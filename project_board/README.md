@@ -33,7 +33,19 @@ The main branch should always build and run.
 
 Board Structure
 
-Columns
+Epics and status (file system)
+
+- Each epic is a folder under project_board/ with an epic-level README.
+- Under each epic, status folders hold tasks:
+  - backlog/ – Approved, not yet scheduled
+  - ready/ – Clearly defined, has acceptance criteria
+  - in_progress/ – Actively being worked on (limit 1–3)
+  - blocked/ – Waiting on dependency or decision
+  - testing/ – Implemented, awaiting playtest validation
+  - done/ – Playable, tested, merged
+- Tasks are markdown files inside the status folder for their current state. Move a task by moving its file to the new status folder.
+
+Columns (meaning)
 
 Backlog
 Ideas that are approved but not yet scheduled.
