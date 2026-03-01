@@ -118,6 +118,22 @@ func _initialize() -> void:
 	total_failures += wall_cling_adversarial_failures
 
 	# ------------------------------------------------------------------
+	# Suite: CameraFollow
+	# Spec coverage: SPEC-37 through SPEC-42, SPEC-45 (headless-verifiable ACs)
+	# Manual ACs (MAN-01 through MAN-06) are listed in camera_follow_spec.md
+	# and are not included here — they require in-editor verification (Task 6).
+	# ------------------------------------------------------------------
+	var camera_follow_suite_script: GDScript = load("res://tests/test_camera_follow.gd")
+	if camera_follow_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_camera_follow.gd")
+		quit(1)
+		return
+
+	var camera_follow_suite: CameraFollowTests = camera_follow_suite_script.new()
+	var camera_follow_failures: int = camera_follow_suite.run_all()
+	total_failures += camera_follow_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")
