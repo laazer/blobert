@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://blobert_test_movement"]
+
+[ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(2000, 20)
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 16.0
+height = 32.0
+
+[node name="TestMovement" type="Node2D"]
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(0, 300)
+
+[node name="FloorShape" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(576, 200)
+script = ExtResource("1_playerctrl")
+
+[node name="PlayerShape" type="CollisionShape2D" parent="Player"]
+shape = SubResource("CapsuleShape2D_player")
+
+[node name="Camera" type="Camera2D" parent="Player"]
