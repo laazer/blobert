@@ -63,6 +63,27 @@ var _current_state: MovementSimulation.MovementState
 
 
 # ---------------------------------------------------------------------------
+# Wall cling configuration parameters (SPEC-26 / Task 5)
+#
+# Exposed via @export so values are editable in the Godot inspector.
+# Defaults match the simulation defaults. Copied to _simulation in _ready().
+# ---------------------------------------------------------------------------
+
+## Gravity multiplier while wall clinging. 0.0 = hover, 1.0 = normal gravity.
+@export var cling_gravity_scale: float = 0.1
+
+## Maximum duration (seconds) the player can cling to a wall per contact.
+## A value of 0.0 disables cling entirely.
+@export var max_cling_time: float = 1.5
+
+## Target apex height of a wall jump in pixels.
+@export var wall_jump_height: float = 100.0
+
+## Horizontal launch speed in pixels per second when wall jumping.
+@export var wall_jump_horizontal_speed: float = 180.0
+
+
+# ---------------------------------------------------------------------------
 # _ready() — Lifecycle initialization (SPEC-9)
 #
 # AC-9.3: Signature is func _ready() -> void.
@@ -85,6 +106,12 @@ func _ready() -> void:
 	_simulation.jump_height = jump_height
 	_simulation.coyote_time = coyote_time
 	_simulation.jump_cut_velocity = jump_cut_velocity
+
+	# Copy wall cling configuration parameters to the simulation instance.
+	_simulation.cling_gravity_scale = cling_gravity_scale
+	_simulation.max_cling_time = max_cling_time
+	_simulation.wall_jump_height = wall_jump_height
+	_simulation.wall_jump_horizontal_speed = wall_jump_horizontal_speed
 
 	# Allocate the initial persistent state. velocity defaults to Vector2.ZERO
 	# and is_on_floor defaults to false — correct starting state for the first frame.
@@ -118,11 +145,20 @@ func _physics_process(delta: float) -> void:
 	# already correct. On the first frame, velocity is Vector2.ZERO (from _ready()).
 	_current_state.is_on_floor = is_on_floor()
 
+	# Read wall contact state from the engine for this frame.
+	# is_on_wall() returns true when CharacterBody2D is in contact with a wall.
+	# get_wall_normal() returns Vector2.ZERO when not on a wall; guard .x access
+	# behind is_on_wall() and pass 0.0 when not contacting a wall (per R2 in ticket).
+	var is_on_wall_now: bool = is_on_wall()
+	var wall_normal_x: float = 0.0
+	if is_on_wall_now:
+		wall_normal_x = get_wall_normal().x
+
 	# --- Step 3: Simulate (AC-8.3) ---
 	# Delegate all velocity math to the pure simulation. The controller
 	# contains no movement formulas (AC-7.4).
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
-		_current_state, input_axis, jump_pressed, jump_just_pressed, delta
+		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, delta
 	)
 
 	# --- Step 4: Apply and slide (AC-8.4) ---
@@ -144,3 +180,9 @@ func _physics_process(delta: float) -> void:
 	# (AC-23.3)
 	_current_state.coyote_timer = next_state.coyote_timer
 	_current_state.jump_consumed = next_state.jump_consumed
+
+	# Copy wall cling state fields back to _current_state so they persist across frames.
+	# Mirrors the coyote_timer pattern: simulation output feeds into the next frame's
+	# prior_state so cling duration and active-cling flag carry forward correctly.
+	_current_state.is_wall_clinging = next_state.is_wall_clinging
+	_current_state.cling_timer = next_state.cling_timer
