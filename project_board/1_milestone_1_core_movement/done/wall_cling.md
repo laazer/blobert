@@ -152,18 +152,18 @@ Full specification written to `/Users/jacobbrandt/workspace/blobert/agent_contex
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+COMPLETE
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Tests: Not Run
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PASS (423 tests, 0 failures, exit code 0 — all 6 suites)
+- Static QA: PASS (godot --headless --check-only implicit via parse-clean test run)
+- Integration: PASS (full headless run via tests/run_tests.gd)
 
 ## Blocking Issues
 - None
@@ -176,20 +176,15 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
+Human
 
 ## Required Input Schema
 ```json
-{
-  "spec_file": "/Users/jacobbrandt/workspace/blobert/agent_context/projects/blobert/specs/wall_cling_spec.md",
-  "primary_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation.gd",
-  "output_adversarial_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation_adversarial.gd",
-  "runner_file": "/Users/jacobbrandt/workspace/blobert/tests/run_tests.gd"
-}
+{}
 ```
 
 ## Status
 Proceed
 
 ## Reason
-Test Breaker complete. New file tests/test_wall_cling_simulation_adversarial.gd written with 42 adversarial tests in 13 groups. run_tests.gd updated to include WallClingSimulationAdversarialTests suite. 12 CHECKPOINT entries logged to agent_context/projects/blobert/CHECKPOINTS.md. Godot --check-only produces no parse errors (version header only, no error lines). Tests are FAILING (red) — implementation does not yet exist. Core Simulation Agent must implement: (a) MovementState new fields is_wall_clinging and cling_timer, (b) 4 new config params, (c) 7-arg simulate() signature, (d) wall cling eligibility/state/gravity/jump logic in movement_simulation.gd per SPEC-25 through SPEC-36.
+Engine Integration Agent complete. Updated scripts/player_controller.gd with: (a) 4 new @export wall cling config vars (cling_gravity_scale=0.1, max_cling_time=1.5, wall_jump_height=100.0, wall_jump_horizontal_speed=180.0), (b) all 4 copied to _simulation in _ready(), (c) is_on_wall() and get_wall_normal().x reads in _physics_process() with guard per R2, (d) 7-arg simulate() call, (e) is_wall_clinging and cling_timer carried forward in _current_state after each frame. Also fixed 7 remaining 5-arg simulate() calls in tests/test_movement_simulation_adversarial.gd that were missed by the Test Design Agent's SPEC-35 migration (checkpoint logged). Full test run: 423 tests across 6 suites — 0 failures, exit code 0. Ticket moved to done/.
