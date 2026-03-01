@@ -152,13 +152,13 @@ Full specification written to `/Users/jacobbrandt/workspace/blobert/agent_contex
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+IMPLEMENTATION_BACKEND
 
 ## Revision
-3
+5
 
 ## Last Updated By
-Spec Agent
+Test Breaker Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -176,21 +176,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Core Simulation Agent
 
 ## Required Input Schema
 ```json
 {
   "spec_file": "/Users/jacobbrandt/workspace/blobert/agent_context/projects/blobert/specs/wall_cling_spec.md",
-  "existing_tests_reference": "/Users/jacobbrandt/workspace/blobert/tests/",
-  "output_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation.gd",
-  "runner_file": "/Users/jacobbrandt/workspace/blobert/tests/run_tests.gd",
-  "files_to_migrate": [
-    "/Users/jacobbrandt/workspace/blobert/tests/test_movement_simulation.gd",
-    "/Users/jacobbrandt/workspace/blobert/tests/test_movement_simulation_adversarial.gd",
-    "/Users/jacobbrandt/workspace/blobert/tests/test_jump_simulation.gd",
-    "/Users/jacobbrandt/workspace/blobert/tests/test_jump_simulation_adversarial.gd"
-  ]
+  "primary_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation.gd",
+  "output_adversarial_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation_adversarial.gd",
+  "runner_file": "/Users/jacobbrandt/workspace/blobert/tests/run_tests.gd"
 }
 ```
 
@@ -198,4 +192,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete. SPEC-25 through SPEC-36 written to wall_cling_spec.md. All design decisions encoded with numbered acceptance criteria, formulas, risk analysis, and concrete numeric examples. Test Designer Agent should write test_wall_cling_simulation.gd covering all AC items, migrate the 4 existing test files from 5-arg to 7-arg simulate() calls, and update run_tests.gd. Tests must be FAILING (red) at handoff since implementation does not yet exist.
+Test Breaker complete. New file tests/test_wall_cling_simulation_adversarial.gd written with 42 adversarial tests in 13 groups. run_tests.gd updated to include WallClingSimulationAdversarialTests suite. 12 CHECKPOINT entries logged to agent_context/projects/blobert/CHECKPOINTS.md. Godot --check-only produces no parse errors (version header only, no error lines). Tests are FAILING (red) — implementation does not yet exist. Core Simulation Agent must implement: (a) MovementState new fields is_wall_clinging and cling_timer, (b) 4 new config params, (c) 7-arg simulate() signature, (d) wall cling eligibility/state/gravity/jump logic in movement_simulation.gd per SPEC-25 through SPEC-36.
