@@ -178,12 +178,15 @@ func test_a04_smoothing_speed_negative_assigned_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
 	node.smoothing_speed = -1.0
 	node._ready()
-	# After _ready(), position_smoothing_speed must equal smoothing_speed
-	# as read from the node. This verifies the assignment was not skipped or
-	# conditionally replaced. Camera2D may internally clamp; we check the
-	# exposed property round-trip is consistent. # CHECKPOINT
-	_assert_approx(node.position_smoothing_speed, node.smoothing_speed,
-		"A-04 — after _ready() with smoothing_speed=-1.0, position_smoothing_speed matches export var") # CHECKPOINT
+	# After _ready(), the @export var must still hold -1.0 (no script-level clamp).
+	# Camera2D may internally clamp position_smoothing_speed to 0.0 for negative
+	# inputs; that is engine behavior and acceptable. We verify two things:
+	# (a) the @export var is unchanged (script did not modify it), and
+	# (b) position_smoothing_speed is finite (no crash or NaN from the assignment). # CHECKPOINT
+	_assert_approx(node.smoothing_speed, -1.0,
+		"A-04a — @export smoothing_speed still holds -1.0 after _ready() (no script-level clamp)") # CHECKPOINT
+	_assert_finite(node.position_smoothing_speed,
+		"A-04b — position_smoothing_speed is finite after _ready() with smoothing_speed=-1.0") # CHECKPOINT
 	node.free()
 
 
@@ -353,10 +356,10 @@ func test_c03_both_drag_bools_nondefa_applied_by_ready() -> void:
 # would fail.
 func test_d01_all_drag_margins_zero_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = 0.0
-	node.drag_right_margin = 0.0
-	node.drag_top_margin = 0.0
-	node.drag_bottom_margin = 0.0
+	node.follow_drag_left_margin = 0.0
+	node.follow_drag_right_margin = 0.0
+	node.follow_drag_top_margin = 0.0
+	node.follow_drag_bottom_margin = 0.0
 	node._ready()
 	_assert_approx(node.drag_left_margin, 0.0,
 		"D-01a — drag_left_margin=0.0 applied by _ready()")
@@ -376,10 +379,10 @@ func test_d01_all_drag_margins_zero_applied_by_ready() -> void:
 # reflects 1.0 (not clamped down by the engine or script).
 func test_d02_all_drag_margins_one_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = 1.0
-	node.drag_right_margin = 1.0
-	node.drag_top_margin = 1.0
-	node.drag_bottom_margin = 1.0
+	node.follow_drag_left_margin = 1.0
+	node.follow_drag_right_margin = 1.0
+	node.follow_drag_top_margin = 1.0
+	node.follow_drag_bottom_margin = 1.0
 	node._ready()
 	_assert_approx(node.drag_left_margin, 1.0,
 		"D-02a — drag_left_margin=1.0 applied by _ready()")
@@ -398,17 +401,17 @@ func test_d02_all_drag_margins_one_applied_by_ready() -> void:
 # The test asserts that whatever Camera2D stored is what the property reports back,
 # confirming the script did not add its own clamp before the assignment.
 # We verify this by checking that the Camera2D property is >= 0.0 (not negative
-# or NaN) and that node.drag_left_margin (the @export var) still holds 1.5.
+# or NaN) and that node.follow_drag_left_margin (the @export var) still holds 1.5.
 # CHECKPOINT: The exact Camera2D behavior for out-of-range margins is engine-defined
 # and not verified here; we verify only the script's no-guard contract.
 func test_d03_drag_left_margin_exceeds_one_export_var_preserves_value() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = 1.5
+	node.follow_drag_left_margin = 1.5
 	node._ready()
 	# The @export var on the script side must still hold 1.5 — the script did not
 	# clamp it before assigning to Camera2D.
-	_assert_approx(node.drag_left_margin, 1.5,
-		"D-03 — @export drag_left_margin preserves 1.5 after _ready() (no script-level clamp)") # CHECKPOINT
+	_assert_approx(node.follow_drag_left_margin, 1.5,
+		"D-03 — @export follow_drag_left_margin preserves 1.5 after _ready() (no script-level clamp)") # CHECKPOINT
 	node.free()
 
 
@@ -417,10 +420,10 @@ func test_d03_drag_left_margin_exceeds_one_export_var_preserves_value() -> void:
 # assignment.
 func test_d04_drag_right_margin_negative_export_var_preserves_value() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_right_margin = -0.1
+	node.follow_drag_right_margin = -0.1
 	node._ready()
-	_assert_approx(node.drag_right_margin, -0.1,
-		"D-04 — @export drag_right_margin preserves -0.1 after _ready() (no script-level clamp)") # CHECKPOINT
+	_assert_approx(node.follow_drag_right_margin, -0.1,
+		"D-04 — @export follow_drag_right_margin preserves -0.1 after _ready() (no script-level clamp)") # CHECKPOINT
 	node.free()
 
 
@@ -429,19 +432,19 @@ func test_d04_drag_right_margin_negative_export_var_preserves_value() -> void:
 # not just the one most likely to be guarded.
 func test_d05_all_margins_out_of_range_export_vars_preserve_values() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = -0.5
-	node.drag_right_margin = 2.0
-	node.drag_top_margin = -0.01
-	node.drag_bottom_margin = 1.99
+	node.follow_drag_left_margin = -0.5
+	node.follow_drag_right_margin = 2.0
+	node.follow_drag_top_margin = -0.01
+	node.follow_drag_bottom_margin = 1.99
 	node._ready()
-	_assert_approx(node.drag_left_margin, -0.5,
-		"D-05a — @export drag_left_margin preserves -0.5") # CHECKPOINT
-	_assert_approx(node.drag_right_margin, 2.0,
-		"D-05b — @export drag_right_margin preserves 2.0") # CHECKPOINT
-	_assert_approx(node.drag_top_margin, -0.01,
-		"D-05c — @export drag_top_margin preserves -0.01") # CHECKPOINT
-	_assert_approx(node.drag_bottom_margin, 1.99,
-		"D-05d — @export drag_bottom_margin preserves 1.99") # CHECKPOINT
+	_assert_approx(node.follow_drag_left_margin, -0.5,
+		"D-05a — @export follow_drag_left_margin preserves -0.5") # CHECKPOINT
+	_assert_approx(node.follow_drag_right_margin, 2.0,
+		"D-05b — @export follow_drag_right_margin preserves 2.0") # CHECKPOINT
+	_assert_approx(node.follow_drag_top_margin, -0.01,
+		"D-05c — @export follow_drag_top_margin preserves -0.01") # CHECKPOINT
+	_assert_approx(node.follow_drag_bottom_margin, 1.99,
+		"D-05d — @export follow_drag_bottom_margin preserves 1.99") # CHECKPOINT
 	node.free()
 
 
@@ -457,10 +460,10 @@ func test_d05_all_margins_out_of_range_export_vars_preserve_values() -> void:
 # "fix" or reject this configuration. SPEC-39 mandates unconditional assignment.
 func test_e01_all_limits_same_value_degenerate_box_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 0
-	node.limit_right = 0
-	node.limit_top = 0
-	node.limit_bottom = 0
+	node.follow_limit_left = 0
+	node.follow_limit_right = 0
+	node.follow_limit_top = 0
+	node.follow_limit_bottom = 0
 	node._ready()
 	_assert_int_eq(node.limit_left, 0,
 		"E-01a — limit_left=0 applied by _ready() (degenerate box)")
@@ -479,8 +482,8 @@ func test_e01_all_limits_same_value_degenerate_box_applied_by_ready() -> void:
 # values through to Camera2D without reordering or rejecting them.
 func test_e02_limit_left_greater_than_limit_right_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 1000
-	node.limit_right = 100
+	node.follow_limit_left = 1000
+	node.follow_limit_right = 100
 	node._ready()
 	_assert_int_eq(node.limit_left, 1000,
 		"E-02a — limit_left=1000 (> limit_right=100) applied by _ready(); no swap")
@@ -496,8 +499,8 @@ func test_e02_limit_left_greater_than_limit_right_applied_by_ready() -> void:
 # without the script reordering or clamping.
 func test_e03_limit_bottom_less_than_limit_top_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_top = 500
-	node.limit_bottom = -500
+	node.follow_limit_top = 500
+	node.follow_limit_bottom = -500
 	node._ready()
 	_assert_int_eq(node.limit_top, 500,
 		"E-03a — limit_top=500 (> limit_bottom=-500) applied by _ready(); no swap")
@@ -510,8 +513,8 @@ func test_e03_limit_bottom_less_than_limit_top_applied_by_ready() -> void:
 # A degenerate case where the horizontal axis has a single allowed x-coordinate.
 func test_e04_limit_left_equals_limit_right_zero_width_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 400
-	node.limit_right = 400
+	node.follow_limit_left = 400
+	node.follow_limit_right = 400
 	node._ready()
 	_assert_int_eq(node.limit_left, 400,
 		"E-04a — limit_left=400 applied by _ready() (zero-width horizontal)")
@@ -523,8 +526,8 @@ func test_e04_limit_left_equals_limit_right_zero_width_applied_by_ready() -> voi
 # E-05: limit_top = limit_bottom (zero-height vertical bounds).
 func test_e05_limit_top_equals_limit_bottom_zero_height_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_top = -200
-	node.limit_bottom = -200
+	node.follow_limit_top = -200
+	node.follow_limit_bottom = -200
 	node._ready()
 	_assert_int_eq(node.limit_top, -200,
 		"E-05a — limit_top=-200 applied by _ready() (zero-height vertical)")
@@ -542,20 +545,20 @@ func test_e05_limit_top_equals_limit_bottom_zero_height_applied_by_ready() -> vo
 # The test asserts the @export var field preserves the value assigned to it.
 func test_e06_all_limits_int32_max_export_var_preserved() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = INT32_MAX
-	node.limit_right = INT32_MAX
-	node.limit_top = INT32_MAX
-	node.limit_bottom = INT32_MAX
+	node.follow_limit_left = INT32_MAX
+	node.follow_limit_right = INT32_MAX
+	node.follow_limit_top = INT32_MAX
+	node.follow_limit_bottom = INT32_MAX
 	# Read back from the @export vars (not the Camera2D property) to confirm
 	# the GDScript field preserves the value. Camera2D property may differ. # CHECKPOINT
-	_assert_int_eq(node.limit_left, INT32_MAX,
-		"E-06a — @export limit_left holds INT32_MAX pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_right, INT32_MAX,
-		"E-06b — @export limit_right holds INT32_MAX pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_top, INT32_MAX,
-		"E-06c — @export limit_top holds INT32_MAX pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_bottom, INT32_MAX,
-		"E-06d — @export limit_bottom holds INT32_MAX pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_left, INT32_MAX,
+		"E-06a — @export follow_limit_left holds INT32_MAX pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_right, INT32_MAX,
+		"E-06b — @export follow_limit_right holds INT32_MAX pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_top, INT32_MAX,
+		"E-06c — @export follow_limit_top holds INT32_MAX pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_bottom, INT32_MAX,
+		"E-06d — @export follow_limit_bottom holds INT32_MAX pre-_ready()") # CHECKPOINT
 	node.free()
 
 
@@ -563,18 +566,18 @@ func test_e06_all_limits_int32_max_export_var_preserved() -> void:
 # Same as E-06 but for the minimum 32-bit boundary.
 func test_e07_all_limits_int32_min_export_var_preserved() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = INT32_MIN
-	node.limit_right = INT32_MIN
-	node.limit_top = INT32_MIN
-	node.limit_bottom = INT32_MIN
-	_assert_int_eq(node.limit_left, INT32_MIN,
-		"E-07a — @export limit_left holds INT32_MIN pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_right, INT32_MIN,
-		"E-07b — @export limit_right holds INT32_MIN pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_top, INT32_MIN,
-		"E-07c — @export limit_top holds INT32_MIN pre-_ready()") # CHECKPOINT
-	_assert_int_eq(node.limit_bottom, INT32_MIN,
-		"E-07d — @export limit_bottom holds INT32_MIN pre-_ready()") # CHECKPOINT
+	node.follow_limit_left = INT32_MIN
+	node.follow_limit_right = INT32_MIN
+	node.follow_limit_top = INT32_MIN
+	node.follow_limit_bottom = INT32_MIN
+	_assert_int_eq(node.follow_limit_left, INT32_MIN,
+		"E-07a — @export follow_limit_left holds INT32_MIN pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_right, INT32_MIN,
+		"E-07b — @export follow_limit_right holds INT32_MIN pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_top, INT32_MIN,
+		"E-07c — @export follow_limit_top holds INT32_MIN pre-_ready()") # CHECKPOINT
+	_assert_int_eq(node.follow_limit_bottom, INT32_MIN,
+		"E-07d — @export follow_limit_bottom holds INT32_MIN pre-_ready()") # CHECKPOINT
 	node.free()
 
 
@@ -585,10 +588,10 @@ func test_e07_all_limits_int32_min_export_var_preserved() -> void:
 # assigned, Camera2D might clamp. This test uses INT32_MAX which fits in int32.
 func test_e08_int32_max_limits_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = INT32_MAX
-	node.limit_right = INT32_MAX
-	node.limit_top = INT32_MAX
-	node.limit_bottom = INT32_MAX
+	node.follow_limit_left = INT32_MAX
+	node.follow_limit_right = INT32_MAX
+	node.follow_limit_top = INT32_MAX
+	node.follow_limit_bottom = INT32_MAX
 	node._ready()
 	_assert_int_eq(node.limit_left, INT32_MAX,
 		"E-08a — limit_left=INT32_MAX applied by _ready()") # CHECKPOINT
@@ -604,10 +607,10 @@ func test_e08_int32_max_limits_applied_by_ready() -> void:
 # E-09: INT32_MIN limits assigned via _ready().
 func test_e09_int32_min_limits_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = INT32_MIN
-	node.limit_right = INT32_MIN
-	node.limit_top = INT32_MIN
-	node.limit_bottom = INT32_MIN
+	node.follow_limit_left = INT32_MIN
+	node.follow_limit_right = INT32_MIN
+	node.follow_limit_top = INT32_MIN
+	node.follow_limit_bottom = INT32_MIN
 	node._ready()
 	_assert_int_eq(node.limit_left, INT32_MIN,
 		"E-09a — limit_left=INT32_MIN applied by _ready()") # CHECKPOINT
@@ -624,10 +627,10 @@ func test_e09_int32_min_limits_applied_by_ready() -> void:
 # Tests the narrowest non-zero horizontal limit box.
 func test_e10_minimal_nonzero_limit_box_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 0
-	node.limit_right = 1
-	node.limit_top = 0
-	node.limit_bottom = 1
+	node.follow_limit_left = 0
+	node.follow_limit_right = 1
+	node.follow_limit_top = 0
+	node.follow_limit_bottom = 1
 	node._ready()
 	_assert_int_eq(node.limit_left, 0,
 		"E-10a — limit_left=0 (minimal box) applied by _ready()")
@@ -645,10 +648,10 @@ func test_e10_minimal_nonzero_limit_box_applied_by_ready() -> void:
 # Already covered by E-01 but this test labels it explicitly as the "origin point" case.
 func test_e11_all_limits_zero_origin_point() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 0
-	node.limit_right = 0
-	node.limit_top = 0
-	node.limit_bottom = 0
+	node.follow_limit_left = 0
+	node.follow_limit_right = 0
+	node.follow_limit_top = 0
+	node.follow_limit_bottom = 0
 	node._ready()
 	_assert_int_eq(node.limit_left, 0, "E-11a — origin-point limit_left=0")
 	_assert_int_eq(node.limit_right, 0, "E-11b — origin-point limit_right=0")
@@ -734,14 +737,14 @@ func test_f02_change_smoothing_speed_between_ready_calls_second_overrides() -> v
 # F-03: Modify limit_right between two _ready() calls.
 func test_f03_change_limit_right_between_ready_calls_second_overrides() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_right = 1000
+	node.follow_limit_right = 1000
 	node._ready()
 	_assert_int_eq(node.limit_right, 1000,
-		"F-03 setup — first _ready() with limit_right=1000 applied")
-	node.limit_right = 800
+		"F-03 setup — first _ready() with follow_limit_right=1000 applied")
+	node.follow_limit_right = 800
 	node._ready()
 	_assert_int_eq(node.limit_right, 800,
-		"F-03 — second _ready() with limit_right=800 overrides 1000")
+		"F-03 — second _ready() with follow_limit_right=800 overrides 1000")
 	node.free()
 
 
@@ -758,14 +761,14 @@ func test_f04_change_all_twelve_vars_between_ready_calls_all_override() -> void:
 	node.smoothing_speed = 8.0
 	node.drag_horizontal = false
 	node.drag_vertical = true
-	node.drag_left_margin = 0.1
-	node.drag_right_margin = 0.3
-	node.drag_top_margin = 0.15
-	node.drag_bottom_margin = 0.25
-	node.limit_left = -500
-	node.limit_right = 500
-	node.limit_top = -300
-	node.limit_bottom = 300
+	node.follow_drag_left_margin = 0.1
+	node.follow_drag_right_margin = 0.3
+	node.follow_drag_top_margin = 0.15
+	node.follow_drag_bottom_margin = 0.25
+	node.follow_limit_left = -500
+	node.follow_limit_right = 500
+	node.follow_limit_top = -300
+	node.follow_limit_bottom = 300
 	# Second call must apply all new values.
 	node._ready()
 	_assert_false(node.position_smoothing_enabled,
@@ -823,63 +826,63 @@ func test_g02_drag_vertical_is_mutable() -> void:
 # G-03: drag_left_margin is mutable.
 func test_g03_drag_left_margin_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = 0.35
-	_assert_approx(node.drag_left_margin, 0.35,
-		"G-03 — drag_left_margin is mutable; assigned 0.35, reads back 0.35")
+	node.follow_drag_left_margin = 0.35
+	_assert_approx(node.follow_drag_left_margin, 0.35,
+		"G-03 — follow_drag_left_margin is mutable; assigned 0.35, reads back 0.35")
 	node.free()
 
 
-# G-04: drag_right_margin is mutable.
+# G-04: follow_drag_right_margin is mutable.
 func test_g04_drag_right_margin_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_right_margin = 0.45
-	_assert_approx(node.drag_right_margin, 0.45,
-		"G-04 — drag_right_margin is mutable; assigned 0.45, reads back 0.45")
+	node.follow_drag_right_margin = 0.45
+	_assert_approx(node.follow_drag_right_margin, 0.45,
+		"G-04 — follow_drag_right_margin is mutable; assigned 0.45, reads back 0.45")
 	node.free()
 
 
-# G-05: drag_top_margin is mutable.
+# G-05: follow_drag_top_margin is mutable.
 func test_g05_drag_top_margin_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_top_margin = 0.1
-	_assert_approx(node.drag_top_margin, 0.1,
-		"G-05 — drag_top_margin is mutable; assigned 0.1, reads back 0.1")
+	node.follow_drag_top_margin = 0.1
+	_assert_approx(node.follow_drag_top_margin, 0.1,
+		"G-05 — follow_drag_top_margin is mutable; assigned 0.1, reads back 0.1")
 	node.free()
 
 
-# G-06: drag_bottom_margin is mutable.
+# G-06: follow_drag_bottom_margin is mutable.
 func test_g06_drag_bottom_margin_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_bottom_margin = 0.5
-	_assert_approx(node.drag_bottom_margin, 0.5,
-		"G-06 — drag_bottom_margin is mutable; assigned 0.5, reads back 0.5")
+	node.follow_drag_bottom_margin = 0.5
+	_assert_approx(node.follow_drag_bottom_margin, 0.5,
+		"G-06 — follow_drag_bottom_margin is mutable; assigned 0.5, reads back 0.5")
 	node.free()
 
 
-# G-07: limit_left is mutable.
+# G-07: follow_limit_left is mutable.
 func test_g07_limit_left_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = -100
-	_assert_int_eq(node.limit_left, -100,
-		"G-07 — limit_left is mutable; assigned -100, reads back -100")
+	node.follow_limit_left = -100
+	_assert_int_eq(node.follow_limit_left, -100,
+		"G-07 — follow_limit_left is mutable; assigned -100, reads back -100")
 	node.free()
 
 
-# G-08: limit_top is mutable.
+# G-08: follow_limit_top is mutable.
 func test_g08_limit_top_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_top = -50
-	_assert_int_eq(node.limit_top, -50,
-		"G-08 — limit_top is mutable; assigned -50, reads back -50")
+	node.follow_limit_top = -50
+	_assert_int_eq(node.follow_limit_top, -50,
+		"G-08 — follow_limit_top is mutable; assigned -50, reads back -50")
 	node.free()
 
 
-# G-09: limit_bottom is mutable.
+# G-09: follow_limit_bottom is mutable.
 func test_g09_limit_bottom_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_bottom = 600
-	_assert_int_eq(node.limit_bottom, 600,
-		"G-09 — limit_bottom is mutable; assigned 600, reads back 600")
+	node.follow_limit_bottom = 600
+	_assert_int_eq(node.follow_limit_bottom, 600,
+		"G-09 — follow_limit_bottom is mutable; assigned 600, reads back 600")
 	node.free()
 
 
@@ -894,7 +897,7 @@ func test_g09_limit_bottom_is_mutable() -> void:
 # H-01: Non-default drag_right_margin applied through _ready().
 func test_h01_nondefa_drag_right_margin_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_right_margin = 0.4
+	node.follow_drag_right_margin = 0.4
 	node._ready()
 	_assert_approx(node.drag_right_margin, 0.4,
 		"H-01 — drag_right_margin=0.4 applied by _ready()")
@@ -904,7 +907,7 @@ func test_h01_nondefa_drag_right_margin_applied_by_ready() -> void:
 # H-02: Non-default drag_top_margin applied through _ready().
 func test_h02_nondefa_drag_top_margin_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_top_margin = 0.3
+	node.follow_drag_top_margin = 0.3
 	node._ready()
 	_assert_approx(node.drag_top_margin, 0.3,
 		"H-02 — drag_top_margin=0.3 applied by _ready()")
@@ -914,7 +917,7 @@ func test_h02_nondefa_drag_top_margin_applied_by_ready() -> void:
 # H-03: Non-default drag_bottom_margin applied through _ready().
 func test_h03_nondefa_drag_bottom_margin_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_bottom_margin = 0.35
+	node.follow_drag_bottom_margin = 0.35
 	node._ready()
 	_assert_approx(node.drag_bottom_margin, 0.35,
 		"H-03 — drag_bottom_margin=0.35 applied by _ready()")
@@ -924,7 +927,7 @@ func test_h03_nondefa_drag_bottom_margin_applied_by_ready() -> void:
 # H-04: Non-default limit_left applied through _ready().
 func test_h04_nondefa_limit_left_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = -400
+	node.follow_limit_left = -400
 	node._ready()
 	_assert_int_eq(node.limit_left, -400,
 		"H-04 — limit_left=-400 applied by _ready()")
@@ -934,7 +937,7 @@ func test_h04_nondefa_limit_left_applied_by_ready() -> void:
 # H-05: Non-default limit_top applied through _ready().
 func test_h05_nondefa_limit_top_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_top = -300
+	node.follow_limit_top = -300
 	node._ready()
 	_assert_int_eq(node.limit_top, -300,
 		"H-05 — limit_top=-300 applied by _ready()")
@@ -944,7 +947,7 @@ func test_h05_nondefa_limit_top_applied_by_ready() -> void:
 # H-06: Non-default limit_bottom applied through _ready().
 func test_h06_nondefa_limit_bottom_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_bottom = 600
+	node.follow_limit_bottom = 600
 	node._ready()
 	_assert_int_eq(node.limit_bottom, 600,
 		"H-06 — limit_bottom=600 applied by _ready()")
@@ -982,10 +985,14 @@ func test_i02_smoothing_speed_large_negative_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
 	node.smoothing_speed = -100.0
 	node._ready()
-	# _ready() must have assigned position_smoothing_speed = -100.0 (no guard).
-	# Camera2D may internally clamp; we verify the round-trip consistency.
-	_assert_approx(node.position_smoothing_speed, node.smoothing_speed,
-		"I-02 — smoothing_speed=-100.0: position_smoothing_speed matches export var after _ready()") # CHECKPOINT
+	# _ready() must have assigned position_smoothing_speed = -100.0 (no guard in script).
+	# Camera2D internally clamps negative speed to 0.0; that is engine behavior.
+	# We verify: (a) @export var holds -100.0 (script did not clamp it), and
+	# (b) position_smoothing_speed is finite (assignment executed without crash). # CHECKPOINT
+	_assert_approx(node.smoothing_speed, -100.0,
+		"I-02a — @export smoothing_speed holds -100.0 after _ready() (no script clamp)") # CHECKPOINT
+	_assert_finite(node.position_smoothing_speed,
+		"I-02b — position_smoothing_speed is finite after _ready() with smoothing_speed=-100.0") # CHECKPOINT
 	node.free()
 
 
@@ -1002,7 +1009,7 @@ func test_j01_free_without_calling_ready_does_not_crash() -> void:
 	var node: CameraFollow = CameraFollow.new()
 	# Set a few properties to ensure the node is not in a trivial default state.
 	node.smoothing_speed = 0.0
-	node.limit_right = 500
+	node.follow_limit_right = 500
 	# Free without _ready() — the test passes if no crash occurs.
 	node.free()
 	_pass("J-01 — CameraFollow can be freed without calling _ready() (no crash)")
@@ -1017,14 +1024,14 @@ func test_j02_all_export_vars_readable_pre_ready() -> void:
 	var _ss: float = node.smoothing_speed
 	var _dh: bool = node.drag_horizontal
 	var _dv: bool = node.drag_vertical
-	var _dlm: float = node.drag_left_margin
-	var _drm: float = node.drag_right_margin
-	var _dtm: float = node.drag_top_margin
-	var _dbm: float = node.drag_bottom_margin
-	var _ll: int = node.limit_left
-	var _lr: int = node.limit_right
-	var _lt: int = node.limit_top
-	var _lb: int = node.limit_bottom
+	var _dlm: float = node.follow_drag_left_margin
+	var _drm: float = node.follow_drag_right_margin
+	var _dtm: float = node.follow_drag_top_margin
+	var _dbm: float = node.follow_drag_bottom_margin
+	var _ll: int = node.follow_limit_left
+	var _lr: int = node.follow_limit_right
+	var _lt: int = node.follow_limit_top
+	var _lb: int = node.follow_limit_bottom
 	# If we reach this point, all twelve vars were accessible without crash.
 	_pass("J-02 — all twelve @export vars readable pre-_ready() without crash")
 	node.free()

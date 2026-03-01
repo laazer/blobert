@@ -181,64 +181,64 @@ func test_spec38_default_drag_vertical() -> void:
 # AC-38.5: drag_left_margin default is 0.2 (tolerance EPSILON).
 func test_spec38_default_drag_left_margin() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_approx(node.drag_left_margin, 0.2,
-		"spec38 — drag_left_margin default is 0.2")
+	_assert_approx(node.follow_drag_left_margin, 0.2,
+		"spec38 — follow_drag_left_margin default is 0.2")
 	node.free()
 
 
 # AC-38.6: drag_right_margin default is 0.2 (tolerance EPSILON).
 func test_spec38_default_drag_right_margin() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_approx(node.drag_right_margin, 0.2,
-		"spec38 — drag_right_margin default is 0.2")
+	_assert_approx(node.follow_drag_right_margin, 0.2,
+		"spec38 — follow_drag_right_margin default is 0.2")
 	node.free()
 
 
 # AC-38.7: drag_top_margin default is 0.2 (tolerance EPSILON).
 func test_spec38_default_drag_top_margin() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_approx(node.drag_top_margin, 0.2,
-		"spec38 — drag_top_margin default is 0.2")
+	_assert_approx(node.follow_drag_top_margin, 0.2,
+		"spec38 — follow_drag_top_margin default is 0.2")
 	node.free()
 
 
 # AC-38.8: drag_bottom_margin default is 0.2 (tolerance EPSILON).
 func test_spec38_default_drag_bottom_margin() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_approx(node.drag_bottom_margin, 0.2,
-		"spec38 — drag_bottom_margin default is 0.2")
+	_assert_approx(node.follow_drag_bottom_margin, 0.2,
+		"spec38 — follow_drag_bottom_margin default is 0.2")
 	node.free()
 
 
 # AC-38.9: limit_left default is -10000000 (exact integer equality).
 func test_spec38_default_limit_left() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_int_eq(node.limit_left, -10000000,
-		"spec38 — limit_left default is -10000000")
+	_assert_int_eq(node.follow_limit_left, -10000000,
+		"spec38 — follow_limit_left default is -10000000")
 	node.free()
 
 
 # AC-38.10: limit_right default is 10000000 (exact integer equality).
 func test_spec38_default_limit_right() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_int_eq(node.limit_right, 10000000,
-		"spec38 — limit_right default is 10000000")
+	_assert_int_eq(node.follow_limit_right, 10000000,
+		"spec38 — follow_limit_right default is 10000000")
 	node.free()
 
 
 # AC-38.11: limit_top default is -10000000 (exact integer equality).
 func test_spec38_default_limit_top() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_int_eq(node.limit_top, -10000000,
-		"spec38 — limit_top default is -10000000")
+	_assert_int_eq(node.follow_limit_top, -10000000,
+		"spec38 — follow_limit_top default is -10000000")
 	node.free()
 
 
 # AC-38.12: limit_bottom default is 10000000 (exact integer equality).
 func test_spec38_default_limit_bottom() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_int_eq(node.limit_bottom, 10000000,
-		"spec38 — limit_bottom default is 10000000")
+	_assert_int_eq(node.follow_limit_bottom, 10000000,
+		"spec38 — follow_limit_bottom default is 10000000")
 	node.free()
 
 
@@ -263,9 +263,9 @@ func test_spec38_smoothing_speed_is_mutable() -> void:
 
 func test_spec38_limit_right_is_mutable() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_right = 800
-	_assert_int_eq(node.limit_right, 800,
-		"spec38 — limit_right is mutable; assigned 800, read back 800")
+	node.follow_limit_right = 800
+	_assert_int_eq(node.follow_limit_right, 800,
+		"spec38 — follow_limit_right is mutable; assigned 800, read back 800")
 	node.free()
 
 
@@ -486,10 +486,10 @@ func test_spec41_drag_bottom_margin_after_ready_default() -> void:
 # the current export value rather than a hardcoded 0.2.
 func test_spec41_nondefa_drag_left_margin_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.drag_left_margin = 0.4
+	node.follow_drag_left_margin = 0.4
 	node._ready()
 	_assert_approx(node.drag_left_margin, 0.4,
-		"spec41/AC-41.7 — drag_left_margin is 0.4 after drag_left_margin=0.4 and _ready()")
+		"spec41/AC-41.7 — drag_left_margin is 0.4 after follow_drag_left_margin=0.4 and _ready()")
 	node.free()
 
 
@@ -538,10 +538,10 @@ func test_spec42_limit_bottom_after_ready_default() -> void:
 # is applied rather than the hardcoded default.
 func test_spec42_nondefa_limit_right_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_right = 800
+	node.follow_limit_right = 800
 	node._ready()
 	_assert_int_eq(node.limit_right, 800,
-		"spec42/AC-42.5 — limit_right is 800 after limit_right=800 and _ready()")
+		"spec42/AC-42.5 — limit_right is 800 after follow_limit_right=800 and _ready()")
 	node.free()
 
 
@@ -549,10 +549,10 @@ func test_spec42_nondefa_limit_right_applied_by_ready() -> void:
 # Camera2D limit properties match the assigned values after _ready().
 func test_spec42_all_four_limits_applied_by_ready() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	node.limit_left = 0
-	node.limit_right = 2000
-	node.limit_top = -600
-	node.limit_bottom = 400
+	node.follow_limit_left = 0
+	node.follow_limit_right = 2000
+	node.follow_limit_top = -600
+	node.follow_limit_bottom = 400
 	node._ready()
 	_assert_int_eq(node.limit_left, 0,
 		"spec42/AC-42.6 — limit_left is 0 after assignment and _ready()")
@@ -609,64 +609,64 @@ func test_spec45_type_drag_vertical_is_bool() -> void:
 # drag_left_margin must be TYPE_FLOAT.
 func test_spec45_type_drag_left_margin_is_float() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.drag_left_margin, TYPE_FLOAT,
-		"spec45 — drag_left_margin value has Variant type TYPE_FLOAT")
+	_assert_type_eq(node.follow_drag_left_margin, TYPE_FLOAT,
+		"spec45 — follow_drag_left_margin value has Variant type TYPE_FLOAT")
 	node.free()
 
 
-# drag_right_margin must be TYPE_FLOAT.
+# follow_drag_right_margin must be TYPE_FLOAT.
 func test_spec45_type_drag_right_margin_is_float() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.drag_right_margin, TYPE_FLOAT,
-		"spec45 — drag_right_margin value has Variant type TYPE_FLOAT")
+	_assert_type_eq(node.follow_drag_right_margin, TYPE_FLOAT,
+		"spec45 — follow_drag_right_margin value has Variant type TYPE_FLOAT")
 	node.free()
 
 
-# drag_top_margin must be TYPE_FLOAT.
+# follow_drag_top_margin must be TYPE_FLOAT.
 func test_spec45_type_drag_top_margin_is_float() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.drag_top_margin, TYPE_FLOAT,
-		"spec45 — drag_top_margin value has Variant type TYPE_FLOAT")
+	_assert_type_eq(node.follow_drag_top_margin, TYPE_FLOAT,
+		"spec45 — follow_drag_top_margin value has Variant type TYPE_FLOAT")
 	node.free()
 
 
-# drag_bottom_margin must be TYPE_FLOAT.
+# follow_drag_bottom_margin must be TYPE_FLOAT.
 func test_spec45_type_drag_bottom_margin_is_float() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.drag_bottom_margin, TYPE_FLOAT,
-		"spec45 — drag_bottom_margin value has Variant type TYPE_FLOAT")
+	_assert_type_eq(node.follow_drag_bottom_margin, TYPE_FLOAT,
+		"spec45 — follow_drag_bottom_margin value has Variant type TYPE_FLOAT")
 	node.free()
 
 
-# limit_left must be TYPE_INT (not float).
+# follow_limit_left must be TYPE_INT (not float).
 func test_spec45_type_limit_left_is_int() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.limit_left, TYPE_INT,
-		"spec45 — limit_left value has Variant type TYPE_INT (not float)")
+	_assert_type_eq(node.follow_limit_left, TYPE_INT,
+		"spec45 — follow_limit_left value has Variant type TYPE_INT (not float)")
 	node.free()
 
 
-# limit_right must be TYPE_INT.
+# follow_limit_right must be TYPE_INT.
 func test_spec45_type_limit_right_is_int() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.limit_right, TYPE_INT,
-		"spec45 — limit_right value has Variant type TYPE_INT (not float)")
+	_assert_type_eq(node.follow_limit_right, TYPE_INT,
+		"spec45 — follow_limit_right value has Variant type TYPE_INT (not float)")
 	node.free()
 
 
-# limit_top must be TYPE_INT.
+# follow_limit_top must be TYPE_INT.
 func test_spec45_type_limit_top_is_int() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.limit_top, TYPE_INT,
-		"spec45 — limit_top value has Variant type TYPE_INT (not float)")
+	_assert_type_eq(node.follow_limit_top, TYPE_INT,
+		"spec45 — follow_limit_top value has Variant type TYPE_INT (not float)")
 	node.free()
 
 
-# limit_bottom must be TYPE_INT.
+# follow_limit_bottom must be TYPE_INT.
 func test_spec45_type_limit_bottom_is_int() -> void:
 	var node: CameraFollow = CameraFollow.new()
-	_assert_type_eq(node.limit_bottom, TYPE_INT,
-		"spec45 — limit_bottom value has Variant type TYPE_INT (not float)")
+	_assert_type_eq(node.follow_limit_bottom, TYPE_INT,
+		"spec45 — follow_limit_bottom value has Variant type TYPE_INT (not float)")
 	node.free()
 
 
