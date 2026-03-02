@@ -444,7 +444,7 @@ func test_core_input_actions_exist_and_have_bindings() -> void:
 		if not has_action:
 			continue
 
-		var events: Array = InputMap.get_action_list(name_str)
+		var events: Array = InputMap.action_get_events(name_str)
 		_assert_true(events.size() > 0,
 			"adv_input_action_has_bindings — InputMap action '%s' has at least one event bound" % name_str)
 

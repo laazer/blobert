@@ -920,8 +920,8 @@ func test_gap17_negative_hp_cost_per_detach_hp_gain() -> void:
 	elif _approx_eq(result.current_hp, guarded_result):
 		_pass("gap17 — CHECKPOINT: negative cost guarded to 0.0 (HP unchanged at 100.0)")
 	else:
-		_fail("gap17 — CHECKPOINT: negative cost produced unexpected HP=" + str(result.current_hp) +
-			" (expected 110.0 via formula or 100.0 via guard)")
+		_fail("gap17 — CHECKPOINT: negative cost produced unexpected HP",
+			"got " + str(result.current_hp) + " (expected 110.0 via formula or 100.0 via guard)")
 
 	# Detach must still fire regardless of cost sign.
 	_assert_false(result.has_chunk,
