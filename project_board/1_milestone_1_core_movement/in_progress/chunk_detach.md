@@ -186,13 +186,13 @@ NF-01: All new vars explicitly typed. NF-02: All new class-level vars have expli
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -210,7 +210,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Core Simulation Agent
 
 ## Required Input Schema
 ```json
@@ -227,4 +227,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test design complete. `tests/test_chunk_detach_simulation.gd` written with 37 tests covering SPEC-46 through SPEC-50 and SPEC-53. All 326 existing simulate() calls in the 6 prior test files migrated from 7-arg to 8-arg signature (false inserted as 7th positional arg before delta). `tests/run_tests.gd` updated with ChunkDetachSimulationTests suite block. Design decisions logged to CHECKPOINTS.md ([M1-005] Test Designer entries). Test Breaker Agent should produce `tests/test_chunk_detach_simulation_adversarial.gd` covering boundary cases: detach when has_chunk=false (no-op), consecutive detach presses, has_chunk carry-forward across multiple no-detach frames, prior_state immutability (has_chunk field not mutated), delta=0.0 with detach, detach on floor vs. airborne.
+Adversarial test suite complete. `tests/test_chunk_detach_simulation_adversarial.gd` written as `ChunkDetachSimulationAdversarialTests` with 30 tests covering 15 adversarial gaps (GAP-01 through GAP-15) not covered by the 37-test primary suite. Gap coverage: detach+jump same frame (all 7 fields), detach+wall jump same frame, detach on landing transition frame, rapid no-op detach stability, delta=0.0 all-7-field verification, very large delta, full 7-field prior_state immutability, config mutation isolation, two-instance isolation, 100-iteration no-op stability, normal movement unaffected in active scenarios, coyote window, jump_consumed=true coexistence, active cling carry-forward, and sequential detach press edge-trigger semantics. `tests/run_tests.gd` updated with ChunkDetachSimulationAdversarialTests suite block. All 15 checkpoint decisions logged to CHECKPOINTS.md ([M1-005] Test Breaker — TB-CD-001 through TB-CD-015). Core Simulation Agent should now implement `has_chunk` field and detach step in `movement_simulation.gd` per SPEC-46 through SPEC-49, then migrate all call sites (SPEC-50), then add input action (SPEC-51).
