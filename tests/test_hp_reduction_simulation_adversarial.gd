@@ -299,10 +299,11 @@ func test_gap03_hp_plus_wall_jump_same_frame() -> void:
 	prior.current_hp = 100.0  # AC-60.4
 
 	# jump_just_pressed=true (wall jump eligible: prior.is_wall_clinging=true + not consumed)
+	# jump_pressed=true so jump cut does not fire and clamp the impulse.
 	# detach_just_pressed=true simultaneously.
 	# is_on_wall=true (stay on wall), wall_normal_x=1.0 (wall on left → normal points right).
 	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, -1.0, false, true, true, 1.0, true, 0.016)
+		prior, -1.0, true, true, true, 1.0, true, 0.016)
 
 	# HP reduction must have fired:
 	_assert_exact(result.current_hp, 75.0,
