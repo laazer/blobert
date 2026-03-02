@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://blobert_test_movement"]
+[gd_scene load_steps=6 format=3 uid="uid://blobert_test_movement"]
 
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
+[ext_resource type="Script" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(2000, 20)
@@ -17,6 +18,11 @@ position = Vector2(0, 300)
 [node name="FloorShape" type="CollisionShape2D" parent="Floor"]
 shape = SubResource("RectangleShape2D_floor")
 
+[node name="FloorVisual" type="Polygon2D" parent="Floor"]
+z_index = 0
+polygon = PackedVector2Array(Vector2(-1000, -10), Vector2(1000, -10), Vector2(1000, 10), Vector2(-1000, 10))
+color = Color(0.2, 0.2, 0.2, 1)
+
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(576, 200)
 script = ExtResource("1_playerctrl")
@@ -25,3 +31,31 @@ script = ExtResource("1_playerctrl")
 shape = SubResource("CapsuleShape2D_player")
 
 [node name="Camera" type="Camera2D" parent="Player"]
+script = ExtResource("2_camera_follow")
+follow_limit_left = -1000
+follow_limit_right = 1000
+follow_limit_top = -200
+follow_limit_bottom = 600
+
+[node name="PlayerVisual" type="Polygon2D" parent="Player"]
+z_index = 10
+polygon = PackedVector2Array(Vector2(-16, -32), Vector2(16, -32), Vector2(16, 32), Vector2(-16, 32))
+color = Color(0.4, 0.9, 0.6, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="Hints" type="Control" parent="UI"]
+position = Vector2(0, 0)
+
+[node name="MoveHint" type="Label" parent="UI/Hints"]
+position = Vector2(-400, -200)
+text = "Move: Left / Right"
+
+[node name="JumpHint" type="Label" parent="UI/Hints"]
+position = Vector2(0, -200)
+text = "Jump: Space / Jump"
+
+[node name="DetachHint" type="Label" parent="UI/Hints"]
+position = Vector2(400, -200)
+text = "Detach: Shift / Detach"
