@@ -37,6 +37,13 @@
 #   SPEC-47 — has_chunk default value semantics
 #   SPEC-48 — Detach step (step 17, final step): detach eligibility, result, order of operations
 #   SPEC-49 — simulate() extended 8-arg signature with detach_just_pressed
+#   SPEC-54 — MovementState new field: current_hp
+#   SPEC-55 — HP config vars: max_hp, hp_cost_per_detach, min_hp
+#   SPEC-56 — HP reduction step (step 18) on detach frames
+#   SPEC-57 — HP carry-forward on non-detach frames
+#   SPEC-58 — HP floor clamp using min_hp
+#   SPEC-59 — simulate() signature remains 8 args (no HP args)
+#   SPEC-61 — prior_state.current_hp immutability
 
 class_name MovementSimulation
 extends RefCounted
@@ -57,6 +64,7 @@ extends RefCounted
 # AC-25.1: is_wall_clinging: bool = false
 # AC-25.1: cling_timer: float = 0.0
 # AC-46.1: has_chunk: bool = true (player starts holding chunk)
+# AC-54.3: current_hp: float = 100.0 (default literal)
 # ---------------------------------------------------------------------------
 class MovementState:
 	var velocity: Vector2 = Vector2.ZERO
@@ -66,6 +74,7 @@ class MovementState:
 	var is_wall_clinging: bool = false
 	var cling_timer: float = 0.0
 	var has_chunk: bool = true
+	var current_hp: float = 100.0
 
 
 # ---------------------------------------------------------------------------
@@ -147,6 +156,29 @@ var wall_jump_horizontal_speed: float = 180.0
 
 
 # ---------------------------------------------------------------------------
+# HP configuration parameters (SPEC-55)
+#
+# These are used by the HP reduction step (step 18) and are exercised by
+# tests in test_hp_reduction_simulation.gd. All three are independently
+# mutable and have explicit float defaults.
+# ---------------------------------------------------------------------------
+
+## Maximum HP cap used only as an upper bound for recall/other systems;
+## it does NOT participate in the detach HP reduction formula (SPEC-55.5).
+var max_hp: float = 100.0
+
+## HP cost applied once per successful detach frame (SPEC-56). The detach
+## step computes a boolean detach_eligible; when true, current_hp is reduced
+## by this amount and clamped at min_hp.
+var hp_cost_per_detach: float = 25.0
+
+## Minimum HP floor applied at the reduction site only (SPEC-58). Detach
+## frames compute max(min_hp, prior_hp - hp_cost_per_detach). Other systems
+## are free to clamp or cap against max_hp separately.
+var min_hp: float = 0.0
+
+
+# ---------------------------------------------------------------------------
 # simulate()
 #
 # Public API entry point. Reads prior_state and input, returns a new
@@ -200,6 +232,13 @@ var wall_jump_horizontal_speed: float = 180.0
 #         else → result.has_chunk = prior_state.has_chunk (carry-forward)
 #         Reads: detach_just_pressed, prior_state.has_chunk
 #         Writes: result.has_chunk only — no other fields affected
+#  18.  HP reduction on detach (SPEC-56):
+#         if detach_eligible →
+#             result.current_hp = max(min_hp, prior_state.current_hp - hp_cost_per_detach)
+#         else →
+#             result.current_hp = prior_state.current_hp
+#         Reads: detach_eligible, prior_state.current_hp, hp_cost_per_detach, min_hp
+#         Writes: result.current_hp only — no other fields affected
 #
 # AC-27.1: Exact signature.
 # AC-49.1: 8-argument signature; detach_just_pressed is position 7 (before delta).
@@ -442,5 +481,25 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 		result.has_chunk = false
 	else:
 		result.has_chunk = prior_state.has_chunk
+
+	# --- 18. HP reduction on detach (SPEC-56) ---
+	#
+	# Single-source HP reduction step. Uses the same detach_eligible flag
+	# computed above so HP reduction fires on exactly the same frames as the
+	# true→false has_chunk transition. Non-detach frames (including no-op
+	# detach presses when has_chunk is already false) carry current_hp forward
+	# exactly (SPEC-57).
+	#
+	# Formula (SPEC-56 / SPEC-58):
+	#   raw_hp = prior_state.current_hp - hp_cost_per_detach
+	#   result.current_hp = max(min_hp, raw_hp)
+	#
+	# max_hp is intentionally *not* applied here (SPEC-55.5); it is reserved
+	# for upper-bound clamping by recall or other systems.
+	if detach_eligible:
+		var raw_hp: float = prior_state.current_hp - hp_cost_per_detach
+		result.current_hp = max(min_hp, raw_hp)
+	else:
+		result.current_hp = prior_state.current_hp
 
 	return result

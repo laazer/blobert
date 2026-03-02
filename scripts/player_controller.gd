@@ -47,6 +47,16 @@ var _current_state: MovementSimulation.MovementState
 ## Set on the frame the true→false has_chunk transition occurs (SPEC-52).
 var _chunk_node: RigidBody2D = null
 
+## Internal flag and timer for an in-progress recall. When true, the controller
+## will attempt to reabsorb the detached chunk after a short, fixed travel
+## duration while continuing to run the normal movement simulation.
+var _recall_in_progress: bool = false
+var _recall_timer: float = 0.0
+
+## Logical travel duration for recall homing before reabsorption completes.
+## This value is purely gameplay-level and does not gate input processing.
+const _RECALL_TRAVEL_TIME: float = 0.25
+
 ## Preloaded chunk scene. Instantiated on detach (SPEC-52).
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk.tscn")
 
@@ -199,10 +209,32 @@ func _physics_process(delta: float) -> void:
 	_current_state.is_wall_clinging = next_state.is_wall_clinging
 	_current_state.cling_timer = next_state.cling_timer
 
+	# Copy HP forward from the simulation so controller-level logic can
+	# operate on current_hp deterministically across frames. This assignment
+	# is a no-op before HP fields exist (guarded by tests).
+	if "current_hp" in _current_state and "current_hp" in next_state:
+		_current_state.current_hp = next_state.current_hp
+
 	# Copy has_chunk back to _current_state so the detach state persists across
 	# frames (SPEC-52 item 4). Without this copy-back, has_chunk would reset to
 	# its default (true) every frame via MovementState.new() in simulate().
 	var prev_has_chunk: bool = _current_state.has_chunk
+
+	# Determine whether this frame should initiate a recall sequence. Recall
+	# uses the same "detach" action but is only eligible when the chunk is
+	# already detached (prev_has_chunk == false) and a live chunk node exists.
+	# Once a recall is in progress, additional presses do not restart or stack
+	# the effect; they are treated as no-ops for recall bookkeeping.
+	var recall_pressed: bool = (
+		detach_just_pressed
+		and (not prev_has_chunk)
+		and _chunk_node != null
+		and is_instance_valid(_chunk_node)
+	)
+	if recall_pressed and not _recall_in_progress:
+		_recall_in_progress = true
+		_recall_timer = 0.0
+
 	_current_state.has_chunk = next_state.has_chunk
 
 	# Spawn the chunk scene on the true→false transition (SPEC-52 item 5).
@@ -219,3 +251,39 @@ func _physics_process(delta: float) -> void:
 		else:
 			parent.add_child(chunk)
 			_chunk_node = chunk
+
+	# Advance any in-progress recall. This runs after the detach spawn logic so
+	# that a newly detached chunk on a previous frame is always present before
+	# recall begins. While recall is active, movement and jump inputs continue
+	# to be processed normally through the simulation.
+	if _recall_in_progress:
+		_recall_timer += delta
+
+		# If the chunk has been destroyed externally (e.g. kill volume), cancel
+		# the recall without restoring HP or reattaching a chunk.
+		if _chunk_node == null or not is_instance_valid(_chunk_node):
+			_recall_in_progress = false
+		elif _recall_timer >= _RECALL_TRAVEL_TIME:
+			# Successful reabsorption: restore has_chunk, free the chunk node,
+			# and apply HP restoration if HP fields are present.
+			_recall_in_progress = false
+
+			# HP restoration uses the assumed recall formula:
+			#   current_hp = min(max_hp, prior_hp + hp_cost_per_detach)
+			# where prior_hp is the HP at the instant recall completes. This
+			# yields an HP-neutral detach+recall cycle capped at max_hp.
+			if (
+				"current_hp" in _current_state
+				and "max_hp" in _simulation
+				and "hp_cost_per_detach" in _simulation
+			):
+				var prior_hp: float = _current_state.current_hp
+				var restored_hp: float = prior_hp + _simulation.hp_cost_per_detach
+				var max_hp_value: float = _simulation.max_hp
+				_current_state.current_hp = min(max_hp_value, restored_hp)
+
+			_current_state.has_chunk = true
+
+			if _chunk_node != null and is_instance_valid(_chunk_node):
+				_chunk_node.queue_free()
+			_chunk_node = null
