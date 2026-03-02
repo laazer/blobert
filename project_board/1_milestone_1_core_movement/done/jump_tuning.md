@@ -15,6 +15,7 @@ Add jump input and tune jump height, coyote time, and optional jump cut so the s
 - [ ] Coyote time (brief window to jump after leaving ledge) implemented and tunable
 - [ ] Optional: jump cut on release so variable height feels good
 - [ ] No double jump unless specified in design
+- [ ] Jump behavior is human-playable in-editor: jump height, coyote window, and jump cut are visually legible and feel good without debug overlays
 
 ---
 

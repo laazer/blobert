@@ -15,3 +15,4 @@ Ensure hybrid state (two mutations, post-fusion) has clear visual feedback so th
 - [ ] Hybrid state is distinguishable from single-mutation state
 - [ ] Fusion trigger or result has readable feedback
 - [ ] Works with existing infection/absorb visuals
+- [ ] Hybrid visuals are human-playable in-editor: all cues are visible at target camera settings and understandable without debug overlays

@@ -15,3 +15,4 @@ Add a light skill check (e.g. platforming, timing, or simple combat) that uses m
 - [ ] Failure has clear consequence (e.g. damage, retry) and no softlock
 - [ ] Difficulty is “light”: completable in a few attempts by target audience
 - [ ] Placed appropriately in level flow (e.g. before or after fusion)
+- [ ] Skill check encounter is human-playable in-editor: layout, hazards, and any instructional UI are visible and understandable without debug overlays

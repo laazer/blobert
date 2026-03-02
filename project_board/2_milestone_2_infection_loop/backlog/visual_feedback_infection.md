@@ -15,3 +15,4 @@ Add visual feedback for infection flow: weakened state, infected state, and abso
 - [ ] Infected enemy has visible cue distinct from weakened
 - [ ] Absorb has clear feedback (e.g. pull, particle, short animation)
 - [ ] Feedback is readable at target camera distance and does not block gameplay
+- [ ] Infection visual feedback is human-playable in-editor: all cues are visible on typical displays and understandable without debug overlays

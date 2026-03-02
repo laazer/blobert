@@ -15,3 +15,4 @@ Build Containment Hall 01 as the first playable level: layout, collision, spawn 
 - [ ] Layout includes space for mutation tease, fusion opportunity, and mini-boss
 - [ ] Collision and boundaries prevent falling out of world
 - [ ] Start and finish points are defined and functional
+- [ ] Level is human-playable in-editor: player, enemies, geometry, and key points of interest are visible and readable without debug overlays

@@ -14,3 +14,4 @@ Minimal UI to support the infection loop: e.g. mutation slot indicator, weakened
 - [ ] Player can see at least one relevant piece of info (e.g. mutation equipped, “absorb” prompt)
 - [ ] UI does not block view of action; minimal and readable
 - [ ] No full HUD or settings; only what’s needed for loop clarity
+- [ ] Infection-related UI is human-playable in-editor: all relevant UI elements are visible, legible at default resolution, and understandable without debug overlays

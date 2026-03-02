@@ -15,3 +15,4 @@ Implement the weakening system: enemies can be weakened (e.g. by chunk attack or
 - [ ] Weakened state is clearly distinguishable (visual or UI cue)
 - [ ] Weakened enemies can be infected (hook for infection interaction)
 - [ ] Tuning (threshold, duration if any) is configurable
+- [ ] Weakening behavior is human-playable in-editor: enemies, weakened cues, and any related UI are visible and understandable without debug overlays

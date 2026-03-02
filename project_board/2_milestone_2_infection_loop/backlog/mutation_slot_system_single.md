@@ -15,3 +15,4 @@ Implement mutation slot system with at least one slot: player can hold one mutat
 - [ ] Mutation effect is usable in gameplay (ability or passive as designed)
 - [ ] Slot state is clear (filled/empty) and consistent with UI
 - [ ] No duplicate or lost mutations in normal flow
+- [ ] Mutation slot system is human-playable in-editor: mutation, slot state, and any related UI are visible, legible, and understandable without debug overlays

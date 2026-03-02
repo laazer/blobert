@@ -15,3 +15,4 @@ Design and implement a room that teases the first mutation: player can see or br
 - [ ] Tease is clear (e.g. locked door, preview enemy, or scripted moment)
 - [ ] Connects to first real mutation acquisition in level flow
 - [ ] No dead ends or softlocks
+- [ ] Mutation tease room is human-playable in-editor: environment, tease object/NPC, and any UI prompts are visible and understandable without debug overlays

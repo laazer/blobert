@@ -14,6 +14,7 @@ Implement the core movement controller for the slime: horizontal movement, accel
 - [ ] Horizontal input (e.g. left/right or stick) drives movement with configurable speed/accel
 - [ ] Movement feels responsive (no noticeable input lag) and stops when input released
 - [ ] Movement works on flat ground and does not break when no jump is present yet
+- [ ] Movement is human-playable in-editor: the player character, ground, and any test geometry are visible and clearly convey motion without relying on debug overlays
 
 ---
 

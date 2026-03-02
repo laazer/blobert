@@ -15,3 +15,4 @@ Implement slot consumption rules for fusion: after fusion, slots are cleared, re
 - [ ] Player can regain mutations via infection/absorb after fusion
 - [ ] Rules are documented and behavior is deterministic
 - [ ] No duplicate or ghost mutations
+- [ ] Slot consumption behavior is human-playable in-editor: changes to slots and mutations are visibly and clearly reflected in game objects and UI without debug overlays

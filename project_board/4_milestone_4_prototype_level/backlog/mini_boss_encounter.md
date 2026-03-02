@@ -15,3 +15,4 @@ Implement a mini-boss encounter in Containment Hall 01: distinct enemy or scenar
 - [ ] Encounter is winnable with movement and available mutations
 - [ ] Victory connects to level completion or next section
 - [ ] No mandatory fusion unless designed; avoid over-tuned difficulty
+- [ ] Mini-boss encounter is human-playable in-editor: boss, arena, telegraphs, and any related UI are visible and understandable without debug overlays

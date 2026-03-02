@@ -15,6 +15,7 @@ Implement the mechanic where the slime can detach a chunk (e.g. on input). The c
 - [ ] Detached chunk exists in world as its own object (position, collision if needed)
 - [ ] Main body state updates (e.g. "has chunk" flag) so recall and HP can hook in
 - [ ] No crash or undefined state when detaching; behavior is deterministic
+- [ ] Mechanic is human-playable in-editor: all relevant characters and detached chunks are visible, readable, and usable without debug overlays or test harnesses
 
 ---
 

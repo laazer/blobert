@@ -20,7 +20,7 @@ shape = SubResource("RectangleShape2D_floor")
 
 [node name="FloorVisual" type="Polygon2D" parent="Floor"]
 z_index = 0
-polygon = PackedVector2Array(Vector2(-1000, -10), Vector2(1000, -10), Vector2(1000, 10), Vector2(-1000, 10))
+polygon = PackedVector2Array(-1000, -10, 1000, -10, 1000, 10, -1000, 10)
 color = Color(0.2, 0.2, 0.2, 1)
 
 [node name="Player" type="CharacterBody2D" parent="."]
@@ -39,7 +39,7 @@ follow_limit_bottom = 600
 
 [node name="PlayerVisual" type="Polygon2D" parent="Player"]
 z_index = 10
-polygon = PackedVector2Array(Vector2(-16, -32), Vector2(16, -32), Vector2(16, 32), Vector2(-16, 32))
+polygon = PackedVector2Array(-16, -32, 16, -32, 16, 32, -16, 32)
 color = Color(0.4, 0.9, 0.6, 1)
 
 [node name="UI" type="CanvasLayer" parent="."]

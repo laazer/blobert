@@ -15,3 +15,4 @@ Camera follows the slime (main body) so the player always has a clear view of th
 - [ ] Follow is smooth (no jitter) and keeps slime on screen
 - [ ] Optional: configurable dead zone or bounds so camera doesn’t move for tiny movements
 - [ ] Playable for 10 minutes in empty room without camera issues
+- [ ] Camera behavior is human-playable in-editor: slime, environment, and camera framing remain clearly visible and readable without debug overlays

@@ -15,6 +15,7 @@ When the slime detaches a chunk, reduce the player's current HP by a defined amo
 - [ ] HP does not go below minimum (e.g. 0 or 1) if design specifies a floor
 - [ ] HP state is consistent with chunk state (detached vs reabsorbed)
 - [ ] No exploit (e.g. repeated detach/recall for unintended HP gain)
+- [ ] Mechanic is human-playable in-editor: HP values and any related UI are visible and clearly reflect detach events without relying on debug overlays
 
 ---
 

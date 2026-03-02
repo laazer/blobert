@@ -15,3 +15,4 @@ Include a fusion opportunity in the level: area or encounter where player can ob
 - [ ] At least one fusion can be performed in-level with clear feedback
 - [ ] Flow supports “weaken → infect → absorb” for both mutations
 - [ ] Fits within 6–8 minute target and feels intentional
+- [ ] Fusion opportunity room is human-playable in-editor: environment, enemies/objects, and any fusion-related UI are visible and understandable without debug overlays

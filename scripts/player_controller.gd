@@ -48,7 +48,7 @@ var _current_state: MovementSimulation.MovementState
 var _chunk_node: RigidBody2D = null
 
 ## Preloaded chunk scene. Instantiated on detach (SPEC-52).
-const _CHUNK_SCENE = preload("res://scenes/chunk.tscn")
+const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk.tscn")
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +210,12 @@ func _physics_process(delta: float) -> void:
 	# the player. It is positioned at the player's global_position at the
 	# detach frame. _chunk_node is stored for future null-safe access.
 	if prev_has_chunk and not _current_state.has_chunk:
-		var chunk: RigidBody2D = _CHUNK_SCENE.instantiate()
+		var chunk: RigidBody2D = _CHUNK_SCENE.instantiate() as RigidBody2D
+		assert(chunk != null, "chunk.tscn root must be a RigidBody2D")
 		chunk.global_position = global_position
-		get_parent().add_child(chunk)
-		_chunk_node = chunk
+		var parent: Node = get_parent()
+		if parent == null:
+			push_error("PlayerController: cannot detach chunk — node has no parent")
+		else:
+			parent.add_child(chunk)
+			_chunk_node = chunk

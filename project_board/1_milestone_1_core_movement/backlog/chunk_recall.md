@@ -15,3 +15,4 @@ Implement recall of a detached chunk: on input, the chunk returns to the main sl
 - [ ] Tendril visibly stretches then snaps (or minimal visual feedback if placeholder)
 - [ ] Player regains HP on reabsorption as specified by design
 - [ ] No input delay or lock introduced by recall
+- [ ] Recall mechanic is human-playable in-editor: main body, chunk, and any recall visuals are visible and clearly readable without debug overlays

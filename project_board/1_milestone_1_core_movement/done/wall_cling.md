@@ -15,6 +15,7 @@ Allow the slime to cling to walls when touching them (e.g. during fall or after 
 - [ ] Cling duration or slide speed is configurable; behavior is predictable
 - [ ] Player can leave wall (e.g. jump off or fall) without getting stuck
 - [ ] Works with existing movement and jump
+- [ ] Wall cling is human-playable in-editor: walls, slime, and cling/jump behavior are visually clear and discoverable without debug overlays
 
 ---
 

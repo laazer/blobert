@@ -15,3 +15,4 @@ Implement the infection interaction: when the slime (or chunk) interacts with a 
 - [ ] Infected state is distinct; player can absorb to gain mutation
 - [ ] At least one mutation is granted and usable after absorb
 - [ ] No softlock or undefined state when infecting/absorbing
+- [ ] Infection interaction is human-playable in-editor: weakened/enemy states, infection, and absorb feedback are visually clear and discoverable without debug overlays

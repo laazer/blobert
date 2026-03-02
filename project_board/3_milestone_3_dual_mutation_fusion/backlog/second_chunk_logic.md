@@ -15,3 +15,4 @@ Extend chunk system to support a second chunk: two chunks can be detached/recall
 - [ ] Both chunks can exist in world at same time with correct state
 - [ ] HP and recall rules apply per chunk (or as designed)
 - [ ] No state corruption when mixing one-chunk and two-chunk flows
+- [ ] Second-chunk behavior is human-playable in-editor: both chunks and their roles are visible and understandable without debug overlays

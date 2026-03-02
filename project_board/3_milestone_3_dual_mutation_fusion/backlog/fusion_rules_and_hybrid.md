@@ -15,3 +15,4 @@ Define and implement fusion rules: when two mutations are present, player can cr
 - [ ] At least one hybrid outcome is implemented and usable in gameplay
 - [ ] Fusion consumes slots or applies slot consumption rules as designed
 - [ ] No crash or undefined state; fusion is repeatable in play
+- [ ] Fusion behavior is human-playable in-editor: hybrids, their effects, and any related UI are visible and understandable without debug overlays
