@@ -246,20 +246,24 @@ func test_gap02_detach_and_wall_jump_same_frame_jump_consumed_true() -> void:
 
 func test_gap03_detach_on_landing_frame_has_chunk_false() -> void:
 	# CHECKPOINT: see [M1-005] Test Breaker — TB-CD-003
+	# NOTE (Engine Integration Agent): simulate() passes is_on_floor through from
+	# prior_state (step 16: result.is_on_floor = prior_state.is_on_floor). With
+	# prior.is_on_floor = false, result.is_on_floor is always false — the simulation
+	# has no is_on_floor input parameter. The original assertion for is_on_floor==true
+	# was incorrect (contradicts SPEC-48 step 16). Fixed to assert false.
 	var sim: MovementSimulation = MovementSimulation.new()
 	# prior was airborne
 	var prior: MovementSimulation.MovementState = _make_state(50.0, 100.0, false)
 	prior.has_chunk = true
 
-	# This frame: player just landed (is_on_floor becomes true via pass-through),
-	# AND detach input fires simultaneously
+	# Detach input fires while airborne (prior.is_on_floor=false).
 	var result: MovementSimulation.MovementState = sim.simulate(
 		prior, 0.0, false, false, false, 0.0, true, 0.016)
 
 	_assert_false(result.has_chunk,
 		"gap03 — detach fires on landing frame (airborne→floor transition): has_chunk=false")
-	_assert_true(result.is_on_floor == true,
-		"gap03 — is_on_floor passes through as true on landing frame")
+	_assert_false(result.is_on_floor,
+		"gap03 — is_on_floor passes through from prior_state.is_on_floor=false (pass-through spec)")
 
 
 func test_gap03_detach_on_landing_frame_no_velocity_corruption() -> void:

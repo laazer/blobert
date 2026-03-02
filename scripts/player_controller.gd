@@ -43,6 +43,13 @@ var _simulation: MovementSimulation
 ## end of each frame. Initialized in _ready() with default (zero) state.
 var _current_state: MovementSimulation.MovementState
 
+## Reference to the spawned chunk node. null when no chunk has been detached.
+## Set on the frame the true→false has_chunk transition occurs (SPEC-52).
+var _chunk_node: RigidBody2D = null
+
+## Preloaded chunk scene. Instantiated on detach (SPEC-52).
+const _CHUNK_SCENE = preload("res://scenes/chunk.tscn")
+
 
 # ---------------------------------------------------------------------------
 # Jump configuration parameters (SPEC-23 / AC-23.*)
@@ -98,7 +105,7 @@ func _ready() -> void:
 	# Read the project's 2D gravity setting and override the simulation default.
 	# This ensures the simulation matches the physics world without hardcoding 980.0
 	# in the controller. ProjectSettings is an engine call isolated to this file.
-	var project_gravity: float = float(ProjectSettings.get_setting("physics/2d/default_gravity", 980.0))
+	var project_gravity: float = ProjectSettings.get_setting("physics/2d/default_gravity", 980.0) as float
 	_simulation.gravity = project_gravity
 
 	# Copy jump configuration parameters to the simulation instance.
@@ -132,12 +139,13 @@ func _ready() -> void:
 # AC-8.6: No input reading, velocity arithmetic, or move_and_slide() outside here.
 # ---------------------------------------------------------------------------
 func _physics_process(delta: float) -> void:
-	# --- Step 1: Read input (AC-8.1, AC-23.1) ---
+	# --- Step 1: Read input (AC-8.1, AC-23.1, SPEC-52) ---
 	# Input.get_axis returns a value in [-1.0, 1.0].
 	# Simultaneous left+right yields 0.0 (Godot built-in behavior).
 	var input_axis: float = Input.get_axis("move_left", "move_right")
 	var jump_pressed: bool = Input.is_action_pressed("jump")
 	var jump_just_pressed: bool = Input.is_action_just_pressed("jump")
+	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
 
 	# --- Step 2: Build prior state (AC-8.2) ---
 	# Update is_on_floor from the engine's floor detection result.
@@ -157,8 +165,9 @@ func _physics_process(delta: float) -> void:
 	# --- Step 3: Simulate (AC-8.3) ---
 	# Delegate all velocity math to the pure simulation. The controller
 	# contains no movement formulas (AC-7.4).
+	# SPEC-52: detach_just_pressed is read from Input above and passed here.
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
-		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, delta
+		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, detach_just_pressed, delta
 	)
 
 	# --- Step 4: Apply and slide (AC-8.4) ---
@@ -184,5 +193,24 @@ func _physics_process(delta: float) -> void:
 	# Copy wall cling state fields back to _current_state so they persist across frames.
 	# Mirrors the coyote_timer pattern: simulation output feeds into the next frame's
 	# prior_state so cling duration and active-cling flag carry forward correctly.
+	# ORDERING NOTE: is_on_floor must be updated (line 146) before these copy-backs.
+	# If is_on_floor=true, simulate() will block cling_eligible regardless of
+	# is_wall_clinging — preventing a phantom cling frame on the landing tick.
 	_current_state.is_wall_clinging = next_state.is_wall_clinging
 	_current_state.cling_timer = next_state.cling_timer
+
+	# Copy has_chunk back to _current_state so the detach state persists across
+	# frames (SPEC-52 item 4). Without this copy-back, has_chunk would reset to
+	# its default (true) every frame via MovementState.new() in simulate().
+	var prev_has_chunk: bool = _current_state.has_chunk
+	_current_state.has_chunk = next_state.has_chunk
+
+	# Spawn the chunk scene on the true→false transition (SPEC-52 item 5).
+	# The chunk is added as a child of get_parent() so it does not move with
+	# the player. It is positioned at the player's global_position at the
+	# detach frame. _chunk_node is stored for future null-safe access.
+	if prev_has_chunk and not _current_state.has_chunk:
+		var chunk: RigidBody2D = _CHUNK_SCENE.instantiate()
+		chunk.global_position = global_position
+		get_parent().add_child(chunk)
+		_chunk_node = chunk

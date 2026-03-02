@@ -21,6 +21,22 @@
 #   SPEC-20 — Jump cut condition and clamp
 #   SPEC-21 — Double-jump prevention via jump_consumed
 #   SPEC-24 — Frame-rate independence of new timer logic
+#   SPEC-25 — MovementState new fields: is_wall_clinging, cling_timer
+#   SPEC-26 — New config parameters: cling_gravity_scale, max_cling_time, wall_jump_height, wall_jump_horizontal_speed
+#   SPEC-27 — simulate() extended 7-arg signature with is_on_wall, wall_normal_x
+#   SPEC-28 — Pressing-toward-wall detection formula
+#   SPEC-29 — Cling eligibility: all 5 conditions
+#   SPEC-30 — Cling state update: timer accumulation and reset
+#   SPEC-31 — Cling gravity modification
+#   SPEC-32 — Wall jump eligibility
+#   SPEC-33 — Wall jump impulse
+#   SPEC-34 — Order of operations (normative 11-step)
+#   SPEC-35 — Call-site migration (handled by existing test files)
+#   SPEC-36 — Frame-rate independence of wall cling timer and gravity
+#   SPEC-46 — MovementState new field: has_chunk
+#   SPEC-47 — has_chunk default value semantics
+#   SPEC-48 — Detach step (step 17, final step): detach eligibility, result, order of operations
+#   SPEC-49 — simulate() extended 8-arg signature with detach_just_pressed
 
 class_name MovementSimulation
 extends RefCounted
@@ -38,17 +54,23 @@ extends RefCounted
 # AC-2.3: MovementState.new() with no arguments produces those defaults.
 # AC-15.2: coyote_timer: float = 0.0
 # AC-15.3: jump_consumed: bool = false
-# AC-15.7: Total field count is exactly four.
+# AC-25.1: is_wall_clinging: bool = false
+# AC-25.1: cling_timer: float = 0.0
+# AC-46.1: has_chunk: bool = true (player starts holding chunk)
 # ---------------------------------------------------------------------------
 class MovementState:
 	var velocity: Vector2 = Vector2.ZERO
 	var is_on_floor: bool = false
 	var coyote_timer: float = 0.0
 	var jump_consumed: bool = false
+	var is_wall_clinging: bool = false
+	var cling_timer: float = 0.0
+	var has_chunk: bool = true
 
 
 # ---------------------------------------------------------------------------
-# Configuration parameters (AC-3.1 through AC-3.7, AC-16.1 through AC-16.7)
+# Configuration parameters (AC-3.1 through AC-3.7, AC-16.1 through AC-16.7,
+# AC-26.1 through AC-26.8)
 #
 # Plain var declarations — this class extends RefCounted, not Node, so
 # @export and @export_category have no inspector effect and are omitted.
@@ -100,6 +122,29 @@ var coyote_time: float = 0.1
 ## velocity. Positive values are undefined behavior (config error).
 var jump_cut_velocity: float = -200.0
 
+## Gravity multiplier while wall clinging. Scales the per-frame gravity
+## contribution so the player slides down slowly. A value of 0.0 produces
+## zero downward acceleration (hover). A value of 1.0 gives normal gravity.
+## Default 0.1.
+var cling_gravity_scale: float = 0.1
+
+## Maximum duration (seconds) the player can cling to a wall per contact.
+## Uses strict less-than comparison: cling_timer < max_cling_time.
+## A value of 0.0 disables cling entirely (0.0 < 0.0 is false on first frame).
+## Default 1.5.
+var max_cling_time: float = 1.5
+
+## Target apex height of a wall jump in pixels. Computed via the same
+## kinematic formula as jump_height. Negative values are guarded to 0.0.
+## Default 100.0.
+var wall_jump_height: float = 100.0
+
+## Horizontal launch speed in pixels per second when wall jumping.
+## Applied as: result.velocity.x = wall_normal_x * wall_jump_horizontal_speed.
+## A value of 0.0 produces a purely vertical wall jump.
+## Default 180.0.
+var wall_jump_horizontal_speed: float = 180.0
+
 
 # ---------------------------------------------------------------------------
 # simulate()
@@ -107,37 +152,63 @@ var jump_cut_velocity: float = -200.0
 # Public API entry point. Reads prior_state and input, returns a new
 # MovementState. Does NOT mutate prior_state.
 #
-# Normative order of operations (SPEC normative summary):
-#   1. Compute effective_delta = max(0.0, delta)
-#   2. Sanitize input_axis (NaN → 0.0; Inf/-Inf → clamp ±1.0)
-#   3. Allocate result: MovementState
-#   4. Coyote timer update (SPEC-19):
-#        if prior_state.is_on_floor → result.coyote_timer = coyote_time
-#        else → result.coyote_timer = max(0.0, prior_state.coyote_timer - effective_delta)
-#   5. jump_consumed carry-forward / landing reset (SPEC-21):
-#        if prior_state.is_on_floor → result.jump_consumed = false
-#        else → result.jump_consumed = prior_state.jump_consumed
-#   6. Jump eligibility and impulse (SPEC-18):
-#        eligible = jump_just_pressed AND (prior_state.is_on_floor OR prior_state.coyote_timer > 0.0)
-#                   AND NOT prior_state.jump_consumed
-#        if eligible → result.velocity.y = -sqrt(2 * gravity * jump_height); result.jump_consumed = true
-#        else → result.velocity.y = prior_state.velocity.y
-#   7. Horizontal velocity (SPEC-5, cases 1-4)
-#   8. Gravity (SPEC-6): result.velocity.y += gravity * effective_delta
-#   9. Jump cut (SPEC-20):
-#        if NOT jump_pressed AND result.velocity.y < jump_cut_velocity
-#            → result.velocity.y = jump_cut_velocity
-#  10. is_on_floor pass-through (AC-4.3): result.is_on_floor = prior_state.is_on_floor
-#  11. Return result
+# Normative order of operations (SPEC-34 extended to 17 steps — SPEC-48):
+#   1.  Compute effective_delta = max(0.0, delta)
+#   2.  Sanitize input_axis (NaN → 0.0; clamp to ±1.0)
+#   3.  Sanitize wall_normal_x (NaN → 0.0; clamp to ±1.0) — prevents NaN propagation
+#   4.  Compute pressing_toward_wall = (safe_axis * safe_wall_normal_x) < 0.0
+#   5.  Coyote timer (same as M1-002):
+#         if prior_state.is_on_floor → result.coyote_timer = coyote_time
+#         else → result.coyote_timer = max(0.0, prior_state.coyote_timer - effective_delta)
+#   6.  jump_consumed carry-forward / landing reset (same as M1-002):
+#         if prior_state.is_on_floor → result.jump_consumed = false
+#         else → result.jump_consumed = prior_state.jump_consumed
+#   7.  Regular jump eligibility:
+#         jump_just_pressed AND (is_on_floor OR coyote_timer > 0) AND NOT prior_state.jump_consumed
+#   8.  Cling eligibility:
+#         is_on_wall AND NOT is_on_floor AND pressing_toward_wall
+#         AND NOT prior_state.jump_consumed AND prior_state.cling_timer < max_cling_time
+#         NOTE: uses prior_state.cling_timer (before updating).
+#   9.  Update cling state:
+#         if cling_eligible → result.is_wall_clinging=true,
+#                             result.cling_timer = prior_state.cling_timer + effective_delta
+#         else → result.is_wall_clinging=false, result.cling_timer=0.0
+#  10.  Wall jump eligibility:
+#         jump_just_pressed AND prior_state.is_wall_clinging AND NOT prior_state.jump_consumed
+#  11.  Branch on jump path:
+#         If regular_jump_eligible → apply jump impulse (SPEC-18 formula),
+#                                    result.jump_consumed=true, result.is_wall_clinging=false,
+#                                    then fall through to horizontal step (step 12)
+#         Elif wall_jump_eligible → result.velocity.y = -sqrt(2*gravity*safe_wj_height) + gravity*delta;
+#                                   result.velocity.x = safe_wall_normal_x * wall_jump_horizontal_speed;
+#                                   result.jump_consumed=true; result.is_wall_clinging=false;
+#                                   SKIP step 12 (horizontal formula)
+#         Else → carry result.velocity.y from prior; run step 12 (horizontal formula)
+#  12.  Horizontal velocity (SPEC-5, cases 1–4) — skipped when wall jump fired
+#  13.  Apply gravity:
+#         if result.is_wall_clinging → result.velocity.y += gravity * cling_gravity_scale * effective_delta
+#         else → result.velocity.y += gravity * effective_delta
+#  14.  Jump cut (SPEC-20):
+#         if NOT jump_pressed AND result.velocity.y < jump_cut_velocity → clamp
+#  15.  is_on_floor pass-through: result.is_on_floor = prior_state.is_on_floor
+#  16.  (formerly step 15 — renumbered for clarity; same operation)
+#         Note: step 15 is the is_on_floor pass-through above; this comment
+#         block continues the sequence for the detach step below.
+#  17.  Chunk detach (SPEC-48):
+#         detach_eligible = detach_just_pressed AND prior_state.has_chunk
+#         if detach_eligible → result.has_chunk = false
+#         else → result.has_chunk = prior_state.has_chunk (carry-forward)
+#         Reads: detach_just_pressed, prior_state.has_chunk
+#         Writes: result.has_chunk only — no other fields affected
 #
-# AC-17.1: Exact signature.
+# AC-27.1: Exact signature.
+# AC-49.1: 8-argument signature; detach_just_pressed is position 7 (before delta).
 # AC-4.2:  Allocates and returns a new MovementState; prior_state is read-only.
 # AC-4.3:  result.is_on_floor == prior_state.is_on_floor (pass-through).
-# AC-4.4:  delta == 0.0 → no velocity change.
-# AC-4.5:  Only move_toward, clamp, is_nan, max, sqrt, and arithmetic appear here.
+# AC-4.4:  delta == 0.0 → no velocity change (from gravity/timer terms).
 # ---------------------------------------------------------------------------
-func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool, jump_just_pressed: bool, delta: float) -> MovementState:
-	# --- 1. Sanitize delta (robustness) ---
+func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool, jump_just_pressed: bool, is_on_wall: bool, wall_normal_x: float, detach_just_pressed: bool, delta: float) -> MovementState:
+	# --- 1. Sanitize delta ---
 	#
 	# Clamp delta to [0.0, +inf). Negative delta is undefined behavior per the
 	# spec; clamping to zero makes the simulation idempotent (no state change)
@@ -155,13 +226,32 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 	else:
 		safe_axis = clamp(input_axis, -1.0, 1.0)
 
-	# --- 3. Construct result (never mutate prior_state) ---
+	# --- 3. Sanitize wall_normal_x (SPEC-34 step 3) ---
+	#
+	# NaN wall_normal_x must not propagate into pressing_toward_wall evaluation
+	# or wall jump velocity formula. Inf must be clamped to ±1.0 for the same
+	# reason. After sanitization, safe_wall_normal_x is always in [-1.0, 1.0].
+	var safe_wall_normal_x: float
+	if is_nan(wall_normal_x):
+		safe_wall_normal_x = 0.0
+	else:
+		safe_wall_normal_x = clamp(wall_normal_x, -1.0, 1.0)
+
+	# --- 4. Pressing-toward-wall detection (SPEC-28) ---
+	#
+	# Product is negative only when input_axis and wall_normal_x have opposite
+	# signs — exactly the condition of pushing into the wall.
+	# wall_normal_x=0.0 always produces 0.0*axis=0.0 which is not < 0.0,
+	# so cling is correctly blocked when the normal is zero.
+	var pressing_toward_wall: bool = (safe_axis * safe_wall_normal_x) < 0.0
+
+	# --- 5. Allocate result ---
 	var result: MovementState = MovementState.new()
 
-	# --- 4. Coyote timer update (SPEC-19) ---
+	# --- 6. Coyote timer update (SPEC-19) ---
 	#
 	# Reset timer to full window when grounded; decrement when airborne.
-	# The eligibility check in step 6 reads prior_state.coyote_timer (not
+	# The eligibility check in step 9 reads prior_state.coyote_timer (not
 	# result.coyote_timer), so this update does not affect the current frame's
 	# jump eligibility — only the next frame's.
 	if prior_state.is_on_floor:
@@ -171,11 +261,11 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 		# AC-19.3, AC-19.4, AC-19.5: Airborne: decrement, clamped to zero.
 		result.coyote_timer = max(0.0, prior_state.coyote_timer - effective_delta)
 
-	# --- 5. jump_consumed carry-forward / landing reset (SPEC-21) ---
+	# --- 7. jump_consumed carry-forward / landing reset (SPEC-21) ---
 	#
 	# On a grounded frame (prior_state.is_on_floor), reset consumed so the
 	# player can jump again. While airborne, carry the flag forward.
-	# Step 6 may override this to true if a jump fires this frame.
+	# Steps 11 or 13 may override this to true if a jump fires this frame.
 	if prior_state.is_on_floor:
 		# AC-21.3: Landing (or staying grounded) resets consumed.
 		result.jump_consumed = false
@@ -183,72 +273,174 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 		# AC-21.4: Carry forward when airborne (no jump this frame yet).
 		result.jump_consumed = prior_state.jump_consumed
 
-	# --- 6. Jump eligibility and impulse (SPEC-18) ---
+	# --- 8. Cling eligibility (SPEC-29) ---
+	#
+	# Five simultaneous conditions (all must be true):
+	#   (a) is_on_wall == true
+	#   (b) NOT prior_state.is_on_floor (floor takes priority — SPEC-34)
+	#   (c) pressing_toward_wall == true
+	#   (d) NOT prior_state.jump_consumed (mid-air jump blocks cling)
+	#   (e) prior_state.cling_timer < max_cling_time (strict less-than; 0.0<0.0 is false)
+	#
+	# Uses prior_state.cling_timer (before update) so eligibility is evaluated
+	# against the accumulated time up to this frame.
+	var cling_eligible: bool = (
+		is_on_wall
+		and not prior_state.is_on_floor
+		and pressing_toward_wall
+		and not prior_state.jump_consumed
+		and prior_state.cling_timer < max_cling_time
+	)
+
+	# --- 9. Update cling state (SPEC-30) ---
+	#
+	# If eligible: activate cling and accumulate timer by effective_delta.
+	# If not eligible: deactivate cling and reset timer to 0.0 immediately.
+	# The reset is unconditional on non-eligible frames — this ensures that
+	# returning to the wall after a break starts a fresh timer (AC-30.3).
+	if cling_eligible:
+		result.is_wall_clinging = true
+		result.cling_timer = prior_state.cling_timer + effective_delta
+	else:
+		result.is_wall_clinging = false
+		result.cling_timer = 0.0
+
+	# --- 10. Wall jump eligibility (SPEC-32) ---
+	#
+	# Reads prior_state.is_wall_clinging — at least one confirmed cling frame
+	# is required before a wall jump is available. This prevents wall jumping
+	# on the very first frame of contact.
+	var wall_jump_eligible: bool = (
+		jump_just_pressed
+		and prior_state.is_wall_clinging
+		and not prior_state.jump_consumed
+	)
+
+	# --- 11. Regular jump eligibility (SPEC-18) ---
 	#
 	# Eligibility requires all three conditions simultaneously:
 	#   (a) jump_just_pressed is true (fresh press on this frame)
 	#   (b) grounded OR coyote window still open (prior_state.coyote_timer > 0.0)
 	#   (c) jump not already consumed during this airborne phase
 	#
-	# Note: eligibility reads prior_state.coyote_timer (not result.coyote_timer)
-	# to preserve the ordering constraint: timer update happens first but
-	# eligibility is evaluated against the pre-update value (AC-19.6, AC-19.7).
+	# Note: reads prior_state.coyote_timer (not result.coyote_timer) to preserve
+	# the ordering constraint (AC-19.6, AC-19.7).
 	var floor_or_coyote: bool = prior_state.is_on_floor or (prior_state.coyote_timer > 0.0)
-	var eligible: bool = jump_just_pressed and floor_or_coyote and (not prior_state.jump_consumed)
+	var regular_jump_eligible: bool = jump_just_pressed and floor_or_coyote and (not prior_state.jump_consumed)
 
-	if eligible:
+	# --- 12. Apply jump path (SPEC-34 step 11) ---
+	#
+	# Priority order: regular jump > wall jump > no jump.
+	# Regular jump fires when grounded or within coyote window — takes
+	# absolute precedence over wall jump per SPEC-34 AC-34.1.
+	#
+	# Wall jump skips step 12 (horizontal formula) entirely — the formula
+	# is replaced by the wall_normal_x * speed assignment (SPEC-34 AC-34.2).
+	var wall_jump_fired: bool = false
+
+	if regular_jump_eligible:
 		# Guard against sqrt(negative) producing NaN for invalid jump_height.
-		# Negative jump_height is undefined behavior per SPEC-16; treat as zero
-		# impulse to preserve the finiteness invariant.
 		var safe_jump_height: float = jump_height if jump_height > 0.0 else 0.0
 		# AC-18.1, AC-18.5: Kinematic peak-height formula.
 		result.velocity.y = -sqrt(2.0 * gravity * safe_jump_height)
 		# AC-21.1: Mark jump as consumed so double-jump is blocked.
 		result.jump_consumed = true
+		# Regular jump clears cling state (cannot be clinging while regular-jumping).
+		result.is_wall_clinging = false
+
+	elif wall_jump_eligible:
+		# Guard against sqrt(negative) producing NaN for invalid wall_jump_height.
+		var safe_wall_jump_height: float = wall_jump_height if wall_jump_height > 0.0 else 0.0
+		# SPEC-33: Wall jump vertical impulse (kinematic formula, same structure as regular jump).
+		# Gravity is added immediately after (step 13) so the formula becomes:
+		# result.velocity.y = -sqrt(2*gravity*safe_wall_jump_height) + gravity*effective_delta
+		# We assign the impulse here; gravity step adds the delta term below.
+		result.velocity.y = -sqrt(2.0 * gravity * safe_wall_jump_height)
+		# SPEC-33: Wall jump horizontal impulse replaces step 12 entirely.
+		# wall_normal_x points away from the wall; multiplying by positive speed
+		# launches the player away from the wall.
+		result.velocity.x = safe_wall_normal_x * wall_jump_horizontal_speed
+		result.jump_consumed = true
+		result.is_wall_clinging = false
+		wall_jump_fired = true
+
 	else:
-		# AC-18.2, AC-18.3, AC-18.4: Carry forward vertical velocity unchanged.
+		# No jump — carry vertical velocity forward.
 		result.velocity.y = prior_state.velocity.y
 
-	# --- 7. Horizontal velocity (SPEC-5) ---
+	# --- 13. Horizontal velocity (SPEC-5) — SKIPPED when wall jump fired ---
 	#
-	# Four mutually exclusive cases based on is_on_floor and input_axis:
+	# Wall jump replaces this step entirely with a fixed horizontal impulse.
+	# When wall jump did not fire, apply the four-case horizontal formula.
 	#
 	#   Case 1 (AC-5.1): Grounded + input → accelerate toward target
 	#   Case 2 (AC-5.2): Grounded + no input → friction toward zero
 	#   Case 3 (AC-5.3): Airborne + input → accelerate toward target (same formula as Case 1)
 	#   Case 4 (AC-5.4): Airborne + no input → air deceleration toward zero
-	if safe_axis != 0.0:
-		# Cases 1 and 3: directional input held (grounded or airborne).
-		var target_vx: float = safe_axis * max_speed
-		result.velocity.x = move_toward(prior_state.velocity.x, target_vx, acceleration * effective_delta)
-	elif prior_state.is_on_floor:
-		# Case 2: grounded, no input — apply friction.
-		result.velocity.x = move_toward(prior_state.velocity.x, 0.0, friction * effective_delta)
-	else:
-		# Case 4: airborne, no input — apply air deceleration.
-		result.velocity.x = move_toward(prior_state.velocity.x, 0.0, air_deceleration * effective_delta)
+	if not wall_jump_fired:
+		if safe_axis != 0.0:
+			# Cases 1 and 3: directional input held (grounded or airborne).
+			var target_vx: float = safe_axis * max_speed
+			result.velocity.x = move_toward(prior_state.velocity.x, target_vx, acceleration * effective_delta)
+		elif prior_state.is_on_floor:
+			# Case 2: grounded, no input — apply friction.
+			result.velocity.x = move_toward(prior_state.velocity.x, 0.0, friction * effective_delta)
+		else:
+			# Case 4: airborne, no input — apply air deceleration.
+			result.velocity.x = move_toward(prior_state.velocity.x, 0.0, air_deceleration * effective_delta)
 
-	# --- 8. Gravity (SPEC-6) ---
+	# --- 14. Gravity (SPEC-6 and SPEC-31) ---
 	#
-	# Applied unconditionally after the jump impulse. On the jump frame,
-	# result.velocity.y = impulse + gravity * delta.
-	result.velocity.y += gravity * effective_delta
+	# Applied unconditionally after jump impulse. The gravity step gate is
+	# result.is_wall_clinging (the current frame's cling state, not prior_state).
+	# When wall jump fires, result.is_wall_clinging is already set to false,
+	# so normal gravity applies on wall-jump frames (SPEC-31 AC-31.6).
+	#
+	# On the regular jump frame: result.velocity.y = impulse + gravity*delta.
+	# On the wall jump frame: result.velocity.y = impulse + gravity*delta.
+	# On non-jump cling frames: result.velocity.y += gravity * cling_gravity_scale * delta.
+	# On non-jump non-cling frames: result.velocity.y += gravity * delta.
+	if result.is_wall_clinging:
+		result.velocity.y += gravity * cling_gravity_scale * effective_delta
+	else:
+		result.velocity.y += gravity * effective_delta
 
-	# --- 9. Jump cut (SPEC-20) ---
+	# --- 15. Jump cut (SPEC-20) ---
 	#
 	# If the jump button is not held and the character is ascending faster
 	# than the cut threshold, clamp upward velocity to the cut velocity.
 	# This allows variable-height jumping by releasing the button early.
+	# Applies to both regular jumps and wall jumps.
 	# Condition uses strict less-than so exact boundary is a no-op (AC-20.5).
-	# Does not apply when falling (positive velocity.y cannot be < -200.0 by default).
 	if not jump_pressed and result.velocity.y < jump_cut_velocity:
 		result.velocity.y = jump_cut_velocity
 
-	# --- 10. is_on_floor pass-through (AC-4.3) ---
+	# --- 16. is_on_floor pass-through (AC-4.3) ---
 	#
 	# The engine controller updates is_on_floor after move_and_slide().
 	# The simulation only passes it through; the controller writes the real
 	# contact result back to _current_state after each physics frame.
 	result.is_on_floor = prior_state.is_on_floor
+
+	# --- 17. Chunk detach (SPEC-48) ---
+	#
+	# Appended as the final step after all physics steps are complete.
+	# detach_eligible requires both a fresh detach press AND the chunk still
+	# being attached. When prior_state.has_chunk is already false, a detach
+	# press is a deterministic no-op — it does not error or re-detach.
+	#
+	# simulate() never sets result.has_chunk = true. Only M1-007 (recall),
+	# executed by the controller, performs the false → true transition
+	# (SPEC-47). The field initializer (has_chunk: bool = true) provides the
+	# only true source at construction time.
+	#
+	# This step reads only: detach_just_pressed, prior_state.has_chunk
+	# This step writes only: result.has_chunk
+	# No velocity, timer, floor, or cling fields are read or written here.
+	var detach_eligible: bool = detach_just_pressed and prior_state.has_chunk
+	if detach_eligible:
+		result.has_chunk = false
+	else:
+		result.has_chunk = prior_state.has_chunk
 
 	return result
