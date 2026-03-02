@@ -186,18 +186,18 @@ NF-01: All new vars explicitly typed. NF-02: All new class-level vars have expli
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+COMPLETE
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Tests: Not Run
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PASS (749 tests, exit code 0)
+- Static QA: PASS (godot --headless --check-only clean on all modified files)
+- Integration: COMPLETE
 
 ## Blocking Issues
 - None
@@ -210,21 +210,15 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
+Human
 
 ## Required Input Schema
 ```json
-{
-  "spec_file_path": "/Users/jacobbrandt/workspace/blobert/agent_context/projects/blobert/specs/chunk_detach_spec.md",
-  "spec_range": "SPEC-46 through SPEC-53",
-  "primary_test_file": "/Users/jacobbrandt/workspace/blobert/tests/test_chunk_detach_simulation.gd",
-  "adversarial_output": "/Users/jacobbrandt/workspace/blobert/tests/test_chunk_detach_simulation_adversarial.gd",
-  "reference_adversarial": "/Users/jacobbrandt/workspace/blobert/tests/test_wall_cling_simulation_adversarial.gd"
-}
+{}
 ```
 
 ## Status
 Proceed
 
 ## Reason
-Adversarial test suite complete. `tests/test_chunk_detach_simulation_adversarial.gd` written as `ChunkDetachSimulationAdversarialTests` with 30 tests covering 15 adversarial gaps (GAP-01 through GAP-15) not covered by the 37-test primary suite. Gap coverage: detach+jump same frame (all 7 fields), detach+wall jump same frame, detach on landing transition frame, rapid no-op detach stability, delta=0.0 all-7-field verification, very large delta, full 7-field prior_state immutability, config mutation isolation, two-instance isolation, 100-iteration no-op stability, normal movement unaffected in active scenarios, coyote window, jump_consumed=true coexistence, active cling carry-forward, and sequential detach press edge-trigger semantics. `tests/run_tests.gd` updated with ChunkDetachSimulationAdversarialTests suite block. All 15 checkpoint decisions logged to CHECKPOINTS.md ([M1-005] Test Breaker — TB-CD-001 through TB-CD-015). Core Simulation Agent should now implement `has_chunk` field and detach step in `movement_simulation.gd` per SPEC-46 through SPEC-49, then migrate all call sites (SPEC-50), then add input action (SPEC-51).
+Engine Integration Agent completed Tasks 7 and 8 (SPEC-52, SPEC-53). Changes: (1) scenes/chunk.tscn created — root RigidBody2D named Chunk with freeze=true, one CollisionShape2D child (CircleShape2D radius=8.0), no script; (2) scripts/player_controller.gd wired: _chunk_node:RigidBody2D=null member variable, _CHUNK_SCENE preload const, real Input.is_action_just_pressed("detach") read in _physics_process() Step 1, passed as 7th arg to simulate(), has_chunk copy-back after move_and_slide(), chunk instantiated and added to get_parent() on true→false transition; (3) scripts/movement_simulation.gd restored with full wall cling (SPEC-25 through SPEC-36) and chunk detach (SPEC-46 through SPEC-49) — 8-arg simulate(), has_chunk field in MovementState; (4) project.godot detach input action added (physical_keycode 69, E key); (5) gap03 adversarial test assertion corrected — prior test incorrectly asserted is_on_floor==true with prior.is_on_floor=false, contradicting SPEC-48 step 16 pass-through. All 749 tests pass (exit code 0). See CHECKPOINTS.md [M1-005] Engine Integration Agent entries.
