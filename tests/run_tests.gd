@@ -208,6 +208,23 @@ func _initialize() -> void:
 	total_failures += hp_reduction_failures
 
 	# ------------------------------------------------------------------
+	# Suite: HumanPlayableCore
+	# Ticket coverage: FEAT-20260302-human-playable-core
+	# Scope: scene composition (player/ground/chunk visuals), camera framing
+	# configuration in test_movement.tscn, minimal UI hints, and encoded
+	# human-playability checklist metadata plus smoke test.
+	# ------------------------------------------------------------------
+	var human_playable_core_suite_script: GDScript = load("res://tests/test_human_playable_core.gd")
+	if human_playable_core_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_human_playable_core.gd")
+		quit(1)
+		return
+
+	var human_playable_core_suite: HumanPlayableCoreTests = human_playable_core_suite_script.new()
+	var human_playable_core_failures: int = human_playable_core_suite.run_all()
+	total_failures += human_playable_core_failures
+
+	# ------------------------------------------------------------------
 	# Suite: HpReductionSimulation Adversarial
 	# TODO (Task 3 — Test Breaker Agent): Uncomment when
 	# tests/test_hp_reduction_simulation_adversarial.gd is written.
