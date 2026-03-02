@@ -208,6 +208,24 @@ func _initialize() -> void:
 	total_failures += hp_reduction_failures
 
 	# ------------------------------------------------------------------
+	# Suite: ChunkRecallSimulation
+	# Ticket coverage: FEAT-20260302-chunk-recall-core
+	# Scope: controller-level chunk recall behavior including valid/invalid
+	# recall input routing, main body and chunk state transitions,
+	# non-blocking input behavior at the simulation level, and basic HP
+	# restoration behavior under the assumed recall HP formula.
+	# ------------------------------------------------------------------
+	var chunk_recall_suite_script: GDScript = load("res://tests/test_chunk_recall_simulation.gd")
+	if chunk_recall_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_chunk_recall_simulation.gd")
+		quit(1)
+		return
+
+	var chunk_recall_suite: ChunkRecallSimulationTests = chunk_recall_suite_script.new()
+	var chunk_recall_failures: int = chunk_recall_suite.run_all()
+	total_failures += chunk_recall_failures
+
+	# ------------------------------------------------------------------
 	# Suite: HumanPlayableCore
 	# Ticket coverage: FEAT-20260302-human-playable-core
 	# Scope: scene composition (player/ground/chunk visuals), camera framing
