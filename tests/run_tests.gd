@@ -192,6 +192,36 @@ func _initialize() -> void:
 	total_failures += chunk_detach_adversarial_failures
 
 	# ------------------------------------------------------------------
+	# Suite: HpReductionSimulation
+	# Spec coverage: SPEC-54 through SPEC-60 (primary behavioral cases)
+	# AC-56.1 through AC-57.6, AC-58.1 through AC-58.4, AC-59.1,
+	# AC-60.4, NFR-61.C (prior_state immutability).
+	# ------------------------------------------------------------------
+	var hp_reduction_suite_script: GDScript = load("res://tests/test_hp_reduction_simulation.gd")
+	if hp_reduction_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_hp_reduction_simulation.gd")
+		quit(1)
+		return
+
+	var hp_reduction_suite: HpReductionSimulationTests = hp_reduction_suite_script.new()
+	var hp_reduction_failures: int = hp_reduction_suite.run_all()
+	total_failures += hp_reduction_failures
+
+	# ------------------------------------------------------------------
+	# Suite: HpReductionSimulation Adversarial
+	# TODO (Task 3 — Test Breaker Agent): Uncomment when
+	# tests/test_hp_reduction_simulation_adversarial.gd is written.
+	# ------------------------------------------------------------------
+	# var hp_reduction_adversarial_suite_script: GDScript = load("res://tests/test_hp_reduction_simulation_adversarial.gd")
+	# if hp_reduction_adversarial_suite_script == null:
+	# 	push_error("RUNNER ERROR: could not load res://tests/test_hp_reduction_simulation_adversarial.gd")
+	# 	quit(1)
+	# 	return
+	# var hp_reduction_adversarial_suite: HpReductionSimulationAdversarialTests = hp_reduction_adversarial_suite_script.new()
+	# var hp_reduction_adversarial_failures: int = hp_reduction_adversarial_suite.run_all()
+	# total_failures += hp_reduction_adversarial_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")
