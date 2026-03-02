@@ -495,10 +495,9 @@ func test_gap08_instance_isolation_hp_reduction() -> void:
 	var result_b2: MovementSimulation.MovementState = sim_b.simulate(
 		prior_b2, 0.0, false, false, false, 0.0, true, 0.016)
 
-	# sim_a uses mutated cost=99.0 → clamped to 0.0.
-	_assert_exact(result_a2.current_hp, 0.0,
-		"gap08 — sim_a after mutation: HP=max(0.0,100.0-99.0)=1.0 (not clamped)")
-	# Note: 100.0 - 99.0 = 1.0 which is > 0.0 so NOT clamped. Correcting above.
+	# sim_a uses mutated cost=99.0: max(0.0, 100.0-99.0) = max(0.0, 1.0) = 1.0 (NOT clamped).
+	_assert_exact(result_a2.current_hp, 1.0,
+		"gap08 — sim_a after mutation: HP=max(0.0,100.0-99.0)=1.0 (above floor, not clamped)")
 
 	# sim_b still uses default cost=25.0 → 100.0-25.0=75.0.
 	_assert_exact(result_b2.current_hp, 75.0,
