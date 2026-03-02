@@ -54,6 +54,12 @@ that are only partially verifiable headlessly.
    - UI elements do **not overlap** the central play area where the player
      and main platform action occur.
 
+4. Open **Project Settings → Input Map** and verify:
+   - Actions used by the controller (`move_left`, `move_right`, `jump`, `detach`)
+     all exist and have at least one binding.
+   - The on-screen hint text remains accurate for the current bindings (e.g.
+     no references to keys or buttons that are no longer mapped).
+
 ---
 
 ### Checklist HP-MAN-04 — 5-minute playability session (AC-7)
@@ -68,6 +74,14 @@ that are only partially verifiable headlessly.
    - There are no recurring camera or visibility issues that make it hard
      to track the player or chunk.
    - Visuals and UI remain **stable and readable** for the entire session.
+
+3. As part of the same session, explicitly stress edge cases:
+   - Perform repeated full-speed runs to both horizontal extremes of the level.
+   - Chain jumps, wall clings, detaches, and (where available) chunk recalls at
+     edges and near pits.
+   - Confirm the camera never produces extended **all-background** views where
+     both player and chunk are off-screen, and UI hints remain legible and in
+     expected screen locations.
 
 Record the outcome of each checklist section (Pass/Fail + short notes) in
 the ticket or associated QA notes.

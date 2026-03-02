@@ -156,6 +156,15 @@ func _point_inside_rect(p: Vector2, r: Rect2) -> bool:
 	return r.has_point(p)
 
 
+func _has_dynamic_world_ancestor(node: Node) -> bool:
+	var current: Node = node
+	while current != null:
+		if current is CharacterBody2D or current is RigidBody2D or current is StaticBody2D:
+			return true
+		current = current.get_parent()
+	return false
+
+
 func _assert_visual_not_invisible_or_tiny(parent: Node, id_suffix: String) -> void:
 	var visual: Node2D = _find_visual_child_2d(parent)
 	_assert_true(visual != null,
@@ -186,6 +195,10 @@ func _collect_hint_labels(root: Node) -> Array:
 	all_labels.append_array(jump_labels)
 	all_labels.append_array(detach_labels)
 	return all_labels
+
+
+func _core_input_actions() -> Array:
+	return ["move_left", "move_right", "jump", "detach"]
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +316,28 @@ func test_camera_limits_not_inverted_and_not_default_horizontal_box() -> void:
 	root.free()
 
 
+func test_camera_zoom_within_human_readable_bounds() -> void:
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var camera: Camera2D = _find_camera(root)
+	if camera == null:
+		_fail("adv_camera_exists_for_zoom", "Camera node not found as child of Player in test_movement.tscn")
+		root.free()
+		return
+
+	# Extremely tiny or huge zoom values make the scene unreadable at default resolution.
+	var zoom: Vector2 = camera.zoom
+	var zoom_min: float = 0.25
+	var zoom_max: float = 4.0
+
+	_assert_true(zoom.x >= zoom_min and zoom.x <= zoom_max and zoom.y >= zoom_min and zoom.y <= zoom_max,
+		"adv_camera_zoom_human_readable — camera.zoom stays within a human-readable range at default resolution")
+
+	root.free()
+
+
 # ---------------------------------------------------------------------------
 # UI hints: visibility and readability beyond mere presence
 # ---------------------------------------------------------------------------
@@ -371,6 +406,49 @@ func test_ui_hints_positions_outside_central_area_and_not_extreme() -> void:
 	root.free()
 
 
+func test_ui_hints_not_parented_under_dynamic_world_nodes() -> void:
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var all_labels: Array = _collect_hint_labels(root)
+	if all_labels.is_empty():
+		_fail("adv_ui_hints_present_for_ancestor_checks",
+			"No move/jump/detach labels found for ancestor checks")
+		root.free()
+		return
+
+	var any_under_dynamic_world: bool = false
+	for raw_label in all_labels:
+		var label := raw_label as Label
+		if label == null:
+			continue
+		if _has_dynamic_world_ancestor(label):
+			any_under_dynamic_world = true
+			break
+
+	_assert_false(any_under_dynamic_world,
+		"adv_ui_hints_not_parented_under_dynamic_world_nodes — control hints are not children of moving physics bodies (Player/Floor/Chunk)")
+
+	root.free()
+
+
+func test_core_input_actions_exist_and_have_bindings() -> void:
+	var actions: Array = _core_input_actions()
+	for action_name in actions:
+		var name_str: String = str(action_name)
+		var has_action: bool = InputMap.has_action(name_str)
+		_assert_true(has_action,
+			"adv_input_action_defined — InputMap defines core action '%s'" % name_str)
+
+		if not has_action:
+			continue
+
+		var events: Array = InputMap.get_action_list(name_str)
+		_assert_true(events.size() > 0,
+			"adv_input_action_has_bindings — InputMap action '%s' has at least one event bound" % name_str)
+
+
 # ---------------------------------------------------------------------------
 # Human-playability metadata: ID uniqueness and per-step integrity
 # ---------------------------------------------------------------------------
@@ -432,10 +510,15 @@ func run_all() -> int:
 
 	# Camera configuration
 	test_camera_limits_not_inverted_and_not_default_horizontal_box()
+	test_camera_zoom_within_human_readable_bounds()
 
 	# UI hints
 	test_ui_hints_labels_visible_and_with_min_line_height()
 	test_ui_hints_positions_outside_central_area_and_not_extreme()
+	test_ui_hints_not_parented_under_dynamic_world_nodes()
+
+	# Input / control mapping robustness
+	test_core_input_actions_exist_and_have_bindings()
 
 	# Human-playability metadata
 	test_manual_checklist_ids_unique_and_steps_non_empty()
