@@ -119,7 +119,7 @@ func test_spec25_prior_state_is_wall_clinging_not_mutated() -> void:
 	prior.jump_consumed = false
 	# All cling conditions met: is_on_wall=true, not floor, pressing toward wall,
 	# not consumed, timer=0.0 < max_cling_time=1.5
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(prior.is_wall_clinging,
 		"spec25/AC-25.5 — prior_state.is_wall_clinging not mutated (stays false)")
 
@@ -131,7 +131,7 @@ func test_spec25_prior_state_cling_timer_not_mutated() -> void:
 	prior.is_wall_clinging = true
 	prior.cling_timer = 0.5
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(prior.cling_timer, 0.5,
 		"spec25/AC-25.5 — prior_state.cling_timer not mutated (stays 0.5)")
 
@@ -190,7 +190,7 @@ func test_spec26_cling_gravity_scale_mutable_affects_output() -> void:
 	prior.jump_consumed = false
 	# gravity=980, scale=0.5, delta=0.016 → cling gravity delta = 980*0.5*0.016 = 7.84
 	# Non-cling would be 980*0.016 = 15.68. Verify result is ~7.84 (cling), not ~15.68.
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec26/AC-26.6 setup — cling is active for mutability test")
 	# Starting vy=0.0; after cling gravity: 0.0 + 980.0*0.5*0.016 = 7.84
@@ -206,7 +206,7 @@ func test_spec26_max_cling_time_mutable_zero_disables_cling() -> void:
 	prior.cling_timer = 0.0
 	prior.jump_consumed = false
 	# cling_timer=0.0 < max_cling_time=0.0 → 0.0 < 0.0 = false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec26/AC-26.6 — max_cling_time=0.0 mutable: cling disabled (0.0 < 0.0 is false)")
 
@@ -221,7 +221,7 @@ func test_spec27_backward_compatible_no_wall_contact() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	# 7-arg call with is_on_wall=false, wall_normal_x=0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# Normal gravity: vy = 0 + 980*0.016 = 15.68
 	_assert_approx(result.velocity.y, 15.68,
 		"spec27/AC-27.2 — no wall contact: gravity = 980*0.016 = 15.68 (normal)")
@@ -235,7 +235,7 @@ func test_spec27_backward_compatible_no_wall_contact() -> void:
 func test_spec27_is_on_floor_passthrough_with_7arg_signature() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(result.is_on_floor == true,
 		"spec27/AC-27.2 — is_on_floor passthrough preserved with 7-arg signature")
 
@@ -255,7 +255,7 @@ func test_spec28_pressing_right_into_right_wall_clings() -> void:
 	prior.jump_consumed = false
 	# is_on_wall=true, wall_normal_x=-1.0 (wall to right), input_axis=1.0
 	# product = 1.0 * -1.0 = -1.0 < 0.0 → pressing_toward_wall = true → eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec28/AC-28.1 — input_axis=1.0, wall_normal_x=-1.0: pressing toward right wall → cling active")
 
@@ -266,7 +266,7 @@ func test_spec28_pressing_left_into_left_wall_clings() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	# product = -1.0 * 1.0 = -1.0 < 0.0 → pressing_toward_wall = true → eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec28/AC-28.2 — input_axis=-1.0, wall_normal_x=1.0: pressing toward left wall → cling active")
 
@@ -277,7 +277,7 @@ func test_spec28_pressing_away_from_right_wall_no_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	# product = -1.0 * -1.0 = 1.0 > 0.0 → pressing_toward_wall = false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, -1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec28/AC-28.3 — input_axis=-1.0, wall_normal_x=-1.0: pressing away from wall → no cling")
 
@@ -288,7 +288,7 @@ func test_spec28_no_input_no_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	# product = 0.0 * -1.0 = 0.0, not < 0.0 → pressing_toward_wall = false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, true, -1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec28/AC-28.4 — input_axis=0.0: product=0.0 (not < 0.0) → no cling even on wall")
 
@@ -300,7 +300,7 @@ func test_spec28_wall_normal_x_zero_always_blocks_cling() -> void:
 	prior.jump_consumed = false
 	# product = 1.0 * 0.0 = 0.0, not < 0.0 → pressing_toward_wall = false
 	# Even with is_on_wall=true passed, normal_x=0 blocks it
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 0.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec28/AC-28.5 — wall_normal_x=0.0: any input * 0.0 = 0.0 → not pressing toward → no cling")
 
@@ -312,7 +312,7 @@ func test_spec28_strict_less_than_zero_boundary() -> void:
 	prior.jump_consumed = false
 	# input_axis=0.5 clamped stays 0.5; wall_normal_x=0.0 → product=0.0
 	# 0.0 < 0.0 is false → no cling (strict less-than)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.5, false, false, true, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.5, false, false, true, 0.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec28/AC-28.6 — product exactly 0.0: strict < boundary → pressing_toward_wall=false")
 
@@ -328,7 +328,7 @@ func test_spec29_all_conditions_met_eligible() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
 	# is_on_wall=true, not on floor, pressing toward (axis=-1, normal=1.0), not consumed, timer<max
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec29/AC-29.1 — all 5 conditions met: is_wall_clinging=true")
 
@@ -340,7 +340,7 @@ func test_spec29_not_on_wall_blocks_cling() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
 	# is_on_wall=false, all other conditions would be met if on wall
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.2 — is_on_wall=false: not eligible for cling")
 
@@ -352,7 +352,7 @@ func test_spec29_on_floor_blocks_cling() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
 	# is_on_wall=true, but is_on_floor=true → condition 2 fails
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.3 — is_on_floor=true: floor takes precedence → no cling")
 
@@ -364,7 +364,7 @@ func test_spec29_pressing_away_blocks_cling() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
 	# input_axis=1.0, wall_normal_x=1.0 → product=1.0 > 0.0 → not pressing toward
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.4 — pressing away from wall: not eligible for cling")
 
@@ -375,7 +375,7 @@ func test_spec29_jump_consumed_blocks_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = true
 	prior.cling_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.5 — jump_consumed=true: not eligible for cling")
 
@@ -386,7 +386,7 @@ func test_spec29_timer_expired_blocks_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 1.5  # equals max_cling_time=1.5 → 1.5 < 1.5 is false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.6 — cling_timer=1.5 >= max_cling_time=1.5: expired → not eligible")
 
@@ -398,7 +398,7 @@ func test_spec29_max_cling_time_zero_disables_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec29/AC-29.7 — max_cling_time=0.0: 0.0 < 0.0 is false → cling disabled entirely")
 
@@ -410,7 +410,7 @@ func test_spec29_last_eligible_frame_before_expiry() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 1.484  # 1.5 - 0.016; still strictly less than 1.5
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec29/AC-29.8 — cling_timer=1.484 < max_cling_time=1.5: still eligible on last frame")
 
@@ -425,7 +425,7 @@ func test_spec30_cling_timer_accumulates_from_zero() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec30/AC-30.1 setup — cling active on first frame")
 	_assert_approx(result.cling_timer, 0.016,
@@ -438,7 +438,7 @@ func test_spec30_cling_timer_accumulates_from_prior_value() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.5
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(result.cling_timer, 0.516,
 		"spec30/AC-30.2 — cling from prior 0.5: result.cling_timer = 0.516")
 
@@ -450,7 +450,7 @@ func test_spec30_cling_timer_resets_to_zero_when_not_eligible() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.8  # had been clinging before
 	# pressing away from wall: no longer eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec30/AC-30.3 setup — not clinging when pressing away")
 	_assert_approx(result.cling_timer, 0.0,
@@ -464,7 +464,7 @@ func test_spec30_cling_timer_resets_when_leaves_wall() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.4  # had been clinging before
 	# is_on_wall=false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 1.0, false, 0.016)
 	_assert_approx(result.cling_timer, 0.0,
 		"spec30/AC-30.3 — timer resets to 0.0 when is_on_wall=false (prior was 0.4)")
 
@@ -475,7 +475,7 @@ func test_spec30_cling_timer_zero_on_expiry_frame() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 1.5  # at max_cling_time; 1.5 < 1.5 is false → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec30/AC-30.4 — expiry frame: is_wall_clinging=false")
 	_assert_approx(result.cling_timer, 0.0,
@@ -488,7 +488,7 @@ func test_spec30_prior_cling_timer_not_mutated() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.3
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(prior.cling_timer, 0.3,
 		"spec30/AC-30.5 — prior_state.cling_timer not mutated by simulate() (stays 0.3)")
 
@@ -499,7 +499,7 @@ func test_spec30_zero_delta_cling_timer_unchanged() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.3
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.0)
 	_assert_approx(result.cling_timer, 0.3,
 		"spec30/AC-30.6 — delta=0.0: cling_timer unchanged when eligible (0.3 + 0.0 = 0.3)")
 
@@ -518,7 +518,7 @@ func test_spec31_cling_gravity_scaled_while_clinging() -> void:
 	prior.cling_timer = 0.0
 	# Cling conditions met. Step 6 carries vy=50.0 forward (no jump).
 	# After cling gravity: 50.0 + 980.0 * 0.1 * 0.016 = 51.568
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec31/AC-31.1 setup — cling active for gravity test")
 	_assert_approx(result.velocity.y, 51.568,
@@ -532,7 +532,7 @@ func test_spec31_normal_gravity_when_not_clinging() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 50.0, false)
 	prior.jump_consumed = false
 	# is_on_wall=false → not clinging → normal gravity
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 65.68,
 		"spec31/AC-31.2 — not clinging: vy = 50.0 + 980.0*0.016 = 65.68 (normal gravity)")
 
@@ -543,7 +543,7 @@ func test_spec31_zero_gravity_scale_produces_hover() -> void:
 	sim.cling_gravity_scale = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec31/AC-31.3 setup — cling active")
 	_assert_approx(result.velocity.y, 0.0,
@@ -557,7 +557,7 @@ func test_spec31_gravity_scale_one_equals_normal_gravity() -> void:
 	sim.cling_gravity_scale = 1.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(result.velocity.y, 15.68,
 		"spec31/AC-31.4 — cling_gravity_scale=1.0: same as normal gravity = 980*1.0*0.016 = 15.68")
 
@@ -568,7 +568,7 @@ func test_spec31_custom_gravity_scale_runtime_change() -> void:
 	sim.cling_gravity_scale = 0.5
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(result.velocity.y, 7.84,
 		"spec31/AC-31.5 — cling_gravity_scale=0.5: vy = 0.0 + 980.0*0.5*0.016 = 7.84")
 
@@ -586,7 +586,7 @@ func test_spec31_wall_jump_frame_uses_normal_gravity_not_cling_gravity() -> void
 	# Wall jump vy impulse = -sqrt(2*980*100) = -sqrt(196000) ≈ -442.7189
 	# After normal gravity: -442.7189 + 15.68 ≈ -427.0389
 	# With held jump button (jump_pressed=true) to suppress jump cut
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_false(result.is_wall_clinging,
 		"spec31/AC-31.6 — wall jump frame: is_wall_clinging=false after wall jump fires")
@@ -599,7 +599,7 @@ func test_spec31_zero_delta_no_gravity_contribution() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 20.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.0)
 	_assert_approx(result.velocity.y, 20.0,
 		"spec31/AC-31.7 — delta=0.0: gravity contribution=0.0 even while clinging (vy unchanged)")
 
@@ -616,7 +616,7 @@ func test_spec32_wall_jump_fires_when_all_conditions_met() -> void:
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
 	# Wall normal pointing left (wall to right) → player launches left; hold jump to suppress cut
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	# Wall jump fires: vy = -sqrt(2*980*100) + 980*0.016
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
@@ -634,7 +634,7 @@ func test_spec32_no_wall_jump_when_jump_not_just_pressed() -> void:
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
 	# jump_just_pressed=false → wall_jump_eligible=false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, true, -1.0, false, 0.016)
 	# No wall jump: vy = prior.vy + cling_gravity (since still clinging this frame eligible)
 	# is_wall_clinging should still be true if all cling conditions met, not the wall jump path
 	_assert_false(result.jump_consumed,
@@ -650,7 +650,7 @@ func test_spec32_no_wall_jump_when_not_clinging_on_prior_frame() -> void:
 	prior.jump_consumed = false
 	# All current frame cling conditions met, jump_just_pressed=true,
 	# but prior_state.is_wall_clinging=false → wall_jump_eligible=false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, true, true, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, true, true, true, 1.0, false, 0.016)
 	# Result vy: no floor, no coyote → no regular jump either
 	# Expect just gravity (+ cling gravity since this frame is eligible for cling)
 	# No wall jump impulse: result.velocity.y should NOT be approximately -sqrt(196000)+gravity*delta
@@ -667,7 +667,7 @@ func test_spec32_wall_jump_blocked_by_jump_consumed() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = true  # already consumed
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, false, 0.016)
 	var wall_jump_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_true(abs(result.velocity.y - wall_jump_vy) > EPSILON,
 		"spec32/AC-32.4 — jump_consumed=true: wall jump blocked")
@@ -682,7 +682,7 @@ func test_spec32_regular_jump_takes_priority_over_wall_jump_on_floor() -> void:
 	prior.jump_consumed = false
 	# Regular jump eligible (on floor, not consumed) → regular jump fires, not wall jump
 	# Regular jump vy: -sqrt(2*980*120) + 980*0.016
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var regular_jump_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	var wall_jump_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, regular_jump_vy,
@@ -702,7 +702,7 @@ func test_spec33_wall_jump_impulse_default_params_right_wall() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	var expected_vx: float = -1.0 * 180.0  # = -180.0
 	_assert_approx(result.velocity.y, expected_vy,
@@ -717,7 +717,7 @@ func test_spec33_wall_jump_impulse_left_wall_launches_right() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 1.0, false, 0.016)
 	_assert_approx(result.velocity.x, 180.0,
 		"spec33/AC-33.2 — wall to left (normal_x=1.0): vx = 1.0*180.0 = 180.0 (launch right)")
 
@@ -728,7 +728,7 @@ func test_spec33_wall_jump_sets_consumed_and_clears_clinging() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_true(result.jump_consumed == true,
 		"spec33/AC-33.3 — after wall jump: result.jump_consumed=true")
 	_assert_false(result.is_wall_clinging,
@@ -741,7 +741,7 @@ func test_spec33_prior_state_not_mutated_on_wall_jump_frame() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_true(prior.is_wall_clinging == true,
 		"spec33/AC-33.4 — prior_state.is_wall_clinging not mutated (stays true)")
 	_assert_false(prior.jump_consumed,
@@ -755,7 +755,7 @@ func test_spec33_zero_wall_jump_height_no_nan() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"spec33/AC-33.5 — wall_jump_height=0.0: velocity.y is not NaN")
 	_assert_true(is_finite(result.velocity.y),
@@ -776,7 +776,7 @@ func test_spec33_custom_wall_jump_horizontal_speed() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_approx(result.velocity.x, -250.0,
 		"spec33/AC-33.6 — wall_jump_horizontal_speed=250.0: vx = -1.0 * 250.0 = -250.0")
 
@@ -789,7 +789,7 @@ func test_spec33_custom_wall_jump_height() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 50.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
 		"spec33/AC-33.7 — wall_jump_height=50.0: vy = -sqrt(98000) + 15.68 ≈ -297.37")
@@ -803,7 +803,7 @@ func test_spec33_wall_jump_cut_applies_on_tap() -> void:
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
 	# jump_pressed=false (released immediately after press)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, false, 0.016)
 	# Wall jump vy ≈ -427.04 < jump_cut_velocity=-200.0 → clamped to -200.0
 	_assert_approx(result.velocity.y, -200.0,
 		"spec33/AC-33.8 — wall jump tap: vy=-427.04 < -200 → jump cut clamps to -200.0")
@@ -816,7 +816,7 @@ func test_spec33_no_jump_cut_when_jump_held() -> void:
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
 	# jump_pressed=true → jump cut condition NOT jump_pressed=false → no cut
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
 		"spec33/AC-33.9 — wall jump held: full impulse retained, no jump cut")
@@ -835,7 +835,7 @@ func test_spec34_regular_jump_takes_priority_over_wall_jump() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	var regular_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, regular_vy,
 		"spec34/AC-34.1 — on floor + clinging: regular jump (jump_height=120) takes priority")
@@ -850,7 +850,7 @@ func test_spec34_wall_jump_skips_horizontal_step_7() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_approx(result.velocity.x, -180.0,
 		"spec34/AC-34.2 — wall jump fires: vx = -1.0*180.0 = -180.0 (step 7 skipped)")
 
@@ -861,7 +861,7 @@ func test_spec34_wall_jump_frame_is_wall_clinging_false() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
 	_assert_false(result.is_wall_clinging,
 		"spec34/AC-34.3 — wall jump frame: result.is_wall_clinging=false")
 
@@ -873,7 +873,7 @@ func test_spec34_jump_cut_still_applies_on_wall_jump_frame() -> void:
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
 	# jump_pressed=false → cut applies; wall jump vy ≈ -427.04 < -200 → clamped to -200
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, true, -1.0, false, 0.016)
 	_assert_approx(result.velocity.y, -200.0,
 		"spec34/AC-34.5 — wall jump + tap: jump cut applies to wall jump vertical impulse")
 
@@ -885,7 +885,7 @@ func test_spec34_no_wall_contact_preserves_all_prior_behaviors() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 15.68,
 		"spec34/AC-34.6 — no wall contact: velocity.y = 980*0.016 = 15.68 (normal gravity)")
 	_assert_false(result.is_wall_clinging,
@@ -899,7 +899,7 @@ func test_spec34_is_on_floor_passthrough_unaffected_by_cling() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_true(result.is_wall_clinging,
 		"spec34/AC-34.7 setup — cling active")
 	_assert_false(result.is_on_floor,
@@ -920,18 +920,18 @@ func test_spec36_cling_timer_two_half_steps_match_one_full_step() -> void:
 	var prior_full: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_full.jump_consumed = false
 	prior_full.cling_timer = 0.0
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, -1.0, false, false, true, 1.0, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, -1.0, false, false, true, 1.0, false, 0.016)
 
 	# Half-step 1
 	var prior_half: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_half.jump_consumed = false
 	prior_half.cling_timer = 0.0
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, -1.0, false, false, true, 1.0, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, -1.0, false, false, true, 1.0, false, 0.008)
 	# mid.cling_timer = 0.008; set up second half-step state
 	var prior_half2: MovementSimulation.MovementState = _make_state_with(0.0, mid.velocity.y, false)
 	prior_half2.jump_consumed = false
 	prior_half2.cling_timer = mid.cling_timer
-	var result_half: MovementSimulation.MovementState = sim.simulate(prior_half2, -1.0, false, false, true, 1.0, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(prior_half2, -1.0, false, false, true, 1.0, false, 0.008)
 
 	_assert_approx(result_half.cling_timer, result_full.cling_timer,
 		"spec36/AC-36.1 — cling_timer: two half-steps (0.008+0.008) = one full step (0.016) = 0.016")
@@ -949,19 +949,19 @@ func test_spec36_cling_gravity_two_half_steps_match_one_full_step() -> void:
 	var prior_full: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_full.jump_consumed = false
 	prior_full.cling_timer = 0.0
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, -1.0, false, false, true, 1.0, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, -1.0, false, false, true, 1.0, false, 0.016)
 
 	# Half-step 1 from vy=0
 	var prior_h1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_h1.jump_consumed = false
 	prior_h1.cling_timer = 0.0
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_h1, -1.0, false, false, true, 1.0, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_h1, -1.0, false, false, true, 1.0, false, 0.008)
 
 	# Half-step 2 from mid
 	var prior_h2: MovementSimulation.MovementState = _make_state_with(0.0, mid.velocity.y, false)
 	prior_h2.jump_consumed = false
 	prior_h2.cling_timer = mid.cling_timer
-	var result_half: MovementSimulation.MovementState = sim.simulate(prior_h2, -1.0, false, false, true, 1.0, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(prior_h2, -1.0, false, false, true, 1.0, false, 0.008)
 
 	_assert_approx(result_half.velocity.y, result_full.velocity.y,
 		"spec36/AC-36.2 — cling gravity: two half-steps = one full step (additive, linear)")
@@ -976,13 +976,13 @@ func test_spec36_wall_jump_vertical_impulse_is_delta_independent() -> void:
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_a.is_wall_clinging = true
 	prior_a.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, true, -1.0, 0.0)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, true, -1.0, false, 0.0)
 
 	# delta=0.1; subtract gravity contribution to isolate impulse
 	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_b.is_wall_clinging = true
 	prior_b.jump_consumed = false
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, true, -1.0, 0.1)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, true, -1.0, false, 0.1)
 
 	var impulse_from_a: float = result_a.velocity.y  # = -sqrt(196000), no gravity added
 	var impulse_from_b: float = result_b.velocity.y - 980.0 * 0.1  # subtract gravity*delta
@@ -999,12 +999,12 @@ func test_spec36_wall_jump_horizontal_impulse_is_delta_independent() -> void:
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_a.is_wall_clinging = true
 	prior_a.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, true, -1.0, 0.0)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, true, -1.0, false, 0.0)
 
 	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_b.is_wall_clinging = true
 	prior_b.jump_consumed = false
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, true, -1.0, 0.1)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, true, -1.0, false, 0.1)
 
 	_assert_approx(result_a.velocity.x, result_b.velocity.x,
 		"spec36/AC-36.4 — wall jump horizontal impulse: vx identical regardless of delta")
@@ -1020,7 +1020,7 @@ func test_spec36_zero_delta_all_new_computations_correct() -> void:
 	var prior_cling: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_cling.jump_consumed = false
 	prior_cling.cling_timer = 0.5
-	var result_cling: MovementSimulation.MovementState = sim.simulate(prior_cling, -1.0, false, false, true, 1.0, 0.0)
+	var result_cling: MovementSimulation.MovementState = sim.simulate(prior_cling, -1.0, false, false, true, 1.0, false, 0.0)
 	_assert_approx(result_cling.cling_timer, 0.5,
 		"spec36/AC-36.5 — delta=0.0: cling_timer does not increment (stays 0.5)")
 
@@ -1028,7 +1028,7 @@ func test_spec36_zero_delta_all_new_computations_correct() -> void:
 	var prior_wj: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_wj.is_wall_clinging = true
 	prior_wj.jump_consumed = false
-	var result_wj: MovementSimulation.MovementState = sim.simulate(prior_wj, 0.0, true, true, true, -1.0, 0.0)
+	var result_wj: MovementSimulation.MovementState = sim.simulate(prior_wj, 0.0, true, true, true, -1.0, false, 0.0)
 	var expected_vy_at_zero_delta: float = -sqrt(2.0 * 980.0 * 100.0)  # + gravity*0.0 = 0
 	_assert_approx(result_wj.velocity.y, expected_vy_at_zero_delta,
 		"spec36/AC-36.5 — delta=0.0: wall jump impulse applied at full magnitude")
@@ -1047,8 +1047,8 @@ func test_determinism_wall_cling_identical_calls() -> void:
 	prior.is_wall_clinging = false
 	prior.cling_timer = 0.3
 	prior.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, 0.016)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
 	_assert_approx(result_a.velocity.x, result_b.velocity.x,
 		"determinism — wall cling: identical inputs produce identical velocity.x")
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,
@@ -1064,8 +1064,8 @@ func test_determinism_wall_jump_identical_calls() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(50.0, 10.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.02)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, 0.02)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.02)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.02)
 	_assert_approx(result_a.velocity.x, result_b.velocity.x,
 		"determinism — wall jump: identical inputs produce identical velocity.x")
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,

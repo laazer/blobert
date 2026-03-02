@@ -153,6 +153,23 @@ func _initialize() -> void:
 	total_failures += camera_follow_adversarial_failures
 
 	# ------------------------------------------------------------------
+	# Suite: ChunkDetachSimulation
+	# Spec coverage: SPEC-46 through SPEC-50, SPEC-53 (headless-verifiable ACs)
+	# SPEC-51 (project.godot input action) and SPEC-52 (engine integration /
+	# player_controller.gd + chunk.tscn) are not covered here — they require
+	# in-editor or controller-level verification (Tasks 6 and 7).
+	# ------------------------------------------------------------------
+	var chunk_detach_suite_script: GDScript = load("res://tests/test_chunk_detach_simulation.gd")
+	if chunk_detach_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_chunk_detach_simulation.gd")
+		quit(1)
+		return
+
+	var chunk_detach_suite: ChunkDetachSimulationTests = chunk_detach_suite_script.new()
+	var chunk_detach_failures: int = chunk_detach_suite.run_all()
+	total_failures += chunk_detach_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")

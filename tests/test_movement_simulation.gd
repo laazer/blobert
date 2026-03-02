@@ -116,7 +116,7 @@ func test_spec1_inner_class_accessible() -> void:
 func test_spec13_headless_smoke() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = MovementSimulation.MovementState.new()
-	var result: MovementSimulation.MovementState = sim.simulate(state, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(state, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(result != null,
 		"spec13 — simulate() returns non-null in headless context")
 	_assert_true(result.velocity.x > 0.0,
@@ -188,7 +188,7 @@ func test_spec3_default_gravity() -> void:
 func test_spec4_is_on_floor_passthrough_true() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(result.is_on_floor == true,
 		"spec4 — is_on_floor passed through as true")
 
@@ -197,7 +197,7 @@ func test_spec4_is_on_floor_passthrough_true() -> void:
 func test_spec4_is_on_floor_passthrough_false() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(result.is_on_floor == false,
 		"spec4 — is_on_floor passed through as false")
 
@@ -206,7 +206,7 @@ func test_spec4_is_on_floor_passthrough_false() -> void:
 func test_spec4_returns_new_object() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(result != prior,
 		"spec4 — simulate() returns a distinct object, not prior_state")
 
@@ -215,7 +215,7 @@ func test_spec4_returns_new_object() -> void:
 func test_spec4_prior_state_velocity_x_not_mutated() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(50.0, 10.0, true)
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(prior.velocity.x, 50.0,
 		"spec4 — prior_state.velocity.x not mutated by simulate()")
 
@@ -224,7 +224,7 @@ func test_spec4_prior_state_velocity_x_not_mutated() -> void:
 func test_spec4_prior_state_velocity_y_not_mutated() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(50.0, 10.0, true)
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(prior.velocity.y, 10.0,
 		"spec4 — prior_state.velocity.y not mutated by simulate()")
 
@@ -233,7 +233,7 @@ func test_spec4_prior_state_velocity_y_not_mutated() -> void:
 func test_spec4_zero_delta_no_change_x_grounded_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(75.0, 20.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.0)
 	_assert_approx(result.velocity.x, 75.0,
 		"spec4 — zero delta, grounded+input: velocity.x unchanged")
 
@@ -242,7 +242,7 @@ func test_spec4_zero_delta_no_change_x_grounded_input() -> void:
 func test_spec4_zero_delta_no_change_y() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 20.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.0)
 	_assert_approx(result.velocity.y, 20.0,
 		"spec4 — zero delta: velocity.y unchanged (gravity * 0 == 0)")
 
@@ -251,7 +251,7 @@ func test_spec4_zero_delta_no_change_y() -> void:
 func test_spec4_zero_delta_no_change_x_airborne_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.0)
 	_assert_approx(result.velocity.x, 100.0,
 		"spec4 — zero delta, airborne+input: velocity.x unchanged")
 
@@ -266,7 +266,7 @@ func test_spec4_zero_delta_no_change_x_airborne_input() -> void:
 func test_spec5_case1_grounded_input_from_rest() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	# move_toward(0.0, 200.0, 12.8) = 12.8
 	_assert_approx(result.velocity.x, 12.8,
 		"spec5/case1 — grounded+input from rest: velocity.x = 12.8")
@@ -277,7 +277,7 @@ func test_spec5_case1_grounded_input_from_rest() -> void:
 func test_spec5_case1_grounded_input_caps_at_target() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(190.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 200.0,
 		"spec5/case1 — grounded+input near max_speed: caps at target 200.0")
 
@@ -286,7 +286,7 @@ func test_spec5_case1_grounded_input_caps_at_target() -> void:
 func test_spec5_case1_grounded_negative_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 0.0, false, 0.016)
 	# move_toward(0.0, -200.0, 12.8) = -12.8
 	_assert_approx(result.velocity.x, -12.8,
 		"spec5/case1 — grounded+negative input from rest: velocity.x = -12.8")
@@ -297,7 +297,7 @@ func test_spec5_case1_grounded_partial_axis() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	# target = 0.5 * 200.0 = 100.0; step = 800.0 * 0.016 = 12.8
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.5, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.5, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 12.8,
 		"spec5/case1 — grounded+axis=0.5 from rest: step=12.8 toward target=100.0")
 
@@ -308,7 +308,7 @@ func test_spec5_case1_grounded_partial_axis() -> void:
 func test_spec5_case2_grounded_no_input_friction() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 80.8,
 		"spec5/case2 — grounded+no input friction: velocity.x = 80.8")
 
@@ -318,7 +318,7 @@ func test_spec5_case2_grounded_no_input_friction() -> void:
 func test_spec5_case2_friction_clamps_at_zero() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(10.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 0.0,
 		"spec5/case2 — friction with vx=10 and step>remaining: result is 0.0, not negative")
 
@@ -327,7 +327,7 @@ func test_spec5_case2_friction_clamps_at_zero() -> void:
 func test_spec5_case2_friction_negative_velocity() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(-100.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# move_toward(-100.0, 0.0, 19.2) = -80.8
 	_assert_approx(result.velocity.x, -80.8,
 		"spec5/case2 — friction on negative velocity: velocity.x = -80.8")
@@ -337,7 +337,7 @@ func test_spec5_case2_friction_negative_velocity() -> void:
 func test_spec5_case2_friction_already_at_rest() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 0.0,
 		"spec5/case2 — friction when already at rest: stays 0.0")
 
@@ -348,7 +348,7 @@ func test_spec5_case2_friction_already_at_rest() -> void:
 func test_spec5_case3_airborne_input_from_rest() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 12.8,
 		"spec5/case3 — airborne+input from rest: velocity.x = 12.8 (same formula as grounded)")
 
@@ -357,7 +357,7 @@ func test_spec5_case3_airborne_input_from_rest() -> void:
 func test_spec5_case3_airborne_negative_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, -12.8,
 		"spec5/case3 — airborne+negative input from rest: velocity.x = -12.8")
 
@@ -367,7 +367,7 @@ func test_spec5_case3_airborne_negative_input() -> void:
 func test_spec5_case4_airborne_no_input_zero_air_decel() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 100.0,
 		"spec5/case4 — airborne+no input+air_decel=0: velocity.x preserved = 100.0")
 
@@ -378,7 +378,7 @@ func test_spec5_case4_airborne_no_input_with_air_decel() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.air_deceleration = 400.0
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 93.6,
 		"spec5/case4 — airborne+no input+air_decel=400: velocity.x = 93.6")
 
@@ -388,7 +388,7 @@ func test_spec5_velocity_x_never_exceeds_max_speed() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	for _i: int in range(200):
-		state = sim.simulate(state, 1.0, false, false, 0.016)
+		state = sim.simulate(state, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(abs(state.velocity.x) <= sim.max_speed + EPSILON,
 		"spec5 — velocity.x never exceeds max_speed after 200 frames of continuous input")
 
@@ -400,7 +400,7 @@ func test_spec5_max_speed_respected_custom_value() -> void:
 	sim.acceleration = 800.0
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	for _i: int in range(100):
-		state = sim.simulate(state, 1.0, false, false, 0.016)
+		state = sim.simulate(state, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(abs(state.velocity.x) <= sim.max_speed + EPSILON,
 		"spec5 — velocity.x never exceeds custom max_speed=50.0")
 
@@ -414,7 +414,7 @@ func test_spec5_max_speed_respected_custom_value() -> void:
 func test_spec6_gravity_from_zero() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 15.68,
 		"spec6 — gravity from vy=0, delta=0.016: result.velocity.y = 15.68")
 
@@ -424,8 +424,8 @@ func test_spec6_gravity_from_zero() -> void:
 func test_spec6_gravity_accumulates_across_frames() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	state = sim.simulate(state, 0.0, false, false, 0.016)
-	state = sim.simulate(state, 0.0, false, false, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(state.velocity.y, 31.36,
 		"spec6 — gravity accumulates: after 2 frames vy = 31.36")
 
@@ -434,7 +434,7 @@ func test_spec6_gravity_accumulates_across_frames() -> void:
 func test_spec6_gravity_applied_on_floor() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 15.68,
 		"spec6 — gravity applied unconditionally even when is_on_floor=true: vy = 15.68")
 
@@ -443,7 +443,7 @@ func test_spec6_gravity_applied_on_floor() -> void:
 func test_spec6_zero_delta_no_gravity() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 50.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.0)
 	_assert_approx(result.velocity.y, 50.0,
 		"spec6 — zero delta: gravity * 0 = 0, velocity.y unchanged = 50.0")
 
@@ -454,7 +454,7 @@ func test_spec6_no_terminal_velocity_cap() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	for _i: int in range(300):
-		state = sim.simulate(state, 0.0, false, false, 0.016)
+		state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_true(state.velocity.y > 4000.0,
 		"spec6 — no terminal velocity cap: vy > 4000 after 300 frames of freefall")
 
@@ -464,7 +464,7 @@ func test_spec6_gravity_uses_configured_parameter() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.gravity = 500.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# 0.0 + 500.0 * 0.016 = 8.0
 	_assert_approx(result.velocity.y, 8.0,
 		"spec6 — gravity uses configured parameter: gravity=500, delta=0.016 → vy = 8.0")
@@ -478,7 +478,7 @@ func test_spec6_gravity_uses_configured_parameter() -> void:
 func test_spec12_single_step_acceleration() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 12.8,
 		"spec12 — single step delta=0.016: velocity.x = 800*0.016 = 12.8")
 
@@ -491,11 +491,11 @@ func test_spec12_single_step_acceleration() -> void:
 func test_spec12_two_half_steps_match_one_full_step_acceleration() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 1.0, false, false, 0.008)
-	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 1.0, false, false, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 1.0, false, false, false, 0.0, false, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 1.0, false, false, false, 0.0, false, 0.008)
 
 	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 1.0, false, false, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 1.0, false, false, false, 0.0, false, 0.016)
 
 	_assert_approx(result_half.velocity.x, result_full.velocity.x,
 		"spec12 — two half-step acceleration matches one full-step (no overshoot in linear region)")
@@ -509,11 +509,11 @@ func test_spec12_two_half_steps_match_one_full_step_acceleration() -> void:
 func test_spec12_two_half_steps_match_one_full_step_friction() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior_a: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, false, false, 0.008)
-	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 0.0, false, false, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, false, false, false, 0.0, false, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 0.0, false, false, false, 0.0, false, 0.008)
 
 	var prior_b: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, false, false, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, false, false, false, 0.0, false, 0.016)
 
 	_assert_approx(result_half.velocity.x, result_full.velocity.x,
 		"spec12 — two half-step friction matches one full-step (no overshoot in linear region)")
@@ -523,7 +523,7 @@ func test_spec12_two_half_steps_match_one_full_step_friction() -> void:
 func test_spec12_single_step_gravity() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 15.68,
 		"spec12 — single step gravity delta=0.016: velocity.y = 980*0.016 = 15.68")
 
@@ -535,11 +535,11 @@ func test_spec12_single_step_gravity() -> void:
 func test_spec12_two_half_steps_match_one_full_step_gravity() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, false, false, 0.008)
-	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 0.0, false, false, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, false, false, false, 0.0, false, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(mid, 0.0, false, false, false, 0.0, false, 0.008)
 
 	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, false, false, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, false, false, false, 0.0, false, 0.016)
 
 	_assert_approx(result_half.velocity.y, result_full.velocity.y,
 		"spec12 — two half-step gravity exactly matches one full-step (additive formula)")
@@ -549,7 +549,7 @@ func test_spec12_two_half_steps_match_one_full_step_gravity() -> void:
 func test_spec12_zero_delta_no_velocity_change() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 50.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.0)
 	_assert_approx(result.velocity.x, 100.0,
 		"spec12 — zero delta: no velocity.x change")
 	_assert_approx(result.velocity.y, 50.0,
@@ -565,7 +565,7 @@ func test_spec12_zero_delta_no_velocity_change() -> void:
 func test_combined_horizontal_and_vertical_independence_airborne_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 12.8,
 		"combined — airborne+input: velocity.x = 12.8")
 	_assert_approx(result.velocity.y, 15.68,
@@ -576,7 +576,7 @@ func test_combined_horizontal_and_vertical_independence_airborne_input() -> void
 func test_combined_grounded_no_input_gravity_still_applied() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.x, 80.8,
 		"combined — grounded+no input: velocity.x = 80.8 (friction)")
 	_assert_approx(result.velocity.y, 15.68,
@@ -591,8 +591,8 @@ func test_combined_grounded_no_input_gravity_still_applied() -> void:
 func test_determinism_identical_calls_produce_identical_results() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(55.0, 30.0, false)
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.7, false, false, 0.02)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.7, false, false, 0.02)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.7, false, false, false, 0.0, false, 0.02)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.7, false, false, false, 0.0, false, 0.02)
 	_assert_approx(result_a.velocity.x, result_b.velocity.x,
 		"determinism — identical inputs produce identical velocity.x")
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,

@@ -109,7 +109,7 @@ func test_spec15_prior_state_coyote_timer_not_mutated() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.coyote_timer = 0.07
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(prior.coyote_timer, 0.07,
 		"spec15/AC-15.5 — prior_state.coyote_timer not mutated by simulate()")
 
@@ -120,7 +120,7 @@ func test_spec15_prior_state_jump_consumed_not_mutated() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = true
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, false, 0.016)
 	_assert_true(prior.jump_consumed == true,
 		"spec15/AC-15.5 — prior_state.jump_consumed not mutated by simulate()")
 
@@ -158,7 +158,7 @@ func test_spec16_jump_height_mutable_affects_impulse() -> void:
 	prior.jump_consumed = false
 	# jump_pressed=true to hold the button — suppresses jump cut so we can measure
 	# the raw impulse value without it being clamped to jump_cut_velocity.
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# impulse = -sqrt(2.0 * 980.0 * 60.0) = -sqrt(117600.0)
 	# result.velocity.y = impulse + 980.0 * 0.016
 	var expected: float = -sqrt(2.0 * 980.0 * 60.0) + 980.0 * 0.016
@@ -171,7 +171,7 @@ func test_spec16_coyote_time_mutable_affects_reset() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.coyote_time = 0.2
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.2,
 		"spec16/AC-16.5 — coyote_time=0.2 is mutable: floor reset produces result.coyote_timer=0.2")
 
@@ -182,7 +182,7 @@ func test_spec16_jump_cut_velocity_mutable_affects_clamp() -> void:
 	sim.jump_cut_velocity = -100.0
 	# prior vy=-200, after gravity: -200 + 15.68 = -184.32. -184.32 < -100.0 → clamp to -100.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -200.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, -100.0,
 		"spec16/AC-16.5 — jump_cut_velocity=-100 is mutable: -184.32 clamped to -100.0")
 
@@ -199,7 +199,7 @@ func test_spec18_jump_impulse_from_floor() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	var expected: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
 		"spec18/AC-18.1 — jump from floor: velocity.y = -sqrt(2*980*120) + 980*0.016")
@@ -211,7 +211,7 @@ func test_spec18_jump_impulse_magnitude() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.0)
 	var expected_impulse: float = -sqrt(2.0 * 980.0 * 120.0)
 	_assert_approx(result.velocity.y, expected_impulse,
 		"spec18 — jump impulse magnitude: -sqrt(2*980*120) with delta=0 (no gravity contribution)")
@@ -223,7 +223,7 @@ func test_spec18_no_jump_when_just_pressed_false() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
 	# jump_pressed=false, jump_just_pressed=false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# Expected: no impulse, just gravity accumulation
 	var expected: float = 0.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -235,7 +235,7 @@ func test_spec18_no_jump_when_consumed_even_on_floor() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# No impulse: result.velocity.y = prior.vy + gravity*delta
 	var expected: float = 0.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -248,7 +248,7 @@ func test_spec18_no_jump_when_airborne_coyote_zero() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# No impulse: result.velocity.y = prior.vy + gravity*delta
 	var expected: float = 0.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -261,7 +261,7 @@ func test_spec18_custom_jump_height_impulse() -> void:
 	sim.jump_height = 60.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# impulse = -sqrt(2.0 * 980.0 * 60.0) = -sqrt(117600.0)
 	var expected: float = -sqrt(2.0 * 980.0 * 60.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -275,7 +275,7 @@ func test_spec18_zero_gravity_jump_produces_zero_not_nan() -> void:
 	sim.gravity = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"spec18/AC-18.6 — gravity=0, valid jump: velocity.y is not NaN")
 	_assert_true(is_finite(result.velocity.y),
@@ -290,7 +290,7 @@ func test_spec18_gravity_applied_on_jump_frame() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.1)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.1)
 	var expected: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.1
 	_assert_approx(result.velocity.y, expected,
 		"spec18 — gravity applied on jump frame: impulse + gravity*delta with delta=0.1")
@@ -301,7 +301,7 @@ func test_spec18_jump_does_not_affect_velocity_x() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# grounded, no input: friction applies. move_toward(100.0, 0.0, 19.2) = 80.8
 	_assert_approx(result.velocity.x, 80.8,
 		"spec18 — jump does not affect velocity.x: friction still applied on jump frame")
@@ -316,7 +316,7 @@ func test_spec19_coyote_timer_resets_to_coyote_time_when_on_floor_from_zero() ->
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.coyote_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.1,
 		"spec19/AC-19.1 — on floor, coyote_timer=0: result.coyote_timer = 0.1 (coyote_time)")
 
@@ -326,7 +326,7 @@ func test_spec19_coyote_timer_always_resets_to_full_when_on_floor() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.coyote_timer = 0.05
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.1,
 		"spec19/AC-19.2 — on floor, coyote_timer=0.05: always reset to full 0.1")
 
@@ -336,7 +336,7 @@ func test_spec19_coyote_timer_decrements_by_delta_when_airborne() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.1
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.084,
 		"spec19/AC-19.3 — airborne, coyote_timer=0.1, delta=0.016: result = 0.084")
 
@@ -346,7 +346,7 @@ func test_spec19_coyote_timer_clamped_to_zero_not_negative() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.01
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.0,
 		"spec19/AC-19.4 — airborne, coyote_timer=0.01, delta=0.016: clamped to 0.0 (not -0.006)")
 
@@ -356,7 +356,7 @@ func test_spec19_coyote_timer_zero_stays_zero_when_airborne() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.0,
 		"spec19/AC-19.5 — airborne, coyote_timer=0.0: stays 0.0 (does not go negative)")
 
@@ -367,7 +367,7 @@ func test_spec19_coyote_jump_fires_when_timer_positive_and_airborne() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# Jump should fire: velocity.y = impulse + gravity*delta
 	var expected: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -380,7 +380,7 @@ func test_spec19_coyote_timer_exactly_zero_blocks_coyote_jump() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# No jump: coyote_timer is not > 0.0. result.velocity.y = prior.vy + gravity*delta
 	var expected: float = 0.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected,
@@ -392,7 +392,7 @@ func test_spec19_prior_state_coyote_timer_not_mutated() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.08
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(prior.coyote_timer, 0.08,
 		"spec19/AC-19.8 — prior_state.coyote_timer not mutated after simulate()")
 
@@ -403,7 +403,7 @@ func test_spec19_custom_coyote_time_applied_on_floor_reset() -> void:
 	sim.coyote_time = 0.2
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.coyote_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.coyote_timer, 0.2,
 		"spec19/AC-19.9 — coyote_time=0.2: floor reset produces result.coyote_timer=0.2")
 
@@ -416,7 +416,7 @@ func test_spec19_eligibility_uses_prior_coyote_timer_not_result() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# Jump fires because prior.coyote_timer=0.05 > 0.
 	# result.coyote_timer = max(0, 0.05 - 0.016) = 0.034 (timer still decrements this frame).
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
@@ -434,7 +434,7 @@ func test_spec19_eligibility_uses_prior_coyote_timer_not_result() -> void:
 func test_spec20_jump_cut_clamps_when_ascending_too_fast_and_button_released() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -450.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, -200.0,
 		"spec20/AC-20.2 — jump_pressed=false, vy=-450: -434.32 < -200 → clamped to -200.0")
 
@@ -444,7 +444,7 @@ func test_spec20_jump_cut_clamps_when_ascending_too_fast_and_button_released() -
 func test_spec20_jump_cut_does_not_apply_when_falling() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 50.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 65.68,
 		"spec20/AC-20.3 — falling (vy=50): jump cut does not apply, result.vy = 65.68")
 
@@ -454,7 +454,7 @@ func test_spec20_jump_cut_does_not_apply_when_falling() -> void:
 func test_spec20_jump_cut_does_not_apply_when_button_held() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -450.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, -434.32,
 		"spec20/AC-20.4 — jump_pressed=true: no jump cut even at high upward velocity")
 
@@ -465,7 +465,7 @@ func test_spec20_jump_cut_does_not_apply_when_button_held() -> void:
 func test_spec20_jump_cut_boundary_exact_equals_no_clamp() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -215.68, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# -215.68 + 15.68 = -200.0 exactly → strict less-than fails → no clamp
 	_assert_approx(result.velocity.y, -200.0,
 		"spec20/AC-20.5 — exact boundary: result.vy == jump_cut_velocity → no clamp (strict <)")
@@ -477,7 +477,7 @@ func test_spec20_custom_jump_cut_velocity_clamp() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.jump_cut_velocity = -100.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -200.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, -100.0,
 		"spec20/AC-20.6 — jump_cut_velocity=-100: -184.32 < -100 → clamped to -100.0")
 
@@ -488,7 +488,7 @@ func test_spec20_jump_cut_velocity_zero_clamps_all_ascending() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.jump_cut_velocity = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -200.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_approx(result.velocity.y, 0.0,
 		"spec20/AC-20.7 — jump_cut_velocity=0.0: -184.32 < 0.0 → clamped to 0.0")
 
@@ -503,7 +503,7 @@ func test_spec20_jump_cut_velocity_zero_clamps_all_ascending() -> void:
 func test_spec20_jump_cut_evaluated_after_gravity_not_before() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -201.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	# After gravity: -201.0 + 15.68 = -185.32. -185.32 is NOT < -200.0 → no clamp.
 	_assert_approx(result.velocity.y, -185.32,
 		"spec20/AC-20.8 — jump cut after gravity: vy=-201+15.68=-185.32 (not < -200) → no clamp")
@@ -518,7 +518,7 @@ func test_spec21_jump_sets_consumed_true() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_true(result.jump_consumed == true,
 		"spec21/AC-21.1 — after jump fires: result.jump_consumed == true")
 
@@ -528,7 +528,7 @@ func test_spec21_double_jump_blocked_by_consumed_flag() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -200.0, false)
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# No impulse. result.velocity.y = prior.vy + gravity*delta = -200 + 15.68 = -184.32
 	_assert_approx(result.velocity.y, -184.32,
 		"spec21/AC-21.2 — double jump blocked: consumed=true → no second impulse")
@@ -541,7 +541,7 @@ func test_spec21_landing_resets_jump_consumed() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
 	_assert_false(result.jump_consumed,
 		"spec21/AC-21.3 — landing (on_floor=true): result.jump_consumed reset to false")
 
@@ -551,7 +551,7 @@ func test_spec21_consumed_carried_forward_when_airborne_no_jump() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -100.0, false)
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, false, false, 0.0, false, 0.016)
 	_assert_true(result.jump_consumed == true,
 		"spec21/AC-21.4 — airborne + consumed=true + no jump: jump_consumed carried forward")
 
@@ -561,7 +561,7 @@ func test_spec21_prior_state_jump_consumed_not_mutated() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_false(prior.jump_consumed,
 		"spec21/AC-21.5 — prior_state.jump_consumed not mutated (stays false after jump fires)")
 
@@ -572,7 +572,7 @@ func test_spec21_fresh_state_first_jump_fires() -> void:
 	# Fresh state: jump_consumed defaults to false
 	var prior: MovementSimulation.MovementState = MovementSimulation.MovementState.new()
 	prior.is_on_floor = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
 		"spec21/AC-21.6 — fresh state: first jump fires, impulse applied")
@@ -586,7 +586,7 @@ func test_spec21_re_pressed_after_airborne_blocked_when_consumed() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -300.0, false)
 	prior.coyote_timer = 0.05  # coyote eligible but consumed blocks it
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# consumed=true blocks jump even with coyote window open
 	var expected_vy: float = -300.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
@@ -604,17 +604,17 @@ func test_spec24_coyote_timer_two_half_steps_match_one_full_step_at_expiry() -> 
 	# Two half-steps from 0.1 with delta=0.05 each
 	var prior_half: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_half.coyote_timer = 0.1
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, 0.0, false, false, 0.05)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, 0.0, false, false, false, 0.0, false, 0.05)
 	# mid.coyote_timer = max(0, 0.1 - 0.05) = 0.05
 	var half_state: MovementSimulation.MovementState = _make_state_with(0.0, mid.velocity.y, false)
 	half_state.coyote_timer = mid.coyote_timer
-	var result_half: MovementSimulation.MovementState = sim.simulate(half_state, 0.0, false, false, 0.05)
+	var result_half: MovementSimulation.MovementState = sim.simulate(half_state, 0.0, false, false, false, 0.0, false, 0.05)
 	# result_half.coyote_timer = max(0, 0.05 - 0.05) = 0.0
 
 	# One full step from 0.1 with delta=0.1
 	var prior_full: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_full.coyote_timer = 0.1
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, 0.0, false, false, 0.1)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, 0.0, false, false, false, 0.0, false, 0.1)
 	# result_full.coyote_timer = max(0, 0.1 - 0.1) = 0.0
 
 	_assert_approx(result_half.coyote_timer, result_full.coyote_timer,
@@ -628,17 +628,17 @@ func test_spec24_coyote_timer_two_half_steps_match_one_full_step_typical() -> vo
 	# Two half-steps
 	var prior_half: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_half.coyote_timer = 0.1
-	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, 0.0, false, false, 0.008)
+	var mid: MovementSimulation.MovementState = sim.simulate(prior_half, 0.0, false, false, false, 0.0, false, 0.008)
 	# mid.coyote_timer = max(0, 0.1 - 0.008) = 0.092
 	var half_state: MovementSimulation.MovementState = _make_state_with(0.0, mid.velocity.y, false)
 	half_state.coyote_timer = mid.coyote_timer
-	var result_half: MovementSimulation.MovementState = sim.simulate(half_state, 0.0, false, false, 0.008)
+	var result_half: MovementSimulation.MovementState = sim.simulate(half_state, 0.0, false, false, false, 0.0, false, 0.008)
 	# result_half.coyote_timer = max(0, 0.092 - 0.008) = 0.084
 
 	# One full step
 	var prior_full: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_full.coyote_timer = 0.1
-	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, 0.0, false, false, 0.016)
+	var result_full: MovementSimulation.MovementState = sim.simulate(prior_full, 0.0, false, false, false, 0.0, false, 0.016)
 	# result_full.coyote_timer = max(0, 0.1 - 0.016) = 0.084
 
 	_assert_approx(result_half.coyote_timer, result_full.coyote_timer,
@@ -651,11 +651,11 @@ func test_spec24_jump_impulse_independent_of_delta() -> void:
 	# Use delta=0 so gravity adds nothing — isolates impulse component
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior_a.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, 0.0)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior_a, 0.0, true, true, false, 0.0, false, 0.0)
 
 	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior_b.jump_consumed = false
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, 0.1)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior_b, 0.0, true, true, false, 0.0, false, 0.1)
 	# Gravity adds 98.0 to result_b. Subtract it to isolate impulse.
 	var impulse_from_a: float = result_a.velocity.y
 	var impulse_from_b: float = result_b.velocity.y - 980.0 * 0.1
@@ -679,7 +679,7 @@ func test_order_of_ops_coyote_update_before_eligibility_check() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	# Jump fires (prior.coyote_timer=0.05 > 0)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
@@ -694,7 +694,7 @@ func test_order_of_ops_jump_consumed_set_on_jump_frame() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_true(result.jump_consumed == true,
 		"order_of_ops — jump_consumed set to true on the same frame as jump")
 
@@ -704,7 +704,7 @@ func test_order_of_ops_is_on_floor_passthrough_unaffected_by_jump() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_true(result.is_on_floor == true,
 		"order_of_ops — is_on_floor passes through unchanged even on jump frame")
 
@@ -718,8 +718,8 @@ func test_determinism_jump_simulation_identical_calls() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, 0.016)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,
 		"determinism — jump: identical inputs produce identical velocity.y")
 	_assert_true(result_a.jump_consumed == result_b.jump_consumed,
