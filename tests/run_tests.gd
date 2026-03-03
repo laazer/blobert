@@ -305,6 +305,23 @@ func _initialize() -> void:
 	total_failures += hp_reduction_adversarial_failures
 
 	# ------------------------------------------------------------------
+	# Suite: InfectionUi
+	# Ticket coverage: basic_ui_feedback_infection.md
+	# Scope: infection HUD container, absorb prompt presence/readability,
+	# layout, and boolean-driven visibility behavior in the infection-loop
+	# playable scene.
+	# ------------------------------------------------------------------
+	var infection_ui_suite_script: GDScript = load("res://tests/test_infection_ui.gd")
+	if infection_ui_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_infection_ui.gd")
+		quit(1)
+		return
+
+	var infection_ui_suite = infection_ui_suite_script.new()
+	var infection_ui_failures: int = infection_ui_suite.run_all()
+	total_failures += infection_ui_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")
