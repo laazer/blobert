@@ -626,6 +626,685 @@ func test_tb_cr_006_determinism_for_standard_detach_recall_sequence() -> void:
 
 
 # ===========================================================================
+# TB-CR-007 — Two consecutive detach+recall cycles: state fully resets
+#
+# VULNERABILITY:
+#   The existing tests verify a single detach+recall cycle. A buggy implementation
+#   could leave stale state (_recall_in_progress=true, _recall_timer dirty,
+#   _chunk_node stale reference) that prevents the second cycle from initiating
+#   or causes it to produce wrong HP. Specifically:
+#     - If _recall_in_progress is not set to false after cycle 1 completes, cycle 2
+#       will never trigger (recall_pressed guard fails because not _recall_in_progress
+#       is false).
+#     - If _recall_timer is not reset to 0.0 on the second initiation, it may fire
+#       immediately or be off by one frame.
+#     - If _chunk_node retains a stale freed reference after cycle 1, the
+#       is_instance_valid guard on cycle 2 initiation will fail.
+#   Tests SPEC-64 (5 reabsorption operations in order) and SPEC-62 AC-62.4
+#   (recall_in_progress reset on completion) in a two-cycle scenario.
+# ===========================================================================
+
+func test_tb_cr_007_two_consecutive_detach_recall_cycles_are_each_hp_neutral() -> void:
+	# VULNERABILITY: Second cycle must work identically to first. After cycle 1
+	# completes, _recall_in_progress must be false, _chunk_node null, has_chunk true.
+	# Pattern B used for both recall timers.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_007_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	if not _supports_hp_fields(player):
+		_pass("tb_cr_007_hp_fields_not_present_yet — two-cycle HP tests skipped until HP fields exist")
+		root.free()
+		return
+
+	_configure_hp_for_recall(player, 100.0, 25.0, 100.0)
+	var hp_start: float = player._current_state.current_hp
+
+	# ---- Cycle 1: detach then recall ----
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_007_cycle1_detach_spawned_chunk", "Cycle 1 detach did not spawn chunk")
+		root.free()
+		return
+
+	var hp_after_detach_1: float = player._current_state.current_hp
+	_assert_approx(hp_after_detach_1, 75.0, "tb_cr_007_cycle1_hp_after_detach")
+
+	# Pattern B: inject recall state for cycle 1
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# Assert cycle 1 complete
+	_assert_true(player._current_state.has_chunk, "tb_cr_007_cycle1_has_chunk_true_after_recall")
+	_assert_false(player._recall_in_progress, "tb_cr_007_cycle1_recall_in_progress_false_after_completion")
+	_assert_true(player._chunk_node == null or not is_instance_valid(player._chunk_node),
+		"tb_cr_007_cycle1_chunk_node_null_after_completion")
+	_assert_approx(player._current_state.current_hp, hp_start,
+		"tb_cr_007_cycle1_hp_neutral_restored_to_start")
+
+	# ---- Cycle 2: detach again, then recall again ----
+	_cleanup_input()
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_007_cycle2_detach_spawned_chunk", "Cycle 2 detach did not spawn chunk")
+		root.free()
+		return
+
+	var hp_after_detach_2: float = player._current_state.current_hp
+	_assert_approx(hp_after_detach_2, 75.0, "tb_cr_007_cycle2_hp_after_detach")
+
+	# Pattern B: inject recall state for cycle 2
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# Assert cycle 2 complete and HP-neutral
+	_assert_true(player._current_state.has_chunk, "tb_cr_007_cycle2_has_chunk_true_after_recall")
+	_assert_false(player._recall_in_progress, "tb_cr_007_cycle2_recall_in_progress_false_after_completion")
+	_assert_true(player._chunk_node == null or not is_instance_valid(player._chunk_node),
+		"tb_cr_007_cycle2_chunk_node_null_after_completion")
+	_assert_approx(player._current_state.current_hp, hp_start,
+		"tb_cr_007_cycle2_hp_neutral_restored_to_start")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-008 — Second recall press during active recall does not reset timer
+#
+# VULNERABILITY:
+#   SPEC-62 AC-62.4 states that a second press during active recall is a no-op:
+#   _recall_in_progress remains true, _recall_timer continues accumulating. A
+#   buggy implementation could reset _recall_timer to 0.0 on a second press (by
+#   misidentifying it as a new recall initiation), extending the recall indefinitely
+#   with rapid key spam. This test verifies timer monotonicity during spam.
+#
+#   Concretely: inject recall mid-progress at _recall_timer=0.10 (pre-accumulated),
+#   then spam recall presses for several frames, and verify the timer still
+#   completes normally at ~0.25s total without being reset.
+# ===========================================================================
+
+func test_tb_cr_008_second_recall_press_during_active_recall_does_not_reset_timer() -> void:
+	# VULNERABILITY: Timer must not reset on re-press while recall is in progress.
+	# If it resets, the recall never completes under spam → has_chunk stays false
+	# and HP is never restored. Tests SPEC-62 AC-62.4 isolation.
+	# CHECKPOINT: We inject _recall_timer=0.10 to simulate mid-progress state,
+	# then press detach again for several frames. Timer should continue advancing
+	# and complete at the 0.25s threshold as if the second press never happened.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_008_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	if not _supports_hp_fields(player):
+		_pass("tb_cr_008_hp_fields_not_present_yet — timer-reset-on-re-press tests skipped")
+		root.free()
+		return
+
+	_configure_hp_for_recall(player, 100.0, 25.0, 100.0)
+
+	# Detach to spawn chunk and set has_chunk=false
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_008_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	# Pattern B: inject recall state pre-accumulated at 0.10s
+	# This represents a recall that is already in progress mid-flight.
+	player._recall_in_progress = true
+	player._recall_timer = 0.10
+
+	# Step 9 more frames at 0.016 = 0.144s additional. Running total: 0.10 + 0.144 = 0.244s < 0.25s.
+	# On frames 8 and 9, press "detach" again to simulate rapid re-press.
+	# The re-press MUST be a no-op (timer not reset; recall still completes at frame 10).
+	var i: int = 0
+	while i < 9:
+		if i == 6 or i == 7:
+			# Simulate re-press during active recall — these frames should NOT reset _recall_timer
+			Input.action_press("detach")
+			player._physics_process(0.016)
+			Input.action_release("detach")
+		else:
+			player._physics_process(0.016)
+		i += 1
+
+	# After 9 more frames at 0.016: timer = 0.10 + 9*0.016 = 0.244s.
+	# Recall has NOT yet completed (0.244 < 0.25).
+	_assert_false(player._current_state.has_chunk,
+		"tb_cr_008_recall_not_yet_complete_after_9_frames_from_0_10")
+	_assert_true(player._recall_in_progress,
+		"tb_cr_008_recall_still_in_progress_during_timer_accumulation")
+
+	# Now step 1 more frame to push timer to 0.244 + 0.016 = 0.260s >= 0.25s → recall completes.
+	player._physics_process(0.016)
+
+	# If the timer was reset by a re-press, recall would not complete here.
+	_assert_true(player._current_state.has_chunk,
+		"tb_cr_008_recall_completed_despite_represses_has_chunk_true")
+	_assert_false(player._recall_in_progress,
+		"tb_cr_008_recall_completed_in_progress_false")
+	_assert_approx(player._current_state.current_hp, 100.0,
+		"tb_cr_008_recall_completed_hp_restored_correctly")
+
+	_cleanup_input()
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-009 — Delta exactly at threshold (0.25s) completes recall in one frame
+#
+# VULNERABILITY:
+#   SPEC-63 AC-63.5 states that delta=0.25 completes recall in the initiation
+#   frame. The check uses >= (not >), so the exact boundary must trigger
+#   completion. A buggy implementation using strict > would fail to fire on the
+#   exact boundary frame. This test exercises the >= boundary for the timer.
+#   Also verifies AC-63.7 (>= semantics).
+# ===========================================================================
+
+func test_tb_cr_009_delta_exactly_at_threshold_completes_recall_in_one_frame() -> void:
+	# VULNERABILITY: Timer check uses >=, not >. A single frame with delta=0.25
+	# must complete recall in that same frame (timer goes from 0.0 to exactly 0.25
+	# which satisfies _recall_timer >= _RECALL_TRAVEL_TIME).
+	# SPEC-63 AC-63.5 and AC-63.7.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_009_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	if not _supports_hp_fields(player):
+		_pass("tb_cr_009_hp_fields_not_present_yet — exact-threshold tests skipped")
+		root.free()
+		return
+
+	_configure_hp_for_recall(player, 100.0, 25.0, 100.0)
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_009_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	_assert_approx(player._current_state.current_hp, 75.0, "tb_cr_009_hp_after_detach")
+
+	# Pattern B: inject recall state. Timer starts at 0.0.
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+
+	# Single frame with delta = 0.25 (exactly _RECALL_TRAVEL_TIME).
+	# Timer goes to 0.0 + 0.25 = 0.25 >= 0.25 → recall must complete THIS frame.
+	player._physics_process(0.25)
+
+	_assert_true(player._current_state.has_chunk,
+		"tb_cr_009_exact_threshold_delta_completes_recall_has_chunk_true")
+	_assert_false(player._recall_in_progress,
+		"tb_cr_009_exact_threshold_delta_recall_in_progress_false")
+	_assert_true(player._chunk_node == null or not is_instance_valid(player._chunk_node),
+		"tb_cr_009_exact_threshold_delta_chunk_node_null")
+	_assert_approx(player._current_state.current_hp, 100.0,
+		"tb_cr_009_exact_threshold_delta_hp_restored")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-010 — Delta just below threshold does NOT complete recall in one frame
+#
+# VULNERABILITY:
+#   Complement to TB-CR-009. A frame with delta = 0.24999 (below 0.25) must NOT
+#   complete recall. If the implementation used floor division or frame-count
+#   instead of accumulation, it might fire early. This test confirms the timer
+#   accumulation model requires strictly >= 0.25 cumulative time.
+# ===========================================================================
+
+func test_tb_cr_010_delta_just_below_threshold_does_not_complete_recall() -> void:
+	# VULNERABILITY: A single frame at delta = 0.249 should leave recall in
+	# progress. Recall must not fire unless _recall_timer >= 0.25.
+	# This tests that the boundary is >= (not <=), complementing TB-CR-009.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_010_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_010_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	# Pattern B: inject recall state. Timer starts at 0.0.
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+
+	# Single frame with delta just below threshold (0.249 < 0.25).
+	# Timer goes to 0.0 + 0.249 = 0.249 < 0.25 → recall must NOT complete.
+	player._physics_process(0.249)
+
+	_assert_false(player._current_state.has_chunk,
+		"tb_cr_010_just_below_threshold_has_chunk_still_false")
+	_assert_true(player._recall_in_progress,
+		"tb_cr_010_just_below_threshold_recall_still_in_progress")
+	_assert_true(player._chunk_node != null and is_instance_valid(player._chunk_node),
+		"tb_cr_010_just_below_threshold_chunk_still_alive")
+
+	# Now step one more tiny frame to push over the threshold.
+	player._physics_process(0.016)
+
+	_assert_true(player._current_state.has_chunk,
+		"tb_cr_010_after_second_frame_recall_completes_has_chunk_true")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-011 — Timer does not advance when _recall_in_progress is false
+#
+# VULNERABILITY:
+#   If the timer advancement block has a logic inversion (e.g., the guard
+#   `if _recall_in_progress:` is missing or inverted), `_recall_timer` would
+#   advance on every physics frame regardless of recall state. This would
+#   cause phantom recall completions when recall is later initiated. This test
+#   injects a non-zero _recall_timer while _recall_in_progress=false and steps
+#   frames, then verifies the timer did not advance further.
+# ===========================================================================
+
+func test_tb_cr_011_timer_does_not_advance_when_recall_not_in_progress() -> void:
+	# VULNERABILITY: Timer must only advance inside the _recall_in_progress block.
+	# If the guard is missing, stepping frames would advance _recall_timer and
+	# spuriously trigger recall completion on the next cycle.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_011_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	# Force state: no chunk, not recalling. Manually set _recall_timer to a non-zero
+	# value to detect whether it advances without _recall_in_progress=true.
+	player._current_state.has_chunk = false
+	player._chunk_node = null
+	player._recall_in_progress = false
+	player._recall_timer = 0.12  # pre-seed with a non-zero value
+
+	_assert_false(player._recall_in_progress, "tb_cr_011_precondition_recall_not_in_progress")
+
+	# Step 10 frames — timer must NOT advance (recall is not in progress).
+	var initial_timer: float = player._recall_timer
+	_step_player(player, 10, 0.016)
+
+	# The timer value should be unchanged from the pre-seeded value.
+	# If timer advanced, it would be ~0.12 + 10*0.016 = 0.280.
+	_assert_approx(player._recall_timer, initial_timer,
+		"tb_cr_011_timer_stays_unchanged_when_not_in_progress")
+	_assert_false(player._current_state.has_chunk,
+		"tb_cr_011_has_chunk_stays_false_when_timer_not_advancing")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-012 — HP at exactly min_hp before detach: recall over-restores
+#             (accepted edge case per SPEC-67 constraint 4)
+#
+# VULNERABILITY:
+#   SPEC-67 constraint 4 explicitly documents: if starting_hp < hp_cost_per_detach,
+#   the detach clamps HP to min_hp (0.0), and recall then adds the full cost back
+#   (resulting in hp = 0.0 + 25.0 = 25.0, NOT the original starting_hp of 5.0).
+#   This is an accepted edge case, but it has never been tested. A naive
+#   implementation might add `maxf(min_hp, ...)` or some other "HP neutral" clamp
+#   that would incorrectly cap the restoration. This test ensures the formula is
+#   exactly minf(max_hp, current_hp + cost) without a lower-bound fudge.
+# ===========================================================================
+
+func test_tb_cr_012_recall_at_min_hp_over_restores_by_design() -> void:
+	# VULNERABILITY (spec-gap): Starting HP (5.0) < cost (25.0).
+	# After detach: max(0.0, 5.0 - 25.0) = 0.0 (clamped to min_hp).
+	# After recall: minf(100.0, 0.0 + 25.0) = 25.0.
+	# This is NOT HP-neutral for the player (gained 20 HP effectively) — by design.
+	# The test verifies the exact formula is implemented without additional clamping.
+	# CHECKPOINT: This tests accepted edge case from SPEC-67 constraint 4.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_012_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	if not _supports_hp_fields(player):
+		_pass("tb_cr_012_hp_fields_not_present_yet — sub-min HP over-restore test skipped")
+		root.free()
+		return
+
+	# Configure: low starting HP so detach clamps to min_hp.
+	_configure_hp_for_recall(player, 100.0, 25.0, 5.0)
+	# min_hp defaults to 0.0 in movement_simulation.gd
+
+	_assert_approx(player._current_state.current_hp, 5.0, "tb_cr_012_starting_hp_is_5")
+
+	# Detach: HP = max(0.0, 5.0 - 25.0) = 0.0 (clamped by min_hp=0.0)
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_012_detach_spawned_chunk", "Detach did not spawn chunk at low HP")
+		root.free()
+		return
+
+	var hp_after_detach: float = player._current_state.current_hp
+	_assert_approx(hp_after_detach, 0.0, "tb_cr_012_hp_clamped_to_min_hp_after_detach")
+
+	# Pattern B: inject recall state
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# Recall: minf(100.0, 0.0 + 25.0) = 25.0 (over-restoration by design, per spec)
+	var hp_after_recall: float = player._current_state.current_hp
+	_assert_approx(hp_after_recall, 25.0,
+		"tb_cr_012_recall_at_min_hp_restores_full_cost_not_original_starting_hp")
+	_assert_true(hp_after_recall <= player._simulation.max_hp + EPSILON,
+		"tb_cr_012_recall_still_bounded_by_max_hp")
+	_assert_true(player._current_state.has_chunk,
+		"tb_cr_012_has_chunk_true_after_over_restore_recall")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-013 — _recall_in_progress is exactly false (not just absent side-effects)
+#             after successful reabsorption
+#
+# VULNERABILITY:
+#   The existing tests check has_chunk == true and _chunk_node == null after
+#   recall, but do not explicitly assert _recall_in_progress == false. A buggy
+#   implementation might set _recall_in_progress = true but never reset it on
+#   completion (causing the second detach+recall cycle to silently fail because
+#   the recall initiation guard `not _recall_in_progress` blocks it).
+#   This test directly asserts the boolean state of _recall_in_progress.
+# ===========================================================================
+
+func test_tb_cr_013_recall_in_progress_is_exactly_false_after_completion() -> void:
+	# VULNERABILITY: _recall_in_progress must be exactly false after recall
+	# completes. If it stays true, subsequent recall initiations are permanently
+	# blocked. Tests SPEC-64 AC-64.1 (recall_in_progress=false is first operation).
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_013_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_013_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	# Verify recall is not in progress before Pattern B injection.
+	_assert_false(player._recall_in_progress, "tb_cr_013_precondition_not_in_progress")
+
+	# Pattern B injection
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# The primary assertion: _recall_in_progress must be exactly false.
+	_assert_false(player._recall_in_progress,
+		"tb_cr_013_recall_in_progress_exactly_false_after_completion")
+
+	# Corroborate with the expected completed state.
+	_assert_true(player._current_state.has_chunk,
+		"tb_cr_013_has_chunk_true_after_completion")
+	_assert_true(player._chunk_node == null or not is_instance_valid(player._chunk_node),
+		"tb_cr_013_chunk_node_null_after_completion")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-014 — _chunk_node is exactly null (not just invalid) after recall
+#
+# VULNERABILITY:
+#   SPEC-64 operation 5 requires `_chunk_node = null` unconditionally after
+#   the reabsorption block. A buggy implementation might call queue_free() but
+#   omit the `_chunk_node = null` assignment, leaving a freed (but non-null)
+#   reference. Subsequent recall initiations would then check
+#   `_chunk_node != null and is_instance_valid(_chunk_node)` — with a non-null
+#   freed ref, `is_instance_valid()` would return false and the recall path
+#   would be silently blocked (classified as no-op, AC-62.5).
+#   This test asserts `player._chunk_node == null` (not just invalid).
+# ===========================================================================
+
+func test_tb_cr_014_chunk_node_is_exactly_null_after_recall_completion() -> void:
+	# VULNERABILITY: _chunk_node must be null (not just invalid/freed) after recall.
+	# If only queue_free() is called without nulling the reference, subsequent
+	# recall cycles fail silently (is_instance_valid guard blocks them).
+	# Tests SPEC-64 operation 5 precisely.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_014_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_014_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	_assert_true(player._chunk_node != null, "tb_cr_014_chunk_node_non_null_before_recall")
+
+	# Pattern B injection
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# Assert _chunk_node is exactly null (strict null check, not just invalid).
+	_assert_true(player._chunk_node == null,
+		"tb_cr_014_chunk_node_is_strictly_null_after_recall_not_just_freed")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-015 — has_chunk is exactly true (not just truthy) after recall
+#
+# VULNERABILITY:
+#   GDScript is dynamically typed in some contexts; a truthy non-bool value could
+#   pass a simple `if has_chunk:` check but fail a strict `== true` check.
+#   More importantly, this test documents the requirement that `has_chunk` must be
+#   exactly the boolean `true` (as set in SPEC-64 operation 3), not any integer
+#   or other truthy value. An implementation accidentally setting
+#   `_current_state.has_chunk = 1` instead of `true` would fail this.
+#
+#   Additionally, SPEC-64 AC-64.9 requires that after reabsorption, a subsequent
+#   detach press is correctly routed to the detach path. This test verifies that
+#   semantic chain: has_chunk=true → next detach press produces has_chunk=false.
+# ===========================================================================
+
+func test_tb_cr_015_has_chunk_is_exactly_true_bool_after_recall() -> void:
+	# VULNERABILITY: has_chunk must be the exact boolean true after recall.
+	# Tests SPEC-64 AC-64.2 and AC-64.9 chain: recall sets has_chunk=true,
+	# then a next detach correctly routes to detach (not recall) path.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_015_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_015_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	# Pattern B injection
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+	_step_player(player, 16, 0.016)
+
+	# has_chunk must be exactly the boolean true (strict identity check).
+	var has_chunk_val = player._current_state.has_chunk
+	_assert_true(has_chunk_val == true,
+		"tb_cr_015_has_chunk_is_exactly_boolean_true_after_recall")
+	_assert_true(typeof(has_chunk_val) == TYPE_BOOL,
+		"tb_cr_015_has_chunk_is_typeof_bool_after_recall")
+
+	# SPEC-64 AC-64.9: after recall, the next detach press must route to detach path.
+	# Clean up input state and detach once more; has_chunk should flip to false again.
+	_cleanup_input()
+	_detach_once(player, 0.016)
+	_assert_false(player._current_state.has_chunk,
+		"tb_cr_015_after_recall_next_detach_routes_correctly_has_chunk_false")
+
+	root.free()
+
+
+# ===========================================================================
+# TB-CR-016 — Cancellation takes priority on the exact completion frame
+#             (chunk destroyed on same frame as timer fires)
+#
+# VULNERABILITY:
+#   SPEC-65 AC-65.5 states: if the chunk is destroyed on the exact frame that
+#   _recall_timer >= _RECALL_TRAVEL_TIME, the cancellation check (evaluated
+#   first in the code) takes priority — recall is cancelled, not completed.
+#   HP is not restored and has_chunk remains false.
+#   This is the most subtle ordering invariant in the recall system: the guard
+#   `if _chunk_node == null or not is_instance_valid(_chunk_node)` runs BEFORE
+#   `elif _recall_timer >= _RECALL_TRAVEL_TIME`. If the order were reversed,
+#   a chunk destroyed mid-completion-frame would incorrectly set has_chunk=true.
+#
+#   TB-CR-003 covers mid-flight destruction (chunk nulled mid-recall then 60
+#   frames run), but does not specifically target the exact-completion-frame case.
+# ===========================================================================
+
+func test_tb_cr_016_cancellation_takes_priority_on_exact_completion_frame() -> void:
+	# VULNERABILITY: Chunk destroyed on the exact frame the timer fires.
+	# Cancellation guard runs before completion check per SPEC-65 AC-65.5.
+	# If ordering is wrong, HP would be incorrectly restored.
+	# CHECKPOINT: This is the exact-frame cancellation race — a spec ambiguity
+	# that the implementation resolves by ordered `if/elif` in _physics_process.
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var player: PlayerController = _get_player(root)
+	if player == null:
+		_fail("tb_cr_016_player_exists", "Player node is not a PlayerController")
+		root.free()
+		return
+
+	player._ready()
+	_cleanup_input()
+
+	if not _supports_hp_fields(player):
+		_pass("tb_cr_016_hp_fields_not_present_yet — exact-frame cancellation test skipped")
+		root.free()
+		return
+
+	_configure_hp_for_recall(player, 100.0, 25.0, 100.0)
+
+	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("tb_cr_016_detach_spawned_chunk", "Detach did not spawn chunk")
+		root.free()
+		return
+
+	var hp_after_detach: float = player._current_state.current_hp
+	_assert_approx(hp_after_detach, 75.0, "tb_cr_016_hp_after_detach")
+
+	# Pattern B: inject recall state with timer pre-loaded to just below threshold.
+	# 15 frames at 0.016 = 0.240s. One more frame at 0.016 would push to 0.256s >= 0.25.
+	# We pre-load the timer to 0.240 so the NEXT frame is the completion frame.
+	player._recall_in_progress = true
+	player._recall_timer = 0.240
+
+	# Destroy the chunk before the completion frame fires.
+	# Nulling _chunk_node directly simulates external destruction on this "frame".
+	# The next _physics_process call is the frame where timer would fire (0.240 + 0.016 = 0.256 >= 0.25).
+	player._chunk_node = null
+
+	# Now step the completion frame.
+	# The cancellation guard (_chunk_node == null) must fire BEFORE the timer check.
+	player._physics_process(0.016)
+
+	# Expect cancellation outcome — NOT completion:
+	_assert_false(player._recall_in_progress,
+		"tb_cr_016_recall_cancelled_not_completed_on_exact_frame")
+	_assert_false(player._current_state.has_chunk,
+		"tb_cr_016_has_chunk_still_false_after_cancellation_on_completion_frame")
+	# HP must NOT be restored (cancellation took priority, per SPEC-65 AC-65.5)
+	_assert_approx(player._current_state.current_hp, hp_after_detach,
+		"tb_cr_016_hp_not_restored_when_cancellation_beats_completion_frame")
+
+	root.free()
+
+
+# ===========================================================================
 # Public entry point
 # ===========================================================================
 
@@ -651,6 +1330,36 @@ func run_all() -> int:
 
 	# TB-CR-006: determinism across controller-level detach/recall sequence
 	test_tb_cr_006_determinism_for_standard_detach_recall_sequence()
+
+	# TB-CR-007: two consecutive detach+recall cycles — state fully resets between cycles
+	test_tb_cr_007_two_consecutive_detach_recall_cycles_are_each_hp_neutral()
+
+	# TB-CR-008: second recall press during active recall does not reset timer
+	test_tb_cr_008_second_recall_press_during_active_recall_does_not_reset_timer()
+
+	# TB-CR-009: delta exactly at threshold (0.25s) completes recall in one frame
+	test_tb_cr_009_delta_exactly_at_threshold_completes_recall_in_one_frame()
+
+	# TB-CR-010: delta just below threshold does not complete recall in one frame
+	test_tb_cr_010_delta_just_below_threshold_does_not_complete_recall()
+
+	# TB-CR-011: timer does not advance when _recall_in_progress is false
+	test_tb_cr_011_timer_does_not_advance_when_recall_not_in_progress()
+
+	# TB-CR-012: recall at min_hp over-restores (accepted edge case, SPEC-67 C4)
+	test_tb_cr_012_recall_at_min_hp_over_restores_by_design()
+
+	# TB-CR-013: _recall_in_progress is exactly false after completion
+	test_tb_cr_013_recall_in_progress_is_exactly_false_after_completion()
+
+	# TB-CR-014: _chunk_node is exactly null (not just invalid) after recall
+	test_tb_cr_014_chunk_node_is_exactly_null_after_recall_completion()
+
+	# TB-CR-015: has_chunk is exactly true (bool) after recall; next detach routes correctly
+	test_tb_cr_015_has_chunk_is_exactly_true_bool_after_recall()
+
+	# TB-CR-016: cancellation takes priority on the exact completion frame
+	test_tb_cr_016_cancellation_takes_priority_on_exact_completion_frame()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
