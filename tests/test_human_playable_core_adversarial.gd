@@ -201,6 +201,19 @@ func _core_input_actions() -> Array:
 	return ["move_left", "move_right", "jump", "detach"]
 
 
+func _has_expected_key_binding(action_name: String, expected_physical_keycode: int) -> bool:
+	if not InputMap.has_action(action_name):
+		return false
+	var events: Array = InputMap.action_get_events(action_name)
+	for event in events:
+		var key_event := event as InputEventKey
+		if key_event == null:
+			continue
+		if key_event.physical_keycode == expected_physical_keycode:
+			return true
+	return false
+
+
 # ---------------------------------------------------------------------------
 # Visuals: invisibility, tiny sprites, and layering issues
 # ---------------------------------------------------------------------------
@@ -433,6 +446,36 @@ func test_ui_hints_not_parented_under_dynamic_world_nodes() -> void:
 	root.free()
 
 
+func test_ui_hints_not_fully_transparent_and_not_tiny() -> void:
+	var root: Node = _load_main_scene()
+	if root == null:
+		return
+
+	var all_labels: Array = _collect_hint_labels(root)
+	if all_labels.is_empty():
+		_fail("adv_ui_hints_present_for_alpha_scale_checks",
+			"No move/jump/detach labels found for alpha/scale checks")
+		root.free()
+		return
+
+	for raw_label in all_labels:
+		var label := raw_label as Label
+		if label == null:
+			continue
+
+		var canvas_item := label as CanvasItem
+		var alpha_ok: bool = canvas_item.modulate.a > 0.0
+		_assert_true(alpha_ok,
+			"adv_ui_hint_alpha_non_zero — hint label '%s' has modulate alpha > 0 (not fully transparent)" % label.text) # CHECKPOINT
+
+		var scale: Vector2 = label.scale
+		var not_tiny: bool = abs(scale.x) >= 0.5 and abs(scale.y) >= 0.5
+		_assert_true(not_tiny,
+			"adv_ui_hint_scale_not_tiny — hint label '%s' scale is not effectively zero on either axis" % label.text) # CHECKPOINT
+
+	root.free()
+
+
 func test_core_input_actions_exist_and_have_bindings() -> void:
 	var actions: Array = _core_input_actions()
 	for action_name in actions:
@@ -447,6 +490,68 @@ func test_core_input_actions_exist_and_have_bindings() -> void:
 		var events: Array = InputMap.action_get_events(name_str)
 		_assert_true(events.size() > 0,
 			"adv_input_action_has_bindings — InputMap action '%s' has at least one event bound" % name_str)
+
+
+func test_core_input_actions_have_expected_default_bindings() -> void:
+	# These bindings are part of the Milestone 1 control scheme:
+	# A/D for horizontal movement, Space for jump, E for detach. # CHECKPOINT
+	var move_left_has_a: bool = _has_expected_key_binding("move_left", 65)
+	_assert_true(move_left_has_a,
+		"adv_input_move_left_has_A_binding — InputMap 'move_left' has at least one key with physical_keycode=65 (A key)") # CHECKPOINT
+
+	var move_right_has_d: bool = _has_expected_key_binding("move_right", 68)
+	_assert_true(move_right_has_d,
+		"adv_input_move_right_has_D_binding — InputMap 'move_right' has at least one key with physical_keycode=68 (D key)") # CHECKPOINT
+
+	var jump_has_space: bool = _has_expected_key_binding("jump", 32)
+	_assert_true(jump_has_space,
+		"adv_input_jump_has_Space_binding — InputMap 'jump' has at least one key with physical_keycode=32 (Space key)") # CHECKPOINT
+
+	var detach_has_e: bool = _has_expected_key_binding("detach", 69)
+	_assert_true(detach_has_e,
+		"adv_input_detach_has_E_binding — InputMap 'detach' has at least one key with physical_keycode=69 (E key)") # CHECKPOINT
+
+
+func test_main_scene_structure_deterministic_across_multiple_loads() -> void:
+	var positions: Array = []
+
+	for i in range(5):
+		var root: Node = _load_main_scene()
+		if root == null:
+			return
+
+		var player: CharacterBody2D = _find_player(root)
+		var floor: StaticBody2D = _find_floor(root)
+		var camera: Camera2D = _find_camera(root)
+
+		if player == null or floor == null or camera == null:
+			_fail("adv_main_scene_structure_load_%d" % i,
+				"Player, Floor, or Camera missing on load %d" % i)
+			root.free()
+			return
+
+		positions.append({
+			"player": player.global_position,
+			"floor": floor.global_position,
+			"camera": camera.global_position,
+		})
+
+		root.free()
+
+	if positions.is_empty():
+		_fail("adv_main_scene_structure_no_samples",
+			"No successful main scene loads to compare for determinism")
+		return
+
+	var first: Dictionary = positions[0] as Dictionary
+	for idx in range(1, positions.size()):
+		var current: Dictionary = positions[idx] as Dictionary
+		_assert_vec2_approx(current["player"], first["player"],
+			"adv_main_scene_player_position_deterministic_load_%d" % idx)
+		_assert_vec2_approx(current["floor"], first["floor"],
+			"adv_main_scene_floor_position_deterministic_load_%d" % idx)
+		_assert_vec2_approx(current["camera"], first["camera"],
+			"adv_main_scene_camera_position_deterministic_load_%d" % idx)
 
 
 # ---------------------------------------------------------------------------
@@ -516,12 +621,17 @@ func run_all() -> int:
 	test_ui_hints_labels_visible_and_with_min_line_height()
 	test_ui_hints_positions_outside_central_area_and_not_extreme()
 	test_ui_hints_not_parented_under_dynamic_world_nodes()
+	test_ui_hints_not_fully_transparent_and_not_tiny()
 
 	# Input / control mapping robustness
 	test_core_input_actions_exist_and_have_bindings()
+	test_core_input_actions_have_expected_default_bindings()
 
 	# Human-playability metadata
 	test_manual_checklist_ids_unique_and_steps_non_empty()
+
+	# Scene determinism / stress
+	test_main_scene_structure_deterministic_across_multiple_loads()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
