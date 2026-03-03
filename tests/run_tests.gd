@@ -322,6 +322,23 @@ func _initialize() -> void:
 	total_failures += infection_ui_failures
 
 	# ------------------------------------------------------------------
+	# Suite: EnemyStateMachine
+	# Ticket coverage: enemy_state_machine.md
+	# Scope: pure enemy lifecycle state machine behavior (Idle/Active/Weakened/
+	# Infected/Dead), weaken → infect → dead transitions, determinism, and
+	# per-instance isolation, independent of scene/visual integration.
+	# ------------------------------------------------------------------
+	var enemy_state_machine_suite_script: GDScript = load("res://tests/test_enemy_state_machine.gd")
+	if enemy_state_machine_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_enemy_state_machine.gd")
+		quit(1)
+		return
+
+	var enemy_state_machine_suite: EnemyStateMachineTests = enemy_state_machine_suite_script.new()
+	var enemy_state_machine_failures: int = enemy_state_machine_suite.run_all()
+	total_failures += enemy_state_machine_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")

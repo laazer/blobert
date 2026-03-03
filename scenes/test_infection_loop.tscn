@@ -25,6 +25,7 @@ polygon = PackedVector2Array(-1000, -10, 1000, -10, 1000, 10, -1000, 10)
 color = Color(0.2, 0.2, 0.2, 1)
 
 [node name="Player" type="CharacterBody2D" parent="."]
+groups = ["player"]
 position = Vector2(576, 200)
 script = ExtResource("1_playerctrl")
 
@@ -51,4 +52,16 @@ script = ExtResource("3_infection_ui")
 visible = false
 position = Vector2(0, -220)
 text = "Press E to Absorb"
+
+[node name="HPLabel" type="Label" parent="InfectionUI"]
+position = Vector2(-440, -260)
+text = "HP: 100"
+
+[node name="ChunkStatusLabel" type="Label" parent="InfectionUI"]
+position = Vector2(-440, -230)
+text = "Chunk: Attached"
+
+[node name="ClingStatusLabel" type="Label" parent="InfectionUI"]
+position = Vector2(-440, -200)
+text = "Wall Cling: OFF"
 

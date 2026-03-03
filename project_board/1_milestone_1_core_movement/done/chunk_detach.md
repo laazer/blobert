@@ -17,6 +17,37 @@ Implement the mechanic where the slime can detach a chunk (e.g. on input). The c
 - [ ] No crash or undefined state when detaching; behavior is deterministic
 - [ ] Mechanic is human-playable in-editor: all relevant characters and detached chunks are visible, readable, and usable without debug overlays or test harnesses
 
+### Human-viewable visual
+
+```text
+Side view (2D):
+
+Frame N (before detach)
+
+   [ SLIME BODY ]
+        ◯
+
+   has_chunk = true
+   no chunk node in world
+
+Frame N+1 (player presses DETACH)
+
+   [ SLIME BODY ]     [ DETACHED CHUNK ]
+        ◯                    ●
+
+   - has_chunk flips true → false in MovementState
+   - chunk RigidBody2D spawned at slime.global_position
+
+Frame N+K (after moving)
+
+   [ SLIME BODY ]           [ DETACHED CHUNK ]
+            ◯                        ●
+
+   - slime keeps moving with input
+   - chunk stays where it was spawned (or moves only via its own physics)
+   - both are clearly visible in camera frame
+```
+
 ---
 
 ## Dependencies

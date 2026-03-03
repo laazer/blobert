@@ -276,3 +276,19 @@ func _physics_process(delta: float) -> void:
 			if _chunk_node != null and is_instance_valid(_chunk_node):
 				_chunk_node.queue_free()
 			_chunk_node = null
+
+
+# ---------------------------------------------------------------------------
+# Public accessors for UI and debug visuals
+# ---------------------------------------------------------------------------
+
+func get_current_hp() -> float:
+	return _current_state.current_hp
+
+
+func has_chunk() -> bool:
+	return _current_state.has_chunk
+
+
+func is_wall_clinging_state() -> bool:
+	return _current_state.is_wall_clinging

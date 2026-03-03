@@ -21,6 +21,40 @@ Implement recall of a detached chunk: on input, the chunk returns to the main sl
 - [ ] No input delay or lock introduced by recall
 - [ ] Recall mechanic is human-playable in-editor: main body, chunk, and any recall visuals are visible and clearly readable without debug overlays
 
+### Human-viewable visual
+
+```text
+Timeline of detach → recall → reabsorb
+
+1. Detach (handled by M1-005)
+
+   [ SLIME BODY ]           [ DETACHED CHUNK ]
+        ◯                            ●
+
+   has_chunk = false
+   chunk RigidBody2D exists in world
+   HP previously reduced by detach (M1-006)
+
+2. Player presses RECALL (same "detach" input while chunk present)
+
+   [ SLIME BODY ]  -----------●
+        ◯         (invisible / minimal "pull" phase)
+
+   _recall_in_progress = true
+   _recall_timer starts at 0.0 and counts up to ~0.25s
+   chunk stays visible during travel window
+
+3. Reabsorption frame (timer >= travel time)
+
+   [ SLIME BODY ]
+        ◯
+
+   - _current_state.has_chunk set to true
+   - current_hp restored by hp_cost_per_detach (clamped to max_hp)
+   - chunk node queue_free()'d and removed from scene
+   - player can still move/jump; no input lock
+```
+
 ---
 
 ## Dependencies

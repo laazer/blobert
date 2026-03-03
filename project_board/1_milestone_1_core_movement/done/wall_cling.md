@@ -17,6 +17,62 @@ Allow the slime to cling to walls when touching them (e.g. during fall or after 
 - [ ] Works with existing movement and jump
 - [ ] Wall cling is human-playable in-editor: walls, slime, and cling/jump behavior are visually clear and discoverable without debug overlays
 
+### Human-viewable visual
+
+```text
+Side view: wall on the right, slime approaching from left
+
+1. Falling next to wall (no cling yet)
+
+          ◯   ↓
+        SLIME
+
+   | WALL |
+   |      |
+   |      |
+
+   - is_on_wall = true
+   - is_on_floor = false
+   - input_axis pressing toward wall (→)
+   - cling_timer < max_cling_time
+
+2. Cling phase (reduced gravity, slow slide)
+
+          ◯  ← input toward wall
+        SLIME
+
+   | WALL |
+   |  ◯   |   (slime "stuck" to wall)
+   |      |
+
+   - result.is_wall_clinging = true
+   - velocity.y uses gravity * cling_gravity_scale
+   - cling_timer counting up but capped by max_cling_time
+
+3a. Drop off (player releases / presses away)
+
+        ◯   ↓
+      SLIME
+
+   | WALL |
+   |      |
+
+   - pressing_toward_wall = false
+   - result.is_wall_clinging = false
+   - cling_timer reset to 0.0
+
+3b. Wall jump (player presses jump while clinging)
+
+        ◯ ↙  ᐃ (jump away from wall)
+      SLIME
+
+   | WALL |
+
+   - wall jump impulse: away from wall + upward
+   - result.is_wall_clinging = false
+   - player clearly moves off wall; no getting "stuck"
+```
+
 ---
 
 ## Dependencies

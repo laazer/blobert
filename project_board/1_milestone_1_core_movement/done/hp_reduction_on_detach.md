@@ -17,6 +17,54 @@ When the slime detaches a chunk, reduce the player's current HP by a defined amo
 - [ ] No exploit (e.g. repeated detach/recall for unintended HP gain)
 - [ ] Mechanic is human-playable in-editor: HP values and any related UI are visible and clearly reflect detach events without relying on debug overlays
 
+### Human-viewable visual
+
+```text
+Single detach + recall cycle (numbers shown in UI)
+
+Initial state
+
+   HP: 100 / 100
+   has_chunk = true
+
+   [██████████]  100
+
+Detach (costs 25 HP)
+
+   HP: 75 / 100
+   has_chunk = false
+
+   [███████___]   75
+                ^ HP dropped by hp_cost_per_detach
+
+Detach at low HP with floor (min_hp = 0)
+
+   Before:
+     HP: 10 / 100
+     has_chunk = true
+
+   After detach:
+     HP: max(0, 10 - 25) = 0
+     has_chunk = false
+
+   [__________]   0
+                ^ never goes below min_hp
+
+Recall (M1-007) restores cost but not above max_hp
+
+   Before recall:
+     HP: 75 / 100
+     has_chunk = false
+
+   After recall:
+     HP: min(100, 75 + 25) = 100
+     has_chunk = true
+
+   [██████████]  100
+
+Multiple detach+recall cycles from max HP simply move HP
+down on detach and back up on recall — no net HP gain.
+```
 ---
 
 ## Dependencies
