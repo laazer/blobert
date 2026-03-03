@@ -238,6 +238,11 @@ func test_r2_successful_recall_reabsorbs_chunk_and_restores_has_chunk_true() -> 
 	#   - _chunk_node becomes null (chunk removed from scene tree).
 	# We give the implementation multiple frames to complete any animated
 	# tendril-style travel before asserting the final state.
+	#
+	# SPEC-70 Pattern B: Input.is_action_just_pressed() is unreliable when
+	# _physics_process() is called directly without the engine event loop.
+	# For timer-driven reabsorption tests, directly inject _recall_in_progress=true
+	# and _recall_timer=0.0 to bypass input routing and focus on the timer/completion path.
 	var root: Node = _load_main_scene()
 	if root == null:
 		return
@@ -258,9 +263,19 @@ func test_r2_successful_recall_reabsorbs_chunk_and_restores_has_chunk_true() -> 
 		root.free()
 		return
 
-	# Trigger recall and then simulate a short window for any interpolation/animation.
-	_recall_once(player, 0.016)
-	_step_player(player, 60, 0.016)  # ~1 second at 60 FPS
+	# Pattern B: inject recall state directly, bypassing input routing.
+	# This tests the timer-driven reabsorption path (SPEC-63, SPEC-64).
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+
+	# Step exactly 16 frames (16 * 0.016 = 0.256s > 0.25s threshold).
+	# IMPORTANT: In headless mode, Input.is_action_just_pressed("detach") stays
+	# true permanently after Input.action_press() because the engine's input flush
+	# never runs between direct _physics_process() calls. After recall completes on
+	# frame 16 (has_chunk=true), any additional frame would trigger a new DETACH
+	# (since detach_just_pressed=true and has_chunk=true again). We assert immediately
+	# after frame 16 to capture the correct post-recall state before re-detach occurs.
+	_step_player(player, 16, 0.016)
 
 	_assert_true(player._current_state.has_chunk, "r2_after_recall_has_chunk_true")
 	_assert_true(player._chunk_node == null or not is_instance_valid(player._chunk_node),
@@ -341,6 +356,10 @@ func test_r5_recall_restores_exact_cost_up_to_max_hp() -> void:
 	# R5: One detach + one recall is HP-neutral under the assumed formula:
 	#   - After detach: current_hp = prior_hp - hp_cost_per_detach.
 	#   - After recall: current_hp = min(max_hp, (prior_hp - cost) + cost) == min(max_hp, prior_hp).
+	#
+	# SPEC-70 Pattern B: inject recall state directly to ensure timer path is exercised.
+	# SPEC-63 AC-63.4: minimum frames at 0.016s delta is 16 to exceed 0.25s threshold.
+	# Using 20 frames (0.32s) to ensure recall completion with comfortable margin.
 	var root: Node = _load_main_scene()
 	if root == null:
 		return
@@ -366,13 +385,25 @@ func test_r5_recall_restores_exact_cost_up_to_max_hp() -> void:
 
 	# Detach once: HP should decrease by cost (validated here to keep recall test self-contained).
 	_detach_once(player, 0.016)
+	if player._chunk_node == null:
+		_fail("r5_detach_spawned_chunk", "Detach did not spawn a chunk; cannot test recall HP restoration")
+		root.free()
+		return
+
 	var hp_after_detach: float = player._current_state.current_hp
 	_assert_approx(hp_after_detach, 75.0, "r5_after_detach_hp_reduced_by_cost")
 
-	# Trigger recall and step forward a bit to allow any controller-side HP
-	# bookkeeping and chunk reabsorption to complete.
-	_recall_once(player, 0.016)
-	_step_player(player, 10, 0.016)
+	# Pattern B: inject recall state directly, bypassing input routing.
+	# This ensures the timer-driven HP restoration path is exercised regardless
+	# of headless Input.is_action_just_pressed reliability.
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+
+	# Step exactly 16 frames (16 * 0.016 = 0.256s > 0.25s threshold).
+	# Assert immediately after frame 16 — additional frames would trigger a new
+	# DETACH because is_action_just_pressed("detach") stays true in headless mode
+	# and would reduce HP again when has_chunk flips back to true.
+	_step_player(player, 16, 0.016)
 
 	var hp_after_recall: float = player._current_state.current_hp
 	_assert_approx(hp_after_recall, 100.0, "r5_after_recall_hp_restored_to_pre_detach_value")
@@ -386,6 +417,9 @@ func test_r6_recall_cannot_exceed_max_hp_after_detach_cycle() -> void:
 	# R6: Recall must not produce a net HP gain or exceed max_hp even when the
 	# player starts below max_hp. Starting from a below-max value, a single
 	# detach+recall cycle should return to the same value (HP-neutral).
+	#
+	# SPEC-70 Pattern B: inject recall state directly to ensure timer path is exercised.
+	# Starting HP (90) - cost (25) = 65. Recall restores: min(100, 65+25) = 90. HP-neutral.
 	var root: Node = _load_main_scene()
 	if root == null:
 		return
@@ -411,8 +445,19 @@ func test_r6_recall_cannot_exceed_max_hp_after_detach_cycle() -> void:
 	player._current_state.current_hp = starting_hp
 
 	_detach_once(player, 0.016)
-	_recall_once(player, 0.016)
-	_step_player(player, 10, 0.016)
+	if player._chunk_node == null:
+		_fail("r6_detach_spawned_chunk", "Detach did not spawn a chunk; cannot test recall HP restoration")
+		root.free()
+		return
+
+	# Pattern B: inject recall state directly.
+	player._recall_in_progress = true
+	player._recall_timer = 0.0
+
+	# Step exactly 16 frames (16 * 0.016 = 0.256s > 0.25s threshold).
+	# Assert immediately after frame 16 to capture the post-recall HP
+	# before the persistent headless detach input triggers another cycle.
+	_step_player(player, 16, 0.016)
 
 	var hp_after_cycle: float = player._current_state.current_hp
 	_assert_approx(hp_after_cycle, starting_hp,

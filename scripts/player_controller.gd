@@ -210,10 +210,8 @@ func _physics_process(delta: float) -> void:
 	_current_state.cling_timer = next_state.cling_timer
 
 	# Copy HP forward from the simulation so controller-level logic can
-	# operate on current_hp deterministically across frames. This assignment
-	# is a no-op before HP fields exist (guarded by tests).
-	if "current_hp" in _current_state and "current_hp" in next_state:
-		_current_state.current_hp = next_state.current_hp
+	# operate on current_hp deterministically across frames.
+	_current_state.current_hp = next_state.current_hp
 
 	# Copy has_chunk back to _current_state so the detach state persists across
 	# frames (SPEC-52 item 4). Without this copy-back, has_chunk would reset to
@@ -268,19 +266,10 @@ func _physics_process(delta: float) -> void:
 			# and apply HP restoration if HP fields are present.
 			_recall_in_progress = false
 
-			# HP restoration uses the assumed recall formula:
-			#   current_hp = min(max_hp, prior_hp + hp_cost_per_detach)
-			# where prior_hp is the HP at the instant recall completes. This
-			# yields an HP-neutral detach+recall cycle capped at max_hp.
-			if (
-				"current_hp" in _current_state
-				and "max_hp" in _simulation
-				and "hp_cost_per_detach" in _simulation
-			):
-				var prior_hp: float = _current_state.current_hp
-				var restored_hp: float = prior_hp + _simulation.hp_cost_per_detach
-				var max_hp_value: float = _simulation.max_hp
-				_current_state.current_hp = min(max_hp_value, restored_hp)
+			# HP restoration formula: current_hp = min(max_hp, prior_hp + hp_cost_per_detach).
+			# Yields an HP-neutral detach+recall cycle capped at max_hp.
+			var prior_hp: float = _current_state.current_hp
+			_current_state.current_hp = minf(_simulation.max_hp, prior_hp + _simulation.hp_cost_per_detach)
 
 			_current_state.has_chunk = true
 
