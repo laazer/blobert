@@ -339,6 +339,36 @@ func _initialize() -> void:
 	total_failures += enemy_state_machine_failures
 
 	# ------------------------------------------------------------------
+	# Suite: DetachRecallFx
+	# Ticket coverage: detach_recall_fx.md
+	# Scope: controller FX signal contract + headless-verifiable presentation response.
+	# ------------------------------------------------------------------
+	var detach_recall_fx_suite_script: GDScript = load("res://tests/test_detach_recall_fx.gd")
+	if detach_recall_fx_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_detach_recall_fx.gd")
+		quit(1)
+		return
+
+	var detach_recall_fx_suite = detach_recall_fx_suite_script.new()
+	var detach_recall_fx_failures: int = detach_recall_fx_suite.run_all()
+	total_failures += detach_recall_fx_failures
+
+	# ------------------------------------------------------------------
+	# Suite: DetachRecallFx Adversarial
+	# Ticket coverage: detach_recall_fx.md
+	# Scope: rapid detach/recall, recall cancel, no-chunk recall, signal ordering, non-blocking.
+	# ------------------------------------------------------------------
+	var detach_recall_fx_adv_suite_script: GDScript = load("res://tests/test_detach_recall_fx_adversarial.gd")
+	if detach_recall_fx_adv_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_detach_recall_fx_adversarial.gd")
+		quit(1)
+		return
+
+	var detach_recall_fx_adv_suite: DetachRecallFxAdversarialTests = detach_recall_fx_adv_suite_script.new()
+	var detach_recall_fx_adv_failures: int = detach_recall_fx_adv_suite.run_all()
+	total_failures += detach_recall_fx_adv_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")
