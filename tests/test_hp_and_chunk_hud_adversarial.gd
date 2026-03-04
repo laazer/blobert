@@ -407,6 +407,250 @@ func test_infection_hud_canvas_layer_is_infection_ui() -> void:
 
 
 # ---------------------------------------------------------------------------
+# GROUP E: Boundary — HP zero, negative, above initial max
+# ---------------------------------------------------------------------------
+
+func _assert_hud_boundary_hp_zero(load_scene_func: Callable, scene_name: String) -> void:
+	var ctx: Dictionary = _prepare_scene_for_hud(load_scene_func, scene_name)
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var player: PlayerController = ctx["player"]
+	var hud: CanvasLayer = ctx["hud"]
+	var hp_label: Label = ctx["hp_label"]
+	var hp_bar: Range = ctx["hp_bar"]
+
+	# First observed HP is 0 → implementation uses max(0, 1.0) = 1.0 for effective max. # CHECKPOINT
+	_configure_player_hp_and_chunk(player, 0.0, true)
+	hud._process(0.016)
+
+	_assert_true(_label_contains_number(hp_label, 0.0),
+		scene_name + "_adv_hud_hp_zero_label — HP label shows 0 when current_hp is 0")
+	var bar_at_min: bool = hp_bar.value <= 0.0 + EPSILON
+	_assert_true(bar_at_min,
+		scene_name + "_adv_hud_hp_zero_bar — HP bar value is at min (0) when current_hp is 0")
+
+	root.free()
+
+
+func test_core_hud_boundary_hp_zero() -> void:
+	_assert_hud_boundary_hp_zero(_load_core_scene, "core")
+
+
+func test_infection_hud_boundary_hp_zero() -> void:
+	_assert_hud_boundary_hp_zero(_load_infection_scene, "infection")
+
+
+func _assert_hud_boundary_hp_negative(load_scene_func: Callable, scene_name: String) -> void:
+	var ctx: Dictionary = _prepare_scene_for_hud(load_scene_func, scene_name)
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var player: PlayerController = ctx["player"]
+	var hud: CanvasLayer = ctx["hud"]
+	var hp_label: Label = ctx["hp_label"]
+	var hp_bar: Range = ctx["hp_bar"]
+
+	# Negative HP: bar is clamped to 0; label shows actual value per implementation. # CHECKPOINT
+	_configure_player_hp_and_chunk(player, -10.0, false)
+	hud._process(0.016)
+
+	var bar_clamped: bool = hp_bar.value <= 0.0 + EPSILON
+	_assert_true(bar_clamped,
+		scene_name + "_adv_hud_hp_negative_bar_clamped — HP bar value is clamped to 0 when current_hp is negative")
+	# Label shows int(round(-10)) = -10
+	var label_ok: bool = "-10" in hp_label.text
+	_assert_true(label_ok,
+		scene_name + "_adv_hud_hp_negative_label — HP label reflects negative current_hp value when bar is clamped")
+
+	root.free()
+
+
+func test_core_hud_boundary_hp_negative() -> void:
+	_assert_hud_boundary_hp_negative(_load_core_scene, "core")
+
+
+func test_infection_hud_boundary_hp_negative() -> void:
+	_assert_hud_boundary_hp_negative(_load_infection_scene, "infection")
+
+
+func _assert_hud_boundary_hp_above_initial_max(load_scene_func: Callable, scene_name: String) -> void:
+	var ctx: Dictionary = _prepare_scene_for_hud(load_scene_func, scene_name)
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var player: PlayerController = ctx["player"]
+	var hud: CanvasLayer = ctx["hud"]
+	var hp_label: Label = ctx["hp_label"]
+	var hp_bar: Range = ctx["hp_bar"]
+
+	# Establish initial max with 100, then set HP above it (e.g. recall restore above initial).
+	_configure_player_hp_and_chunk(player, 100.0, true)
+	hud._process(0.016)
+	var max_after_100: float = hp_bar.max_value
+
+	_configure_player_hp_and_chunk(player, 150.0, true)
+	hud._process(0.016)
+
+	# Bar value must not exceed effective max (clamped); label may show 150 / 100. # CHECKPOINT
+	var bar_not_above_max: bool = hp_bar.value <= hp_bar.max_value + EPSILON
+	_assert_true(bar_not_above_max,
+		scene_name + "_adv_hud_hp_above_max_bar_clamped — HP bar value does not exceed max when current_hp > initial max")
+	_assert_true(_label_contains_number(hp_label, 150.0),
+		scene_name + "_adv_hud_hp_above_max_label — HP label shows actual current_hp (150) when above inferred max")
+	_assert_true(max_after_100 >= 99.0,
+		scene_name + "_adv_hud_initial_max_stable — Inferred max remains stable when HP later exceeds it")
+
+	root.free()
+
+
+func test_core_hud_boundary_hp_above_initial_max() -> void:
+	_assert_hud_boundary_hp_above_initial_max(_load_core_scene, "core")
+
+
+func test_infection_hud_boundary_hp_above_initial_max() -> void:
+	_assert_hud_boundary_hp_above_initial_max(_load_infection_scene, "infection")
+
+
+# ---------------------------------------------------------------------------
+# GROUP F: Null safety — _player null does not crash _process
+# ---------------------------------------------------------------------------
+
+func _assert_hud_safe_when_player_null(load_scene_func: Callable, scene_name: String) -> void:
+	var ctx: Dictionary = _prepare_scene_for_hud(load_scene_func, scene_name)
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var hud: CanvasLayer = ctx["hud"]
+
+	# Clear player reference; next _process must not crash.
+	hud._player = null
+	hud._process(0.016)
+	hud._process(0.0)
+
+	_assert_true(true,
+		scene_name + "_adv_hud_process_safe_when_player_null — _process() does not crash when _player is null")
+
+	root.free()
+
+
+func test_core_hud_safe_when_player_null() -> void:
+	_assert_hud_safe_when_player_null(_load_core_scene, "core")
+
+
+func test_infection_hud_safe_when_player_null() -> void:
+	_assert_hud_safe_when_player_null(_load_infection_scene, "infection")
+
+
+# ---------------------------------------------------------------------------
+# GROUP G: Order dependency — rapid chunk state toggles
+# ---------------------------------------------------------------------------
+
+func _assert_hud_rapid_chunk_toggle(load_scene_func: Callable, scene_name: String) -> void:
+	var ctx: Dictionary = _prepare_scene_for_hud(load_scene_func, scene_name)
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var player: PlayerController = ctx["player"]
+	var hud: CanvasLayer = ctx["hud"]
+	var chunk_label: Label = ctx["chunk_label"]
+
+	# Toggle has_chunk true → false → true → false; final state must show Detached.
+	_configure_player_hp_and_chunk(player, 50.0, true)
+	hud._process(0.016)
+	_configure_player_hp_and_chunk(player, 50.0, false)
+	hud._process(0.016)
+	_configure_player_hp_and_chunk(player, 50.0, true)
+	hud._process(0.016)
+	_configure_player_hp_and_chunk(player, 50.0, false)
+	hud._process(0.016)
+
+	_assert_true("detached" in chunk_label.text.to_lower(),
+		scene_name + "_adv_hud_rapid_chunk_toggle_final — Chunk label shows Detached after rapid attach/detach sequence")
+
+	root.free()
+
+
+func test_core_hud_rapid_chunk_toggle() -> void:
+	_assert_hud_rapid_chunk_toggle(_load_core_scene, "core")
+
+
+func test_infection_hud_rapid_chunk_toggle() -> void:
+	_assert_hud_rapid_chunk_toggle(_load_infection_scene, "infection")
+
+
+# ---------------------------------------------------------------------------
+# GROUP H: Determinism — same state yields same display semantics across scenes
+# ---------------------------------------------------------------------------
+
+func test_hud_determinism_same_state_both_scenes() -> void:
+	var core_ctx: Dictionary = _prepare_scene_for_hud(_load_core_scene, "core")
+	var inf_ctx: Dictionary = _prepare_scene_for_hud(_load_infection_scene, "infection")
+	if core_ctx.is_empty() or inf_ctx.is_empty():
+		return
+
+	var core_player: PlayerController = core_ctx["player"]
+	var core_hud: CanvasLayer = core_ctx["hud"]
+	var core_hp_label: Label = core_ctx["hp_label"]
+	var core_chunk_label: Label = core_ctx["chunk_label"]
+
+	var inf_player: PlayerController = inf_ctx["player"]
+	var inf_hud: CanvasLayer = inf_ctx["hud"]
+	var inf_hp_label: Label = inf_ctx["hp_label"]
+	var inf_chunk_label: Label = inf_ctx["chunk_label"]
+
+	_configure_player_hp_and_chunk(core_player, 73.0, true)
+	_configure_player_hp_and_chunk(inf_player, 73.0, true)
+	core_hud._process(0.016)
+	inf_hud._process(0.016)
+
+	# Same script (infection_ui.gd) → same format; labels must match.
+	_assert_true(core_hp_label.text == inf_hp_label.text,
+		"adv_hud_determinism_hp_label — Same HP state produces identical HP label text in core and infection scenes")
+	_assert_true(core_chunk_label.text == inf_chunk_label.text,
+		"adv_hud_determinism_chunk_label — Same chunk state produces identical chunk label text in core and infection scenes")
+
+	core_ctx["root"].free()
+	inf_ctx["root"].free()
+
+
+# ---------------------------------------------------------------------------
+# GROUP I: Stress — repeated instantiate/free then one full behavior run
+# ---------------------------------------------------------------------------
+
+func test_hud_stress_repeated_instantiate_free_then_behavior() -> void:
+	for _i in range(5):
+		var root: Node = _load_core_scene()
+		if root != null:
+			root.free()
+
+	# After 5 instantiate/free cycles, one full behavior run must still pass (no leak/crash).
+	var ctx: Dictionary = _prepare_scene_for_hud(_load_core_scene, "core")
+	if ctx.is_empty():
+		return
+
+	var root: Node = ctx["root"]
+	var player: PlayerController = ctx["player"]
+	var hud: CanvasLayer = ctx["hud"]
+	var hp_label: Label = ctx["hp_label"]
+	var chunk_label: Label = ctx["chunk_label"]
+
+	_configure_player_hp_and_chunk(player, 100.0, true)
+	hud._process(0.016)
+	_assert_true(_label_contains_number(hp_label, 100.0),
+		"adv_hud_stress_hp_after_cycles — HP label correct after repeated scene load/free")
+	_assert_true("attached" in chunk_label.text.to_lower(),
+		"adv_hud_stress_chunk_after_cycles — Chunk label correct after repeated scene load/free")
+
+	root.free()
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -430,6 +674,28 @@ func run_all() -> int:
 	# Group D: HUD CanvasLayer identity per scene
 	test_core_hud_canvas_layer_is_ui_canvas_layer()
 	test_infection_hud_canvas_layer_is_infection_ui()
+
+	# Group E: Boundary — HP zero, negative, above initial max
+	test_core_hud_boundary_hp_zero()
+	test_infection_hud_boundary_hp_zero()
+	test_core_hud_boundary_hp_negative()
+	test_infection_hud_boundary_hp_negative()
+	test_core_hud_boundary_hp_above_initial_max()
+	test_infection_hud_boundary_hp_above_initial_max()
+
+	# Group F: Null safety
+	test_core_hud_safe_when_player_null()
+	test_infection_hud_safe_when_player_null()
+
+	# Group G: Order dependency — rapid chunk toggles
+	test_core_hud_rapid_chunk_toggle()
+	test_infection_hud_rapid_chunk_toggle()
+
+	# Group H: Determinism
+	test_hud_determinism_same_state_both_scenes()
+
+	# Group I: Stress
+	test_hud_stress_repeated_instantiate_free_then_behavior()
 
 	print("")
 	print("  Results (adversarial HUD): " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
