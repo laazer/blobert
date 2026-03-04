@@ -65,3 +65,7 @@ text = "Chunk: Attached"
 position = Vector2(-440, -200)
 text = "Wall Cling: OFF"
 
+[node name="HPBar" type="TextureProgressBar" parent="InfectionUI"]
+position = Vector2(-440, -280)
+size = Vector2(200, 16)
+
