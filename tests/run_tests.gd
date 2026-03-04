@@ -322,6 +322,24 @@ func _initialize() -> void:
 	total_failures += infection_ui_failures
 
 	# ------------------------------------------------------------------
+	# Suite: HpAndChunkHud
+	# Ticket coverage: hp_and_chunk_hud.md
+	# Scope: HP bar + numeric HP and chunk attached/detached HUD elements
+	# in both core movement and infection-loop scenes, including layout
+	# constraints vs. central play area and basic behavioral binding to
+	# PlayerController.current_hp and has_chunk.
+	# ------------------------------------------------------------------
+	var hp_and_chunk_hud_suite_script: GDScript = load("res://tests/test_hp_and_chunk_hud.gd")
+	if hp_and_chunk_hud_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_hp_and_chunk_hud.gd")
+		quit(1)
+		return
+
+	var hp_and_chunk_hud_suite = hp_and_chunk_hud_suite_script.new()
+	var hp_and_chunk_hud_failures: int = hp_and_chunk_hud_suite.run_all()
+	total_failures += hp_and_chunk_hud_failures
+
+	# ------------------------------------------------------------------
 	# Suite: EnemyStateMachine
 	# Ticket coverage: enemy_state_machine.md
 	# Scope: pure enemy lifecycle state machine behavior (Idle/Active/Weakened/
@@ -354,7 +372,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 
-	var enemy_state_machine_adversarial_suite: EnemyStateMachineAdversarialTests = enemy_state_machine_adversarial_suite_script.new()
+	var enemy_state_machine_adversarial_suite = enemy_state_machine_adversarial_suite_script.new()
 	var enemy_state_machine_adversarial_failures: int = enemy_state_machine_adversarial_suite.run_all()
 	total_failures += enemy_state_machine_adversarial_failures
 
