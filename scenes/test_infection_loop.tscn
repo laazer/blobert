@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://blobert_test_infection_loop"]
+[gd_scene load_steps=9 format=3 uid="uid://blobert_test_infection_loop"]
 
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
 [ext_resource type="Script" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
 [ext_resource type="Script" path="res://scripts/infection_ui.gd" id="3_infection_ui"]
 [ext_resource type="Script" path="res://scripts/infection_interaction_handler.gd" id="4_infection_handler"]
+[ext_resource type="PackedScene" uid="uid://c2yenemy_infection" path="res://scenes/enemy_infection.tscn" id="5_enemy"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(2000, 20)
@@ -16,6 +17,9 @@ height = 32.0
 
 [node name="InfectionInteractionHandler" type="Node" parent="."]
 script = ExtResource("4_infection_handler")
+
+[node name="Enemy" parent="." instance=ExtResource("5_enemy")]
+position = Vector2(400, 250)
 
 [node name="Floor" type="StaticBody2D" parent="."]
 position = Vector2(0, 300)

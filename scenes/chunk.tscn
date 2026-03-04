@@ -3,7 +3,7 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_chunk"]
 radius = 12.0
 
-[node name="Chunk" type="RigidBody2D" unique_id=1763488805]
+[node name="Chunk" type="RigidBody2D" groups=["chunk"] unique_id=1763488805]
 freeze = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2120547394]
