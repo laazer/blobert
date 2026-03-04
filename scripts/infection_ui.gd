@@ -3,10 +3,16 @@ extends CanvasLayer
 var _absorb_available: bool = false
 var _player: PlayerController
 var _initial_max_hp: float = 0.0
+var _handler: Node
+var _prev_mutation_count: int = 0
+var _absorb_feedback_until_ms: int = 0
 
 
 func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player") as PlayerController
+	var root: Node = get_parent()
+	if root != null:
+		_handler = root.get_node_or_null("InfectionInteractionHandler")
 
 
 func set_absorb_available(available: bool) -> void:
@@ -33,10 +39,24 @@ func _get_cling_label() -> Label:
 	return get_node_or_null("ClingStatusLabel") as Label
 
 
+func _get_mutation_label() -> Label:
+	return get_node_or_null("MutationLabel") as Label
+
+
+func _get_absorb_feedback_label() -> Label:
+	return get_node_or_null("AbsorbFeedbackLabel") as Label
+
+
+func _get_mutation_icon() -> Control:
+	return get_node_or_null("MutationIcon") as Control
+
+
 func _process(_delta: float) -> void:
 	var absorb_label: Label = _get_absorb_prompt_label()
 	if absorb_label != null:
 		absorb_label.visible = _absorb_available
+
+	_update_mutation_display()
 
 	if _player == null:
 		return
@@ -65,4 +85,37 @@ func _process(_delta: float) -> void:
 	var cling_label: Label = _get_cling_label()
 	if cling_label != null:
 		cling_label.text = "Wall Cling: " + ("ON" if _player.is_wall_clinging_state() else "OFF")
+
+
+func _update_mutation_display() -> void:
+	var mutation_label: Label = _get_mutation_label()
+	var absorb_feedback: Label = _get_absorb_feedback_label()
+	var mutation_icon: Control = _get_mutation_icon()
+	var inv: Object = null
+	if _handler != null and _handler.has_method("get_mutation_inventory"):
+		inv = _handler.get_mutation_inventory()
+	var count: int = 0
+	if inv != null and inv.has_method("get_granted_count"):
+		count = inv.get_granted_count()
+
+	if count > _prev_mutation_count:
+		_absorb_feedback_until_ms = Time.get_ticks_msec() + 800
+	_prev_mutation_count = count
+
+	var now_ms: int = Time.get_ticks_msec()
+	var showing_absorb_feedback: bool = now_ms < _absorb_feedback_until_ms
+
+	if mutation_label != null:
+		mutation_label.visible = count > 0
+		mutation_label.text = "Mutation: " + str(count) + " active"
+		if showing_absorb_feedback:
+			mutation_label.modulate = Color(0.6, 1.0, 0.7, 1.0)
+		else:
+			mutation_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
+	if absorb_feedback != null:
+		absorb_feedback.visible = showing_absorb_feedback
+
+	if mutation_icon != null:
+		mutation_icon.visible = count > 0
 

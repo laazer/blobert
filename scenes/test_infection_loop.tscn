@@ -77,3 +77,24 @@ text = "Wall Cling: OFF"
 position = Vector2(-440, -280)
 size = Vector2(200, 16)
 
+[node name="AbsorbFeedbackLabel" type="Label" parent="InfectionUI"]
+visible = false
+position = Vector2(-80, -220)
+size = Vector2(160, 24)
+theme_override_colors/font_color = Color(0.6, 1, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "Absorbed!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MutationIcon" type="ColorRect" parent="InfectionUI"]
+visible = false
+position = Vector2(-470, -172)
+size = Vector2(24, 20)
+color = Color(0.4, 0.85, 0.55, 1)
+
+[node name="MutationLabel" type="Label" parent="InfectionUI"]
+visible = false
+position = Vector2(-440, -170)
+text = "Mutation: 0 active"
+
