@@ -400,6 +400,24 @@ func _initialize() -> void:
 	total_failures += enemy_state_machine_adversarial_failures
 
 	# ------------------------------------------------------------------
+	# Suite: InfectionInteraction
+	# Ticket coverage: infection_interaction.md
+	# Scope: pure logic for absorb resolution, mutation granting, full
+	# weaken → infect → absorb → mutation loop; scene structure for
+	# test_infection_loop.tscn (Player, InfectionUI). Requires
+	# scripts/mutation_inventory.gd and scripts/infection_absorb_resolver.gd.
+	# ------------------------------------------------------------------
+	var infection_interaction_suite_script: GDScript = load("res://tests/test_infection_interaction.gd")
+	if infection_interaction_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_infection_interaction.gd")
+		quit(1)
+		return
+
+	var infection_interaction_suite = infection_interaction_suite_script.new()
+	var infection_interaction_failures: int = infection_interaction_suite.run_all()
+	total_failures += infection_interaction_failures
+
+	# ------------------------------------------------------------------
 	# Suite: DetachRecallFx
 	# Ticket coverage: detach_recall_fx.md
 	# Scope: controller FX signal contract + headless-verifiable presentation response.
