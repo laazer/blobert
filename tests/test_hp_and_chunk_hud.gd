@@ -334,6 +334,66 @@ func test_infection_hud_layout_respects_central_play_area() -> void:
 	root.free()
 
 
+func _assert_hud_readability_for_scene(root: Node, scene_name: String) -> void:
+	if root == null:
+		return
+
+	var hud: CanvasLayer = _find_hud_layer_with_hp(root)
+	if hud == null:
+		_fail(scene_name + "_hud_readability_hud_missing",
+			"HUD CanvasLayer with HPLabel not found; cannot assert readability")
+		return
+
+	var hp_label: Label = _get_hp_label(hud)
+	var chunk_label: Label = _get_chunk_label(hud)
+	var hp_bar: Range = _get_hp_bar(hud)
+
+	var any_missing: bool = (hp_label == null or chunk_label == null or hp_bar == null)
+	_assert_false(any_missing,
+		scene_name + "_hud_readability_elements_present — HPLabel, ChunkStatusLabel, and HP bar exist for readability checks")
+	if any_missing:
+		return
+
+	var labels: Array[Label] = [hp_label, chunk_label]
+	for label in labels:
+		var canvas_item := label as CanvasItem
+		var alpha_ok: bool = canvas_item.modulate.a > 0.0
+		var scale: Vector2 = label.scale
+		var not_tiny: bool = abs(scale.x) >= 0.5 and abs(scale.y) >= 0.5
+
+		_assert_true(alpha_ok,
+			scene_name + "_hud_label_alpha_non_zero — HUD text label has modulate alpha > 0 (not fully transparent)")
+		_assert_true(not_tiny,
+			scene_name + "_hud_label_scale_not_tiny — HUD text label scale is not effectively zero on either axis")
+
+	var bar_control: Control = hp_bar as Control
+	var bar_canvas_item := bar_control as CanvasItem
+	var bar_alpha_ok: bool = bar_canvas_item.modulate.a > 0.0
+	var bar_scale: Vector2 = bar_control.scale
+	var bar_not_tiny: bool = abs(bar_scale.x) >= 0.5 and abs(bar_scale.y) >= 0.5
+
+	_assert_true(bar_alpha_ok,
+		scene_name + "_hud_bar_alpha_non_zero — HP bar has modulate alpha > 0 (not fully transparent)")
+	_assert_true(bar_not_tiny,
+		scene_name + "_hud_bar_scale_not_tiny — HP bar scale is not effectively zero on either axis")
+
+
+func test_core_hud_readability_for_hp_and_chunk_elements() -> void:
+	var root: Node = _load_core_scene()
+	if root == null:
+		return
+	_assert_hud_readability_for_scene(root, "core")
+	root.free()
+
+
+func test_infection_hud_readability_for_hp_and_chunk_elements() -> void:
+	var root: Node = _load_infection_scene()
+	if root == null:
+		return
+	_assert_hud_readability_for_scene(root, "infection")
+	root.free()
+
+
 # ---------------------------------------------------------------------------
 # Behavior: HP and chunk HUD track PlayerController state
 # ---------------------------------------------------------------------------
@@ -427,6 +487,8 @@ func run_all() -> int:
 	# Layout
 	test_core_hud_layout_respects_central_play_area()
 	test_infection_hud_layout_respects_central_play_area()
+	test_core_hud_readability_for_hp_and_chunk_elements()
+	test_infection_hud_readability_for_hp_and_chunk_elements()
 
 	# Behavior
 	test_core_hud_tracks_hp_and_chunk_state()
