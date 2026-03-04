@@ -195,7 +195,17 @@ func _physics_process(delta: float) -> void:
 	# the physics engine resolve collisions via move_and_slide(). After the
 	# slide, self.velocity reflects the engine-corrected (post-collision) value.
 	velocity = next_state.velocity
-	move_and_slide()
+
+	# In headless scene-tree tests, the CharacterBody2D may not be attached to a
+	# valid World2D/physics space. Guard move_and_slide() to avoid null-space
+	# errors while still allowing simulation and signal behavior to run.
+	var world_2d: World2D = null
+	if is_inside_tree():
+		world_2d = get_world_2d()
+	if world_2d != null and world_2d.space.is_valid():
+		move_and_slide()
+	else:
+		global_position += velocity * delta
 
 	# Capture the engine-corrected post-slide velocity for next frame's prior state.
 	# This is the key handoff between the engine and the simulation: the engine's

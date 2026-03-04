@@ -32,6 +32,11 @@ godot --headless --export-release "Linux/X11" ./build/blobert
 - `resources/` — Custom Godot resources (`.tres`, `.res`) such as stat configs, themes, and materials.
 - `.godot/` — Auto-generated import cache; never committed (in `.gitignore`).
 
+## File Editing & Moves
+
+- Prefer `git mv` or `mv` for any file renames or moves so history is preserved.
+- Avoid delete+recreate patterns for moves unless a tool only supports add/delete semantics.
+
 ## Key Godot 4 Patterns
 
 - Scenes are composed of **Nodes** in a tree hierarchy. Scripts attach to nodes via `extends NodeType`.
