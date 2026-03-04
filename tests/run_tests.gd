@@ -20,6 +20,9 @@
 
 extends SceneTree
 
+# Preload so EnemyStateMachine is registered before test_enemy_state_machine.gd is loaded.
+const _ENEMY_STATE_MACHINE: GDScript = preload("res://scripts/enemy_state_machine.gd")
+
 
 func _initialize() -> void:
 	print("=== blobert headless test runner ===")
