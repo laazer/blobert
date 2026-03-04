@@ -79,6 +79,10 @@ func _load_main_scene() -> Node:
 	if inst == null:
 		_fail("fx_scene_instantiate_main", "instantiate() returned null for test_movement.tscn")
 		return null
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		tree.root.add_child(inst)
+		tree.current_scene = inst
 	return inst
 
 
@@ -110,9 +114,9 @@ func _find_fx_presenter(root: Node) -> Node:
 func _get_fx_state(presenter: Node) -> Dictionary:
 	if presenter == null:
 		return {}
-	var state := presenter.call("get_detach_recall_fx_test_state")
-	if state is Dictionary:
-		return state
+	var raw: Variant = presenter.call("get_detach_recall_fx_test_state")
+	if raw is Dictionary:
+		return raw as Dictionary
 	return {}
 
 

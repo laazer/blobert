@@ -62,6 +62,16 @@ const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk.tscn")
 
 
 # ---------------------------------------------------------------------------
+# Detach/recall visual feedback signals (detach_recall_fx_spec.md)
+# Emitted at exact frames per signal contract; presentation subscribes for VFX.
+# ---------------------------------------------------------------------------
+
+signal detach_fired(player_position: Vector2, chunk_position: Vector2)
+signal recall_started(player_position: Vector2, chunk_position: Vector2)
+signal chunk_reabsorbed(player_position: Vector2, chunk_position: Vector2)
+
+
+# ---------------------------------------------------------------------------
 # Jump configuration parameters (SPEC-23 / AC-23.*)
 #
 # Exposed via @export so values are editable in the Godot inspector.
@@ -232,6 +242,8 @@ func _physics_process(delta: float) -> void:
 	if recall_pressed and not _recall_in_progress:
 		_recall_in_progress = true
 		_recall_timer = 0.0
+		if _chunk_node != null and is_instance_valid(_chunk_node):
+			recall_started.emit(global_position, _chunk_node.global_position)
 
 	_current_state.has_chunk = next_state.has_chunk
 
@@ -249,6 +261,8 @@ func _physics_process(delta: float) -> void:
 		else:
 			parent.add_child(chunk)
 			_chunk_node = chunk
+			print("DETACH: spawned chunk at ", chunk.global_position)
+			detach_fired.emit(global_position, chunk.global_position)
 
 	# Advance any in-progress recall. This runs after the detach spawn logic so
 	# that a newly detached chunk on a previous frame is always present before
@@ -274,6 +288,9 @@ func _physics_process(delta: float) -> void:
 			_current_state.has_chunk = true
 
 			if _chunk_node != null and is_instance_valid(_chunk_node):
+				var player_pos: Vector2 = global_position
+				var chunk_pos: Vector2 = _chunk_node.global_position
+				chunk_reabsorbed.emit(player_pos, chunk_pos)
 				_chunk_node.queue_free()
 			_chunk_node = null
 

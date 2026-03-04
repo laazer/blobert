@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://blobert_test_movement"]
+[gd_scene load_steps=7 format=3 uid="uid://blobert_test_movement"]
 
 [ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
 [ext_resource type="Script" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
+[ext_resource type="Script" path="res://scripts/detach_recall_fx_presenter.gd" id="3_fx_presenter"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(2000, 20)
@@ -11,6 +12,8 @@ radius = 16.0
 height = 32.0
 
 [node name="TestMovement" type="Node2D"]
+
+[node name="DetachRecallFxPresenter" type="Node" parent="." script=ExtResource("3_fx_presenter")]
 
 [node name="Floor" type="StaticBody2D" parent="."]
 position = Vector2(0, 300)
@@ -58,4 +61,4 @@ text = "Jump: Space / Jump"
 
 [node name="DetachHint" type="Label" parent="UI/Hints"]
 position = Vector2(400, -200)
-text = "Detach: Shift / Detach"
+text = "Detach: E / Detach"

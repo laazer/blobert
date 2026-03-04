@@ -364,7 +364,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 
-	var detach_recall_fx_adv_suite: DetachRecallFxAdversarialTests = detach_recall_fx_adv_suite_script.new()
+	var detach_recall_fx_adv_suite = detach_recall_fx_adv_suite_script.new()
 	var detach_recall_fx_adv_failures: int = detach_recall_fx_adv_suite.run_all()
 	total_failures += detach_recall_fx_adv_failures
 
