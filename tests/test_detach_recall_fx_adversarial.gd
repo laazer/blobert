@@ -90,6 +90,12 @@ func test_adv_rapid_detach_press_only_emits_detach_fired_once_per_logical_detach
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: adv_rapid_detach_press_only_emits_detach_fired_once_per_logical_detach — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 	_cleanup_input()
 
 	if not player.has_signal("detach_fired"):
@@ -98,7 +104,7 @@ func test_adv_rapid_detach_press_only_emits_detach_fired_once_per_logical_detach
 		return
 
 	var count: int = 0
-	player.connect("detach_fired", func(_pp: Vector2, _cp: Vector2) -> void: count += 1)
+	player.detach_fired.connect(func(_pp: Vector2, _cp: Vector2) -> void: count += 1)
 
 	# Two physics frames with detach held; only first frame has logical detach (has_chunk true→false).
 	Input.action_press("detach")
@@ -137,7 +143,7 @@ func test_adv_recall_cancel_chunk_destroyed_before_reabsorb_does_not_emit_chunk_
 		return
 
 	var reabsorb_count: int = 0
-	player.connect("chunk_reabsorbed", func(_pp: Vector2, _cp: Vector2) -> void: reabsorb_count += 1)
+	player.chunk_reabsorbed.connect(func(_pp: Vector2, _cp: Vector2) -> void: reabsorb_count += 1)
 
 	# Start recall then destroy chunk before travel time completes.
 	Input.action_press("detach")
@@ -180,7 +186,7 @@ func test_adv_recall_pressed_with_no_chunk_does_not_emit_recall_started() -> voi
 		player._chunk_node = null
 
 	var recall_start_count: int = 0
-	player.connect("recall_started", func(_pp: Vector2, _cp: Vector2) -> void: recall_start_count += 1)
+	player.recall_started.connect(func(_pp: Vector2, _cp: Vector2) -> void: recall_start_count += 1)
 
 	Input.action_press("detach")
 	player._physics_process(0.016)
@@ -205,9 +211,9 @@ func test_adv_signal_ordering_preserved_over_full_cycle() -> void:
 	_cleanup_input()
 
 	var order: Array[String] = []
-	player.connect("detach_fired", func(_p: Vector2, _c: Vector2) -> void: order.append("detach_fired"))
-	player.connect("recall_started", func(_p: Vector2, _c: Vector2) -> void: order.append("recall_started"))
-	player.connect("chunk_reabsorbed", func(_p: Vector2, _c: Vector2) -> void: order.append("chunk_reabsorbed"))
+	player.detach_fired.connect(func(_p: Vector2, _c: Vector2) -> void: order.append("detach_fired"))
+	player.recall_started.connect(func(_p: Vector2, _c: Vector2) -> void: order.append("recall_started"))
+	player.chunk_reabsorbed.connect(func(_p: Vector2, _c: Vector2) -> void: order.append("chunk_reabsorbed"))
 
 	_pulse_detach(player, 0.016)
 	Input.action_press("detach")
@@ -234,6 +240,12 @@ func test_adv_non_blocking_input_processed_after_detach_and_recall_start() -> vo
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: adv_non_blocking_input_processed_after_detach_and_recall_start — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 	_cleanup_input()
 
 	Input.action_press("move_right")

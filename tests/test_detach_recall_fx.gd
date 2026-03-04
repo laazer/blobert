@@ -183,6 +183,12 @@ func test_drf4_detach_fired_emitted_once_on_successful_detach_and_positions_equa
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf4_detach_fired_emitted_once_on_successful_detach_and_positions_equal — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 	_cleanup_input()
 
 	if not player.has_signal("detach_fired"):
@@ -194,7 +200,7 @@ func test_drf4_detach_fired_emitted_once_on_successful_detach_and_positions_equa
 	var got_player_pos: Vector2 = Vector2.INF
 	var got_chunk_pos: Vector2 = Vector2.INF
 
-	player.connect("detach_fired", func(pp: Vector2, cp: Vector2) -> void:
+	player.detach_fired.connect(func(pp: Vector2, cp: Vector2) -> void:
 		count += 1
 		got_player_pos = pp
 		got_chunk_pos = cp
@@ -227,6 +233,12 @@ func test_drf4_recall_started_emitted_once_when_recall_begins_with_current_posit
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf4_recall_started_emitted_once_when_recall_begins_with_current_positions — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 	_cleanup_input()
 
 	if not player.has_signal("recall_started"):
@@ -248,7 +260,7 @@ func test_drf4_recall_started_emitted_once_when_recall_begins_with_current_posit
 	var got_chunk_pos: Vector2 = Vector2.INF
 	var chunk_pos_at_callback: Vector2 = Vector2.INF
 
-	player.connect("recall_started", func(pp: Vector2, cp: Vector2) -> void:
+	player.recall_started.connect(func(pp: Vector2, cp: Vector2) -> void:
 		count += 1
 		got_player_pos = pp
 		got_chunk_pos = cp
@@ -283,6 +295,12 @@ func test_drf4_chunk_reabsorbed_emitted_once_before_chunk_is_queued_for_free() -
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf4_chunk_reabsorbed_emitted_once_before_chunk_is_queued_for_free — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 	_cleanup_input()
 
 	if not player.has_signal("chunk_reabsorbed"):
@@ -305,7 +323,7 @@ func test_drf4_chunk_reabsorbed_emitted_once_before_chunk_is_queued_for_free() -
 	var callback_chunk_node_valid: bool = false
 	var callback_chunk_node_not_queued: bool = false
 
-	player.connect("chunk_reabsorbed", func(_pp: Vector2, _cp: Vector2) -> void:
+	player.chunk_reabsorbed.connect(func(_pp: Vector2, _cp: Vector2) -> void:
 		count += 1
 		if player._chunk_node != null and is_instance_valid(player._chunk_node):
 			callback_chunk_node_valid = true
@@ -346,9 +364,9 @@ func test_drf4_signal_ordering_detach_then_recall_started_then_chunk_reabsorbed(
 			return
 
 	var order: Array[String] = []
-	player.connect("detach_fired", func(_pp: Vector2, _cp: Vector2) -> void: order.append("detach_fired"))
-	player.connect("recall_started", func(_pp: Vector2, _cp: Vector2) -> void: order.append("recall_started"))
-	player.connect("chunk_reabsorbed", func(_pp: Vector2, _cp: Vector2) -> void: order.append("chunk_reabsorbed"))
+	player.detach_fired.connect(func(_pp: Vector2, _cp: Vector2) -> void: order.append("detach_fired"))
+	player.recall_started.connect(func(_pp: Vector2, _cp: Vector2) -> void: order.append("recall_started"))
+	player.chunk_reabsorbed.connect(func(_pp: Vector2, _cp: Vector2) -> void: order.append("chunk_reabsorbed"))
 
 	# Detach.
 	_pulse_detach(player, 0.016)
@@ -388,6 +406,12 @@ func test_drf1_presentation_records_detach_cue_trigger() -> void:
 
 	player._ready()
 
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf1_presentation_records_detach_cue_trigger — no valid physics space for CharacterBody2D")
+		root.free()
+		return
+
 	var presenter: Node = _find_fx_presenter(root)
 	_assert_true(presenter != null, "drf1_presenter_exists_with_test_hook")
 	if presenter == null:
@@ -426,6 +450,12 @@ func test_drf2_presentation_records_recall_started_cue_trigger() -> void:
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf2_presentation_records_recall_started_cue_trigger — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 
 	var presenter: Node = _find_fx_presenter(root)
 	_assert_true(presenter != null, "drf2_presenter_exists_with_test_hook")
@@ -475,6 +505,12 @@ func test_drf3_presentation_records_reabsorb_cue_trigger() -> void:
 		return
 
 	player._ready()
+
+	var world_2d: World2D = player.get_world_2d()
+	if world_2d == null or not world_2d.space.is_valid():
+		print("  SKIP: drf3_presentation_records_reabsorb_cue_trigger — no valid physics space for CharacterBody2D")
+		root.free()
+		return
 
 	var presenter: Node = _find_fx_presenter(root)
 	_assert_true(presenter != null, "drf3_presenter_exists_with_test_hook")

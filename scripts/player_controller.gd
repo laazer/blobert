@@ -144,6 +144,10 @@ func _ready() -> void:
 	# and is_on_floor defaults to false — correct starting state for the first frame.
 	_current_state = MovementSimulation.MovementState.new()
 
+	# Ensure the controller starts in the canonical "chunk attached" state so that
+	# the first logical detach frame produces a true→false transition for has_chunk.
+	_current_state.has_chunk = true
+
 
 # ---------------------------------------------------------------------------
 # _physics_process() — Per-frame movement pipeline (SPEC-8)
