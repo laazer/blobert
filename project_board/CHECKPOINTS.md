@@ -242,3 +242,78 @@ Tickets queued: infection_interaction.md
 ### [infection_interaction] — OUTCOME: COMPLETE
 All automated infection interaction suites (primary + adversarial) are passing and a human has verified in-editor that infection/absorb visuals and UX satisfy the final acceptance criterion; ticket is marked COMPLETE and moved to the milestone’s done column.
 
+## Run: 2026-03-05T14:00:00Z
+Tickets queued: mutation_slot_system_single.md
+
+---
+
+### [mutation_slot_system_single] Orchestrator — Missing workflow state blocks
+
+**Would have asked:** The ticket `mutation_slot_system_single` currently lacks WORKFLOW STATE and NEXT ACTION sections; should the orchestrator normalize the ticket structure before handing off to Planner, or allow Planner to create the initial workflow blocks?
+
+**Assumption made:** Treat the ticket as newly activated. Move it from the milestone backlog into `01_active/` without modifying its content, rely on the folder rule (`01_active/` → active, non-COMPLETE Stage) and delegate normalization of WORKFLOW STATE and NEXT ACTION to the Planner agent as part of Stage PLANNING.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Planner — Relationship to MutationInventory
+
+**Would have asked:** Should the single mutation slot be modeled as a separate system from `MutationInventory`, or is the slot effectively "the currently equipped mutation" backed by `MutationInventory` as the source of granted mutations?
+
+**Assumption made:** The mutation slot system is a thin layer over the existing `MutationInventory`: absorbs continue to grant mutations into the inventory, and the slot tracks which single mutation (by ID) is currently active/equipped. The slot never owns data independently of the inventory; it only references or selects from it, and implementation tasks will keep inventory and slot state consistent.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Planner — Slot consumption vs persistence
+
+**Would have asked:** When the player "uses" the mutation in the slot, should that usage consume and clear the slot, or does the slot remain filled with a passive or repeatable effect until explicitly replaced?
+
+**Assumption made:** For this milestone, the conservative contract is that the slot represents a persistent, always-on mutation once filled. Using the mutation expresses its effect (e.g. passive stat change or repeatable ability) but does not automatically clear the slot; the slot is only changed when a new mutation is equipped or explicitly cleared by design. Spec and tests will treat one filled slot with persistent effect as the minimum required behavior.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Planner — Multiple granted mutations
+
+**Would have asked:** If the player absorbs multiple enemies and gains multiple mutations, how should the single slot choose which mutation is active (first granted, last granted, configurable selection, or other rule)?
+
+**Assumption made:** For this ticket, the selection rule is deterministic and simple: the active slot always tracks the most recently granted compatible mutation (last-wins). Additional inventory capacity or multi-mutation management is out of scope; tests and spec will only require that the latest valid mutation from an absorb becomes the active slot content, with previous slot contents replaced but inventory history remaining consistent.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Planner — Scope of persistence and save/load
+
+**Would have asked:** Should the mutation slot contents and its active effect persist across scene reloads/checkpoints or be scoped only to the current play session/scene?
+
+**Assumption made:** In line with other Milestone 2 infection-loop tickets, the mutation slot is scoped to the current play session/scene. Persistence across saves, level transitions, or meta-progression is explicitly out of scope for this ticket and can be handled by future progression/persistence features.
+
+**Confidence:** High
+
+---
+
+### [mutation_slot_system_single] Spec — Slot vs effect gating
+
+**Would have asked:** For this milestone, should the active mutation slot state be the *only* authority for enabling/disabling the mutation’s gameplay effect, or can the existing implementation that ties the effect directly to `MutationInventory` remain unchanged as long as slot state accurately mirrors inventory?
+
+**Assumption made:** To keep scope minimal and avoid destabilizing the existing infection loop, the mutation effect remains bound to the presence of at least one granted mutation in `MutationInventory` as implemented for `infection_interaction`. The new single-slot layer must accurately reflect that state (empty before any grants, filled after the first successful absorb, last-wins on later grants) but is not required to introduce an additional layer of effect gating beyond inventory for this milestone.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Test Designer — MutationSlot empty sentinel and API surface
+
+**Would have asked:** When the slot is empty, should `MutationSlot.get_active_mutation_id()` return an empty string, `null`, or a dedicated sentinel constant, and what minimum write API should the slot expose for tests to drive SLOT-1/SLOT-2 behavior?
+
+**Assumption made:** The strictest defensible contract is that `get_active_mutation_id()` returns the empty string `""` whenever the slot is empty, and that the slot exposes a minimal, explicit write API `set_active_mutation_id(id: String)` plus `clear()`. Tests assert the empty-string sentinel and drive all state changes through `set_active_mutation_id` and `clear` rather than relying on implicit side effects so that any future change to the sentinel or write semantics is intentional and requires coordinated spec/test updates.
+
+**Confidence:** Medium
+
+---
+

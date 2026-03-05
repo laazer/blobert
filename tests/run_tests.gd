@@ -521,6 +521,24 @@ func _initialize() -> void:
 	total_failures += detach_recall_fx_adv_failures
 
 	# ------------------------------------------------------------------
+	# Suite: MutationSlotSystemSingle
+	# Ticket coverage: mutation_slot_system_single.md
+	# Scope: pure-logic MutationSlot data model (SLOT-1) and integration
+	# invariants with MutationInventory (SLOT-2) under simple grant
+	# sequences. UI and gameplay usage are covered transitively via
+	# infection_interaction and infection_ui suites.
+	# ------------------------------------------------------------------
+	var mutation_slot_suite_script: GDScript = load("res://tests/test_mutation_slot_system_single.gd")
+	if mutation_slot_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_mutation_slot_system_single.gd")
+		quit(1)
+		return
+
+	var mutation_slot_suite = mutation_slot_suite_script.new()
+	var mutation_slot_failures: int = mutation_slot_suite.run_all()
+	total_failures += mutation_slot_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")
