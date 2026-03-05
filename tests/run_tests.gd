@@ -453,6 +453,24 @@ func _initialize() -> void:
 	total_failures += infection_state_fx_failures
 
 	# ------------------------------------------------------------------
+	# Suite: InputHints
+	# Ticket coverage: input_hint_polish_core_mechanics
+	# Scope: on-screen input hints for move/jump/detach/recall/absorb in the
+	# infection-loop scene, layout constraints vs. central play area and
+	# HP/chunk HUD, and a global toggle controlling visibility across core
+	# movement and infection-loop scenes.
+	# ------------------------------------------------------------------
+	var input_hints_suite_script: GDScript = load("res://tests/test_input_hints.gd")
+	if input_hints_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_input_hints.gd")
+		quit(1)
+		return
+
+	var input_hints_suite = input_hints_suite_script.new()
+	var input_hints_failures: int = input_hints_suite.run_all()
+	total_failures += input_hints_failures
+
+	# ------------------------------------------------------------------
 	# Suite: DetachRecallFx
 	# Ticket coverage: detach_recall_fx.md
 	# Scope: controller FX signal contract + headless-verifiable presentation response.
