@@ -38,16 +38,16 @@ Implement mutation slot system with at least one slot: player can hold one mutat
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-3
+6
 
 ## Last Updated By
-Test Designer Agent
+Gameplay Systems Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Passing (core MutationSlot model, integration, and gameplay wiring green; full suite executed via tests/run_tests.gd)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -62,7 +62,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
@@ -73,5 +73,5 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Authoritative spec created at `project_board/specs/mutation_slot_system_single_spec.md` covering slot data model, integration with `MutationInventory` and absorb flow, gameplay semantics, UI representation, and non-functional constraints; ticket advanced to Stage TEST_DESIGN with Test Designer Agent responsible for deriving primary tests from the spec.
+Gameplay Systems Agent has implemented gameplay usage of the active MutationSlot by wiring InfectionInteractionHandler to own and update a canonical slot instance and by applying a modest passive movement speed buff in PlayerController when the slot is filled; all primary and adversarial mutation slot, infection interaction, and core movement tests continue to pass via tests/run_tests.gd. Handoff to Engine Integration Agent to wire slot state into scene-level UI/HUD elements and any remaining engine-level plumbing while keeping the full test suite green.
 

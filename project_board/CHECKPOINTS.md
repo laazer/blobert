@@ -317,3 +317,43 @@ Tickets queued: mutation_slot_system_single.md
 
 ---
 
+### [mutation_slot_system_single] Test Breaker — Empty slot ID write semantics
+
+**Would have asked:** When `MutationSlot.set_active_mutation_id("")` is called, should the slot treat the empty string as a real mutation ID (leaving the slot filled) or interpret it as "clear the slot" to keep the empty-string sentinel semantics consistent?
+
+**Assumption made:** For this ticket, the conservative contract is that `set_active_mutation_id("")` is equivalent to `clear()`: after the call, `is_filled()` must be `false` and `get_active_mutation_id()` must return the empty string sentinel `""`, ensuring the slot never reports itself as filled with an empty ID.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Core Simulation Agent — InfectionAbsorbResolver slot parameter
+
+**Would have asked:** Should `InfectionAbsorbResolver.resolve_absorb` be extended to take a `MutationSlot` parameter directly, or should slot updates be handled entirely by higher-level coordination code outside the resolver?
+
+**Assumption made:** To keep integration minimal and deterministic while honoring the SLOT-2 spec, `resolve_absorb` is extended with an optional third `slot: Object = null` parameter. Existing call sites that pass only `(esm, inv)` continue to behave identically, and when a non-null slot implementing `set_active_mutation_id(id: String)` is provided and absorb succeeds, the resolver calls `slot.set_active_mutation_id(DEFAULT_MUTATION_ID)` immediately after `inv.grant(DEFAULT_MUTATION_ID)`. If `slot` is null or lacks the method, it is ignored.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Gameplay Systems Agent — Slot owner and gameplay access
+
+**Would have asked:** In the infection-loop scene, which runtime object should own the authoritative `MutationSlot` instance for the player (e.g. `PlayerController`, `InfectionInteractionHandler`, a dedicated mutation controller node, or a global singleton)?
+
+**Assumption made:** `InfectionInteractionHandler` owns the canonical `MutationSlot` instance for the player: it instantiates `MutationSlot` once in `_ready()`, passes it into `InfectionAbsorbResolver.resolve_absorb(esm, inv, slot)` whenever an absorb succeeds, and exposes it via `get_mutation_slot()` so gameplay systems like `PlayerController` and `InfectionUI` can read slot state without introducing new autoloads or duplicating slot instances.
+
+**Confidence:** Medium
+
+---
+
+### [mutation_slot_system_single] Gameplay Systems Agent — Mutation slot movement buff magnitude
+
+**Would have asked:** What concrete gameplay effect (type and magnitude) should the active mutation slot provide for this milestone so that it feels "real" but does not destabilize existing movement tuning or infection-loop difficulty?
+
+**Assumption made:** Implement a single passive movement buff driven by the active slot: `PlayerController` caches the baseline `MovementSimulation.max_speed` in `_base_max_speed` and, on each physics frame, raises `max_speed` by a fixed 1.25× multiplier only when the cached `MutationSlot` reference is non-null and `slot.is_filled()` is true, restoring the baseline when the slot is empty. No other movement or HP parameters are changed, so baseline behavior for non-slot scenes is unchanged and the buff remains modest and easily re-tunable.
+
+**Confidence:** Medium
+
+---
+

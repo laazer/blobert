@@ -60,6 +60,17 @@ const _RECALL_TRAVEL_TIME: float = 0.25
 ## Preloaded chunk scene. Instantiated on detach (SPEC-52).
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk.tscn")
 
+## Optional mutation slot reference for infection loop scenes.
+## When non-null and filled, applies a passive movement speed buff.
+var _mutation_slot: Object = null
+
+## Cached baseline max_speed from the simulation. Used as the source value for
+## mutation-driven speed buffs so we never permanently overwrite the base config.
+var _base_max_speed: float = 0.0
+
+## Multiplicative movement speed buff when a mutation slot is filled.
+const _MUTATION_SPEED_MULTIPLIER: float = 1.25
+
 
 # ---------------------------------------------------------------------------
 # Detach/recall visual feedback signals (detach_recall_fx_spec.md)
@@ -148,6 +159,20 @@ func _ready() -> void:
 	# the first logical detach frame produces a true→false transition for has_chunk.
 	_current_state.has_chunk = true
 
+	# Cache the baseline max_speed so any mutation-driven buffs can be expressed
+	# as multipliers of this value without permanently altering the underlying
+	# simulation configuration.
+	_base_max_speed = _simulation.max_speed
+
+	# In infection-loop scenes, the InfectionInteractionHandler node owns the
+	# authoritative MutationSlot instance. Cache a reference here so gameplay
+	# systems can react to the slot being filled (e.g. movement buffs).
+	var root: Node = get_parent()
+	if root != null:
+		var handler: Node = root.get_node_or_null("InfectionInteractionHandler")
+		if handler != null and handler.has_method("get_mutation_slot"):
+			_mutation_slot = handler.call("get_mutation_slot")
+
 
 # ---------------------------------------------------------------------------
 # _physics_process() — Per-frame movement pipeline (SPEC-8)
@@ -185,6 +210,18 @@ func _physics_process(delta: float) -> void:
 	var wall_normal_x: float = 0.0
 	if is_on_wall_now:
 		wall_normal_x = get_wall_normal().x
+
+	# Apply mutation-driven movement speed buff, if any, before simulating.
+	# When the slot is filled, we temporarily raise max_speed by a fixed
+	# multiplier; when empty or unavailable, we restore the baseline.
+	if _base_max_speed <= 0.0:
+		_base_max_speed = _simulation.max_speed
+
+	var speed_multiplier: float = 1.0
+	if _mutation_slot != null and _mutation_slot.has_method("is_filled") and _mutation_slot.is_filled():
+		speed_multiplier = _MUTATION_SPEED_MULTIPLIER
+
+	_simulation.max_speed = _base_max_speed * speed_multiplier
 
 	# --- Step 3: Simulate (AC-8.3) ---
 	# Delegate all velocity math to the pure simulation. The controller

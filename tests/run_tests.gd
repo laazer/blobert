@@ -539,6 +539,22 @@ func _initialize() -> void:
 	total_failures += mutation_slot_failures
 
 	# ------------------------------------------------------------------
+	# Suite: MutationSlotSystemSingle Adversarial
+	# Ticket coverage: mutation_slot_system_single.md
+	# Scope: adversarial mutation slot model and inventory invariants
+	#        under long, mixed sequences plus CHECKPOINT edge cases.
+	# ------------------------------------------------------------------
+	var mutation_slot_adv_suite_script: GDScript = load("res://tests/test_mutation_slot_system_single_adversarial.gd")
+	if mutation_slot_adv_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_mutation_slot_system_single_adversarial.gd")
+		quit(1)
+		return
+
+	var mutation_slot_adv_suite = mutation_slot_adv_suite_script.new()
+	var mutation_slot_adv_failures: int = mutation_slot_adv_suite.run_all()
+	total_failures += mutation_slot_adv_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")

@@ -20,10 +20,13 @@ func can_absorb(esm: EnemyStateMachine) -> bool:
 	return esm.get_state() == "infected"
 
 
-func resolve_absorb(esm: EnemyStateMachine, inv: Object) -> void:
+func resolve_absorb(esm: EnemyStateMachine, inv: Object, slot: Object = null) -> void:
 	if esm == null or inv == null:
 		return
 	if not can_absorb(esm):
 		return
 	esm.apply_death_event()
 	inv.grant(DEFAULT_MUTATION_ID)
+
+	if slot != null and slot.has_method("set_active_mutation_id"):
+		slot.set_active_mutation_id(DEFAULT_MUTATION_ID)
