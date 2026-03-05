@@ -143,3 +143,98 @@ no additional refactoring is performed. The existing modules are treated as the 
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-05T13:00:00Z
+Tickets queued: infection_interaction.md
+
+---
+
+### [infection_interaction] Planner — Project name field
+
+**Would have asked:** What value should the `Project` field use for the `infection_interaction` ticket (e.g. `blobert` vs `Milestone 2 – Infection Loop`)?
+
+**Assumption made:** Use `blobert` as the canonical project name, with milestone and epic context captured in the ticket body and folder structure rather than the `Project` field itself.
+
+**Confidence:** High
+
+---
+
+### [infection_interaction] Planner — Implementation stage vs domain agents
+
+**Would have asked:** Given the Stage enum in `workflow_enforcement_v1` only includes `IMPLEMENTATION_BACKEND | IMPLEMENTATION_FRONTEND | IMPLEMENTATION_GENERALIST`, but the infection loop uses domain-specific agents (Core Simulation, Gameplay Systems, Engine Integration, Presentation), which Stage value should be used when handing off to implementation?
+
+**Assumption made:** Continue to use the documented enum and set Stage to `IMPLEMENTATION_GENERALIST` for all implementation-domain handoffs, while using `Next Responsible Agent` to name the specific domain agent (e.g. `Core Simulation Agent`, `Gameplay Systems Agent`). No new Stage values are introduced.
+
+**Confidence:** Medium
+
+---
+
+### [infection_interaction] Spec — Canonical infection trigger
+
+**Would have asked:** For this milestone, should the spec treat chunk contact, an explicit `infect` input action, or both as the required way to infect a weakened enemy?
+
+**Assumption made:** The canonical, testable contract for this ticket is chunk-based contact: when an infecting slime chunk body enters a weakened enemy’s infection area, infection is triggered if the enemy is eligible. Any `infect` input action wiring is treated as higher-level engine integration and is not required for this spec to be satisfied.
+
+**Confidence:** Medium
+
+---
+
+### [infection_interaction] Spec — Infection eligibility scope
+
+**Would have asked:** Do all enemies support being weakened and infected, or only a subset tagged/configured for infection in this milestone?
+
+**Assumption made:** Only enemies whose state is driven by `EnemyStateMachine` and are explicitly configured/marked as infection-eligible in the scene or data are in scope. Other enemies remain non-infectable for this milestone and are allowed to ignore chunk contact entirely.
+
+**Confidence:** Medium
+
+---
+
+### [infection_interaction] Spec — Mutation selection rule
+
+**Would have asked:** When absorbing an infected enemy, if multiple mutation types exist, should the granted mutation be random, cyclic, or fixed?
+
+**Assumption made:** For this milestone, mutation granting is deterministic and fixed: absorbing an infected enemy always grants a single, configured mutation ID (e.g. the first entry in a small infection-mutation config), with no randomness. This keeps tests and player expectations stable while still delivering “at least one mutation.”
+
+**Confidence:** Medium
+
+---
+
+### [infection_interaction] Spec — Repeated infection attempts
+
+**Would have asked:** What should happen if infection is triggered against an enemy that is already infected or dead?
+
+**Assumption made:** Infection is strictly one-way and idempotent: chunk contact that does not find the enemy in the weakened state (e.g. idle, active, infected, dead) has no effect and must not change enemy or player state. Only weakened → infected is allowed for this ticket.
+
+**Confidence:** High
+
+---
+
+### [infection_interaction] Spec — Multiple absorbs and mutation stacking
+
+**Would have asked:** If the player infects and absorbs multiple enemies in sequence, should mutations stack, replace the previous one, or be capped for this milestone?
+
+**Assumption made:** Each successful absorb from an infected enemy increments the stored mutation count by 1 (via `MutationInventory`) with no explicit upper cap for this ticket. The acceptance criteria only require that at least one mutation is granted and visible/usable; additional absorbs are allowed but not strictly required to be showcased in UX beyond a monotonically increasing count.
+
+**Confidence:** Medium
+
+---
+
+### [infection_interaction] Spec — Out-of-scope systems
+
+**Would have asked:** Should infection state and mutations be persisted across scene reloads/checkpoints or integrated with broader progression, or is this milestone limited to single-session, in-level behavior?
+
+**Assumption made:** For this ticket, infection and mutation effects are scoped to the current play session/scene. Save/load, cross-level persistence, and meta-progression are explicitly out of scope and may be handled by future tickets.
+
+**Confidence:** High
+
+---
+
+### [infection_interaction] Test Breaker — EnemyInfection player targeting wiring
+
+**Would have asked:** Should `EnemyInfection` be required to always set and clear the current absorb target via `InfectionInteractionHandler.set_target_esm` and `clear_target` exactly once per player enter/exit, and never in response to chunk contact?
+
+**Assumption made:** For this ticket, the conservative contract is that entering an enemy's infection area with a body in the `player` group calls `InfectionInteractionHandler.set_target_esm` once with that enemy's `EnemyStateMachine`, exiting calls `clear_target` once, and chunk-contact infection (`body in group "chunk"`) must not change the handler's target at all. Tests treat any deviation (missing set/clear or handler calls from chunk-only contact) as a failure.
+
+**Confidence:** Medium
+
+---
