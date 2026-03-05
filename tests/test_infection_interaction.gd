@@ -126,6 +126,21 @@ func _state_allowed(state: String) -> bool:
 	return state in ALLOWED_ESM_STATES
 
 
+func _load_enemy_infection_script() -> GDScript:
+	return load("res://scripts/enemy_infection.gd") as GDScript
+
+
+func _make_enemy_infection_instance() -> Object:
+	var script: GDScript = _load_enemy_infection_script()
+	if script == null:
+		return null
+	var instance: Object = script.new()
+	# enemy_infection.gd extends Node2D; _ready() wires up its internal ESM.
+	if instance.has_method("_ready"):
+		instance._ready()
+	return instance
+
+
 # ---------------------------------------------------------------------------
 # Module availability (fail fast with clear message)
 # ---------------------------------------------------------------------------
@@ -398,6 +413,57 @@ func test_infection_loop_scene_has_player_and_infection_ui() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Engine wiring: chunk-contact infection trigger (EnemyInfection)
+# ---------------------------------------------------------------------------
+
+func test_enemy_infection_chunk_contact_from_idle_results_in_infected_state() -> void:
+	var enemy_obj: Object = _make_enemy_infection_instance()
+	if enemy_obj == null:
+		_fail("ii_enemy_infection_chunk_idle", "enemy_infection.gd could not be loaded/instantiated")
+		return
+
+	if not enemy_obj.has_method("get_esm") or not enemy_obj.has_method("_on_body_entered"):
+		_fail("ii_enemy_infection_chunk_idle", "EnemyInfection instance missing get_esm/_on_body_entered API")
+		return
+
+	var esm: EnemyStateMachine = enemy_obj.get_esm()
+	_assert_eq_string("idle", _state_of(esm), "ii_enemy_infection_chunk_idle_pre_idle — ESM starts in idle")
+
+	var chunk: Node2D = Node2D.new()
+	chunk.add_to_group("chunk")
+
+	enemy_obj._on_body_entered(chunk)
+
+	var state_after: String = _state_of(esm)
+	_assert_eq_string("infected", state_after, "ii_enemy_infection_chunk_idle_infected — chunk contact drives idle → weakened → infected")
+	_assert_true(_state_allowed(state_after), "ii_enemy_infection_chunk_idle_state_allowed — resulting state in allowed set")
+
+
+func test_enemy_infection_chunk_contact_when_already_infected_is_idempotent() -> void:
+	var enemy_obj: Object = _make_enemy_infection_instance()
+	if enemy_obj == null:
+		_fail("ii_enemy_infection_chunk_infected", "enemy_infection.gd could not be loaded/instantiated")
+		return
+
+	if not enemy_obj.has_method("get_esm") or not enemy_obj.has_method("_on_body_entered"):
+		_fail("ii_enemy_infection_chunk_infected", "EnemyInfection instance missing get_esm/_on_body_entered API")
+		return
+
+	var esm: EnemyStateMachine = enemy_obj.get_esm()
+	# First contact: drive to infected.
+	var chunk: Node2D = Node2D.new()
+	chunk.add_to_group("chunk")
+	enemy_obj._on_body_entered(chunk)
+	_assert_eq_string("infected", _state_of(esm), "ii_enemy_infection_chunk_infected_pre_infected — precondition infected")
+
+	# Second contact: must leave state at infected (no undefined / no softlock).
+	enemy_obj._on_body_entered(chunk)
+	var state_after: String = _state_of(esm)
+	_assert_eq_string("infected", state_after, "ii_enemy_infection_chunk_infected_idempotent — repeated chunk contact leaves state infected")
+	_assert_true(_state_allowed(state_after), "ii_enemy_infection_chunk_infected_state_allowed — state remains within allowed set")
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -430,6 +496,9 @@ func run_all() -> int:
 	# Scene structure (Task 4 subset)
 	test_infection_loop_scene_loads()
 	test_infection_loop_scene_has_player_and_infection_ui()
+	# Engine wiring: chunk-contact infection trigger (R1, R4)
+	test_enemy_infection_chunk_contact_from_idle_results_in_infected_state()
+	test_enemy_infection_chunk_contact_when_already_infected_is_idempotent()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

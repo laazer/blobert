@@ -194,6 +194,12 @@ func _run_absorb_available_sequence(sequence: Array) -> Array[bool]:
 	return vis
 
 
+func _find_infection_handler(root: Node) -> Node:
+	if root == null:
+		return null
+	return root.get_node_or_null("InfectionInteractionHandler")
+
+
 # ---------------------------------------------------------------------------
 # INF-UI-1 — Infection UI container and scene integration
 # ---------------------------------------------------------------------------
@@ -528,6 +534,54 @@ func test_infection_ui_scene_can_be_instantiated_and_freed_repeatedly() -> void:
 
 	_assert_true(all_ok,
 		"inf_ui_4_repeated_headless_instantiation — InfectionUI scene can be instantiated and freed repeatedly without errors")
+
+
+# ---------------------------------------------------------------------------
+# INF-UI-5 / R3, R5 — Mutation acquisition plumbing to InfectionUI
+# ---------------------------------------------------------------------------
+
+func test_mutation_label_becomes_visible_after_inventory_gain_via_handler() -> void:
+	var root: Node = _load_infection_scene()
+	if root == null:
+		return
+
+	var infection_ui: CanvasLayer = _find_infection_ui(root)
+	var handler: Node = _find_infection_handler(root)
+	if infection_ui == null or handler == null:
+		root.free()
+		return
+
+	if not handler.has_method("get_mutation_inventory"):
+		_fail("inf_ui_5_handler_inventory_api_missing", "InfectionInteractionHandler must expose get_mutation_inventory() for mutation UI")
+		root.free()
+		return
+
+	var inv: Object = handler.get_mutation_inventory()
+	if inv == null or not inv.has_method("grant") or not inv.has_method("get_granted_count"):
+		_fail("inf_ui_5_inventory_missing_or_incomplete", "Handler.get_mutation_inventory() must return object with grant/get_granted_count")
+		root.free()
+		return
+
+	# Initial process: no mutations granted → mutation label hidden.
+	infection_ui._process(0.016)
+	var mutation_label: Label = infection_ui.get_node_or_null("MutationLabel") as Label
+	if mutation_label == null:
+		root.free()
+		return
+
+	var visible_before: bool = mutation_label.visible
+
+	# Grant one mutation via inventory and re-process; label must become visible.
+	inv.grant("test_mutation_id")
+	infection_ui._process(0.016)
+	var visible_after: bool = mutation_label.visible
+
+	_assert_false(visible_before,
+		"inf_ui_5_mutation_label_hidden_before_gain — MutationLabel hidden when inventory has zero mutations")
+	_assert_true(visible_after,
+		"inf_ui_5_mutation_label_visible_after_gain — MutationLabel visible after inventory grants at least one mutation")
+
+	root.free()
 
 
 # ---------------------------------------------------------------------------

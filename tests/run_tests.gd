@@ -435,6 +435,24 @@ func _initialize() -> void:
 	total_failures += infection_interaction_adv_failures
 
 	# ------------------------------------------------------------------
+	# Suite: InfectionStateFx
+	# Ticket coverage: infection_interaction.md (presentation subset)
+	# Scope: infection_state_fx.gd visual/label behavior for ESM states
+	# (idle/weakened/infected/dead). Verifies that FX reacts to ESM state
+	# without introducing gameplay logic; minimal R5 plumbing into
+	# presentation.
+	# ------------------------------------------------------------------
+	var infection_state_fx_suite_script: GDScript = load("res://tests/test_infection_state_fx.gd")
+	if infection_state_fx_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx.gd")
+		quit(1)
+		return
+
+	var infection_state_fx_suite = infection_state_fx_suite_script.new()
+	var infection_state_fx_failures: int = infection_state_fx_suite.run_all()
+	total_failures += infection_state_fx_failures
+
+	# ------------------------------------------------------------------
 	# Suite: DetachRecallFx
 	# Ticket coverage: detach_recall_fx.md
 	# Scope: controller FX signal contract + headless-verifiable presentation response.

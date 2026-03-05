@@ -436,6 +436,198 @@ func test_tb_ii_012_scene_repeated_load_instantiate_free_stable() -> void:
 	_pass("tb_ii_012_repeated_load_stable — 5 load/instantiate/free cycles completed")
 
 
+# ===========================================================================
+# [infection_interaction] TB-II-013 — resolve_absorb null arguments are no-ops
+#
+# VULNERABILITY: Primary and adversarial suites assume non-null esm/inv. A
+# buggy implementation might dereference null and crash or partially apply
+# effects. This test encodes the conservative assumption that null arguments
+# are treated as strict no-ops.
+# CHECKPOINT: Behavior when inv is null for an infected ESM is not specified
+# by the ticket; we require no state change and no crash.
+# ===========================================================================
+
+func test_tb_ii_013_resolve_absorb_null_args_noop() -> void:
+	# CHECKPOINT
+	var arr: Array = _require_infection_modules()
+	var inv = arr[0]
+	var resolver = arr[1]
+	if resolver == null:
+		_fail("tb_ii_013_skip", "InfectionAbsorbResolver script missing; skipping")
+		return
+	# Case 1: both null — must not crash.
+	resolver.resolve_absorb(null, null)
+	_pass("tb_ii_013_null_null_no_crash — resolve_absorb(null, null) did not crash")
+	# Case 2: null ESM, real inventory — inventory count must remain unchanged.
+	if inv != null:
+		var before: int = inv.get_granted_count()
+		resolver.resolve_absorb(null, inv)
+		_assert_eq_int(before, inv.get_granted_count(), "tb_ii_013_null_esm_inventory_unchanged — null ESM does not change inventory")
+	# Case 3: infected ESM, null inventory — infected must remain infected and no grant occurs.
+	var esm: EnemyStateMachine = _make_esm()
+	_drive_to_infected(esm)
+	_assert_eq_string("infected", _state_of(esm), "tb_ii_013_pre_infected")
+	resolver.resolve_absorb(esm, null)
+	_assert_eq_string("infected", _state_of(esm), "tb_ii_013_infected_state_unchanged_when_inv_null — ESM state unchanged when inventory is null")
+
+
+# ===========================================================================
+# [infection_interaction] TB-II-014 — Stress: many mixed resolve_absorb calls
+# across multiple ESMs and a single inventory.
+#
+# VULNERABILITY: Primary and adversarial tests cover some multi-ESM scenarios
+# but not longer mixed sequences of weaken/infect/absorb across a shared
+# inventory. A bug could double-count grants or mis-handle ESM states when
+# stressed.
+# ===========================================================================
+
+func test_tb_ii_014_many_mixed_resolve_calls_preserve_invariants() -> void:
+	var arr: Array = _require_infection_modules()
+	var inv = arr[0]
+	var resolver = arr[1]
+	if inv == null or resolver == null:
+		_fail("tb_ii_014_skip", "scripts missing; skipping")
+		return
+	var esms: Array[EnemyStateMachine] = []
+	for i in 10:
+		esms.append(_make_esm())
+	# Deterministic pattern: some ESMs stay idle, some weakened-only, some infected.
+	for i in esms.size():
+		var esm: EnemyStateMachine = esms[i]
+		match i % 4:
+			0:
+				# idle
+				pass
+			1:
+				_drive_to_weakened(esm)
+			2:
+				_drive_to_infected(esm)
+			3:
+				_drive_to_infected(esm)
+				esm.apply_death_event()
+	# Mixed sequence of resolve_absorb calls (some invalid, some valid).
+	var expected_grants: int = 0
+	for round in 3:
+		for i in esms.size():
+			var esm: EnemyStateMachine = esms[i]
+			if resolver.can_absorb(esm):
+				resolver.resolve_absorb(esm, inv)
+				expected_grants += 1
+			else:
+				# Call resolve_absorb even when can_absorb is false for no-op stress.
+				resolver.resolve_absorb(esm, inv)
+	for i in esms.size():
+		var state: String = _state_of(esms[i])
+		_assert_true(_state_allowed(state), "tb_ii_014_state_allowed_" + str(i) + " — state in allowed set after stress")
+	_assert_eq_int(expected_grants, inv.get_granted_count(), "tb_ii_014_grants_match_resolves — inventory count equals number of successful absorbs")
+
+
+# ===========================================================================
+# [infection_interaction] TB-II-015 — Multiple infection/absorb cycles on the
+# same ESM with reset between cycles.
+#
+# VULNERABILITY: Implementation might accidentally retain hidden per-ESM flags
+# between cycles, causing later cycles to miscount grants or mis-handle
+# states. This test asserts that each cycle behaves identically and increments
+# mutation count by exactly one.
+# ===========================================================================
+
+func test_tb_ii_015_repeated_cycles_on_same_esm_consistent() -> void:
+	var arr: Array = _require_infection_modules()
+	var inv = arr[0]
+	var resolver = arr[1]
+	if inv == null or resolver == null:
+		_fail("tb_ii_015_skip", "scripts missing; skipping")
+		return
+	var esm: EnemyStateMachine = _make_esm()
+	var cycles: int = 5
+	for i in cycles:
+		esm.reset()
+		_drive_to_infected(esm)
+		_assert_true(resolver.can_absorb(esm), "tb_ii_015_cycle_" + str(i) + "_can_absorb")
+		resolver.resolve_absorb(esm, inv)
+		_assert_eq_string("dead", _state_of(esm), "tb_ii_015_cycle_" + str(i) + "_dead_after_absorb")
+	_assert_eq_int(cycles, inv.get_granted_count(), "tb_ii_015_cycles_grant_one_each — each cycle grants exactly one mutation")
+
+
+# ===========================================================================
+# [infection_interaction] TB-II-016 — Many inventories, many ESMs: independence
+# and isolation.
+#
+# VULNERABILITY: A faulty implementation might accidentally share internal
+# inventory state across instances or mis-route grants when many inventories
+# and ESMs are present.
+# ===========================================================================
+
+func test_tb_ii_016_many_inventories_and_esms_isolated() -> void:
+	var inv_script: GDScript = _load_mutation_inventory_script()
+	var resolver_script: GDScript = _load_absorb_resolver_script()
+	if inv_script == null or resolver_script == null:
+		_fail("tb_ii_016_skip", "scripts missing; skipping")
+		return
+	var resolver = resolver_script.new()
+	var invs: Array = []
+	var esms: Array[EnemyStateMachine] = []
+	for i in 8:
+		invs.append(inv_script.new())
+		esms.append(_make_esm())
+		# Infect even-indexed machines only.
+		if i % 2 == 0:
+			_drive_to_infected(esms[i])
+	# Resolve absorbs for all; only even indices should grant.
+	for i in 8:
+		resolver.resolve_absorb(esms[i], invs[i])
+	for i in 8:
+		var inv = invs[i]
+		var expected: int = 1 if i % 2 == 0 else 0
+		_assert_eq_int(expected, inv.get_granted_count(), "tb_ii_016_inv_count_" + str(i) + " — inventory count matches infection for index")
+		_assert_true(_state_allowed(_state_of(esms[i])), "tb_ii_016_state_allowed_" + str(i))
+
+
+# ===========================================================================
+# [infection_interaction] TB-II-017 — Deterministic pseudo-random mixed
+# sequence stress on single ESM + inventory.
+#
+# VULNERABILITY: Complex interleavings of weaken/infect/death/absorb not
+# covered by simpler loops could surface illegal transitions or inventory
+# corruption. This test uses a simple deterministic LCG to drive a fixed
+# pseudo-random event sequence and asserts state validity and non-negative
+# grant count.
+# ===========================================================================
+
+func test_tb_ii_017_pseudorandom_mixed_sequence_stable() -> void:
+	var arr: Array = _require_infection_modules()
+	var inv = arr[0]
+	var resolver = arr[1]
+	if inv == null or resolver == null:
+		_fail("tb_ii_017_skip", "scripts missing; skipping")
+		return
+	var esm: EnemyStateMachine = _make_esm()
+	var grants: int = 0
+	var seed: int = 12345
+	for i in 100:
+		# Simple LCG: x_{n+1} = (a * x_n + c) mod m
+		seed = int((1103515245 * seed + 12345) % 2147483647)
+		var r: int = seed % 4
+		match r:
+			0:
+				esm.apply_weaken_event()
+			1:
+				esm.apply_infection_event()
+			2:
+				if resolver.can_absorb(esm):
+					resolver.resolve_absorb(esm, inv)
+					grants += 1
+				else:
+					resolver.resolve_absorb(esm, inv)
+			3:
+				esm.apply_death_event()
+		var state: String = _state_of(esm)
+		_assert_true(_state_allowed(state), "tb_ii_017_state_allowed_step_" + str(i))
+	_assert_true(inv.get_granted_count() >= 0, "tb_ii_017_non_negative_count — inventory count non-negative after stress")
+
+
+
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
@@ -457,6 +649,11 @@ func run_all() -> int:
 	test_tb_ii_010_repeated_grant_same_id_state_consistent()
 	test_tb_ii_011_after_absorb_can_absorb_false()
 	test_tb_ii_012_scene_repeated_load_instantiate_free_stable()
+	test_tb_ii_013_resolve_absorb_null_args_noop()
+	test_tb_ii_014_many_mixed_resolve_calls_preserve_invariants()
+	test_tb_ii_015_repeated_cycles_on_same_esm_consistent()
+	test_tb_ii_016_many_inventories_and_esms_isolated()
+	test_tb_ii_017_pseudorandom_mixed_sequence_stable()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
