@@ -46,12 +46,16 @@ func _get_mutation_label() -> Label:
 	return get_node_or_null("MutationLabel") as Label
 
 
+func _get_mutation_slot_label() -> Label:
+	return get_node_or_null("MutationSlotLabel") as Label
+
+
 func _get_absorb_feedback_label() -> Label:
 	return get_node_or_null("AbsorbFeedbackLabel") as Label
 
 
-func _get_mutation_icon() -> Control:
-	return get_node_or_null("MutationIcon") as Control
+func _get_mutation_icon() -> ColorRect:
+	return get_node_or_null("MutationIcon") as ColorRect
 
 
 func _get_input_hints_config() -> Node:
@@ -133,8 +137,9 @@ func _process(_delta: float) -> void:
 
 func _update_mutation_display() -> void:
 	var mutation_label: Label = _get_mutation_label()
+	var slot_label: Label = _get_mutation_slot_label()
 	var absorb_feedback: Label = _get_absorb_feedback_label()
-	var mutation_icon: Control = _get_mutation_icon()
+	var mutation_icon: ColorRect = _get_mutation_icon()
 	var inv: Object = null
 	var slot: Object = _mutation_slot
 	if _handler != null and _handler.has_method("get_mutation_inventory"):
@@ -159,6 +164,18 @@ func _update_mutation_display() -> void:
 
 	var any_mutation: bool = count > 0
 
+	if slot_label != null:
+		slot_label.visible = true
+		if slot_filled and slot_id != "":
+			slot_label.text = "Mutation Slot: " + slot_id + " active"
+			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
+		elif any_mutation:
+			slot_label.text = "Mutation Slot: Active"
+			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
+		else:
+			slot_label.text = "Mutation Slot: Empty"
+			slot_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+
 	if mutation_label != null:
 		mutation_label.visible = any_mutation
 		if any_mutation:
@@ -175,5 +192,11 @@ func _update_mutation_display() -> void:
 		absorb_feedback.visible = showing_absorb_feedback
 
 	if mutation_icon != null:
-		mutation_icon.visible = any_mutation
+		mutation_icon.visible = true
+		if slot_filled:
+			mutation_icon.color = Color(0.4, 0.85, 0.55, 1.0)
+		elif any_mutation:
+			mutation_icon.color = Color(0.4, 0.75, 0.5, 0.9)
+		else:
+			mutation_icon.color = Color(0.2, 0.2, 0.2, 0.6)
 

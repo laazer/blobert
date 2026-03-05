@@ -367,3 +367,13 @@ Tickets queued: mutation_slot_system_single.md
 
 ---
 
+### [mutation_slot_system_single] Presentation Agent — Slot empty HUD indicator vs legacy tests
+
+**Would have asked:** Can InfectionUI's `MutationLabel` become always-visible to show an explicit \"Mutation Slot: Empty\" state at scene start, or must we preserve the `basic_ui_feedback_infection` contract that keeps it hidden until the first mutation is granted via inventory?
+
+**Assumption made:** Preserve the existing tests and semantics for `MutationLabel` (hidden when `MutationInventory.get_granted_count() == 0`, visible after the first grant) and satisfy SLOT-4's empty/filled HUD requirement by adding a separate always-visible `MutationSlotLabel` plus a dimmed `MutationIcon` to represent the empty slot, brightening both when the slot is filled and using the slot's active ID to drive the text when available.
+
+**Confidence:** Medium
+
+---
+

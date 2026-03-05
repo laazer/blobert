@@ -41,10 +41,10 @@ Implement mutation slot system with at least one slot: player can hold one mutat
 IMPLEMENTATION_GENERALIST
 
 ## Revision
-7
+8
 
 ## Last Updated By
-Engine Integration Agent
+Presentation Agent
 
 ## Validation Status
 - Tests: Passing (core MutationSlot model, integration, and gameplay wiring green; full suite executed via tests/run_tests.gd)
@@ -62,7 +62,7 @@ Engine Integration Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Presentation Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -73,5 +73,5 @@ Presentation Agent
 Proceed
 
 ## Reason
-Engine Integration Agent has wired the active MutationSlot into the infection-loop HUD by giving InfectionUI access to the canonical slot instance owned by InfectionInteractionHandler and updating the mutation HUD to derive its state from inventory while upgrading its text to show the active slot mutation ID when available; the full test suite (including mutation slot, infection interaction, infection UI, and core movement suites) continues to pass via tests/run_tests.gd. Handoff to Presentation Agent to refine the visual presentation of the mutation slot so its empty vs filled state and active mutation identity are clear and human-playable without debug overlays.
+Presentation Agent has refined the infection-loop HUD to make the single mutation slot visually clear and human-playable without debug overlays by introducing an always-visible `MutationSlotLabel` and dimmed `MutationIcon` that indicate an empty slot, brightening both and showing \"Mutation Slot: <id> active\" when the slot is filled while preserving the existing `MutationLabel` visibility contract and keeping all automated tests (including mutation slot, infection interaction, infection UI, and core movement suites) passing via tests/run_tests.gd. Handoff to Acceptance Criteria Gatekeeper Agent to validate that the updated HUD presentation fully satisfies SLOT-4 and the ticket’s visibility and clarity acceptance criteria.
 

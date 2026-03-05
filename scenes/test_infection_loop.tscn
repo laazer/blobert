@@ -89,10 +89,15 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="MutationIcon" type="ColorRect" parent="InfectionUI"]
-visible = false
 position = Vector2(-470, -172)
 size = Vector2(24, 20)
 color = Color(0.4, 0.85, 0.55, 1)
+
+[node name="MutationSlotLabel" type="Label" parent="InfectionUI"]
+position = Vector2(-440, -190)
+text = "Mutation Slot: Empty"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="MutationLabel" type="Label" parent="InfectionUI"]
 visible = false
