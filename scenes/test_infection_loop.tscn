@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/infection_ui.gd" id="3_infection_ui"]
 [ext_resource type="Script" path="res://scripts/infection_interaction_handler.gd" id="4_infection_handler"]
 [ext_resource type="PackedScene" uid="uid://c2yenemy_infection" path="res://scenes/enemy_infection.tscn" id="5_enemy"]
+[ext_resource type="Script" path="res://scripts/input_hint_label.gd" id="6_input_hint_label"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(2000, 20)
@@ -59,7 +60,7 @@ script = ExtResource("3_infection_ui")
 [node name="AbsorbPromptLabel" type="Label" parent="InfectionUI"]
 visible = false
 position = Vector2(0, -220)
-text = "Press E to Absorb"
+text = "Press R to Absorb"
 
 [node name="HPLabel" type="Label" parent="InfectionUI"]
 position = Vector2(-440, -260)
@@ -97,4 +98,32 @@ color = Color(0.4, 0.85, 0.55, 1)
 visible = false
 position = Vector2(-440, -170)
 text = "Mutation: 0 active"
+
+[node name="Hints" type="Control" parent="InfectionUI"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="MoveHint" type="Label" parent="InfectionUI/Hints"]
+script = ExtResource("6_input_hint_label")
+layout_mode = 0
+position = Vector2(440, -260)
+text = "Move (A/D): move left/right"
+
+[node name="JumpHint" type="Label" parent="InfectionUI/Hints"]
+script = ExtResource("6_input_hint_label")
+layout_mode = 0
+position = Vector2(440, -230)
+text = "Jump (Space): jump"
+
+[node name="DetachRecallHint" type="Label" parent="InfectionUI/Hints"]
+script = ExtResource("6_input_hint_label")
+layout_mode = 0
+position = Vector2(440, -200)
+text = "Detach/Recall (E): detach & recall chunk"
+
+[node name="AbsorbHint" type="Label" parent="InfectionUI/Hints"]
+script = ExtResource("6_input_hint_label")
+layout_mode = 0
+position = Vector2(440, -170)
+text = "Absorb (R): absorb enemy"
 

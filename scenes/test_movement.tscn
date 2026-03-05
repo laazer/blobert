@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dbi1n5ry0trsy" path="res://scripts/player_controller.gd" id="1_playerctrl"]
 [ext_resource type="Script" uid="uid://cv6hiepewg2ts" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
 [ext_resource type="Script" uid="uid://b2ty0qu3nef66" path="res://scripts/infection_ui.gd" id="4_infection_ui"]
+[ext_resource type="Script" path="res://scripts/input_hint_label.gd" id="5_input_hint_label"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(2000, 20)
@@ -53,6 +54,7 @@ layout_mode = 3
 anchors_preset = 0
 
 [node name="MoveHint" type="Label" parent="UI/Hints" unique_id=205188770]
+script = ExtResource("5_input_hint_label")
 layout_mode = 0
 offset_left = -1100.0
 offset_top = 64.0
@@ -61,6 +63,7 @@ offset_bottom = 87.0
 text = "Move: Left / Right"
 
 [node name="JumpHint" type="Label" parent="UI/Hints" unique_id=1746831326]
+script = ExtResource("5_input_hint_label")
 layout_mode = 0
 offset_left = -1100.0
 offset_top = -92.0
@@ -69,6 +72,7 @@ offset_bottom = -69.0
 text = "Jump: Space / Jump"
 
 [node name="DetachHint" type="Label" parent="UI/Hints" unique_id=2023455199]
+script = ExtResource("5_input_hint_label")
 layout_mode = 0
 offset_left = -1100.0
 offset_top = -103.0

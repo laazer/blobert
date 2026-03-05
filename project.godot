@@ -53,6 +53,10 @@ infect={
 ]
 }
 
+[autoload]
+
+InputHintsConfig="*res://scripts/input_hints_config.gd"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

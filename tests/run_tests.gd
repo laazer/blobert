@@ -486,7 +486,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 
-	var input_hints_adv_suite: InputHintsAdversarialTests = input_hints_adv_suite_script.new()
+	var input_hints_adv_suite = input_hints_adv_suite_script.new()
 	var input_hints_adv_failures: int = input_hints_adv_suite.run_all()
 	total_failures += input_hints_adv_failures
 

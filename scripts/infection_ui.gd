@@ -51,10 +51,51 @@ func _get_mutation_icon() -> Control:
 	return get_node_or_null("MutationIcon") as Control
 
 
+func _get_input_hints_config() -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("InputHintsConfig")
+
+
+func _collect_input_hint_labels() -> Array:
+	var labels: Array = []
+
+	var hints_root: Node = get_node_or_null("Hints")
+	if hints_root != null:
+		for child in hints_root.get_children():
+			var label := child as Label
+			if label != null:
+				labels.append(label)
+
+	var core_names: Array = ["MoveHint", "JumpHint", "DetachHint", "DetachRecallHint", "AbsorbHint"]
+	for name in core_names:
+		var label_node := get_node_or_null(name) as Label
+		if label_node != null and not labels.has(label_node):
+			labels.append(label_node)
+
+	return labels
+
+
+func _update_input_hints_visibility() -> void:
+	var config: Node = _get_input_hints_config()
+	var enabled: bool = true
+	if config != null and ("input_hints_enabled" in config):
+		enabled = config.input_hints_enabled
+
+	var labels: Array = _collect_input_hint_labels()
+	for label in labels:
+		var typed_label := label as Label
+		if typed_label != null:
+			typed_label.visible = enabled
+
+
 func _process(_delta: float) -> void:
 	var absorb_label: Label = _get_absorb_prompt_label()
 	if absorb_label != null:
 		absorb_label.visible = _absorb_available
+
+	_update_input_hints_visibility()
 
 	_update_mutation_display()
 
