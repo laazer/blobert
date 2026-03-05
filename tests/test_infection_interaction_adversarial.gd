@@ -109,6 +109,22 @@ func _state_allowed(state: String) -> bool:
 	return state in ALLOWED_ESM_STATES
 
 
+# Simple stub for InfectionInteractionHandler to observe player targeting calls.
+class StubInfectionInteractionHandler:
+	extends Node
+
+	var last_esm: EnemyStateMachine = null
+	var set_calls: int = 0
+	var clear_calls: int = 0
+
+	func set_target_esm(esm: EnemyStateMachine) -> void:
+		last_esm = esm
+		set_calls += 1
+
+	func clear_target() -> void:
+		clear_calls += 1
+
+
 # ===========================================================================
 # [infection_interaction] TB-II-001 — get_granted_count never negative
 #
@@ -627,6 +643,52 @@ func test_tb_ii_017_pseudorandom_mixed_sequence_stable() -> void:
 	_assert_true(inv.get_granted_count() >= 0, "tb_ii_017_non_negative_count — inventory count non-negative after stress")
 
 
+# ===========================================================================
+# [infection_interaction] TB-II-018 — EnemyInfection player targeting wiring
+# sets/clears handler target only for player bodies.
+#
+# VULNERABILITY: Primary suites exercise chunk-contact infection but do not
+# assert that EnemyInfection calls InfectionInteractionHandler.set_target_esm
+# and clear_target correctly for player enter/exit. A wiring bug here would
+# make absorb input silently fail or leave stale targets.
+# ===========================================================================
+
+func test_tb_ii_018_enemy_infection_player_enter_exit_targets_handler() -> void:
+	var enemy_script: GDScript = load("res://scripts/enemy_infection.gd") as GDScript
+	if enemy_script == null:
+		_fail("tb_ii_018_skip", "enemy_infection.gd missing; skipping")
+		return
+
+	var enemy: Node2D = enemy_script.new() as Node2D
+	if enemy == null:
+		_fail("tb_ii_018_new_enemy", "could not instantiate EnemyInfection")
+		return
+
+	var handler := StubInfectionInteractionHandler.new()
+	enemy._handler = handler
+
+	if enemy.has_method("_ready"):
+		enemy._ready()
+
+	var player: Node2D = Node2D.new()
+	player.add_to_group("player")
+
+	enemy._on_body_entered(player)
+
+	_assert_eq_int(1, handler.set_calls, "tb_ii_018_set_called_once_on_player_enter")
+	_assert_true(handler.last_esm != null, "tb_ii_018_last_esm_not_null_after_player_enter")
+
+	var chunk: Node2D = Node2D.new()
+	chunk.add_to_group("chunk")
+
+	enemy._on_body_entered(chunk)
+
+	_assert_eq_int(1, handler.set_calls, "tb_ii_018_chunk_does_not_call_set_target")
+
+	enemy._on_body_exited(player)
+
+	_assert_eq_int(1, handler.clear_calls, "tb_ii_018_clear_called_once_on_player_exit")
+
 
 # ---------------------------------------------------------------------------
 # Public entry point
@@ -654,6 +716,7 @@ func run_all() -> int:
 	test_tb_ii_015_repeated_cycles_on_same_esm_consistent()
 	test_tb_ii_016_many_inventories_and_esms_isolated()
 	test_tb_ii_017_pseudorandom_mixed_sequence_stable()
+	test_tb_ii_018_enemy_infection_player_enter_exit_targets_handler()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

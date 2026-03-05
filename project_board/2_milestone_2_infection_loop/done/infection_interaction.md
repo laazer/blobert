@@ -22,18 +22,18 @@ Implement the infection interaction: when the slime (or chunk) interacts with a 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+8
 
 ## Last Updated By
-Core Simulation Agent
+Human
 
 ## Validation Status
-- Tests: Run (Passing)
+- Tests: Run (Passing) — primary + adversarial InfectionInteraction suites cover AC 1–4 (infection trigger, infected state + absorb, mutation grant/usage, and softlock/undefined-state protections).
 - Static QA: Not Run
-- Integration: Not Run
+- Integration: Run (Passing) — human manually verified in-editor that weakened/enemy states, infection, and absorb feedback are visually clear and discoverable without debug overlays.
 
 ## Blocking Issues
 - None
@@ -46,7 +46,7 @@ Core Simulation Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
@@ -59,5 +59,5 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Core Simulation Agent verified that the pure infection loop modules (EnemyStateMachine, MutationInventory, InfectionAbsorbResolver, and EnemyInfection wiring) satisfy all primary + adversarial InfectionInteraction suites in the headless test runner; ticket is ready for acceptance-criteria validation.
+Human verified in-editor that all infection interaction acceptance criteria, including visual clarity and discoverability without debug overlays, are satisfied; ticket is marked COMPLETE.
 
