@@ -41,10 +41,10 @@ Implement mutation slot system with at least one slot: player can hold one mutat
 IMPLEMENTATION_GENERALIST
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Gameplay Systems Agent
+Engine Integration Agent
 
 ## Validation Status
 - Tests: Passing (core MutationSlot model, integration, and gameplay wiring green; full suite executed via tests/run_tests.gd)
@@ -62,7 +62,7 @@ Gameplay Systems Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Presentation Agent
 
 ## Required Input Schema
 ```json
@@ -73,5 +73,5 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Gameplay Systems Agent has implemented gameplay usage of the active MutationSlot by wiring InfectionInteractionHandler to own and update a canonical slot instance and by applying a modest passive movement speed buff in PlayerController when the slot is filled; all primary and adversarial mutation slot, infection interaction, and core movement tests continue to pass via tests/run_tests.gd. Handoff to Engine Integration Agent to wire slot state into scene-level UI/HUD elements and any remaining engine-level plumbing while keeping the full test suite green.
+Engine Integration Agent has wired the active MutationSlot into the infection-loop HUD by giving InfectionUI access to the canonical slot instance owned by InfectionInteractionHandler and updating the mutation HUD to derive its state from inventory while upgrading its text to show the active slot mutation ID when available; the full test suite (including mutation slot, infection interaction, infection UI, and core movement suites) continues to pass via tests/run_tests.gd. Handoff to Presentation Agent to refine the visual presentation of the mutation slot so its empty vs filled state and active mutation identity are clear and human-playable without debug overlays.
 

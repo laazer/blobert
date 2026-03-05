@@ -357,3 +357,13 @@ Tickets queued: mutation_slot_system_single.md
 
 ---
 
+### [mutation_slot_system_single] Engine Integration Agent — Slot HUD empty state vs existing tests
+
+**Would have asked:** Should the InfectionUI mutation HUD show an explicit "empty" slot state (e.g. text such as "Mutation Slot: Empty") even when no mutations have been granted yet, or remain hidden until the first mutation is acquired as encoded in the existing `test_infection_ui.gd` suite?
+
+**Assumption made:** To avoid breaking the established `basic_ui_feedback_infection` contract, the MutationLabel and MutationIcon remain hidden when `MutationInventory.get_granted_count() == 0`, and become visible once the count is greater than zero. The InfectionUI now also holds an optional `MutationSlot` reference and, when both inventory and slot indicate an active mutation in normal absorb-driven play, the label text is upgraded to show the active mutation ID (e.g. "Mutation Slot: infection_mutation_01 active") while continuing to rely on inventory count for visibility in tests that drive the inventory directly.
+
+**Confidence:** Medium
+
+---
+

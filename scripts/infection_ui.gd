@@ -4,6 +4,7 @@ var _absorb_available: bool = false
 var _player: PlayerController
 var _initial_max_hp: float = 0.0
 var _handler: Node
+var _mutation_slot: Object = null
 var _prev_mutation_count: int = 0
 var _absorb_feedback_until_ms: int = 0
 
@@ -13,6 +14,8 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		_handler = root.get_node_or_null("InfectionInteractionHandler")
+		if _handler != null and _handler.has_method("get_mutation_slot"):
+			_mutation_slot = _handler.get_mutation_slot()
 
 
 func set_absorb_available(available: bool) -> void:
@@ -133,11 +136,19 @@ func _update_mutation_display() -> void:
 	var absorb_feedback: Label = _get_absorb_feedback_label()
 	var mutation_icon: Control = _get_mutation_icon()
 	var inv: Object = null
+	var slot: Object = _mutation_slot
 	if _handler != null and _handler.has_method("get_mutation_inventory"):
 		inv = _handler.get_mutation_inventory()
 	var count: int = 0
 	if inv != null and inv.has_method("get_granted_count"):
 		count = inv.get_granted_count()
+
+	var slot_filled: bool = false
+	var slot_id: String = ""
+	if slot != null and slot.has_method("is_filled") and slot.has_method("get_active_mutation_id"):
+		slot_filled = slot.is_filled()
+		if slot_filled:
+			slot_id = slot.get_active_mutation_id()
 
 	if count > _prev_mutation_count:
 		_absorb_feedback_until_ms = Time.get_ticks_msec() + 800
@@ -146,9 +157,15 @@ func _update_mutation_display() -> void:
 	var now_ms: int = Time.get_ticks_msec()
 	var showing_absorb_feedback: bool = now_ms < _absorb_feedback_until_ms
 
+	var any_mutation: bool = count > 0
+
 	if mutation_label != null:
-		mutation_label.visible = count > 0
-		mutation_label.text = "Mutation: " + str(count) + " active"
+		mutation_label.visible = any_mutation
+		if any_mutation:
+			if slot_filled and slot_id != "":
+				mutation_label.text = "Mutation Slot: " + slot_id + " active"
+			else:
+				mutation_label.text = "Mutation: " + str(count) + " active"
 		if showing_absorb_feedback:
 			mutation_label.modulate = Color(0.6, 1.0, 0.7, 1.0)
 		else:
@@ -158,5 +175,5 @@ func _update_mutation_display() -> void:
 		absorb_feedback.visible = showing_absorb_feedback
 
 	if mutation_icon != null:
-		mutation_icon.visible = count > 0
+		mutation_icon.visible = any_mutation
 
