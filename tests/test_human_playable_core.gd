@@ -201,6 +201,30 @@ func _point_inside_rect(p: Vector2, r: Rect2) -> bool:
 	return r.has_point(p)
 
 
+func _labels_under_canvas_layer(root: Node, labels: Array) -> bool:
+	if labels.is_empty():
+		return false
+	var label: Label = labels[0] as Label
+	if label == null:
+		return false
+	var n: Node = label
+	while n != null and n != root:
+		if n is CanvasLayer:
+			return true
+		n = n.get_parent()
+	return false
+
+
+# Screen-space central area for UI hints (shared game_ui layout). Used when labels
+# are under a CanvasLayer so we compare like-for-like coordinates.
+func _central_play_area_bounds_screen() -> Rect2:
+	# Typical viewport center (1280x720): box 400x400 centered at (640, 360)
+	var cx: float = 640.0
+	var cy: float = 360.0
+	var half: float = 200.0
+	return Rect2(Vector2(cx - half, cy - half), Vector2(half * 2, half * 2))
+
+
 # ---------------------------------------------------------------------------
 # Player, ground/platform, and chunk visuals and alignment
 # ---------------------------------------------------------------------------
@@ -416,7 +440,11 @@ func test_ui_hints_do_not_overlap_central_play_area() -> void:
 	all_labels.append_array(jump_labels)
 	all_labels.append_array(detach_labels)
 
-	var central_bounds: Rect2 = _central_play_area_bounds(root)
+	var central_bounds: Rect2
+	if _labels_under_canvas_layer(root, all_labels):
+		central_bounds = _central_play_area_bounds_screen()
+	else:
+		central_bounds = _central_play_area_bounds(root)
 
 	var all_outside: bool = true
 	for label in all_labels:

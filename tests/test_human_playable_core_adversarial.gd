@@ -156,6 +156,27 @@ func _point_inside_rect(p: Vector2, r: Rect2) -> bool:
 	return r.has_point(p)
 
 
+func _labels_under_canvas_layer(root: Node, labels: Array) -> bool:
+	if labels.is_empty():
+		return false
+	var label: Label = labels[0] as Label
+	if label == null:
+		return false
+	var n: Node = label
+	while n != null and n != root:
+		if n is CanvasLayer:
+			return true
+		n = n.get_parent()
+	return false
+
+
+func _central_play_area_bounds_screen() -> Rect2:
+	var cx: float = 640.0
+	var cy: float = 360.0
+	var half: float = 200.0
+	return Rect2(Vector2(cx - half, cy - half), Vector2(half * 2, half * 2))
+
+
 func _has_dynamic_world_ancestor(node: Node) -> bool:
 	var current: Node = node
 	while current != null:
@@ -394,7 +415,11 @@ func test_ui_hints_positions_outside_central_area_and_not_extreme() -> void:
 		root.free()
 		return
 
-	var central_bounds: Rect2 = _central_play_area_bounds(root)
+	var central_bounds: Rect2
+	if _labels_under_canvas_layer(root, all_labels):
+		central_bounds = _central_play_area_bounds_screen()
+	else:
+		central_bounds = _central_play_area_bounds(root)
 	var center: Vector2 = central_bounds.position + central_bounds.size * 0.5
 
 	var all_outside_and_nearby: bool = true

@@ -1,134 +1,22 @@
-[gd_scene load_steps=9 format=3 uid="uid://blobert_test_infection_loop"]
+[gd_scene load_steps=4 format=3 uid="uid://7fg7oeqvyus0"]
 
-[ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
-[ext_resource type="Script" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
-[ext_resource type="Script" path="res://scripts/infection_ui.gd" id="3_infection_ui"]
-[ext_resource type="Script" path="res://scripts/infection_interaction_handler.gd" id="4_infection_handler"]
-[ext_resource type="PackedScene" uid="uid://c2yenemy_infection" path="res://scenes/enemy_infection.tscn" id="5_enemy"]
-[ext_resource type="Script" path="res://scripts/input_hint_label.gd" id="6_input_hint_label"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
-size = Vector2(2000, 20)
-
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
-radius = 16.0
-height = 32.0
+[ext_resource type="Script" path="res://scripts/infection_interaction_handler.gd" id="1_infection_handler"]
+[ext_resource type="PackedScene" path="res://scenes/enemy_infection.tscn" id="2_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/floor.tscn" id="4_floor"]
+[ext_resource type="PackedScene" path="res://scenes/game_ui.tscn" id="5_game_ui"]
 
 [node name="TestInfectionLoop" type="Node2D"]
 
 [node name="InfectionInteractionHandler" type="Node" parent="."]
-script = ExtResource("4_infection_handler")
+script = ExtResource("1_infection_handler")
 
-[node name="Enemy" parent="." instance=ExtResource("5_enemy")]
-position = Vector2(400, 250)
+[node name="Enemy" parent="." instance=ExtResource("2_enemy")]
+position = Vector2(720, 250)
 
-[node name="Floor" type="StaticBody2D" parent="."]
-position = Vector2(0, 300)
+[node name="Floor" parent="." instance=ExtResource("4_floor")]
 
-[node name="FloorShape" type="CollisionShape2D" parent="Floor"]
-shape = SubResource("RectangleShape2D_floor")
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(520, 250)
 
-[node name="FloorVisual" type="Polygon2D" parent="Floor"]
-z_index = 0
-polygon = PackedVector2Array(-1000, -10, 1000, -10, 1000, 10, -1000, 10)
-color = Color(0.2, 0.2, 0.2, 1)
-
-[node name="Player" type="CharacterBody2D" parent="."]
-groups = ["player"]
-position = Vector2(576, 200)
-script = ExtResource("1_playerctrl")
-
-[node name="PlayerShape" type="CollisionShape2D" parent="Player"]
-shape = SubResource("CapsuleShape2D_player")
-
-[node name="Camera" type="Camera2D" parent="Player"]
-script = ExtResource("2_camera_follow")
-follow_limit_left = -1000
-follow_limit_right = 1000
-follow_limit_top = -200
-follow_limit_bottom = 600
-
-[node name="PlayerVisual" type="Polygon2D" parent="Player"]
-z_index = 10
-polygon = PackedVector2Array(-16, -32, 16, -32, 16, 32, -16, 32)
-color = Color(0.4, 0.9, 0.6, 1)
-
-[node name="InfectionUI" type="CanvasLayer" parent="."]
-layer = 1
-script = ExtResource("3_infection_ui")
-
-[node name="AbsorbPromptLabel" type="Label" parent="InfectionUI"]
-visible = false
-position = Vector2(0, -220)
-text = "Press R to Absorb"
-
-[node name="HPLabel" type="Label" parent="InfectionUI"]
-position = Vector2(-440, -260)
-text = "HP: 100"
-
-[node name="ChunkStatusLabel" type="Label" parent="InfectionUI"]
-position = Vector2(-440, -230)
-text = "Chunk: Attached"
-
-[node name="ClingStatusLabel" type="Label" parent="InfectionUI"]
-position = Vector2(-440, -200)
-text = "Wall Cling: OFF"
-
-[node name="HPBar" type="TextureProgressBar" parent="InfectionUI"]
-position = Vector2(-440, -280)
-size = Vector2(200, 16)
-
-[node name="AbsorbFeedbackLabel" type="Label" parent="InfectionUI"]
-visible = false
-position = Vector2(-80, -220)
-size = Vector2(160, 24)
-theme_override_colors/font_color = Color(0.6, 1, 0.7, 1)
-theme_override_font_sizes/font_size = 18
-text = "Absorbed!"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="MutationIcon" type="ColorRect" parent="InfectionUI"]
-position = Vector2(-470, -172)
-size = Vector2(24, 20)
-color = Color(0.4, 0.85, 0.55, 1)
-
-[node name="MutationSlotLabel" type="Label" parent="InfectionUI"]
-position = Vector2(-440, -190)
-text = "Mutation Slot: Empty"
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-
-[node name="MutationLabel" type="Label" parent="InfectionUI"]
-visible = false
-position = Vector2(-440, -170)
-text = "Mutation: 0 active"
-
-[node name="Hints" type="Control" parent="InfectionUI"]
-layout_mode = 3
-anchors_preset = 0
-
-[node name="MoveHint" type="Label" parent="InfectionUI/Hints"]
-script = ExtResource("6_input_hint_label")
-layout_mode = 0
-position = Vector2(440, -260)
-text = "Move (A/D): move left/right"
-
-[node name="JumpHint" type="Label" parent="InfectionUI/Hints"]
-script = ExtResource("6_input_hint_label")
-layout_mode = 0
-position = Vector2(440, -230)
-text = "Jump (Space): jump"
-
-[node name="DetachRecallHint" type="Label" parent="InfectionUI/Hints"]
-script = ExtResource("6_input_hint_label")
-layout_mode = 0
-position = Vector2(440, -200)
-text = "Detach/Recall (E): detach & recall chunk"
-
-[node name="AbsorbHint" type="Label" parent="InfectionUI/Hints"]
-script = ExtResource("6_input_hint_label")
-layout_mode = 0
-position = Vector2(440, -170)
-text = "Absorb (R): absorb enemy"
-
+[node name="InfectionUI" parent="." instance=ExtResource("5_game_ui")]

@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://cplayer001"]
+
+[ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_playerctrl"]
+[ext_resource type="Script" path="res://scripts/camera_follow.gd" id="2_camera_follow"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 16.0
+height = 32.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+position = Vector2(0, 0)
+script = ExtResource("1_playerctrl")
+
+[node name="PlayerShape" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_player")
+
+[node name="Camera" type="Camera2D" parent="."]
+script = ExtResource("2_camera_follow")
+follow_limit_left = -1000
+follow_limit_right = 1100
+follow_limit_top = -200
+follow_limit_bottom = 600
+
+[node name="PlayerVisual" type="Polygon2D" parent="."]
+z_index = 10
+color = Color(0.4, 0.9, 0.6, 1)
+polygon = PackedVector2Array(-16, -32, 16, -32, 16, 32, -16, 32)
