@@ -6,7 +6,7 @@
 # Movement constrained to plane Z=0; camera fixed for side view.
 
 class_name PlayerController3D
-extends CharacterBody3D
+extends BasePhysicsEntity3D
 
 const MovementSimulation = preload("res://scripts/movement_simulation.gd")
 ## 2D sim uses pixel-like units; 3D uses meters. 1 m = SCALE_2D_TO_3D "pixels".

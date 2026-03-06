@@ -2,23 +2,25 @@
 
 [ext_resource type="Script" path="res://scripts/enemy_infection_3d.gd" id="1_enemy_3d"]
 [ext_resource type="Script" path="res://scripts/infection_state_fx_3d.gd" id="2_infection_fx_3d"]
+[ext_resource type="PackedScene" path="res://assets/Models/gobot/model/gobot.glb" id="3_gobot"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
 radius = 1.2
 
-[sub_resource type="BoxMesh" id="BoxMesh_visual"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_body"]
 size = Vector3(0.8, 1.0, 0.4)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_enemy"]
-albedo_color = Color(0.7, 0.35, 0.4, 1)
-
-[node name="EnemyInfection3D" type="Node3D"]
+[node name="EnemyInfection3D" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
 script = ExtResource("1_enemy_3d")
 
-[node name="EnemyVisual" type="MeshInstance3D" parent="."]
+[node name="BodyShape" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-material_override = SubResource("StandardMaterial3D_enemy")
-mesh = SubResource("BoxMesh_visual")
+shape = SubResource("BoxShape3D_body")
+
+[node name="EnemyVisual" instance=ExtResource("3_gobot") parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="InfectionStateFx3D" type="Node3D" parent="."]
 script = ExtResource("2_infection_fx_3d")

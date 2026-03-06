@@ -26,11 +26,16 @@ godot --headless --check-only
 # Run the project headlessly (useful for CI/testing)
 godot --headless
 
+# Run all tests headlessly (recommended for CI and automated testing)
+./ci/scripts/run_tests.sh
+# Or manually: timeout 300 godot --headless -s tests/run_tests.gd
+
 # Export the project (requires export templates installed)
 godot --headless --export-release "Linux/X11" ./build/blobert
 ```
 
 > If `godot` is not on your PATH, it may be installed as `godot4` or require a full path.
+> The test script includes a 5-minute timeout to prevent hanging tests from blocking CI.
 
 ## Godot Project Structure (expected as project grows)
 

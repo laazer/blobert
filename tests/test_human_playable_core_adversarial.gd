@@ -661,4 +661,3 @@ func run_all() -> int:
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
 	return _fail_count
-

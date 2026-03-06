@@ -3,7 +3,7 @@
 # Engine-integration node for the infection loop: holds an EnemyStateMachine,
 # exposes it to InfectionInteractionHandler for target/absorb, and detects
 # player (for set_target_esm/clear_target) and chunk (for weaken + infect).
-# Uses CharacterBody2D so the enemy is affected by gravity and collides with the floor.
+# Uses BasePhysicsEntity2D so the enemy is affected by gravity and collides with the floor.
 #
 # Contract: Parent scene must have "InfectionInteractionHandler" as sibling.
 # Chunk contact: apply_weaken_event then apply_infection_event (idempotent per ESM).
@@ -11,7 +11,7 @@
 # Ticket: infection_interaction.md (Task 8)
 
 class_name EnemyInfection
-extends CharacterBody2D
+extends BasePhysicsEntity2D
 
 var _esm: EnemyStateMachine
 var _handler: InfectionInteractionHandler

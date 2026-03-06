@@ -15,7 +15,7 @@
 #   - MovementSimulation is instantiated directly (not as a node), keeping it engine-agnostic.
 
 class_name PlayerController
-extends CharacterBody2D
+extends BasePhysicsEntity2D
 
 # Preload the simulation script under the same name as its class_name declaration.
 # This const shadows the global class_name "MovementSimulation" in this file's scope

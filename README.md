@@ -230,3 +230,19 @@ godot --headless
 ```
 
 See `CLAUDE.md` for CLI commands (syntax check, export, etc.) used during development.
+
+## Testing
+
+This project uses a custom headless test runner for automated testing. Tests are written in GDScript and run without a GUI for CI compatibility.
+
+```bash
+# Run all tests (recommended - includes timeout to prevent hanging)
+./ci/scripts/run_tests.sh
+
+# Or run manually (with 5-minute timeout)
+timeout 300 godot --headless -s tests/run_tests.gd
+```
+
+Tests are organized in `tests/` with suites for movement, combat, UI, and integration scenarios. The runner exits with code 0 on success or 1 on failure, making it suitable for CI pipelines.
+
+For development, direnv is configured to make `run_tests.sh` accessible from any directory in the repo.
