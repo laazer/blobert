@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cplayer3d001"]
+[gd_scene format=3 uid="uid://cplayer3d001"]
 
 [ext_resource type="Script" path="res://scripts/player_controller_3d.gd" id="1_controller"]
 [ext_resource type="Script" path="res://scripts/slime_visual_state.gd" id="2_visual_state"]

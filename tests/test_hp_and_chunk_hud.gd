@@ -120,6 +120,20 @@ func _central_play_area_bounds(root: Node) -> Rect2:
 	return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 
+func _central_play_area_bounds_in_viewport_space(root: Node) -> Rect2:
+	if OS.has_feature("headless") or OS.has_feature("server"):
+		return Rect2()
+	var vp: Viewport = root.get_viewport() if root.is_inside_tree() else null
+	if vp == null:
+		return Rect2()
+	var visible: Rect2 = vp.get_visible_rect()
+	if visible.size.x < 100.0 or visible.size.y < 100.0:
+		return Rect2()
+	var margin: Vector2 = visible.size * 0.40
+	var center_size: Vector2 = visible.size * 0.20
+	return Rect2(margin, center_size)
+
+
 func _point_inside_rect(p: Vector2, r: Rect2) -> bool:
 	return r.has_point(p)
 
@@ -285,7 +299,7 @@ func test_infection_scene_has_hp_and_chunk_hud_elements() -> void:
 # Layout: HUD elements stay out of central play area and within sane distance
 # ---------------------------------------------------------------------------
 
-func _assert_hud_elements_layout_ok(root: Node, scene_name: String) -> void:
+func _assert_hud_elements_layout_ok(root: Node, scene_name: String, central_bounds_override: Rect2 = Rect2()) -> void:
 	if root == null:
 		return
 
@@ -299,10 +313,17 @@ func _assert_hud_elements_layout_ok(root: Node, scene_name: String) -> void:
 	var chunk_label: Label = _get_chunk_label(hud)
 	var hp_bar: Range = _get_hp_bar(hud)
 
-	# HUD elements are CanvasLayer children; use screen-space bounds for like-for-like comparison.
-	var bounds_and_center := _central_bounds_and_center_screen()
-	var central_bounds: Rect2 = bounds_and_center["bounds"]
-	var center: Vector2 = bounds_and_center["center"]
+	var central_bounds: Rect2
+	var center: Vector2
+	if central_bounds_override.size.length_squared() > 0.0:
+		central_bounds = central_bounds_override
+		center = central_bounds.position + central_bounds.size * 0.5
+	else:
+		# HUD elements are CanvasLayer children; use screen-space bounds for like-for-like
+		# comparison with their global rects.
+		var bounds_and_center: Dictionary = _central_bounds_and_center_screen()
+		central_bounds = bounds_and_center["bounds"]
+		center = bounds_and_center["center"]
 
 	var all_outside: bool = true
 	var all_within_distance: bool = true
@@ -344,7 +365,16 @@ func test_infection_hud_layout_respects_central_play_area() -> void:
 	var root: Node = _load_infection_scene()
 	if root == null:
 		return
-	_assert_hud_elements_layout_ok(root, "infection")
+
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		tree.root.add_child(root)
+
+	var vp_central: Rect2 = _central_play_area_bounds_in_viewport_space(root)
+	_assert_hud_elements_layout_ok(root, "infection", vp_central)
+
+	if root.get_parent() != null:
+		root.get_parent().remove_child(root)
 	root.free()
 
 

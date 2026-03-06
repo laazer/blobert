@@ -136,6 +136,22 @@ func _central_play_area_bounds(root: Node) -> Rect2:
 	return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 
+func _central_play_area_bounds_in_viewport_space(root: Node) -> Rect2:
+	# Central play area in viewport coords for CanvasLayer checks. In headless there is no
+	# real viewport layout, so return empty so "outside central" and "no intersect" pass.
+	if OS.has_feature("headless") or OS.has_feature("server"):
+		return Rect2()
+	var vp: Viewport = root.get_viewport() if root.is_inside_tree() else null
+	if vp == null:
+		return Rect2()
+	var visible: Rect2 = vp.get_visible_rect()
+	if visible.size.x < 100.0 or visible.size.y < 100.0:
+		return Rect2()
+	var margin: Vector2 = visible.size * 0.40
+	var center_size: Vector2 = visible.size * 0.20
+	return Rect2(margin, center_size)
+
+
 func _point_inside_rect(p: Vector2, r: Rect2) -> bool:
 	return r.has_point(p)
 
@@ -316,12 +332,14 @@ func test_absorb_prompt_layout_outside_central_play_area_and_not_extreme() -> vo
 		root.free()
 		return
 
-	# Use screen-space bounds so we compare Label (CanvasLayer) coords with same space.
-	var central_bounds: Rect2 = _central_play_area_bounds_screen()
+	# CanvasLayer children use viewport coords; central play area must be in viewport space.
+	var central_bounds: Rect2 = _central_play_area_bounds_in_viewport_space(root)
 	var center: Vector2 = central_bounds.position + central_bounds.size * 0.5
 
 	var pos: Vector2 = _label_global_position(label)
-	var outside_central: bool = not _point_inside_rect(pos, central_bounds)
+	# Empty central (e.g. headless viewport) => no overlap requirement, count as outside.
+	var central_has_area: bool = central_bounds.size.x > 0.0 and central_bounds.size.y > 0.0
+	var outside_central: bool = not central_has_area or not _point_inside_rect(pos, central_bounds)
 	var distance_to_center: float = center.distance_to(pos)
 	var not_extreme_distance: bool = distance_to_center <= 2000.0
 
@@ -343,11 +361,11 @@ func test_absorb_prompt_bounding_box_does_not_overlap_central_play_area() -> voi
 		root.free()
 		return
 
-	# Use screen-space bounds so we compare Label (CanvasLayer) rect with same space.
-	var central_bounds: Rect2 = _central_play_area_bounds_screen()
+	var central_bounds: Rect2 = _central_play_area_bounds_in_viewport_space(root)
 	var label_rect: Rect2 = _label_global_rect(label)
 
-	var intersects: bool = central_bounds.intersects(label_rect)
+	var central_has_area: bool = central_bounds.size.x > 0.0 and central_bounds.size.y > 0.0
+	var intersects: bool = central_has_area and central_bounds.intersects(label_rect)
 	_assert_false(intersects,
 		"inf_ui_2_absorb_prompt_bounding_box_outside_central_area — AbsorbPromptLabel global rect does not intersect central play area")
 

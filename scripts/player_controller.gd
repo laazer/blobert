@@ -312,7 +312,13 @@ func _physics_process(delta: float) -> void:
 		else:
 			parent.add_child(chunk)
 			_chunk_node = chunk
-			print("DETACH: spawned chunk at ", chunk.global_position)
+			# Throw the chunk: unfreeze and set initial velocity so it visibly flies.
+			chunk.freeze = false
+			var throw_dir: float = 1.0 if velocity.x >= 0.0 else -1.0
+			chunk.linear_velocity = Vector2(throw_dir * 280.0, -140.0)
+			# Reduce tunneling so chunk reliably hits enemy Area2D.
+			if chunk.get("continuous_cd") != null:
+				chunk.continuous_cd = RigidBody2D.CCD_MODE_CAST_RAY
 			detach_fired.emit(global_position, chunk.global_position)
 
 	# Advance any in-progress recall. This runs after the detach spawn logic so

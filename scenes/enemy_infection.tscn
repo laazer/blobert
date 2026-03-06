@@ -1,13 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://c2yenemy_infection"]
+[gd_scene load_steps=6 format=3 uid="uid://c2yenemy_infection"]
 
 [ext_resource type="Script" path="res://scripts/enemy_infection.gd" id="1_enemy_infection"]
 [ext_resource type="Script" path="res://scripts/infection_state_fx.gd" id="2_state_fx"]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(40, 48)
+
 [sub_resource type="CircleShape2D" id="CircleShape2D_interaction"]
 radius = 80.0
 
-[node name="EnemyInfection" type="Node2D"]
+[node name="EnemyInfection" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
 script = ExtResource("1_enemy_infection")
+
+[node name="BodyShape" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
 
 [node name="EnemyVisual" type="Polygon2D" parent="."]
 z_index = 5
@@ -30,8 +38,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="InteractionArea" type="Area2D" parent="."]
-monitorable = false
+collision_layer = 1
 collision_mask = 1
+monitorable = false
+monitoring = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractionArea"]
 shape = SubResource("CircleShape2D_interaction")

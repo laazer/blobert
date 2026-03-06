@@ -38,21 +38,21 @@ Implement mutation slot system with at least one slot: player can hold one mutat
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+INTEGRATION
 
 ## Revision
-8
+9
 
 ## Last Updated By
-Presentation Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Passing (core MutationSlot model, integration, and gameplay wiring green; full suite executed via tests/run_tests.gd)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Passing (core MutationSlot model, infection interaction, infection UI, and gameplay wiring suites green; full suite executed via `tests/run_tests.gd` against current revision)
+- Static QA: Not Run (`godot --headless --check-only` not yet executed for this ticket scope)
+- Integration: Not Run – no documented manual in-editor play session verifying mutation slot behavior, UI clarity, and absence of duplicate or lost mutations across normal infection flows.
 
 ## Blocking Issues
-- None
+- Manual in-editor verification is not yet documented for the following acceptance criteria: one mutation slot exists and is filled on absorb from infected enemies; mutation effect is usable in gameplay; slot state is clear (filled/empty) and consistent with UI; no duplicate or lost mutations in normal flow; mutation slot system is human-playable in-editor with mutation, slot state, and related UI visible and understandable without debug overlays.
 
 ## Escalation Notes
 - See `project_board/CHECKPOINTS.md` entries for `[mutation_slot_system_single]` for logged assumptions about slot/inventory relationship, consumption semantics, selection rules, and persistence scope.
@@ -62,7 +62,7 @@ Presentation Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
@@ -70,8 +70,8 @@ Acceptance Criteria Gatekeeper Agent
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Presentation Agent has refined the infection-loop HUD to make the single mutation slot visually clear and human-playable without debug overlays by introducing an always-visible `MutationSlotLabel` and dimmed `MutationIcon` that indicate an empty slot, brightening both and showing \"Mutation Slot: <id> active\" when the slot is filled while preserving the existing `MutationLabel` visibility contract and keeping all automated tests (including mutation slot, infection interaction, infection UI, and core movement suites) passing via tests/run_tests.gd. Handoff to Acceptance Criteria Gatekeeper Agent to validate that the updated HUD presentation fully satisfies SLOT-4 and the ticket’s visibility and clarity acceptance criteria.
+Automated tests and updated HUD presentation provide strong evidence for mutation slot behavior and UI wiring, but there is no documented manual in-editor integration check yet for the human-playable and no-duplicates acceptance criteria; holding the ticket in Stage INTEGRATION and routing to a Human to perform and record a short play session that explicitly confirms all acceptance criteria before this ticket can be advanced to COMPLETE.
 

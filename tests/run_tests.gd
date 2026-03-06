@@ -435,6 +435,18 @@ func _initialize() -> void:
 	total_failures += infection_interaction_adv_failures
 
 	# ------------------------------------------------------------------
+	# Suite: ChunkEnemyCollision
+	# Verifies chunk (RigidBody2D) is detected by enemy InteractionArea (Area2D)
+	# when they overlap: collision_layer/mask contract and runtime body_entered.
+	# ------------------------------------------------------------------
+	var chunk_collision_suite_script: GDScript = load("res://tests/test_chunk_enemy_collision.gd")
+	if chunk_collision_suite_script != null:
+		var chunk_collision_suite = chunk_collision_suite_script.new()
+		total_failures += chunk_collision_suite.run_all()
+	else:
+		push_error("RUNNER ERROR: could not load res://tests/test_chunk_enemy_collision.gd")
+
+	# ------------------------------------------------------------------
 	# Suite: InfectionStateFx
 	# Ticket coverage: infection_interaction.md (presentation subset)
 	# Scope: infection_state_fx.gd visual/label behavior for ESM states

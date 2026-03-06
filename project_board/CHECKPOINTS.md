@@ -257,6 +257,9 @@ Tickets queued: mutation_slot_system_single.md
 
 ---
 
+### [mutation_slot_system_single] — OUTCOME: INTEGRATION (Human verification required)
+Automated tests, core simulation, gameplay wiring, engine integration, and HUD presentation for the single mutation slot are all implemented and passing; ticket is parked in Stage INTEGRATION with explicit Blocking Issues for a human to verify in-editor that the slot UX is human-playable, clearly indicates filled/empty state and active mutation, and that no duplicate or lost mutations occur in realistic play.
+
 ### [mutation_slot_system_single] Planner — Relationship to MutationInventory
 
 **Would have asked:** Should the single mutation slot be modeled as a separate system from `MutationInventory`, or is the slot effectively "the currently equipped mutation" backed by `MutationInventory` as the source of granted mutations?

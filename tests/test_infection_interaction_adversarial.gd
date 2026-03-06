@@ -17,6 +17,9 @@ class_name InfectionInteractionAdversarialTests
 extends Object
 
 
+# Load so StubInfectionInteractionHandler can extend it (class_name available after preload).
+const _HandlerScript: GDScript = preload("res://scripts/infection_interaction_handler.gd")
+
 const DEFAULT_MUTATION_ID: String = "infection_mutation_01"
 const ALLOWED_ESM_STATES: Array[String] = [
 	"idle",
@@ -109,9 +112,9 @@ func _state_allowed(state: String) -> bool:
 	return state in ALLOWED_ESM_STATES
 
 
-# Simple stub for InfectionInteractionHandler to observe player targeting calls.
+# Stub for InfectionInteractionHandler so EnemyInfection._handler (typed as InfectionInteractionHandler) accepts it.
 class StubInfectionInteractionHandler:
-	extends Node
+	extends InfectionInteractionHandler
 
 	var last_esm: EnemyStateMachine = null
 	var set_calls: int = 0

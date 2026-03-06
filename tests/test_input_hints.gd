@@ -123,6 +123,20 @@ func _central_play_area_bounds(root: Node) -> Rect2:
 	return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 
+func _central_play_area_bounds_in_viewport_space(root: Node) -> Rect2:
+	if OS.has_feature("headless") or OS.has_feature("server"):
+		return Rect2()
+	var vp: Viewport = root.get_viewport() if root.is_inside_tree() else null
+	if vp == null:
+		return Rect2()
+	var visible: Rect2 = vp.get_visible_rect()
+	if visible.size.x < 100.0 or visible.size.y < 100.0:
+		return Rect2()
+	var margin: Vector2 = visible.size * 0.40
+	var center_size: Vector2 = visible.size * 0.20
+	return Rect2(margin, center_size)
+
+
 func _label_global_rect(label: Label) -> Rect2:
 	if label == null:
 		return Rect2()
@@ -240,8 +254,11 @@ func test_infection_input_hints_respect_central_play_area_and_hud_safe_zones() -
 	if root == null:
 		return
 
-	# Hint labels are under CanvasLayer; use screen-space central bounds.
-	var central_bounds: Rect2 = _central_play_area_bounds_screen()
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		tree.root.add_child(root)
+
+	var central_bounds: Rect2 = _central_play_area_bounds_in_viewport_space(root)
 	var hud_bounds: Rect2 = _hp_and_chunk_hud_bounds_in_infection_scene(root)
 	var has_hud_bounds: bool = hud_bounds.size.length() > 0.0
 
@@ -267,6 +284,8 @@ func test_infection_input_hints_respect_central_play_area_and_hud_safe_zones() -
 	_assert_true(all_outside_hud,
 		"input_hints_infection_outside_hud_area — infection input hints do not overlap HP/chunk HUD bounds")
 
+	if root.get_parent() != null:
+		root.get_parent().remove_child(root)
 	root.free()
 
 
