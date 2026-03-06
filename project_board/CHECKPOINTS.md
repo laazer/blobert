@@ -478,3 +478,48 @@ Tickets queued: scene_state_machine.md
 **Confidence:** High
 
 ---
+
+### [scene_state_machine] Test Breaker — Config dictionary mutability semantics
+
+**Would have asked:** When callers retrieve the configuration via `SceneStateMachine.get_config()`, is the returned `Dictionary` allowed to be mutated by callers, and if so, must the state machine protect its internal state from those external mutations?
+
+**Assumption made:** For this ticket, the conservative contract is that `get_config()` returns a defensive copy of the internal configuration on every call. Callers may mutate the returned `Dictionary` freely, and such mutations must not change the internal state or future `get_config()` results. The adversarial test `test_mutating_returned_config_does_not_change_internal_state` in `test_scene_state_machine_adversarial.gd` (# CHECKPOINT) encodes this requirement.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Test Breaker — Non-String event ID handling
+
+**Would have asked:** What should happen if `SceneStateMachine.apply_event` is accidentally invoked with non-String event identifiers (e.g. `null`, integers, booleans) despite the intended `String` API?
+
+**Assumption made:** For this ticket, any non-String event identifier is treated as an unknown event and must be a strict no-op: it must not crash, must not change state or configuration, and must not produce side effects beyond normal logging. The adversarial test `test_non_string_events_are_treated_as_strict_noops` in `test_scene_state_machine_adversarial.gd` (# CHECKPOINT) encodes this behavior.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Test Breaker — Event ID case sensitivity
+
+**Would have asked:** Are scene state selection events intended to be case-sensitive (e.g. `"select_infection_demo"` only) or should case-variant identifiers like `"SELECT_INFECTION_DEMO"` and `"Select_Enemy_Playtest"` also be accepted as aliases?
+
+**Assumption made:** The conservative, deterministic contract for this ticket is that event IDs are strictly case-sensitive: only the exact lowercase identifiers `"select_baseline"`, `"select_infection_demo"`, and `"select_enemy_playtest"` are recognized. Any case-mismatched identifier is treated as an unknown event and must be a strict no-op for both state and configuration. The adversarial test `test_case_mismatched_event_ids_are_treated_as_unknown_noops` in `test_scene_state_machine_adversarial.gd` (# CHECKPOINT) encodes this requirement.
+
+**Confidence:** Medium
+
+---
+
+## Run: 2026-03-06T12:00:00Z
+Tickets queued: scene_state_machine.md
+
+---
+
+### [scene_state_machine] Core Simulation Agent — Unknown-event trace equivalence vs no-op semantics
+
+**Would have asked:** The adversarial test `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` requires the state/config trace for an event sequence with interleaved unknown events to be identical (including length) to the trace for the same sequence with unknown events removed, but `SceneStateMachine.apply_event` is also required to treat unknown events as strict no-ops and the test harness unconditionally records one trace entry per input event. How should this inconsistency between "strict no-op" semantics and trace-length equality be resolved?
+
+**Assumption made:** Implement `SceneStateMachine` according to the documented contract and existing primary/adversarial tests for all other behaviors (canonical states, config flags, defensive copies, non-String and case-mismatched events as no-ops, long-sequence stability, and per-instance isolation). Treat the remaining failure in `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` as a specification/test bug that cannot be satisfied without changing the test harness itself, and mark the ticket BLOCKED pending human or Planner guidance on how to reconcile unknown-event trace semantics.
+
+**Confidence:** Low
+
+---

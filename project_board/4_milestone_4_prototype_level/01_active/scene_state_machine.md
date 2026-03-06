@@ -34,21 +34,21 @@ Introduce a reusable, pure-logic scene state machine that represents different f
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+BLOCKED
 
 ## Revision
-3
+5
 
 ## Last Updated By
-Test Designer Agent
+Core Simulation Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Failed
 - Static QA: Not Run
 - Integration: Not Run
 
 ## Blocking Issues
-- None
+- Adversarial test `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` in `tests/test_scene_state_machine_adversarial.gd` requires the trace for a sequence with interleaved unknown events to be identical (including length) to the trace for the same sequence with unknown events removed, but the scene state machine is also required to treat unknown events as strict no-ops and the test harness unconditionally records one trace entry per input event. This creates an unresolvable conflict between the specified semantics and the test harness without modifying the tests themselves.
 
 ## Escalation Notes
 - None
@@ -58,7 +58,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Orchestrator Agent
 
 ## Required Input Schema
 ```json
@@ -70,7 +70,7 @@ Test Breaker Agent
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Primary scene state machine behavioral tests have been authored and wired into the headless runner; Test Breaker Agent should now design adversarial suites and harden the contract before implementation proceeds.
+Core Simulation Agent implemented `SceneStateMachine` as a pure-logic module that satisfies all documented contracts and passes all primary and adversarial tests except for the unknown-event trace equivalence case, which appears to be a spec/test inconsistency that cannot be resolved without changing the tests; ticket is handed back to the orchestrator for guidance or test adjustment.
