@@ -37,6 +37,12 @@ signal chunk_reabsorbed(player_position: Vector3, chunk_position: Vector3)
 @export var wall_jump_height: float = 100.0
 @export var wall_jump_horizontal_speed: float = 180.0
 
+## Detach lob: initial velocity (m/s) for the chunk when thrown. X = horizontal, Y = upward.
+@export var detach_lob_horizontal: float = 5.0
+@export var detach_lob_upward: float = 8.0
+## Spawn offset (m) in lob direction so chunk clears the player.
+const _DETACH_SPAWN_OFFSET: float = 0.4
+
 ## Game juice: jump stretch (kit jumpStretchSize). Scale applied to SlimeVisual.
 @export var jump_stretch_scale: Vector3 = Vector3(0.85, 1.15, 0.85)
 @export var juice_tween_duration: float = 0.1
@@ -154,13 +160,20 @@ func _physics_process(delta: float) -> void:
 	if prev_has_chunk and not _current_state.has_chunk:
 		var chunk: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
 		assert(chunk != null, "chunk_3d.tscn root must be RigidBody3D")
-		chunk.global_position = global_position
+		# Lob direction: same as movement, or right if standing still.
+		var lob_dir: float = 1.0
+		if abs(velocity.x) > 0.1:
+			lob_dir = 1.0 if velocity.x > 0.0 else -1.0
+		var spawn_offset: Vector3 = Vector3(lob_dir * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
+		chunk.global_position = global_position + spawn_offset
 		var parent: Node = get_parent()
 		if parent == null:
 			push_error("PlayerController3D: cannot detach chunk — node has no parent")
 		else:
 			parent.add_child(chunk)
 			_chunk_node = chunk
+			chunk.freeze = false
+			chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
 			var am := _get_audio_manager()
 			if am != null and am.detach_sfx != null:
 				am.detach_sfx.play()
