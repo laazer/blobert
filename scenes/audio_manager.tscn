@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://baudiomgr001"]
+
+[ext_resource type="Script" path="res://scripts/audio_manager.gd" id="1_script"]
+
+[node name="AudioManager" type="Node"]
+script = ExtResource("1_script")
+
+[node name="JumpSfx" type="AudioStreamPlayer" parent="."]
+volume_db = -5.0
+pitch_scale = 1.1
+
+[node name="DetachSfx" type="AudioStreamPlayer" parent="."]
+volume_db = -5.0
+pitch_scale = 1.0
+
+[node name="RecallSfx" type="AudioStreamPlayer" parent="."]
+volume_db = -5.0
+pitch_scale = 0.95

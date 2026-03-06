@@ -187,8 +187,21 @@ func _control_global_rect(control: Control) -> Rect2:
 	return control.get_global_rect()
 
 
+func _central_play_area_bounds_screen() -> Rect2:
+	var cx: float = 640.0
+	var cy: float = 360.0
+	var half: float = 200.0
+	return Rect2(Vector2(cx - half, cy - half), Vector2(half * 2, half * 2))
+
+
 func _central_bounds_and_center(root: Node) -> Dictionary:
 	var bounds: Rect2 = _central_play_area_bounds(root)
+	var center: Vector2 = bounds.position + bounds.size * 0.5
+	return {"bounds": bounds, "center": center}
+
+
+func _central_bounds_and_center_screen() -> Dictionary:
+	var bounds: Rect2 = _central_play_area_bounds_screen()
 	var center: Vector2 = bounds.position + bounds.size * 0.5
 	return {"bounds": bounds, "center": center}
 
@@ -286,7 +299,8 @@ func _assert_hud_elements_layout_ok(root: Node, scene_name: String) -> void:
 	var chunk_label: Label = _get_chunk_label(hud)
 	var hp_bar: Range = _get_hp_bar(hud)
 
-	var bounds_and_center := _central_bounds_and_center(root)
+	# HUD elements are CanvasLayer children; use screen-space bounds for like-for-like comparison.
+	var bounds_and_center := _central_bounds_and_center_screen()
 	var central_bounds: Rect2 = bounds_and_center["bounds"]
 	var center: Vector2 = bounds_and_center["center"]
 

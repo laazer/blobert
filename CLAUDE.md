@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **blobert** is a Godot 4+ game project. The primary scripting language is GDScript; C# (Mono) support is also configured via `.gitignore` patterns.
 
+## Development target: 3D scenes
+
+Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
+
+- **Main scene:** `res://scenes/test_movement_3d.tscn` (set in `project.godot` as `run/main_scene`).
+- **Player:** `PlayerController3D` in `scripts/player_controller_3d.gd`; scene `scenes/player_3d.tscn`. Use **CharacterBody3D**, **Camera3D**, **Area3D**, **Node3D**, etc. for new gameplay and levels.
+- **Movement logic:** Shared pure simulation in `scripts/movement_simulation.gd` (no Node/Input); the 3D controller maps Vector2 → Vector3 and drives physics.
+- **2D scenes:** `test_movement.tscn`, `player.tscn`, and related 2D assets are kept for existing headless tests; do not add new features to 2D as the primary target. New tests for playable content should use the 3D scene (see `tests/test_3d_scene.gd`).
+
 ## Common Commands
 
 Godot projects are primarily developed through the Godot editor, but the engine can also be invoked via CLI:

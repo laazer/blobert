@@ -1,13 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://vm5l00cyai1j"]
+[gd_scene load_steps=6 format=3 uid="uid://vm5l00cyai1j"]
 
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/floor.tscn" id="2_floor"]
 [ext_resource type="PackedScene" path="res://scenes/game_ui.tscn" id="3_game_ui"]
+[ext_resource type="Script" path="res://scripts/detach_recall_fx_presenter.gd" id="4_fx"]
 
 [node name="TestMovement" type="Node2D"]
 position = Vector2(14, -140)
 
 [node name="DetachRecallFxPresenter" type="Node" parent="."]
+script = ExtResource("4_fx")
 
 [node name="Floor" parent="." instance=ExtResource("2_floor")]
 

@@ -92,6 +92,13 @@ func _labels_with_text_under_infection_ui(root: Node, needle: String) -> Array:
 	return matches
 
 
+func _central_play_area_bounds_screen() -> Rect2:
+	var cx: float = 640.0
+	var cy: float = 360.0
+	var half: float = 200.0
+	return Rect2(Vector2(cx - half, cy - half), Vector2(half * 2, half * 2))
+
+
 func _central_play_area_bounds(root: Node) -> Rect2:
 	var player: CharacterBody2D = root.get_node_or_null("Player") as CharacterBody2D
 	var floor: StaticBody2D = root.get_node_or_null("Floor") as StaticBody2D
@@ -233,7 +240,8 @@ func test_infection_input_hints_respect_central_play_area_and_hud_safe_zones() -
 	if root == null:
 		return
 
-	var central_bounds: Rect2 = _central_play_area_bounds(root)
+	# Hint labels are under CanvasLayer; use screen-space central bounds.
+	var central_bounds: Rect2 = _central_play_area_bounds_screen()
 	var hud_bounds: Rect2 = _hp_and_chunk_hud_bounds_in_infection_scene(root)
 	var has_hud_bounds: bool = hud_bounds.size.length() > 0.0
 

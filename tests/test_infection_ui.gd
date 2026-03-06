@@ -103,6 +103,14 @@ func _has_dynamic_world_ancestor(node: Node) -> bool:
 	return false
 
 
+# Screen-space central area for CanvasLayer UI (same coord system as Label global rect).
+func _central_play_area_bounds_screen() -> Rect2:
+	var cx: float = 640.0
+	var cy: float = 360.0
+	var half: float = 200.0
+	return Rect2(Vector2(cx - half, cy - half), Vector2(half * 2, half * 2))
+
+
 func _central_play_area_bounds(root: Node) -> Rect2:
 	# Reuses the same definition as HumanPlayableCoreTests._central_play_area_bounds:
 	# a rectangle spanning the main floor and a generous buffer around the player.
@@ -308,7 +316,8 @@ func test_absorb_prompt_layout_outside_central_play_area_and_not_extreme() -> vo
 		root.free()
 		return
 
-	var central_bounds: Rect2 = _central_play_area_bounds(root)
+	# Use screen-space bounds so we compare Label (CanvasLayer) coords with same space.
+	var central_bounds: Rect2 = _central_play_area_bounds_screen()
 	var center: Vector2 = central_bounds.position + central_bounds.size * 0.5
 
 	var pos: Vector2 = _label_global_position(label)
@@ -334,7 +343,8 @@ func test_absorb_prompt_bounding_box_does_not_overlap_central_play_area() -> voi
 		root.free()
 		return
 
-	var central_bounds: Rect2 = _central_play_area_bounds(root)
+	# Use screen-space bounds so we compare Label (CanvasLayer) rect with same space.
+	var central_bounds: Rect2 = _central_play_area_bounds_screen()
 	var label_rect: Rect2 = _label_global_rect(label)
 
 	var intersects: bool = central_bounds.intersects(label_rect)

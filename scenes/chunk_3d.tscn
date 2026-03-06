@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://cchunk3d001"]
+
+[ext_resource type="Script" path="res://scripts/chunk_3d.gd" id="1_chunk3d"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_chunk"]
+radius = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_chunk"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chunk"]
+albedo_color = Color(0.9, 0.4, 0.4, 1)
+
+[node name="Chunk3D" type="RigidBody3D" groups=["chunk"]]
+freeze = true
+script = ExtResource("1_chunk3d")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_chunk")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_chunk")
+mesh = SubResource("SphereMesh_chunk")

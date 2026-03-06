@@ -6,6 +6,12 @@ A cozy 2.5D experimental platformer about biological mutation, physical experime
 
 ---
 
+## Development target: 3D scenes
+
+**We develop for 3D.** The project uses a single 3D world with 2D-like gameplay (movement constrained to a plane, side-view camera). The default run scene is **`scenes/test_movement_3d.tscn`**; the playable character is **`PlayerController3D`** (`scripts/player_controller_3d.gd`) with scene **`scenes/player_3d.tscn`**. New features, levels, and mechanics should target 3D nodes (CharacterBody3D, Camera3D, Area3D, etc.). The shared movement logic lives in **`scripts/movement_simulation.gd`** (pure 2D math); the 3D controller maps its output to Vector3 and drives the 3D scene. Legacy 2D scenes (`test_movement.tscn`, `player.tscn`) remain for existing headless tests only.
+
+---
+
 ## Built with AI Agents
 
 Most of this project is developed **solely with AI agents** (Claude in Cursor): planning, specs, tests, and implementation are driven through a multi-agent TDD pipeline. Human input steers scope and review; agents own the bulk of the code and test authorship. If that kind of workflow interests you, the repo is a working example.

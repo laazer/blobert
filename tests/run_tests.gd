@@ -555,6 +555,21 @@ func _initialize() -> void:
 	total_failures += mutation_slot_adv_failures
 
 	# ------------------------------------------------------------------
+	# Suite: 3D Scene
+	# Scope: test_movement_3d.tscn structure, PlayerController3D, signals (Vector3),
+	#        required nodes (WorldEnvironment, Floor, RespawnZone, etc.), detach_fired.
+	# ------------------------------------------------------------------
+	var test_3d_scene_suite_script: GDScript = load("res://tests/test_3d_scene.gd")
+	if test_3d_scene_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_3d_scene.gd")
+		quit(1)
+		return
+
+	var test_3d_scene_suite: Object = test_3d_scene_suite_script.new()
+	var test_3d_scene_failures: int = test_3d_scene_suite.run_all()
+	total_failures += test_3d_scene_failures
+
+	# ------------------------------------------------------------------
 	# Summary
 	# ------------------------------------------------------------------
 	print("")

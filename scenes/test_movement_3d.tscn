@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3 uid="uid://ctest3d001"]
+
+[ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player_3d.tscn" id="1_player"]
+[ext_resource type="Script" path="res://scripts/respawn_zone.gd" id="2_respawn"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.2, 0.25, 0.3, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.35, 0.4, 0.45, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(60, 8, 15)
+
+[node name="TestMovement3D" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 5, 10, 5)
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+material_override = SubResource("StandardMaterial3D_floor")
+mesh = SubResource("BoxMesh_floor")
+
+[node name="SpawnPosition" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="RespawnZone" type="Area3D" parent="."]
+script = ExtResource("2_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[node name="Player3D" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]
