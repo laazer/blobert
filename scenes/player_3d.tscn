@@ -39,7 +39,7 @@ mesh = SubResource("SphereMesh_slime")
 [node name="Gimbal" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="Gimbal"]
-transform = Transform3D(1, 0, 0, 0, 0.940, -0.342, 0, 0.342, 0.940, 0, 0, 12)
+transform = Transform3D(1, 0, 0, 0, 0.866, -0.5, 0, 0.5, 0.866, 0, 5, 10)
 current = true
 
 [node name="ParticleTrail" type="CPUParticles3D" parent="."]

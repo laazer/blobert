@@ -52,7 +52,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if is_on_floor():
 		if velocity.y != 0.0:
-			print("enemy landed, clearing velocity from", velocity.y)
+			Logging.log("enemy landed, clearing velocity from " + str(velocity.y))
 		velocity.y = 0.0
 	else:
-		print("enemy falling, velocity", velocity.y)
+		Logging.debug("enemy falling, velocity " + str(velocity.y))

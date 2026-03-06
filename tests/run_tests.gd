@@ -20,8 +20,8 @@
 
 extends SceneTree
 
-# Preload so EnemyStateMachine is registered before test_enemy_state_machine.gd is loaded.
-const _ENEMY_STATE_MACHINE: GDScript = preload("res://scripts/enemy_state_machine.gd")
+# Preload so LoggingTests is registered before run_tests.gd is loaded.
+const _LOGGING_TESTS: GDScript = preload("res://tests/test_logging.gd")
 
 
 func _initialize() -> void:
@@ -375,6 +375,20 @@ func _initialize() -> void:
 		quit(1)
 		return
 
+	# ------------------------------------------------------------------
+	# Suite: BasePhysicsEntity3D
+	# Spec coverage: gravity application on CharacterBody3D subclasses
+	# ------------------------------------------------------------------
+	var base_physics_suite_script: GDScript = load("res://tests/test_base_physics_entity_3d.gd")
+	if base_physics_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_base_physics_entity_3d.gd")
+		quit(1)
+		return
+
+	var base_physics_suite: Object = base_physics_suite_script.new()
+	var base_physics_failures: int = base_physics_suite.run_all()
+	total_failures += base_physics_failures
+
 	var enemy_state_machine_suite: EnemyStateMachineTests = enemy_state_machine_suite_script.new()
 	var enemy_state_machine_failures: int = enemy_state_machine_suite.run_all()
 	total_failures += enemy_state_machine_failures
@@ -653,6 +667,20 @@ func _initialize() -> void:
 	var scene_state_integration_3d_suite: Object = scene_state_integration_3d_suite_script.new()
 	var scene_state_integration_3d_failures: int = scene_state_integration_3d_suite.run_all()
 	total_failures += scene_state_integration_3d_failures
+
+	# ------------------------------------------------------------------
+	# Suite: Logging
+	# Spec coverage: logging utility functions
+	# ------------------------------------------------------------------
+	var logging_suite_script: GDScript = load("res://tests/test_logging.gd")
+	if logging_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_logging.gd")
+		quit(1)
+		return
+
+	var logging_suite: Object = logging_suite_script.new()
+	var logging_failures: int = logging_suite.run_all()
+	total_failures += logging_failures
 
 	# ------------------------------------------------------------------
 	# Summary

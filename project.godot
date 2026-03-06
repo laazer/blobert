@@ -23,6 +23,7 @@ config/features=PackedStringArray("4.6")
 AudioManager="*res://scenes/audio_manager.tscn"
 GameManager="*res://scripts/game_manager.gd"
 InputHintsConfig="*res://scripts/input_hints_config.gd"
+Logging="*res://scripts/logging.gd"
 
 [input]
 
@@ -65,5 +66,5 @@ renderer/rendering_method="gl_compatibility"
 
 [display]
 
-window/size/viewport_width=1600
-window/size/viewport_height=900
+window/size/viewport_width=3200
+window/size/viewport_height=1880

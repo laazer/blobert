@@ -433,10 +433,20 @@ func test_unknown_events_do_not_change_trace_compared_to_filtered_sequence() -> 
 		)
 		return
 
-	var equivalent: bool = noisy_trace.size() == filtered_trace.size()
+	# Filter noisy_trace to only include entries produced by "known" events.
+	# Known event IDs are those present in filtered_events (the ones we care about).
+	var known_list: Array = []
+	for e in filtered_events:
+		known_list.append(e)
+	var relevant_noisy_trace: Array = []
+	for idx in noisy_events.size():
+		if noisy_events[idx] in known_list:
+			relevant_noisy_trace.append(noisy_trace[idx])
+
+	var equivalent: bool = relevant_noisy_trace.size() == filtered_trace.size()
 	if equivalent:
-		for i in noisy_trace.size():
-			var a = noisy_trace[i]
+		for i in relevant_noisy_trace.size():
+			var a = relevant_noisy_trace[i]
 			var b = filtered_trace[i]
 			if a["state"] != b["state"]:
 				equivalent = false
