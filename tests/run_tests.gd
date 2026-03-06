@@ -465,6 +465,22 @@ func _initialize() -> void:
 	total_failures += infection_state_fx_failures
 
 	# ------------------------------------------------------------------
+	# Suite: InfectionStateFx3D
+	# Ticket coverage: infection_interaction.md (3D presentation subset)
+	# Scope: infection_state_fx_3d.gd behavior for 3D enemy visuals:
+	#        damage blink feedback and disappearance on death/absorb.
+	# ------------------------------------------------------------------
+	var infection_state_fx_3d_suite_script: GDScript = load("res://tests/test_infection_state_fx_3d.gd")
+	if infection_state_fx_3d_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx_3d.gd")
+		quit(1)
+		return
+
+	var infection_state_fx_3d_suite = infection_state_fx_3d_suite_script.new()
+	var infection_state_fx_3d_failures: int = infection_state_fx_3d_suite.run_all()
+	total_failures += infection_state_fx_3d_failures
+
+	# ------------------------------------------------------------------
 	# Suite: InputHints
 	# Ticket coverage: input_hint_polish_core_mechanics
 	# Scope: on-screen input hints for move/jump/detach/recall/absorb in the
@@ -618,6 +634,25 @@ func _initialize() -> void:
 	var test_3d_scene_suite: Object = test_3d_scene_suite_script.new()
 	var test_3d_scene_failures: int = test_3d_scene_suite.run_all()
 	total_failures += test_3d_scene_failures
+
+	# ------------------------------------------------------------------
+	# Suite: SceneStateIntegration3D
+	# Ticket coverage: scene_state_machine.md
+	# Scope: minimal headless integration between test_movement_3d.tscn and
+	#        SceneStateMachine via SceneVariantController node; ensures that
+	#        the 3D scene owns a state machine and can switch between
+	#        baseline and infection demo variants without duplicating the
+	#        scene.
+	# ------------------------------------------------------------------
+	var scene_state_integration_3d_suite_script: GDScript = load("res://tests/test_scene_state_integration_3d.gd")
+	if scene_state_integration_3d_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_scene_state_integration_3d.gd")
+		quit(1)
+		return
+
+	var scene_state_integration_3d_suite: Object = scene_state_integration_3d_suite_script.new()
+	var scene_state_integration_3d_failures: int = scene_state_integration_3d_suite.run_all()
+	total_failures += scene_state_integration_3d_failures
 
 	# ------------------------------------------------------------------
 	# Summary

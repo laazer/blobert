@@ -37,18 +37,21 @@ Introduce a reusable, pure-logic scene state machine that represents different f
 BLOCKED
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Core Simulation Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Failed
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Failed — primary scene state machine tests pass, but adversarial test `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` in `tests/test_scene_state_machine_adversarial.gd` still fails due to the unknown-event trace equivalence requirement.
+- Static QA: Not Run — no documented review mapping `SceneStateMachine` states/transitions and unknown-event semantics back to the Acceptance Criteria.
+- Integration: Not Run — no documented evidence that the main 3D playable scene is using `SceneStateMachine` to switch between concrete configurations or that feature systems are correctly gated on state.
 
 ## Blocking Issues
-- Adversarial test `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` in `tests/test_scene_state_machine_adversarial.gd` requires the trace for a sequence with interleaved unknown events to be identical (including length) to the trace for the same sequence with unknown events removed, but the scene state machine is also required to treat unknown events as strict no-ops and the test harness unconditionally records one trace entry per input event. This creates an unresolvable conflict between the specified semantics and the test harness without modifying the tests themselves.
+- AC: "Primary and adversarial test suites under `tests/` cover allowed transitions, no-op combinations, determinism, and per-instance isolation for the scene state machine" is not satisfied: adversarial test `test_unknown_events_do_not_change_trace_compared_to_filtered_sequence` in `tests/test_scene_state_machine_adversarial.gd` currently fails, and there is no documented decision reconciling the unknown-event semantics with the test harness expectation that traces with and without unknown events are identical (including length).
+- AC: "The main 3D playable scene uses the scene state machine via a controller or manager script to switch between at least two concrete configurations" is not evidenced: no integration or manual test notes show the 3D scene driving at least two concrete configurations via `SceneStateMachine`.
+- AC: "Key feature systems in the 3D scene are gated on scene state in a way that is headless-testable where reasonable and preserves existing passing tests" is not evidenced: there is no validation that infection loop, enemies, HUD slices, or similar systems are wired through scene state without breaking existing tests.
+- AC: "No new top-level `.tscn` scenes are introduced solely to represent feature variants that can be expressed via scene state" is not evidenced: no static QA review is documented confirming that recent scene changes respect this constraint.
 
 ## Escalation Notes
 - None
@@ -58,7 +61,7 @@ Core Simulation Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Orchestrator Agent
+Human
 
 ## Required Input Schema
 ```json
@@ -70,7 +73,7 @@ Orchestrator Agent
 ```
 
 ## Status
-Blocked
+Needs Attention
 
 ## Reason
-Core Simulation Agent implemented `SceneStateMachine` as a pure-logic module that satisfies all documented contracts and passes all primary and adversarial tests except for the unknown-event trace equivalence case, which appears to be a spec/test inconsistency that cannot be resolved without changing the tests; ticket is handed back to the orchestrator for guidance or test adjustment.
+Ticket remains in `BLOCKED` stage because multiple Acceptance Criteria lack concrete validation evidence: (1) an adversarial unknown-event trace test in `tests/test_scene_state_machine_adversarial.gd` still fails and there is no documented decision on whether to change the test, the semantics, or the Acceptance Criteria; (2) there is no integration or manual testing record showing the main 3D scene using `SceneStateMachine` to switch between at least two concrete configurations; (3) there is no static QA review confirming that key feature systems are correctly gated on scene state and that no new top-level variant scenes were introduced. Human owner must decide how to reconcile the unknown-event test with the intended semantics, run/record integration and static QA checks against each Acceptance Criterion, and then update this ticket’s Validation Status accordingly.

@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/infection_interaction_handler.gd" id="3_infection_handler"]
 [ext_resource type="PackedScene" uid="uid://bnenemy_infection_3d" path="res://scenes/enemy_infection_3d.tscn" id="4_enemy"]
 [ext_resource type="PackedScene" uid="uid://cgame_ui001" path="res://scenes/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="Script" path="res://scripts/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -26,6 +27,9 @@ albedo_color = Color(0.35, 0.4, 0.45, 1)
 size = Vector3(60, 8, 15)
 
 [node name="TestMovement3D" type="Node3D"]
+
+[node name="SceneVariantController" type="Node" parent="."]
+script = ExtResource("6_scene_variant_controller")
 
 [node name="InfectionInteractionHandler" type="Node" parent="."]
 script = ExtResource("3_infection_handler")
