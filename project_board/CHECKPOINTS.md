@@ -380,3 +380,101 @@ Automated tests, core simulation, gameplay wiring, engine integration, and HUD p
 
 ---
 
+### [scene_state_machine] Test Designer — Public API shape and per-state flags
+
+**Would have asked:** Should `SceneStateMachine` expose its behavior via a generic `apply_event(event_id: String)` API with string event identifiers, or via dedicated methods per variant (e.g. `select_baseline()`), and what exact `enable_infection_loop`, `enable_enemies`, and `enable_prototype_hud` flag combinations should each canonical state use?
+
+**Assumption made:** For this ticket, the strictest deterministic contract is a pure-logic `SceneStateMachine` script at `res://scripts/scene_state_machine.gd` that (a) exposes `get_state_id() -> String`, `get_config() -> Dictionary`, and `apply_event(event_id: String) -> void`, (b) treats `"select_baseline"`, `"select_infection_demo"`, and `"select_enemy_playtest"` as the only recognized events, and (c) maps states to configuration flags as:
+`BASELINE` → `{enable_infection_loop: false, enable_enemies: false, enable_prototype_hud: true}`,
+`INFECTION_DEMO` → `{enable_infection_loop: true, enable_enemies: false, enable_prototype_hud: true}`,
+`ENEMY_PLAYTEST` → `{enable_infection_loop: false, enable_enemies: true, enable_prototype_hud: true}`.
+Unknown event IDs and redundant selections are strict no-ops for both state and config, and all instances are fully deterministic and isolated.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Orchestrator — Milestone placement
+
+**Would have asked:** Which milestone should the new scene state machine ticket live under — Milestone 2 (Infection Loop), Milestone 3 (Dual Mutation Fusion), or Milestone 4 (Prototype Level)?
+
+**Assumption made:** Place the ticket under `4_milestone_4_prototype_level/backlog/` with Epic set to “Milestone 4 – Prototype Level”, since the scene state machine primarily supports composing and toggling complex feature configurations in prototype levels while remaining reusable by earlier milestones.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Orchestrator — Workflow block initialization
+
+**Would have asked:** Should the orchestrator create initial WORKFLOW STATE / NEXT ACTION blocks for the new ticket before handing off to Planner, or follow the `mutation_slot_system_single` precedent and let Planner normalize the ticket structure?
+
+**Assumption made:** Follow the precedent from `[mutation_slot_system_single]`: the orchestrator leaves the new ticket with description and acceptance criteria only, moves it into the active column, and relies on the Planner agent to introduce and own the initial WORKFLOW STATE and NEXT ACTION blocks.
+
+**Confidence:** Medium
+
+---
+
+## Run: 2026-03-06T00:00:00Z
+Tickets queued: scene_state_machine.md
+
+---
+
+### [scene_state_machine] Planner — Ticket metadata defaults
+
+**Would have asked:** What initial values should the `Created By`, `Created On`, and `Revision` fields use when normalizing the new `scene_state_machine` ticket into the standard workflow template?
+
+**Assumption made:** Initialize the ticket as if this is its first formal workflow pass: set `Created By` to `Human`, `Created On` to the current ISO-8601 date-time for this run, and `Revision` to `1` when introducing the WORKFLOW STATE / NEXT ACTION blocks, with future agents incrementing Revision on each subsequent state change.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Spec — Canonical scene states
+
+**Would have asked:** Which exact scene variants must be treated as canonical states in the scene state machine for this milestone, and are additional future variants in scope?
+
+**Assumption made:** Define a minimal canonical set of three states for this ticket: `BASELINE` (movement-only prototype), `INFECTION_DEMO` (baseline + infection loop systems enabled), and `ENEMY_PLAYTEST` (baseline + enemy combat systems enabled). Additional states may be added by future tickets, but are explicitly out of scope for this spec and tests; this ticket only needs to cover these three.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Spec — Feature gating surface
+
+**Would have asked:** Which feature systems must the scene state machine control directly versus leaving them to ad-hoc scene logic?
+
+**Assumption made:** For this milestone, the state machine exposes a minimal, explicit configuration surface consisting of three boolean flags per state: `enable_infection_loop`, `enable_enemies`, and `enable_prototype_hud`. Other systems (e.g. advanced UI, progression, multi-level routing) are not gated by this state machine yet and remain out of scope.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Spec — Event model scope
+
+**Would have asked:** Should the scene state machine support generic "next/previous variant" navigation and complex transition graphs, or only direct selection of a specific variant?
+
+**Assumption made:** To keep behavior deterministic and testable, the public API only supports explicit selection events for this ticket: `select_baseline`, `select_infection_demo`, and `select_enemy_playtest`. There is no cyclic `next/prev` navigation or internal transition graph beyond mapping each selection event to its corresponding canonical state.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Spec — Initial state
+
+**Would have asked:** When a `SceneStateMachine` instance is created with no events applied, which state should be considered the initial default?
+
+**Assumption made:** Every new `SceneStateMachine` instance starts in the `BASELINE` state, with configuration flags matching the baseline (infection loop and enemies disabled, prototype HUD enabled). Tests treat any other initial state as incorrect for this ticket.
+
+**Confidence:** Medium
+
+---
+
+### [scene_state_machine] Spec — Invalid event handling
+
+**Would have asked:** How should the state machine behave if it receives an unknown event name or a selection event that redundantly targets the current state?
+
+**Assumption made:** Unknown event identifiers and redundant selection events are strict no-ops: they must not change the current state or configuration, and must not throw or log errors in normal operation. Tests will assert that applying such events leaves state and configuration unchanged.
+
+**Confidence:** High
+
+---

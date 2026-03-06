@@ -567,6 +567,23 @@ func _initialize() -> void:
 	total_failures += mutation_slot_adv_failures
 
 	# ------------------------------------------------------------------
+	# Suite: SceneStateMachine
+	# Ticket coverage: scene_state_machine.md
+	# Scope: pure-logic scene variant selection/state configuration for
+	#        BASELINE, INFECTION_DEMO, ENEMY_PLAYTEST; deterministic
+	#        selection events and per-instance isolation.
+	# ------------------------------------------------------------------
+	var scene_state_machine_suite_script: GDScript = load("res://tests/test_scene_state_machine.gd")
+	if scene_state_machine_suite_script == null:
+		push_error("RUNNER ERROR: could not load res://tests/test_scene_state_machine.gd")
+		quit(1)
+		return
+
+	var scene_state_machine_suite: SceneStateMachineTests = scene_state_machine_suite_script.new()
+	var scene_state_machine_failures: int = scene_state_machine_suite.run_all()
+	total_failures += scene_state_machine_failures
+
+	# ------------------------------------------------------------------
 	# Suite: 3D Scene
 	# Scope: test_movement_3d.tscn structure, PlayerController3D, signals (Vector3),
 	#        required nodes (WorldEnvironment, Floor, RespawnZone, etc.), detach_fired.
