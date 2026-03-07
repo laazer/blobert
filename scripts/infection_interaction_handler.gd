@@ -14,6 +14,8 @@
 class_name InfectionInteractionHandler
 extends Node
 
+signal absorb_resolved(esm: EnemyStateMachine)
+
 const _MutationInventoryScript: GDScript = preload("res://scripts/mutation_inventory.gd")
 const _ResolverScript: GDScript = preload("res://scripts/infection_absorb_resolver.gd")
 const _MutationSlotScript: GDScript = preload("res://scripts/mutation_slot.gd")
@@ -45,6 +47,7 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("absorb"):
 		if _resolver.can_absorb(_target_esm):
 			_resolver.resolve_absorb(_target_esm, _inventory, _mutation_slot)
+			absorb_resolved.emit(_target_esm)
 
 	if Input.is_action_just_pressed("infect"):
 		if _target_esm.get_state() == "weakened":
