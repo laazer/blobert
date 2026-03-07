@@ -39,16 +39,16 @@ Make wall cling state visually obvious so a human can tell when the slime is cli
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-1
+2
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Status
 Proceed

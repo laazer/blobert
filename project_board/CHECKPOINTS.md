@@ -881,3 +881,112 @@ Decompose wall cling visual feedback into spec-design-test-implementation tasks.
 ## Summary
 This execution plan decomposes wall cling visual feedback into 9 sequential tasks across Spec, Test, and Implementation domains. The conservative approach prioritizes **simple, non-distracting visuals** (color tint + optional low-cost particles) that rely on existing state tracking in `PlayerController.is_wall_clinging_state()`. The HUD indicator is already in place; this ticket adds sprite-level feedback. Estimated effort: 2–3 agent runs (Spec + Test + Implementation + QA + Playtest).
 
+---
+
+## Run: 2026-03-07T00:00:00Z
+Tickets queued: wall_cling_visual_readability.md (SPECIFICATION stage)
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Visual approach selection
+
+**Would have asked:** Should the wall cling visual feedback use sprite tilt/rotation, outline effects, color tint, or a combination?
+
+**Assumption made:** Conservative approach: **color modulate tint only**, no sprite rotation or animation. Rationale: (1) modulate is zero-cost and direction-agnostic (no special mirroring logic needed), (2) infection_state_fx.gd demonstrates the pattern, (3) readable at normal camera zoom without debug overlays, (4) instantaneous state-to-visual mapping (no fades). Optional particle trail is offered as fallback if budget allows, but tint is the core requirement.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Tint color values
+
+**Would have asked:** What exact RGB values should the cling tint use to be visibly distinct from the idle player color Color(0.4, 0.9, 0.6, 1.0)?
+
+**Assumption made:** **Cling tint = Color(0.8, 1.0, 0.5, 1.0)** — brighter, warmer green offset toward yellow/lime. Rationale: (1) increases green and red channels from idle, (2) maintains alpha = 1.0 (fully opaque), (3) visually distinct without over-saturation or glow effects, (4) readable at normal camera distances, (5) testable with RGB comparison (no subjective "looks good" assertions).
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Particle emission conditions
+
+**Would have asked:** Should particles emit continuously while clinging, only while sliding, or never?
+
+**Assumption made:** **Only while sliding** (velocity.y > ~10 pixels/frame or downward motion), not while stationary against wall. Rationale: (1) reduces visual noise, (2) conserves particle budget (5 max concurrent), (3) makes sense aesthetically (friction trail along wall, not hovering), (4) AC#2 says "optional"; if omitted, ticket still completes.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Particle budget and cost
+
+**Would have asked:** What is the maximum acceptable particle count and emission rate to avoid FPS drop?
+
+**Assumption made:** **~1–2 particles per 0.1 seconds (~15–20/second), ~5 max concurrent, ~0.3–0.5 second lifetime.** Rationale: (1) conservative estimate for Godot 2D CPUParticles2D, (2) does not require custom shaders, (3) safe on modern hardware without measurable FPS impact, (4) maintains visual distinction without saturation.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — AC#4 scope (HUD indicator)
+
+**Would have asked:** Does AC#4 require new HUD code, or is the existing InputHintLabel sufficient?
+
+**Assumption made:** **Existing InputHintLabel is sufficient.** Rationale: (1) reviewed `infection_ui.gd` and `game_ui.tscn`; InputHintLabel already subscribes to `PlayerController.is_wall_clinging_state()` and displays "Cling" hint, (2) no new HUD code is needed, (3) spec requires test validation only (verify label text/visibility matches state).
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — State tracking backend verification
+
+**Would have asked:** Is `MovementSimulation.is_wall_clinging` state tracking reliable, or do wall-cling state transitions need fixes?
+
+**Assumption made:** **State tracking is correct.** Rationale: (1) execution plan Task 5 explicitly delegates verification to "Implementation Backend Agent," (2) prior wall_cling.md and movement_controller.md tickets already specify and validate state transitions, (3) `PlayerController.is_wall_clinging_state()` exists and is public, (4) ClingStateFX spec assumes this method is accurate; if state is wrong, no FX spec can fix it.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Script pattern and file location
+
+**Would have asked:** Should the new FX presenter be a new script file or integrated into PlayerController or PlayerVisual?
+
+**Assumption made:** **New file `scripts/cling_state_fx.gd`** following the infection_state_fx.gd pattern. Rationale: (1) separates presentation logic from controller, (2) makes testing isolated easier, (3) consistent with infection loop architecture (infection_state_fx.gd, detach_recall_fx_presenter.gd), (4) clean responsibility: ClingStateFX polls state and applies visuals, PlayerController owns movement only.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Scene integration approach
+
+**Would have asked:** Should ClingStateFX be a child node or sibling in player.tscn?
+
+**Assumption made:** **Child node under Player (CharacterBody2D).** Rationale: (1) infection_state_fx.gd is a child of EnemyInfection, (2) allows ClingStateFX to easily access parent PlayerController reference, (3) optional CPUParticles2D can be a sibling or child of ClingStateFX (TBD by implementation agent).
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Edge case: rapid cling/detach
+
+**Would have asked:** What should happen if the player rapidly clings and detaches multiple times per second (e.g., bouncing against wall)?
+
+**Assumption made:** **Tint is applied/removed frame-by-frame without lag or glitches.** Rationale: (1) modulate assignment is instant, (2) no fading or interpolation, (3) _process() runs every frame and immediately reflects state, (4) adversarial tests (Task 3) will stress-test this case with 10+ transitions/second.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Spec Agent — Scope: no shader or custom rendering
+
+**Would have asked:** If modulate tint is insufficient, can we use custom shaders or other rendering effects?
+
+**Assumption made:** **No custom shaders or post-processing.** Rationale: (1) spec requires "visually obvious," not "pixel-perfect;" modulate achieves this, (2) keeping scope minimal reduces implementation risk, (3) if playtest reveals tint is too subtle, fallback is to brighten the RGB values further, not switch to shaders.
+
+**Confidence:** High
+
+---
+
+**End of autonomous decisions. Specification document complete and committed to repo. Ready for Test Designer handoff.**
+
