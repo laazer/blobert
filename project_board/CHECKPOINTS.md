@@ -578,3 +578,38 @@ Tickets queued: visual_feedback_infection.md, weakening_system.md, wall_cling_vi
 **Confidence:** High
 
 ---
+
+### [visual_feedback_infection] Spec — Absorb feedback event integration
+
+**Would have asked:** How should absorb visual feedback (particles, scale animation) be triggered: via a signal from `InfectionAbsorbResolver`, via direct call from `InfectionInteractionHandler`, or via state polling in the FX presenter?
+
+**Assumption made:** Three integration points are viable. The spec does not mandate a specific approach but recommends (in order of preference):
+  1. **Signal from resolver** (cleanest): Enhance `InfectionAbsorbResolver.resolve_absorb()` to emit a signal (e.g., `absorb_resolved`) that subscribers (e.g., `InfectionStateFX` or a new presenter) connect to and trigger feedback on.
+  2. **Direct call from handler** (pragmatic): `InfectionInteractionHandler` holds a reference to the FX presenter and calls `play_absorb_feedback()` after `resolve_absorb()` succeeds.
+  3. **State polling** (fallback): The FX presenter monitors `esm.get_state()` transitions; on infected → dead, it spawns absorb particles (no separate event needed).
+
+  Implementation will choose the cleanest integration that does not require refactoring existing modules. For minimal scope, option 3 (state polling) is preferred if it cleanly detects absorb-caused deaths without triggering on non-absorb deaths (e.g., respawn, other kill sources).
+
+**Confidence:** Medium
+
+---
+
+### [visual_feedback_infection] Spec — Absorb feedback triggering only on successful absorb
+
+**Would have asked:** If an infected enemy transitions to dead via some mechanism other than absorb (e.g., manual event, timeout, other code), should absorb visual feedback still play?
+
+**Assumption made:** Absorb feedback must be triggered **only** when the enemy dies **via absorb**, not on all infected → dead transitions. Conservative solution: (1) absorb feedback is emitted as an explicit event from `InfectionAbsorbResolver.resolve_absorb()` so it only fires on actual absorb success, OR (2) the FX presenter tracks that absorb was called and only plays feedback in that frame (no false positives from unrelated deaths). Implementation agents will select the approach that cleanly separates absorb-caused deaths from other dead-state causes.
+
+**Confidence:** Medium
+
+---
+
+### [visual_feedback_infection] Spec — Particle effect size and visibility
+
+**Would have asked:** How many particles, what size, and what velocity should the absorb particle burst have?
+
+**Assumption made:** Spec defines a **minimum viable** particle effect: 5–15 small particles (2–5 pixels each), white or light cyan color, radiating outward from enemy center over 0.3–0.5 seconds with 1.0 → 0.0 alpha fade. Implementation agents have discretion to adjust counts and velocities for visual polish as long as the effect remains lightweight and visible at target camera distance. If the effect is too subtle, a follow-up ticket can enhance particle art/count; for now, the simple burst satisfies the AC requirement.
+
+**Confidence:** High
+
+---

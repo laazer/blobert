@@ -38,33 +38,38 @@ Add visual feedback for infection flow: weakened state, infected state, and abso
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-1
+2
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
-- Tests: Not Run (test design and implementation pending)
+- Tests: Not Run (test design pending)
 - Static QA: Not Run (implementation pending)
 - Integration: Not Run (implementation and wiring pending)
 
 ## Blocking Issues
-None identified; plan is complete and ready for Spec Agent handoff.
+None identified; spec is complete and authoritative. Test Designer Agent may proceed with test design.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Context for Next Agent
-- Read this ticket and the execution plan above.
-- Review CHECKPOINTS entries under `[visual_feedback_infection]` to understand key assumptions (2D primary scope, absorb feedback is visual-only, readability at standard camera distance).
-- Reference existing implementations: `infection_state_fx.gd` (color tint + label, 2D), `infection_state_fx_3d.gd` (blink feedback, 3D), `detach_recall_fx_presenter.gd` (example presenter pattern).
-- Consult test scene: `scenes/test_infection_loop.tscn` — run it to assess current visual feedback and identify gaps.
-- Draft spec document (`project_board/specs/visual_feedback_infection_spec.md`): define exact color values, particles/animation scope, and AC-to-visual mapping.
-- Update this ticket: set Stage to TEST_DESIGN, increment Revision, set Last Updated By to `Spec Agent`, set Next Responsible Agent to `Test Designer`.
+- Specification document has been created at `project_board/specs/visual_feedback_infection_spec.md` and is authoritative.
+- Read the spec and review this ticket's execution plan (Task 2: Primary Tests).
+- Review CHECKPOINTS entries under `[visual_feedback_infection]` to understand integration assumptions (e.g., absorb feedback event wiring).
+- Design primary test suite validating:
+  - State label text and visibility match spec for weakened/infected/dead/idle states.
+  - Color tint values (via `_modulate_for_state()`) match spec RGB values.
+  - Absorb feedback is triggered appropriately on absorb success.
+  - No visual glitches or regressions in existing infection interaction flow.
+- Reference existing implementations: `infection_state_fx.gd`, test infrastructure, and `test_infection_loop.tscn`.
+- Create test file(s) in `tests/` and register with test runner.
+- Update this ticket: set Stage to TEST_BREAK, increment Revision, set Last Updated By to `Test Designer Agent`, set Next Responsible Agent to `Test Breaker Agent`.
