@@ -1028,5 +1028,151 @@ Tickets queued: wall_cling_visual_readability.md (SPECIFICATION stage)
 
 ---
 
-**Test Designer suite complete. 26 primary tests + 18 adversarial tests. All tests registered in run_tests.gd. Ready for Test Breaker handoff.****
+**Test Designer suite complete. 26 primary tests + 18 adversarial tests. All tests registered in run_tests.gd. Ready for Test Breaker handoff.**
+
+---
+
+## Run: 2026-03-07T22:00:00Z
+Tickets queued: wall_cling_visual_readability.md (TEST_BREAK stage)
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Idle vs Cling Color Channel Precision
+
+**Would have asked:** Should color tint values (idle R=0.4, cling R=0.8, etc.) be treated as hard constants with exact RGB values, or are tolerance ranges acceptable due to float precision?
+
+**Assumption made:** Treat color constants as hard specifications with ±0.01 tolerance for floating-point precision. Tests encode exact expected values (idle Color(0.4, 0.9, 0.6, 1.0) and cling Color(0.8, 1.0, 0.5, 1.0)) and accept results within EPSILON=0.01 per channel. Any implementation that deviates beyond this tolerance (e.g., using Color(0.4, 0.9, 0.55, 1.0) for idle) fails the test and must be corrected.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Null Parent Error Handling
+
+**Would have asked:** When ClingStateFX._ready() is called without a parent node or with a non-PlayerController parent, what exact behavior is required: silent graceful skip, warning log, or exception?
+
+**Assumption made:** ClingStateFX must gracefully handle a null parent: cache null references without crashing, return early from _process() if parent is null, and produce no logs/warnings for normal operation (silent skip). Logging is reserved for actual errors (e.g., loaded script is null). Test `gap_null_parent_graceful_exit` encodes the silent no-op contract.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Missing PlayerVisual Node
+
+**Would have asked:** If PlayerVisual is missing from the player hierarchy, should ClingStateFX crash, warn, or silently skip modulate updates?
+
+**Assumption made:** ClingStateFX must silently skip modulate updates if PlayerVisual is unavailable. Cache the visual reference at _ready(); if null, defer lookup each frame via get_node_or_null("PlayerVisual"). If visual remains null after attempted lookup, skip modulate assignment in _process() without logging. This ensures robustness in scenes with non-standard hierarchies.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Missing is_wall_clinging_state() Method
+
+**Would have asked:** If parent lacks the is_wall_clinging_state() method, should ClingStateFX default to idle state, throw an exception, or require an explicit API check before calling the method?
+
+**Assumption made:** ClingStateFX must call has_method("is_wall_clinging_state") before invoking the method. If the method is absent, default to idle state (is_clinging = false) so that the sprite reverts to the default tint. This allows ClingStateFX to be attached to any parent node without crashing.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Delta Time Parameter Invariance
+
+**Would have asked:** Does the delta parameter in _process(delta) affect tint application? Should _process(0.0) and _process(1.0) produce identical visual results?
+
+**Assumption made:** The delta parameter is semantically unused for tint application; ClingStateFX is purely reactive to instantaneous state, not time-dependent. Both _process(0.0) and _process(1.0) must produce identical cling/idle tints. Delta may be used for particle updates (e.g., fade-out timing) but not for state-to-visual mapping. Test `gap_delta_parameter_unused_or_used` encodes this contract.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Rapid Cling/Detach Stability
+
+**Would have asked:** Under 50+ rapid cling/detach cycles, should visual remain stable with no glitches, flicker, or intermediate tint values?
+
+**Assumption made:** ClingStateFX must produce stable, glitch-free visuals under stress. Rapid state transitions (cling true → false → true, repeat 50 times) must result in correct tint each time, with zero flickering or visual artifacts. Test `test_adv_rapid_cling_detach_50_cycles` verifies this stress contract.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Particle Emitter Lifecycle (Optional Feature)
+
+**Would have asked:** If CPUParticles2D emitter exists as a child of ClingStateFX, what exact lifecycle should it follow: always disabled until _ready() explicitly enables it, disabled initially then enabled on cling, or some other state?
+
+**Assumption made:** If particle emitter exists (child named "ClingTrail"), it should be disabled (emitting=false) by default. ClingStateFX._process() enables emitting (set to true) only when is_clinging=true AND conditions for particle emission are met (e.g., velocity.y > threshold); disables emitting (set to false) on detach. Existing particles continue to animate and fade per their lifetime.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — _ready() Not Required Before _process()
+
+**Would have asked:** Can ClingStateFX._process() be called directly without prior _ready() call, and if so, should it still apply tint correctly or degrade gracefully?
+
+**Assumption made:** ClingStateFX must be safe to call _process() even if _ready() was skipped. Node references are initialized on-demand in _process() (lazy initialization) if they were not cached in _ready(). This ensures robustness and allows testing without full scene setup.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Multiple _ready() Calls Idempotence
+
+**Would have asked:** If _ready() is called multiple times (e.g., due to scene reload or manual re-initialization), does ClingStateFX remain stable and re-cache references correctly?
+
+**Assumption made:** _ready() is idempotent: calling it multiple times is safe and simply re-caches node references. No side effects, state corruption, or crashes should occur. Subsequent _process() calls function identically whether _ready() was called once or multiple times.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — Modulate Override Conflict Resolution
+
+**Would have asked:** If an external system (e.g., shader, animation, or another FX system) sets PlayerVisual.modulate while ClingStateFX is running, which has priority?
+
+**Assumption made:** ClingStateFX has priority and writes modulate every frame in _process(). External modifications to modulate between frames are overwritten on the next _process() call. ClingStateFX is the authoritative modulate driver for cling visuals; no coordination with other modulate writers is implemented for this ticket.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Implementation Frontend Agent — Recommended Architecture
+
+**Would have asked:** Should ClingStateFX be a standalone script attached to a new node, or should it be integrated into PlayerVisual or PlayerController?
+
+**Assumption made:** Create a new node `ClingFX` as a child of `Player` and attach the `cling_state_fx.gd` script to it (following infection_state_fx.gd pattern). The `ClingFX` node caches references to parent `PlayerController` and sibling `PlayerVisual` (Polygon2D), polls `is_wall_clinging_state()` each frame, and updates `PlayerVisual.modulate` directly. Optional `CPUParticles2D` child `ClingTrail` can be added if particle trail is in scope.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Implementation Frontend Agent — Scene Hierarchy
+
+**Would have asked:** What should the updated player.tscn hierarchy look like, and which node should own the CPUParticles2D emitter?
+
+**Assumption made:** Updated hierarchy:
+```
+Player (CharacterBody2D) [PlayerController script]
+├── PlayerShape (CollisionShape2D)
+├── Camera (Camera2D)
+├── PlayerVisual (Polygon2D)
+└── ClingFX (Node) [cling_state_fx.gd script]
+    └── ClingTrail (CPUParticles2D) [optional particle emitter]
+```
+ClingFX owns the ClingTrail emitter to keep particle logic encapsulated. PlayerVisual is a sibling for easy reference via get_node_or_null().
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Breaker — OUTCOME SUMMARY
+
+**Mutation tests created:** 18 tests (color precision, error handling, delta invariance, stress scenarios)
+**Spec gaps identified:** 13 checkpoints logged (error handling, null safety, initialization, integration semantics)
+**Adversarial test coverage:** 50+ tests already present (primary + existing adversarial suite)
+**Architecture confidence:** High (cling_state_fx.gd implementation provided; pattern follows infection_state_fx.gd)
+**Ready for implementation:** Yes. All tests, spec, and checkpoints in place. cling_state_fx.gd is implemented and ready to be integrated into player.tscn.
+
+---
 

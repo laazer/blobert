@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cwall001"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(20, 400)
+
+[node name="Wall" type="StaticBody2D"]
+
+[node name="WallShape" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="WallVisual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.3, 0.4, 1)
+polygon = PackedVector2Array(-10, -200, 10, -200, 10, 200, -10, 200)
