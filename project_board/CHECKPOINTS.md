@@ -988,5 +988,45 @@ Tickets queued: wall_cling_visual_readability.md (SPECIFICATION stage)
 
 ---
 
-**End of autonomous decisions. Specification document complete and committed to repo. Ready for Test Designer handoff.**
+### [wall_cling_visual_readability] Test Designer — AC#4 HUD Indicator Scope
+
+**Would have asked:** Should test_wall_cling_visual_readability.gd verify InputHintLabel binding and text synchronization, or is that covered by existing test_infection_ui.gd?
+
+**Assumption made:** Existing `test_infection_ui.gd` and `test_input_hints.gd` already cover HUD label synchronization with game state. This test suite focuses on visual FX layer (modulate tint and optional particles). AC#4 is verified in existing tests and manual playtest; primary and adversarial suites reserve the contract but defer detailed HUD testing to existing suites.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Designer — Particle Cleanup Mechanism
+
+**Would have asked:** Should particle emitter be set to `emitting=false` on detach, or should the emitter be removed/disabled entirely?
+
+**Assumption made:** Particle emitter should be set to `emitting=false` (stop emitting new particles) but remain active so existing particles fade per their lifetime. This allows smooth visual fade-out without abrupt disappearance. Adversarial tests verify this behavior if particles are implemented.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Test Designer — Detach While Sliding Condition
+
+**Would have asked:** Should the FX presenter check velocity.y (downward/sliding) to conditionally apply detach cleanup, or is detach cleanup always instant regardless of velocity?
+
+**Assumption made:** Detach cleanup is always instant. AC#3 requires "removed within one frame" regardless of velocity or sliding state. The FX presenter responds only to `is_wall_clinging` state transitions, not velocity. Velocity is tracked in movement simulation; FX layer is agnostic to it.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Test Designer — Headless Testing Gaps
+
+**Would have asked:** Which ACs require manual/in-engine verification and cannot be tested headless?
+
+**Assumption made:** AC#5 (camera distance readability) and parts of AC#1 (sprite "clearly indicates," subjective visual assessment) require manual playtest in-editor. Headless tests verify state→visual contract (color values, label text, tint application/removal), while human playtest confirms visual clarity and aesthetics.
+
+**Confidence:** High
+
+---
+
+**Test Designer suite complete. 26 primary tests + 18 adversarial tests. All tests registered in run_tests.gd. Ready for Test Breaker handoff.****
 
