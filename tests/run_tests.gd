@@ -3,25 +3,86 @@
 # Top-level headless test runner for the blobert project.
 #
 # Usage:
-#   godot --headless --path /Users/jacobbrandt/workspace/blobert -s tests/run_tests.gd
-#
-# This script extends SceneTree so Godot executes it directly via the -s flag.
-# It instantiates each Object-subclass test suite, calls run_all(), accumulates
-# the failure count, and exits with code 0 (all pass) or 1 (any failure).
+#   godot --headless --path /path/to/blobert -s tests/run_tests.gd
 #
 # Exit codes:
-#   0  — all test suites passed (fail_count == 0)
-#   1  — one or more tests failed (fail_count > 0)
+#   0  — all test suites passed
+#   1  — one or more tests failed
 #
 # Adding a new suite:
-#   1. Create tests/test_<name>.gd as "class_name <Name>Tests extends Object"
+#   1. Create tests/<group>/test_<name>.gd as "class_name <Name>Tests extends Object"
 #      with a "func run_all() -> int:" entry point.
-#   2. Add a load/new/run_all block below, identically to the existing pattern.
+#   2. Add the path to the SUITES array below in the appropriate group.
 
 extends SceneTree
 
 # Preload so LoggingTests is registered before run_tests.gd is loaded.
-const _LOGGING_TESTS: GDScript = preload("res://tests/test_logging.gd")
+const _LOGGING_TESTS: GDScript = preload("res://tests/system/test_logging.gd")
+
+const SUITES: Array[String] = [
+	# --- movement ---
+	"res://tests/movement/test_movement_simulation.gd",
+	"res://tests/movement/test_movement_simulation_adversarial.gd",
+	"res://tests/movement/test_jump_simulation.gd",
+	"res://tests/movement/test_jump_simulation_adversarial.gd",
+	"res://tests/movement/test_wall_cling_simulation.gd",
+	"res://tests/movement/test_wall_cling_simulation_adversarial.gd",
+
+	# --- camera ---
+	"res://tests/camera/test_camera_follow.gd",
+	"res://tests/camera/test_camera_follow_adversarial.gd",
+
+	# --- chunk ---
+	"res://tests/chunk/test_chunk_detach_simulation.gd",
+	"res://tests/chunk/test_chunk_detach_simulation_adversarial.gd",
+	"res://tests/chunk/test_chunk_recall_simulation.gd",
+	"res://tests/chunk/test_chunk_recall_simulation_adversarial.gd",
+	"res://tests/chunk/test_chunk_enemy_collision.gd",
+
+	# --- player ---
+	"res://tests/player/test_base_physics_entity_3d.gd",
+	"res://tests/player/test_hp_reduction_simulation.gd",
+	"res://tests/player/test_hp_reduction_simulation_adversarial.gd",
+	"res://tests/player/test_human_playable_core.gd",
+	"res://tests/player/test_human_playable_core_adversarial.gd",
+
+	# --- enemy ---
+	"res://tests/enemy/test_enemy_state_machine.gd",
+	"res://tests/enemy/test_enemy_state_machine_adversarial.gd",
+	"res://tests/enemy/test_weakening_system.gd",
+	"res://tests/enemy/test_weakening_system_adversarial.gd",
+
+	# --- infection ---
+	"res://tests/infection/test_infection_ui.gd",
+	"res://tests/infection/test_infection_interaction.gd",
+	"res://tests/infection/test_infection_interaction_adversarial.gd",
+	"res://tests/infection/test_infection_state_fx.gd",
+	"res://tests/infection/test_infection_state_fx_adversarial.gd",
+	"res://tests/infection/test_infection_state_fx_mutation_edge_cases.gd",
+	"res://tests/infection/test_infection_state_fx_3d.gd",
+
+	# --- ui ---
+	"res://tests/ui/test_hp_and_chunk_hud.gd",
+	"res://tests/ui/test_hp_and_chunk_hud_adversarial.gd",
+	"res://tests/ui/test_input_hints.gd",
+	"res://tests/ui/test_input_hints_adversarial.gd",
+	"res://tests/ui/test_wall_cling_visual_readability.gd",
+	"res://tests/ui/test_wall_cling_visual_readability_adversarial.gd",
+	# test_wall_cling_visual_readability_mutation_specs.gd excluded: Color.distance_to() is not valid in Godot 4.6
+
+	# --- scene ---
+	"res://tests/scene/test_3d_scene.gd",
+	"res://tests/scene/test_scene_state_machine.gd",
+	"res://tests/scene/test_scene_state_machine_adversarial.gd",
+	"res://tests/scene/test_scene_state_integration_3d.gd",
+
+	# --- system ---
+	"res://tests/system/test_detach_recall_fx.gd",
+	"res://tests/system/test_detach_recall_fx_adversarial.gd",
+	"res://tests/system/test_mutation_slot_system_single.gd",
+	"res://tests/system/test_mutation_slot_system_single_adversarial.gd",
+	"res://tests/system/test_logging.gd",
+]
 
 
 func _initialize() -> void:
@@ -30,788 +91,14 @@ func _initialize() -> void:
 
 	var total_failures: int = 0
 
-	# ------------------------------------------------------------------
-	# Suite: MovementSimulation
-	# Spec coverage: SPEC-1 through SPEC-6, SPEC-12 through SPEC-14
-	# ------------------------------------------------------------------
-	var movement_suite_script: GDScript = load("res://tests/test_movement_simulation.gd")
-	if movement_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_movement_simulation.gd")
-		quit(1)
-		return
+	for path in SUITES:
+		var script: GDScript = load(path)
+		if script == null or not script.can_instantiate():
+			push_error("RUNNER ERROR: could not load " + path)
+			quit(1)
+			return
+		total_failures += script.new().run_all()
 
-	var movement_suite: MovementSimulationTests = movement_suite_script.new()
-	var movement_failures: int = movement_suite.run_all()
-	total_failures += movement_failures
-
-	# ------------------------------------------------------------------
-	# Suite: MovementSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-02-28
-	# Spec coverage: edge cases, boundary values, mutation testing, stress
-	# scenarios targeting gaps in SPEC-3 through SPEC-6, SPEC-12.
-	# ------------------------------------------------------------------
-	var adversarial_suite_script: GDScript = load("res://tests/test_movement_simulation_adversarial.gd")
-	if adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_movement_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var adversarial_suite: MovementSimulationAdversarialTests = adversarial_suite_script.new()
-	var adversarial_failures: int = adversarial_suite.run_all()
-	total_failures += adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: JumpSimulation
-	# Spec coverage: SPEC-15 through SPEC-21, SPEC-24
-	# ------------------------------------------------------------------
-	var jump_suite_script: GDScript = load("res://tests/test_jump_simulation.gd")
-	if jump_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_jump_simulation.gd")
-		quit(1)
-		return
-
-	var jump_suite: JumpSimulationTests = jump_suite_script.new()
-	var jump_failures: int = jump_suite.run_all()
-	total_failures += jump_failures
-
-	# ------------------------------------------------------------------
-	# Suite: JumpSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-03-01
-	# Spec coverage: boundary, mutation, stress, and edge-case tests targeting
-	# gaps in SPEC-15 through SPEC-21, SPEC-24.
-	# ------------------------------------------------------------------
-	var jump_adversarial_suite_script: GDScript = load("res://tests/test_jump_simulation_adversarial.gd")
-	if jump_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_jump_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var jump_adversarial_suite: JumpSimulationAdversarialTests = jump_adversarial_suite_script.new()
-	var jump_adversarial_failures: int = jump_adversarial_suite.run_all()
-	total_failures += jump_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WallClingSimulation
-	# Spec coverage: SPEC-25 through SPEC-34, SPEC-36
-	# ------------------------------------------------------------------
-	var wall_cling_suite_script: GDScript = load("res://tests/test_wall_cling_simulation.gd")
-	if wall_cling_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_wall_cling_simulation.gd")
-		quit(1)
-		return
-
-	var wall_cling_suite: WallClingSimulationTests = wall_cling_suite_script.new()
-	var wall_cling_failures: int = wall_cling_suite.run_all()
-	total_failures += wall_cling_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WallClingSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-03-01
-	# Spec coverage: boundary, mutation, stress, and edge-case tests targeting
-	# gaps in SPEC-25 through SPEC-34, SPEC-36 not covered by primary suite.
-	# ------------------------------------------------------------------
-	var wall_cling_adversarial_suite_script: GDScript = load("res://tests/test_wall_cling_simulation_adversarial.gd")
-	if wall_cling_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_wall_cling_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var wall_cling_adversarial_suite: WallClingSimulationAdversarialTests = wall_cling_adversarial_suite_script.new()
-	var wall_cling_adversarial_failures: int = wall_cling_adversarial_suite.run_all()
-	total_failures += wall_cling_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: CameraFollow
-	# Spec coverage: SPEC-37 through SPEC-42, SPEC-45 (headless-verifiable ACs)
-	# Manual ACs (MAN-01 through MAN-06) are listed in camera_follow_spec.md
-	# and are not included here — they require in-editor verification (Task 6).
-	# ------------------------------------------------------------------
-	var camera_follow_suite_script: GDScript = load("res://tests/test_camera_follow.gd")
-	if camera_follow_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_camera_follow.gd")
-		quit(1)
-		return
-
-	var camera_follow_suite: CameraFollowTests = camera_follow_suite_script.new()
-	var camera_follow_failures: int = camera_follow_suite.run_all()
-	total_failures += camera_follow_failures
-
-	# ------------------------------------------------------------------
-	# Suite: CameraFollow Adversarial
-	# Generated by Test Breaker Agent — 2026-03-01
-	# Spec coverage: edge-case and adversarial tests for SPEC-38, SPEC-39,
-	# SPEC-40, SPEC-41, SPEC-42 targeting: zero/negative/INF smoothing_speed,
-	# smoothing_enabled=false, degenerate limit boxes, inverted limits,
-	# INT32 boundary limits, out-of-range drag margins, idempotency and
-	# override behavior of _ready() on repeated calls.
-	# ------------------------------------------------------------------
-	var camera_follow_adversarial_suite_script: GDScript = load("res://tests/test_camera_follow_adversarial.gd")
-	if camera_follow_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_camera_follow_adversarial.gd")
-		quit(1)
-		return
-
-	var camera_follow_adversarial_suite: CameraFollowAdversarialTests = camera_follow_adversarial_suite_script.new()
-	var camera_follow_adversarial_failures: int = camera_follow_adversarial_suite.run_all()
-	total_failures += camera_follow_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: ChunkDetachSimulation
-	# Spec coverage: SPEC-46 through SPEC-50, SPEC-53 (headless-verifiable ACs)
-	# SPEC-51 (project.godot input action) and SPEC-52 (engine integration /
-	# player_controller.gd + chunk.tscn) are not covered here — they require
-	# in-editor or controller-level verification (Tasks 6 and 7).
-	# ------------------------------------------------------------------
-	var chunk_detach_suite_script: GDScript = load("res://tests/test_chunk_detach_simulation.gd")
-	if chunk_detach_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_chunk_detach_simulation.gd")
-		quit(1)
-		return
-
-	var chunk_detach_suite: ChunkDetachSimulationTests = chunk_detach_suite_script.new()
-	var chunk_detach_failures: int = chunk_detach_suite.run_all()
-	total_failures += chunk_detach_failures
-
-	# ------------------------------------------------------------------
-	# Suite: ChunkDetachSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-03-01
-	# Spec coverage: adversarial boundary, mutation, stress, and edge-case
-	# tests for SPEC-46 through SPEC-50, SPEC-53 not covered by the 37-test
-	# primary suite. Targets: detach+jump same frame (all 7 fields), detach+
-	# wall jump, detach on landing, rapid no-op detach, delta=0.0 (all
-	# fields), large delta, 7-field state immutability, config mutation
-	# isolation, two-instance isolation, 100-iteration no-op stability,
-	# normal movement unaffected, coyote window, jump_consumed=true, active
-	# cling carry-forward, and sequential detach press stability.
-	# ------------------------------------------------------------------
-	var chunk_detach_adversarial_suite_script: GDScript = load("res://tests/test_chunk_detach_simulation_adversarial.gd")
-	if chunk_detach_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_chunk_detach_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var chunk_detach_adversarial_suite: ChunkDetachSimulationAdversarialTests = chunk_detach_adversarial_suite_script.new()
-	var chunk_detach_adversarial_failures: int = chunk_detach_adversarial_suite.run_all()
-	total_failures += chunk_detach_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HpReductionSimulation
-	# Spec coverage: SPEC-54 through SPEC-60 (primary behavioral cases)
-	# AC-56.1 through AC-57.6, AC-58.1 through AC-58.4, AC-59.1,
-	# AC-60.4, NFR-61.C (prior_state immutability).
-	# ------------------------------------------------------------------
-	var hp_reduction_suite_script: GDScript = load("res://tests/test_hp_reduction_simulation.gd")
-	if hp_reduction_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_hp_reduction_simulation.gd")
-		quit(1)
-		return
-
-	var hp_reduction_suite: HpReductionSimulationTests = hp_reduction_suite_script.new()
-	var hp_reduction_failures: int = hp_reduction_suite.run_all()
-	total_failures += hp_reduction_failures
-
-	# ------------------------------------------------------------------
-	# Suite: ChunkRecallSimulation
-	# Ticket coverage: FEAT-20260302-chunk-recall-core
-	# Scope: controller-level chunk recall behavior including valid/invalid
-	# recall input routing, main body and chunk state transitions,
-	# non-blocking input behavior at the simulation level, and basic HP
-	# restoration behavior under the assumed recall HP formula.
-	# ------------------------------------------------------------------
-	var chunk_recall_suite_script: GDScript = load("res://tests/test_chunk_recall_simulation.gd")
-	if chunk_recall_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_chunk_recall_simulation.gd")
-		quit(1)
-		return
-
-	var chunk_recall_suite: ChunkRecallSimulationTests = chunk_recall_suite_script.new()
-	var chunk_recall_failures: int = chunk_recall_suite.run_all()
-	total_failures += chunk_recall_failures
-
-	# ------------------------------------------------------------------
-	# Suite: ChunkRecallSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-03-02
-	# Scope: adversarial and edge-case tests for FEAT-20260302-chunk-recall-core,
-	# targeting rapid repeated detach/recall input, airborne recall behavior,
-	# large-delta homing/reabsorption ordering, null/no-op recall when no chunk
-	# exists or is destroyed mid-flight, and controller-level determinism of
-	# HP/has_chunk given identical input sequences.
-	# ------------------------------------------------------------------
-	var chunk_recall_adversarial_suite_script: GDScript = load("res://tests/test_chunk_recall_simulation_adversarial.gd")
-	if chunk_recall_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_chunk_recall_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var chunk_recall_adversarial_suite: ChunkRecallSimulationAdversarialTests = chunk_recall_adversarial_suite_script.new()
-	var chunk_recall_adversarial_failures: int = chunk_recall_adversarial_suite.run_all()
-	total_failures += chunk_recall_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HumanPlayableCore
-	# Ticket coverage: FEAT-20260302-human-playable-core
-	# Scope: scene composition (player/ground/chunk visuals), camera framing
-	# configuration in test_movement.tscn, minimal UI hints, and encoded
-	# human-playability checklist metadata plus smoke test.
-	# ------------------------------------------------------------------
-	var human_playable_core_suite_script: GDScript = load("res://tests/test_human_playable_core.gd")
-	if human_playable_core_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_human_playable_core.gd")
-		quit(1)
-		return
-
-	var human_playable_core_suite: HumanPlayableCoreTests = human_playable_core_suite_script.new()
-	var human_playable_core_failures: int = human_playable_core_suite.run_all()
-	total_failures += human_playable_core_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HumanPlayableCore Adversarial
-	# Generated by Test Breaker Agent — 2026-03-02
-	# Scope: adversarial and edge-case tests targeting:
-	#   - invisible/tiny visuals and layering issues for player/floor/chunk
-	#   - unconfigured/default CameraFollow limits and inverted limit boxes
-	#   - UI hint visibility/readability and off-screen placement
-	#   - human-playability metadata ID uniqueness and per-step integrity.
-	# ------------------------------------------------------------------
-	var human_playable_core_adversarial_suite_script: GDScript = load("res://tests/test_human_playable_core_adversarial.gd")
-	if human_playable_core_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_human_playable_core_adversarial.gd")
-		quit(1)
-		return
-
-	var human_playable_core_adversarial_suite: HumanPlayableCoreAdversarialTests = human_playable_core_adversarial_suite_script.new()
-	var human_playable_core_adversarial_failures: int = human_playable_core_adversarial_suite.run_all()
-	total_failures += human_playable_core_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HpReductionSimulation Adversarial
-	# Generated by Test Breaker Agent — 2026-03-02
-	# Spec coverage: adversarial boundary, mutation, stress, and edge-case
-	# tests for SPEC-54 through SPEC-60, NFR-61.C not covered by the 32-test
-	# primary suite. Targets: all 9 fields on one detach frame, HP+jump/wall-jump
-	# coexistence, active cling differential, floor-boundary epsilon, instance
-	# isolation, 12-config-var mutation, 50-frame stability, full 9-field
-	# prior_state immutability, zero cost, negative min_hp, large/INF cost,
-	# NaN current_hp (CHECKPOINT), negative cost (CHECKPOINT), over-healed HP,
-	# zero HP pool, config mutation between frames, below-floor carry-forward
-	# (CHECKPOINT), custom non-zero min_hp boundary, active-run differential,
-	# jump_consumed differential, and mixed-sequence stability.
-	# ------------------------------------------------------------------
-	var hp_reduction_adversarial_suite_script: GDScript = load("res://tests/test_hp_reduction_simulation_adversarial.gd")
-	if hp_reduction_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_hp_reduction_simulation_adversarial.gd")
-		quit(1)
-		return
-
-	var hp_reduction_adversarial_suite: HpReductionSimulationAdversarialTests = hp_reduction_adversarial_suite_script.new()
-	var hp_reduction_adversarial_failures: int = hp_reduction_adversarial_suite.run_all()
-	total_failures += hp_reduction_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionUi
-	# Ticket coverage: basic_ui_feedback_infection.md
-	# Scope: infection HUD container, absorb prompt presence/readability,
-	# layout, and boolean-driven visibility behavior in the infection-loop
-	# playable scene.
-	# ------------------------------------------------------------------
-	var infection_ui_suite_script: GDScript = load("res://tests/test_infection_ui.gd")
-	if infection_ui_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_ui.gd")
-		quit(1)
-		return
-
-	var infection_ui_suite = infection_ui_suite_script.new()
-	var infection_ui_failures: int = infection_ui_suite.run_all()
-	total_failures += infection_ui_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HpAndChunkHud
-	# Ticket coverage: hp_and_chunk_hud.md
-	# Scope: HP bar + numeric HP and chunk attached/detached HUD elements
-	# in both core movement and infection-loop scenes, including layout
-	# constraints vs. central play area and basic behavioral binding to
-	# PlayerController.current_hp and has_chunk.
-	# ------------------------------------------------------------------
-	var hp_and_chunk_hud_suite_script: GDScript = load("res://tests/test_hp_and_chunk_hud.gd")
-	if hp_and_chunk_hud_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_hp_and_chunk_hud.gd")
-		quit(1)
-		return
-
-	var hp_and_chunk_hud_suite = hp_and_chunk_hud_suite_script.new()
-	var hp_and_chunk_hud_failures: int = hp_and_chunk_hud_suite.run_all()
-	total_failures += hp_and_chunk_hud_failures
-
-	# ------------------------------------------------------------------
-	# Suite: HpAndChunkHud Adversarial
-	# Generated by Test Breaker Agent — 2026-03-04
-	# Scope: adversarial boundary, mutation, stress, and edge-case tests for
-	# hp_and_chunk_hud.md not covered by the primary suite. Targets:
-	#   - stricter HP bar monotonicity across multiple HP levels,
-	#   - HUD stability/determinism under repeated _process() calls,
-	#   - detach/recall-style HP + chunk state sequences,
-	#   - and scene-level HUD CanvasLayer identity per test scene.
-	# ------------------------------------------------------------------
-	var hp_and_chunk_hud_adv_suite_script: GDScript = load("res://tests/test_hp_and_chunk_hud_adversarial.gd")
-	if hp_and_chunk_hud_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_hp_and_chunk_hud_adversarial.gd")
-		quit(1)
-		return
-
-	var hp_and_chunk_hud_adv_suite = hp_and_chunk_hud_adv_suite_script.new()
-	var hp_and_chunk_hud_adv_failures: int = hp_and_chunk_hud_adv_suite.run_all()
-	total_failures += hp_and_chunk_hud_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: EnemyStateMachine
-	# Ticket coverage: enemy_state_machine.md
-	# Scope: pure enemy lifecycle state machine behavior (Idle/Active/Weakened/
-	# Infected/Dead), weaken → infect → dead transitions, determinism, and
-	# per-instance isolation, independent of scene/visual integration.
-	# ------------------------------------------------------------------
-	var enemy_state_machine_suite_script: GDScript = load("res://tests/test_enemy_state_machine.gd")
-	if enemy_state_machine_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_enemy_state_machine.gd")
-		quit(1)
-		return
-
-	# ------------------------------------------------------------------
-	# Suite: BasePhysicsEntity3D
-	# Spec coverage: gravity application on CharacterBody3D subclasses
-	# ------------------------------------------------------------------
-	var base_physics_suite_script: GDScript = load("res://tests/test_base_physics_entity_3d.gd")
-	if base_physics_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_base_physics_entity_3d.gd")
-		quit(1)
-		return
-
-	var base_physics_suite: Object = base_physics_suite_script.new()
-	var base_physics_failures: int = base_physics_suite.run_all()
-	total_failures += base_physics_failures
-
-	var enemy_state_machine_suite: EnemyStateMachineTests = enemy_state_machine_suite_script.new()
-	var enemy_state_machine_failures: int = enemy_state_machine_suite.run_all()
-	total_failures += enemy_state_machine_failures
-
-	# ------------------------------------------------------------------
-	# Suite: EnemyStateMachine Adversarial
-	# Generated by Test Breaker Agent — 2026-03-04
-	# Scope: adversarial and edge-case tests targeting:
-	#   - additional no-op combinations (e.g., weaken from infected)
-	#   - reset() semantics from infected/dead
-	#   - long-sequence state validity and non-empty labels
-	#   - stress testing of events after dead
-	#   - reset() idempotency and many-instance isolation
-	# ------------------------------------------------------------------
-	var enemy_state_machine_adversarial_suite_script: GDScript = load("res://tests/test_enemy_state_machine_adversarial.gd")
-	if enemy_state_machine_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_enemy_state_machine_adversarial.gd")
-		quit(1)
-		return
-
-	var enemy_state_machine_adversarial_suite = enemy_state_machine_adversarial_suite_script.new()
-	var enemy_state_machine_adversarial_failures: int = enemy_state_machine_adversarial_suite.run_all()
-	total_failures += enemy_state_machine_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionInteraction
-	# Ticket coverage: infection_interaction.md
-	# Scope: pure logic for absorb resolution, mutation granting, full
-	# weaken → infect → absorb → mutation loop; scene structure for
-	# test_infection_loop.tscn (Player, InfectionUI). Requires
-	# scripts/mutation_inventory.gd and scripts/infection_absorb_resolver.gd.
-	# ------------------------------------------------------------------
-	var infection_interaction_suite_script: GDScript = load("res://tests/test_infection_interaction.gd")
-	if infection_interaction_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_interaction.gd")
-		quit(1)
-		return
-
-	var infection_interaction_suite = infection_interaction_suite_script.new()
-	var infection_interaction_failures: int = infection_interaction_suite.run_all()
-	total_failures += infection_interaction_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionInteraction Adversarial
-	# Generated by Test Breaker Agent — 2026-03-04
-	# Scope: mutation tests, edge cases, stress (many grants, many ESMs),
-	# order independence, same ESM two inventories, empty string ID
-	# (CHECKPOINT), repeated grant same id, scene load stability.
-	# ------------------------------------------------------------------
-	var infection_interaction_adv_suite_script: GDScript = load("res://tests/test_infection_interaction_adversarial.gd")
-	if infection_interaction_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_interaction_adversarial.gd")
-		quit(1)
-		return
-
-	var infection_interaction_adv_suite = infection_interaction_adv_suite_script.new()
-	var infection_interaction_adv_failures: int = infection_interaction_adv_suite.run_all()
-	total_failures += infection_interaction_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: ChunkEnemyCollision
-	# Verifies chunk (RigidBody2D) is detected by enemy InteractionArea (Area2D)
-	# when they overlap: collision_layer/mask contract and runtime body_entered.
-	# ------------------------------------------------------------------
-	var chunk_collision_suite_script: GDScript = load("res://tests/test_chunk_enemy_collision.gd")
-	if chunk_collision_suite_script != null:
-		var chunk_collision_suite = chunk_collision_suite_script.new()
-		total_failures += chunk_collision_suite.run_all()
-	else:
-		push_error("RUNNER ERROR: could not load res://tests/test_chunk_enemy_collision.gd")
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionStateFx
-	# Ticket coverage: infection_interaction.md (presentation subset)
-	# Scope: infection_state_fx.gd visual/label behavior for ESM states
-	# (idle/weakened/infected/dead). Verifies that FX reacts to ESM state
-	# without introducing gameplay logic; minimal R5 plumbing into
-	# presentation.
-	# ------------------------------------------------------------------
-	var infection_state_fx_suite_script: GDScript = load("res://tests/test_infection_state_fx.gd")
-	if infection_state_fx_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx.gd")
-		quit(1)
-		return
-
-	var infection_state_fx_suite = infection_state_fx_suite_script.new()
-	var infection_state_fx_failures: int = infection_state_fx_suite.run_all()
-	total_failures += infection_state_fx_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionStateFx Adversarial
-	# Ticket coverage: visual_feedback_infection.md (Test Breaker Agent)
-	# Scope: edge cases and stress tests for infection_state_fx.gd:
-	#        repeated transitions, rapid state changes, missing label nodes,
-	#        unknown states, label visibility cycles, dead alpha checks,
-	#        duplicate updates, orphaned nodes, exact color values, and
-	#        any-state-to-dead transitions.
-	# ------------------------------------------------------------------
-	var infection_state_fx_adv_suite_script: GDScript = load("res://tests/test_infection_state_fx_adversarial.gd")
-	if infection_state_fx_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx_adversarial.gd")
-		quit(1)
-		return
-
-	var infection_state_fx_adv_suite = infection_state_fx_adv_suite_script.new()
-	var infection_state_fx_adv_failures: int = infection_state_fx_adv_suite.run_all()
-	total_failures += infection_state_fx_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionStateFx3D
-	# Ticket coverage: infection_interaction.md (3D presentation subset)
-	# Scope: infection_state_fx_3d.gd behavior for 3D enemy visuals:
-	#        damage blink feedback and disappearance on death/absorb.
-	# ------------------------------------------------------------------
-	var infection_state_fx_3d_suite_script: GDScript = load("res://tests/test_infection_state_fx_3d.gd")
-	if infection_state_fx_3d_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx_3d.gd")
-		quit(1)
-		return
-
-	var infection_state_fx_3d_suite = infection_state_fx_3d_suite_script.new()
-	var infection_state_fx_3d_failures: int = infection_state_fx_3d_suite.run_all()
-	total_failures += infection_state_fx_3d_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WeakeningSystem
-	# Ticket coverage: weakening_system.md
-	# Spec coverage: weakening_system_spec.md
-	# Scope: Primary behavioral tests for the weakening system covering:
-	#        - AC#1: Enemies transition to weakened state on chunk contact
-	#        - AC#2: Weakened state is visually distinguishable (blink + label)
-	#        - AC#3: Weakened enemies can be infected
-	#        - AC#4: Tuning is configurable (@export parameters)
-	#        - AC#5: Human-playable in-editor verification
-	# ------------------------------------------------------------------
-	var weakening_system_suite_script: GDScript = load("res://tests/test_weakening_system.gd")
-	if weakening_system_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_weakening_system.gd")
-		quit(1)
-		return
-
-	var weakening_system_suite = weakening_system_suite_script.new()
-	var weakening_system_failures: int = weakening_system_suite.run_all()
-	total_failures += weakening_system_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WeakeningSystem Adversarial
-	# Generated by Test Designer Agent — 2026-03-07
-	# Scope: Adversarial and edge-case tests for weakening_system.md,
-	#        targeting:
-	#          - invalid state transitions (weaken from dead/infected/weakened)
-	#          - infection from non-weakened states (idle, active, dead, infected)
-	#          - rapid/sequential transitions (weaken→infect→death)
-	#          - repeated events idempotency
-	#          - reset semantics from weakened/infected/dead
-	#          - visual blink edge cases (rapid transitions, large deltas)
-	#          - null handling (missing visual, missing label, missing enemy)
-	#          - concurrent events (absorb with null inventory, null ESM)
-	# ------------------------------------------------------------------
-	var weakening_system_adv_suite_script: GDScript = load("res://tests/test_weakening_system_adversarial.gd")
-	if weakening_system_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_weakening_system_adversarial.gd")
-		quit(1)
-		return
-
-	var weakening_system_adv_suite = weakening_system_adv_suite_script.new()
-	var weakening_system_adv_failures: int = weakening_system_adv_suite.run_all()
-	total_failures += weakening_system_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InfectionStateFx Mutation/Edge Case
-	# Generated by Test Breaker Agent — 2026-03-07
-	# Scope: mutation tests, edge cases, stress tests, and spec gap detection
-	#        for visual_feedback_infection.md. Targets:
-	#          - color value boundary mutations (off-by-delta)
-	#          - label text case sensitivity and exact content
-	#          - swapped color assignments between states
-	#          - initialization order (process before _ready)
-	#          - missing visual/label nodes
-	#          - rapid frame-by-frame transitions (stress)
-	#          - long sequences (50+ transitions)
-	#          - spec gaps: absorb feedback not yet implemented (F6),
-	#            label positioning not validated, color contrast subjective
-	# ------------------------------------------------------------------
-	var infection_state_fx_mutation_suite_script: GDScript = load("res://tests/test_infection_state_fx_mutation_edge_cases.gd")
-	if infection_state_fx_mutation_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_infection_state_fx_mutation_edge_cases.gd")
-		quit(1)
-		return
-
-	var infection_state_fx_mutation_suite = infection_state_fx_mutation_suite_script.new()
-	var infection_state_fx_mutation_failures: int = infection_state_fx_mutation_suite.run_all()
-	total_failures += infection_state_fx_mutation_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InputHints
-	# Ticket coverage: input_hint_polish_core_mechanics
-	# Scope: on-screen input hints for move/jump/detach/recall/absorb in the
-	# infection-loop scene, layout constraints vs. central play area and
-	# HP/chunk HUD, and a global toggle controlling visibility across core
-	# movement and infection-loop scenes.
-	# ------------------------------------------------------------------
-	var input_hints_suite_script: GDScript = load("res://tests/test_input_hints.gd")
-	if input_hints_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_input_hints.gd")
-		quit(1)
-		return
-
-	var input_hints_suite = input_hints_suite_script.new()
-	var input_hints_failures: int = input_hints_suite.run_all()
-	total_failures += input_hints_failures
-
-	# ------------------------------------------------------------------
-	# Suite: InputHints Adversarial
-	# Generated by Test Breaker Agent — 2026-03-05
-	# Scope: adversarial and edge-case tests for input_hint_polish_core_mechanics,
-	# targeting:
-	#   - global toggle determinism across core and infection scenes,
-	#   - dynamic response to toggle changes after scene instantiation,
-	#   - parenting/layout robustness for infection input hints, and
-	#   - minimal keyboard glyph coverage for default PC bindings (CHECKPOINT).
-	# ------------------------------------------------------------------
-	var input_hints_adv_suite_script: GDScript = load("res://tests/test_input_hints_adversarial.gd")
-	if input_hints_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_input_hints_adversarial.gd")
-		quit(1)
-		return
-
-	var input_hints_adv_suite = input_hints_adv_suite_script.new()
-	var input_hints_adv_failures: int = input_hints_adv_suite.run_all()
-	total_failures += input_hints_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: DetachRecallFx
-	# Ticket coverage: detach_recall_fx.md
-	# Scope: controller FX signal contract + headless-verifiable presentation response.
-	# ------------------------------------------------------------------
-	var detach_recall_fx_suite_script: GDScript = load("res://tests/test_detach_recall_fx.gd")
-	if detach_recall_fx_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_detach_recall_fx.gd")
-		quit(1)
-		return
-
-	var detach_recall_fx_suite = detach_recall_fx_suite_script.new()
-	var detach_recall_fx_failures: int = detach_recall_fx_suite.run_all()
-	total_failures += detach_recall_fx_failures
-
-	# ------------------------------------------------------------------
-	# Suite: DetachRecallFx Adversarial
-	# Ticket coverage: detach_recall_fx.md
-	# Scope: rapid detach/recall, recall cancel, no-chunk recall, signal ordering, non-blocking.
-	# ------------------------------------------------------------------
-	var detach_recall_fx_adv_suite_script: GDScript = load("res://tests/test_detach_recall_fx_adversarial.gd")
-	if detach_recall_fx_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_detach_recall_fx_adversarial.gd")
-		quit(1)
-		return
-
-	var detach_recall_fx_adv_suite = detach_recall_fx_adv_suite_script.new()
-	var detach_recall_fx_adv_failures: int = detach_recall_fx_adv_suite.run_all()
-	total_failures += detach_recall_fx_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: MutationSlotSystemSingle
-	# Ticket coverage: mutation_slot_system_single.md
-	# Scope: pure-logic MutationSlot data model (SLOT-1) and integration
-	# invariants with MutationInventory (SLOT-2) under simple grant
-	# sequences. UI and gameplay usage are covered transitively via
-	# infection_interaction and infection_ui suites.
-	# ------------------------------------------------------------------
-	var mutation_slot_suite_script: GDScript = load("res://tests/test_mutation_slot_system_single.gd")
-	if mutation_slot_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_mutation_slot_system_single.gd")
-		quit(1)
-		return
-
-	var mutation_slot_suite = mutation_slot_suite_script.new()
-	var mutation_slot_failures: int = mutation_slot_suite.run_all()
-	total_failures += mutation_slot_failures
-
-	# ------------------------------------------------------------------
-	# Suite: MutationSlotSystemSingle Adversarial
-	# Ticket coverage: mutation_slot_system_single.md
-	# Scope: adversarial mutation slot model and inventory invariants
-	#        under long, mixed sequences plus CHECKPOINT edge cases.
-	# ------------------------------------------------------------------
-	var mutation_slot_adv_suite_script: GDScript = load("res://tests/test_mutation_slot_system_single_adversarial.gd")
-	if mutation_slot_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_mutation_slot_system_single_adversarial.gd")
-		quit(1)
-		return
-
-	var mutation_slot_adv_suite = mutation_slot_adv_suite_script.new()
-	var mutation_slot_adv_failures: int = mutation_slot_adv_suite.run_all()
-	total_failures += mutation_slot_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: SceneStateMachine
-	# Ticket coverage: scene_state_machine.md
-	# Scope: pure-logic scene variant selection/state configuration for
-	#        BASELINE, INFECTION_DEMO, ENEMY_PLAYTEST; deterministic
-	#        selection events and per-instance isolation.
-	# ------------------------------------------------------------------
-	var scene_state_machine_suite_script: GDScript = load("res://tests/test_scene_state_machine.gd")
-	if scene_state_machine_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_scene_state_machine.gd")
-		quit(1)
-		return
-
-	var scene_state_machine_suite: SceneStateMachineTests = scene_state_machine_suite_script.new()
-	var scene_state_machine_failures: int = scene_state_machine_suite.run_all()
-	total_failures += scene_state_machine_failures
-
-	# ------------------------------------------------------------------
-	# Suite: SceneStateMachine Adversarial
-	# Generated by Test Breaker Agent — 2026-03-06
-	# Scope: adversarial and edge-case tests for scene_state_machine.md,
-	#        targeting:
-	#          - strict config shape and bool-only flags,
-	#          - external mutation of returned config dictionaries (# CHECKPOINT),
-	#          - non-String and case-mismatched events (# CHECKPOINT),
-	#          - long-sequence stability for mixed valid/unknown events,
-	#          - and equivalence of traces with and without unknown events.
-	# ------------------------------------------------------------------
-	var scene_state_machine_adv_suite_script: GDScript = load("res://tests/test_scene_state_machine_adversarial.gd")
-	if scene_state_machine_adv_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_scene_state_machine_adversarial.gd")
-		quit(1)
-		return
-
-	var scene_state_machine_adv_suite = scene_state_machine_adv_suite_script.new()
-	var scene_state_machine_adv_failures: int = scene_state_machine_adv_suite.run_all()
-	total_failures += scene_state_machine_adv_failures
-
-	# ------------------------------------------------------------------
-	# Suite: 3D Scene
-	# Scope: test_movement_3d.tscn structure, PlayerController3D, signals (Vector3),
-	#        required nodes (WorldEnvironment, Floor, RespawnZone, etc.), detach_fired.
-	# ------------------------------------------------------------------
-	var test_3d_scene_suite_script: GDScript = load("res://tests/test_3d_scene.gd")
-	if test_3d_scene_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_3d_scene.gd")
-		quit(1)
-		return
-
-	var test_3d_scene_suite: Object = test_3d_scene_suite_script.new()
-	var test_3d_scene_failures: int = test_3d_scene_suite.run_all()
-	total_failures += test_3d_scene_failures
-
-	# ------------------------------------------------------------------
-	# Suite: SceneStateIntegration3D
-	# Ticket coverage: scene_state_machine.md
-	# Scope: minimal headless integration between test_movement_3d.tscn and
-	#        SceneStateMachine via SceneVariantController node; ensures that
-	#        the 3D scene owns a state machine and can switch between
-	#        baseline and infection demo variants without duplicating the
-	#        scene.
-	# ------------------------------------------------------------------
-	var scene_state_integration_3d_suite_script: GDScript = load("res://tests/test_scene_state_integration_3d.gd")
-	if scene_state_integration_3d_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_scene_state_integration_3d.gd")
-		quit(1)
-		return
-
-	var scene_state_integration_3d_suite: Object = scene_state_integration_3d_suite_script.new()
-	var scene_state_integration_3d_failures: int = scene_state_integration_3d_suite.run_all()
-	total_failures += scene_state_integration_3d_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WallClingVisualReadability
-	# Ticket: wall_cling_visual_readability.md
-	# Scope: Primary behavioral tests for cling state FX (modulate tint,
-	# optional particles, HUD indicator). Verifies cling_state_fx.gd reacts
-	# to PlayerController.is_wall_clinging_state() with correct visual feedback.
-	# Covers AC#1 (sprite tint), AC#3 (detach cleanup), AC#4 (HUD),
-	# AC#5 (mirroring), and NFR tests.
-	# ------------------------------------------------------------------
-	var wall_cling_visual_suite_script: GDScript = load("res://tests/test_wall_cling_visual_readability.gd")
-	if wall_cling_visual_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_wall_cling_visual_readability.gd")
-		quit(1)
-		return
-
-	var wall_cling_visual_suite: WallClingVisualReadabilityTests = wall_cling_visual_suite_script.new()
-	var wall_cling_visual_failures: int = wall_cling_visual_suite.run_all()
-	total_failures += wall_cling_visual_failures
-
-	# ------------------------------------------------------------------
-	# Suite: WallClingVisualReadability Adversarial
-	# Generated by Test Designer Agent — 2026-03-07
-	# Scope: Adversarial and edge-case tests for wall cling visual feedback
-	# targeting: rapid cling/detach cycles (50x), high-frequency _process calls,
-	# left/right wall consistency, particle emitter lifecycle, tint persistence
-	# over multiple frames, boundary transitions, atomic state changes, and
-	# visual stability/latency verification.
-	# ------------------------------------------------------------------
-	var wall_cling_visual_adversarial_suite_script: GDScript = load("res://tests/test_wall_cling_visual_readability_adversarial.gd")
-	if wall_cling_visual_adversarial_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_wall_cling_visual_readability_adversarial.gd")
-		quit(1)
-		return
-
-	var wall_cling_visual_adversarial_suite: WallClingVisualReadabilityAdversarialTests = wall_cling_visual_adversarial_suite_script.new()
-	var wall_cling_visual_adversarial_failures: int = wall_cling_visual_adversarial_suite.run_all()
-	total_failures += wall_cling_visual_adversarial_failures
-
-	# ------------------------------------------------------------------
-	# Suite: Logging
-	# Spec coverage: logging utility functions
-	# ------------------------------------------------------------------
-	var logging_suite_script: GDScript = load("res://tests/test_logging.gd")
-	if logging_suite_script == null:
-		push_error("RUNNER ERROR: could not load res://tests/test_logging.gd")
-		quit(1)
-		return
-
-	var logging_suite: Object = logging_suite_script.new()
-	var logging_failures: int = logging_suite.run_all()
-	total_failures += logging_failures
-
-	# ------------------------------------------------------------------
-	# Summary
-	# ------------------------------------------------------------------
 	print("")
 	if total_failures == 0:
 		print("=== ALL TESTS PASSED ===")
