@@ -325,9 +325,9 @@ func test_rapid_state_transitions_no_visual_corruption() -> void:
 		_fail("weaken_adv_visual_rapid_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
 	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if esm == null or fx == null or visual == null:
 		_fail("weaken_adv_visual_rapid_nodes", "setup missing nodes")
@@ -360,8 +360,8 @@ func test_blink_with_large_delta() -> void:
 		_fail("weaken_adv_blink_large_delta_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if esm == null or fx == null:
 		_fail("weaken_adv_blink_large_delta_nodes", "setup missing nodes")
@@ -394,8 +394,8 @@ func test_enemy_node_null_recovery() -> void:
 		_fail("weaken_adv_null_enemy_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if esm == null or fx == null:
 		_fail("weaken_adv_null_enemy_nodes", "setup missing fx or esm")
@@ -427,8 +427,8 @@ func test_missing_label_node() -> void:
 		_fail("weaken_adv_missing_label_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if esm == null or fx == null:
 		_fail("weaken_adv_missing_label_nodes", "setup missing fx or esm")
@@ -436,7 +436,7 @@ func test_missing_label_node() -> void:
 		return
 
 	# Remove label node if it exists.
-	var label: Node = enemy.get_node_or_null("InfectionStateVisuals/StateLabel")
+	var label: Node = enemy.get_node_or_null("InfectionStateFx3D/StateLabel")
 	if label != null:
 		label.queue_free()
 
@@ -687,7 +687,7 @@ func test_many_enemies_rapid_weaken() -> void:
 			_fail("weaken_stress_many_setup_" + str(i), "could not create enemy " + str(i))
 			return
 		enemies.append(enemy)
-		var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+		var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 		if esm == null:
 			_fail("weaken_stress_many_esm_" + str(i), "could not get esm from enemy " + str(i))
 			enemy.free()
@@ -723,7 +723,7 @@ func test_many_enemies_rapid_infect_sequence() -> void:
 			_fail("weaken_stress_infect_setup_" + str(i), "could not create enemy " + str(i))
 			return
 		enemies.append(enemy)
-		var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+		var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 		if esm == null:
 			_fail("weaken_stress_infect_esm_" + str(i), "could not get esm from enemy " + str(i))
 			enemy.free()
@@ -762,7 +762,7 @@ func test_interleaved_weaken_infect_across_enemies() -> void:
 			_fail("weaken_stress_interleave_setup_" + str(i), "could not create enemy")
 			return
 		enemies.append(enemy)
-		var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+		var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 		if esm == null:
 			_fail("weaken_stress_interleave_esm_" + str(i), "could not get esm")
 			enemy.free()
@@ -800,8 +800,8 @@ func test_blink_fx_under_high_process_rate() -> void:
 		_fail("weaken_stress_blink_high_fps_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if fx == null or esm == null:
 		_fail("weaken_stress_blink_high_fps_nodes", "setup missing fx or esm")
@@ -838,8 +838,8 @@ func test_dead_state_hides_enemy_before_blink_completes() -> void:
 		_fail("weaken_edge_dead_blink_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if fx == null or esm == null:
 		_fail("weaken_edge_dead_blink_nodes", "setup missing fx or esm")
@@ -875,8 +875,8 @@ func test_multiple_state_changes_in_single_frame() -> void:
 		_fail("weaken_edge_multi_state_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if fx == null or esm == null:
 		_fail("weaken_edge_multi_state_nodes", "setup missing fx or esm")
@@ -954,9 +954,9 @@ func test_blink_visible_property_toggle() -> void:
 		_fail("weaken_mut_blink_visible_setup", "could not create enemy")
 		return
 
-	var fx: Node3D = enemy.get_node_or_null("InfectionStateVisuals") as Node3D
+	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
 	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
-	var esm: EnemyStateMachine = enemy.get_method("get_esm").callv([]) if enemy.has_method("get_esm") else null
+	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if fx == null or visual == null or esm == null:
 		_fail("weaken_mut_blink_visible_nodes", "setup missing nodes")
