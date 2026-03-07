@@ -2,18 +2,19 @@
 
 **Epic:** Milestone 2 – Infection Loop  
 **Ticket ID:** weakening_system  
-**Status:** Active  
-**Revision:** 2  
-**Last Updated By:** Spec Agent  
-**Next Responsible Agent:** Test Designer Agent  
+**Status:** Proceed  
+**Revision:** 3  
+**Last Updated By:** Test Designer Agent  
+**Next Responsible Agent:** Test Breaker Agent  
 
 ---
 
 ## Workflow State
 
-**Stage:** TEST_DESIGN  
+**Stage:** TEST_BREAK  
 **Blocking Issues:** None  
-**Next Action:** Test Designer Agent to define formal test cases (primary, adversarial, integration, manual) based on weakening_system_spec.md.
+**Next Action:** Test Breaker Agent to design adversarial test suite targeting edge cases, invalid inputs, rapid transitions, and null handling based on test_weakening_system.gd and test_weakening_system_adversarial.gd.
+
 
 ---
 
