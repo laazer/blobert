@@ -537,7 +537,7 @@ func test_adv_tint_matches_state_every_frame() -> void:
 
 	# Pseudo-random sequence (deterministic).
 	var states: Array[bool] = [true, false, true, true, false, false, true, false, false, true,
-	                             true, true, false, true, false, true, true, false, false, false]
+								 true, true, false, true, false, true, true, false, false, false]
 
 	for frame in range(states.size()):
 		var is_clinging: bool = states[frame]
