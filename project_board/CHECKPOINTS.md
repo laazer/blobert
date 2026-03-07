@@ -613,3 +613,33 @@ Tickets queued: visual_feedback_infection.md, weakening_system.md, wall_cling_vi
 **Confidence:** High
 
 ---
+
+### [visual_feedback_infection] Test Breaker — Absorb feedback not yet implemented (F6)
+
+**Would have asked:** Should absorb feedback (particle effect + optional animation on absorb) be part of the `infection_state_fx.gd` implementation, or is it integrated separately via a new presenter?
+
+**Assumption made:** F6 (absorb feedback) is a documented requirement in the spec but not yet implemented in the current `infection_state_fx.gd`. Per the execution plan (Task 5), absorb feedback is assigned to the Presentation Agent as a separate concern from state-tint logic. Tests assume a new presenter (e.g., `InfectionAbsorbFXPresenter`) or enhancement to `infection_state_fx.gd` will be implemented in IMPLEMENTATION_FRONTEND. The baseline `infection_state_fx.gd` provides state-to-tint mapping; absorb FX is deferred to the Presentation Agent's Task 5.
+
+**Confidence:** High
+
+---
+
+### [visual_feedback_infection] Test Breaker — Label positioning not validated
+
+**Would have asked:** Should the state label be positioned "immediately above enemy center" as stated in F5, or is default positioning (0, 0) relative to parent acceptable?
+
+**Assumption made:** Spec F5 requires label offset "defaults to immediately above enemy center (e.g., offset = Vector2(0, -30))." Current tests do not validate label.position; they only check visibility and text. Presentation Agent (Task 4) should set label.position or use CanvasLayer/anchors to ensure label renders above enemy. Automated position validation is not added to tests; human playtest (Task 7) will verify readability and placement.
+
+**Confidence:** Medium
+
+---
+
+### [visual_feedback_infection] Test Breaker — Color contrast not measured (subjective)
+
+**Would have asked:** How should contrast ratio (NF1 requirement: >= 3:1) be validated? Pixel-by-pixel analysis, manual eyeball test, or analytical formula?
+
+**Assumption made:** Contrast requirement is human-verified during Task 7 (human playtest). Automated color-contrast analysis is deferred; tests document that contrast is subjective and verified visually by Presentation Agent. Conservative approach: assume Presentation Agent will choose contrasting colors (amber vs. purple are naturally distinct) and Task 7 will confirm on typical display.
+
+**Confidence:** Medium
+
+---
