@@ -37,6 +37,26 @@ godot --headless --export-release "Linux/X11" ./build/blobert
 > If `godot` is not on your PATH, it may be installed as `godot4` or require a full path.
 > The test script includes a 5-minute timeout to prevent hanging tests from blocking CI.
 
+## ⏱ Godot Execution Rule: Always Use Timeout
+
+**Critical rule:** All Godot invocations must use the `timeout` command to prevent hanging indefinitely.
+
+- Recommended timeouts:
+  - `timeout 120` — Syntax checks, quick operations
+  - `timeout 300` — Full test suite (5 minutes)
+  - `timeout 600` — Complex builds or exports (10 minutes)
+  
+**Example:**
+```bash
+# Good: Protected by timeout
+timeout 300 godot --headless -s tests/run_tests.gd
+
+# Bad: No timeout, can hang forever
+godot --headless -s tests/run_tests.gd
+```
+
+This protects CI/automated workflows from hanging and blocking other tasks.
+
 ## Godot Project Structure (expected as project grows)
 
 - `project.godot` — Main project configuration file; defines project name, entry scene, renderer settings, etc.
