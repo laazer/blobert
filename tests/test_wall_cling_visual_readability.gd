@@ -578,6 +578,5 @@ func run_all() -> int:
 		print("Status: ALL TESTS PASSED ✓")
 	else:
 		print("Status: FAILURES DETECTED ✗")
-	return _fail_count
 	# return total failures to runner
 	return _fail_count
