@@ -3,17 +3,17 @@
 **Epic:** Milestone 2 – Infection Loop  
 **Ticket ID:** weakening_system  
 **Status:** Proceed  
-**Revision:** 3  
-**Last Updated By:** Test Designer Agent  
-**Next Responsible Agent:** Test Breaker Agent  
+**Revision:** 4  
+**Last Updated By:** Test Breaker Agent  
+**Next Responsible Agent:** Implementation Generalist Agent  
 
 ---
 
 ## Workflow State
 
-**Stage:** TEST_BREAK  
+**Stage:** IMPLEMENTATION_GENERALIST  
 **Blocking Issues:** None  
-**Next Action:** Test Breaker Agent to design adversarial test suite targeting edge cases, invalid inputs, rapid transitions, and null handling based on test_weakening_system.gd and test_weakening_system_adversarial.gd.
+**Next Action:** Implementation Generalist Agent to complete visual polish, confirm scene structure for human playtest, and validate all acceptance criteria are met in test_movement_3d.tscn.
 
 
 ---

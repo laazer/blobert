@@ -151,13 +151,15 @@ func test_adv_rapid_cling_detach_50_cycles() -> void:
 		# Cling.
 		_mock_cling_state(player_node, true)
 		_step_cling_fx(fx, 0.016)
-		if visual.modulate.distance_to(cling_tint) > EPSILON:
+		var cm := visual.modulate
+		if abs(cm.r - cling_tint.r) + abs(cm.g - cling_tint.g) + abs(cm.b - cling_tint.b) + abs(cm.a - cling_tint.a) > EPSILON:
 			glitch_count += 1
 
 		# Detach.
 		_mock_cling_state(player_node, false)
 		_step_cling_fx(fx, 0.016)
-		if visual.modulate.distance_to(idle_tint) > EPSILON:
+		var im := visual.modulate
+		if abs(im.r - idle_tint.r) + abs(im.g - idle_tint.g) + abs(im.b - idle_tint.b) + abs(im.a - idle_tint.a) > EPSILON:
 			glitch_count += 1
 
 	_assert_true(glitch_count == 0,
@@ -190,7 +192,9 @@ func test_adv_high_frequency_state_changes_per_frame() -> void:
 	# Verify all captures are identical (no flickering).
 	var all_same: bool = true
 	for i in range(1, modulate_values.size()):
-		if modulate_values[i].distance_to(modulate_values[0]) > EPSILON:
+		var c0 := modulate_values[0]
+		var ci := modulate_values[i]
+		if abs(ci.r - c0.r) + abs(ci.g - c0.g) + abs(ci.b - c0.b) + abs(ci.a - c0.a) > EPSILON:
 			all_same = false
 			break
 
@@ -377,7 +381,8 @@ func test_adv_tint_persistence_over_10_frames() -> void:
 	_mock_cling_state(player_node, true)
 	for frame in range(10):
 		_step_cling_fx(fx, 0.016)
-		if visual.modulate.distance_to(cling_tint) > EPSILON:
+		var vm := visual.modulate
+		if abs(vm.r - cling_tint.r) + abs(vm.g - cling_tint.g) + abs(vm.b - cling_tint.b) + abs(vm.a - cling_tint.a) > EPSILON:
 			inconsistency_count += 1
 
 	_assert_true(inconsistency_count == 0,
@@ -403,7 +408,8 @@ func test_adv_idle_tint_persistence_over_10_frames() -> void:
 	_mock_cling_state(player_node, false)
 	for frame in range(10):
 		_step_cling_fx(fx, 0.016)
-		if visual.modulate.distance_to(idle_tint) > EPSILON:
+		var vm2 := visual.modulate
+		if abs(vm2.r - idle_tint.r) + abs(vm2.g - idle_tint.g) + abs(vm2.b - idle_tint.b) + abs(vm2.a - idle_tint.a) > EPSILON:
 			inconsistency_count += 1
 
 	_assert_true(inconsistency_count == 0,
@@ -547,7 +553,7 @@ func test_adv_tint_matches_state_every_frame() -> void:
 		var expected_tint: Color = cling_tint if is_clinging else idle_tint
 		var actual_tint: Color = visual.modulate
 
-		if actual_tint.distance_to(expected_tint) > EPSILON:
+		if abs(actual_tint.r - expected_tint.r) + abs(actual_tint.g - expected_tint.g) + abs(actual_tint.b - expected_tint.b) + abs(actual_tint.a - expected_tint.a) > EPSILON:
 			mismatch_count += 1
 
 	_assert_true(mismatch_count == 0,
