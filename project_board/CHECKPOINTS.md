@@ -998,6 +998,81 @@ Tickets queued: wall_cling_visual_readability.md (SPECIFICATION stage)
 
 ---
 
+## Run: 2026-03-07T21:00:00Z
+Tickets queued: weakening_system.md
+
+---
+
+### [weakening_system] Planner — Trigger mechanism: chunk contact vs HP threshold vs key press
+
+**Would have asked:** AC says "condition is met (e.g. HP/damage threshold)" but the current implementation triggers weakening on chunk contact with no health/damage logic. Should the weakening system be revised to use HP-threshold-based weakening, or is chunk contact the intended trigger?
+
+**Assumption made:** The phrase "e.g. HP/damage threshold" is an example, not a mandate. Current implementation correctly interprets weakening as: **chunk contact with enemy triggers weaken event**, which represents "damage" (chunk hit) as the condition. However, the ticket says "Define threshold" suggesting some parameter decision is needed. Conservative interpretation: chunk contact is the trigger (already implemented), but the "threshold" refers to the triggering interaction itself (physical contact requirement). Spec Agent will formalize whether a second mechanism (HP-based weakening) is also in scope, or if chunk contact alone satisfies the AC.
+
+**Confidence:** Medium
+
+---
+
+### [weakening_system] Planner — Configurable tuning scope
+
+**Would have asked:** What parameters should be "configurable" per AC#4? (a) threshold value (HP, damage count, or just trigger condition), (b) visual feedback duration/style, (c) both, or (d) only non-code configuration (inspector @export)?
+
+**Assumption made:** **Configurable tuning = @export variables in related scripts.** Rationale: (1) BLINK_DURATION_SECONDS = 0.35 in infection_state_fx.gd is already configurable, (2) if a numerical threshold exists (e.g., "weaken after 3 chunk hits"), it should be @export on the enemy, (3) visual tint colors should be @export if they differ from spec defaults. Spec Agent will define which parameters are required to be tunable; Implementation Agent will expose them as @export.
+
+**Confidence:** Medium
+
+---
+
+### [weakening_system] Planner — Human-playable in-editor verification
+
+**Would have asked:** AC#5 says "weakening behavior is human-playable in-editor: enemies, weakened cues, and any related UI are visible and understandable without debug overlays." Does this require a dedicated playtest scene, or does the existing test_movement_3d.tscn suffice?
+
+**Assumption made:** **Existing test_movement_3d.tscn is the human-playable scene.** Rationale: (1) scene already has a single enemy (EnemyInfection3D node), (2) player can throw chunks and hit the enemy, (3) visual feedback (blink + state label) is visible in-scene, (4) no additional scene needed for this milestone; playtest task will verify human can discover and understand weakening without reading code or debug output.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Planner — Integration with infection_interaction spec
+
+**Would have asked:** The infection_interaction_spec.md already covers the full weaken → infect → absorb loop. What should the weakening_system ticket add that is not already specified/tested there?
+
+**Assumption made:** **Weakening_system is a component of the broader infection loop.** infection_interaction_spec addresses the full flow; weakening_system ticket focuses narrowly on the weaken-state transition, visual feedback, and tuning of that step. Primary deliverable: ensure visual feedback is clear and human-discoverable, and that all tuning knobs (@export) are in place. Tests are integrated with infection loop test suite; no duplicate primary tests are required.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Planner — Current implementation status
+
+**Would have asked:** EnemyStateMachine.apply_weaken_event() is already implemented, EnemyInfection3D calls it on chunk contact, and infection_state_fx_3d.gd provides visual feedback (blink + state label). What is NOT yet complete for this ticket?
+
+**Assumption made:** Following a code review: (1) EnemyStateMachine state machine is COMPLETE and production-ready, (2) EnemyInfection3D chunk-contact triggering is COMPLETE and working, (3) InfectionStateFX has blink effect but the exact visual distinctiveness (tint colors, label text) may need refinement for AC#2 ("clearly distinguishable"), (4) configurable tuning parameters may be partially missing (only BLINK_DURATION is exposed; threshold/trigger tuning may need addition), (5) human playtest is NOT YET DONE. Spec task: formalize minimum visual contrast/distinctness. Implementation tasks: add missing tuning @exports, run human playtest.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Planner — Dual-render approach for state labels
+
+**Would have asked:** The infection_state_fx_3d.gd (discovered in code review) appears to render only one Label3D at a time for state display. Should the weakened state show a distinct label (e.g., "Weakened" vs. "Infected" vs. "Dead"), or is a single label sufficient?
+
+**Assumption made:** Yes, distinct labels enhance clarity per AC#2 ("clearly distinguishable"). Current code in infection_state_fx_3d.gd has a _start_blink() method that triggers on state change to weakened/infected. Extending the pattern: render a state-dependent Label with text "Weakened", "Infected", or "Dead" alongside the blink effect. This is already partially visible (blink + label text), but spec should confirm exact label strings and color tinting are standardized.
+
+**Confidence:** Medium
+
+---
+
+### [weakening_system] Planner — No HP tracking on enemies (simplified scope)
+
+**Would have asked:** Should the weakening system include HP/damage tracking on enemies so that a threshold can be enforced (e.g., "weaken when HP < 50%"), or is the simplified chunk-contact trigger sufficient for this milestone?
+
+**Assumption made:** **Simplified scope: chunk contact is the sole trigger.** Rationale: (1) current implementation already works and is tested, (2) HP tracking would require new enemy health system / state (out of scope for this ticket per workflow), (3) if future tickets require HP-based weaken logic, they can extend EnemyInfection3D with health tracking, (4) AC#1 says "when condition is met (e.g. HP/damage threshold)" — the "e.g." allows the condition to be just chunk contact, which represents the "damage" to the enemy.
+
+**Confidence:** High
+
+---
+
 ### [wall_cling_visual_readability] Test Designer — Particle Cleanup Mechanism
 
 **Would have asked:** Should particle emitter be set to `emitting=false` on detach, or should the emitter be removed/disabled entirely?
