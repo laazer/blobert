@@ -558,7 +558,7 @@ func test_adv_tint_matches_state_every_frame() -> void:
 # Test runner
 # ---------------------------------------------------------------------------
 
-func run_all() -> void:
+func run_all() -> int:
 	print("\n=== WallClingVisualReadabilityAdversarialTests ===\n")
 
 	# Rapid transition tests
@@ -601,3 +601,5 @@ func run_all() -> void:
 		print("Status: ALL TESTS PASSED ✓")
 	else:
 		print("Status: FAILURES DETECTED ✗")
+	# return failure count
+	return _fail_count

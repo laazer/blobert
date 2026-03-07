@@ -715,7 +715,7 @@ func test_gap_modulate_property_override() -> void:
 # Test Runner
 # ---------------------------------------------------------------------------
 
-func run_all() -> void:
+func run_all() -> int:
 	print("\n=== WallClingVisualReadabilityMutationTests ===\n")
 
 	# Color precision mutations
@@ -758,6 +758,14 @@ func run_all() -> void:
 	# Summary
 	print("\n=== SUMMARY ===")
 	print("Passed: " + str(_pass_count))
+	print("Failed: " + str(_fail_count))
+	print("Checkpoints: " + str(_checkpoint_count))
+	print("Total: " + str(_pass_count + _fail_count))
+	if _fail_count == 0:
+		print("Status: ALL TESTS PASSED ✓")
+	else:
+		print("Status: FAILURES DETECTED ✗")
+	return _fail_count
 	print("Failed: " + str(_fail_count))
 	print("Checkpoints: " + str(_checkpoint_count))
 	print("Total: " + str(_pass_count + _fail_count))

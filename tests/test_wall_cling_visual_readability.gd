@@ -535,7 +535,7 @@ func test_nfr_method_signature_compatibility() -> void:
 # Test runner
 # ---------------------------------------------------------------------------
 
-func run_all() -> void:
+func run_all() -> int:
 	print("\n=== WallClingVisualReadabilityTests ===\n")
 
 	# AC#1 Tests
@@ -578,3 +578,6 @@ func run_all() -> void:
 		print("Status: ALL TESTS PASSED ✓")
 	else:
 		print("Status: FAILURES DETECTED ✗")
+	return _fail_count
+	# return total failures to runner
+	return _fail_count
