@@ -523,3 +523,58 @@ Tickets queued: scene_state_machine.md
 **Confidence:** Low
 
 ---
+
+## Run: 2026-03-07T12:00:00Z
+Manual Verification & Acceptance
+
+---
+
+### [mutation_slot_system_single] — OUTCOME: COMPLETE
+Mutation slot system successfully implemented with full integration. Manual verification confirmed all acceptance criteria: slot properly filled on absorb, mutation effect is usable in gameplay (last-wins policy), slot state is clear in UI (green filled / gray empty), no duplicates or lost mutations, and human-playable in-editor without debug overlays. Test suite passing (core model + infection interaction + UI wiring). Ticket moved to done/ column.
+
+---
+
+## Run: 2026-03-07T20:00:00Z
+Tickets queued: visual_feedback_infection.md, weakening_system.md, wall_cling_visual_readability.md, two_mutation_slots.md, slot_consumption_rules.md, fusion_rules_and_hybrid.md, second_chunk_logic.md, visual_clarity_hybrid_state.md, containment_hall_01_layout.md, light_skill_check.md, mini_boss_encounter.md, fusion_opportunity_room.md, mutation_tease_room.md, start_finish_flow.md
+
+---
+
+### [visual_feedback_infection] Planner — Scope: 2D, 3D, or both?
+
+**Would have asked:** Should this ticket cover both 2D and 3D infection visual feedback, or scope to one variant?
+
+**Assumption made:** Ticket AC is presented without variant qualifier. Codebase has both `enemy_infection.gd` (2D) and `enemy_infection_3d.gd` (3D) with corresponding `infection_state_fx.gd` and `infection_state_fx_3d.gd`. Plan scopes to 2D as primary variant (test scene is `test_infection_loop.tscn` with 2D setup); 3D can be addressed by a separate ticket or follow-up. 2D weakened/infected color tint + state label already exists but may need enhancement for clarity/readability AC.
+
+**Confidence:** Medium
+
+---
+
+### [visual_feedback_infection] Planner — Absorb feedback mechanics
+
+**Would have asked:** What concrete mechanics does "absorb feedback (pull, particle, short animation)" mean—particle system spawning, enemy/player pull-toward effect, or UI-only confirmation?
+
+**Assumption made:** Absorb feedback is visual-only, not gameplay-altering. Minimum viable: (1) particle effect or brief sprite flash when absorb succeeds, (2) optional visual "pull" as aesthetic suggestion (not collision-based). If pull is engine-intensive or conflicts with absorb timing, particle + UI toast are sufficient. Spec Agent will define exact mechanics.
+
+**Confidence:** Medium
+
+---
+
+### [visual_feedback_infection] Planner — "Readable at target camera distance"
+
+**Would have asked:** What is the target camera distance, aspect ratio, and display size assumed for this ticket's readability requirement?
+
+**Assumption made:** Standard in-editor viewport at Godot default camera (orthogonal 2D or perspective 3D at typical gameplay distance). No extreme zoom or mobile-specific considerations in this ticket; manual playtest will verify standard desktop display (e.g. 1920×1080). If later tickets address mobile/console camera scaling, they can refactor.
+
+**Confidence:** High
+
+---
+
+### [visual_feedback_infection] Planner — Existing infection_state_fx partial implementation
+
+**Would have asked:** The 2D `infection_state_fx.gd` exists with color tint + state label. Should the plan treat it as "complete but needs refinement" or "needs substantial rework"?
+
+**Assumption made:** Plan treats existing code as a solid foundation requiring polish and validation: verify that amber (weakened) and purple (infected) are sufficiently distinct at target camera distance, confirm state label is readable without debug overlays, and test that both color + label render properly in test scene. No major refactor assumed unless AC fails; minor tweaks (e.g. color values, label positioning) are in-scope for Implementation Agent.
+
+**Confidence:** High
+
+---
