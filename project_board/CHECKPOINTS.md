@@ -648,3 +648,236 @@ All 5 acceptance criteria satisfied and verified. Weakened state shows amber col
 **Confidence:** Medium
 
 ---
+
+### [wall_cling_visual_readability] Planner — Cling indicator scope and dual-state feedback
+
+**Would have asked:** Should wall cling feedback include ONLY HUD status text (already present as "Wall Cling: ON/OFF" in ClingStatusLabel), or does it require BOTH sprite/visual tint AND HUD feedback?
+
+**Assumption made:** AC explicitly requires both: (1) sprite-level indication (tilt, outline, or color tint while clinging), AND (2) a secondary indicator (icon or text in HUD). The ClingStatusLabel in game_ui.tscn already displays "Wall Cling: ON/OFF" and is updated in infection_ui.gd. This satisfies AC requirement #4 (secondary indicator). This ticket focuses on adding AC requirements #1-3: sprite tilt/tint on cling, optional particle trail, and clean removal on detach.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Planner — Visual approach selection
+
+**Would have asked:** Which visual strategy—sprite tilt, color tint, or outline—should be used for cling indication?
+
+**Assumption made:** AC lists "e.g. pose tilt toward wall, outline, or color tint" as examples, not mandates. Conservative approach: implement a simple, non-distracting solution. Since the player is rendered as a Polygon2D (green rectangle), a combined approach is minimal: (1) apply a slight modulation/tint change (e.g., 1.0, 0.95, 0.85 to desaturate/shift toward yellow-green when clinging), AND (2) if time permits, a small outline via a second polygon or shader. Spec Agent will formalize the exact visual approach; Implementation Agent selects the least costly approach that satisfies AC#1.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Planner — Wall-direction mirroring scope
+
+**Would have asked:** Does "correct mirroring for left/right walls" require the sprite to tilt/rotate, or is a simple color tint sufficient?
+
+**Assumption made:** AC#5 requires mirroring to "remain readable at normal camera distances." For a simple polygon, color tint does not require mirroring; tilt/rotation does. Conservative: assume sprite-tint approach (no rotation) first, which is direction-agnostic. If Spec Agent decides on tilt, the Implementation Agent must ensure tilt direction matches the wall side (e.g., rotate -10° when clinging left, +10° right). Current tests will validate that cling visuals are applied; detailed rotation logic is spec-domain.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Planner — Particle trail complexity
+
+**Would have asked:** Should the "wall-cling slide effect" be a continuous particle stream (expensive, per frame) or a burst/trail (cheaper, event-based)?
+
+**Assumption made:** AC#2 describes the effect as "optional" and "visible but not distracting." Conservative approach: implement a **low-cost trail** via infrequent particle emission on slide (e.g., emit 1–2 particles every 0.1s while sliding) rather than a continuous stream. This keeps perf overhead minimal and remains visually noticeable. Spec Agent will confirm the visual impact; Implementation Agent may simplify to a single color-change if particles prove too costly.
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Planner — One-frame removal requirement
+
+**Would have asked:** Does "cling visuals removed within one frame" mean instantaneous, or is a 1-frame fade acceptable?
+
+**Assumption made:** AC#3 requires cleanup on detach (jump, release, or enter free-fall). "Within one frame" means the cling indicator (tint, particles, etc.) must not linger into the next physics frame after is_wall_clinging transitions false. This is achievable by reading `_current_state.is_wall_clinging` in the same frame-update code that applies tint; no async fade needed. If FX uses particles, spawned particles may animate out; the cling-state-driven tint/indicator must clear immediately.
+
+**Confidence:** High
+
+---
+
+### [wall_cling_visual_readability] Planner — FX presenter pattern consistency
+
+**Would have asked:** Should cling visuals be managed by a new presenter class (e.g., `ClingStateFXPresenter`), or integrated into `PlayerController` or `infection_state_fx.gd`?
+
+**Assumption made:** Following existing patterns (e.g., `InfectionStateFX` for enemy state feedback), cling feedback should be isolated in a new **FX Presenter** script attached to the Player scene. This script will subscribe to or poll `PlayerController.is_wall_clinging_state()` each frame and drive the sprite modulate/outline/particles. Keeping FX logic separate from controller logic ensures testability and reusability. Implementation Agent may choose to inline it if the scope is minimal (e.g., single line of modulate logic).
+
+**Confidence:** Medium
+
+---
+
+### [wall_cling_visual_readability] Planner — Existing HUD integration
+
+**Would have asked:** Is the existing "Wall Cling: ON/OFF" HUD label sufficient, or must it be enhanced (e.g., icon, color-coded)?
+
+**Assumption made:** The ClingStatusLabel in game_ui.tscn already updates via infection_ui.gd line `cling_label.text = "Wall Cling: " + ("ON" if _player.is_wall_clinging_state() else "OFF")`. This satisfies AC#4 (secondary indicator). No enhancement is required unless Spec Agent deems the plain text insufficient; if so, a follow-up ticket can add a cling icon (parallel to mutation icon).
+
+**Confidence:** High
+
+---
+
+## Execution Plan: wall_cling_visual_readability
+
+**Ticket:** `project_board/2_milestone_2_infection_loop/01_active/wall_cling_visual_readability.md`
+
+**Overview:**
+Decompose wall cling visual feedback into spec-design-test-implementation tasks. The ticket requires: (1) sprite-level visual indication of cling state (tint, pose, or outline), (2) optional (but recommended) particle slide effect, (3) instantaneous cleanup on detach, (4) HUD status indicator (already in place), and (5) correct mirroring for left/right walls.
+
+---
+
+### Task 1: Spec Agent — Formalize Wall Cling Visual Strategy
+**Input:** Ticket AC, code review of player_controller.gd, player.tscn, and infection_state_fx.gd patterns.
+
+**Deliverable:** `wall_cling_visual_readability_spec.md`
+
+**Spec scope:**
+- Choose visual approach: **recommended = simple modulate/color tint + optional low-cost particle trail**.
+- Define tint colors:
+  - **Default (idle):** Color(0.4, 0.9, 0.6, 1) — current green
+  - **Wall clinging:** Color(0.6, 0.95, 0.5, 1) — slightly brighter, warmer (toward yellow-green)
+- Particle trail (if included):
+  - **Emission:** 1–2 particles every 0.1s while `is_wall_clinging == true` and `velocity.y != 0` (sliding)
+  - **Particle:** 3–5px white/cyan dots, 0.5s lifespan, fade-out
+  - **Cost:** single small particle emitter, ~5 particles max concurrently
+- HUD indicator:
+  - Already present as `ClingStatusLabel`, no change required (AC#4 satisfied)
+  - Color modulation optional (can enhance with cling-tint match, e.g., greenish when ON)
+- Edge cases:
+  - Horizontal cling (e.g., on ceiling) — same tint (direction-agnostic)
+  - Detach (jump, release, gravity break) — instant tint removal (no fade)
+  - Cling timer/grace period — apply tint only while `is_wall_clinging == true` (rely on controller state)
+
+---
+
+### Task 2: Test Design Agent — Define Test Cases for Cling Visuals
+**Input:** Spec from Task 1, test patterns from infection_interaction tests.
+
+**Deliverable:** Test cases in `tests/test_cling_visual_readability.gd` (or inline in `test_human_playable_core.gd` if scope is small).
+
+**Test coverage:**
+- **Unit/Presentation tests:**
+  - When `PlayerController.is_wall_clinging_state() == true`, player sprite modulate is non-default tint.
+  - When `is_wall_clinging_state() == false`, player sprite modulate is default Color(0.4, 0.9, 0.6, 1).
+  - Transition (cling true → false) clears tint within one frame.
+- **Particle tests (if applicable):**
+  - While clinging and sliding vertically, particle emitter is active.
+  - On detach, particle emitter stops immediately (no lingering).
+  - Particle count stays under 10 (performance bound).
+- **HUD tests:**
+  - `ClingStatusLabel.text` contains "ON" iff `is_wall_clinging_state() == true`.
+  - `ClingStatusLabel.text` contains "OFF" iff `is_wall_clinging_state() == false`.
+- **Integration/playability tests:**
+  - Player remains responsive during cling (no input lag).
+  - Visuals work on left and right walls (mirror-agnostic).
+  - Camera remains in-frame; visuals readable at default zoom (no clipping).
+
+---
+
+### Task 3: Test Design Agent — Break Wall Cling Visuals
+**Input:** Spec from Task 1, test cases from Task 2.
+
+**Deliverable:** Documented failure modes and expected breakpoints for Implementation Agent.
+
+**Known breakpoints:**
+- Tint is not applied or is always default color (sprite invisible or incorrect state tracking).
+- Tint persists after detach (lingering cling indicator, violates AC#3).
+- Particle trail floods the screen or causes FPS drop (cost constraint violated).
+- Cling indicator does not appear on right-side wall (mirroring bug).
+- HUD label does not update (integration failure, but likely not cling-visual-specific).
+- Player model is unreadable due to tint (contrast too low, violates "not distracting").
+
+---
+
+### Task 4: Presentation Agent — Implement Cling State FX Presenter
+**Input:** Spec from Task 1, test cases from Task 2.
+
+**Deliverable:** New script `scripts/cling_state_fx.gd` attached to Player scene node `PlayerVisual` or new `ClingFX` child.
+
+**Implementation scope:**
+- Subscribe to/poll `PlayerController.is_wall_clinging_state()` every frame.
+- **Apply tint:**
+  - Cache original default color: Color(0.4, 0.9, 0.6, 1)
+  - If `is_wall_clinging`: apply cling tint Color(0.6, 0.95, 0.5, 1) to `_visual.modulate`
+  - Else: restore default color
+  - Update in `_process(_delta)` to ensure one-frame responsiveness
+- **Particle trail (optional):**
+  - Instantiate a small CPUParticles2D node as child of player
+  - Enable emission iff `is_wall_clinging && is_sliding_down` (vertical velocity check)
+  - Emit at fixed low rate (1–2 particles per 0.1s)
+  - Disable emission on detach
+- **No rotation/tilt required** — color tint is direction-agnostic (satisfies mirroring AC#5)
+- **Reference:** Follow pattern from `infection_state_fx.gd` (state-driven modulation + optional FX)
+
+---
+
+### Task 5: Implementation Backend — Ensure Wall Cling State Tracking
+**Input:** Spec from Task 1, current player_controller.gd, movement_simulation.gd.
+
+**Deliverable:** Verify/enhance `PlayerController._current_state.is_wall_clinging` is correctly updated by `MovementSimulation.simulate()`.
+
+**Verification scope:**
+- `is_wall_clinging` transitions are driven by wall contact and cling timer in movement_simulation.gd step 9 (cling state update).
+- No additional changes required if movement logic is already spec-compliant.
+- If missing or broken, fix movement_simulation.gd to ensure `is_wall_clinging` reflects actual cling eligibility.
+
+---
+
+### Task 6: Implementation Frontend — Integrate Cling FX into Player Scene and Controller
+**Input:** Deliverable from Task 4 (cling_state_fx.gd script).
+
+**Deliverable:** Updated `scenes/player.tscn` with attached FX presenter.
+
+**Integration scope:**
+- Attach `cling_state_fx.gd` to a new child node `ClingFX` under `Player` (or directly to `PlayerVisual`).
+- Ensure `ClingFX` has reference to `PlayerVisual` Polygon2D and `PlayerController`.
+- Wire optional particle emitter (CPUParticles2D) as child of `ClingFX`.
+- Test in-scene: run test_movement.tscn, initiate wall cling, verify tint change and HUD update.
+
+---
+
+### Task 7: Static QA — Review Cling Visuals for Clarity and Compliance
+**Input:** Implemented cling_state_fx.gd, updated player.tscn, Test Design deliverables.
+
+**Deliverable:** Code review report + visual/UX notes.
+
+**QA scope:**
+- **Code:** cling_state_fx.gd follows infection_state_fx.gd patterns, no unused variables, error handling.
+- **Visual:**
+  - Tint is visible and does not over-saturate or desaturate player model.
+  - Particle trail (if included) is smooth and not distracting.
+  - HUD label is readable and updates in sync with visuals.
+  - Mirroring works (left/right walls show same tint).
+- **Performance:** No FPS drop, particle count stable under 10 (if applicable).
+- **Compliance:** AC#1-5 checkpoints all green (sprite tint, optional trail, instant cleanup, HUD, mirroring).
+
+---
+
+### Task 8: Integration — Manual Playtest of Wall Cling Visuals
+**Input:** Integrated scene + QA report from Task 7.
+
+**Deliverable:** Playtest log (human verification of AC satisfaction).
+
+**Playtest scope:**
+- Load test_movement.tscn, wall-jump and cling on left and right walls.
+- Verify cling tint is visible and matches spec color.
+- Verify particle trail (if enabled) is smooth and non-distracting.
+- Verify tint clears immediately on jump/detach.
+- Verify HUD label updates to "Wall Cling: ON/OFF" in sync.
+- Verify camera distance and zoom allow visual clarity.
+- Sign off on AC completion.
+
+---
+
+### Task 9: Deployment — Move Ticket to Complete
+**Input:** Sign-off from Task 8.
+
+**Deliverable:** Ticket moved to `02_complete/` with Stage = COMPLETE.
+
+---
+
+## Summary
+This execution plan decomposes wall cling visual feedback into 9 sequential tasks across Spec, Test, and Implementation domains. The conservative approach prioritizes **simple, non-distracting visuals** (color tint + optional low-cost particles) that rely on existing state tracking in `PlayerController.is_wall_clinging_state()`. The HUD indicator is already in place; this ticket adds sprite-level feedback. Estimated effort: 2–3 agent runs (Spec + Test + Implementation + QA + Playtest).
+
