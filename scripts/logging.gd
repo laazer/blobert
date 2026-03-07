@@ -1,27 +1,34 @@
 # logging.gd
 #
 # Common logging utility for consistent output with caller context.
-# Use Logging.log(message) instead of print() for traceable logs.
+# Use Logging.trace(message) instead of print() for traceable logs.
 
-class_name Logging
+extends Node
 
-static func log(message: String) -> void:
+var _dummy = 0  # Ensure the script can be instantiated for autoload
+
+static func trace(message: String) -> void:
 	var stack = get_stack()
 	if stack.size() > 1:
 		var caller = stack[1]
-		var file_name = caller.file.get_file()  # Get just the filename
-		print("[%s:%d] %s" % [file_name, caller.line, message])
+		var file_name = "unknown"
+		var line = -1
+		if caller.has("file") and caller.file is String:
+			file_name = caller.file.get_file()
+		if caller.has("line"):
+			line = caller.line
+		print("[%s:%d] %s" % [file_name, line, message])
 	else:
 		print("[unknown] %s" % message)
 
 static func debug(message: String) -> void:
-	log("DEBUG: " + message)
+	trace("DEBUG: " + message)
 
 static func info(message: String) -> void:
-	log("INFO: " + message)
+	trace("INFO: " + message)
 
 static func warn(message: String) -> void:
-	log("WARN: " + message)
+	trace("WARN: " + message)
 
 static func error(message: String) -> void:
-	log("ERROR: " + message)
+	trace("ERROR: " + message)
