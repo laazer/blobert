@@ -998,6 +998,108 @@ Tickets queued: wall_cling_visual_readability.md (SPECIFICATION stage)
 
 ---
 
+## Run: 2026-03-07T14:30:00Z
+Tickets queued: weakening_system.md
+
+---
+
+### [weakening_system] Spec Agent — Foundation validation
+
+**Would have asked:** Is the EnemyStateMachine implementation already complete with all state transitions, or does the spec require new state machine work?
+
+**Assumption made:** `EnemyStateMachine` is complete and production-ready. Rationale: (1) prior checkpoint logs show enemy_state_machine.md ticket is COMPLETE with full state lifecycle (idle, active, weakened, infected, dead) and all transition rules implemented, (2) `get_state()`, `apply_weaken_event()`, `apply_infection_event()`, `apply_death_event()`, and `reset()` are all present and tested, (3) this spec builds on top of the existing state machine; no new state machine work is in scope.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Weakening trigger mechanism
+
+**Would have asked:** Should the weakening system define weaken as a chunk-contact event, HP-threshold event, or support both?
+
+**Assumption made:** **Chunk contact is the canonical trigger.** Rationale: (1) `EnemyInfection3D._on_body_entered()` already implements chunk-body detection and calls `apply_weaken_event()`, (2) HP-based thresholds add numerical state tracking (out of scope for this ticket per planner checkpoints), (3) chunk contact is tactile, testable, and aligns with game design (projectile "damages" enemy into weakened state), (4) spec documents chunk contact as primary; input-based `infect` action is supplementary and not required for this ticket.
+
+**Confidence:** Medium
+
+---
+
+### [weakening_system] Spec Agent — Visual feedback scope
+
+**Would have asked:** What visual feedback is mandatory versus optional for the weakened state to be "clearly distinguishable"?
+
+**Assumption made:** **Mandatory: blink effect (0.35s at 10 Hz) when enemy transitions to weakened.** **Optional: state label text display.** Rationale: (1) `infection_state_fx_3d.gd` already implements blink effect for both weakened and infected states, (2) blink duration (0.35s) and frequency (10 Hz) are documented in the script and tested, (3) state label is implemented but optional (graceful null handling), (4) spec requires test validation that blink timing is correct and visually distinct, not creation of new visual effects.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Configuration tuning scope
+
+**Would have asked:** What parameters should be configurable via @export for designers?
+
+**Assumption made:** **BLINK_DURATION_SECONDS and BLINK_FREQUENCY_HZ are the tuning surface.** Rationale: (1) both are already defined as `const` in `infection_state_fx_3d.gd` (0.35, 10.0), (2) converting to @export allows designers to adjust feedback without script changes, (3) color tints (weakened_tint, infected_tint, dead_dim_alpha) are not yet @export but spec documents them as future enhancements, (4) for this ticket, duration and frequency are the critical tuning knobs.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Integration with infection loop
+
+**Would have asked:** Does the weakening system need to know about mutation granting, absorb mechanics, or other infection-loop details?
+
+**Assumption made:** **No direct coupling.** Rationale: (1) weakening and infection are distinct state transitions in the state machine, (2) `EnemyInfection3D` and `InfectionInteractionHandler` coordinate the infection → absorb → mutation flow independently of weaken mechanics, (3) integration is via the shared ESM reference: when an enemy is weakened, it becomes infectable; when absorb happens, the enemy dies (state = dead), (4) spec documents the integration points but does not require changes to absorb logic.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Idempotency and robustness requirements
+
+**Would have asked:** What happens if `apply_weaken_event()` is called repeatedly or on an enemy that's already infected/dead?
+
+**Assumption made:** **All invalid transitions are strict no-ops.** Rationale: (1) EnemyStateMachine contract already specifies that `apply_weaken_event()` only transitions idle/active → weakened; calling it when already weakened/infected/dead is a no-op, (2) this is documented in the ESM code and tested in `test_infection_state_fx_adversarial.gd`, (3) spec requires test validation that rapid weaken calls don't cause visual glitches or state corruption.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Human-playable acceptance criterion
+
+**Would have asked:** What "human-playable in-editor" means: is a dev-level test scene sufficient, or is a full gameplay level required?
+
+**Assumption made:** **test_movement_3d.tscn is the human-playtest target.** Rationale: (1) this scene already has a 3D environment, player controller, chunks, and enemies with the infection loop wired, (2) spec AC#5 explicitly mentions this scene as the verification target, (3) human opens test_movement_3d.tscn, fires chunks at enemies, observes clear weakened feedback (blink), and confirms infection/absorb works without debug overlays, (4) no separate "full level" is required for this milestone.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Out-of-scope considerations
+
+**Would have asked:** Should the spec address enemy weakening persistence across scenes, difficulty modifiers for weaken chance, or damage-scaling effects tied to weaken?
+
+**Assumption made:** **All are out of scope.** Rationale: (1) prior checkpoints establish that infection state is scoped to the current play session/scene (no save/load), (2) difficulty tuning and advanced gameplay effects are future-ticket concerns, (3) this ticket focuses on the core mechanic: chunk contact → weaken → infect, with clear visual feedback, (4) spec is minimal and focused.
+
+**Confidence:** High
+
+---
+
+### [weakening_system] Spec Agent — Specification completeness and confidence
+
+**Would have asked:** Are all acceptance criteria fully addressed by the spec, or are there ambiguities that require follow-up from Test Designer/Implementation?
+
+**Assumption made:** **Spec is complete and unambiguous.** Rationale:
+- **AC#1** (transition condition): Chunk contact triggers weaken; state machine enforces idempotency.
+- **AC#2** (visual distinctness): Blink effect + optional label; spec documents timing and visual expectations.
+- **AC#3** (infection eligibility): weakened → infected transition; ESM prevents invalid transitions.
+- **AC#4** (configurable tuning): BLINK_DURATION_SECONDS and BLINK_FREQUENCY_HZ are tuning surface.
+- **AC#5** (human-playable): test_movement_3d.tscn is verification target; no debug overlays required.
+
+Test Designer and Implementation will reference the spec to define test cases and polish visual parameters; no ambiguities remain.
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-07T21:00:00Z
 Tickets queued: weakening_system.md
 

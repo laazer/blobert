@@ -3,17 +3,17 @@
 **Epic:** Milestone 2 – Infection Loop  
 **Ticket ID:** weakening_system  
 **Status:** Active  
-**Revision:** 1  
-**Last Updated By:** Planner Agent  
-**Next Responsible Agent:** Spec Agent  
+**Revision:** 2  
+**Last Updated By:** Spec Agent  
+**Next Responsible Agent:** Test Designer Agent  
 
 ---
 
 ## Workflow State
 
-**Stage:** SPECIFICATION  
+**Stage:** TEST_DESIGN  
 **Blocking Issues:** None  
-**Next Action:** Spec Agent to define formal specification for weakening system visual feedback, configuration tuning, and acceptance criterion validation.
+**Next Action:** Test Designer Agent to define formal test cases (primary, adversarial, integration, manual) based on weakening_system_spec.md.
 
 ---
 
