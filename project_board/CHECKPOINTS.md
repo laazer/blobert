@@ -80,11 +80,11 @@ Tickets queued: input_hint_polish_core_mechanics.md
 
 ---
 
-### [infection_interaction] Test Designer — Mutation “usable” via InfectionUI
+### [infection_interaction] Test Designer — Mutation "usable" via InfectionUI
 
-**Would have asked:** Does “at least one mutation is granted and usable after absorb” require a concrete gameplay effect, or is a visible mutation indicator in the infection-loop HUD sufficient for this milestone?
+**Would have asked:** Does "at least one mutation is granted and usable after absorb" require a concrete gameplay effect, or is a visible mutation indicator in the infection-loop HUD sufficient for this milestone?
 
-**Assumption made:** For this milestone, a mutation is considered “usable” if it is (a) granted into `MutationInventory` and (b) made clearly visible to the player via InfectionUI (e.g. `MutationLabel`/`MutationIcon` driven from `get_mutation_inventory()` and `get_granted_count()`). Tests enforce that a non-zero mutation count makes the mutation label visible; any deeper gameplay effect is left to future tickets.
+**Assumption made:** For this milestone, a mutation is considered "usable" if it is (a) granted into `MutationInventory` and (b) made clearly visible to the player via InfectionUI (e.g. `MutationLabel`/`MutationIcon` driven from `get_mutation_inventory()` and `get_granted_count()`). Tests enforce that a non-zero mutation count makes the mutation label visible; any deeper gameplay effect is left to future tickets.
 
 **Confidence:** Medium
 
@@ -94,7 +94,7 @@ Tickets queued: input_hint_polish_core_mechanics.md
 
 **Would have asked:** Should the infection state FX contract specify exact label text and color tints for weakened/infected/dead, or only require that each state is visually distinct?
 
-**Assumption made:** The strictest defensible contract for this ticket is that `infection_state_fx.gd` produces distinct visuals and explicit state labels: “Weakened”, “Infected”, and “Dead”, with weakened/infected tinted away from the idle/default color and dead rendered dimmer (alpha < 1). Tests assert these concrete label strings and basic tint/dim relationships rather than exact RGB values, so future visual tweaks remain possible while keeping states clearly distinguishable.
+**Assumption made:** The strictest defensible contract for this ticket is that `infection_state_fx.gd` produces distinct visuals and explicit state labels: "Weakened", "Infected", and "Dead", with weakened/infected tinted away from the idle/default color and dead rendered dimmer (alpha < 1). Tests assert these concrete label strings and basic tint/dim relationships rather than exact RGB values, so future visual tweaks remain possible while keeping states clearly distinguishable.
 
 **Confidence:** Medium
 
@@ -173,7 +173,7 @@ Tickets queued: infection_interaction.md
 
 **Would have asked:** For this milestone, should the spec treat chunk contact, an explicit `infect` input action, or both as the required way to infect a weakened enemy?
 
-**Assumption made:** The canonical, testable contract for this ticket is chunk-based contact: when an infecting slime chunk body enters a weakened enemy’s infection area, infection is triggered if the enemy is eligible. Any `infect` input action wiring is treated as higher-level engine integration and is not required for this spec to be satisfied.
+**Assumption made:** The canonical, testable contract for this ticket is chunk-based contact: when an infecting slime chunk body enters a weakened enemy's infection area, infection is triggered if the enemy is eligible. Any `infect` input action wiring is treated as higher-level engine integration and is not required for this spec to be satisfied.
 
 **Confidence:** Medium
 
@@ -193,7 +193,7 @@ Tickets queued: infection_interaction.md
 
 **Would have asked:** When absorbing an infected enemy, if multiple mutation types exist, should the granted mutation be random, cyclic, or fixed?
 
-**Assumption made:** For this milestone, mutation granting is deterministic and fixed: absorbing an infected enemy always grants a single, configured mutation ID (e.g. the first entry in a small infection-mutation config), with no randomness. This keeps tests and player expectations stable while still delivering “at least one mutation.”
+**Assumption made:** For this milestone, mutation granting is deterministic and fixed: absorbing an infected enemy always grants a single, configured mutation ID (e.g. the first entry in a small infection-mutation config), with no randomness. This keeps tests and player expectations stable while still delivering "at least one mutation."
 
 **Confidence:** Medium
 
@@ -240,7 +240,7 @@ Tickets queued: infection_interaction.md
 ---
 
 ### [infection_interaction] — OUTCOME: COMPLETE
-All automated infection interaction suites (primary + adversarial) are passing and a human has verified in-editor that infection/absorb visuals and UX satisfy the final acceptance criterion; ticket is marked COMPLETE and moved to the milestone’s done column.
+All automated infection interaction suites (primary + adversarial) are passing and a human has verified in-editor that infection/absorb visuals and UX satisfy the final acceptance criterion; ticket is marked COMPLETE and moved to the milestone's done column.
 
 ## Run: 2026-03-05T14:00:00Z
 Tickets queued: mutation_slot_system_single.md
@@ -302,7 +302,7 @@ Automated tests, core simulation, gameplay wiring, engine integration, and HUD p
 
 ### [mutation_slot_system_single] Spec — Slot vs effect gating
 
-**Would have asked:** For this milestone, should the active mutation slot state be the *only* authority for enabling/disabling the mutation’s gameplay effect, or can the existing implementation that ties the effect directly to `MutationInventory` remain unchanged as long as slot state accurately mirrors inventory?
+**Would have asked:** For this milestone, should the active mutation slot state be the *only* authority for enabling/disabling the mutation's gameplay effect, or can the existing implementation that ties the effect directly to `MutationInventory` remain unchanged as long as slot state accurately mirrors inventory?
 
 **Assumption made:** To keep scope minimal and avoid destabilizing the existing infection loop, the mutation effect remains bound to the presence of at least one granted mutation in `MutationInventory` as implemented for `infection_interaction`. The new single-slot layer must accurately reflect that state (empty before any grants, filled after the first successful absorb, last-wins on later grants) but is not required to introduce an additional layer of effect gating beyond inventory for this milestone.
 
@@ -398,7 +398,7 @@ Unknown event IDs and redundant selections are strict no-ops for both state and 
 
 **Would have asked:** Which milestone should the new scene state machine ticket live under — Milestone 2 (Infection Loop), Milestone 3 (Dual Mutation Fusion), or Milestone 4 (Prototype Level)?
 
-**Assumption made:** Place the ticket under `4_milestone_4_prototype_level/backlog/` with Epic set to “Milestone 4 – Prototype Level”, since the scene state machine primarily supports composing and toggling complex feature configurations in prototype levels while remaining reusable by earlier milestones.
+**Assumption made:** Place the ticket under `4_milestone_4_prototype_level/backlog/` with Epic set to "Milestone 4 – Prototype Level", since the scene state machine primarily supports composing and toggling complex feature configurations in prototype levels while remaining reusable by earlier milestones.
 
 **Confidence:** Medium
 
@@ -710,7 +710,7 @@ All 5 acceptance criteria satisfied and verified. Weakened state shows amber col
 
 **Would have asked:** Does "correct mirroring for left/right walls" require the sprite to tilt/rotate, or is a simple color tint sufficient?
 
-**Assumption made:** AC#5 requires mirroring to "remain readable at normal camera distances." For a simple polygon, color tint does not require mirroring; tilt/rotation does. Conservative: assume sprite-tint approach (no rotation) first, which is direction-agnostic. If Spec Agent decides on tilt, the Implementation Agent must ensure tilt direction matches the wall side (e.g., rotate -10° when clinging left, +10° right). Current tests will validate that cling visuals are applied; detailed rotation logic is spec-domain.
+**Assumption made:** Color tint is direction-agnostic and satisfies "mirroring" at minimal cost. If the spec requires sprite tilt, it adds complexity (rotation direction per wall normal). Conservative decision: color tint is the primary visual cue and is identical on left/right walls. Sprite tilt/rotation is optional and only required if the spec explicitly mandates distinct orientation per wall. Spec Agent decides; tests should parametrize for both left/right wall scenarios.
 
 **Confidence:** Medium
 
@@ -1497,3 +1497,115 @@ ClingFX owns the ClingTrail emitter to keep particle logic encapsulated. PlayerV
 
 ---
 
+
+## Run: 2026-03-08T00:00:00Z
+Tickets queued: two_mutation_slots.md, second_chunk_logic.md, slot_consumption_rules.md, fusion_rules_and_hybrid.md, visual_clarity_hybrid_state.md
+
+---
+
+### [M3-AUTOPILOT] Orchestrator — ticket processing order
+**Would have asked:** Alphabetical order puts fusion_rules_and_hybrid first, but it depends on two_mutation_slots, second_chunk_logic, and slot_consumption_rules existing. Should we use dependency order?
+**Assumption made:** Process in dependency order: two_mutation_slots → second_chunk_logic → slot_consumption_rules → fusion_rules_and_hybrid → visual_clarity_hybrid_state.
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Planner — Slot assignment mechanism (which slot fills first)
+
+**Would have asked:** When the player absorbs an enemy, should the mutation fill slot A first (if empty), then slot B, or should it be configurable, or should the player actively choose a target slot?
+
+**Assumption made:** Conservative first-available rule: the absorb resolver fills slot A (index 0) first if empty, then slot B (index 1) if slot A is already filled. If both slots are filled, the absorb overwrites slot B (last-absorb-wins for the second slot). This mirrors the existing single-slot last-wins behavior and requires no new input action for slot selection. Spec Agent will formalize; if active slot selection is needed, it is a future ticket.
+
+**Confidence:** Medium
+
+---
+
+### [two_mutation_slots] Planner — Slot independence vs slot interaction
+
+**Would have asked:** Are the two slots entirely independent (each holds its own mutation ID and drives its own gameplay effect), or do they interact (e.g., slot B modifies slot A's effect)?
+
+**Assumption made:** Slots are fully independent for this ticket. Each slot holds one mutation ID, independently drives one gameplay effect (or the same speed-buff effect if both are filled), and can be individually cleared. Slot interaction (e.g., fusion rules, hybrid effects) is addressed by the fusion_rules_and_hybrid ticket, not this one. Spec Agent will document this boundary.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Planner — Gameplay effect per slot
+
+**Would have asked:** Should each filled slot provide a separate gameplay effect (e.g., slot A gives speed boost, slot B gives a different buff), or do both slots contribute to the same effect (e.g., stack speed multipliers)?
+
+**Assumption made:** For this milestone, both slots drive the same passive speed-boost effect already implemented for the single-slot system. If slot A or slot B is filled (or both), the player receives the 1.25x speed multiplier. Stacking (e.g., 1.25x * 1.25x) is explicitly out of scope; the multiplier is flat and applied once regardless of how many slots are filled. Spec Agent will decide; the conservative choice avoids tuning risk.
+
+**Confidence:** Medium
+
+---
+
+### [two_mutation_slots] Planner — UI layout for two slots
+
+**Would have asked:** Should the HUD display two separate slot labels/icons side by side, or show a combined "Slots: A=x, B=y" summary?
+
+**Assumption made:** Two separate labeled slot displays (e.g., "Slot 1: [id or Empty]" and "Slot 2: [id or Empty]"), following the existing MutationSlotLabel pattern. Each slot label is always visible (matching the behavior of the single MutationSlotLabel added in the single-slot ticket). Specific visual layout (horizontal vs vertical) is deferred to Presentation Agent.
+
+**Confidence:** Medium
+
+---
+
+### [two_mutation_slots] Planner — Backward compatibility with single-slot tests
+
+**Would have asked:** Will extending from one slot to two slots break any existing single-slot tests (test_mutation_slot_system_single.gd, test_mutation_slot_system_single_adversarial.gd)?
+
+**Assumption made:** The existing MutationSlot class (mutation_slot.gd) is a pure-logic single-slot object and must not be changed in a way that breaks its existing API. A new coordinator class (e.g., MutationSlotManager or similar) will own two MutationSlot instances. Existing single-slot tests continue to test the MutationSlot data model in isolation and remain unbroken. New dual-slot tests will cover the coordinator.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Planner — Persistence and save/load scope
+
+**Would have asked:** Should dual-slot state persist across scene reloads?
+
+**Assumption made:** Out of scope, consistent with all prior mutation-related tickets. Dual-slot state is session-scoped only.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Spec Agent — HUD node naming convention
+
+**Would have asked:** Should the new HUD slot nodes be named `MutationSlot1Label` / `MutationSlot2Label` (numeric suffix), or some other convention?
+
+**Assumption made:** Use `MutationSlot1Label` and `MutationSlot2Label` for label nodes, `MutationIcon1` and `MutationIcon2` for icon nodes. This is consistent with the existing singular `MutationSlotLabel` and `MutationIcon` naming pattern, extended by a numeric index suffix starting at 1 (matching human-readable "Slot 1" / "Slot 2" label text). The singular existing nodes are preserved as legacy to avoid breaking any existing scene reference queries.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Spec Agent — Legacy node handling (MutationSlotLabel, MutationIcon)
+
+**Would have asked:** Should the existing `MutationSlotLabel` and `MutationIcon` (singular, no number) be removed, hidden, or kept functional after the dual-slot HUD is added?
+
+**Assumption made:** Both are kept in the scene tree and must not crash any existing test. The Implementation Agent (Presentation, Task 8) may choose to: (a) hide them permanently (`visible = false`), (b) wire them to mirror slot A state as a fallback, or (c) leave them visible with their existing single-slot logic. The spec does not mandate which option; it only requires no crash and no test regression. This is explicitly deferred to the Presentation Agent.
+
+**Confidence:** Medium
+
+---
+
+### [two_mutation_slots] Spec Agent — `fill_next_available` empty-string guard behavior
+
+**Would have asked:** Should `fill_next_available("")` silently no-op, or emit a push_error?
+
+**Assumption made:** `push_error` with a descriptive message, then return without modifying slots. Rationale: an empty ID reaching the manager indicates a bug in the caller (e.g., `DEFAULT_MUTATION_ID` was somehow unset). Silent no-op would mask the bug; `push_error` surfaces it without crashing. This is consistent with Godot engine error reporting conventions used elsewhere in the codebase.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Spec Agent — Resolver dispatch priority (manager vs single-slot duck-typing)
+
+**Would have asked:** When `resolve_absorb` receives an object that has both `fill_next_available` AND `set_active_mutation_id`, which path should it take?
+
+**Assumption made:** Check `fill_next_available` first (higher-specificity check). If the object has `fill_next_available`, it is treated as a manager and `fill_next_available` is called. The `set_active_mutation_id` check is only reached if `fill_next_available` is absent. This ordering ensures `MutationSlotManager` is never accidentally routed through the single-slot path.
+
+**Confidence:** High
+
+---
