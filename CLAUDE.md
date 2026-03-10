@@ -17,21 +17,25 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 
 ## Common Commands
 
+`direnv` puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH automatically.
+
 ```bash
 # Validate GDScript syntax
-timeout 120 godot --headless --check-only
+godot --check-only
 
 # Run all tests
-./ci/scripts/run_tests.sh
-# Or: timeout 300 godot --headless -s tests/run_tests.gd
+run_tests.sh
+# Or: godot -s tests/run_tests.gd
+
+# Force reimport (rebuilds class cache — run if tests fail to load scripts)
+godot --import
 ```
 
 ## ⏱ Always Use Timeout
 
-All Godot invocations must use `timeout` to prevent hanging:
-- `timeout 120` — syntax checks
-- `timeout 300` — full test suite
-- `timeout 600` — builds/exports
+When invoking Godot outside of `run_tests.sh`, use a timeout to prevent hanging:
+- `timeout 120 godot --check-only` — syntax checks
+- `timeout 300 godot -s tests/run_tests.gd` — full test suite
 
 ## File Editing & Moves
 

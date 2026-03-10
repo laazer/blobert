@@ -1,0 +1,4 @@
+#!/bin/bash
+# Wrapper: always runs Godot in headless mode.
+# Usage is identical to the Godot CLI — just omit --headless.
+exec /Applications/Godot.app/Contents/MacOS/Godot --headless "$@"
