@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="blobert"
-run/main_scene="res://scenes/levels/test_movement_3d.tscn"
+run/main_scene="res://scenes/levels/sandbox/test_movement_3d.tscn"
 config/features=PackedStringArray("4.6")
 
 [autoload]
@@ -24,6 +24,11 @@ AudioManager="*res://scenes/system/audio_manager.tscn"
 GameManager="*res://scripts/system/game_manager.gd"
 InputHintsConfig="*res://scripts/ui/input_hints_config.gd"
 Logging="*res://scripts/system/logging.gd"
+
+[display]
+
+window/size/viewport_width=3200
+window/size/viewport_height=1880
 
 [input]
 
@@ -63,8 +68,3 @@ infect={
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
-
-[display]
-
-window/size/viewport_width=3200
-window/size/viewport_height=1880

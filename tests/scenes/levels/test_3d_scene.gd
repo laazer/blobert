@@ -40,9 +40,9 @@ func _assert_false(condition: bool, test_name: String) -> void:
 
 
 func _load_3d_scene() -> Node:
-	var packed: PackedScene = load("res://scenes/levels/test_movement_3d.tscn") as PackedScene
+	var packed: PackedScene = load("res://scenes/levels/sandbox/test_movement_3d.tscn") as PackedScene
 	if packed == null:
-		_fail_test("scene_load_3d", "could not load res://scenes/levels/test_movement_3d.tscn")
+		_fail_test("scene_load_3d", "could not load res://scenes/levels/sandbox/test_movement_3d.tscn")
 		return null
 	var inst: Node = packed.instantiate()
 	if inst == null:
