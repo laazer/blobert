@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 var _absorb_available: bool = false
-var _player: PlayerController
+var _player: PlayerController3D
 var _initial_max_hp: float = 0.0
 var _handler: Node
 var _slot_manager: Object = null  # MutationSlotManager (preferred) or fallback MutationSlot
@@ -10,7 +10,7 @@ var _absorb_feedback_until_ms: int = 0
 
 
 func _ready() -> void:
-	_player = get_tree().get_first_node_in_group("player") as PlayerController
+	_player = get_tree().get_first_node_in_group("player") as PlayerController3D
 	var root: Node = get_parent()
 	if root != null:
 		_handler = root.get_node_or_null("InfectionInteractionHandler")
@@ -218,4 +218,3 @@ func _update_slot_display(slot_number: int, slot: Object) -> void:
 			icon.color = Color(0.4, 0.85, 0.55, 1.0)
 		else:
 			icon.color = Color(0.2, 0.2, 0.2, 0.6)
-
