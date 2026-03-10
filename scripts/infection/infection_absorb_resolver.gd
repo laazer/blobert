@@ -28,5 +28,13 @@ func resolve_absorb(esm: EnemyStateMachine, inv: Object, slot: Object = null) ->
 	esm.apply_death_event()
 	inv.grant(DEFAULT_MUTATION_ID)
 
-	if slot != null and slot.has_method("set_active_mutation_id"):
-		slot.set_active_mutation_id(DEFAULT_MUTATION_ID)
+	if slot != null:
+		# Dispatch: check fill_next_available first (MutationSlotManager), then
+		# set_active_mutation_id (single MutationSlot). If neither is present,
+		# log an error but do not crash.
+		if slot.has_method("fill_next_available"):
+			slot.fill_next_available(DEFAULT_MUTATION_ID)
+		elif slot.has_method("set_active_mutation_id"):
+			slot.set_active_mutation_id(DEFAULT_MUTATION_ID)
+		else:
+			push_error("InfectionAbsorbResolver: slot arg has neither fill_next_available nor set_active_mutation_id")

@@ -4,7 +4,7 @@ var _absorb_available: bool = false
 var _player: PlayerController
 var _initial_max_hp: float = 0.0
 var _handler: Node
-var _mutation_slot: Object = null
+var _slot_manager: Object = null  # MutationSlotManager (preferred) or fallback MutationSlot
 var _prev_mutation_count: int = 0
 var _absorb_feedback_until_ms: int = 0
 
@@ -14,8 +14,11 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		_handler = root.get_node_or_null("InfectionInteractionHandler")
-		if _handler != null and _handler.has_method("get_mutation_slot"):
-			_mutation_slot = _handler.get_mutation_slot()
+		if _handler != null:
+			if _handler.has_method("get_mutation_slot_manager"):
+				_slot_manager = _handler.get_mutation_slot_manager()
+			elif _handler.has_method("get_mutation_slot"):
+				_slot_manager = _handler.get_mutation_slot()
 
 
 func set_absorb_available(available: bool) -> void:
@@ -137,23 +140,13 @@ func _process(_delta: float) -> void:
 
 func _update_mutation_display() -> void:
 	var mutation_label: Label = _get_mutation_label()
-	var slot_label: Label = _get_mutation_slot_label()
 	var absorb_feedback: Label = _get_absorb_feedback_label()
-	var mutation_icon: ColorRect = _get_mutation_icon()
 	var inv: Object = null
-	var slot: Object = _mutation_slot
 	if _handler != null and _handler.has_method("get_mutation_inventory"):
 		inv = _handler.get_mutation_inventory()
 	var count: int = 0
 	if inv != null and inv.has_method("get_granted_count"):
 		count = inv.get_granted_count()
-
-	var slot_filled: bool = false
-	var slot_id: String = ""
-	if slot != null and slot.has_method("is_filled") and slot.has_method("get_active_mutation_id"):
-		slot_filled = slot.is_filled()
-		if slot_filled:
-			slot_id = slot.get_active_mutation_id()
 
 	if count > _prev_mutation_count:
 		_absorb_feedback_until_ms = Time.get_ticks_msec() + 800
@@ -161,16 +154,20 @@ func _update_mutation_display() -> void:
 
 	var now_ms: int = Time.get_ticks_msec()
 	var showing_absorb_feedback: bool = now_ms < _absorb_feedback_until_ms
-
 	var any_mutation: bool = count > 0
 
+	# Drive dual-slot displays (DSM-4).
+	_update_slot_display(1, _get_slot(0))
+	_update_slot_display(2, _get_slot(1))
+
+	# Legacy single-slot label (backward compat — shows slot A state or empty).
+	var slot_label: Label = _get_mutation_slot_label()
 	if slot_label != null:
+		var s0: Object = _get_slot(0)
+		var s0_filled: bool = s0 != null and s0.has_method("is_filled") and s0.is_filled()
 		slot_label.visible = true
-		if slot_filled and slot_id != "":
-			slot_label.text = "Mutation Slot: " + slot_id + " active"
-			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
-		elif any_mutation:
-			slot_label.text = "Mutation Slot: Active"
+		if s0_filled:
+			slot_label.text = "Mutation Slot: " + s0.get_active_mutation_id() + " active"
 			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
 		else:
 			slot_label.text = "Mutation Slot: Empty"
@@ -179,10 +176,7 @@ func _update_mutation_display() -> void:
 	if mutation_label != null:
 		mutation_label.visible = any_mutation
 		if any_mutation:
-			if slot_filled and slot_id != "":
-				mutation_label.text = "Mutation Slot: " + slot_id + " active"
-			else:
-				mutation_label.text = "Mutation: " + str(count) + " active"
+			mutation_label.text = "Mutations: " + str(count) + " absorbed"
 		if showing_absorb_feedback:
 			mutation_label.modulate = Color(0.6, 1.0, 0.7, 1.0)
 		else:
@@ -191,12 +185,37 @@ func _update_mutation_display() -> void:
 	if absorb_feedback != null:
 		absorb_feedback.visible = showing_absorb_feedback
 
-	if mutation_icon != null:
-		mutation_icon.visible = true
-		if slot_filled:
-			mutation_icon.color = Color(0.4, 0.85, 0.55, 1.0)
-		elif any_mutation:
-			mutation_icon.color = Color(0.4, 0.75, 0.5, 0.9)
+
+func _get_slot(index: int) -> Object:
+	if _slot_manager != null and _slot_manager.has_method("get_slot"):
+		return _slot_manager.get_slot(index)
+	# Fallback: treat _slot_manager as a single slot for index 0.
+	if index == 0 and _slot_manager != null:
+		return _slot_manager
+	return null
+
+
+func _update_slot_display(slot_number: int, slot: Object) -> void:
+	var label: Label = get_node_or_null("MutationSlot" + str(slot_number) + "Label") as Label
+	var icon: ColorRect = get_node_or_null("MutationIcon" + str(slot_number)) as ColorRect
+	var filled: bool = slot != null and slot.has_method("is_filled") and slot.is_filled()
+	var slot_id: String = ""
+	if filled and slot.has_method("get_active_mutation_id"):
+		slot_id = slot.get_active_mutation_id()
+
+	if label != null:
+		label.visible = true
+		if filled and slot_id != "":
+			label.text = "Slot " + str(slot_number) + ": " + slot_id + " active"
+			label.modulate = Color(0.9, 1.0, 0.9, 1.0)
 		else:
-			mutation_icon.color = Color(0.2, 0.2, 0.2, 0.6)
+			label.text = "Slot " + str(slot_number) + ": Empty"
+			label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+	if icon != null:
+		icon.visible = true
+		if filled:
+			icon.color = Color(0.4, 0.85, 0.55, 1.0)
+		else:
+			icon.color = Color(0.2, 0.2, 0.2, 0.6)
 

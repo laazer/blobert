@@ -4,6 +4,16 @@
 
 A cozy 2.5D experimental platformer about biological mutation, physical experimentation, and elastic game feel.
 
+![Concept art — player slime and crystal mutations](docs/images/inspirational.png)
+
+---
+
+## Enemy Designs
+
+![Enemy designs — Blobert ability drops](docs/images/enemies1.png)
+
+![Bestiary — Blobert ability drops](docs/images/enemies2.png)
+
 ---
 
 ## Development target: 3D scenes

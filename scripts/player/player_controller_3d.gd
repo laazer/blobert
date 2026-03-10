@@ -70,8 +70,11 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		var handler: Node = root.get_node_or_null("InfectionInteractionHandler")
-		if handler != null and handler.has_method("get_mutation_slot"):
-			_mutation_slot = handler.call("get_mutation_slot")
+		if handler != null:
+			if handler.has_method("get_mutation_slot_manager"):
+				_mutation_slot = handler.call("get_mutation_slot_manager")
+			elif handler.has_method("get_mutation_slot"):
+				_mutation_slot = handler.call("get_mutation_slot")
 
 func _process(_delta: float) -> void:
 	var cam: Camera3D = get_node_or_null("Gimbal/Camera3D") as Camera3D
@@ -99,8 +102,14 @@ func _physics_process(delta: float) -> void:
 	if _base_max_speed <= 0.0:
 		_base_max_speed = _simulation.max_speed
 	var speed_multiplier: float = 1.0
-	if _mutation_slot != null and _mutation_slot.has_method("is_filled") and _mutation_slot.is_filled():
-		speed_multiplier = _MUTATION_SPEED_MULTIPLIER
+	if _mutation_slot != null:
+		var mutation_active: bool = false
+		if _mutation_slot.has_method("any_filled"):
+			mutation_active = _mutation_slot.any_filled()
+		elif _mutation_slot.has_method("is_filled"):
+			mutation_active = _mutation_slot.is_filled()
+		if mutation_active:
+			speed_multiplier = _MUTATION_SPEED_MULTIPLIER
 	_simulation.max_speed = _base_max_speed * speed_multiplier
 
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(

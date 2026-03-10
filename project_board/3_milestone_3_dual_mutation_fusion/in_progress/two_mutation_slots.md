@@ -72,31 +72,32 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+INTEGRATION
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Implementation Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: PASSED (50 new dual-slot tests green; 0 regressions in existing suite)
 - Static QA: Not Run
-- Integration: Not Run
+- Integration: Pending human playtest (AC#5)
 
 ## Blocking Issues
 - None
 
 ## Escalation Notes
-- None
+- NFR-6 (run_tests.gd registration): auto-discovery handles this automatically.
+- infection_ui.gd still references PlayerController (2D, legacy) in _ready() — pre-existing issue, out of scope.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Human / Integration Agent
 
 ## Required Input Schema
 ```json
@@ -107,4 +108,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Execution plan decomposed into 11 sequential tasks covering spec, test design, test break, implementation (pure-logic, wiring, UI), QA, and integration. All checkpointed assumptions logged in CHECKPOINTS.md. Spec Agent should formalize the MutationSlotManager API, fill-order rule, effect rule, and HUD layout per the execution plan Task 1 brief.
+All Tasks 1-9 complete. Open test_movement_3d.tscn in editor, absorb 2 enemies, verify both slot labels update independently in HUD and speed buff active. AC#5 is the only remaining check.
