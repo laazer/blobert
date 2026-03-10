@@ -10,60 +10,44 @@
 #   1  — one or more tests failed
 #
 # Adding a new suite:
-#   1. Create tests/<group>/test_<name>.gd as "class_name <Name>Tests extends Object"
-#      with a "func run_all() -> int:" entry point.
-#   2. Add the path to the SUITES array below in the appropriate group.
+#   Create any file under tests/ whose name starts with "test_".
+#   It will be discovered and run automatically.
+#   The file must define "func run_all() -> int:".
 
 extends SceneTree
 
 # Preload so LoggingTests is registered before run_tests.gd is loaded.
 const _LOGGING_TESTS: GDScript = preload("res://tests/scripts/system/test_logging.gd")
 
-const SUITES: Array[String] = [
-	# --- movement ---
-	"res://tests/scripts/movement/test_movement_simulation.gd",
-	"res://tests/scripts/movement/test_movement_simulation_adversarial.gd",
-	"res://tests/scripts/movement/test_jump_simulation.gd",
-	"res://tests/scripts/movement/test_jump_simulation_adversarial.gd",
-	"res://tests/scripts/movement/test_wall_cling_simulation.gd",
-	"res://tests/scripts/movement/test_wall_cling_simulation_adversarial.gd",
 
-	# --- player ---
-	"res://tests/scripts/player/test_base_physics_entity_3d.gd",
-	"res://tests/scripts/player/test_hp_reduction_simulation.gd",
-	"res://tests/scripts/player/test_hp_reduction_simulation_adversarial.gd",
-
-	# --- enemy ---
-	"res://tests/scripts/enemy/test_enemy_state_machine.gd",
-	"res://tests/scripts/enemy/test_enemy_state_machine_adversarial.gd",
-	"res://tests/scripts/enemy/test_weakening_system.gd",
-	"res://tests/scripts/enemy/test_weakening_system_adversarial.gd",
-
-	# --- infection ---
-	"res://tests/scripts/infection/test_infection_state_fx_3d.gd",
-
-	# --- system ---
-	"res://tests/scripts/system/test_logging.gd",
-	"res://tests/scripts/system/test_scene_state_machine.gd",
-	"res://tests/scripts/system/test_scene_state_machine_adversarial.gd",
-
-	# --- mutation ---
-	"res://tests/scripts/mutation/test_mutation_slot_system_single.gd",
-	"res://tests/scripts/mutation/test_mutation_slot_system_single_adversarial.gd",
-
-	# --- scene ---
-	"res://tests/scenes/levels/test_3d_scene.gd",
-	"res://tests/scenes/levels/test_scene_state_integration_3d.gd",
-]
+func _collect_test_files(dir_path: String, results: Array[String]) -> void:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	while true:
+		var entry := dir.get_next()
+		if entry == "":
+			break
+		if dir.current_is_dir():
+			if not entry.begins_with("."):
+				_collect_test_files(dir_path + "/" + entry, results)
+		elif entry.begins_with("test_") and entry.ends_with(".gd"):
+			results.append(dir_path + "/" + entry)
+	dir.list_dir_end()
 
 
 func _initialize() -> void:
 	print("=== blobert headless test runner ===")
 	print("")
 
+	var suites: Array[String] = []
+	_collect_test_files("res://tests", suites)
+	suites.sort()
+
 	var total_failures: int = 0
 
-	for path in SUITES:
+	for path in suites:
 		var script: GDScript = load(path)
 		if script == null or not script.can_instantiate():
 			push_error("RUNNER ERROR: could not load " + path)
