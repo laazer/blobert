@@ -1,4 +1,42 @@
 #!/bin/bash
 # Wrapper: always runs Godot in headless mode.
 # Usage is identical to the Godot CLI — just omit --headless.
-exec /Applications/Godot.app/Contents/MacOS/Godot --headless "$@"
+#
+# Searches for the Godot binary in platform-specific locations,
+# then falls back to whatever is on PATH.
+
+_find_godot() {
+  case "$(uname -s)" in
+    Darwin)
+      echo "/Applications/Godot.app/Contents/MacOS/Godot"
+      ;;
+    Linux)
+      # Common Linux install locations / package names
+      for candidate in godot4 godot Godot; do
+        if command -v "$candidate" &>/dev/null; then
+          echo "$candidate"
+          return
+        fi
+      done
+      ;;
+    *)
+      # Fallback: try PATH
+      if command -v Godot &>/dev/null; then
+        echo "Godot"
+      elif command -v godot4 &>/dev/null; then
+        echo "godot4"
+      fi
+      ;;
+  esac
+}
+
+GODOT_BIN="$(_find_godot)"
+
+if [[ -z "$GODOT_BIN" || ! -x "$GODOT_BIN" ]] && ! command -v "$GODOT_BIN" &>/dev/null 2>&1; then
+  echo "ERROR: Godot binary not found." >&2
+  echo "  macOS: install Godot.app to /Applications/" >&2
+  echo "  Linux: install godot4 or godot and ensure it is on PATH" >&2
+  exit 1
+fi
+
+exec "$GODOT_BIN" --headless "$@"
