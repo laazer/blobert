@@ -9,13 +9,12 @@
 class_name EnemyInfection3D
 extends BasePhysicsEntity3D
 
-var _esm: EnemyStateMachine
+var _esm: EnemyStateMachine = EnemyStateMachine.new()
 var _handler: InfectionInteractionHandler
 var _area: Area3D
 
 
 func _ready() -> void:
-	_esm = EnemyStateMachine.new()
 	var root: Node = get_parent()
 	if root != null:
 		_handler = root.get_node_or_null("InfectionInteractionHandler") as InfectionInteractionHandler
@@ -34,8 +33,10 @@ func _on_body_entered(body: Node3D) -> void:
 		if _handler != null:
 			_handler.set_target_esm(_esm)
 	if body.is_in_group("chunk"):
-		_esm.apply_weaken_event()
-		_esm.apply_infection_event()
+		if _esm.get_state() == "weakened":
+			_esm.apply_infection_event()
+		else:
+			_esm.apply_weaken_event()
 
 
 func _on_body_exited(body: Node3D) -> void:

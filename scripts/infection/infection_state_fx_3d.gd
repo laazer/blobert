@@ -18,7 +18,7 @@ const BLINK_FREQUENCY_HZ: float = 10.0
 
 
 var _enemy: Node3D
-var _visual: MeshInstance3D
+var _visual: Node3D
 var _esm: EnemyStateMachine
 
 var _last_state: String = ""
@@ -34,10 +34,10 @@ func _ready() -> void:
 		_last_state = _esm.get_state()
 
 
-func _get_visual_node() -> MeshInstance3D:
+func _get_visual_node() -> Node3D:
 	if _enemy == null:
 		return null
-	return _enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
+	return _enemy.get_node_or_null("EnemyVisual") as Node3D
 
 
 func _get_esm_from_enemy() -> EnemyStateMachine:

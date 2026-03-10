@@ -326,7 +326,7 @@ func test_rapid_state_transitions_no_visual_corruption() -> void:
 		return
 
 	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
-	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
+	var visual: Node3D = enemy.get_node_or_null("EnemyVisual") as Node3D
 	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if esm == null or fx == null or visual == null:
@@ -633,7 +633,7 @@ func test_visual_distinctness_label_and_color() -> void:
 		_fail("weaken_gap_visual_distinctness_setup", "could not create enemy")
 		return
 
-	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
+	var visual: Node3D = enemy.get_node_or_null("EnemyVisual") as Node3D
 	if visual == null:
 		_fail("weaken_gap_visual_distinctness_nodes", "EnemyVisual not found")
 		enemy.free()
@@ -955,7 +955,7 @@ func test_blink_visible_property_toggle() -> void:
 		return
 
 	var fx: Node3D = enemy.get_node_or_null("InfectionStateFx3D") as Node3D
-	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
+	var visual: Node3D = enemy.get_node_or_null("EnemyVisual") as Node3D
 	var esm: EnemyStateMachine = enemy.get_esm() if enemy.has_method("get_esm") else null
 
 	if fx == null or visual == null or esm == null:

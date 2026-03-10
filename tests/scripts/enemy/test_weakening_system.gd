@@ -186,7 +186,7 @@ func test_weakened_state_triggers_visual_blink() -> void:
 		enemy.free()
 		return
 
-	var visual: MeshInstance3D = enemy.get_node_or_null("EnemyVisual") as MeshInstance3D
+	var visual: Node3D = enemy.get_node_or_null("EnemyVisual") as Node3D
 	if visual == null:
 		_fail("weakening_visual_setup", "enemy_infection_3d does not have EnemyVisual child")
 		enemy.free()
