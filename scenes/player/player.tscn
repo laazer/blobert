@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://cplayer001"]
+
+[ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_playerctrl"]
+[ext_resource type="Script" path="res://scripts/camera/camera_follow.gd" id="2_camera_follow"]
+[ext_resource type="Script" path="res://scripts/fx/cling_state_fx.gd" id="3_cling_fx"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 16.0
+height = 32.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+position = Vector2(0, 0)
+script = ExtResource("1_playerctrl")
+
+[node name="PlayerShape" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_player")
+
+[node name="Camera" type="Camera2D" parent="."]
+script = ExtResource("2_camera_follow")
+follow_limit_left = -1000
+follow_limit_right = 1100
+follow_limit_top = -200
+follow_limit_bottom = 600
+
+[node name="PlayerVisual" type="Polygon2D" parent="."]
+z_index = 10
+color = Color(0.4, 0.9, 0.6, 1)
+polygon = PackedVector2Array(-16, -32, 16, -32, 16, 32, -16, 32)
+
+[node name="ClingFX" type="Node" parent="."]
+script = ExtResource("3_cling_fx")
+
+[node name="ClingTrail" type="CPUParticles2D" parent="ClingFX"]
+emitting = false
+ lifetime = 0.5
+ amount = 4
+ emission_shape = 1
+ emission_sphere_radius = 5.0
+ direction = Vector2(0, -1)
+ spread_degrees = 45.0
+ initial_velocity = 50.0
+ gravity = Vector2(0, 20)
+ color = Color(0.8, 1.0, 0.5, 1)
+ size = 4.0
+ scale_amount = Vector2(0.5, 1.0)

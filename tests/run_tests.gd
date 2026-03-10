@@ -17,71 +17,71 @@
 extends SceneTree
 
 # Preload so LoggingTests is registered before run_tests.gd is loaded.
-const _LOGGING_TESTS: GDScript = preload("res://tests/system/test_logging.gd")
+const _LOGGING_TESTS: GDScript = preload("res://tests/scripts/system/test_logging.gd")
 
 const SUITES: Array[String] = [
 	# --- movement ---
-	"res://tests/movement/test_movement_simulation.gd",
-	"res://tests/movement/test_movement_simulation_adversarial.gd",
-	"res://tests/movement/test_jump_simulation.gd",
-	"res://tests/movement/test_jump_simulation_adversarial.gd",
-	"res://tests/movement/test_wall_cling_simulation.gd",
-	"res://tests/movement/test_wall_cling_simulation_adversarial.gd",
+	"res://tests/scripts/movement/test_movement_simulation.gd",
+	"res://tests/scripts/movement/test_movement_simulation_adversarial.gd",
+	"res://tests/scripts/movement/test_jump_simulation.gd",
+	"res://tests/scripts/movement/test_jump_simulation_adversarial.gd",
+	"res://tests/scripts/movement/test_wall_cling_simulation.gd",
+	"res://tests/scripts/movement/test_wall_cling_simulation_adversarial.gd",
 
 	# --- camera ---
-	"res://tests/camera/test_camera_follow.gd",
-	"res://tests/camera/test_camera_follow_adversarial.gd",
+	"res://tests/scripts/camera/test_camera_follow.gd",
+	"res://tests/scripts/camera/test_camera_follow_adversarial.gd",
 
 	# --- chunk ---
-	"res://tests/chunk/test_chunk_detach_simulation.gd",
-	"res://tests/chunk/test_chunk_detach_simulation_adversarial.gd",
-	"res://tests/chunk/test_chunk_recall_simulation.gd",
-	"res://tests/chunk/test_chunk_recall_simulation_adversarial.gd",
-	"res://tests/chunk/test_chunk_enemy_collision.gd",
+	"res://tests/scripts/chunk/test_chunk_detach_simulation.gd",
+	"res://tests/scripts/chunk/test_chunk_detach_simulation_adversarial.gd",
+	"res://tests/scripts/chunk/test_chunk_recall_simulation.gd",
+	"res://tests/scripts/chunk/test_chunk_recall_simulation_adversarial.gd",
+	"res://tests/scripts/chunk/test_chunk_enemy_collision.gd",
 
 	# --- player ---
-	"res://tests/player/test_base_physics_entity_3d.gd",
-	"res://tests/player/test_hp_reduction_simulation.gd",
-	"res://tests/player/test_hp_reduction_simulation_adversarial.gd",
-	"res://tests/player/test_human_playable_core.gd",
-	"res://tests/player/test_human_playable_core_adversarial.gd",
+	"res://tests/scripts/player/test_base_physics_entity_3d.gd",
+	"res://tests/scripts/player/test_hp_reduction_simulation.gd",
+	"res://tests/scripts/player/test_hp_reduction_simulation_adversarial.gd",
+	"res://tests/scripts/player/test_human_playable_core.gd",
+	"res://tests/scripts/player/test_human_playable_core_adversarial.gd",
 
 	# --- enemy ---
-	"res://tests/enemy/test_enemy_state_machine.gd",
-	"res://tests/enemy/test_enemy_state_machine_adversarial.gd",
-	"res://tests/enemy/test_weakening_system.gd",
-	"res://tests/enemy/test_weakening_system_adversarial.gd",
+	"res://tests/scripts/enemy/test_enemy_state_machine.gd",
+	"res://tests/scripts/enemy/test_enemy_state_machine_adversarial.gd",
+	"res://tests/scripts/enemy/test_weakening_system.gd",
+	"res://tests/scripts/enemy/test_weakening_system_adversarial.gd",
 
 	# --- infection ---
-	"res://tests/infection/test_infection_ui.gd",
-	"res://tests/infection/test_infection_interaction.gd",
-	"res://tests/infection/test_infection_interaction_adversarial.gd",
-	"res://tests/infection/test_infection_state_fx.gd",
-	"res://tests/infection/test_infection_state_fx_adversarial.gd",
-	"res://tests/infection/test_infection_state_fx_mutation_edge_cases.gd",
-	"res://tests/infection/test_infection_state_fx_3d.gd",
+	"res://tests/scripts/infection/test_infection_ui.gd",
+	"res://tests/scripts/infection/test_infection_interaction.gd",
+	"res://tests/scripts/infection/test_infection_interaction_adversarial.gd",
+	"res://tests/scripts/infection/test_infection_state_fx.gd",
+	"res://tests/scripts/infection/test_infection_state_fx_adversarial.gd",
+	"res://tests/scripts/infection/test_infection_state_fx_mutation_edge_cases.gd",
+	"res://tests/scripts/infection/test_infection_state_fx_3d.gd",
 
 	# --- ui ---
-	"res://tests/ui/test_hp_and_chunk_hud.gd",
-	"res://tests/ui/test_hp_and_chunk_hud_adversarial.gd",
-	"res://tests/ui/test_input_hints.gd",
-	"res://tests/ui/test_input_hints_adversarial.gd",
-	"res://tests/ui/test_wall_cling_visual_readability.gd",
-	"res://tests/ui/test_wall_cling_visual_readability_adversarial.gd",
+	"res://tests/scripts/ui/test_hp_and_chunk_hud.gd",
+	"res://tests/scripts/ui/test_hp_and_chunk_hud_adversarial.gd",
+	"res://tests/scripts/ui/test_input_hints.gd",
+	"res://tests/scripts/ui/test_input_hints_adversarial.gd",
+	"res://tests/scripts/ui/test_wall_cling_visual_readability.gd",
+	"res://tests/scripts/ui/test_wall_cling_visual_readability_adversarial.gd",
 	# test_wall_cling_visual_readability_mutation_specs.gd excluded: Color.distance_to() is not valid in Godot 4.6
 
 	# --- scene ---
-	"res://tests/scene/test_3d_scene.gd",
-	"res://tests/scene/test_scene_state_machine.gd",
-	"res://tests/scene/test_scene_state_machine_adversarial.gd",
-	"res://tests/scene/test_scene_state_integration_3d.gd",
+	"res://tests/scenes/levels/test_3d_scene.gd",
+	"res://tests/scripts/system/test_scene_state_machine.gd",
+	"res://tests/scripts/system/test_scene_state_machine_adversarial.gd",
+	"res://tests/scenes/levels/test_scene_state_integration_3d.gd",
 
 	# --- system ---
-	"res://tests/system/test_detach_recall_fx.gd",
-	"res://tests/system/test_detach_recall_fx_adversarial.gd",
-	"res://tests/system/test_mutation_slot_system_single.gd",
-	"res://tests/system/test_mutation_slot_system_single_adversarial.gd",
-	"res://tests/system/test_logging.gd",
+	"res://tests/scripts/fx/test_detach_recall_fx.gd",
+	"res://tests/scripts/fx/test_detach_recall_fx_adversarial.gd",
+	"res://tests/scripts/mutation/test_mutation_slot_system_single.gd",
+	"res://tests/scripts/mutation/test_mutation_slot_system_single_adversarial.gd",
+	"res://tests/scripts/system/test_logging.gd",
 ]
 
 
