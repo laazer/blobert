@@ -1648,3 +1648,29 @@ Tickets queued: two_mutation_slots.md, second_chunk_logic.md, slot_consumption_r
 **Assumption made:** The spec requires that `any_filled()` returns `true` if at least one slot `is_filled()`, implying it polls the slots. If a cached flag is used and a direct `set_active_mutation_id` call on the slot bypasses the cache, `any_filled()` would return stale data. The adversarial test verifies that directly calling `set_active_mutation_id` on the object returned by `get_slot()` is immediately reflected by `any_filled()`. This is the safest behavior and matches the spec's wording.
 
 **Confidence:** High
+
+---
+
+### [two_mutation_slots] Core Simulation — whitespace-only ID handling
+
+**Would have asked:** Should `fill_next_available` reject whitespace-only IDs (e.g. `"   "`, `"\t"`) the same way it rejects the empty string?
+
+**Assumption made:** Whitespace-only IDs are accepted. The spec DSM-2 guard condition is exactly `id == ""`. The adversarial tests (test_adv_whitespace_id_fills_slot_because_not_empty_string, test_adv_tab_id_fills_slot, test_adv_newline_id_fills_slot) all assert that whitespace-only IDs FILL a slot. Implementation checks only `id == ""`, not `id.strip_edges() == ""`.
+
+**Confidence:** High
+
+### [two_mutation_slots] Core Simulation — any_filled() implementation strategy
+
+**Would have asked:** Should `any_filled()` use a cached boolean flag for performance, or poll slots live?
+
+**Assumption made:** Poll slots live (`_slots[0].is_filled() or _slots[1].is_filled()`). Avoids stale-flag bugs when callers manipulate slot state directly via `get_slot()`. Adversarial test explicitly verifies this live-read behavior.
+
+**Confidence:** High
+
+### [two_mutation_slots] Core Simulation — InfectionInteractionHandler: _mutation_slot variable renamed
+
+**Would have asked:** Is the rename of `_mutation_slot` to `_slot_manager` in InfectionInteractionHandler safe, given no external code reads that private variable directly?
+
+**Assumption made:** Safe. `_mutation_slot` was a private var. External callers used `get_mutation_slot()`, which continues to work via the backward-compat alias returning `_slot_manager.get_slot(0)`. No external read of the private var is possible in GDScript.
+
+**Confidence:** High

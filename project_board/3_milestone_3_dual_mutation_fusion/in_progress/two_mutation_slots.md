@@ -72,16 +72,16 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+INTEGRATION
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Core Simulation Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Passing
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -96,7 +96,7 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -107,4 +107,4 @@ Core Simulation Agent
 Proceed
 
 ## Reason
-Adversarial test suite written to tests/system/test_mutation_slot_system_dual_adversarial.gd (36 tests across 12 vulnerability categories). Suite registered in tests/run_tests.gd immediately after the primary dual test entry. Three checkpoint entries logged to CHECKPOINTS.md covering: whitespace-only IDs, get_slot() identity stability, and any_filled() live-state vs. cached-flag assumption. All adversarial tests are expected to fail (red) before MutationSlotManager is implemented. Core Simulation Agent to implement scripts/mutation_slot_manager.gd per DSM-1 through DSM-3 spec and make both primary and adversarial suites green.
+Tasks 4, 5, 6, and 9 complete. Created scripts/mutation_slot_manager.gd (MutationSlotManager extends RefCounted, two MutationSlot instances, full DSM-1/DSM-2/DSM-3 API). Updated scripts/infection_absorb_resolver.gd with dual-slot dispatch (fill_next_available path checked before set_active_mutation_id for higher specificity; push_error on unrecognized slot type; full backward-compat with null and single-slot forms). Updated scripts/infection_interaction_handler.gd to instantiate MutationSlotManager, expose get_mutation_slot_manager(), and keep get_mutation_slot() as backward-compat alias returning slot A. Both test suites (test_mutation_slot_system_dual.gd, test_mutation_slot_system_dual_adversarial.gd) were already registered in tests/run_tests.gd. Three checkpoint entries appended to CHECKPOINTS.md covering: whitespace ID handling, any_filled() live-read strategy, and InfectionInteractionHandler _mutation_slot rename. All single-slot tests remain green (mutation_slot.gd is unmodified).
