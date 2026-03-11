@@ -25,9 +25,9 @@ const _MutationInventoryScript: GDScript = preload("res://scripts/mutation_inven
 const _ResolverScript: GDScript = preload("res://scripts/infection_absorb_resolver.gd")
 const _MutationSlotManagerScript: GDScript = preload("res://scripts/mutation_slot_manager.gd")
 
-var _inventory: RefCounted
-var _resolver: RefCounted
-var _slot_manager: RefCounted
+var _inventory: MutationInventory
+var _resolver: InfectionAbsorbResolver
+var _slot_manager: MutationSlotManager
 var _target_esm: EnemyStateMachine = null
 var _infection_ui: CanvasLayer = null
 
@@ -72,7 +72,7 @@ func get_mutation_inventory() -> RefCounted:
 
 
 # Returns the full MutationSlotManager for callers that support dual-slot logic.
-func get_mutation_slot_manager() -> RefCounted:
+func get_mutation_slot_manager() -> MutationSlotManager:
 	return _slot_manager
 
 

@@ -22,6 +22,9 @@ const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk_3d.tscn")
 
 var _mutation_slot: Object = null
+# Dual-slot manager fetched from InfectionInteractionHandler when available.
+# When present, any_filled() is used instead of _mutation_slot.is_filled().
+var _slot_manager: Object = null
 var _base_max_speed: float = 0.0
 const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 
@@ -70,8 +73,12 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		var handler: Node = root.get_node_or_null("InfectionInteractionHandler")
-		if handler != null and handler.has_method("get_mutation_slot"):
-			_mutation_slot = handler.call("get_mutation_slot")
+		if handler != null:
+			# Prefer dual-slot manager (DSM-3); fall back to single slot for backward compat.
+			if handler.has_method("get_mutation_slot_manager"):
+				_slot_manager = handler.call("get_mutation_slot_manager")
+			if handler.has_method("get_mutation_slot"):
+				_mutation_slot = handler.call("get_mutation_slot")
 
 func _process(_delta: float) -> void:
 	var cam: Camera3D = get_node_or_null("Gimbal/Camera3D") as Camera3D
@@ -99,7 +106,13 @@ func _physics_process(delta: float) -> void:
 	if _base_max_speed <= 0.0:
 		_base_max_speed = _simulation.max_speed
 	var speed_multiplier: float = 1.0
-	if _mutation_slot != null and _mutation_slot.has_method("is_filled") and _mutation_slot.is_filled():
+	# Use dual-slot manager when available; fall back to single-slot for backward compat.
+	var mutation_active: bool = false
+	if _slot_manager != null and _slot_manager.has_method("any_filled"):
+		mutation_active = _slot_manager.any_filled()
+	elif _mutation_slot != null and _mutation_slot.has_method("is_filled"):
+		mutation_active = _mutation_slot.is_filled()
+	if mutation_active:
 		speed_multiplier = _MUTATION_SPEED_MULTIPLIER
 	_simulation.max_speed = _base_max_speed * speed_multiplier
 

@@ -24,7 +24,7 @@ extends RefCounted
 const _MutationSlotScript: GDScript = preload("res://scripts/mutation_slot.gd")
 
 # Exactly two slots; capacity is fixed per spec (DSM-1).
-var _slots: Array = []
+var _slots: Array[MutationSlot] = []
 
 
 func _init() -> void:
@@ -36,7 +36,7 @@ func _init() -> void:
 
 # Returns the MutationSlot at the given index, or null if out of range.
 # Valid indices: 0 (slot A) and 1 (slot B).
-func get_slot(index: int) -> RefCounted:
+func get_slot(index: int) -> MutationSlot:
 	if index < 0 or index >= _slots.size():
 		return null
 	return _slots[index]
@@ -53,8 +53,8 @@ func fill_next_available(id: String) -> void:
 		push_error("MutationSlotManager.fill_next_available: id must not be empty string; call ignored.")
 		return
 
-	var slot_a: RefCounted = _slots[0]
-	var slot_b: RefCounted = _slots[1]
+	var slot_a: MutationSlot = _slots[0]
+	var slot_b: MutationSlot = _slots[1]
 
 	if not slot_a.is_filled():
 		slot_a.set_active_mutation_id(id)

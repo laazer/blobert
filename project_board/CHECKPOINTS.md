@@ -1674,3 +1674,39 @@ Tickets queued: two_mutation_slots.md, second_chunk_logic.md, slot_consumption_r
 **Assumption made:** Safe. `_mutation_slot` was a private var. External callers used `get_mutation_slot()`, which continues to work via the backward-compat alias returning `_slot_manager.get_slot(0)`. No external read of the private var is possible in GDScript.
 
 **Confidence:** High
+
+---
+
+### [two_mutation_slots] Core Simulation (fix) — tighten-types
+
+**Would have asked:** For `InfectionInteractionHandler._inventory`, the private field was typed as `RefCounted` but holds a `MutationInventory` instance. Is it safe to tighten the type to `MutationInventory` without any behavior change?
+
+**Assumption made:** Safe. `MutationInventory` has `class_name MutationInventory` and extends `RefCounted`. All three private fields (`_inventory`, `_resolver`, `_slot_manager`) and the return type of `get_mutation_slot_manager()` and `get_slot()` are tightened to their concrete types. No call-site logic changes; this is a static-type-only annotation fix. All callers already receive the concrete types at runtime.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Gameplay Systems — PlayerController3D speed buff uses get_mutation_slot_manager().any_filled()
+
+**Decision:** `_ready()` now prefers `get_mutation_slot_manager()` via `has_method` guard, storing the result in a new `_slot_manager` variable. The speed-buff check in `_physics_process` reads `_slot_manager.any_filled()` when a manager is available, falling back to `_mutation_slot.is_filled()` when only the legacy single-slot path is present. The `_mutation_slot` variable is retained for the fallback case; `_slot_manager` is an additional variable. Flat 1.25x multiplier is unchanged.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Presentation — InfectionUI dual-slot wiring strategy
+
+**Would have asked:** Should the InfectionUI crash or silently skip if `MutationSlot1Label`, `MutationIcon1`, `MutationSlot2Label`, or `MutationIcon2` nodes are absent from the scene?
+
+**Assumption made:** Silent skip via null checks on each node. The script calls `get_node_or_null` for all four new nodes. If a node is absent, that slot display is simply not updated — no crash, no error. This keeps the script forward-compatible if the scene is edited independently. The legacy `MutationSlotLabel` and `MutationIcon` nodes continue to exist in the scene and are updated to reflect slot A state (not hidden), satisfying DSM-4-AC-8.
+
+**Confidence:** High
+
+### [two_mutation_slots] Presentation — _slot_manager fallback in InfectionUI
+
+**Would have asked:** If `get_mutation_slot_manager()` is unavailable on the handler, should InfectionUI fall back to `get_mutation_slot()` for a single-slot display, or show both slots as empty?
+
+**Assumption made:** Fall back to `get_mutation_slot()` if available on the handler; in that mode only the slot 1 label/icon reflect the single slot state, and slot 2 is shown as empty. This mirrors the backward-compat guarantee in DSM-5.
+
+**Confidence:** High

@@ -75,10 +75,10 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 INTEGRATION
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Core Simulation Agent
+Gameplay Systems Agent
 
 ## Validation Status
 - Tests: Passing
@@ -107,4 +107,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Tasks 4, 5, 6, and 9 complete. Created scripts/mutation_slot_manager.gd (MutationSlotManager extends RefCounted, two MutationSlot instances, full DSM-1/DSM-2/DSM-3 API). Updated scripts/infection_absorb_resolver.gd with dual-slot dispatch (fill_next_available path checked before set_active_mutation_id for higher specificity; push_error on unrecognized slot type; full backward-compat with null and single-slot forms). Updated scripts/infection_interaction_handler.gd to instantiate MutationSlotManager, expose get_mutation_slot_manager(), and keep get_mutation_slot() as backward-compat alias returning slot A. Both test suites (test_mutation_slot_system_dual.gd, test_mutation_slot_system_dual_adversarial.gd) were already registered in tests/run_tests.gd. Three checkpoint entries appended to CHECKPOINTS.md covering: whitespace ID handling, any_filled() live-read strategy, and InfectionInteractionHandler _mutation_slot rename. All single-slot tests remain green (mutation_slot.gd is unmodified).
+Task 7 complete. Updated scripts/player_controller_3d.gd: added _slot_manager variable; _ready() now prefers get_mutation_slot_manager() (has_method guard) and stores the result, falling back to get_mutation_slot() for backward compat; _physics_process speed-buff check reads _slot_manager.any_filled() when manager available, elif falls back to _mutation_slot.is_filled() — flat 1.25x multiplier unchanged. Checkpoint entry appended to CHECKPOINTS.md. Syntax verified by code review (no parse errors expected). All previously-passing tests remain unaffected (no logic changes to simulation layer). Previous tasks 4, 5, 6, 9 already complete (MutationSlotManager, InfectionAbsorbResolver dual-slot dispatch, InfectionInteractionHandler wiring, run_tests.gd registration). Remaining: Task 8 (Presentation Agent — InfectionUI + game_ui.tscn dual-slot HUD), Task 10 (Static QA), Task 11 (Integration/playtest).
