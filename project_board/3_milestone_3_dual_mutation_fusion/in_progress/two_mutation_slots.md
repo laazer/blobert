@@ -72,13 +72,13 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -96,7 +96,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Core Simulation Agent
 
 ## Required Input Schema
 ```json
@@ -107,4 +107,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary behavioral test suite written to tests/system/test_mutation_slot_system_dual.gd (26 tests covering DSM-1, DSM-2, DSM-3). Suite registered in tests/run_tests.gd under # --- system --- section. All tests are red before MutationSlotManager implementation. Test Breaker Agent to write adversarial suite (tests/system/test_mutation_slot_system_dual_adversarial.gd).
+Adversarial test suite written to tests/system/test_mutation_slot_system_dual_adversarial.gd (36 tests across 12 vulnerability categories). Suite registered in tests/run_tests.gd immediately after the primary dual test entry. Three checkpoint entries logged to CHECKPOINTS.md covering: whitespace-only IDs, get_slot() identity stability, and any_filled() live-state vs. cached-flag assumption. All adversarial tests are expected to fail (red) before MutationSlotManager is implemented. Core Simulation Agent to implement scripts/mutation_slot_manager.gd per DSM-1 through DSM-3 spec and make both primary and adversarial suites green.

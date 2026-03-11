@@ -1618,3 +1618,33 @@ Tickets queued: two_mutation_slots.md, second_chunk_logic.md, slot_consumption_r
 **Assumption made:** The primary test suite (`test_mutation_slot_system_dual.gd`) tests only the `any_filled()` API contract on `MutationSlotManager`, which is the observable predicate the controller uses. The scene-wiring half of DSM-3 (that `_simulation.max_speed` is actually 1.25x when any slot filled) is already covered by the player controller's existing movement tests and will be re-verified by the Integration Agent at playtest time. Pulling the player controller into a headless unit test would require mocking a scene graph, which violates the pure-logic isolation principle (NFR-1) and the "mock only true externals" guideline.
 
 **Confidence:** High
+
+---
+
+### [two_mutation_slots] Test Breaker — whitespace-only IDs in fill_next_available
+
+**Would have asked:** Should `fill_next_available("   ")` (whitespace-only string) be rejected like `fill_next_available("")`, or is whitespace a valid non-empty mutation ID?
+
+**Assumption made:** Whitespace-only IDs are accepted because the spec (DSM-2) only defines the rejection criterion as `id == ""` (exact empty string check). A string of spaces is not equal to `""`, so the spec guard does not apply. The adversarial test encodes this as: whitespace ID fills slot A and is stored verbatim. If the implementation adds a broader trim/whitespace guard, the test will catch the discrepancy and expose the spec gap.
+
+**Confidence:** Medium
+
+---
+
+### [two_mutation_slots] Test Breaker — get_slot() identity stability across repeated calls
+
+**Would have asked:** Must `get_slot(0)` always return the exact same object reference on every call, or is it acceptable for it to return a fresh wrapper object each time (as long as the data is consistent)?
+
+**Assumption made:** The spec states both slot instances are created in `_init()` and are never null during the manager's lifetime (DSM-1). This implies the slots are stored as fields, not created on demand. Conservative assumption: `get_slot(0)` returns the same stored instance each time (identity stable). The adversarial test asserts `slot_a_first == slot_a_second`. If an implementation returns fresh wrappers, the test exposes that behavior which could cause bugs in callers that hold a reference to the result of `get_slot()` and expect it to reflect live state.
+
+**Confidence:** High
+
+---
+
+### [two_mutation_slots] Test Breaker — any_filled() reads live slot state vs. cached flag
+
+**Would have asked:** Does `any_filled()` compute its result by querying the live `is_filled()` state of each slot, or does it maintain an internal boolean flag that could become stale if a caller directly sets an ID on the slot object returned by `get_slot()`?
+
+**Assumption made:** The spec requires that `any_filled()` returns `true` if at least one slot `is_filled()`, implying it polls the slots. If a cached flag is used and a direct `set_active_mutation_id` call on the slot bypasses the cache, `any_filled()` would return stale data. The adversarial test verifies that directly calling `set_active_mutation_id` on the object returned by `get_slot()` is immediately reflected by `any_filled()`. This is the safest behavior and matches the spec's wording.
+
+**Confidence:** High
