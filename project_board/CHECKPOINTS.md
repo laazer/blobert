@@ -1609,3 +1609,12 @@ Tickets queued: two_mutation_slots.md, second_chunk_logic.md, slot_consumption_r
 **Confidence:** High
 
 ---
+---
+
+### [two_mutation_slots] Test Designer — DSM-3 speed-buff scene wiring
+
+**Would have asked:** DSM-3 acceptance criteria (AC-2 through AC-5) refer to `_simulation.max_speed` on `PlayerController3D`, which requires a scene tree and a live controller node. Should the primary test suite spin up a scene to verify the speed multiplier value, or should it only test `any_filled()` on the pure-logic manager?
+
+**Assumption made:** The primary test suite (`test_mutation_slot_system_dual.gd`) tests only the `any_filled()` API contract on `MutationSlotManager`, which is the observable predicate the controller uses. The scene-wiring half of DSM-3 (that `_simulation.max_speed` is actually 1.25x when any slot filled) is already covered by the player controller's existing movement tests and will be re-verified by the Integration Agent at playtest time. Pulling the player controller into a headless unit test would require mocking a scene graph, which violates the pure-logic isolation principle (NFR-1) and the "mock only true externals" guideline.
+
+**Confidence:** High

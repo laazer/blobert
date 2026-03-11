@@ -72,13 +72,13 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_BREAK
 
 ## Revision
-2
+4
 
 ## Last Updated By
-Planner Agent
+Test Designer Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -96,7 +96,7 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
@@ -107,4 +107,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Execution plan decomposed into 11 sequential tasks covering spec, test design, test break, implementation (pure-logic, wiring, UI), QA, and integration. All checkpointed assumptions logged in CHECKPOINTS.md. Spec Agent should formalize the MutationSlotManager API, fill-order rule, effect rule, and HUD layout per the execution plan Task 1 brief.
+Primary behavioral test suite written to tests/system/test_mutation_slot_system_dual.gd (26 tests covering DSM-1, DSM-2, DSM-3). Suite registered in tests/run_tests.gd under # --- system --- section. All tests are red before MutationSlotManager implementation. Test Breaker Agent to write adversarial suite (tests/system/test_mutation_slot_system_dual_adversarial.gd).

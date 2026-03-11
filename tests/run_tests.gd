@@ -81,6 +81,7 @@ const SUITES: Array[String] = [
 	"res://tests/system/test_detach_recall_fx_adversarial.gd",
 	"res://tests/system/test_mutation_slot_system_single.gd",
 	"res://tests/system/test_mutation_slot_system_single_adversarial.gd",
+	"res://tests/system/test_mutation_slot_system_dual.gd",
 	"res://tests/system/test_logging.gd",
 ]
 
