@@ -59,6 +59,10 @@ mesh = SubResource("BoxMesh_floor")
 physics_interpolation_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5, 0)
 
+[node name="Enemy2" parent="." unique_id=186488896 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 5, 0)
+
 [node name="InfectionUI" parent="." unique_id=1139678762 instance=ExtResource("5_game_ui")]
 
 [node name="RespawnZone" type="Area3D" parent="." unique_id=31933753]
