@@ -77,18 +77,18 @@ The existing system has one chunk lifecycle managed by `PlayerController3D` and 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-INTEGRATION
+COMPLETE
 
 ## Revision
-10
+11
 
 ## Last Updated By
-Human (Claude Code assisted)
+Human
 
 ## Validation Status
 - Tests: CONFIRMED PASS. `timeout 300 godot -s tests/run_tests.gd` run on 2026-03-13. Result: 408 passed, 0 failed across all suites. Includes test_dual_chunk_controller.gd (10/10), test_second_chunk_simulation.gd (57/57), test_second_chunk_simulation_adversarial.gd (24/24). BLOCK-1 resolved.
 - Static QA: CONFIRMED — No syntax errors. Note: `--check-only` hangs in Godot 4.6.1 headless because it initializes the main scene (known engine behavior in this project). Full test suite run above serves as runtime + parse verification — no GDScript errors were reported during execution. BLOCK-2 resolved.
-- Integration: Pending. No playtest notes exist. Task 10 from the Execution Plan (in-editor human playability verification) has not been performed. AC5 requires a human to run the scene in-editor, observe both chunks detaching and recalling independently without debug overlays, and document that result. This has not occurred.
+- Integration: CONFIRMED. Human playtest of `test_movement_3d.tscn` on 2026-03-13. Both chunks (E = chunk 1, Q = chunk 2) detach and recall independently. Both can exist in world simultaneously. No crashes, no state corruption across mixed flows. Behavior understandable without debug overlays. AC1–AC5 all satisfied. BLOCK-3 resolved.
 - Spec: Complete. See `project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md`. Covers SPEC-SCL-1 through SPEC-SCL-9.
 
 ## Implementation Summary (Tasks 5, 6, 7 complete)
@@ -109,7 +109,7 @@ Human (Claude Code assisted)
 - Created `tests/chunk/test_dual_chunk_controller.gd` with 10 tests covering dual-chunk flows
 
 ## Blocking Issues
-- BLOCK-3 (AC5): Manual in-editor playability verification has not been performed. AC5 requires a human to open `test_movement_3d.tscn`, play the scene, detach and recall both chunks independently, confirm both chunks and their roles are visually understandable without debug overlays, and document playtest notes. No such notes exist. This is an inherently manual check that cannot be substituted by automated tests.
+- None. All blocks resolved.
 
 ## Escalation Notes
 - SPEC-SCL-4 clarification: detach_2_just_pressed is the 9th (last) positional arg in simulate(), after delta, due to GDScript 4 constraint that optional parameters must follow required parameters.
@@ -123,20 +123,15 @@ Human (Claude Code assisted)
 # NEXT ACTION
 
 ## Next Responsible Agent
-Human
+None
 
 ## Required Input Schema
 ```json
-{
-  "ticket_path": "project_board/3_milestone_3_dual_mutation_fusion/in_progress/second_chunk_logic.md",
-  "required_actions": [
-    "Open test_movement_3d.tscn in-editor; detach and recall both chunks independently; confirm both chunks and their roles are visually clear without debug overlays; document playtest notes in Validation Status (resolves AC5 / BLOCK-3)"
-  ]
-}
+{}
 ```
 
 ## Status
-Needs Attention
+Complete
 
 ## Reason
-BLOCK-1 and BLOCK-2 resolved: full test suite confirmed 408 passed, 0 failed on 2026-03-13. Only BLOCK-3 (AC5) remains: human in-editor playtest of dual-chunk detach/recall in test_movement_3d.tscn has not been performed. Once playtest notes are documented in Validation Status, ticket may advance to COMPLETE.
+All acceptance criteria satisfied. Tests: 408 passed. Static QA: clean. Integration: human playtest confirmed on 2026-03-13.
