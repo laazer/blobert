@@ -77,6 +77,38 @@ theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 20
 text = "Mutation Slot: Empty"
 
+[node name="MutationSlot1Label" type="Label" parent="."]
+offset_left = 48.0
+offset_top = 145.0
+offset_right = 300.0
+offset_bottom = 169.0
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 18
+text = "Slot 1: Empty"
+
+[node name="MutationIcon1" type="ColorRect" parent="."]
+offset_left = 20.0
+offset_top = 147.0
+offset_right = 44.0
+offset_bottom = 167.0
+color = Color(0.2, 0.2, 0.2, 0.6)
+
+[node name="MutationSlot2Label" type="Label" parent="."]
+offset_left = 48.0
+offset_top = 173.0
+offset_right = 300.0
+offset_bottom = 197.0
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 18
+text = "Slot 2: Empty"
+
+[node name="MutationIcon2" type="ColorRect" parent="."]
+offset_left = 20.0
+offset_top = 175.0
+offset_right = 44.0
+offset_bottom = 195.0
+color = Color(0.2, 0.2, 0.2, 0.6)
+
 [node name="MutationLabel" type="Label" parent="."]
 visible = false
 offset_left = 48.0

@@ -75,36 +75,58 @@ Both slots drive the existing 1.25x speed multiplier. The multiplier is flat (ap
 INTEGRATION
 
 ## Revision
-7
+10
 
 ## Last Updated By
-Gameplay Systems Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Passing
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PASSING. 26 primary + 36 adversarial dual-slot tests pass headlessly. Full suite shows 31 pre-existing failures only (unrelated to this ticket; traced to weakening_system and wall_cling_visual tickets). No new failures introduced. AC1 and AC2 are fully evidenced by this automated coverage.
+- Static QA: COMPLETE (Task 10). GDScript Reviewer Agent reviewed all 7 files. 0 blocking issues. 6 non-blocking warnings (all pre-existing duck-typing conventions consistent with codebase) and 5 style suggestions. Key notes: infection_ui.gd typed _player as PlayerController (2D) not PlayerController3D (pre-existing, gracefully handled); _slot_manager typed as Object (intentional duck-typing); suggestion to use MutationSlot return type on get_mutation_slot() instead of RefCounted. No dead code, no orphaned variables, no silent failures, no magic strings in new code.
+- Presentation (Task 8): COMPLETE. game_ui.tscn updated with MutationSlot1Label, MutationIcon1, MutationSlot2Label, and MutationIcon2 nodes. infection_ui.gd drives both slot labels and icons independently via _slot_manager. Legacy MutationSlotLabel/MutationIcon nodes retained for backward compatibility.
+- Integration (Task 11 / AC5): NOT PERFORMED. AC5 ("Dual-slot system is human-playable in-editor: both slots, their contents, and any related UI are visible, legible, and understandable without debug overlays") is an inherently manual requirement. No human has documented opening test_movement_3d.tscn, absorbing 2 enemies, and confirming both slot labels update independently without debug overlays. Automated tests cannot satisfy this criterion. Mandatory human action required before COMPLETE.
+- AC3 ("Both mutations can be used or fused per fusion rules"): EXPLICITLY OUT OF SCOPE for this ticket per execution plan (Notes section). Delegated to fusion_rules_and_hybrid.md. Not evidenced here and will not be.
+- AC4 ("Slot consumption rules apply when fusing"): EXPLICITLY OUT OF SCOPE for this ticket per execution plan (Notes section). Delegated to slot_consumption_rules.md. Not evidenced here and will not be.
 
 ## Blocking Issues
-- None
+- [BLOCKING — AC5] Manual verification not performed: AC5 requires a human to open test_movement_3d.tscn in-editor, absorb 2 enemies, and confirm both slot labels fill and update independently with no debug overlays needed for legibility. No such verification has been documented. Ticket cannot advance to COMPLETE until a human performs and documents Task 11. Recommended verification resolution: 1920x1080 per Task 11 risk note.
+- [BLOCKING — AC3] Out of scope, human sign-off required at milestone close: AC3 ("Both mutations can be used or fused per fusion rules") is not satisfied by this ticket and is intentionally deferred to fusion_rules_and_hybrid.md. A human reviewer must confirm at milestone close that fusion_rules_and_hybrid.md satisfies this criterion and document that decision in this ticket or the downstream ticket. Until that sign-off exists, this AC is unresolved.
+- [BLOCKING — AC4] Out of scope, human sign-off required at milestone close: AC4 ("Slot consumption rules apply when fusing") is not satisfied by this ticket and is intentionally deferred to slot_consumption_rules.md. A human reviewer must confirm at milestone close that slot_consumption_rules.md satisfies this criterion and document that decision in this ticket or the downstream ticket. Until that sign-off exists, this AC is unresolved.
 
 ## Escalation Notes
-- None
+- AC3 and AC4 text in the Acceptance Criteria section refers to fusion and slot consumption behaviors that are intentionally deferred to separate downstream tickets (fusion_rules_and_hybrid.md, slot_consumption_rules.md). The AC text cannot be modified by this agent. A human reviewer must confirm at milestone close — in writing in this ticket or the relevant downstream tickets — that these two criteria are fully satisfied before the dual-mutation-fusion milestone is marked complete.
+- AC5 manual verification (Task 11) should be performed at 1920x1080 resolution per the execution plan risk note. Upon completion, the human verifier should update Validation Status with a dated, explicit confirmation that both slots were observed to fill and display independently with no debug overlays.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
-{}
+{
+  "action": "in_editor_playtest",
+  "scene": "res://scenes/test_movement_3d.tscn",
+  "steps": [
+    "Open test_movement_3d.tscn in the Godot editor",
+    "Play the scene at 1920x1080 resolution",
+    "Absorb two enemies in sequence",
+    "Confirm Slot 1 label and icon update after first absorb",
+    "Confirm Slot 2 label and icon update after second absorb",
+    "Confirm both slots display independently and legibly without any debug overlays",
+    "Document findings (pass or fail with details) in Validation Status under Integration"
+  ],
+  "secondary_actions": [
+    "Confirm at milestone close that fusion_rules_and_hybrid.md satisfies AC3 and document sign-off here or in that ticket",
+    "Confirm at milestone close that slot_consumption_rules.md satisfies AC4 and document sign-off here or in that ticket"
+  ]
+}
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Task 7 complete. Updated scripts/player_controller_3d.gd: added _slot_manager variable; _ready() now prefers get_mutation_slot_manager() (has_method guard) and stores the result, falling back to get_mutation_slot() for backward compat; _physics_process speed-buff check reads _slot_manager.any_filled() when manager available, elif falls back to _mutation_slot.is_filled() — flat 1.25x multiplier unchanged. Checkpoint entry appended to CHECKPOINTS.md. Syntax verified by code review (no parse errors expected). All previously-passing tests remain unaffected (no logic changes to simulation layer). Previous tasks 4, 5, 6, 9 already complete (MutationSlotManager, InfectionAbsorbResolver dual-slot dispatch, InfectionInteractionHandler wiring, run_tests.gd registration). Remaining: Task 8 (Presentation Agent — InfectionUI + game_ui.tscn dual-slot HUD), Task 10 (Static QA), Task 11 (Integration/playtest).
+AC1 and AC2 are fully evidenced by 26 primary + 36 adversarial dual-slot tests passing headlessly, with the fill-order rule encoded deterministically in both spec and tests. Task 8 (Presentation) and Task 10 (Static QA) are both complete with 0 blocking issues. However, three acceptance criteria remain unresolved and prevent Stage COMPLETE: (1) AC5 — the mandatory human in-editor playtest (Task 11) has not been performed; no human has documented opening test_movement_3d.tscn, absorbing 2 enemies, and confirming both slot labels update independently without debug overlays; this is an inherently manual requirement that automated tests cannot satisfy; (2) AC3 — "Both mutations can be used or fused per fusion rules" is explicitly out of scope for this ticket per the execution plan and is deferred to fusion_rules_and_hybrid.md; a human must sign off at milestone close; (3) AC4 — "Slot consumption rules apply when fusing" is explicitly out of scope per the execution plan and is deferred to slot_consumption_rules.md; a human must sign off at milestone close. Ticket is held at Stage INTEGRATION pending human action on all three blocking issues.

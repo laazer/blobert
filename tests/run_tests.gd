@@ -35,6 +35,7 @@ const SUITES: Array[String] = [
 	# --- chunk ---
 	"res://tests/chunk/test_chunk_detach_simulation.gd",
 	"res://tests/chunk/test_chunk_detach_simulation_adversarial.gd",
+	"res://tests/chunk/test_second_chunk_simulation.gd",
 	"res://tests/chunk/test_chunk_recall_simulation.gd",
 	"res://tests/chunk/test_chunk_recall_simulation_adversarial.gd",
 	"res://tests/chunk/test_chunk_enemy_collision.gd",
