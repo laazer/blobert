@@ -433,3 +433,38 @@ Tickets queued: fusion_opportunity_room.md
 ### [slot_consumption_rules] — OUTCOME: PLANNING COMPLETE
 Planner Agent completed full execution plan before rate limit. Ticket at SPECIFICATION, Spec Agent is next. Key decision: consume_fusion_slots() method on MutationSlotManager; all-or-nothing slot clear after fusion.
 
+---
+
+## Run: 2026-03-13T00:00:00Z
+Tickets queued: second_chunk_logic.md (TEST_BREAK stage)
+
+---
+
+### [second_chunk_logic] Test Break — HP order-of-operations for step 20 reads result not prior
+
+**Would have asked:** Step 20 (HP reduction for chunk 2) reads result.current_hp (output of step 18) not prior_state.current_hp. Should adversarial tests probe an incorrect implementation that reads prior_state.current_hp instead, which would produce wrong results for dual-detach scenarios at the HP floor boundary?
+
+**Assumption made:** Yes. A buggy implementation could read prior_state.current_hp in step 20 (instead of result.current_hp), which would make the dual-detach cumulative HP reduction tests fail. Adversarial tests explicitly probe this: prior_hp=50.0 with both chunks detached on same frame should produce 0.0 (not 25.0 if read from prior_state after step 18). This catches an incorrect "reads prior, not result" mutation.
+
+**Confidence:** High
+
+---
+
+### [second_chunk_logic] Test Break — Cross-contamination: detach_just_pressed affects has_chunk_2 via implementation bug
+
+**Would have asked:** Could a buggy implementation share a single `detach_eligible` flag for both chunks (i.e. detach_just_pressed inadvertently triggers detach_2 behavior or vice versa)?
+
+**Assumption made:** Yes, this is a realistic implementation mutation. Adversarial tests use asymmetric input combinations (detach_just_pressed=true, detach_2_just_pressed=false) with both chunk fields true, then verify the strict non-interference: has_chunk changes, has_chunk_2 does not. A conflated implementation would fail these tests.
+
+**Confidence:** High
+
+---
+
+### [second_chunk_logic] Test Break — prior_state immutability for has_chunk_2
+
+**Would have asked:** The primary suite checks prior_state immutability individually for has_chunk_2=true and has_chunk_2=false. Should adversarial tests also verify that the FULL prior_state object is not mutated across ALL fields in the same call?
+
+**Assumption made:** Yes. A naive GDScript implementation that returns `prior_state` by reference (rather than a freshly allocated result) would cause all fields — including has_chunk_2 — to reflect the post-simulation state, breaking immutability. Adversarial tests verify all key prior_state fields are unchanged after simulate() returns.
+
+**Confidence:** High
+

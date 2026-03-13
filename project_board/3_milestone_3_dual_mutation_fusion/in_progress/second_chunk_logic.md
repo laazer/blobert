@@ -77,16 +77,16 @@ The existing system has one chunk lifecycle managed by `PlayerController3D` and 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_CORE_SIMULATION
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Written (not yet run against implementation — expected to fail until Task 5 implements has_chunk_2 and 9-arg simulate())
+- Tests: Written (adversarial suite added at `tests/chunk/test_second_chunk_simulation_adversarial.gd`; 24 GAPs + bonus combinatorial matrix, auto-discovered by run_tests.gd). All tests expected to fail until Task 5 implements has_chunk_2 and 9-arg simulate().
 - Static QA: Not Run
 - Integration: Not Run
 - Spec: Complete. See `project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md`. Covers SPEC-SCL-1 through SPEC-SCL-9. Key decision: detach_2_just_pressed placed as 9th arg (after delta) due to GDScript default-arg ordering constraint. detach_2 action registered in project.godot at key Q (physical_keycode 81).
@@ -97,13 +97,14 @@ Test Designer Agent
 ## Escalation Notes
 - SPEC-SCL-4 clarification: detach_2_just_pressed is the 9th (last) positional arg in simulate(), after delta, due to GDScript 4 constraint that optional parameters must follow required parameters.
 - Test Designer checkpoint: two decisions logged in CHECKPOINTS.md under [second_chunk_logic].
+- Test Breaker checkpoints: three decisions logged in CHECKPOINTS.md under [second_chunk_logic] (HP order-of-operations, cross-contamination, prior-state immutability).
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Core Simulation Agent
 
 ## Required Input Schema
 ```json
@@ -111,11 +112,8 @@ Test Breaker Agent
   "ticket_path": "project_board/3_milestone_3_dual_mutation_fusion/in_progress/second_chunk_logic.md",
   "spec_path": "project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md",
   "primary_tests": "tests/chunk/test_second_chunk_simulation.gd",
-  "reference_files": [
-    "scripts/movement_simulation.gd",
-    "tests/chunk/test_chunk_detach_simulation_adversarial.gd",
-    "tests/run_tests.gd"
-  ]
+  "adversarial_tests": "tests/chunk/test_second_chunk_simulation_adversarial.gd",
+  "implementation_target": "scripts/movement_simulation.gd"
 }
 ```
 
@@ -123,4 +121,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary behavioral tests written and registered. Test Breaker Agent should produce adversarial tests in `tests/chunk/test_second_chunk_simulation_adversarial.gd` covering independence, simultaneous detach, HP floor clamp, determinism, and prior_state immutability for has_chunk_2. Register in run_tests.gd and advance Stage to IMPLEMENT on handoff.
+Adversarial suite written at `tests/chunk/test_second_chunk_simulation_adversarial.gd` (auto-discovered, no run_tests.gd registration required). 24 gap categories cover: step-ordering mutations, cross-contamination between detach/detach_2, prior_state immutability, HP floor boundary, delta independence, instance isolation, stress (1000 frames), INF/zero cost, non-zero min_hp, and full 4-combination prior-state matrix. Core Simulation Agent must implement MovementState.has_chunk_2, extend simulate() to 9 args with detach_2_just_pressed as 9th arg, and add steps 19 and 20.
