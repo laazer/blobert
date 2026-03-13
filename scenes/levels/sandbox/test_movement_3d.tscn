@@ -2,10 +2,10 @@
 
 [ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
-[ext_resource type="Script" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
 [ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
-[ext_resource type="Script" path="res://scripts/system/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
+[ext_resource type="Script" uid="uid://67hlquotuweb" path="res://scripts/system/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
