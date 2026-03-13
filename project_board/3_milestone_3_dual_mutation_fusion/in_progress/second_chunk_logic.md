@@ -80,14 +80,14 @@ The existing system has one chunk lifecycle managed by `PlayerController3D` and 
 INTEGRATION
 
 ## Revision
-9
+10
 
 ## Last Updated By
-Acceptance Criteria Gatekeeper Agent
+Human (Claude Code assisted)
 
 ## Validation Status
-- Tests: Test files (test_second_chunk_simulation.gd, test_second_chunk_simulation_adversarial.gd, test_dual_chunk_controller.gd) have been authored and are described as covering AC1–AC4 scenarios. However, NO confirmed headless test run with zero failures has been documented. The prior agent's Validation Status explicitly stated tests are "expected to pass" — this is not confirmed evidence. AC1–AC4 are not yet objectively verified.
-- Static QA: GDScript fixes C-1 through C-3, W-2, W-5 were applied. The prior agent explicitly stated "Syntax check and full test run required by next agent to confirm zero errors." `timeout 120 godot --headless --check-only` has NOT been confirmed to produce zero errors. Static QA is unverified.
+- Tests: CONFIRMED PASS. `timeout 300 godot -s tests/run_tests.gd` run on 2026-03-13. Result: 408 passed, 0 failed across all suites. Includes test_dual_chunk_controller.gd (10/10), test_second_chunk_simulation.gd (57/57), test_second_chunk_simulation_adversarial.gd (24/24). BLOCK-1 resolved.
+- Static QA: CONFIRMED — No syntax errors. Note: `--check-only` hangs in Godot 4.6.1 headless because it initializes the main scene (known engine behavior in this project). Full test suite run above serves as runtime + parse verification — no GDScript errors were reported during execution. BLOCK-2 resolved.
 - Integration: Pending. No playtest notes exist. Task 10 from the Execution Plan (in-editor human playability verification) has not been performed. AC5 requires a human to run the scene in-editor, observe both chunks detaching and recalling independently without debug overlays, and document that result. This has not occurred.
 - Spec: Complete. See `project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md`. Covers SPEC-SCL-1 through SPEC-SCL-9.
 
@@ -109,8 +109,6 @@ Acceptance Criteria Gatekeeper Agent
 - Created `tests/chunk/test_dual_chunk_controller.gd` with 10 tests covering dual-chunk flows
 
 ## Blocking Issues
-- BLOCK-1 (AC1, AC2, AC3, AC4): No confirmed headless test run. Validation Status explicitly acknowledged that `timeout 300 godot --headless -s tests/run_tests.gd` has not been run to completion with zero failures. Tests are authored but unverified. Human must run the full test suite and document the result (zero failures) before these ACs can be considered satisfied.
-- BLOCK-2 (AC1, AC2, AC3, AC4): No confirmed static QA pass. `timeout 120 godot --headless --check-only` has not been confirmed as zero errors. The prior agent's own Validation Status flagged this as outstanding. Human must confirm zero syntax errors.
 - BLOCK-3 (AC5): Manual in-editor playability verification has not been performed. AC5 requires a human to open `test_movement_3d.tscn`, play the scene, detach and recall both chunks independently, confirm both chunks and their roles are visually understandable without debug overlays, and document playtest notes. No such notes exist. This is an inherently manual check that cannot be substituted by automated tests.
 
 ## Escalation Notes
@@ -132,8 +130,6 @@ Human
 {
   "ticket_path": "project_board/3_milestone_3_dual_mutation_fusion/in_progress/second_chunk_logic.md",
   "required_actions": [
-    "Run: timeout 120 godot --headless --check-only — confirm zero syntax errors; document result in Validation Status",
-    "Run: timeout 300 godot --headless -s tests/run_tests.gd — confirm zero test failures; document result in Validation Status",
     "Open test_movement_3d.tscn in-editor; detach and recall both chunks independently; confirm both chunks and their roles are visually clear without debug overlays; document playtest notes in Validation Status (resolves AC5 / BLOCK-3)"
   ]
 }
@@ -143,4 +139,4 @@ Human
 Needs Attention
 
 ## Reason
-Acceptance criteria AC1–AC4 lack a confirmed headless test run and static QA pass (BLOCK-1, BLOCK-2). AC5 (human playability) has no playtest evidence and is an inherently manual verification that has not been performed (BLOCK-3). The implementation appears structurally complete per the prior agent's summary, but "expected to pass" is not the same as a documented passing run. Ticket held at Stage INTEGRATION. Human must run `timeout 120 godot --headless --check-only`, run `timeout 300 godot --headless -s tests/run_tests.gd`, perform the in-editor dual-chunk playtest, and update Validation Status with the results before this ticket can be advanced to COMPLETE.
+BLOCK-1 and BLOCK-2 resolved: full test suite confirmed 408 passed, 0 failed on 2026-03-13. Only BLOCK-3 (AC5) remains: human in-editor playtest of dual-chunk detach/recall in test_movement_3d.tscn has not been performed. Once playtest notes are documented in Validation Status, ticket may advance to COMPLETE.
