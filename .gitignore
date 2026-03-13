@@ -17,3 +17,9 @@ mono_crash.*.json
 
 # Claude Code (local only — do not commit)
 .claude/
+
+# Godot auto-generated UID files
+*.uid
+
+# macOS metadata
+.DS_Store

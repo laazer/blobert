@@ -134,6 +134,40 @@ Level playable from start to finish with no debug tools.
 
 ------------------------------------------------------------
 
+Milestone 5 – Procedural Enemy Generation
+Goal: Blender → Godot enemy pipeline fully operational for first 4 families.
+
+Includes:
+- Blender Python script for kitbash enemy assembly
+- Parts library (blob, sphere, capsule, spike, claw, eye, shell)
+- GLB export pipeline and naming convention
+- Godot scene auto-generator (load_assets.gd) producing game-ready .tscn files
+- Enemy base script with family, mutation drop, and state hooks
+- First 4 families playable: adhesion, acid, claw, carapace
+
+Exit Criteria:
+All 4 first-pass families can be generated in Blender, exported, auto-wrapped in Godot,
+and placed in a level with correct mutation drops and functional collision.
+
+------------------------------------------------------------
+
+Milestone 6 – Roguelike Run Structure
+Goal: Complete run loop with procedurally assembled levels.
+
+Includes:
+- Run state manager (start, active, death, win)
+- Room template system (intro, combat, mutation tease, fusion, cooldown, boss)
+- Procedural room chaining per run
+- Mutation reset on death
+- Soft death state and run restart
+- At least 2 combat rooms, 1 mutation tease, 1 boss room
+
+Exit Criteria:
+A full run can be started, played through procedurally arranged rooms,
+and ended (win or death) with clean state reset and restart.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:

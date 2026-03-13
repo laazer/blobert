@@ -4,11 +4,21 @@
 
 A cozy 2.5D experimental platformer about biological mutation, physical experimentation, and elastic game feel.
 
+![Concept art — player slime and crystal mutations](docs/images/inspirational.png)
+
+---
+
+## Enemy Designs
+
+![Enemy designs — Blobert ability drops](docs/images/enemies1.png)
+
+![Bestiary — Blobert ability drops](docs/images/enemies2.png)
+
 ---
 
 ## Development target: 3D scenes
 
-**We develop for 3D.** The project uses a single 3D world with 2D-like gameplay (movement constrained to a plane, side-view camera). The default run scene is **`scenes/test_movement_3d.tscn`**; the playable character is **`PlayerController3D`** (`scripts/player_controller_3d.gd`) with scene **`scenes/player_3d.tscn`**. New features, levels, and mechanics should target 3D nodes (CharacterBody3D, Camera3D, Area3D, etc.). The shared movement logic lives in **`scripts/movement_simulation.gd`** (pure 2D math); the 3D controller maps its output to Vector3 and drives the 3D scene. Legacy 2D scenes (`test_movement.tscn`, `player.tscn`) remain for existing headless tests only.
+**We develop for 3D.** The project uses a single 3D world with 2D-like gameplay (movement constrained to a plane, side-view camera). The default run scene is **`scenes/test_movement_3d.tscn`**; the playable character is **`PlayerController3D`** (`scripts/player/player_controller_3d.gd`) with scene **`scenes/player/player_3d.tscn`**. New features, levels, and mechanics should target 3D nodes (CharacterBody3D, Camera3D, Area3D, etc.). The shared movement logic lives in **`scripts/movement/movement_simulation.gd`** (pure 2D math); the 3D controller maps its output to Vector3 and drives the 3D scene. Legacy 2D scenes (`test_movement.tscn`, `player.tscn`) remain for existing headless tests only.
 
 ---
 
@@ -171,11 +181,69 @@ Each level includes:
 
 ---
 
+## Roguelike Structure
+
+The game is run-based. Each attempt through the lab is a self-contained run.
+
+**Run loop:**
+
+1. Start in a fixed entry room
+2. Progress through procedurally-arranged rooms
+3. Gain mutations through infection — mutations reset on death
+4. Reach the exit or die trying
+
+**What persists between runs:**
+
+- Nothing, by default (true roguelike)
+- Meta-progression (unlocks, starting bonuses) may be added later but is not in initial scope
+
+**Run length target:** 15–25 minutes for a full clear.
+
+**Death state:** Soft — no harsh punishment screen. The lab simply resets. The slime re-grows. You try again.
+
+The roguelike structure reinforces the mutation experimentation loop: each run is a fresh chance to try different infection combinations and fusion paths.
+
+---
+
+## Procedural Enemy & Level Generation
+
+### Enemy Generation Pipeline
+
+Enemies are generated procedurally using a Blender Python script that assembles low-poly kitbash variants from a shared parts library (blobs, spheres, capsules, spikes, claws, etc.).
+
+**Pipeline:**
+
+```
+Blender Python script
+  → assemble enemy from primitive parts library
+  → randomize variants per family
+  → export as .glb
+
+Godot editor script (scripts/asset_generation/load_assets.gd)
+  → scan assets/enemies/generated_glb/
+  → auto-generate .tscn wrapper scenes
+  → attach collision, hurtbox, markers, and metadata
+  → output to scenes/enemies/generated/
+```
+
+**Enemy families:** 17 families × 3 variants = ~51 enemies. Each family drops a specific mutation type (acid, adhesion, claw, carapace, electric, tendril, fire, ice, earth, wind, metal, sword, javelin, punch, ring, bomb, random).
+
+See `docs/enemy_asset_pipeline_diagram.md` and `docs/generative_worflow_v1.md` for full pipeline details.
+
+### Procedural Level Layout
+
+Rooms are assembled from pre-authored templates and connected procedurally each run. The layout system draws from a pool of room templates per category (intro, combat, mutation tease, fusion opportunity, cooldown, boss) and chains them according to run progression rules.
+
+This keeps individual rooms hand-crafted while making the overall run layout non-deterministic.
+
+---
+
 ## Initial Scope
 
-- 1 world
-- 4–5 levels
-- 8–12 mutations
+- Roguelike run structure
+- Procedurally assembled levels from room templates
+- Procedurally generated enemy roster (~51 variants across 17 families)
+- 8–12 mutations + fusion combinations
 - 1 final boss
 - Minimal narrative
 
@@ -236,13 +304,18 @@ See `CLAUDE.md` for CLI commands (syntax check, export, etc.) used during develo
 This project uses a custom headless test runner for automated testing. Tests are written in GDScript and run without a GUI for CI compatibility.
 
 ```bash
-# Run all tests (recommended - includes timeout to prevent hanging)
-./ci/scripts/run_tests.sh
+# Run all tests
+run_tests.sh
 
-# Or run manually (with 5-minute timeout)
-timeout 300 godot --headless -s tests/run_tests.gd
+# Or run directly
+godot -s tests/run_tests.gd
+
+# Syntax check only
+godot --check-only
 ```
 
-Tests are organized in `tests/` with suites for movement, combat, UI, and integration scenarios. The runner exits with code 0 on success or 1 on failure, making it suitable for CI pipelines.
+`direnv` is configured so that from anywhere in the repo:
+- `godot` — headless Godot wrapper (`bin/godot`), no `--headless` flag needed
+- `run_tests.sh` — full test suite runner
 
-For development, direnv is configured to make `run_tests.sh` accessible from any directory in the repo.
+Tests live under `tests/scripts/` (unit/logic tests mirroring `scripts/`) and `tests/scenes/` (scene integration tests). The runner exits with code 0 on success or 1 on any failure.
