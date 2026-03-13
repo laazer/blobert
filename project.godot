@@ -30,11 +30,6 @@ Logging="*res://scripts/system/logging.gd"
 window/size/viewport_width=3200
 window/size/viewport_height=1880
 
-[display]
-
-window/size/viewport_width=3200
-window/size/viewport_height=1880
-
 [input]
 
 move_left={

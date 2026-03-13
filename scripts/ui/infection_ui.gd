@@ -198,8 +198,8 @@ func _update_mutation_display() -> void:
 			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
 
 		else:
-			legacy_slot_label.text = "Mutation Slot: Empty"
-			legacy_slot_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+			slot_label.text = "Mutation Slot: Empty"
+			slot_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
 
 	if mutation_label != null:
 		mutation_label.visible = any_mutation
