@@ -18,6 +18,9 @@ var _current_state: MovementSimulation.MovementState
 var _chunk_node: RigidBody3D = null
 var _recall_in_progress: bool = false
 var _recall_timer: float = 0.0
+var _chunk_node_2: RigidBody3D = null
+var _recall_in_progress_2: bool = false
+var _recall_timer_2: float = 0.0
 const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
 
@@ -31,6 +34,9 @@ const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 signal detach_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_reabsorbed(player_position: Vector3, chunk_position: Vector3)
+signal detach_2_fired(player_position: Vector3, chunk_position: Vector3)
+signal recall_2_started(player_position: Vector3, chunk_position: Vector3)
+signal chunk_2_reabsorbed(player_position: Vector3, chunk_position: Vector3)
 
 @export var jump_height: float = 120.0
 @export var coyote_time: float = 0.1
@@ -68,6 +74,7 @@ func _ready() -> void:
 
 	_current_state = MovementSimulation.MovementState.new()
 	_current_state.has_chunk = true
+	_current_state.has_chunk_2 = true
 	_base_max_speed = _simulation.max_speed
 
 	var root: Node = get_parent()
@@ -95,6 +102,7 @@ func _physics_process(delta: float) -> void:
 	var jump_pressed: bool = Input.is_action_pressed("jump")
 	var jump_just_pressed: bool = Input.is_action_just_pressed("jump")
 	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
+	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
 
 	_current_state.is_on_floor = is_on_floor()
 
@@ -118,7 +126,7 @@ func _physics_process(delta: float) -> void:
 	_simulation.max_speed = _base_max_speed * speed_multiplier
 
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
-		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, detach_just_pressed, delta
+		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, detach_just_pressed, delta, detach_2_just_pressed
 	)
 
 	# Jump SFX + squash/stretch (kit pattern)
@@ -212,6 +220,62 @@ func _physics_process(delta: float) -> void:
 				_chunk_node.queue_free()
 			_chunk_node = null
 
+	# --- Chunk 2 detach/recall (SPEC-SCL-7, SPEC-SCL-8) ---
+
+	var prev_has_chunk_2: bool = _current_state.has_chunk_2
+
+	var recall_2_pressed: bool = (
+		detach_2_just_pressed
+		and (not prev_has_chunk_2)
+		and _chunk_node_2 != null
+		and is_instance_valid(_chunk_node_2)
+	)
+	if recall_2_pressed and not _recall_in_progress_2:
+		_recall_in_progress_2 = true
+		_recall_timer_2 = 0.0
+		if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
+			recall_2_started.emit(global_position, _chunk_node_2.global_position)
+
+	_current_state.has_chunk_2 = next_state.has_chunk_2
+
+	if prev_has_chunk_2 and not _current_state.has_chunk_2:
+		var chunk_2: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
+		assert(chunk_2 != null, "chunk_3d.tscn root must be RigidBody3D")
+		# Lob direction: same as movement, or right if standing still.
+		var lob_dir_2: float = 1.0
+		if abs(velocity.x) > 0.1:
+			lob_dir_2 = 1.0 if velocity.x > 0.0 else -1.0
+		var spawn_offset_2: Vector3 = Vector3(lob_dir_2 * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
+		chunk_2.global_position = global_position + spawn_offset_2
+		var parent_2: Node = get_parent()
+		if parent_2 == null:
+			push_error("PlayerController3D: cannot detach chunk 2 — node has no parent")
+		else:
+			parent_2.add_child(chunk_2)
+			_chunk_node_2 = chunk_2
+			chunk_2.freeze = false
+			chunk_2.linear_velocity = Vector3(lob_dir_2 * detach_lob_horizontal, detach_lob_upward, 0.0)
+			_juice_detach_pop()
+			detach_2_fired.emit(global_position, chunk_2.global_position)
+
+	if _recall_in_progress_2:
+		_recall_timer_2 += delta
+		if _chunk_node_2 == null or not is_instance_valid(_chunk_node_2):
+			_recall_in_progress_2 = false
+		elif _recall_timer_2 >= _RECALL_TRAVEL_TIME:
+			_recall_in_progress_2 = false
+			var prior_hp_2: float = _current_state.current_hp
+			_current_state.current_hp = minf(_simulation.max_hp, prior_hp_2 + _simulation.hp_cost_per_detach)
+			_current_state.has_chunk_2 = true
+			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
+				var am := _get_audio_manager()
+				if am != null and am.recall_sfx != null:
+					am.recall_sfx.play()
+				_juice_recall_pop()
+				chunk_2_reabsorbed.emit(global_position, _chunk_node_2.global_position)
+				_chunk_node_2.queue_free()
+			_chunk_node_2 = null
+
 func _get_visual_node() -> Node3D:
 	return get_node_or_null("SlimeVisual") as Node3D
 
@@ -261,6 +325,9 @@ func get_current_hp() -> float:
 
 func has_chunk() -> bool:
 	return _current_state.has_chunk
+
+func has_chunk_2() -> bool:
+	return _current_state.has_chunk_2
 
 func is_wall_clinging_state() -> bool:
 	return _current_state.is_wall_clinging

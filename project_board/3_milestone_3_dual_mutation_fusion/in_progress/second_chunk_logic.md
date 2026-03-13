@@ -77,48 +77,70 @@ The existing system has one chunk lifecycle managed by `PlayerController3D` and 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_CORE_SIMULATION
+INTEGRATION
 
 ## Revision
-5
+9
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Written (adversarial suite added at `tests/chunk/test_second_chunk_simulation_adversarial.gd`; 24 GAPs + bonus combinatorial matrix, auto-discovered by run_tests.gd). All tests expected to fail until Task 5 implements has_chunk_2 and 9-arg simulate().
-- Static QA: Not Run
-- Integration: Not Run
-- Spec: Complete. See `project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md`. Covers SPEC-SCL-1 through SPEC-SCL-9. Key decision: detach_2_just_pressed placed as 9th arg (after delta) due to GDScript default-arg ordering constraint. detach_2 action registered in project.godot at key Q (physical_keycode 81).
+- Tests: Test files (test_second_chunk_simulation.gd, test_second_chunk_simulation_adversarial.gd, test_dual_chunk_controller.gd) have been authored and are described as covering AC1–AC4 scenarios. However, NO confirmed headless test run with zero failures has been documented. The prior agent's Validation Status explicitly stated tests are "expected to pass" — this is not confirmed evidence. AC1–AC4 are not yet objectively verified.
+- Static QA: GDScript fixes C-1 through C-3, W-2, W-5 were applied. The prior agent explicitly stated "Syntax check and full test run required by next agent to confirm zero errors." `timeout 120 godot --headless --check-only` has NOT been confirmed to produce zero errors. Static QA is unverified.
+- Integration: Pending. No playtest notes exist. Task 10 from the Execution Plan (in-editor human playability verification) has not been performed. AC5 requires a human to run the scene in-editor, observe both chunks detaching and recalling independently without debug overlays, and document that result. This has not occurred.
+- Spec: Complete. See `project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md`. Covers SPEC-SCL-1 through SPEC-SCL-9.
+
+## Implementation Summary (Tasks 5, 6, 7 complete)
+### Task 5 (Core Simulation Agent — already complete):
+- Added `has_chunk_2: bool = true` to `MovementState` inner class in `scripts/movement/movement_simulation.gd`
+- Extended `simulate()` to 9 arguments: `detach_2_just_pressed: bool = false` as 9th and final positional arg after `delta: float`
+- Added steps 19 and 20 for chunk 2 detach and HP reduction
+- All existing 8-arg `simulate()` call sites continue to work via default value of the 9th arg
+
+### Tasks 6 and 7 (Gameplay Systems Agent):
+- Added `_chunk_node_2: RigidBody3D = null`, `_recall_in_progress_2: bool = false`, `_recall_timer_2: float = 0.0` fields to `PlayerController3D`
+- Added signals: `detach_2_fired(player_position, chunk_position)`, `recall_2_started(player_position, chunk_position)`, `chunk_2_reabsorbed(player_position)`
+- Added `has_chunk_2() -> bool` public method: returns `_chunk_node_2 == null`
+- Reads `Input.is_action_just_pressed("detach_2")` and passes as 9th arg to `simulate()`
+- Detach chunk 2 logic mirrors chunk 1: same lob parameters, same spawn offset, same scene
+- Recall chunk 2 logic mirrors chunk 1: same travel time (`_RECALL_TRAVEL_TIME`), same HP restoration formula
+- Both `_chunk_node` and `_chunk_node_2` can be non-null simultaneously (independent timers)
+- Created `tests/chunk/test_dual_chunk_controller.gd` with 10 tests covering dual-chunk flows
 
 ## Blocking Issues
-- None
+- BLOCK-1 (AC1, AC2, AC3, AC4): No confirmed headless test run. Validation Status explicitly acknowledged that `timeout 300 godot --headless -s tests/run_tests.gd` has not been run to completion with zero failures. Tests are authored but unverified. Human must run the full test suite and document the result (zero failures) before these ACs can be considered satisfied.
+- BLOCK-2 (AC1, AC2, AC3, AC4): No confirmed static QA pass. `timeout 120 godot --headless --check-only` has not been confirmed as zero errors. The prior agent's own Validation Status flagged this as outstanding. Human must confirm zero syntax errors.
+- BLOCK-3 (AC5): Manual in-editor playability verification has not been performed. AC5 requires a human to open `test_movement_3d.tscn`, play the scene, detach and recall both chunks independently, confirm both chunks and their roles are visually understandable without debug overlays, and document playtest notes. No such notes exist. This is an inherently manual check that cannot be substituted by automated tests.
 
 ## Escalation Notes
 - SPEC-SCL-4 clarification: detach_2_just_pressed is the 9th (last) positional arg in simulate(), after delta, due to GDScript 4 constraint that optional parameters must follow required parameters.
 - Test Designer checkpoint: two decisions logged in CHECKPOINTS.md under [second_chunk_logic].
 - Test Breaker checkpoints: three decisions logged in CHECKPOINTS.md under [second_chunk_logic] (HP order-of-operations, cross-contamination, prior-state immutability).
+- Gameplay Systems checkpoint: test_dual_chunk_controller.gd created by this agent (see CHECKPOINTS.md) since it is required for test suite completeness and was unambiguously scoped to this ticket.
+- AC Gatekeeper (Revision 9): Stage held at INTEGRATION. Three blocking issues documented. Implementation appears structurally complete but no confirmed test run or in-editor playtest is on record. All three blocks must be resolved and documented in Validation Status before this ticket may advance to COMPLETE.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/3_milestone_3_dual_mutation_fusion/in_progress/second_chunk_logic.md",
-  "spec_path": "project_board/3_milestone_3_dual_mutation_fusion/specs/second_chunk_logic_spec.md",
-  "primary_tests": "tests/chunk/test_second_chunk_simulation.gd",
-  "adversarial_tests": "tests/chunk/test_second_chunk_simulation_adversarial.gd",
-  "implementation_target": "scripts/movement_simulation.gd"
+  "required_actions": [
+    "Run: timeout 120 godot --headless --check-only — confirm zero syntax errors; document result in Validation Status",
+    "Run: timeout 300 godot --headless -s tests/run_tests.gd — confirm zero test failures; document result in Validation Status",
+    "Open test_movement_3d.tscn in-editor; detach and recall both chunks independently; confirm both chunks and their roles are visually clear without debug overlays; document playtest notes in Validation Status (resolves AC5 / BLOCK-3)"
+  ]
 }
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Adversarial suite written at `tests/chunk/test_second_chunk_simulation_adversarial.gd` (auto-discovered, no run_tests.gd registration required). 24 gap categories cover: step-ordering mutations, cross-contamination between detach/detach_2, prior_state immutability, HP floor boundary, delta independence, instance isolation, stress (1000 frames), INF/zero cost, non-zero min_hp, and full 4-combination prior-state matrix. Core Simulation Agent must implement MovementState.has_chunk_2, extend simulate() to 9 args with detach_2_just_pressed as 9th arg, and add steps 19 and 20.
+Acceptance criteria AC1–AC4 lack a confirmed headless test run and static QA pass (BLOCK-1, BLOCK-2). AC5 (human playability) has no playtest evidence and is an inherently manual verification that has not been performed (BLOCK-3). The implementation appears structurally complete per the prior agent's summary, but "expected to pass" is not the same as a documented passing run. Ticket held at Stage INTEGRATION. Human must run `timeout 120 godot --headless --check-only`, run `timeout 300 godot --headless -s tests/run_tests.gd`, perform the in-editor dual-chunk playtest, and update Validation Status with the results before this ticket can be advanced to COMPLETE.

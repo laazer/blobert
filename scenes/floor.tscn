@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://doxklvxusxcj"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(2000, 20)
+
+[node name="Floor" type="StaticBody2D" unique_id=1460630715]
+position = Vector2(0, 300)
+
+[node name="FloorShape" type="CollisionShape2D" parent="." unique_id=273943468]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="FloorVisual" type="Polygon2D" parent="." unique_id=985572734]
+color = Color(0.2, 0.2, 0.2, 1)
+polygon = PackedVector2Array(-1000, -10, 1000, -10, 1000, 10, -1000, 10)

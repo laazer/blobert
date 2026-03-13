@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://ca35f5o2srfo1"]
+
+[ext_resource type="Script" path="res://scripts/enemy_infection_3d.gd" id="1_enemy_3d"]
+[ext_resource type="Script" path="res://scripts/infection_state_fx_3d.gd" id="2_infection_fx_3d"]
+[ext_resource type="PackedScene" uid="uid://kod0awm1ha4o" path="res://assets/Models/gobot/model/gobot.glb" id="3_gobot"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_body"]
+size = Vector3(0.8, 1, 0.4)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interaction"]
+radius = 1.2
+
+[node name="EnemyInfection3D" type="CharacterBody3D" unique_id=1443157325]
+collision_layer = 2
+script = ExtResource("1_enemy_3d")
+
+[node name="BodyShape" type="CollisionShape3D" parent="." unique_id=352313775]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_body")
+
+[node name="EnemyVisual" parent="." unique_id=2033435609 instance=ExtResource("3_gobot")]
+
+[node name="InfectionStateFx3D" type="Node3D" parent="." unique_id=244851590]
+script = ExtResource("2_infection_fx_3d")
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=443466132]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1895487128]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("SphereShape3D_interaction")
