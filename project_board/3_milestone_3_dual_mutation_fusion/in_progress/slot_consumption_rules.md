@@ -61,13 +61,13 @@ The `MutationSlotManager` API (`clear_all()`, `clear_slot(index)`, `fill_next_av
 ## WORKFLOW STATE
 
 ```
-Stage:              SPECIFICATION
-Revision:           1
+Stage:              TEST_DESIGN
+Revision:           2
 Created By:         Human
 Created On:         2026-03-12T00:00:00Z
-Last Updated By:    Planner Agent
-Last Updated On:    2026-03-12T00:00:00Z
-Next Responsible Agent: Spec Agent
+Last Updated By:    Spec Agent
+Last Updated On:    2026-03-13T00:00:00Z
+Next Responsible Agent: Test Designer Agent
 Status:             Proceed
 ```
 
@@ -75,7 +75,7 @@ Status:             Proceed
 
 ## NEXT ACTION
 
-**Agent:** Spec Agent
-**Action:** Write `project_board/3_milestone_3_dual_mutation_fusion/specs/slot_consumption_rules_spec.md` covering requirements SCR-1 through SCR-5 per the Execution Plan Task 1 description.
-**Reason:** The spec is the authoritative contract that unblocks all downstream tasks (test design, adversarial test design, implementation). No implementation or test work should begin until the spec is written and the function contract (`consume_fusion_slots()`) is formally defined.
-**Blocking Issues:** None. All ambiguities resolved via CHECKPOINTS.md. Proceed immediately.
+**Agent:** Test Designer Agent
+**Action:** Write `tests/system/test_slot_consumption_rules.gd` — headless GDScript primary test suite covering all SCR-* acceptance criteria in `project_board/specs/slot_consumption_rules_spec.md`. Test names must map 1-to-1 with spec AC IDs (e.g., `test_scr_1_ac_1_has_method`, `test_scr_2_ac_1_both_slots_cleared_when_both_filled`). Register the suite in `tests/run_tests.gd` under `# --- system ---`. Tasks 2 and 3 (primary and adversarial suites) may be executed in parallel.
+**Reason:** Spec is complete. All SCR-1 through SCR-5 requirements are formally defined with numbered acceptance criteria. Test Designer Agent can now write deterministic headless assertions directly from the spec.
+**Blocking Issues:** None.
