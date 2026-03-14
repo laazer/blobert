@@ -22,19 +22,19 @@ When a thrown chunk contacts an enemy, the chunk should stick to (attach to) the
 ## WORKFLOW STATE
 
 ```
-Stage:              TEST_BREAK
-Revision:           4
-Last Updated By:    Test Designer Agent
-Next Responsible Agent: Test Breaker Agent
+Stage:              IMPLEMENTATION_GAMEPLAY
+Revision:           5
+Last Updated By:    Test Breaker Agent
+Next Responsible Agent: Gameplay Systems Agent
 Status:             Proceed
-Validation Status:  Primary test suite authored. 119 assertions pass (logic contracts via headless stubs). 7 assertions fail in correct TDD red phase (chunk_attached signal, 4 stuck-state fields, 2 new methods not yet on PlayerController3D). Adversarial suite deferred to Test Breaker Agent per ticket instructions.
+Validation Status:  Adversarial suite authored at tests/chunk/test_chunk_sticks_to_enemy_adversarial.gd. 185 assertions pass, 0 fail. Targets 20 mutation categories (MUT-1..MUT-20) plus rapid-fire, cross-slot, boundary, stress, determinism, and assumption-check scenarios. Pre-existing TDD red-phase failures (7 assertions across primary suite) unchanged — implementation not yet written. 4 CHECKPOINT entries logged to project_board/CHECKPOINTS.md.
 Blocking Issues:    None.
 ```
 
 ## NEXT ACTION
 
-**Agent:** Test Breaker Agent
-**Action:** Author `tests/chunk/test_chunk_sticks_to_enemy_adversarial.gd` covering adversarial/edge cases for all SPEC-CSE-* requirements. Focus on: order-of-operations mutations (freeze before reparent), cross-slot contamination bugs, double-attach scenarios, absorb signal fired twice, enemy freed mid-session, recall guard bypass attempts. All tests must remain headless-safe. After authoring, advance Stage to IMPLEMENTATION_GENERALIST and hand off to Implementation Agent.
+**Agent:** Gameplay Systems Agent
+**Action:** Implement the feature per spec `project_board/specs/chunk_sticks_to_enemy_spec.md` and API contracts in Section 5. Modify `scripts/enemy/enemy_infection_3d.gd` (add chunk_attached signal, emit in _on_body_entered) and `scripts/player/player_controller_3d.gd` (4 new fields, _ready wiring, _on_enemy_chunk_attached handler, _on_absorb_resolved handler, recall guard extensions). All 119+185 test assertions must pass after implementation (the 7 currently-failing TDD-red assertions will flip to green).
 **Blocking Issues:** None.
 
 ---

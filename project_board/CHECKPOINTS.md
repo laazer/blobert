@@ -5,6 +5,46 @@ Review these after autopilot completes.
 
 ---
 
+### [chunk_sticks_to_enemy] Test Break — double-attach same chunk to different enemies
+
+**Would have asked:** If chunk_attached fires twice for the same chunk node (two different enemies contact the same in-flight chunk simultaneously), does the second attach overwrite the stored enemy reference, or is it silently ignored?
+
+**Assumption made:** The second call to _on_enemy_chunk_attached fires the if/elif branch again (chunk == _chunk_node matches), so _chunk_stuck_enemy is overwritten to the second enemy. The stuck flag remains true. This means "last enemy wins." The absorb handler must match against the current _chunk_stuck_enemy reference.
+
+**Confidence:** Medium
+
+---
+
+### [chunk_sticks_to_enemy] Test Break — chunk_attached emission for body in both "chunk" AND "player" groups
+
+**Would have asked:** If a body is in both the "chunk" group and the "player" group simultaneously (unusual but possible), should chunk_attached be emitted or suppressed?
+
+**Assumption made:** The spec says the signal fires for bodies in the "chunk" group and NOT for player bodies. The existing _on_body_entered code checks player group first. Conservative assumption: the chunk group check takes precedence in the stub (it checks "chunk" without a prior player-group exclusion). This edge case is unlikely in production but is documented for the implementation agent.
+
+**Confidence:** Medium
+
+---
+
+### [chunk_sticks_to_enemy] Test Break — dead-state enemy headless testability
+
+**Would have asked:** Can we drive EnemyStateMachine to a "dead" state headlessly without instantiating a full scene?
+
+**Assumption made:** The deepest testable state headlessly is "infected" (idle → weakened → infected). There is no apply_dead_event() confirmed available headlessly. SPEC-CSE-1 says the signal fires regardless of state including "dead." The test covers "infected" as the deepest verified proxy for "dead" state behavior.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Test Break — freed enemy node prevents flag clear on absorb
+
+**Would have asked:** If _chunk_stuck_enemy is freed before absorb_resolved fires, the is_instance_valid guard skips the entire slot block, leaving _chunk_stuck_on_enemy=true. Is this acceptable or should the flag be cleared even when the enemy ref is invalid?
+
+**Assumption made:** Per SPEC-CSE-10 risk note: "If the stuck flag is not cleared when the chunk node is invalid, the recall guard will permanently block recall for that slot, creating a softlock." However, SPEC-CSE-10 only addresses the chunk node being freed, not the enemy node being freed. When the ENEMY node is freed (not the chunk), the implementation skips the block and flags remain — this is a known risk per spec. The test documents this behavior without asserting flag state, only asserting no crash.
+
+**Confidence:** Medium
+
+---
+
 ## Run: 2026-03-05T12:00:00Z
 Tickets queued: input_hint_polish_core_mechanics.md
 
