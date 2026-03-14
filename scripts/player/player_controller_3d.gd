@@ -94,6 +94,17 @@ func _ready() -> void:
 		for enemy in enemies:
 			enemy.chunk_attached.connect(_on_enemy_chunk_attached.bind(enemy))
 
+func _exit_tree() -> void:
+	if not is_inside_tree():
+		return
+	var root: Node = get_parent()
+	if root == null:
+		return
+	var enemies: Array = root.find_children("*", "EnemyInfection3D", true, false)
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.chunk_attached.is_connected(_on_enemy_chunk_attached):
+			enemy.chunk_attached.disconnect(_on_enemy_chunk_attached)
+
 func _process(_delta: float) -> void:
 	var cam: Camera3D = get_node_or_null("Gimbal/Camera3D") as Camera3D
 	if cam != null:
@@ -226,6 +237,8 @@ func _physics_process(delta: float) -> void:
 				_juice_recall_pop()
 				chunk_reabsorbed.emit(global_position, _chunk_node.global_position)
 				_chunk_node.queue_free()
+			_chunk_stuck_on_enemy = false
+			_chunk_stuck_enemy = null
 			_chunk_node = null
 
 	# --- Chunk 2 detach/recall (SPEC-SCL-7, SPEC-SCL-8) ---
@@ -283,6 +296,8 @@ func _physics_process(delta: float) -> void:
 				_juice_recall_pop()
 				chunk_2_reabsorbed.emit(global_position, _chunk_node_2.global_position)
 				_chunk_node_2.queue_free()
+			_chunk_2_stuck_on_enemy = false
+			_chunk_2_stuck_enemy = null
 			_chunk_node_2 = null
 
 func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> void:
@@ -307,16 +322,18 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 	if _chunk_stuck_on_enemy and _chunk_stuck_enemy != null and is_instance_valid(_chunk_stuck_enemy):
 		if _chunk_stuck_enemy.get_esm() == esm:
 			if _chunk_node != null and is_instance_valid(_chunk_node):
-				_chunk_node.reparent(get_parent(), true)
-				_chunk_node.freeze = false
+				if _chunk_node.get_parent() == _chunk_stuck_enemy:
+					_chunk_node.reparent(get_parent(), true)
+					_chunk_node.freeze = false
 			_chunk_stuck_on_enemy = false
 			_chunk_stuck_enemy = null
 	# Slot 2
 	if _chunk_2_stuck_on_enemy and _chunk_2_stuck_enemy != null and is_instance_valid(_chunk_2_stuck_enemy):
 		if _chunk_2_stuck_enemy.get_esm() == esm:
 			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
-				_chunk_node_2.reparent(get_parent(), true)
-				_chunk_node_2.freeze = false
+				if _chunk_node_2.get_parent() == _chunk_2_stuck_enemy:
+					_chunk_node_2.reparent(get_parent(), true)
+					_chunk_node_2.freeze = false
 			_chunk_2_stuck_on_enemy = false
 			_chunk_2_stuck_enemy = null
 

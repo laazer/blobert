@@ -14,6 +14,7 @@ signal chunk_attached(chunk: RigidBody3D)
 var _esm: EnemyStateMachine = EnemyStateMachine.new()
 var _handler: InfectionInteractionHandler
 var _area: Area3D
+var _attached_chunks: Array[RigidBody3D] = []
 
 
 func _ready() -> void:
@@ -35,11 +36,15 @@ func _on_body_entered(body: Node3D) -> void:
 		if _handler != null:
 			_handler.set_target_esm(_esm)
 	if body.is_in_group("chunk"):
+		var chunk: RigidBody3D = body as RigidBody3D
+		if chunk in _attached_chunks:
+			return
 		if _esm.get_state() == "weakened":
 			_esm.apply_infection_event()
+			chunk_attached.emit(chunk)
+			_attached_chunks.append(chunk)
 		else:
 			_esm.apply_weaken_event()
-		chunk_attached.emit(body as RigidBody3D)
 
 
 func _on_body_exited(body: Node3D) -> void:
