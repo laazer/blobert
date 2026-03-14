@@ -47,6 +47,11 @@ func _process(_delta: float) -> void:
 		var available: bool = _target_esm != null and _resolver.can_absorb(_target_esm)
 		_infection_ui.set_absorb_available(available)
 
+	# DEBUG (AC5 playtest stub — remove after slot_consumption_rules.md sign-off)
+	if Input.is_action_just_pressed("debug_consume_fusion"):
+		_slot_manager.consume_fusion_slots()
+		print("[DEBUG] consume_fusion_slots() called — both slots cleared")
+
 	if _target_esm == null:
 		return
 
@@ -58,11 +63,6 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("infect"):
 		if _target_esm.get_state() == "weakened":
 			_target_esm.apply_infection_event()
-
-	# DEBUG (AC5 playtest stub — remove after slot_consumption_rules.md sign-off)
-	if Input.is_action_just_pressed("debug_consume_fusion"):
-		_slot_manager.consume_fusion_slots()
-		print("[DEBUG] consume_fusion_slots() called — both slots cleared")
 
 
 func set_target_esm(esm: EnemyStateMachine) -> void:
