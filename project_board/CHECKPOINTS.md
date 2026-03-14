@@ -513,3 +513,69 @@ Tickets queued: slot_consumption_rules.md (TEST_BREAK stage — adversarial suit
 
 **Confidence:** High
 
+
+---
+
+## Run: 2026-03-14T14:45:54Z
+Tickets queued: chunk_sticks_to_enemy.md
+
+---
+
+### [chunk_sticks_to_enemy] Planner — Where does "stuck" state live?
+
+**Would have asked:** Should the `chunk_stuck` flag (tracking that a chunk is attached to an enemy) live in `MovementSimulation.MovementState` (pure simulation), or only in `PlayerController3D` (engine layer)?
+
+**Assumption made:** The stuck flag lives exclusively in `PlayerController3D` as a controller-side field (e.g. `_chunk_stuck_on_enemy: bool` and `_chunk_2_stuck_on_enemy: bool`), parallel to `_recall_in_progress`. `MovementSimulation.MovementState` is not modified: the simulation has no knowledge of enemy contact. This keeps the pure simulation headless and unchanged, and avoids adding new simulation specs. The controller checks the stuck flag in its recall-gate logic before starting a recall.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Planner — How is recall blocked?
+
+**Would have asked:** Should recall be blocked by a flag checked in the simulation (`has_chunk` gated by a stuck predicate) or purely by a controller guard that refuses to begin `_recall_in_progress`?
+
+**Assumption made:** Recall is blocked exclusively by a controller guard: when `_chunk_stuck_on_enemy` is true, the `recall_pressed` condition evaluates to false (or is explicitly short-circuited), so `_recall_in_progress` is never set to true. The simulation sees no difference; `has_chunk` remains false while the chunk is stuck and detached. This is the minimal, conservative change: no simulation changes, no new simulation flags.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Planner — How does absorb completion signal the chunk to detach?
+
+**Would have asked:** When the enemy is absorbed (via `InfectionInteractionHandler.absorb_resolved` signal), how does `PlayerController3D` learn that its stuck chunk should be freed and become recallable?
+
+**Assumption made:** `InfectionInteractionHandler` already emits `absorb_resolved(esm: EnemyStateMachine)`. `PlayerController3D` connects to this signal in `_ready()`. On signal receipt, the controller checks whether either stuck chunk belongs to that enemy (via a stored enemy reference `_chunk_stuck_enemy` / `_chunk_2_stuck_enemy`) and clears the stuck flag for the matching chunk(s), making them immediately recallable. The chunk node itself is un-parented from the enemy and re-added as a free RigidBody3D in the scene at its current world position so physics resume normally.
+
+**Confidence:** Medium
+
+---
+
+### [chunk_sticks_to_enemy] Planner — One-chunk and two-chunk independence
+
+**Would have asked:** Must the stuck/recallable state for chunk 1 and chunk 2 be fully independent, with no shared flag or shared enemy reference?
+
+**Assumption made:** Yes, fully independent. Each slot gets its own pair of controller fields: (`_chunk_stuck_on_enemy: bool`, `_chunk_stuck_enemy: Node`) for slot 1, and (`_chunk_2_stuck_on_enemy: bool`, `_chunk_2_stuck_enemy: Node`) for slot 2. Absorbing enemy A only clears the slot(s) whose stored enemy reference matches enemy A. A chunk stuck on enemy B remains stuck. This mirrors the independence invariant already established for `has_chunk` / `has_chunk_2`.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Planner — Chunk attachment mechanism
+
+**Would have asked:** Should the chunk stick to the enemy by being re-parented as a child of the enemy node, or by zeroing its physics velocity and updating its position every frame in the controller, or by another approach?
+
+**Assumption made:** The conservative, minimal approach: when a chunk enters the enemy's InteractionArea, the enemy (EnemyInfection3D) emits a new signal `chunk_attached(chunk: RigidBody3D)`, which the controller (or a new thin script on the chunk) receives. On attachment, the chunk's `freeze = true` (halting physics) and the chunk is reparented as a child of the enemy node so it moves with the enemy automatically. On absorb completion (via the controller's absorb_resolved handler), the chunk is un-parented back to the scene root and `freeze = false` is restored. This avoids a per-frame position-sync loop and relies on Godot's scene tree reparenting.
+
+**Confidence:** Medium
+
+---
+
+### [chunk_sticks_to_enemy] Planner — Signal routing: who notifies the controller?
+
+**Would have asked:** Should EnemyInfection3D emit a signal that PlayerController3D connects to, or should the chunk itself call back to the controller, or should InfectionInteractionHandler mediate?
+
+**Assumption made:** EnemyInfection3D emits two new signals: `chunk_attached(chunk: RigidBody3D)` (fired when a chunk body enters its InteractionArea) and `chunk_detached(chunk: RigidBody3D)` (fired when a stuck chunk is released after absorb). PlayerController3D connects to these signals from each enemy in the scene at startup (or the chunk connects them on spawn). The handler remains unmodified; it already emits `absorb_resolved` which the controller also connects to. This keeps the signal graph simple and the handler's scope unchanged.
+
+**Confidence:** Medium
+
