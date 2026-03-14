@@ -61,13 +61,13 @@ The `MutationSlotManager` API (`clear_all()`, `clear_slot(index)`, `fill_next_av
 ## WORKFLOW STATE
 
 ```
-Stage:              TEST_DESIGN
-Revision:           2
+Stage:              TEST_BREAK
+Revision:           3
 Created By:         Human
 Created On:         2026-03-12T00:00:00Z
-Last Updated By:    Spec Agent
-Last Updated On:    2026-03-13T00:00:00Z
-Next Responsible Agent: Test Designer Agent
+Last Updated By:    Test Breaker Agent
+Last Updated On:    2026-03-14T00:00:00Z
+Next Responsible Agent: Core Simulation Agent
 Status:             Proceed
 ```
 
@@ -75,7 +75,7 @@ Status:             Proceed
 
 ## NEXT ACTION
 
-**Agent:** Test Designer Agent
-**Action:** Write `tests/system/test_slot_consumption_rules.gd` — headless GDScript primary test suite covering all SCR-* acceptance criteria in `project_board/specs/slot_consumption_rules_spec.md`. Test names must map 1-to-1 with spec AC IDs (e.g., `test_scr_1_ac_1_has_method`, `test_scr_2_ac_1_both_slots_cleared_when_both_filled`). Register the suite in `tests/run_tests.gd` under `# --- system ---`. Tasks 2 and 3 (primary and adversarial suites) may be executed in parallel.
-**Reason:** Spec is complete. All SCR-1 through SCR-5 requirements are formally defined with numbered acceptance criteria. Test Designer Agent can now write deterministic headless assertions directly from the spec.
+**Agent:** Core Simulation Agent
+**Action:** Implement `consume_fusion_slots() -> void` on `MutationSlotManager` in `scripts/mutation/mutation_slot_manager.gd`. The method must delegate to `clear_all()` internally and carry the exact comment: `# Called by the fusion trigger after a successful fusion event. Clears both slots so the player can re-infect.` Then register both `tests/system/test_slot_consumption_rules.gd` and `tests/system/test_slot_consumption_rules_adversarial.gd` in `tests/run_tests.gd`. Run `timeout 300 godot --headless -s tests/run_tests.gd` and confirm 0 failures.
+**Reason:** Both the primary behavioral suite (Test Designer Agent) and the adversarial suite (Test Breaker Agent) are complete. All tests are in correct TDD red-phase state — they fail on the missing method and will pass once implementation is added. No changes to MutationSlot or any other file are permitted.
 **Blocking Issues:** None.

@@ -478,3 +478,38 @@ Tickets queued: second_chunk_logic.md (TEST_BREAK stage)
 
 **Confidence:** High
 
+---
+
+## Run: 2026-03-14T00:00:00Z
+Tickets queued: slot_consumption_rules.md (TEST_BREAK stage — adversarial suite)
+
+---
+
+### [slot_consumption_rules] Test Breaker — Dynamic method invocation to avoid parse errors in TDD red phase
+
+**Would have asked:** consume_fusion_slots() does not yet exist on MutationSlotManager. Should adversarial tests call it directly (causing parse/load errors before implementation) or use has_method() + call() to remain parseable in the red phase?
+
+**Assumption made:** All invocations of consume_fusion_slots() use manager.has_method("consume_fusion_slots") + manager.call("consume_fusion_slots") so the suite loads and runs cleanly before implementation. Absence of the method is itself recorded as a failure via the gate test (test_adv_method_exists). Once Core Simulation Agent adds the method, all tests switch from failing the gate to exercising the full adversarial matrix. This is the correct TDD red-phase pattern for a method that does not yet exist.
+
+**Confidence:** High
+
+---
+
+### [slot_consumption_rules] Test Breaker — Whitespace IDs treated as valid non-empty
+
+**Would have asked:** Should fill_next_available(" ") (whitespace-only string) be treated as a valid ID (not empty) or should it be rejected like empty string?
+
+**Assumption made:** Per DSM-2 and the existing implementation, the push_error guard fires only when id == "". A whitespace-only string is not equal to "" so it passes the guard and fills slot A. ADV-13 tests this explicitly: after consume, fill_next_available(" ") must fill slot A with " " and slot B must remain empty. If future spec revisions tighten the guard to reject whitespace, ADV-13 becomes the canary that breaks first, making the spec change visible.
+
+**Confidence:** High
+
+---
+
+### [slot_consumption_rules] Test Breaker — Slot object identity as a correctness signal
+
+**Would have asked:** Should the adversarial suite verify that get_slot(0) and get_slot(1) return the same object references before and after consume (in-place clear), or is this too implementation-specific?
+
+**Assumption made:** Object identity is tested (ADV-10) because it encodes a real caller contract: any external code that holds a reference obtained via get_slot() before consume must still see the correct cleared state after consume. If consume replaces slot instances (_slots[0] = MutationSlot.new()), the held reference becomes a stale zombie. The spec's SCR-4 risk section notes this explicitly ("slot object identity" edge case). Treating it as testable is conservative and correct.
+
+**Confidence:** High
+
