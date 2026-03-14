@@ -624,3 +624,28 @@ Tickets queued: chunk_sticks_to_enemy.md (SPECIFICATION stage — Spec Agent aut
 
 **Confidence:** High
 
+---
+
+## Run: 2026-03-14T16:00:00Z
+Tickets queued: chunk_sticks_to_enemy.md (TEST_DESIGN stage)
+
+---
+
+### [chunk_sticks_to_enemy] Test Design — Headless test strategy for non-instantiable nodes
+
+**Would have asked:** Both `EnemyInfection3D` (extends `BasePhysicsEntity3D`) and `PlayerController3D` (extends `BasePhysicsEntity3D`) cannot be instantiated headlessly. Should behavioral tests for SPEC-CSE-3 through SPEC-CSE-10 use real instances (requiring a scene tree) or minimal pure-Object stubs that embed the spec's logic?
+
+**Assumption made:** All tests in the primary suite are headless-safe. `EnemyInfection3D` and `PlayerController3D` are replaced by minimal inner-class stubs (`FakeChunk`, `FakeEnemyNode`, `FakeControllerState`) that hold only the fields and methods specified in the API contracts. `EnemyStateMachine` (extends `RefCounted`) is used directly. Tests drive the fake objects through the exact sequences described in each AC and assert observable post-call state. This is identical to the pattern used in `test_dual_chunk_controller.gd` (which tests `MovementSimulation` directly rather than `PlayerController3D`). Scene-tree-required tests are explicitly out of scope for this suite; the adversarial suite (Test Breaker's job) may add scene-level integration tests with the documented dependency.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Test Design — EnemyInfection3D signal emission test approach
+
+**Would have asked:** `EnemyInfection3D._on_body_entered` emits `chunk_attached`. Since the class cannot be instantiated headlessly, should TC-CSE-001 through TC-CSE-003 test the GDScript signal declaration by loading the script and inspecting it, or by constructing a fake that mirrors the specified behavior?
+
+**Assumption made:** TC-CSE-001 through TC-CSE-003 test the behavioral contract using a minimal `FakeEnemyNode` that implements `_on_body_entered` with the exact logic from SPEC-CSE-1 API contract (emit `chunk_attached` only when body is in "chunk" group, after weaken/infect calls). A separate test (TC-CSE-001-signal-decl) loads the real `enemy_infection_3d.gd` script and inspects signal declarations using `get_script_signal_list()` to confirm the signal is declared at class scope. This is the strictest defensible approach that remains headless-safe.
+
+**Confidence:** Medium
+
