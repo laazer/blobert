@@ -579,3 +579,48 @@ Tickets queued: chunk_sticks_to_enemy.md
 
 **Confidence:** Medium
 
+---
+
+## Run: 2026-03-14T15:00:00Z
+Tickets queued: chunk_sticks_to_enemy.md (SPECIFICATION stage — Spec Agent authoring)
+
+---
+
+### [chunk_sticks_to_enemy] Spec Agent — chunk_detached signal scope
+
+**Would have asked:** The Planner checkpoint mentions two new signals: `chunk_attached` and `chunk_detached`. Should `chunk_detached` be defined on `EnemyInfection3D`, or is un-parenting on absorb sufficient (driven entirely by the `absorb_resolved` handler in `PlayerController3D`)?
+
+**Assumption made:** `chunk_detached` is NOT added to `EnemyInfection3D` for this ticket. The conservative, minimal approach is that detach/un-parenting is driven entirely by `PlayerController3D._on_absorb_resolved`, which has all the information needed (stuck flags, chunk references, enemy references). Adding a `chunk_detached` signal would require `EnemyInfection3D` to track which chunks are attached — extra state that isn't needed. The Planner checkpoint mentioned it as a possibility ("or a new thin script on the chunk") but the simplest working design has only `chunk_attached` on `EnemyInfection3D` plus the `absorb_resolved` handler in `PlayerController3D`.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Spec Agent — ESM matching via get_esm() vs node identity
+
+**Would have asked:** Should `_on_absorb_resolved` match the absorbing enemy using ESM reference equality (`enemy_node.get_esm() == esm`) or by some other key?
+
+**Assumption made:** ESM reference equality is the correct match key. `absorb_resolved` carries the `EnemyStateMachine` instance; `_chunk_stuck_enemy.get_esm()` returns the same object that was passed to `absorb_resolved`. Reference equality in GDScript for objects (non-value types) compares identity, which is deterministic and correct here since each enemy owns exactly one ESM instance.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Spec Agent — find_children type filter string for EnemyInfection3D
+
+**Would have asked:** `get_parent().find_children("*", "EnemyInfection3D", true, false)` uses a class name string filter. Does this work correctly for `class_name EnemyInfection3D` declared in the script?
+
+**Assumption made:** Yes. In Godot 4, `find_children` type argument works with registered `class_name` names. `EnemyInfection3D` is declared as `class_name EnemyInfection3D` in `enemy_infection_3d.gd` (confirmed by reading the file). The filter will correctly return all `EnemyInfection3D` nodes.
+
+**Confidence:** High
+
+---
+
+### [chunk_sticks_to_enemy] Spec Agent — chunk_3d group membership assumed
+
+**Would have asked:** Is the `"chunk"` group already assigned to chunk_3d.tscn scene nodes, or does this feature need to add it?
+
+**Assumption made:** The `"chunk"` group is already assigned on `chunk_3d.tscn`. This is confirmed indirectly: `EnemyInfection3D._on_body_entered` already checks `body.is_in_group("chunk")` (line 35 of the existing implementation), and the tests for `infection_interaction` pass. If the group were missing, the existing infection trigger tests would be broken. Therefore, no changes to `chunk_3d.tscn` group membership are required.
+
+**Confidence:** High
+

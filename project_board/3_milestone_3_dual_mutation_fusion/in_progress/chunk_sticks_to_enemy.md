@@ -22,19 +22,19 @@ When a thrown chunk contacts an enemy, the chunk should stick to (attach to) the
 ## WORKFLOW STATE
 
 ```
-Stage:              SPECIFICATION
-Revision:           2
-Last Updated By:    Planner Agent
-Next Responsible Agent: Spec Agent
+Stage:              TEST_DESIGN
+Revision:           3
+Last Updated By:    Spec Agent
+Next Responsible Agent: Test Designer Agent
 Status:             Proceed
-Validation Status:  Not started.
+Validation Status:  Spec complete. Test design not started.
 Blocking Issues:    None.
 ```
 
 ## NEXT ACTION
 
-**Agent:** Spec Agent
-**Action:** Author `project_board/specs/chunk_sticks_to_enemy_spec.md` in full. Define all SPEC-CSE-* requirements, API contracts for EnemyInfection3D and PlayerController3D, edge cases, out-of-scope items, and test coverage mapping. Read the scaffolding section in the spec file and all referenced source files before writing. After authoring, advance Stage to TEST_DESIGN and hand off to Test Design Agent.
+**Agent:** Test Designer Agent
+**Action:** Read `project_board/specs/chunk_sticks_to_enemy_spec.md` in full. Author `tests/chunk/test_chunk_sticks_to_enemy.gd` (primary suite) and `tests/chunk/test_chunk_sticks_to_enemy_adversarial.gd` (adversarial suite) covering all TC-CSE-* test IDs mapped in Section 6 of the spec. Tests must be headless-safe (no scene tree required) where possible; for tests that require a scene tree, document the dependency explicitly. After authoring, advance Stage to TEST_BREAK and hand off to Test Breaker Agent.
 **Blocking Issues:** None.
 
 ---
