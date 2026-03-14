@@ -54,6 +54,11 @@ func fill_next_available(id: String) -> void:
 		_slots[1].set_active_mutation_id(id)
 
 
+# Called by the fusion trigger after a successful fusion event. Clears both slots so the player can re-infect.
+func consume_fusion_slots() -> void:
+	clear_all()
+
+
 func clear_all() -> void:
 	for slot in _slots:
 		slot.clear()
