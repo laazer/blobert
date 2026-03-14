@@ -9,6 +9,8 @@
 class_name EnemyInfection3D
 extends BasePhysicsEntity3D
 
+signal chunk_attached(chunk: RigidBody3D)
+
 var _esm: EnemyStateMachine = EnemyStateMachine.new()
 var _handler: InfectionInteractionHandler
 var _area: Area3D
@@ -37,6 +39,7 @@ func _on_body_entered(body: Node3D) -> void:
 			_esm.apply_infection_event()
 		else:
 			_esm.apply_weaken_event()
+		chunk_attached.emit(body as RigidBody3D)
 
 
 func _on_body_exited(body: Node3D) -> void:

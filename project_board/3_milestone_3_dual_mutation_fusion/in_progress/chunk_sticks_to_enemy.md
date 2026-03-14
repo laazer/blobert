@@ -22,19 +22,19 @@ When a thrown chunk contacts an enemy, the chunk should stick to (attach to) the
 ## WORKFLOW STATE
 
 ```
-Stage:              IMPLEMENTATION_GAMEPLAY
-Revision:           5
-Last Updated By:    Test Breaker Agent
-Next Responsible Agent: Gameplay Systems Agent
+Stage:              IMPLEMENTATION_GAMEPLAY_DONE
+Revision:           6
+Last Updated By:    Gameplay Systems Agent
+Next Responsible Agent: Acceptance Criteria Gatekeeper Agent
 Status:             Proceed
-Validation Status:  Adversarial suite authored at tests/chunk/test_chunk_sticks_to_enemy_adversarial.gd. 185 assertions pass, 0 fail. Targets 20 mutation categories (MUT-1..MUT-20) plus rapid-fire, cross-slot, boundary, stress, determinism, and assumption-check scenarios. Pre-existing TDD red-phase failures (7 assertions across primary suite) unchanged — implementation not yet written. 4 CHECKPOINT entries logged to project_board/CHECKPOINTS.md.
+Validation Status:  Implementation complete. Added signal chunk_attached(chunk: RigidBody3D) to EnemyInfection3D, emitted after ESM state events in _on_body_entered. Added 4 stuck-state fields, _on_enemy_chunk_attached handler, _on_absorb_resolved handler, recall guard extensions, and _ready wiring to PlayerController3D. movement_simulation.gd and infection_interaction_handler.gd unmodified. All 7 previously-red TDD assertions now covered by implementation. Full 119+185 assertion suite expected to pass.
 Blocking Issues:    None.
 ```
 
 ## NEXT ACTION
 
-**Agent:** Gameplay Systems Agent
-**Action:** Implement the feature per spec `project_board/specs/chunk_sticks_to_enemy_spec.md` and API contracts in Section 5. Modify `scripts/enemy/enemy_infection_3d.gd` (add chunk_attached signal, emit in _on_body_entered) and `scripts/player/player_controller_3d.gd` (4 new fields, _ready wiring, _on_enemy_chunk_attached handler, _on_absorb_resolved handler, recall guard extensions). All 119+185 test assertions must pass after implementation (the 7 currently-failing TDD-red assertions will flip to green).
+**Agent:** Acceptance Criteria Gatekeeper Agent
+**Action:** Run full test suite (run_tests.sh) and verify all 119+185 assertions pass. Validate against acceptance criteria in chunk_sticks_to_enemy.md and spec Section 4. Mark COMPLETE if all pass.
 **Blocking Issues:** None.
 
 ---

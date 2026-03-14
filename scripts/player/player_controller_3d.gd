@@ -21,6 +21,10 @@ var _recall_timer: float = 0.0
 var _chunk_node_2: RigidBody3D = null
 var _recall_in_progress_2: bool = false
 var _recall_timer_2: float = 0.0
+var _chunk_stuck_on_enemy: bool = false
+var _chunk_stuck_enemy: EnemyInfection3D = null
+var _chunk_2_stuck_on_enemy: bool = false
+var _chunk_2_stuck_enemy: EnemyInfection3D = null
 const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
 
@@ -84,8 +88,11 @@ func _ready() -> void:
 			if handler.has_method("get_mutation_slot_manager"):
 				_mutation_slot = handler.call("get_mutation_slot_manager")
 			elif handler.has_method("get_mutation_slot"):
-
 				_mutation_slot = handler.call("get_mutation_slot")
+			handler.absorb_resolved.connect(_on_absorb_resolved)
+		var enemies: Array = root.find_children("*", "EnemyInfection3D", true, false)
+		for enemy in enemies:
+			enemy.chunk_attached.connect(_on_enemy_chunk_attached.bind(enemy))
 
 func _process(_delta: float) -> void:
 	var cam: Camera3D = get_node_or_null("Gimbal/Camera3D") as Camera3D
@@ -170,6 +177,7 @@ func _physics_process(delta: float) -> void:
 		and (not prev_has_chunk)
 		and _chunk_node != null
 		and is_instance_valid(_chunk_node)
+		and (not _chunk_stuck_on_enemy)
 	)
 	if recall_pressed and not _recall_in_progress:
 		_recall_in_progress = true
@@ -229,6 +237,7 @@ func _physics_process(delta: float) -> void:
 		and (not prev_has_chunk_2)
 		and _chunk_node_2 != null
 		and is_instance_valid(_chunk_node_2)
+		and (not _chunk_2_stuck_on_enemy)
 	)
 	if recall_2_pressed and not _recall_in_progress_2:
 		_recall_in_progress_2 = true
@@ -275,6 +284,42 @@ func _physics_process(delta: float) -> void:
 				chunk_2_reabsorbed.emit(global_position, _chunk_node_2.global_position)
 				_chunk_node_2.queue_free()
 			_chunk_node_2 = null
+
+func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> void:
+	if not is_instance_valid(chunk):
+		return
+	if chunk == _chunk_node:
+		_chunk_node.freeze = true
+		_chunk_node.linear_velocity = Vector3.ZERO
+		_chunk_node.reparent(enemy, true)
+		_chunk_stuck_on_enemy = true
+		_chunk_stuck_enemy = enemy
+	elif chunk == _chunk_node_2:
+		_chunk_node_2.freeze = true
+		_chunk_node_2.linear_velocity = Vector3.ZERO
+		_chunk_node_2.reparent(enemy, true)
+		_chunk_2_stuck_on_enemy = true
+		_chunk_2_stuck_enemy = enemy
+
+
+func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
+	# Slot 1
+	if _chunk_stuck_on_enemy and _chunk_stuck_enemy != null and is_instance_valid(_chunk_stuck_enemy):
+		if _chunk_stuck_enemy.get_esm() == esm:
+			if _chunk_node != null and is_instance_valid(_chunk_node):
+				_chunk_node.reparent(get_parent(), true)
+				_chunk_node.freeze = false
+			_chunk_stuck_on_enemy = false
+			_chunk_stuck_enemy = null
+	# Slot 2
+	if _chunk_2_stuck_on_enemy and _chunk_2_stuck_enemy != null and is_instance_valid(_chunk_2_stuck_enemy):
+		if _chunk_2_stuck_enemy.get_esm() == esm:
+			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
+				_chunk_node_2.reparent(get_parent(), true)
+				_chunk_node_2.freeze = false
+			_chunk_2_stuck_on_enemy = false
+			_chunk_2_stuck_enemy = null
+
 
 func _get_visual_node() -> Node3D:
 	return get_node_or_null("SlimeVisual") as Node3D
