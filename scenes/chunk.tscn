@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://38ovqiwsqupv"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chunk"]
+radius = 8.0
+
+[node name="Chunk" type="RigidBody2D" unique_id=1763488805]
+freeze = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2120547394]
+shape = SubResource("CircleShape2D_chunk")
+
+[node name="ChunkVisual" type="Polygon2D" parent="." unique_id=974356832]
+z_index = 5
+color = Color(0.9, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
