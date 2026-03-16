@@ -1,7 +1,7 @@
 # Fusion rules and hybrid creation
 
 **Epic:** Milestone 3 – Dual Mutation + Fusion
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -9,15 +9,21 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_CORE_SIM |
-| Revision | 6 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Core Simulation Agent |
-| Validation Status | — |
+| Stage | COMPLETE |
+| Revision | 10 |
+| Last Updated By | Human |
+| Next Responsible Agent | — |
+| Validation Status | All automated tests pass (22 primary + 18 adversarial fusion resolver tests, full suite green). All GDScript CRITICAL issues resolved. Human playtest confirmed: both slots fill after absorbing two enemies, FusePromptLabel appears, G key triggers perceptible speed boost (~5s), slots clear on fusion, prompt disappears, fusion is repeatable after re-infecting. All AC satisfied. |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Core Simulation Agent: implement `scripts/fusion/fusion_resolver.gd` — a pure `RefCounted` script with `class_name FusionResolver`, constants `FUSION_DURATION: float = 5.0` and `FUSION_MULTIPLIER: float = 1.5`, and two public methods `can_fuse(slot_manager: Object) -> bool` and `resolve_fusion(slot_manager: Object, player: Object) -> void`. No Node/Input/scene dependencies. All 38 failing tests (20 primary in `tests/fusion/test_fusion_resolver.gd` + 18 adversarial in `tests/fusion/test_fusion_resolver_adversarial.gd`) must pass after implementation. Spec at `agent_context/agents/2_spec/fusion_rules_and_hybrid_spec.md`. Existing test suite must remain green (`run_tests.sh` exits 0).
+
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Human |
+| Required Input Schema | Documented manual playtest result confirming: FusePromptLabel visible with two filled slots; G-key fuse triggers perceptible speed boost; slots clear after fuse; prompt hides; full cycle repeatable; all UI readable without debug overlays. |
+| Status | Blocked on manual verification |
+| Reason | All five automated acceptance criteria are evidenced by 40 passing tests (22 primary + 18 adversarial), confirmed input action registration, confirmed wiring in InfectionInteractionHandler and PlayerController3D, confirmed FusePromptLabel in scene and driven from InfectionUI._process. Two acceptance criteria (AC 2: "usable in gameplay"; AC 5: "human-playable in-editor without debug overlays") are inherently manual and have no documented playtest result in this ticket. Ticket held in INTEGRATION until human completes and records the Task 9 checklist. |
 
 ---
 

@@ -24,28 +24,38 @@ signal absorb_resolved(esm: EnemyStateMachine)
 const _MutationInventoryScript: GDScript = preload("res://scripts/mutation/mutation_inventory.gd")
 const _ResolverScript: GDScript = preload("res://scripts/infection/infection_absorb_resolver.gd")
 const _MutationSlotManagerScript: GDScript = preload("res://scripts/mutation/mutation_slot_manager.gd")
+const _FusionResolverScript: GDScript = preload("res://scripts/fusion/fusion_resolver.gd")
 
 var _inventory: RefCounted
 var _resolver: RefCounted
 var _slot_manager: RefCounted
+var _fusion_resolver: FusionResolver
 
 var _target_esm: EnemyStateMachine = null
 var _infection_ui: CanvasLayer = null
+var _player_node: Node = null
 
 
 func _ready() -> void:
 	_inventory = _MutationInventoryScript.new()
 	_resolver = _ResolverScript.new()
 	_slot_manager = _MutationSlotManagerScript.new()
+	_fusion_resolver = _FusionResolverScript.new()
 	var root: Node = get_parent()
 	if root != null:
 		_infection_ui = root.get_node_or_null("InfectionUI") as CanvasLayer
+	if get_tree() != null:
+		_player_node = get_tree().get_first_node_in_group("player")
 
 
 func _process(_delta: float) -> void:
 	if _infection_ui != null and _infection_ui.has_method("set_absorb_available"):
 		var available: bool = _target_esm != null and _resolver.can_absorb(_target_esm)
 		_infection_ui.set_absorb_available(available)
+
+	if Input.is_action_just_pressed("fuse"):
+		if _fusion_resolver != null and _fusion_resolver.can_fuse(_slot_manager):
+			_fusion_resolver.resolve_fusion(_slot_manager, _player_node)
 
 	if _target_esm == null:
 		return

@@ -33,6 +33,10 @@ var _mutation_slot: Object = null
 var _base_max_speed: float = 0.0
 const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 
+var _fusion_timer: float = 0.0
+var _fusion_active: bool = false
+var _fusion_multiplier: float = 1.0
+
 signal detach_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_reabsorbed(player_position: Vector3, chunk_position: Vector3)
@@ -130,16 +134,26 @@ func _physics_process(delta: float) -> void:
 
 	if _base_max_speed <= 0.0:
 		_base_max_speed = _simulation.max_speed
-	var speed_multiplier: float = 1.0
-	if _mutation_slot != null:
-		var mutation_active: bool = false
-		if _mutation_slot.has_method("any_filled"):
-			mutation_active = _mutation_slot.any_filled()
-		elif _mutation_slot.has_method("is_filled"):
-			mutation_active = _mutation_slot.is_filled()
-		if mutation_active:
-			speed_multiplier = _MUTATION_SPEED_MULTIPLIER
-	_simulation.max_speed = _base_max_speed * speed_multiplier
+
+	if _fusion_active:
+		_fusion_timer -= delta
+		if _fusion_timer > 0.0:
+			_simulation.max_speed = _base_max_speed * _fusion_multiplier
+		else:
+			_fusion_active = false
+			_fusion_timer = 0.0
+			_fusion_multiplier = 1.0
+	else:
+		var speed_multiplier: float = 1.0
+		if _mutation_slot != null:
+			var mutation_active: bool = false
+			if _mutation_slot.has_method("any_filled"):
+				mutation_active = _mutation_slot.any_filled()
+			elif _mutation_slot.has_method("is_filled"):
+				mutation_active = _mutation_slot.is_filled()
+			if mutation_active:
+				speed_multiplier = _MUTATION_SPEED_MULTIPLIER
+		_simulation.max_speed = _base_max_speed * speed_multiplier
 
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
 		_current_state, input_axis, jump_pressed, jump_just_pressed,
@@ -147,7 +161,7 @@ func _physics_process(delta: float) -> void:
 	)
 
 	if next_state.jump_consumed and not _current_state.jump_consumed:
-		var am = _get_audio_manager()
+		var am := _get_audio_manager()
 		if am != null and am.jump_sfx != null:
 			am.jump_sfx.pitch_scale = randf_range(1.0, 1.15)
 			am.jump_sfx.play()
@@ -406,3 +420,13 @@ func has_chunk_2() -> bool:
 
 func is_wall_clinging_state() -> bool:
 	return _current_state.is_wall_clinging
+
+
+func apply_fusion_effect(duration: float, multiplier: float) -> void:
+	if _fusion_active:
+		_fusion_timer = maxf(_fusion_timer, duration)
+		_fusion_multiplier = multiplier
+		return
+	_fusion_active = true
+	_fusion_timer = duration
+	_fusion_multiplier = multiplier

@@ -1,3 +1,4 @@
+class_name InfectionUI
 extends CanvasLayer
 
 var _absorb_available: bool = false
@@ -29,6 +30,10 @@ func set_absorb_available(available: bool) -> void:
 
 func _get_absorb_prompt_label() -> Label:
 	return get_node_or_null("AbsorbPromptLabel") as Label
+
+
+func _get_fuse_prompt_label() -> Label:
+	return get_node_or_null("FusePromptLabel") as Label
 
 
 func _get_hp_label() -> Label:
@@ -126,6 +131,16 @@ func _process(_delta: float) -> void:
 	var absorb_label: Label = _get_absorb_prompt_label()
 	if absorb_label != null:
 		absorb_label.visible = _absorb_available
+
+	var fuse_label: Label = _get_fuse_prompt_label()
+	if fuse_label != null:
+		var s0: Object = _get_slot(0)
+		var s1: Object = _get_slot(1)
+		var both_filled: bool = (
+			s0 != null and s0.has_method("is_filled") and s0.is_filled()
+			and s1 != null and s1.has_method("is_filled") and s1.is_filled()
+		)
+		fuse_label.visible = both_filled
 
 	_update_input_hints_visibility()
 

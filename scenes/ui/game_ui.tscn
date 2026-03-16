@@ -16,6 +16,16 @@ theme_override_colors/font_color = Color(0.9, 0.95, 0.9, 1)
 theme_override_font_sizes/font_size = 20
 text = "Press R to Absorb"
 
+[node name="FusePromptLabel" type="Label" parent="."]
+visible = false
+offset_left = 20.0
+offset_top = 188.0
+offset_right = 20.0
+offset_bottom = 188.0
+theme_override_colors/font_color = Color(0.9, 0.95, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "[G] Fuse"
+
 [node name="HPLabel" type="Label" parent="."]
 offset_left = 20.0
 offset_top = 28.0

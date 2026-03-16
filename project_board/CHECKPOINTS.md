@@ -5,6 +5,36 @@ Review these after autopilot completes.
 
 ---
 
+### [fusion_rules_and_hybrid] GDScript Fix — C2 expiry branch removes slot re-query
+
+**Would have asked:** On fusion expiry, should we re-query mutation slots to restore the correct speed (mutation-boosted vs. base), or just clear fusion state and let the else branch handle it next frame?
+
+**Assumption made:** Let the else branch run next frame. The C2 fix spec explicitly says "Do NOT try to re-query slots for speed restoration on the same tick — let the else branch that runs next frame handle it naturally." The one-frame latency is imperceptible and avoids the dual-write speed glitch.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] GDScript Fix — C3 player cache timing in InfectionInteractionHandler._ready
+
+**Would have asked:** `_ready` fires before children are necessarily in the scene tree group. Is `get_first_node_in_group("player")` reliable from a sibling node's `_ready`?
+
+**Assumption made:** The pattern is consistent with existing usage in `infection_ui.gd` line 14 which does the same thing. Both nodes are siblings under the level root; Godot processes `_ready` bottom-up so the player is already in the tree when the handler's `_ready` runs. Accepted as consistent with the existing codebase convention.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] IMPLEMENTATION_CORE_SIM — null player handling in resolve_fusion
+
+**Would have asked:** When player is null, spec FRH-3-AC-8 says slots are consumed and no crash. But FRH-3 also says push_error when player lacks apply_fusion_effect. Should push_error be emitted for a null player specifically?
+
+**Assumption made:** No push_error for null player. Null player is an explicitly documented valid path (FRH-3-AC-8: "handle a null player gracefully"). push_error is reserved for a non-null player that is the wrong type (lacks the method). This matches the spec's risk note: "if player is null, slots are still consumed and no crash occurs (the effect simply does not apply)."
+
+**Confidence:** High
+
+---
+
 ### [fusion_rules_and_hybrid] TEST_BREAK — double-fuse no-op second call verification strategy
 
 **Would have asked:** The spec requires that calling resolve_fusion twice in a row is a no-op on the second call (slots are empty after first call so guard fails). Should the adversarial test verify this by checking the player double call count is still 1, or should it also verify slots remain empty on the second call?
