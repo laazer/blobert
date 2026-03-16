@@ -689,3 +689,22 @@ Tickets queued: chunk_sticks_to_enemy.md (TEST_DESIGN stage)
 
 **Confidence:** Medium
 
+---
+
+## Run: 2026-03-16
+
+### [chunk_sticks_to_enemy] Code Review Fixes — All issues already resolved in working tree
+
+**Would have asked:** A code review identified 5 issues (CRITICAL 1, CRITICAL 2, WARNING 1, WARNING 2, WARNING 3) in `player_controller_3d.gd` and `enemy_infection_3d.gd`. Were these issues introduced by the prior implementation run and need to be fixed now, or were they already addressed?
+
+**Assumption made:** All five issues were already resolved in the current working tree before this agent run began. Full file reads confirmed:
+- CRITICAL 1 (stuck flags not cleared on recall): Lines 240-242 and 299-301 of `player_controller_3d.gd` already clear `_chunk_stuck_on_enemy`, `_chunk_stuck_enemy`, `_chunk_2_stuck_on_enemy`, `_chunk_2_stuck_enemy` in both recall-complete paths.
+- CRITICAL 2 (reparent without parent check): Lines 325-327 and 334-336 already guard `reparent` with `get_parent() == _chunk_stuck_enemy` checks.
+- WARNING 1 (chunk_attached emitted on weaken hit): Line 44 of `enemy_infection_3d.gd` already places `chunk_attached.emit(chunk)` inside the `if _esm.get_state() == "weakened":` branch only.
+- WARNING 2 (no re-entry guard): `_attached_chunks: Array[RigidBody3D] = []` field at line 17, guard at lines 40-41, and append at line 45 are all present.
+- WARNING 3 (signal not disconnected): `_exit_tree()` at lines 97-106 already disconnects the signal from all enemies.
+
+No file modifications were required. The code review was generated against an older snapshot of the code; the prior Gameplay Systems Agent run had already applied all the fixes. No changes were made, no tests were broken.
+
+**Confidence:** High
+
