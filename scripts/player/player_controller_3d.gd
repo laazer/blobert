@@ -213,6 +213,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			parent.add_child(chunk)
 			_chunk_node = chunk
+			chunk.add_collision_exception_with(self)
 			chunk.freeze = false
 			chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
 			var am := _get_audio_manager()
@@ -275,6 +276,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			parent_2.add_child(chunk_2)
 			_chunk_node_2 = chunk_2
+			chunk_2.add_collision_exception_with(self)
 			chunk_2.freeze = false
 			chunk_2.linear_velocity = Vector3(lob_dir_2 * detach_lob_horizontal, detach_lob_upward, 0.0)
 			_juice_detach_pop()
