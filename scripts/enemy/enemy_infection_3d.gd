@@ -39,6 +39,8 @@ func _on_body_entered(body: Node3D) -> void:
 		var chunk: RigidBody3D = body as RigidBody3D
 		if chunk in _attached_chunks:
 			return
+		if _esm.get_state() == "dead":
+			return
 		if _esm.get_state() == "weakened":
 			_esm.apply_infection_event()
 		else:

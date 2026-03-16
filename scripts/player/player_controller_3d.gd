@@ -21,6 +21,10 @@ var _recall_in_progress: Array = [false, false]
 var _recall_timer: Array = [0.0, 0.0]
 var _chunk_stuck: Array = [false, false]      # true while frozen on an enemy
 var _chunk_stuck_enemy: Array = [null, null]  # EnemyInfection3D per slot
+# True after a spawn until detach_just goes false — prevents the same
+# just_pressed event from immediately triggering a recall on the next
+# physics tick within the same display frame.
+var _detach_spawned: Array = [false, false]
 
 const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
@@ -49,6 +53,9 @@ signal chunk_2_reabsorbed(player_position: Vector3, chunk_position: Vector3)
 @export var detach_lob_upward: float = 8.0
 ## Spawn offset (m) in lob direction so chunk clears the player.
 const _DETACH_SPAWN_OFFSET: float = 0.4
+## Spawn height (m) above player origin so chunk clears the floor.
+## Player origin Y≈0 on floor; chunk radius=0.5 → 0.75 gives 0.25m clearance.
+const _DETACH_SPAWN_HEIGHT: float = 0.75
 
 ## Game juice: jump stretch (kit jumpStretchSize). Scale applied to SlimeVisual.
 @export var jump_stretch_scale: Vector3 = Vector3(0.85, 1.15, 0.85)
@@ -177,12 +184,37 @@ func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulati
 	var prev_has: bool = _get_has_chunk(i)
 	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 
+	# Kill-plane: recover a live chunk that has fallen below the platform.
+	# Threshold matches the respawn zone bottom (-9 m) with some margin.
+	const CHUNK_KILL_Y: float = -4.0
+	if not prev_has and not _recall_in_progress[i] and not _chunk_stuck[i] \
+			and chunk != null and is_instance_valid(chunk) \
+			and chunk.global_position.y < CHUNK_KILL_Y:
+		chunk.queue_free()
+		_chunks[i] = null
+		_set_has_chunk(i, true)
+		return
+
+	# Recover slot if chunk reference became invalid externally. Never fire
+	# while stuck on an enemy — _on_absorb_resolved handles that path.
+	if not prev_has and not _recall_in_progress[i] and not _chunk_stuck[i] and (chunk == null or not is_instance_valid(chunk)):
+		_chunk_stuck[i] = false
+		_chunk_stuck_enemy[i] = null
+		_chunks[i] = null
+		_set_has_chunk(i, true)
+		return
+
+	# Clear the spawn-guard once the key is released so the next press works.
+	if not detach_just:
+		_detach_spawned[i] = false
+
 	var recall_pressed: bool = (
 		detach_just
 		and (not prev_has)
 		and chunk != null
 		and is_instance_valid(chunk)
 		and (not _chunk_stuck[i])
+		and (not _detach_spawned[i])
 	)
 	if recall_pressed and not _recall_in_progress[i]:
 		_recall_in_progress[i] = true
@@ -207,9 +239,12 @@ func _spawn_chunk(i: int) -> void:
 	if parent == null:
 		push_error("PlayerController3D: cannot detach chunk — node has no parent")
 		return
-	chunk.global_position = global_position + Vector3(lob_dir * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
 	parent.add_child(chunk)
+	# Set global_position AFTER add_child so the physics body initialises
+	# at the correct world position rather than the pre-tree local origin.
+	chunk.global_position = global_position + Vector3(lob_dir * _DETACH_SPAWN_OFFSET, _DETACH_SPAWN_HEIGHT, 0.0)
 	_chunks[i] = chunk
+	_detach_spawned[i] = true
 	chunk.add_collision_exception_with(self)
 	chunk.freeze = false
 	chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
@@ -230,6 +265,10 @@ func _tick_recall(i: int, delta: float) -> void:
 	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 	if chunk == null or not is_instance_valid(chunk):
 		_recall_in_progress[i] = false
+		_chunk_stuck[i] = false
+		_chunk_stuck_enemy[i] = null
+		_chunks[i] = null
+		_set_has_chunk(i, true)
 		return
 	if _recall_timer[i] >= _RECALL_TRAVEL_TIME:
 		_recall_in_progress[i] = false
@@ -268,8 +307,8 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 				var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 				if chunk != null and is_instance_valid(chunk):
 					chunk.queue_free()
-					_chunks[i] = null
-					_set_has_chunk(i, true)
+				_chunks[i] = null
+				_set_has_chunk(i, true)
 				_chunk_stuck[i] = false
 				_chunk_stuck_enemy[i] = null
 
