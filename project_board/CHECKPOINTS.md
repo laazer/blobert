@@ -5,6 +5,36 @@ Review these after autopilot completes.
 
 ---
 
+### [fusion_rules_and_hybrid] TEST_DESIGN — PlayerDouble implementation strategy
+
+**Would have asked:** Should the PlayerDouble for tracking `apply_fusion_effect` calls be a preloaded external script, an autoload, or an inner class on the test file?
+
+**Assumption made:** Inner class on the test file (`class PlayerDouble extends Object`). This keeps the test file self-contained, avoids adding a new file to the repo, and matches GDScript's support for inner classes in headless test suites. The double extends `Object` (not `RefCounted`) to allow manual `free()` and avoid potential auto-free conflicts with the resolver.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_DESIGN — FRH-3-AC-11 call-order verification strategy
+
+**Would have asked:** The spec mandates `apply_fusion_effect` is called before `consume_fusion_slots` (FRH-3-AC-11). How should this order be verified without a call-sequence interceptor?
+
+**Assumption made:** Behavioral proxy: assert that `apply_fusion_effect_call_count >= 1` AND both slots are empty after `resolve_fusion`. These two facts can only co-exist if the effect was called (with slots still filled, which the internal guard checks) and then consume ran. No slot-state snapshot during the call is required. This conservative approach avoids adding complexity to the player double.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_DESIGN — FRH-2-AC-6 malformed manager simulation
+
+**Would have asked:** FRH-2-AC-6 requires testing `can_fuse` when `get_slot(0)` returns null. MutationSlotManager never returns null for valid indices. How to simulate a malformed manager?
+
+**Assumption made:** Pass a plain `Object.new()` (which has no `get_slot` method at all) to `can_fuse`. This is a strictly stricter case than a manager that returns null from `get_slot` — it tests the duck-typing null-safety guard more thoroughly. The spec says "malformed manager"; a missing method is the simplest headless-safe simulation of this.
+
+**Confidence:** High
+
+---
+
 ### [chunk_sticks_to_enemy] Test Break — double-attach same chunk to different enemies
 
 **Would have asked:** If chunk_attached fires twice for the same chunk node (two different enemies contact the same in-flight chunk simultaneously), does the second attach overwrite the stored enemy reference, or is it silently ignored?
@@ -692,6 +722,7 @@ Tickets queued: chunk_sticks_to_enemy.md (TEST_DESIGN stage)
 ---
 
 ## Run: 2026-03-16
+Tickets queued: fusion_rules_and_hybrid.md (SPECIFICATION stage — Spec Agent authoring)
 
 ### [chunk_sticks_to_enemy] Code Review Fixes — All issues already resolved in working tree
 
@@ -708,3 +739,118 @@ No file modifications were required. The code review was generated against an ol
 
 **Confidence:** High
 
+
+## Run: 2026-03-16T13:07:42Z
+Tickets queued: fusion_rules_and_hybrid.md
+
+---
+
+### [fusion_rules_and_hybrid] Planning — Fuse input action name
+
+**Would have asked:** No "fuse" input action exists in project.godot. The existing actions are move_left, move_right, jump, detach, detach_2, absorb, infect. What key and action name should the fusion trigger use?
+
+**Assumption made:** A new input action named `"fuse"` mapped to the F key (physical_keycode 70 is already used by `infect`, so use G key, physical_keycode 71) will be added to project.godot. The action name `"fuse"` is consistent with the naming convention (short verb). The Spec Agent will confirm the exact key; if the design changes, it is a single-line change in project.godot and a string change in the handler.
+
+**Confidence:** Medium
+
+---
+
+### [fusion_rules_and_hybrid] Planning — Where fusion logic lives (pure vs wired)
+
+**Would have asked:** Should fusion detection and effect application live in a new pure-logic script (FusionResolver, analogous to InfectionAbsorbResolver), or be wired directly into InfectionInteractionHandler's _process loop?
+
+**Assumption made:** A new pure-logic script `scripts/fusion/fusion_resolver.gd` (class FusionResolver, extends RefCounted) handles the fusion rules: can_fuse(slot_manager) and resolve_fusion(slot_manager, player). InfectionInteractionHandler reads the fuse input and delegates to FusionResolver. This keeps the engine-integration handler thin and keeps fusion logic headless-testable, consistent with the pattern established by InfectionAbsorbResolver.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Planning — Minimum hybrid gameplay effect
+
+**Would have asked:** What tangible gameplay effect should the initial fusion hybrid produce? The ticket says "at minimum a speed boost or similar."
+
+**Assumption made:** The first and only required fusion hybrid for this ticket is a timed speed boost: `_FUSION_SPEED_MULTIPLIER` (e.g. 1.5x) applied to `_simulation.max_speed` in PlayerController3D for a fixed duration (e.g. 5 seconds), then restored. This is the simplest observable effect that reuses existing speed-multiplier infrastructure already in the controller. The Spec Agent will nail down the exact multiplier and duration; if a different effect is preferred, it can be swapped without changing the resolver's API.
+
+**Confidence:** Medium
+
+---
+
+### [fusion_rules_and_hybrid] Planning — Fusion guard: must both slots be filled
+
+**Would have asked:** Should fusion be allowed when only one slot is filled, or is it strictly gated on both slots being filled (slot_manager.any_filled() vs a new both_filled() check)?
+
+**Assumption made:** Fusion requires both slots to be filled. `MutationSlotManager` does not yet have a `both_filled()` method; FusionResolver will implement its own check: `slot_manager.get_slot(0).is_filled() and slot_manager.get_slot(1).is_filled()`. This is the most conservative, testable guard and matches the ticket's stated trigger condition. The Spec Agent may choose to add a `both_filled()` convenience method to MutationSlotManager; if so, that is a backend task assigned to Core Simulation Agent.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Planning — HUD fusion prompt visibility
+
+**Would have asked:** Should the InfectionUI show a fusion prompt hint only when both slots are filled, similar to how set_absorb_available() drives the absorb prompt?
+
+**Assumption made:** Yes. InfectionUI will show a "FusePromptLabel" (or equivalent Label node in the scene) that is visible only when both slots are filled. The label text will display the fuse key hint. This follows the exact same pattern as AbsorbPromptLabel and set_absorb_available(), requiring minimal new code. The Spec Agent will confirm the exact label name and text; implementation re-uses existing _process update logic in infection_ui.gd.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Planning — Fusion effect duration and re-fuse after cooldown
+
+**Would have asked:** After a fusion and its effect expires, can the player immediately re-infect two enemies and fuse again, or is there a cooldown?
+
+**Assumption made:** No cooldown. Once consume_fusion_slots() is called, both slots are empty and the player can immediately begin re-infecting. The fusion effect (speed boost) runs for its fixed duration on a timer; a second fusion can occur as soon as both slots are refilled. This is the most conservative, repeatable design and is explicitly required by the ticket AC ("fusion is repeatable in play"). If a cooldown is desired later, it is a feature addition, not a blocker.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Spec — G key confirmed for fuse action
+
+**Would have asked:** Physical keycode 70 is used by the `infect` action (F key). Should fuse use the G key (physical_keycode 71) as assumed by the Planner, or a different key?
+
+**Assumption made:** G key (physical_keycode 71) confirmed. Rationale: F (70) is infect, G is adjacent and unused by any existing action, and the Planner checkpoint already documents this. No existing action uses G. The spec confirms `"fuse"` maps to physical_keycode 71.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Spec — both_filled() method not added to MutationSlotManager
+
+**Would have asked:** Should `MutationSlotManager` gain a `both_filled() -> bool` convenience method, or should `FusionResolver` implement the guard directly using `get_slot(0).is_filled()` and `get_slot(1).is_filled()`?
+
+**Assumption made:** `both_filled()` is NOT added to `MutationSlotManager` for this ticket. FusionResolver implements the guard directly. Rationale: adding a method to MutationSlotManager requires a Core Simulation Agent task and changes an existing tested module. The direct check is equivalent, already testable, and avoids scope creep. If future code duplication warrants a convenience method, it can be added independently.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Spec — resolve_fusion call order: apply effect before consume slots
+
+**Would have asked:** Should `apply_fusion_effect` be called before or after `consume_fusion_slots` in `resolve_fusion`?
+
+**Assumption made:** Effect is applied first, slots are consumed second. Rationale: if `apply_fusion_effect` were to fail or crash (unlikely but defensive), calling it first means slots are not yet consumed and the game state remains recoverable. Consume-after-effect is the safe, conservative order. This is mandated as the canonical order in FRH-3-AC-11.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Spec — Fusion multiplier and duration final values
+
+**Would have asked:** Are the Planner's suggested defaults (multiplier 1.5, duration 5.0 seconds) acceptable, or should different values be used?
+
+**Assumption made:** Multiplier 1.5 and duration 5.0 seconds are confirmed as final values. Rationale: 1.5x is perceptibly higher than the existing mutation multiplier (1.25x), making fusion clearly rewarding. 5.0 seconds is long enough to be felt but short enough to not trivialize the game. These are defined as named constants in FusionResolver (FUSION_MULTIPLIER, FUSION_DURATION) so a one-line change updates them globally.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] Spec — Fusion timer re-trigger semantics
+
+**Would have asked:** If `apply_fusion_effect` is called while a fusion effect is already active (e.g. the player somehow fuses again before the first effect expires), should the timer reset or stack?
+
+**Assumption made:** Timer resets (re-triggerable). The new call replaces `_fusion_timer` with the new duration and `_fusion_multiplier` with the new multiplier. No stacking. This is the simplest, most predictable behaviour: fusion always gives a fresh 5-second window regardless of when it is triggered. Stacking would require summing timers, which adds complexity without clear gameplay benefit at this stage.
+
+**Confidence:** High
+
+---
