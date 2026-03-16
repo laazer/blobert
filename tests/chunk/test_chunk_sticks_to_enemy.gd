@@ -955,14 +955,10 @@ func test_tc_cse_050b_player_controller_declares_stuck_fields() -> void:
 	for p in props:
 		field_names.append(p["name"])
 
-	_assert_true(field_names.has("_chunk_stuck_on_enemy"),
-		TEST_NAME + " — _chunk_stuck_on_enemy field must be declared (AC-CSE-2.1)")
+	_assert_true(field_names.has("_chunk_stuck"),
+		TEST_NAME + " — _chunk_stuck array must be declared (AC-CSE-2.1, AC-CSE-2.3)")
 	_assert_true(field_names.has("_chunk_stuck_enemy"),
-		TEST_NAME + " — _chunk_stuck_enemy field must be declared (AC-CSE-2.2)")
-	_assert_true(field_names.has("_chunk_2_stuck_on_enemy"),
-		TEST_NAME + " — _chunk_2_stuck_on_enemy field must be declared (AC-CSE-2.3)")
-	_assert_true(field_names.has("_chunk_2_stuck_enemy"),
-		TEST_NAME + " — _chunk_2_stuck_enemy field must be declared (AC-CSE-2.4)")
+		TEST_NAME + " — _chunk_stuck_enemy array must be declared (AC-CSE-2.2, AC-CSE-2.4)")
 
 
 # ---------------------------------------------------------------------------

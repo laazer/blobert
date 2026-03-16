@@ -15,23 +15,17 @@ const SCALE_2D_TO_3D: float = 100.0
 var _simulation: MovementSimulation
 var _current_state: MovementSimulation.MovementState
 
-var _chunk_node: RigidBody3D = null
-var _recall_in_progress: bool = false
-var _recall_timer: float = 0.0
-var _chunk_node_2: RigidBody3D = null
-var _recall_in_progress_2: bool = false
-var _recall_timer_2: float = 0.0
-var _chunk_stuck_on_enemy: bool = false
-var _chunk_stuck_enemy: EnemyInfection3D = null
-var _chunk_2_stuck_on_enemy: bool = false
-var _chunk_2_stuck_enemy: EnemyInfection3D = null
+# Per-slot chunk state — index 0 = slot 1 (detach), index 1 = slot 2 (detach_2).
+var _chunks: Array = [null, null]             # RigidBody3D per slot
+var _recall_in_progress: Array = [false, false]
+var _recall_timer: Array = [0.0, 0.0]
+var _chunk_stuck: Array = [false, false]      # true while frozen on an enemy
+var _chunk_stuck_enemy: Array = [null, null]  # EnemyInfection3D per slot
+
 const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
 
 var _mutation_slot: Object = null
-# Dual-slot manager fetched from InfectionInteractionHandler when available.
-# When present, any_filled() is used instead of _mutation_slot.is_filled().
-var _slot_manager: Object = null
 var _base_max_speed: float = 0.0
 const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 
@@ -60,14 +54,11 @@ const _DETACH_SPAWN_OFFSET: float = 0.4
 @export var jump_stretch_scale: Vector3 = Vector3(0.85, 1.15, 0.85)
 @export var juice_tween_duration: float = 0.1
 
-func _ready() -> void:
-	# CharacterBody3D does not apply gravity automatically; simulation drives velocity.
 
+func _ready() -> void:
 	_simulation = MovementSimulation.new()
 	var project_gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8) as float
-	# Sim uses pixel-like units (gravity 980). Scale 3D 9.8 -> 980 for sim.
 	_simulation.gravity = project_gravity * SCALE_2D_TO_3D
-
 	_simulation.jump_height = jump_height
 	_simulation.coyote_time = coyote_time
 	_simulation.jump_cut_velocity = jump_cut_velocity
@@ -75,7 +66,6 @@ func _ready() -> void:
 	_simulation.max_cling_time = max_cling_time
 	_simulation.wall_jump_height = wall_jump_height
 	_simulation.wall_jump_horizontal_speed = wall_jump_horizontal_speed
-
 	_current_state = MovementSimulation.MovementState.new()
 	_current_state.has_chunk = true
 	_current_state.has_chunk_2 = true
@@ -94,6 +84,7 @@ func _ready() -> void:
 		for enemy in enemies:
 			enemy.chunk_attached.connect(_on_enemy_chunk_attached.bind(enemy))
 
+
 func _exit_tree() -> void:
 	if not is_inside_tree():
 		return
@@ -105,15 +96,16 @@ func _exit_tree() -> void:
 		if is_instance_valid(enemy) and enemy.chunk_attached.is_connected(_on_enemy_chunk_attached):
 			enemy.chunk_attached.disconnect(_on_enemy_chunk_attached)
 
+
 func _process(_delta: float) -> void:
 	var cam: Camera3D = get_node_or_null("Gimbal/Camera3D") as Camera3D
 	if cam != null:
 		cam.look_at(global_position)
-
 	var trail: CPUParticles3D = get_node_or_null("ParticleTrail") as CPUParticles3D
 	if trail != null:
 		var moving: bool = abs(velocity.x) > 0.5 or abs(velocity.y) > 0.5
 		trail.emitting = is_on_floor() and moving
+
 
 func _physics_process(delta: float) -> void:
 	var input_axis: float = Input.get_axis("move_left", "move_right")
@@ -140,14 +132,13 @@ func _physics_process(delta: float) -> void:
 			mutation_active = _mutation_slot.is_filled()
 		if mutation_active:
 			speed_multiplier = _MUTATION_SPEED_MULTIPLIER
-
 	_simulation.max_speed = _base_max_speed * speed_multiplier
 
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
-		_current_state, input_axis, jump_pressed, jump_just_pressed, is_on_wall_now, wall_normal_x, detach_just_pressed, delta, detach_2_just_pressed
+		_current_state, input_axis, jump_pressed, jump_just_pressed,
+		is_on_wall_now, wall_normal_x, detach_just_pressed, delta, detach_2_just_pressed
 	)
 
-	# Jump SFX + squash/stretch (kit pattern)
 	if next_state.jump_consumed and not _current_state.jump_consumed:
 		var am = _get_audio_manager()
 		if am != null and am.jump_sfx != null:
@@ -155,25 +146,21 @@ func _physics_process(delta: float) -> void:
 			am.jump_sfx.play()
 		_juice_jump_stretch()
 
-	# Map 2D sim velocity to 3D (pixels/s -> m/s): X horizontal, 2D y+ down -> 3D y-.
 	velocity = Vector3(
 		next_state.velocity.x / SCALE_2D_TO_3D,
 		-next_state.velocity.y / SCALE_2D_TO_3D,
 		0.0
 	)
 
-	# Lock Z to plane.
 	var pos: Vector3 = global_position
 	pos.z = 0.0
 	global_position = pos
 
 	move_and_slide()
 
-	# Land squash: just landed this frame
 	if is_on_floor() and not _current_state.is_on_floor:
 		_juice_land_squash()
 
-	# Feed back engine-corrected velocity into sim state (m/s -> pixels/s, 2D y+ down).
 	_current_state.velocity = Vector2(velocity.x * SCALE_2D_TO_3D, -velocity.y * SCALE_2D_TO_3D)
 	_current_state.coyote_timer = next_state.coyote_timer
 	_current_state.jump_consumed = next_state.jump_consumed
@@ -181,169 +168,147 @@ func _physics_process(delta: float) -> void:
 	_current_state.cling_timer = next_state.cling_timer
 	_current_state.current_hp = next_state.current_hp
 
-	var prev_has_chunk: bool = _current_state.has_chunk
+	var detach_inputs: Array = [detach_just_pressed, detach_2_just_pressed]
+	for i in 2:
+		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
+
+
+func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
+	var prev_has: bool = _get_has_chunk(i)
+	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 
 	var recall_pressed: bool = (
-		detach_just_pressed
-		and (not prev_has_chunk)
-		and _chunk_node != null
-		and is_instance_valid(_chunk_node)
-		and (not _chunk_stuck_on_enemy)
+		detach_just
+		and (not prev_has)
+		and chunk != null
+		and is_instance_valid(chunk)
+		and (not _chunk_stuck[i])
 	)
-	if recall_pressed and not _recall_in_progress:
-		_recall_in_progress = true
-		_recall_timer = 0.0
-		if _chunk_node != null and is_instance_valid(_chunk_node):
-			recall_started.emit(global_position, _chunk_node.global_position)
+	if recall_pressed and not _recall_in_progress[i]:
+		_recall_in_progress[i] = true
+		_recall_timer[i] = 0.0
+		_emit_recall_started(i)
 
-	_current_state.has_chunk = next_state.has_chunk
+	_set_has_chunk(i, _next_has_chunk(i, next_state))
 
-	if prev_has_chunk and not _current_state.has_chunk:
-		var chunk: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
-		assert(chunk != null, "chunk_3d.tscn root must be RigidBody3D")
-		# Lob direction: same as movement, or right if standing still.
-		var lob_dir: float = 1.0
-		if abs(velocity.x) > 0.1:
-			lob_dir = 1.0 if velocity.x > 0.0 else -1.0
-		var spawn_offset: Vector3 = Vector3(lob_dir * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
-		chunk.global_position = global_position + spawn_offset
-		var parent: Node = get_parent()
-		if parent == null:
-			push_error("PlayerController3D: cannot detach chunk — node has no parent")
-		else:
-			parent.add_child(chunk)
-			_chunk_node = chunk
-			chunk.add_collision_exception_with(self)
-			chunk.freeze = false
-			chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
-			var am := _get_audio_manager()
-			if am != null and am.detach_sfx != null:
-				am.detach_sfx.play()
-			_juice_detach_pop()
-			detach_fired.emit(global_position, chunk.global_position)
+	if prev_has and not _get_has_chunk(i):
+		_spawn_chunk(i)
 
-	if _recall_in_progress:
-		_recall_timer += delta
-		if _chunk_node == null or not is_instance_valid(_chunk_node):
-			_recall_in_progress = false
-		elif _recall_timer >= _RECALL_TRAVEL_TIME:
-			_recall_in_progress = false
-			var prior_hp: float = _current_state.current_hp
-			_current_state.current_hp = minf(_simulation.max_hp, prior_hp + _simulation.hp_cost_per_detach)
-			_current_state.has_chunk = true
-			if _chunk_node != null and is_instance_valid(_chunk_node):
-				var am := _get_audio_manager()
-				if am != null and am.recall_sfx != null:
-					am.recall_sfx.play()
-				_juice_recall_pop()
-				chunk_reabsorbed.emit(global_position, _chunk_node.global_position)
-				_chunk_node.queue_free()
-			_chunk_stuck_on_enemy = false
-			_chunk_stuck_enemy = null
-			_chunk_node = null
+	_tick_recall(i, delta)
 
-	# --- Chunk 2 detach/recall (SPEC-SCL-7, SPEC-SCL-8) ---
 
-	var prev_has_chunk_2: bool = _current_state.has_chunk_2
+func _spawn_chunk(i: int) -> void:
+	var chunk: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
+	assert(chunk != null, "chunk_3d.tscn root must be RigidBody3D")
+	var lob_dir: float = 1.0
+	if abs(velocity.x) > 0.1:
+		lob_dir = 1.0 if velocity.x > 0.0 else -1.0
+	var parent: Node = get_parent()
+	if parent == null:
+		push_error("PlayerController3D: cannot detach chunk — node has no parent")
+		return
+	chunk.global_position = global_position + Vector3(lob_dir * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
+	parent.add_child(chunk)
+	_chunks[i] = chunk
+	chunk.add_collision_exception_with(self)
+	chunk.freeze = false
+	chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
+	_juice_detach_pop()
+	if i == 0:
+		var am := _get_audio_manager()
+		if am != null and am.detach_sfx != null:
+			am.detach_sfx.play()
+		detach_fired.emit(global_position, chunk.global_position)
+	else:
+		detach_2_fired.emit(global_position, chunk.global_position)
 
-	var recall_2_pressed: bool = (
-		detach_2_just_pressed
-		and (not prev_has_chunk_2)
-		and _chunk_node_2 != null
-		and is_instance_valid(_chunk_node_2)
-		and (not _chunk_2_stuck_on_enemy)
-	)
-	if recall_2_pressed and not _recall_in_progress_2:
-		_recall_in_progress_2 = true
-		_recall_timer_2 = 0.0
-		if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
-			recall_2_started.emit(global_position, _chunk_node_2.global_position)
 
-	_current_state.has_chunk_2 = next_state.has_chunk_2
+func _tick_recall(i: int, delta: float) -> void:
+	if not _recall_in_progress[i]:
+		return
+	_recall_timer[i] += delta
+	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
+	if chunk == null or not is_instance_valid(chunk):
+		_recall_in_progress[i] = false
+		return
+	if _recall_timer[i] >= _RECALL_TRAVEL_TIME:
+		_recall_in_progress[i] = false
+		_current_state.current_hp = minf(_simulation.max_hp, _current_state.current_hp + _simulation.hp_cost_per_detach)
+		_set_has_chunk(i, true)
+		var am := _get_audio_manager()
+		if am != null and am.recall_sfx != null:
+			am.recall_sfx.play()
+		_juice_recall_pop()
+		_emit_chunk_reabsorbed(i, chunk.global_position)
+		chunk.queue_free()
+		_chunk_stuck[i] = false
+		_chunk_stuck_enemy[i] = null
+		_chunks[i] = null
 
-	if prev_has_chunk_2 and not _current_state.has_chunk_2:
-		var chunk_2: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
-		assert(chunk_2 != null, "chunk_3d.tscn root must be RigidBody3D")
-		# Lob direction: same as movement, or right if standing still.
-		var lob_dir_2: float = 1.0
-		if abs(velocity.x) > 0.1:
-			lob_dir_2 = 1.0 if velocity.x > 0.0 else -1.0
-		var spawn_offset_2: Vector3 = Vector3(lob_dir_2 * _DETACH_SPAWN_OFFSET, 0.0, 0.0)
-		chunk_2.global_position = global_position + spawn_offset_2
-		var parent_2: Node = get_parent()
-		if parent_2 == null:
-			push_error("PlayerController3D: cannot detach chunk 2 — node has no parent")
-		else:
-			parent_2.add_child(chunk_2)
-			_chunk_node_2 = chunk_2
-			chunk_2.add_collision_exception_with(self)
-			chunk_2.freeze = false
-			chunk_2.linear_velocity = Vector3(lob_dir_2 * detach_lob_horizontal, detach_lob_upward, 0.0)
-			_juice_detach_pop()
-			detach_2_fired.emit(global_position, chunk_2.global_position)
-
-	if _recall_in_progress_2:
-		_recall_timer_2 += delta
-		if _chunk_node_2 == null or not is_instance_valid(_chunk_node_2):
-			_recall_in_progress_2 = false
-		elif _recall_timer_2 >= _RECALL_TRAVEL_TIME:
-			_recall_in_progress_2 = false
-			var prior_hp_2: float = _current_state.current_hp
-			_current_state.current_hp = minf(_simulation.max_hp, prior_hp_2 + _simulation.hp_cost_per_detach)
-			_current_state.has_chunk_2 = true
-			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
-				var am := _get_audio_manager()
-				if am != null and am.recall_sfx != null:
-					am.recall_sfx.play()
-				_juice_recall_pop()
-				chunk_2_reabsorbed.emit(global_position, _chunk_node_2.global_position)
-				_chunk_node_2.queue_free()
-			_chunk_2_stuck_on_enemy = false
-			_chunk_2_stuck_enemy = null
-			_chunk_node_2 = null
 
 func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> void:
 	if not is_instance_valid(chunk):
 		return
-	if chunk == _chunk_node:
-		_chunk_node.linear_velocity = Vector3.ZERO
-		_chunk_node.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-		_chunk_node.freeze = true
-		_chunk_node.reparent(enemy, true)
-		_chunk_stuck_on_enemy = true
-		_chunk_stuck_enemy = enemy
-	elif chunk == _chunk_node_2:
-		_chunk_node_2.linear_velocity = Vector3.ZERO
-		_chunk_node_2.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-		_chunk_node_2.freeze = true
-		_chunk_node_2.reparent(enemy, true)
-		_chunk_2_stuck_on_enemy = true
-		_chunk_2_stuck_enemy = enemy
+	for i in 2:
+		if chunk == _chunks[i]:
+			chunk.linear_velocity = Vector3.ZERO
+			chunk.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+			chunk.freeze = true
+			chunk.reparent(enemy, true)
+			_chunk_stuck[i] = true
+			_chunk_stuck_enemy[i] = enemy
+			return
 
 
 func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
-	# Slot 1
-	if _chunk_stuck_on_enemy and _chunk_stuck_enemy != null and is_instance_valid(_chunk_stuck_enemy):
-		if _chunk_stuck_enemy.get_esm() == esm:
-			if _chunk_node != null and is_instance_valid(_chunk_node):
-				_chunk_node.queue_free()
-				_chunk_node = null
-				_current_state.has_chunk = true
-			_chunk_stuck_on_enemy = false
-			_chunk_stuck_enemy = null
-	# Slot 2
-	if _chunk_2_stuck_on_enemy and _chunk_2_stuck_enemy != null and is_instance_valid(_chunk_2_stuck_enemy):
-		if _chunk_2_stuck_enemy.get_esm() == esm:
-			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
-				_chunk_node_2.queue_free()
-				_chunk_node_2 = null
-				_current_state.has_chunk_2 = true
-			_chunk_2_stuck_on_enemy = false
-			_chunk_2_stuck_enemy = null
+	for i in 2:
+		var stuck_enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
+		if _chunk_stuck[i] and stuck_enemy != null and is_instance_valid(stuck_enemy):
+			if stuck_enemy.get_esm() == esm:
+				var chunk: RigidBody3D = _chunks[i] as RigidBody3D
+				if chunk != null and is_instance_valid(chunk):
+					chunk.queue_free()
+					_chunks[i] = null
+					_set_has_chunk(i, true)
+				_chunk_stuck[i] = false
+				_chunk_stuck_enemy[i] = null
+
+
+func _get_has_chunk(i: int) -> bool:
+	return _current_state.has_chunk if i == 0 else _current_state.has_chunk_2
+
+
+func _set_has_chunk(i: int, val: bool) -> void:
+	if i == 0:
+		_current_state.has_chunk = val
+	else:
+		_current_state.has_chunk_2 = val
+
+
+func _next_has_chunk(i: int, next: MovementSimulation.MovementState) -> bool:
+	return next.has_chunk if i == 0 else next.has_chunk_2
+
+
+func _emit_recall_started(i: int) -> void:
+	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
+	if chunk == null or not is_instance_valid(chunk):
+		return
+	if i == 0:
+		recall_started.emit(global_position, chunk.global_position)
+	else:
+		recall_2_started.emit(global_position, chunk.global_position)
+
+
+func _emit_chunk_reabsorbed(i: int, chunk_pos: Vector3) -> void:
+	if i == 0:
+		chunk_reabsorbed.emit(global_position, chunk_pos)
+	else:
+		chunk_2_reabsorbed.emit(global_position, chunk_pos)
 
 
 func _get_visual_node() -> Node3D:
 	return get_node_or_null("SlimeVisual") as Node3D
+
 
 func _juice_jump_stretch() -> void:
 	var vis: Node3D = _get_visual_node()
@@ -352,6 +317,7 @@ func _juice_jump_stretch() -> void:
 	var tween := create_tween()
 	tween.tween_property(vis, "scale", jump_stretch_scale, juice_tween_duration)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
+
 
 func _juice_land_squash() -> void:
 	var vis: Node3D = _get_visual_node()
@@ -362,6 +328,7 @@ func _juice_land_squash() -> void:
 	tween.tween_property(vis, "scale", squash, juice_tween_duration)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration * 1.2)
 
+
 func _juice_detach_pop() -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
@@ -370,6 +337,7 @@ func _juice_detach_pop() -> void:
 	var tween := create_tween()
 	tween.tween_property(vis, "scale", pop, juice_tween_duration * 0.5)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
+
 
 func _juice_recall_pop() -> void:
 	var vis: Node3D = _get_visual_node()
@@ -380,20 +348,25 @@ func _juice_recall_pop() -> void:
 	tween.tween_property(vis, "scale", pop, juice_tween_duration * 0.5)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
 
+
 func _get_audio_manager() -> Node:
 	if not is_inside_tree():
 		return null
 	var root: Node = get_tree().root
 	return root.get_node_or_null("AudioManager")
 
+
 func get_current_hp() -> float:
 	return _current_state.current_hp
+
 
 func has_chunk() -> bool:
 	return _current_state.has_chunk
 
+
 func has_chunk_2() -> bool:
 	return _current_state.has_chunk_2
+
 
 func is_wall_clinging_state() -> bool:
 	return _current_state.is_wall_clinging
