@@ -326,20 +326,18 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 	if _chunk_stuck_on_enemy and _chunk_stuck_enemy != null and is_instance_valid(_chunk_stuck_enemy):
 		if _chunk_stuck_enemy.get_esm() == esm:
 			if _chunk_node != null and is_instance_valid(_chunk_node):
-				if _chunk_node.get_parent() == _chunk_stuck_enemy:
-					_chunk_node.reparent(get_parent(), true)
-					_chunk_node.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
-					_chunk_node.freeze = false
+				_chunk_node.queue_free()
+				_chunk_node = null
+				_current_state.has_chunk = true
 			_chunk_stuck_on_enemy = false
 			_chunk_stuck_enemy = null
 	# Slot 2
 	if _chunk_2_stuck_on_enemy and _chunk_2_stuck_enemy != null and is_instance_valid(_chunk_2_stuck_enemy):
 		if _chunk_2_stuck_enemy.get_esm() == esm:
 			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
-				if _chunk_node_2.get_parent() == _chunk_2_stuck_enemy:
-					_chunk_node_2.reparent(get_parent(), true)
-					_chunk_node_2.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
-					_chunk_node_2.freeze = false
+				_chunk_node_2.queue_free()
+				_chunk_node_2 = null
+				_current_state.has_chunk_2 = true
 			_chunk_2_stuck_on_enemy = false
 			_chunk_2_stuck_enemy = null
 
