@@ -9,15 +9,15 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 5 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_CORE_SIM |
+| Revision | 6 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Core Simulation Agent |
 | Validation Status | — |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Test Breaker Agent: review `tests/fusion/test_fusion_resolver.gd` (primary suite, 20 failing tests, 2 passing). Write adversarial suite at `tests/fusion/test_fusion_resolver_adversarial.gd` covering partial-slot guard (only A filled, only B filled, both empty), double-fuse, fuse with null player, and no crash on any invalid input path. All tests must be headless-safe and in TDD red-phase. Spec is at `agent_context/agents/2_spec/fusion_rules_and_hybrid_spec.md`.
+Core Simulation Agent: implement `scripts/fusion/fusion_resolver.gd` — a pure `RefCounted` script with `class_name FusionResolver`, constants `FUSION_DURATION: float = 5.0` and `FUSION_MULTIPLIER: float = 1.5`, and two public methods `can_fuse(slot_manager: Object) -> bool` and `resolve_fusion(slot_manager: Object, player: Object) -> void`. No Node/Input/scene dependencies. All 38 failing tests (20 primary in `tests/fusion/test_fusion_resolver.gd` + 18 adversarial in `tests/fusion/test_fusion_resolver_adversarial.gd`) must pass after implementation. Spec at `agent_context/agents/2_spec/fusion_rules_and_hybrid_spec.md`. Existing test suite must remain green (`run_tests.sh` exits 0).
 
 ---
 

@@ -5,6 +5,56 @@ Review these after autopilot completes.
 
 ---
 
+### [fusion_rules_and_hybrid] TEST_BREAK — double-fuse no-op second call verification strategy
+
+**Would have asked:** The spec requires that calling resolve_fusion twice in a row is a no-op on the second call (slots are empty after first call so guard fails). Should the adversarial test verify this by checking the player double call count is still 1, or should it also verify slots remain empty on the second call?
+
+**Assumption made:** Both. Check that apply_fusion_effect_call_count == 1 (not 2) AND that both slots remain empty after the second call. This is the strictest interpretation: slot count confirms the guard fired, call count confirms resolve_fusion did not bypass it.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_BREAK — re-trigger timer reset verification without physics tick
+
+**Would have asked:** FRH-4-AC-7 says calling apply_fusion_effect twice resets the timer, not stacks it. PlayerController3D does not exist yet and cannot be instantiated headlessly without a scene. How do we test this via FusionResolver alone?
+
+**Assumption made:** Test via PlayerDouble only: call resolve_fusion twice with fills in between (first fuse consumes slots, refill, fuse again). Verify apply_fusion_effect_call_count == 2 and that the second call used the same duration/multiplier as the first (last_duration == 5.0, last_multiplier == 1.5). This verifies the resolver passes correct args to re-trigger; the reset-not-stack behavior is a PlayerController3D concern tested separately. Document the gap clearly.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_BREAK — NullSlotDouble: get_slot returns null on all indices
+
+**Would have asked:** The spec says can_fuse should return false when get_slot(0) returns null (FRH-2-AC-6). The primary suite tests a plain Object with no get_slot method at all. Should the adversarial suite additionally test a manager that HAS get_slot but returns null from it?
+
+**Assumption made:** Yes. Create a NullSlotDouble inner class with a get_slot method that returns null. This is a distinct vulnerability from the "no get_slot at all" case — an implementation that does has_method("get_slot") before calling, then calls without null-checking the return value, passes the primary suite but fails here.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_BREAK — FUSION_DURATION and FUSION_MULTIPLIER positivity check
+
+**Would have asked:** The ticket says to test that FUSION_DURATION and FUSION_MULTIPLIER are > 0. The primary suite checks their exact values (5.0 and 1.5). Should the adversarial suite redundantly check > 0, or test something orthogonal?
+
+**Assumption made:** Test immutability behavior: verify that calling resolve_fusion does not modify FUSION_DURATION or FUSION_MULTIPLIER on the instance (constants must remain unchanged after use). This catches a naive implementation that uses instance vars named the same as constants and mutates them during resolve_fusion. The primary suite only checks the values before any call; the adversarial test checks them again after a resolve_fusion call.
+
+**Confidence:** High
+
+---
+
+### [fusion_rules_and_hybrid] TEST_BREAK — resolve_fusion with player that has apply_fusion_effect but is a wrong-type Object
+
+**Would have asked:** Spec says push_error if player lacks apply_fusion_effect AND slots are still consumed. Should the adversarial suite verify that slots are consumed even when the player is a plain Object with no apply_fusion_effect method?
+
+**Assumption made:** Yes. Pass an Object that lacks apply_fusion_effect entirely. Verify: no crash, slots consumed (both empty after call). This is the exact path that triggers the push_error branch per spec FRH-3. The adversarial test documents this separately from the primary null-player test.
+
+**Confidence:** High
+
+---
+
 ### [fusion_rules_and_hybrid] TEST_DESIGN — PlayerDouble implementation strategy
 
 **Would have asked:** Should the PlayerDouble for tracking `apply_fusion_effect` calls be a preloaded external script, an autoload, or an inner class on the test file?
