@@ -41,10 +41,10 @@ func _on_body_entered(body: Node3D) -> void:
 			return
 		if _esm.get_state() == "weakened":
 			_esm.apply_infection_event()
-			chunk_attached.emit(chunk)
-			_attached_chunks.append(chunk)
 		else:
 			_esm.apply_weaken_event()
+		chunk_attached.emit(chunk)
+		_attached_chunks.append(chunk)
 
 
 func _on_body_exited(body: Node3D) -> void:
