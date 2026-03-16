@@ -90,25 +90,25 @@ func _sim_frame(sim: MovementSimulation, prior: MovementSimulation.MovementState
 func test_detach_chunk1_then_chunk2_both_out() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state()
-	state.has_chunk = true
-	state.has_chunk_2 = true
+	state.has_chunks[0] = true
+	state.has_chunks[1] = true
 	state.current_hp = 100.0
 
 	# Frame 1: detach chunk 1 only
 	state = _sim_frame(sim, state, true, false)
-	_assert_false(state.has_chunk,
-		"dc-1/a — after detach chunk 1: has_chunk=false")
-	_assert_true(state.has_chunk_2 == true,
+	_assert_false(state.has_chunks[0],
+		"dc-1/a — after detach chunk 1: has_chunks[0]=false")
+	_assert_true(state.has_chunks[1] == true,
 		"dc-1/b — chunk 2 still attached after detach chunk 1 only")
 	_assert_approx(state.current_hp, 75.0,
 		"dc-1/c — HP reduced once after detach chunk 1")
 
 	# Frame 2: detach chunk 2 only (chunk 1 already detached)
 	state = _sim_frame(sim, state, false, true)
-	_assert_false(state.has_chunk,
-		"dc-1/d — has_chunk stays false after detach chunk 2")
-	_assert_false(state.has_chunk_2,
-		"dc-1/e — has_chunk_2=false after detach chunk 2")
+	_assert_false(state.has_chunks[0],
+		"dc-1/d — has_chunks[0] stays false after detach chunk 2")
+	_assert_false(state.has_chunks[1],
+		"dc-1/e — has_chunks[1]=false after detach chunk 2")
 	_assert_approx(state.current_hp, 50.0,
 		"dc-1/f — HP reduced twice total: 100→75→50")
 
@@ -118,15 +118,15 @@ func test_detach_chunk1_then_chunk2_both_out() -> void:
 func test_detach_both_chunks_same_frame() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state()
-	state.has_chunk = true
-	state.has_chunk_2 = true
+	state.has_chunks[0] = true
+	state.has_chunks[1] = true
 	state.current_hp = 100.0
 
 	state = _sim_frame(sim, state, true, true)
-	_assert_false(state.has_chunk,
-		"dc-2/a — both detached same frame: has_chunk=false")
-	_assert_false(state.has_chunk_2,
-		"dc-2/b — both detached same frame: has_chunk_2=false")
+	_assert_false(state.has_chunks[0],
+		"dc-2/a — both detached same frame: has_chunks[0]=false")
+	_assert_false(state.has_chunks[1],
+		"dc-2/b — both detached same frame: has_chunks[1]=false")
 	_assert_approx(state.current_hp, 50.0,
 		"dc-2/c — dual detach same frame: HP=50 (100→75→50)")
 
@@ -142,29 +142,29 @@ func test_recall_chunk1_while_chunk2_detached() -> void:
 
 	# Start: both detached, HP=50 (post dual-detach state)
 	var state: MovementSimulation.MovementState = _make_state()
-	state.has_chunk = false
-	state.has_chunk_2 = false
+	state.has_chunks[0] = false
+	state.has_chunks[1] = false
 	state.current_hp = 50.0
 
-	# Controller-side recall of chunk 1: restores has_chunk and HP.
+	# Controller-side recall of chunk 1: restores has_chunks[0] and HP.
 	# Mirroring what PlayerController3D does at recall completion.
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk = true
+	state.has_chunks[0] = true
 
 	# Verify chunk 1 recalled, chunk 2 still detached
-	_assert_true(state.has_chunk == true,
-		"dc-3/a — chunk 1 recalled: has_chunk=true")
-	_assert_false(state.has_chunk_2,
-		"dc-3/b — chunk 2 still detached during chunk 1 recall: has_chunk_2=false")
+	_assert_true(state.has_chunks[0] == true,
+		"dc-3/a — chunk 1 recalled: has_chunks[0]=true")
+	_assert_false(state.has_chunks[1],
+		"dc-3/b — chunk 2 still detached during chunk 1 recall: has_chunks[1]=false")
 	_assert_approx(state.current_hp, 75.0,
 		"dc-3/c — HP restored to 75 after chunk 1 recall (50+25)")
 
 	# Run simulation frame to verify carry-forward
 	var result: MovementSimulation.MovementState = _sim_frame(sim, state, false, false)
-	_assert_true(result.has_chunk == true,
-		"dc-3/d — has_chunk carries forward true after recall")
-	_assert_false(result.has_chunk_2,
-		"dc-3/e — has_chunk_2 stays false (chunk 2 not recalled)")
+	_assert_true(result.has_chunks[0] == true,
+		"dc-3/d — has_chunks[0] carries forward true after recall")
+	_assert_false(result.has_chunks[1],
+		"dc-3/e — has_chunks[1] stays false (chunk 2 not recalled)")
 
 
 # DC-4: Simulate recall of chunk 2 while chunk 1 stays detached.
@@ -173,28 +173,28 @@ func test_recall_chunk2_while_chunk1_detached() -> void:
 
 	# Start: both detached, HP=50
 	var state: MovementSimulation.MovementState = _make_state()
-	state.has_chunk = false
-	state.has_chunk_2 = false
+	state.has_chunks[0] = false
+	state.has_chunks[1] = false
 	state.current_hp = 50.0
 
-	# Controller-side recall of chunk 2: restores has_chunk_2 and HP.
+	# Controller-side recall of chunk 2: restores has_chunks[1] and HP.
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk_2 = true
+	state.has_chunks[1] = true
 
 	# Verify chunk 2 recalled, chunk 1 still detached
-	_assert_false(state.has_chunk,
-		"dc-4/a — chunk 1 still detached: has_chunk=false")
-	_assert_true(state.has_chunk_2 == true,
-		"dc-4/b — chunk 2 recalled: has_chunk_2=true")
+	_assert_false(state.has_chunks[0],
+		"dc-4/a — chunk 1 still detached: has_chunks[0]=false")
+	_assert_true(state.has_chunks[1] == true,
+		"dc-4/b — chunk 2 recalled: has_chunks[1]=true")
 	_assert_approx(state.current_hp, 75.0,
 		"dc-4/c — HP restored to 75 after chunk 2 recall (50+25)")
 
 	# Run simulation frame to verify carry-forward
 	var result: MovementSimulation.MovementState = _sim_frame(sim, state, false, false)
-	_assert_false(result.has_chunk,
-		"dc-4/d — has_chunk stays false (chunk 1 not recalled)")
-	_assert_true(result.has_chunk_2 == true,
-		"dc-4/e — has_chunk_2 carries forward true after recall")
+	_assert_false(result.has_chunks[0],
+		"dc-4/d — has_chunks[0] stays false (chunk 1 not recalled)")
+	_assert_true(result.has_chunks[1] == true,
+		"dc-4/e — has_chunks[1] carries forward true after recall")
 
 
 # ===========================================================================
@@ -215,19 +215,19 @@ func test_hp_balance_dual_detach_and_dual_recall() -> void:
 
 	# Recall chunk 1 (controller-side)
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk = true
+	state.has_chunks[0] = true
 	_assert_approx(state.current_hp, 75.0,
 		"dc-5/b — after recall chunk 1: HP=75")
 
 	# Recall chunk 2 (controller-side)
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk_2 = true
+	state.has_chunks[1] = true
 	_assert_approx(state.current_hp, 100.0,
 		"dc-5/c — after recall chunk 2: HP=100 (restored to max)")
 
-	_assert_true(state.has_chunk == true,
+	_assert_true(state.has_chunks[0] == true,
 		"dc-5/d — chunk 1 restored after full cycle")
-	_assert_true(state.has_chunk_2 == true,
+	_assert_true(state.has_chunks[1] == true,
 		"dc-5/e — chunk 2 restored after full cycle")
 
 
@@ -249,13 +249,13 @@ func test_hp_floor_clamp_dual_detach_then_recall() -> void:
 
 	# Recall chunk 1: 0+25=25
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk = true
+	state.has_chunks[0] = true
 	_assert_approx(state.current_hp, 25.0,
 		"dc-6/b — after recall chunk 1: HP=25")
 
 	# Recall chunk 2: 25+25=50
 	state.current_hp = minf(sim.max_hp, state.current_hp + sim.hp_cost_per_detach)
-	state.has_chunk_2 = true
+	state.has_chunks[1] = true
 	_assert_approx(state.current_hp, 50.0,
 		"dc-6/c — after recall chunk 2: HP=50")
 

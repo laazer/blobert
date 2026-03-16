@@ -44,12 +44,12 @@
 #   SPEC-58 — HP floor clamp using min_hp
 #   SPEC-59 — simulate() signature remains 8 args (no HP args)
 #   SPEC-61 — prior_state.current_hp immutability
-#   SPEC-SCL-1 — MovementState new field: has_chunk_2
-#   SPEC-SCL-2 — has_chunk_2 default semantics; simulate() never sets has_chunk_2=true
+#   SPEC-SCL-1 — MovementState new field: has_chunks (replaces has_chunk_2)
+#   SPEC-SCL-2 — has_chunks default semantics; simulate() never sets has_chunks[i]=true
 #   SPEC-SCL-3 — Detach step 2 (step 19): detach_2 eligibility, result, order of operations
 #   SPEC-SCL-4 — simulate() extended 9-arg signature with detach_2_just_pressed as last arg
 #   SPEC-SCL-5 — HP reduction step 2 (step 20) on detach_2 frames; reads result.current_hp
-#   SPEC-SCL-6 — Independence invariant: has_chunk and has_chunk_2 are fully independent
+#   SPEC-SCL-6 — Independence invariant: has_chunks[0] and has_chunks[1] are fully independent
 
 class_name MovementSimulation
 extends RefCounted
@@ -69,9 +69,9 @@ extends RefCounted
 # AC-15.3: jump_consumed: bool = false
 # AC-25.1: is_wall_clinging: bool = false
 # AC-25.1: cling_timer: float = 0.0
-# AC-46.1: has_chunk: bool = true (player starts holding chunk)
+# AC-46.1: has_chunks[0] = true (slot 1), has_chunks[1] = true (slot 2) at construction
 # AC-54.3: current_hp: float = 100.0 (default literal)
-# SPEC-SCL-1: has_chunk_2: bool = true (player starts with both chunks)
+# SPEC-SCL-1: has_chunks: Array = [true, true] (index 0 = slot 1, index 1 = slot 2)
 # ---------------------------------------------------------------------------
 class MovementState:
 	var velocity: Vector2 = Vector2.ZERO
@@ -80,9 +80,8 @@ class MovementState:
 	var jump_consumed: bool = false
 	var is_wall_clinging: bool = false
 	var cling_timer: float = 0.0
-	var has_chunk: bool = true
+	var has_chunks: Array = [true, true]  # index 0 = slot 1, index 1 = slot 2
 	var current_hp: float = 100.0
-	var has_chunk_2: bool = true
 
 
 # ---------------------------------------------------------------------------
@@ -235,11 +234,11 @@ var min_hp: float = 0.0
 #         Note: step 15 is the is_on_floor pass-through above; this comment
 #         block continues the sequence for the detach step below.
 #  17.  Chunk detach (SPEC-48):
-#         detach_eligible = detach_just_pressed AND prior_state.has_chunk
-#         if detach_eligible → result.has_chunk = false
-#         else → result.has_chunk = prior_state.has_chunk (carry-forward)
-#         Reads: detach_just_pressed, prior_state.has_chunk
-#         Writes: result.has_chunk only — no other fields affected
+#         detach_eligible = detach_just_pressed AND prior_state.has_chunks[0]
+#         if detach_eligible → result.has_chunks[0] = false
+#         else → result.has_chunks[0] = prior_state.has_chunks[0] (carry-forward)
+#         Reads: detach_just_pressed, prior_state.has_chunks[0]
+#         Writes: result.has_chunks[0] only — no other fields affected
 #  18.  HP reduction on detach (SPEC-56):
 #         if detach_eligible →
 #             result.current_hp = max(min_hp, prior_state.current_hp - hp_cost_per_detach)
@@ -248,12 +247,12 @@ var min_hp: float = 0.0
 #         Reads: detach_eligible, prior_state.current_hp, hp_cost_per_detach, min_hp
 #         Writes: result.current_hp only — no other fields affected
 #  19.  Chunk 2 detach (SPEC-SCL-3):
-#         detach_2_eligible = detach_2_just_pressed AND prior_state.has_chunk_2
-#         if detach_2_eligible → result.has_chunk_2 = false
-#         else → result.has_chunk_2 = prior_state.has_chunk_2 (carry-forward)
-#         Reads: detach_2_just_pressed, prior_state.has_chunk_2
-#         Writes: result.has_chunk_2 only — no other fields affected
-#         Independence: has_chunk_2 is fully independent of has_chunk (SPEC-SCL-6)
+#         detach_2_eligible = detach_2_just_pressed AND prior_state.has_chunks[1]
+#         if detach_2_eligible → result.has_chunks[1] = false
+#         else → result.has_chunks[1] = prior_state.has_chunks[1] (carry-forward)
+#         Reads: detach_2_just_pressed, prior_state.has_chunks[1]
+#         Writes: result.has_chunks[1] only — no other fields affected
+#         Independence: has_chunks[1] is fully independent of has_chunks[0] (SPEC-SCL-6)
 #  20.  HP reduction for chunk 2 detach (SPEC-SCL-5):
 #         if detach_2_eligible →
 #             result.current_hp = max(min_hp, result.current_hp - hp_cost_per_detach)
@@ -491,22 +490,22 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 	#
 	# Appended as the final step after all physics steps are complete.
 	# detach_eligible requires both a fresh detach press AND the chunk still
-	# being attached. When prior_state.has_chunk is already false, a detach
+	# being attached. When prior_state.has_chunks[0] is already false, a detach
 	# press is a deterministic no-op — it does not error or re-detach.
 	#
-	# simulate() never sets result.has_chunk = true. Only M1-007 (recall),
+	# simulate() never sets result.has_chunks[0] = true. Only M1-007 (recall),
 	# executed by the controller, performs the false → true transition
-	# (SPEC-47). The field initializer (has_chunk: bool = true) provides the
-	# only true source at construction time.
+	# (SPEC-47). The array initializer (has_chunks: Array = [true, true]) provides
+	# the only true source at construction time.
 	#
-	# This step reads only: detach_just_pressed, prior_state.has_chunk
-	# This step writes only: result.has_chunk
+	# This step reads only: detach_just_pressed, prior_state.has_chunks[0]
+	# This step writes only: result.has_chunks[0]
 	# No velocity, timer, floor, or cling fields are read or written here.
-	var detach_eligible: bool = detach_just_pressed and prior_state.has_chunk
+	var detach_eligible: bool = detach_just_pressed and prior_state.has_chunks[0]
 	if detach_eligible:
-		result.has_chunk = false
+		result.has_chunks[0] = false
 	else:
-		result.has_chunk = prior_state.has_chunk
+		result.has_chunks[0] = prior_state.has_chunks[0]
 
 	# --- 18. HP reduction on detach (SPEC-56) ---
 	#
@@ -531,22 +530,22 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 	# --- 19. Chunk 2 detach (SPEC-SCL-3) ---
 	#
 	# Independent second-chunk detach step. Mirrors step 17 exactly but
-	# operates on has_chunk_2 and detach_2_just_pressed. The two chunk fields
-	# are strictly independent: no step reads has_chunk to determine
-	# has_chunk_2 behavior or vice versa (SPEC-SCL-6).
+	# operates on has_chunks[1] and detach_2_just_pressed. The two chunk slots
+	# are strictly independent: no step reads has_chunks[0] to determine
+	# has_chunks[1] behavior or vice versa (SPEC-SCL-6).
 	#
-	# simulate() never sets result.has_chunk_2 = true. Only the controller
+	# simulate() never sets result.has_chunks[1] = true. Only the controller
 	# (PlayerController3D) performs the false→true transition on recall
-	# completion (SPEC-SCL-2). The field initializer (has_chunk_2: bool = true)
+	# completion (SPEC-SCL-2). The array initializer (has_chunks: Array = [true, true])
 	# provides the only true source at construction time.
 	#
-	# This step reads only: detach_2_just_pressed, prior_state.has_chunk_2
-	# This step writes only: result.has_chunk_2
-	var detach_2_eligible: bool = detach_2_just_pressed and prior_state.has_chunk_2
+	# This step reads only: detach_2_just_pressed, prior_state.has_chunks[1]
+	# This step writes only: result.has_chunks[1]
+	var detach_2_eligible: bool = detach_2_just_pressed and prior_state.has_chunks[1]
 	if detach_2_eligible:
-		result.has_chunk_2 = false
+		result.has_chunks[1] = false
 	else:
-		result.has_chunk_2 = prior_state.has_chunk_2
+		result.has_chunks[1] = prior_state.has_chunks[1]
 
 	# --- 20. HP reduction for chunk 2 detach (SPEC-SCL-5) ---
 	#

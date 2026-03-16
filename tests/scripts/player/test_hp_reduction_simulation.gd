@@ -89,7 +89,7 @@ func _make_prior(vx: float, vy: float, on_floor: bool, has_chunk: bool) -> Movem
 	var s: MovementSimulation.MovementState = MovementSimulation.MovementState.new()
 	s.velocity = Vector2(vx, vy)
 	s.is_on_floor = on_floor
-	s.has_chunk = has_chunk
+	s.has_chunks[0] = has_chunk
 	return s
 
 
@@ -128,8 +128,8 @@ func test_spec54_current_hp_isolated_from_other_fields() -> void:
 		"spec54/AC-54.5 — current_hp write does not affect is_wall_clinging")
 	_assert_exact(state.cling_timer, 0.0,
 		"spec54/AC-54.5 — current_hp write does not affect cling_timer")
-	_assert_true(state.has_chunk == true,
-		"spec54/AC-54.5 — current_hp write does not affect has_chunk")
+	_assert_true(state.has_chunks[0] == true,
+		"spec54/AC-54.5 — current_hp write does not affect has_chunks[0]")
 
 
 # AC-54.3 via simulate(): result of simulate() carries current_hp; field is accessible.
@@ -212,8 +212,8 @@ func test_spec56_hp_and_detach_same_frame() -> void:
 	prior.current_hp = 100.0  # AC-60.4
 	var result: MovementSimulation.MovementState = sim.simulate(
 		prior, 0.0, false, false, false, 0.0, true, 0.016)
-	_assert_false(result.has_chunk,
-		"spec56/AC-56.3 — detach frame: result.has_chunk=false (step 17 fired)")
+	_assert_false(result.has_chunks[0],
+		"spec56/AC-56.3 — detach frame: result.has_chunks[0]=false (step 17 fired)")
 	_assert_exact(result.current_hp, 75.0,
 		"spec56/AC-56.3 — detach frame: result.current_hp=75.0 (step 18 fired on same frame)")
 
@@ -325,7 +325,7 @@ func test_spec58_hp_at_floor_stays_at_floor_and_detach_fires() -> void:
 		prior, 0.0, false, false, false, 0.0, true, 0.016)
 	_assert_exact(result.current_hp, 0.0,
 		"spec58/AC-58.3 — prior_hp=0.0 + detach: result.current_hp stays at 0.0 (floor)")
-	_assert_false(result.has_chunk,
+	_assert_false(result.has_chunks[0],
 		"spec58/AC-58.4 — detach fires even when HP is at floor (not gated by HP)")
 
 
@@ -339,8 +339,8 @@ func test_spec56_hp_reduces_with_delta_zero() -> void:
 		prior, 0.0, false, false, false, 0.0, true, 0.0)
 	_assert_exact(result.current_hp, 75.0,
 		"spec56/AC-56.7 — delta=0.0 + detach: HP still reduces from 100.0 to 75.0")
-	_assert_false(result.has_chunk,
-		"spec56/AC-56.7 — delta=0.0 + detach: has_chunk=false on same frame")
+	_assert_false(result.has_chunks[0],
+		"spec56/AC-56.7 — delta=0.0 + detach: has_chunks[0]=false on same frame")
 
 
 # AC-56.8: Custom hp_cost_per_detach — formula uses configured value not hardcoded 25.0.
@@ -493,8 +493,8 @@ func test_spec56_second_detach_press_is_noop_for_hp() -> void:
 	prior_f1.current_hp = 100.0  # AC-60.4
 	var result_f1: MovementSimulation.MovementState = sim.simulate(
 		prior_f1, 0.0, false, false, false, 0.0, true, 0.016)
-	_assert_false(result_f1.has_chunk,
-		"spec56 — frame 1: detach fired, has_chunk=false")
+	_assert_false(result_f1.has_chunks[0],
+		"spec56 — frame 1: detach fired, has_chunks[0]=false")
 	_assert_exact(result_f1.current_hp, 75.0,
 		"spec56 — frame 1: HP reduced from 100.0 to 75.0")
 
@@ -502,8 +502,8 @@ func test_spec56_second_detach_press_is_noop_for_hp() -> void:
 	# HP must remain at 75.0 (not reduce again to 50.0)
 	var result_f2: MovementSimulation.MovementState = sim.simulate(
 		result_f1, 0.0, false, false, false, 0.0, true, 0.016)
-	_assert_false(result_f2.has_chunk,
-		"spec56 — frame 2: has_chunk still false (no recall in M1-006)")
+	_assert_false(result_f2.has_chunks[0],
+		"spec56 — frame 2: has_chunks[0] still false (no recall in M1-006)")
 	_assert_exact(result_f2.current_hp, 75.0,
 		"spec56 — frame 2: HP unchanged at 75.0 (second detach is no-op when has_chunk=false)")
 

@@ -67,8 +67,8 @@ func _ready() -> void:
 	_simulation.wall_jump_height = wall_jump_height
 	_simulation.wall_jump_horizontal_speed = wall_jump_horizontal_speed
 	_current_state = MovementSimulation.MovementState.new()
-	_current_state.has_chunk = true
-	_current_state.has_chunk_2 = true
+	_current_state.has_chunks[0] = true
+	_current_state.has_chunks[1] = true
 	_base_max_speed = _simulation.max_speed
 
 	var root: Node = get_parent()
@@ -275,18 +275,15 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 
 
 func _get_has_chunk(i: int) -> bool:
-	return _current_state.has_chunk if i == 0 else _current_state.has_chunk_2
+	return _current_state.has_chunks[i]
 
 
 func _set_has_chunk(i: int, val: bool) -> void:
-	if i == 0:
-		_current_state.has_chunk = val
-	else:
-		_current_state.has_chunk_2 = val
+	_current_state.has_chunks[i] = val
 
 
 func _next_has_chunk(i: int, next: MovementSimulation.MovementState) -> bool:
-	return next.has_chunk if i == 0 else next.has_chunk_2
+	return next.has_chunks[i]
 
 
 func _emit_recall_started(i: int) -> void:
@@ -361,11 +358,11 @@ func get_current_hp() -> float:
 
 
 func has_chunk() -> bool:
-	return _current_state.has_chunk
+	return _current_state.has_chunks[0]
 
 
 func has_chunk_2() -> bool:
-	return _current_state.has_chunk_2
+	return _current_state.has_chunks[1]
 
 
 func is_wall_clinging_state() -> bool:
