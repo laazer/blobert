@@ -304,14 +304,16 @@ func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> vo
 	if not is_instance_valid(chunk):
 		return
 	if chunk == _chunk_node:
-		_chunk_node.freeze = true
 		_chunk_node.linear_velocity = Vector3.ZERO
+		_chunk_node.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		_chunk_node.freeze = true
 		_chunk_node.reparent(enemy, true)
 		_chunk_stuck_on_enemy = true
 		_chunk_stuck_enemy = enemy
 	elif chunk == _chunk_node_2:
-		_chunk_node_2.freeze = true
 		_chunk_node_2.linear_velocity = Vector3.ZERO
+		_chunk_node_2.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		_chunk_node_2.freeze = true
 		_chunk_node_2.reparent(enemy, true)
 		_chunk_2_stuck_on_enemy = true
 		_chunk_2_stuck_enemy = enemy
@@ -324,6 +326,7 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 			if _chunk_node != null and is_instance_valid(_chunk_node):
 				if _chunk_node.get_parent() == _chunk_stuck_enemy:
 					_chunk_node.reparent(get_parent(), true)
+					_chunk_node.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 					_chunk_node.freeze = false
 			_chunk_stuck_on_enemy = false
 			_chunk_stuck_enemy = null
@@ -333,6 +336,7 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 			if _chunk_node_2 != null and is_instance_valid(_chunk_node_2):
 				if _chunk_node_2.get_parent() == _chunk_2_stuck_enemy:
 					_chunk_node_2.reparent(get_parent(), true)
+					_chunk_node_2.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 					_chunk_node_2.freeze = false
 			_chunk_2_stuck_on_enemy = false
 			_chunk_2_stuck_enemy = null
