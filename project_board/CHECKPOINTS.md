@@ -5,6 +5,78 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-18T03:00:00Z (Test Breaker Agent — player_hud adversarial extension)
+
+### [player_hud] TestBreak — Rect2.intersects shared-edge semantics
+
+**Would have asked:** Godot 4's `Rect2.intersects()` documentation states it returns false when rectangles share only an edge. Should the overlap tests depend on this semantic, or add an explicit unit test to document and confirm this behavior so future readers know the oracle is NOT a one-pixel-error source?
+
+**Assumption made:** Added a dedicated unit test (`test_adv_rect2_intersects_shared_edge_semantics`) that verifies Godot's `Rect2.intersects` returns false for rectangles that share exactly one edge. This test is purely a semantic oracle check — it documents the engine behavior so that if Godot's behavior ever changes, the test suite surfaces it before the overlap assertions become unreliable.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — HPBar exact class string guard
+
+**Would have asked:** The existing T-6.1 asserts `is ProgressBar` and `not is TextureProgressBar`. Would a node of type HSlider (which IS a Range, IS NOT a TextureProgressBar, IS NOT a ProgressBar) be caught by T-6.1? Yes it would — but should there be a `get_class()` string test as a separate mutation matrix target to make the failure mode explicit and unambiguous?
+
+**Assumption made:** Added `test_adv_hpbar_exact_class_string` that asserts `hp_bar.get_class() == "ProgressBar"`. This catches any non-ProgressBar Range subtype (HSlider, ScrollBar, VSlider, SpinBox) that would fool a pure `is Range` test. The `get_class()` check is the most conservative mutation-matrix target and is deterministic.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — Contextual prompts Y >= 1780 region guard
+
+**Would have asked:** T-6.10 asserts contextual prompts don't overlap the always-visible set (which ends at Y=266), but a node repositioned to Y=300 would pass T-6.10 while still being in the top-left status area, violating the spec requirement. Should a dedicated Y-range guard be added?
+
+**Assumption made:** Added `test_adv_contextual_prompts_in_bottom_region` that asserts each contextual prompt node has `offset_top >= 1780` and `offset_left >= 1300`. This fails for the current scene (where AbsorbPromptLabel is at Y=164, X=20) and passes only after correct repositioning to Y=1800, X=1400.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — FusionActiveLabel in left panel region
+
+**Would have asked:** The bonus exact-offset test covers the precise FusionActiveLabel position, but there is no structural range test. Should a region-boundary test assert X < 400 and Y in 310–340 for FusionActiveLabel to catch off-by-one repositioning?
+
+**Assumption made:** Added `test_adv_fusion_active_label_in_left_panel` that asserts `offset_left >= 20`, `offset_left < 400`, `offset_right <= 400`, `offset_top >= 310`, `offset_bottom <= 340`. This fails for the current scene (FusionActiveLabel is at Y=212–236) and is a distinct failure mode from the exact-offset assertion.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — ColorRect node type preservation for slot icons
+
+**Would have asked:** T-6.4 verifies node paths resolve to non-null but does not check the type. If MutationIcon1 is accidentally made a Panel instead of a ColorRect, `infection_ui.gd`'s `get_node_or_null("MutationIcon1") as ColorRect` returns null and slot colors stop updating — silently. Should a type-guard test be added?
+
+**Assumption made:** Added `test_adv_colorect_node_types` that asserts MutationIcon1, MutationIcon2, and MutationIcon all resolve as non-null ColorRect instances (not just non-null nodes). This targets the case where a node is present but the wrong type.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — HPBar initial value scene default
+
+**Would have asked:** T-6.3 checks min_value and max_value but not the initial `value`. The spec (Part 2.2) requires `value = 100.0`. If the implementation sets `value = 0`, the bar starts empty in the editor. Should a test assert `value == 100.0` on the fresh scene instance?
+
+**Assumption made:** Added `test_adv_hpbar_initial_value` that asserts `(hp_bar as Range).value == 100.0`. This fails pre-implementation (current TextureProgressBar has no `value` set explicitly, defaulting to 0.0 in Godot 4) and passes after correct implementation.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestBreak — Hints container not hidden by scene default
+
+**Would have asked:** The spec says `Hints` has no explicit `visible = false` in the tscn (visibility is controlled per-child-label at runtime via InputHintsConfig). If an implementation accidentally adds `visible = false` to the Hints Control node itself, all hint labels become permanently hidden regardless of config. Should a test assert `Hints.visible == true` in the scene default?
+
+**Assumption made:** Added `test_adv_hints_container_visible_by_default` that asserts `Hints.visible == true` in the fresh scene instance. This is a regression guard that catches a naive "hide all hints" implementation that hides the container instead of the labels.
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-18T01:00:00Z
 Tickets queued: player_hud.md (Test Designer Agent)
 

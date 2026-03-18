@@ -9,15 +9,15 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_PRESENTATION |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Presentation Agent |
 | Validation Status | Proceed |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Test Breaker Agent: verify that `tests/ui/test_player_hud_layout.gd` is in a stable red phase (77 failures, 149 passes from this file). Confirm all 12 T-6.x test cases fail only for the expected pre-implementation reasons. Confirm no existing suite regressions (all other 34 suites remain at 0 failures). Sign off for Implementation Agent to proceed with Task 2 (game_ui.tscn layout) and Task 3 (input_hints_config.gd default change).
+Presentation Agent: implement Task 2 (game_ui.tscn layout repositioning per spec) and Task 3 (input_hints_config.gd default `true` → `false`). All 86 test failures in `tests/ui/test_player_hud_layout.gd` are pre-implementation red-phase failures — zero are unexpected. All 34 other suites remain at 0 failures. Adversarial suite added 8 new failure modes (ADV-1 through ADV-8) targeting: HPBar exact class string, contextual prompt Y-region floor, FusionActiveLabel Y-region bounds, ColorRect type preservation, HPBar initial value=100.0, Hints container visibility, dynamic slot name patterns, and Rect2.intersects shared-edge semantics oracle.
 
 ---
 

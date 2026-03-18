@@ -782,6 +782,385 @@ func test_bonus_exact_offsets_hints_children() -> void:
 
 
 # ---------------------------------------------------------------------------
+# ADVERSARIAL EXTENSION — Test Breaker Agent
+#
+# 8 distinct failure modes targeting blind spots in the T-6.x suite.
+# All tests are deterministic and reproducible. None change expected outputs.
+# Each test is annotated with the mutation vector it defends against.
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# ADV-1 — Rect2.intersects shared-edge semantics oracle
+#
+# Mutation vector: An implementation that checks rect overlap with ">=" instead
+# of ">" would incorrectly flag shared-edge rectangles as overlapping. The spec
+# relies on Godot's Rect2.intersects() returning false for shared-edge pairs
+# (e.g., HPBar bottom=28 and HPLabel top=28 are adjacent, not overlapping).
+# This test documents and verifies that oracle assumption with no scene loading.
+# If Godot's semantics ever change, this test surfaces it before the overlap
+# suite becomes unreliable.
+#
+# Red phase: PASSES (engine behavior check, not impl-dependent).
+# Green phase: PASSES (regression guard only).
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_rect2_intersects_shared_edge_semantics() -> void:
+	# Two rectangles sharing only their right/left edge — should NOT intersect.
+	var r1: Rect2 = Rect2(Vector2(20.0, 8.0), Vector2(380.0, 20.0))   # HPBar spec rect
+	var r2: Rect2 = Rect2(Vector2(20.0, 28.0), Vector2(380.0, 26.0))  # one pixel below HPBar
+
+	# Shared edge at Y=28: r1's bottom edge equals r2's top edge.
+	# Godot 4 Rect2.intersects() excludes shared edges — returns false.
+	_assert_false(
+		r1.intersects(r2),
+		"adv-1_shared_edge_y -- Rect2.intersects must return false for rectangles sharing only a Y edge (Godot 4 exclusive-edge semantics)"
+	)
+
+	# Same for X axis: two rects sharing only a right/left edge.
+	var r3: Rect2 = Rect2(Vector2(20.0, 200.0), Vector2(26.0, 26.0))  # MutationIcon1 spec rect
+	var r4: Rect2 = Rect2(Vector2(46.0, 200.0), Vector2(348.0, 26.0)) # starts at r3's right edge
+
+	_assert_false(
+		r3.intersects(r4),
+		"adv-1_shared_edge_x -- Rect2.intersects must return false for rectangles sharing only an X edge (Godot 4 exclusive-edge semantics)"
+	)
+
+	# Confirm that actual overlap (1 pixel interior) DOES return true (oracle sanity).
+	var r5: Rect2 = Rect2(Vector2(20.0, 200.0), Vector2(26.0, 26.0))
+	var r6: Rect2 = Rect2(Vector2(45.0, 200.0), Vector2(348.0, 26.0)) # overlaps by 1px at X=45
+
+	_assert_true(
+		r5.intersects(r6),
+		"adv-1_actual_overlap -- Rect2.intersects must return true for rectangles with 1px interior overlap (oracle sanity check)"
+	)
+
+
+# ---------------------------------------------------------------------------
+# ADV-2 — HPBar exact class string (HSlider / non-ProgressBar Range mutation)
+#
+# Mutation vector: An implementation that substitutes HSlider, VSlider, SpinBox,
+# or ScrollBar for ProgressBar would pass T-6.2 (is Range), would NOT pass
+# T-6.1 (is ProgressBar), BUT the goal here is a mutation-matrix complement:
+# assert get_class() == "ProgressBar" to make the exact Godot built-in class
+# unambiguous and give a clear failure message naming the actual wrong class.
+#
+# Red phase: FAILS (current scene uses TextureProgressBar —
+#   get_class() == "TextureProgressBar", not "ProgressBar").
+# Green phase: PASSES.
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_hpbar_exact_class_string() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-2_hpbar_exact_class", "game_ui.tscn failed to load")
+		return
+	var hp_bar: Node = ui.get_node_or_null("HPBar")
+	if hp_bar == null:
+		_fail("adv-2_hpbar_exact_class", "HPBar node not found in game_ui.tscn")
+		_free_ui(ui)
+		return
+
+	# get_class() returns the exact Godot built-in class string, unaffected by
+	# script inheritance. This distinguishes ProgressBar from all other Range
+	# subtypes (HSlider, VSlider, ScrollBar, SpinBox, TextureProgressBar).
+	_assert_true(
+		hp_bar.get_class() == "ProgressBar",
+		"adv-2_hpbar_exact_class -- HPBar.get_class() must be 'ProgressBar'; got '"
+		+ hp_bar.get_class() + "' -- catches HSlider/VSlider/ScrollBar substitutions that satisfy 'is Range'"
+	)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-3 — Contextual prompts must be in the center-bottom region (Y >= 1780)
+#
+# Mutation vector: An implementation that repositions AbsorbPromptLabel,
+# FusePromptLabel, AbsorbFeedbackLabel to Y=300 (below the mutation panel but
+# above the 1780 floor) would pass T-6.10 (no overlap with always-visible set
+# which ends at Y=266) but violate the spec's center-bottom region requirement.
+# This test catches that failure mode with an explicit Y lower bound.
+#
+# Red phase: FAILS (current scene has all three at Y ~164–196).
+# Green phase: PASSES (spec positions at Y=1800).
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_contextual_prompts_in_bottom_region() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-3_contextual_bottom_region", "game_ui.tscn failed to load")
+		return
+
+	var contextual_names: Array[String] = [
+		"AbsorbPromptLabel", "FusePromptLabel", "AbsorbFeedbackLabel"
+	]
+
+	for node_name in contextual_names:
+		var n: Control = ui.get_node_or_null(node_name) as Control
+		if n == null:
+			_fail("adv-3_contextual_bottom_region", "node '" + node_name + "' not found")
+			_free_ui(ui)
+			return
+
+		# Spec Region 6: Y range 1800–1870, X range 1400–1800.
+		# Conservative floor: offset_top >= 1780 (20px margin below spec minimum).
+		# This also catches off-by-one repositioning to Y=1799.
+		_assert_true(
+			n.offset_top >= 1780.0,
+			"adv-3_" + node_name + "_top_ge_1780 -- contextual prompt must be in center-bottom region (offset_top >= 1780); got "
+			+ str(n.offset_top) + " -- catches nodes moved to Y~300 which pass T-6.10 but violate spec region"
+		)
+
+		# X lower bound: offset_left >= 1300 (not in top-left status strip).
+		_assert_true(
+			n.offset_left >= 1300.0,
+			"adv-3_" + node_name + "_left_ge_1300 -- contextual prompt must not be in left panel (offset_left >= 1300); got "
+			+ str(n.offset_left)
+		)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-4 — FusionActiveLabel in left panel (X < 400, Y in 310–340)
+#
+# Mutation vector: An implementation that skips repositioning FusionActiveLabel
+# (currently at Y=212–236) to Y=310–340 would pass T-6.7 only if it also moves
+# other nodes. But a partial implementation that moves status strip nodes without
+# moving FusionActiveLabel would leave it in the mid-panel range. This structural
+# range test provides an explicit Y floor/ceiling assertion independent of the
+# exact-offset bonus test.
+#
+# Red phase: FAILS (current FusionActiveLabel offset_top = 212.0, spec = 310.0).
+# Green phase: PASSES.
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_fusion_active_label_in_left_panel() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-4_fusion_label_region", "game_ui.tscn failed to load")
+		return
+
+	var n: Control = ui.get_node_or_null("FusionActiveLabel") as Control
+	if n == null:
+		_fail("adv-4_fusion_label_region", "FusionActiveLabel not found in game_ui.tscn")
+		_free_ui(ui)
+		return
+
+	# Region 3 spec: X 20–300, Y 310–340.
+	_assert_true(
+		n.offset_left >= 20.0 and n.offset_left < 400.0,
+		"adv-4_fusion_label_x_in_left_panel -- FusionActiveLabel offset_left must be in [20, 400); got "
+		+ str(n.offset_left)
+	)
+	_assert_true(
+		n.offset_right <= 400.0,
+		"adv-4_fusion_label_right_le_400 -- FusionActiveLabel must stay within left panel (offset_right <= 400); got "
+		+ str(n.offset_right)
+	)
+	_assert_true(
+		n.offset_top >= 310.0,
+		"adv-4_fusion_label_top_ge_310 -- FusionActiveLabel offset_top must be >= 310 (spec Region 3); got "
+		+ str(n.offset_top) + " -- catches nodes not moved from Y=212"
+	)
+	_assert_true(
+		n.offset_bottom <= 340.0,
+		"adv-4_fusion_label_bottom_le_340 -- FusionActiveLabel offset_bottom must be <= 340 (spec Region 3); got "
+		+ str(n.offset_bottom)
+	)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-5 — ColorRect type preservation for all slot icon nodes
+#
+# Mutation vector: If MutationIcon1, MutationIcon2, or MutationIcon are
+# accidentally replaced with Panel, TextureRect, or other Control subclass,
+# infection_ui.gd's `get_node_or_null("MutationIcon1") as ColorRect` cast
+# returns null and slot icon colors stop updating silently.
+# T-6.4 only verifies non-null by path — not the node type.
+#
+# Red phase: PASSES (current scene already has ColorRect nodes — this is a
+# regression guard that would fail if implementation accidentally changed type).
+# Green phase: PASSES.
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_colorect_node_types() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-5_colorect_types", "game_ui.tscn failed to load")
+		return
+
+	var colorect_names: Array[String] = ["MutationIcon1", "MutationIcon2", "MutationIcon"]
+
+	for node_name in colorect_names:
+		var n: Node = ui.get_node_or_null(node_name)
+		if n == null:
+			_fail("adv-5_colorect_types", "node '" + node_name + "' not found")
+			_free_ui(ui)
+			return
+
+		# Must resolve to non-null ColorRect (not just non-null Node).
+		_assert_true(
+			n is ColorRect,
+			"adv-5_" + node_name + "_is_colorect -- " + node_name
+			+ " must be ColorRect so infection_ui.gd cast succeeds; got class '"
+			+ n.get_class() + "' -- catches accidental Panel/TextureRect substitution"
+		)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-6 — HPBar initial value == 100.0 (spec Part 2.2)
+#
+# Mutation vector: The spec requires `value = 100.0` on the HPBar scene node
+# so the bar visually starts full in the editor. An implementation that omits
+# this property leaves `value = 0` (Godot default for Range), showing an empty
+# bar in-editor. T-6.3 checks min_value and max_value but not value.
+#
+# Red phase: FAILS (current TextureProgressBar has no explicit value property;
+# Godot initializes Range.value to 0.0 by default).
+# Green phase: PASSES (spec sets value = 100.0).
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_hpbar_initial_value() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-6_hpbar_initial_value", "game_ui.tscn failed to load")
+		return
+
+	var hp_bar: Node = ui.get_node_or_null("HPBar")
+	if hp_bar == null:
+		_fail("adv-6_hpbar_initial_value", "HPBar not found")
+		_free_ui(ui)
+		return
+	if not (hp_bar is Range):
+		_fail("adv-6_hpbar_initial_value", "HPBar is not Range; cannot read value")
+		_free_ui(ui)
+		return
+
+	var bar: Range = hp_bar as Range
+	# Spec Part 2.2: value = 100.0 — bar starts full in editor.
+	_assert_eq_float(
+		100.0, bar.value,
+		"adv-6_hpbar_initial_value -- HPBar.value must be 100.0 at scene default per spec Part 2.2 AC; got "
+		+ str(bar.value) + " -- a zero-value bar is invisible/empty in the editor"
+	)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-7 — Hints container must be visible=true by scene default
+#
+# Mutation vector: A naive "hide all hints" implementation might set
+# `visible = false` on the Hints Control node itself rather than on individual
+# child labels. This permanently hides all input hints regardless of
+# InputHintsConfig, because runtime code sets per-label visibility (not the
+# container's). T-6.11 and T-6.12 verify per-label defaults but nothing verifies
+# the container is not accidentally hidden.
+#
+# Red phase: PASSES (current scene has no explicit visible=false on Hints).
+# Green phase: PASSES.
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_hints_container_visible_by_default() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-7_hints_container_visible", "game_ui.tscn failed to load")
+		return
+
+	var hints: Node = ui.get_node_or_null("Hints")
+	if hints == null:
+		_fail("adv-7_hints_container_visible", "Hints node not found")
+		_free_ui(ui)
+		return
+
+	# Hints must be visible=true so per-label visibility logic in
+	# _update_input_hints_visibility() is not permanently masked.
+	_assert_true(
+		hints.visible,
+		"adv-7_hints_container_visible -- Hints.visible must be true by scene default; "
+		+ "a hidden container permanently masks all hint labels regardless of InputHintsConfig"
+	)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
+# ADV-8 — Dynamic node name patterns in infection_ui.gd must resolve
+#
+# Mutation vector: infection_ui.gd builds node names dynamically:
+#   "MutationSlot" + str(n) + "Label"  (n = 1, 2)
+#   "MutationIcon" + str(n)            (n = 1, 2)
+# T-6.4 checks these paths by their static string values, but does not verify
+# them via the same dynamic construction pattern used in infection_ui.gd. A
+# node named "MutationSlot_1_Label" (underscore variant) would fail the dynamic
+# lookup silently. This test explicitly constructs the names using the same
+# string template as infection_ui.gd to confirm the node name contract.
+#
+# Red phase: PASSES (nodes already exist with correct names).
+# Green phase: PASSES (regression guard for renaming accidents).
+# CHECKPOINT
+# ---------------------------------------------------------------------------
+
+func test_adv_dynamic_slot_node_names_match_infection_ui_pattern() -> void:
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("adv-8_dynamic_slot_names", "game_ui.tscn failed to load")
+		return
+
+	# Replicate the exact string-construction pattern from infection_ui.gd
+	# _update_slot_display(): "MutationSlot" + str(slot_number) + "Label"
+	# and "MutationIcon" + str(slot_number), where slot_number is 1 or 2.
+	for slot_number in [1, 2]:
+		var label_name: String = "MutationSlot" + str(slot_number) + "Label"
+		var icon_name: String = "MutationIcon" + str(slot_number)
+
+		var label_node: Node = ui.get_node_or_null(label_name)
+		_assert_true(
+			label_node != null,
+			"adv-8_dynamic_" + label_name + " -- node constructed as 'MutationSlot' + str("
+			+ str(slot_number) + ") + 'Label' must resolve; infection_ui.gd uses this exact pattern"
+		)
+
+		var icon_node: Node = ui.get_node_or_null(icon_name)
+		_assert_true(
+			icon_node != null,
+			"adv-8_dynamic_" + icon_name + " -- node constructed as 'MutationIcon' + str("
+			+ str(slot_number) + ") must resolve; infection_ui.gd uses this exact pattern"
+		)
+
+		# Verify Label type for label node
+		if label_node != null:
+			_assert_true(
+				label_node is Label,
+				"adv-8_dynamic_" + label_name + "_is_label -- dynamic slot label must be Label type; got '"
+				+ label_node.get_class() + "'"
+			)
+
+		# Verify ColorRect type for icon node
+		if icon_node != null:
+			_assert_true(
+				icon_node is ColorRect,
+				"adv-8_dynamic_" + icon_name + "_is_colorect -- dynamic slot icon must be ColorRect type; got '"
+				+ icon_node.get_class() + "'"
+			)
+
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -831,6 +1210,32 @@ func run_all() -> int:
 	test_bonus_exact_offsets_mutation_panel()
 	test_bonus_exact_offsets_lower_left_and_prompts()
 	test_bonus_exact_offsets_hints_children()
+
+	# --- Adversarial extension (Test Breaker Agent) ---
+
+	# ADV-1: Rect2.intersects shared-edge semantics oracle (regression guard; passes pre-impl)
+	test_adv_rect2_intersects_shared_edge_semantics()
+
+	# ADV-2: HPBar exact class string — catches HSlider/VSlider substitution (red phase)
+	test_adv_hpbar_exact_class_string()
+
+	# ADV-3: Contextual prompts Y >= 1780 center-bottom region guard (red phase)
+	test_adv_contextual_prompts_in_bottom_region()
+
+	# ADV-4: FusionActiveLabel structural region bounds X<400, Y 310-340 (red phase)
+	test_adv_fusion_active_label_in_left_panel()
+
+	# ADV-5: ColorRect type preservation for all slot icon nodes (regression guard)
+	test_adv_colorect_node_types()
+
+	# ADV-6: HPBar initial value == 100.0 by scene default (red phase)
+	test_adv_hpbar_initial_value()
+
+	# ADV-7: Hints container visible=true by scene default (regression guard)
+	test_adv_hints_container_visible_by_default()
+
+	# ADV-8: Dynamic slot node name pattern matches infection_ui.gd construction (regression guard)
+	test_adv_dynamic_slot_node_names_match_infection_ui_pattern()
 
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
 	return _fail_count
