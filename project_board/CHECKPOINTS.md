@@ -5,6 +5,37 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-17T02:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md
+
+---
+
+### [visual_clarity_hybrid_state] TestDesign — InfectionUI headless instantiation strategy
+
+**Would have asked:** InfectionUI extends CanvasLayer and cannot be `.new()`'d headlessly. How do we test the color-selection logic and field/method presence without instantiating the full node?
+
+**Assumption made:** Three-track strategy: (1) Constant presence and values: read via `GDScript.get_script_constant_map()` on the loaded script resource -- no instantiation required. (2) Method and field presence: read via `GDScript.get_script_method_list()` and `GDScript.get_script_property_list()` on the loaded script resource. (3) Algorithm correctness: inner-class `LogicHarness extends RefCounted` implements the spec's color-selection matrix verbatim and is tested directly -- the harness constants must match the real script constants (verified by track 1). This pattern means logic tests pass immediately (harness is correct by construction) while script-shape tests fail until implementation adds the required symbols.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] TestDesign — RefCounted vs Object for doubles
+
+**Would have asked:** The existing test suite (test_fusion_resolver.gd) uses `extends Object` with manual `free()`. Should new doubles follow the same pattern or use RefCounted?
+
+**Assumption made:** RefCounted. The existing pattern works for top-level doubles that are freed at test-method end, but fails when `free_all()` is called on a manager that holds inner-slot references while still on the call stack (Godot "Object is locked" error). RefCounted eliminates all manual memory management, prevents the locked-object error, and is strictly safer for inner-class doubles that do not need to be freed in a specific order.
+
+**Confidence:** High
+
+---
+
+## Run: 2026-03-16T00:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md
+
+---
+---
+
 ### [fusion_rules_and_hybrid] GDScript Fix — C2 expiry branch removes slot re-query
 
 **Would have asked:** On fusion expiry, should we re-query mutation slots to restore the correct speed (mutation-boosted vs. base), or just clear fusion state and let the else branch handle it next frame?
@@ -932,5 +963,85 @@ Tickets queued: fusion_rules_and_hybrid.md
 **Assumption made:** Timer resets (re-triggerable). The new call replaces `_fusion_timer` with the new duration and `_fusion_multiplier` with the new multiplier. No stacking. This is the simplest, most predictable behaviour: fusion always gives a fresh 5-second window regardless of when it is triggered. Stacking would require summing timers, which adds complexity without clear gameplay benefit at this stage.
 
 **Confidence:** High
+
+---
+
+## Run: 2026-03-17T00:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md (PLANNING stage)
+
+---
+
+### [visual_clarity_hybrid_state] Planning — Fusion-active indicator via player field read
+
+**Would have asked:** `InfectionUI` needs to know whether fusion is active. `PlayerController3D` has `_fusion_active: bool` (a private field). Should `InfectionUI` read this via a public accessor method `is_fusion_active() -> bool` (consistent with `get_current_hp()` pattern), or directly access the field since it already references `_player`?
+
+**Assumption made:** The Spec Agent must define a public accessor method `is_fusion_active() -> bool` on `PlayerController3D`, consistent with the existing pattern where InfectionUI uses `_player.get_current_hp()` rather than reading `_player._current_hp` directly. Direct private field access would be a convention violation. This is flagged as a Spec-required API addition; it is a one-line method and does not require a new implementation task.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] Planning — New scene nodes required for fusion-active indicator
+
+**Would have asked:** Is a new Label node (`FusionActiveLabel`) needed in `game_ui.tscn` to show the fusion-active state, or can the existing `FusePromptLabel` be repurposed to display both "ready to fuse" and "fusion active" states with different text and color?
+
+**Assumption made:** The most conservative approach: the Spec Agent decides. The plan does not add a new node in this task; if the Spec Agent determines that a new `FusionActiveLabel` node is required, it is a small addition to `game_ui.tscn` scoped entirely to the Presentation Agent's implementation task. Reusing `FusePromptLabel` for both states is allowed if text and color differentiation are sufficient; adding a separate node is allowed if they are not. Either choice is self-contained.
+
+**Confidence:** Medium
+
+---
+
+### [visual_clarity_hybrid_state] Planning — Post-fusion empty state distinguishability
+
+**Would have asked:** After fusion fires and slots are cleared, both slot icons return to their "empty" grey color — identical to the pre-absorb state. Should a timed visual cue (e.g. brief white flash on MutationIcon1/MutationIcon2) distinguish "just fused" from "never absorbed"?
+
+**Assumption made:** Yes, a brief timed flash or distinctive color modulation on the icon nodes after fusion is the minimum required to satisfy AC "post-fusion state is distinct from single-mutation." Duration and exact mechanism (flash, pulse, or held color for N ms) are deferred to the Spec Agent. The implementation pattern already exists in InfectionUI for absorb feedback (`_absorb_feedback_until_ms`); the same timer-based approach is the default assumption.
+
+**Confidence:** Medium
+
+---
+
+## Run: 2026-03-17T01:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md (SPECIFICATION stage)
+
+---
+
+### [visual_clarity_hybrid_state] Spec — FusionActiveLabel as a new node vs reusing FusePromptLabel
+
+**Would have asked:** Should `FusePromptLabel` be repurposed to show both "press G to fuse" (ready) and "FUSION ACTIVE" (running), or should a separate `FusionActiveLabel` node be added?
+
+**Assumption made:** A separate `FusionActiveLabel` node is added. The two states serve different semantic purposes: `FusePromptLabel` is a player affordance (action instruction shown when fusion is available); `FusionActiveLabel` is a status notification (shown while the effect is running, after slots are empty). Repurposing the prompt label would require logic to swap text and color inside a single visibility path, creating a coupling between "ready" and "active" states that does not exist in any other UI element in the codebase. A separate node keeps the logic clean and is consistent with the AbsorbPromptLabel / AbsorbFeedbackLabel precedent (separate nodes for "available" vs "feedback").
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] Spec — Post-fusion flash duration: 600 ms
+
+**Would have asked:** How long should the post-fusion flash last? The absorb feedback uses 800 ms. Should the post-fusion flash match, or be shorter to feel distinct?
+
+**Assumption made:** 600 ms. Shorter than the absorb feedback flash (800 ms) so the two cues feel distinct if they somehow overlap. Long enough to be perceived clearly at normal play speed. The value is defined as a named constant `POST_FUSION_FLASH_DURATION_MS: int = 600` so it is trivially adjustable.
+
+**Confidence:** Medium
+
+---
+
+### [visual_clarity_hybrid_state] Spec — Post-fusion flash trigger condition requires is_fusion_active()
+
+**Would have asked:** The flash must fire specifically when fusion cleared the slots (not any other slot-clear event). Should the trigger require `is_fusion_active() == true` in the same frame as the both_filled transition, or should the flash fire on any both_filled-to-empty transition?
+
+**Assumption made:** Trigger requires `is_fusion_active() == true`. This gates the flash specifically to the fusion event and prevents spurious flashes from hypothetical future slot-clear mechanisms. The one-frame lag between fusion firing (in physics process) and InfectionUI detecting it (in _process) is acceptable and consistent with all other player-state reads in InfectionUI.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] Spec — COLOR_SLOT_DUAL_FILLED chosen as saturated blue
+
+**Would have asked:** What specific color distinguishes "both slots filled" from "single slot filled"? The existing single-fill color is green (0.4, 0.85, 0.55). Should dual-fill be a different hue (e.g. blue, gold, cyan) or a brighter/saturated green?
+
+**Assumption made:** Saturated blue: `Color(0.3, 0.65, 1.0, 1.0)`. Blue is maximally distinct from the existing green palette in the mutation UI and from the amber gold reserved for the fusion-active label. It reads as "upgraded state" without conflicting with HP (red), absorb feedback (green tint), or cling/chunk labels (white/grey). The exact values are conservative defaults; the Implementer may adjust within the blue family if screen visibility testing warrants it.
+
+**Confidence:** Medium
 
 ---
