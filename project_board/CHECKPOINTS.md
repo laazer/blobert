@@ -5,6 +5,39 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-18T01:00:00Z
+Tickets queued: player_hud.md (Test Designer Agent)
+
+### [player_hud] TestDesign — add_child pattern for CanvasLayer in headless test
+
+**Would have asked:** The spec says `add_child(ui)` in the test, but the test class extends Object (no scene tree). How do we add the CanvasLayer to the tree so InfectionUI._ready() has a valid get_tree() call?
+
+**Assumption made:** Used `Engine.get_main_loop() as SceneTree` and `tree.root.add_child(ui)`, matching the pattern in `tests/scenes/levels/test_3d_scene.gd`. InfectionUI._ready() calls `get_tree().get_first_node_in_group("player")` which returns null safely in headless (no player in tree). No crash risk confirmed by running the suite.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestDesign — T-6.8 red-phase criterion for zero-area nodes
+
+**Would have asked:** The current scene has nodes like HPLabel with offset_right == offset_left == 20.0, making them zero-area. These technically fit within the 3200x1880 viewport (AC-5.2 passes trivially). Should T-6.8 also assert width > 0 to create a meaningful red phase?
+
+**Assumption made:** Added `size.x > 0` and `size.y > 0` assertions to T-6.8 for all always-visible nodes. This ensures T-6.8 fails in red phase (zero-area nodes) and only passes after implementation gives nodes real dimensions. The spec's AC-5.2 intent is to verify nodes are reasonably positioned within the viewport — a zero-area node satisfies the letter but not the spirit of that criterion.
+
+**Confidence:** High
+
+---
+
+### [player_hud] TestDesign — T-6.9 red phase analysis
+
+**Would have asked:** The current legacy node MutationSlotLabel is at Y 115–143, which overlaps with the current positions of MutationIcon1 (Y 147–167) and MutationSlot1Label (Y 145–169). But all these positions differ from spec. Does the red-phase failure come from legacy-vs-legacy overlap (current positions) or legacy-vs-spec overlap?
+
+**Assumption made:** T-6.9 asserts actual node offset values against each other (not against spec values), so it tests whether the current scene positions are disjoint. The current legacy node MutationSlotLabel at Y 115–143 overlaps current MutationSlot2Label at Y 173–197 via the always-visible set's current positions. Verified by running the suite — T-6.9 produces failures confirming red-phase behavior is correct.
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-18T00:00:00Z
 Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 
@@ -488,7 +521,7 @@ Automated tests, core simulation, gameplay wiring, engine integration, and HUD p
 
 **Would have asked:** Should the mutation slot contents and its active effect persist across scene reloads/checkpoints or be scoped only to the current play session/scene?
 
-**Assumption made:** In line with other Milestone 2 infection-loop tickets, the mutation slot is scoped to the current play session/scene. Persistence across saves, level transitions, or meta-progression is explicitly out of scope for this ticket and can be handled by future progression/persistence features.
+**Assumption made:** In line with other Milestone 2 infection-loop tickets, the mutation slot is scoped to the current play session/scene. Persistence across saves, level transitions, and meta-progression is explicitly out of scope for this ticket and can be handled by future progression/persistence features.
 
 **Confidence:** High
 
@@ -1133,3 +1166,115 @@ Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-17T01:00:00Z
+Tickets queued: player_hud.md
+
+---
+
+## Run: 2026-03-18T00:01:00Z
+Tickets queued: player_hud.md (PLANNING stage — Planner Agent)
+
+---
+
+### [player_hud] Planning — Node renames in game_ui.tscn vs infection_ui.gd accessor strings
+
+**Would have asked:** The HUD reorganization requires repositioning all nodes. If any nodes are renamed during reorganization (e.g. wrapping them in a Panel container changes the path), all `get_node_or_null("NodeName")` calls in `infection_ui.gd` would need to match. Should the plan treat node names as immutable and only reposition, or allow renames with a required update pass on the accessor strings?
+
+**Assumption made:** Node names are preserved exactly. The reorganization moves nodes by changing their `offset_*` properties and adding structural container parents (e.g. a `StatusPanel` PanelContainer), but all leaf node names (`HPLabel`, `HPBar`, `ChunkStatusLabel`, `ClingStatusLabel`, `MutationSlot1Label`, `MutationIcon1`, `MutationSlot2Label`, `MutationIcon2`, `AbsorbPromptLabel`, `AbsorbFeedbackLabel`, `FusePromptLabel`, `FusionActiveLabel`, `MutationLabel`, `MutationSlotLabel`, `MutationIcon`, `Hints`) stay identical. `infection_ui.gd` uses flat `get_node_or_null("NodeName")` calls from the CanvasLayer root — if containers are added, nodes must stay as direct children of the CanvasLayer OR the accessor paths must be updated. Conservative assumption: all nodes remain direct children of `GameUI` (no nesting). Visual grouping is achieved via offset alignment, not container parenting.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Planning — InputHintsConfig default value must change
+
+**Would have asked:** The ticket requires input hints hidden by default in normal play. `input_hints_config.gd` currently defaults `input_hints_enabled = true`. Changing this to `false` will hide hints in all scenes where no InputHintsConfig is present (since the fallback in `_update_input_hints_visibility` treats missing config as enabled=true). Should the default in the config script be changed, or should the scene that instantiates InputHintsConfig be updated to set it false?
+
+**Assumption made:** The fix is in `input_hints_config.gd`: change `var input_hints_enabled: bool = true` to `var input_hints_enabled: bool = false`. The ticket acceptance criterion says hints are "hidden by default in normal play" — the config default IS the normal-play value. Any scene that needs hints shown (e.g. a tutorial scene) explicitly sets the value to true. The fallback in `_update_input_hints_visibility` (`var enabled: bool = true` when config is absent) remains unchanged as a safety net for scenes without a config node at all.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Planning — HPBar visual style: TextureProgressBar has no textures assigned
+
+**Would have asked:** The current `HPBar` node is a `TextureProgressBar` with no texture resources set, so it renders as nothing visible. Should the HUD reorganization replace it with a `ProgressBar` (which renders with a theme-default fill bar), or keep `TextureProgressBar` and set a minimal texture?
+
+**Assumption made:** Replace `TextureProgressBar` with a plain `ProgressBar` node (same node name `HPBar`, same parent). `ProgressBar` renders a visible fill bar using Godot's built-in theme with no asset dependencies, matching the ticket requirement that the HUD be "human-readable in-editor without debug overlays." Asset-styled progress bars are a future visual polish concern. The `_get_hp_bar()` accessor returns `Range` (base class of both), so the script requires no change.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Planning — Layout region assignments for each HUD group
+
+**Would have asked:** What exact screen regions should each HUD group occupy at 3200x1880? The ticket says "top-left panel" for HP but does not specify where mutation slots, status labels, or contextual prompts go.
+
+**Assumption made:** Four non-overlapping regions at 3200x1880:
+  - Top-left status strip (x: 20–400, y: 8–180): HPBar, HPLabel, ChunkStatusLabel, ClingStatusLabel — stacked vertically with 28px row pitch.
+  - Mid-left mutation panel (x: 20–400, y: 200–300): MutationIcon1 + MutationSlot1Label, then MutationIcon2 + MutationSlot2Label, then MutationSlotLabel (legacy, hidden in practice) — 36px row pitch.
+  - Contextual center-bottom prompts (x: 1400–1800, y: 1800–1870): AbsorbPromptLabel, FusePromptLabel, AbsorbFeedbackLabel — centered horizontally, stacked.
+  - Fusion-active notice (x: 20–300, y: 310–340): FusionActiveLabel — below mutation panel, amber, always visible when active.
+  - MutationLabel (x: 20–300, y: 350–375): shown only when any mutations absorbed.
+  - Hints group (top-center, x: 1300–2000, y: 12–120): grouped MoveHint, JumpHint, DetachRecallHint, AbsorbHint — hidden by default.
+
+**Confidence:** Medium
+
+---
+
+### [player_hud] Planning — Legacy nodes MutationSlotLabel and MutationIcon retained
+
+**Would have asked:** The legacy single-slot nodes (`MutationSlotLabel`, `MutationIcon`) are still updated by `infection_ui.gd` for backward compatibility. Should they be removed (cleaning up the scene) or kept but hidden/repositioned so they don't overlap?
+
+**Assumption made:** Kept but positioned below the dual-slot rows and set `visible = false` by default in the scene. They are driven by `infection_ui.gd` for backward compat and the acceptance criteria explicitly state "all existing `infection_ui.gd` data bindings are preserved." Removal would require also modifying the script, which is out of scope for a pure layout change.
+
+**Confidence:** High
+
+---
+
+## Run: 2026-03-18T12:00:00Z
+Tickets queued: player_hud.md (SPECIFICATION stage — Spec Agent authoring)
+
+---
+
+### [player_hud] Spec — ProgressBar show_percentage default behavior
+
+**Would have asked:** `ProgressBar` nodes display a percentage text overlay by default (`show_percentage = true`). With `HPLabel` showing "HP: X / Y" directly below the bar, having the bar also display "X%" would be redundant and potentially confusing. Should the spec require `show_percentage = false` on the HPBar ProgressBar node?
+
+**Assumption made:** Yes, `show_percentage = false` is required. Having two HP value displays (the label and the bar's internal percentage) is confusing and inconsistent with the "human-readable without debug overlays" acceptance criterion. The HPLabel already provides full HP information (current/max). AC-2.7 is added to the spec to enforce this.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Spec — Hints child offsets are viewport-absolute because Hints container is at origin
+
+**Would have asked:** The `Hints` Control node has `anchors_preset=0` with no offset set, placing it at (0,0) in the CanvasLayer. If a future change repositions the Hints container, the child offsets (which are relative to the container) would no longer correspond to the viewport positions in the layout table. Should the spec explicitly state that Hints remains at origin, and that child offsets ARE viewport-absolute for the purposes of this spec?
+
+**Assumption made:** Yes, the spec explicitly states this as an assumption (Section 1.2, Region 7). Hints remains at position (0,0) — no `offset_*` changes on the Hints node itself. Child hint labels' offsets are equivalent to viewport coordinates because the container's origin coincides with the viewport origin. If Hints is ever repositioned, the child offsets must be recalculated.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Spec — AbsorbPromptLabel and AbsorbFeedbackLabel co-location is intentional
+
+**Would have asked:** Both AbsorbPromptLabel and AbsorbFeedbackLabel are assigned to the same bounding rectangle (Rect2(1400, 1800, 400, 30)). This appears to violate the no-overlap requirement. Is this intentional?
+
+**Assumption made:** Yes, intentional. These two nodes are never simultaneously visible: AbsorbPromptLabel shows when an enemy is absorbable (before absorb resolves); AbsorbFeedbackLabel shows as a timed flash after absorb resolves (at which point AbsorbPromptLabel is hidden because `_absorb_available` is false). The pairwise disjointness test explicitly excludes this pair. The co-location maximizes readability — both messages appear in the same center-bottom region, giving visual consistency to absorb-related feedback.
+
+**Confidence:** High
+
+---
+
+### [player_hud] Spec — Row pitch in status strip chosen for font_size=20 readability
+
+**Would have asked:** The status strip (Y 8–180) fits HPBar + HPLabel + ChunkStatusLabel + ClingStatusLabel. With font_size=20, each label renders approximately 26px tall. The chosen row pitch of 34px (e.g. top=36 to top=70) gives an 8px gap between rows. Is this sufficient, or should rows be more spread out?
+
+**Assumption made:** 34px pitch (8px gap between 26px-tall labels) is sufficient for font_size=20. This keeps the status strip compact and contained within Y 8–130, leaving a 70px gap to the mutation panel at Y=200. The gap is visible and clear even at the target resolution. If the display proves crowded, the Presentation Agent can increase the pitch within the Y 8–180 budget without changing node names or violating the no-overlap spec.
+
+**Confidence:** Medium
+
+---
+
