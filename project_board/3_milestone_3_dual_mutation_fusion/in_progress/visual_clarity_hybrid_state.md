@@ -9,15 +9,15 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_PRESENTATION |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Presentation Agent |
 | Validation Status | Proceed |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Test Breaker Agent: author adversarial companion suite for `tests/ui/test_infection_ui_hybrid_visuals.gd`. Cover all adversarial cases listed in the spec's "Measurable Test Targets" section (VCH-1, VCH-2, VCH-3 adversarial bullets). Minimum 6 cases per spec task row 3. Follow the RefCounted doubles pattern established in the primary suite. File target: `tests/ui/test_infection_ui_hybrid_visuals_adversarial.gd`.
+Presentation Agent: implement all spec changes in `infection_ui.gd` and `player_controller_3d.gd` and `game_ui.tscn`. All primary (40 passing + 13 red-phase) and adversarial (41 passing + 3 red-phase) tests must go green. Red-phase failures to fix: (1) declare 8 color constants on InfectionUI per spec NF-1 and Named Color Constants table; (2) update `_update_slot_display` to 4-param signature per API-2; (3) add `_update_fusion_display()` per API-3; (4) add `_get_fusion_active_label()` per API-4; (5) add `FusionActiveLabel` Label node to `game_ui.tscn` per API-5; (6) add `is_fusion_active() -> bool` to `PlayerController3D` per API-1; (7) add `_post_fusion_flash_until_ms: int = 0` and `_prev_both_filled: bool = false` fields per VCH-3-AC-1.
 
 ---
 

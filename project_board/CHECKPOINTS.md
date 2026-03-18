@@ -1045,3 +1045,58 @@ Tickets queued: visual_clarity_hybrid_state.md (SPECIFICATION stage)
 **Confidence:** Medium
 
 ---
+
+## Run: 2026-03-17T03:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
+
+---
+
+### [visual_clarity_hybrid_state] TestBreak — same-color dual-fill bug detection strategy
+
+**Would have asked:** The primary suite already asserts `COLOR_SLOT_DUAL_FILLED != COLOR_SLOT_SINGLE_FILLED` as a constant comparison. Is an additional adversarial test needed, or does the constant-comparison test already catch the same-color bug?
+
+**Assumption made:** A separate adversarial test is warranted. The constant-comparison test (VCH-1-AC-4) only verifies the constants differ; it does NOT verify that the implementation actually uses `COLOR_SLOT_DUAL_FILLED` when both slots are filled (a naive implementation could declare the constant but still apply `COLOR_SLOT_SINGLE_FILLED` in the method body). The adversarial test must verify that the color selection matrix actually returns `COLOR_SLOT_DUAL_FILLED` and that this result is NOT equal to `COLOR_SLOT_SINGLE_FILLED`, closing the gap between constant-declaration and actual usage.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] TestBreak — is_fusion_active() method missing on PlayerController3D
+
+**Would have asked:** `is_fusion_active()` does not yet exist on `PlayerController3D` (confirmed by grep). The adversarial test for failure mode #9 should verify the method IS present on the real script. Should this be a hard FAIL or a soft warning?
+
+**Assumption made:** Hard FAIL. The spec (API-1) mandates this method as a required public accessor. `InfectionUI._update_fusion_display()` calls it every frame; if missing it silently breaks all fusion-active visual feedback without a parse error (GDScript duck-type). The adversarial test checks `get_script_method_list()` on the real `player_controller_3d.gd` script and fails hard if the method is absent, forcing the Presentation Agent to add it.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] TestBreak — FusePromptLabel post-fusion visibility contract
+
+**Would have asked:** After fusion fires and both slots clear, `both_filled` becomes `false`. Does `FusePromptLabel.visible` go to `false` automatically (because it's driven by `both_filled`)? Or is there a separate clear/hide step needed?
+
+**Assumption made:** FusePromptLabel hides automatically because `_process` evaluates `both_filled` fresh each frame from slot state, and with both slots empty `both_filled == false` drives `fuse_label.visible = false`. The adversarial test encodes this: it verifies that the transition from both-filled to both-empty (slot-clear simulated) results in `both_filled == false`, which MUST make the fuse prompt hidden. This is a regression guard -- any implementation that accidentally caches `both_filled` or uses a separate flag could regress it. # CHECKPOINT
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] TestBreak — flash duration zero edge case
+
+**Would have asked:** If `_post_fusion_flash_until_ms` is set to exactly `Time.get_ticks_msec()` (i.e. duration zero), does the flash trigger at all? The spec says `now_ms < _post_fusion_flash_until_ms` so duration=0 means the condition is immediately false. Should the test cover this as a boundary?
+
+**Assumption made:** Yes, this is a real boundary. A zero-duration flash (set to `now` not `now + 600`) means the flash condition is `now < now` which is always false -- the flash never renders. The adversarial test must verify that the flash-active path requires a STRICTLY FUTURE timestamp, and that setting `_post_fusion_flash_until_ms = now` (not `now + 600`) results in no flash. This catches an off-by-one bug where a developer writes `=` instead of `+` in the timer assignment. # CHECKPOINT
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] TestBreak — slot-only text change without color change
+
+**Would have asked:** The spec says label text changes when mutation_id changes. But if a naive implementation only changes text and not modulate, the test suite would still pass (primary tests only check color via the harness, not the real label node). How do we catch this?
+
+**Assumption made:** Add an adversarial test that drives the LogicHarness for a mutation-id-change scenario and explicitly asserts the LABEL color is `COLOR_LABEL_SINGLE_FILLED` (not the legacy hard-coded `Color(0.9, 1.0, 0.9, 1.0)` magic value). If the implementer forgets to use the named constant and uses the legacy magic number, this test fails because the adversarial harness computes `COLOR_LABEL_SINGLE_FILLED` from the constant map. The gap: the primary test checks the harness, the adversarial test checks that the real constant VALUE matches the harness constant (ensuring no magic-number drift). # CHECKPOINT
+
+**Confidence:** Medium
+
+---
