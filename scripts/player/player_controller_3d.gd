@@ -422,6 +422,10 @@ func is_wall_clinging_state() -> bool:
 	return _current_state.is_wall_clinging
 
 
+func is_fusion_active() -> bool:
+	return _fusion_active
+
+
 func apply_fusion_effect(duration: float, multiplier: float) -> void:
 	if _fusion_active:
 		_fusion_timer = maxf(_fusion_timer, duration)

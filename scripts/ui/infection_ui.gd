@@ -1,6 +1,20 @@
 class_name InfectionUI
 extends CanvasLayer
 
+# --- Named color constants (spec NF-1) ---
+
+const COLOR_SLOT_EMPTY         = Color(0.2, 0.2, 0.2, 0.6)
+const COLOR_SLOT_SINGLE_FILLED = Color(0.4, 0.85, 0.55, 1.0)
+const COLOR_SLOT_DUAL_FILLED   = Color(0.3, 0.65, 1.0, 1.0)
+const COLOR_SLOT_POST_FUSION   = Color(1.0, 1.0, 1.0, 1.0)
+
+const COLOR_LABEL_EMPTY         = Color(0.7, 0.7, 0.7, 1.0)
+const COLOR_LABEL_SINGLE_FILLED = Color(0.9, 1.0, 0.9, 1.0)
+const COLOR_LABEL_DUAL_FILLED   = Color(0.6, 0.85, 1.0, 1.0)
+const COLOR_LABEL_POST_FUSION   = Color(1.0, 0.9, 0.5, 1.0)
+
+const POST_FUSION_FLASH_DURATION_MS: int = 600
+
 var _absorb_available: bool = false
 var _player: PlayerController3D
 var _initial_max_hp: float = 0.0
@@ -9,6 +23,8 @@ var _slot_manager: Object = null  # MutationSlotManager (preferred) or fallback 
 
 var _prev_mutation_count: int = 0
 var _absorb_feedback_until_ms: int = 0
+var _post_fusion_flash_until_ms: int = 0
+var _prev_both_filled: bool = false
 
 
 func _ready() -> void:
@@ -88,6 +104,10 @@ func _get_slot2_icon() -> ColorRect:
 	return get_node_or_null("MutationIcon2") as ColorRect
 
 
+func _get_fusion_active_label() -> Label:
+	return get_node_or_null("FusionActiveLabel") as Label
+
+
 func _get_input_hints_config() -> Node:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
@@ -127,6 +147,14 @@ func _update_input_hints_visibility() -> void:
 			typed_label.visible = enabled
 
 
+func _update_fusion_display() -> void:
+	if _player == null:
+		return
+	var label: Label = _get_fusion_active_label()
+	if label != null:
+		label.visible = _player.is_fusion_active()
+
+
 func _process(_delta: float) -> void:
 	var absorb_label: Label = _get_absorb_prompt_label()
 	if absorb_label != null:
@@ -148,6 +176,8 @@ func _process(_delta: float) -> void:
 
 	if _player == null:
 		return
+
+	_update_fusion_display()
 
 	var hp_label: Label = _get_hp_label()
 	var hp_bar: Range = _get_hp_bar()
@@ -198,9 +228,24 @@ func _update_mutation_display() -> void:
 	var showing_absorb_feedback: bool = now_ms < _absorb_feedback_until_ms
 	var any_mutation: bool = count > 0
 
+	# Compute both_filled for dual-slot color logic.
+	var s0_disp: Object = _get_slot(0)
+	var s1_disp: Object = _get_slot(1)
+	var both_filled: bool = (
+		s0_disp != null and s0_disp.has_method("is_filled") and s0_disp.is_filled()
+		and s1_disp != null and s1_disp.has_method("is_filled") and s1_disp.is_filled()
+	)
+
+	# Detect post-fusion transition: both_filled true→false with fusion active.
+	if _prev_both_filled and not both_filled and _player != null and _player.is_fusion_active():
+		_post_fusion_flash_until_ms = now_ms + POST_FUSION_FLASH_DURATION_MS
+	_prev_both_filled = both_filled
+
+	var post_fusion_flash_active: bool = now_ms < _post_fusion_flash_until_ms
+
 	# Drive dual-slot displays (DSM-4).
-	_update_slot_display(1, _get_slot(0))
-	_update_slot_display(2, _get_slot(1))
+	_update_slot_display(1, _get_slot(0), both_filled, post_fusion_flash_active)
+	_update_slot_display(2, _get_slot(1), both_filled, post_fusion_flash_active)
 
 	# Legacy single-slot label (backward compat — shows slot A state or empty).
 	var slot_label: Label = _get_mutation_slot_label()
@@ -210,11 +255,11 @@ func _update_mutation_display() -> void:
 		slot_label.visible = true
 		if s0_filled:
 			slot_label.text = "Mutation Slot: " + s0.get_active_mutation_id() + " active"
-			slot_label.modulate = Color(0.9, 1.0, 0.9, 1.0)
+			slot_label.modulate = COLOR_LABEL_SINGLE_FILLED
 
 		else:
 			slot_label.text = "Mutation Slot: Empty"
-			slot_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+			slot_label.modulate = COLOR_LABEL_EMPTY
 
 	if mutation_label != null:
 		mutation_label.visible = any_mutation
@@ -239,7 +284,7 @@ func _get_slot(index: int) -> Object:
 	return null
 
 
-func _update_slot_display(slot_number: int, slot: Object) -> void:
+func _update_slot_display(slot_number: int, slot: Object, both_filled: bool, post_fusion_flash_active: bool) -> void:
 	var label: Label = get_node_or_null("MutationSlot" + str(slot_number) + "Label") as Label
 	var icon: ColorRect = get_node_or_null("MutationIcon" + str(slot_number)) as ColorRect
 	var filled: bool = slot != null and slot.has_method("is_filled") and slot.is_filled()
@@ -247,19 +292,30 @@ func _update_slot_display(slot_number: int, slot: Object) -> void:
 	if filled and slot.has_method("get_active_mutation_id"):
 		slot_id = slot.get_active_mutation_id()
 
+	# Color priority (highest wins): post_fusion_flash > dual_filled > single_filled > empty
+	var icon_color: Color
+	var label_color: Color
+	if post_fusion_flash_active:
+		icon_color = COLOR_SLOT_POST_FUSION
+		label_color = COLOR_LABEL_POST_FUSION
+	elif filled and both_filled:
+		icon_color = COLOR_SLOT_DUAL_FILLED
+		label_color = COLOR_LABEL_DUAL_FILLED
+	elif filled and not both_filled:
+		icon_color = COLOR_SLOT_SINGLE_FILLED
+		label_color = COLOR_LABEL_SINGLE_FILLED
+	else:
+		icon_color = COLOR_SLOT_EMPTY
+		label_color = COLOR_LABEL_EMPTY
+
 	if label != null:
 		label.visible = true
 		if filled and slot_id != "":
 			label.text = "Slot " + str(slot_number) + ": " + slot_id + " active"
-
-			label.modulate = Color(0.9, 1.0, 0.9, 1.0)
 		else:
 			label.text = "Slot " + str(slot_number) + ": Empty"
-			label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+		label.modulate = label_color
 
 	if icon != null:
 		icon.visible = true
-		if filled:
-			icon.color = Color(0.4, 0.85, 0.55, 1.0)
-		else:
-			icon.color = Color(0.2, 0.2, 0.2, 0.6)
+		icon.color = icon_color

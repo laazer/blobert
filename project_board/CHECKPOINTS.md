@@ -5,6 +5,19 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-18T00:00:00Z
+Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
+
+### [visual_clarity_hybrid_state] GDScript Fix — WARNING 4 has_method guard removal scope
+
+**Would have asked:** The `has_method("is_fusion_active")` guard in `_update_mutation_display` was removed from the post-fusion flash trigger. The `CorrectHarness` in the adversarial test still uses `has_method` in its own `should_trigger_flash` and `compute_fusion_label_visible` helpers. Should the real script match the harness exactly (keeping has_method) or follow the ticket directive (remove it)?
+
+**Assumption made:** The ticket directive is authoritative for the production script. The harness is a test fixture with its own defensive guards for duck-typed doubles; the production script uses a statically-typed `_player: PlayerController3D` so `has_method` is redundant and misleading. Removed it from the production code only. The harness was not modified (test files are off-limits).
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-17T02:00:00Z
 Tickets queued: visual_clarity_hybrid_state.md
 
@@ -1098,5 +1111,25 @@ Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
 **Assumption made:** Add an adversarial test that drives the LogicHarness for a mutation-id-change scenario and explicitly asserts the LABEL color is `COLOR_LABEL_SINGLE_FILLED` (not the legacy hard-coded `Color(0.9, 1.0, 0.9, 1.0)` magic value). If the implementer forgets to use the named constant and uses the legacy magic number, this test fails because the adversarial harness computes `COLOR_LABEL_SINGLE_FILLED` from the constant map. The gap: the primary test checks the harness, the adversarial test checks that the real constant VALUE matches the harness constant (ensuring no magic-number drift). # CHECKPOINT
 
 **Confidence:** Medium
+
+---
+
+### [visual_clarity_hybrid_state] Implementation — _update_fusion_display null safety
+
+**Would have asked:** `_update_fusion_display()` calls `_player.is_fusion_active()` directly. Should it re-check `_player != null` inside the method, or rely on the call-site guard in `_process`?
+
+**Assumption made:** Rely on call-site guard. `_update_fusion_display()` is a private method called only after `if _player == null: return` in `_process`. Adding a redundant null-check inside is inconsistent with the existing pattern (e.g. `_player.get_current_hp()`, `_player.has_chunk()` etc. are called with no per-call null-check after the same guard). The flash trigger in `_update_mutation_display` (called before the null guard) explicitly checks `_player != null` inline because it runs unconditionally.
+
+**Confidence:** High
+
+---
+
+### [visual_clarity_hybrid_state] Implementation — FusionActiveLabel text content
+
+**Would have asked:** The ticket says text `"⚡ FUSED"` (or similar). No test checks the exact text string. What text to use?
+
+**Assumption made:** Used `"FUSION ACTIVE"` — plain ASCII, readable without emoji font support in any headless render. The spec has no exact text requirement and no test checks it.
+
+**Confidence:** High
 
 ---

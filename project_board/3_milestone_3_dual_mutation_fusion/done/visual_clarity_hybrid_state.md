@@ -1,7 +1,7 @@
 # Visual clarity for hybrid state
 
 **Epic:** Milestone 3 – Dual Mutation + Fusion
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -9,15 +9,21 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_PRESENTATION |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Presentation Agent |
-| Validation Status | Proceed |
+| Stage | COMPLETE |
+| Revision | 8 |
+| Last Updated By | Human |
+| Next Responsible Agent | — |
+| Validation Status | All automated tests pass (primary + adversarial suites, run_tests.sh exits 0). GDScript review: zero criticals. Human playtest confirmed: dual-slot blue color distinct from single-slot green, FusionActiveLabel appears on fusion, 600ms white flash on post-fusion slot clear, all cues visible without debug overlays. All AC satisfied. |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Presentation Agent: implement all spec changes in `infection_ui.gd` and `player_controller_3d.gd` and `game_ui.tscn`. All primary (40 passing + 13 red-phase) and adversarial (41 passing + 3 red-phase) tests must go green. Red-phase failures to fix: (1) declare 8 color constants on InfectionUI per spec NF-1 and Named Color Constants table; (2) update `_update_slot_display` to 4-param signature per API-2; (3) add `_update_fusion_display()` per API-3; (4) add `_get_fusion_active_label()` per API-4; (5) add `FusionActiveLabel` Label node to `game_ui.tscn` per API-5; (6) add `is_fusion_active() -> bool` to `PlayerController3D` per API-1; (7) add `_post_fusion_flash_until_ms: int = 0` and `_prev_both_filled: bool = false` fields per VCH-3-AC-1.
+
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Human |
+| Status | Needs Attention |
+| Reason | All automated acceptance criteria (AC-1 through AC-4) are evidenced by a passing headless test suite (primary + adversarial, 39 adversarial cases covering FM-1 through FM-10 plus combinatorial edge cases) and zero-critical Static QA. AC-5 requires human in-editor playability verification: absorb two enemies in test_movement_3d.tscn, confirm dual-slot blue cue is visible, trigger fusion, confirm FusionActiveLabel appears and 600ms post-fusion white flash is visible, all without debug overlays at side-view camera. Document confirmation in Blocking Issues before moving to 02_complete. |
+| Required Input Schema | Human confirmation statement covering: (1) dual-slot color visible and distinguishable from single-slot, (2) FusionActiveLabel visible during fusion, (3) 600ms post-fusion flash visible, (4) all cues readable without debug overlays at target camera angle. |
 
 ---
 
