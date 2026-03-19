@@ -10,14 +10,21 @@
 | Field | Value |
 |---|---|
 | Stage | INTEGRATION |
-| Revision | 6 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | Proceed |
-| Blocking Issues | — |
+| Revision | 7 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC-1 through AC-4 fully covered by automated tests (38 tests, all passing, run_tests.sh exits 0). AC-5 requires human manual verification — no automated test can confirm visual readability, enemy/geometry visibility, and absence of debug overlays in-editor. |
+| Blocking Issues | AC-5 ("Level is human-playable in-editor: player, enemies, geometry, and key points of interest are visible and readable without debug overlays") has no automated or documented manual verification. A human must open `scenes/levels/containment_hall_01/containment_hall_01.tscn` in the Godot editor, press Play, and confirm: (a) player spawns visibly at the entry corridor, (b) all 4 enemies are visible and distinguishable in their assigned zones, (c) all zone floors and platforms are visible with no missing meshes, (d) no debug overlays or collision shape wireframes are visible during play, (e) the level exit trigger fires and logs "level_complete" when the player reaches the exit corridor. Evidence of this verification must be documented before Stage can advance to COMPLETE. |
+| Escalation Notes | AC-1 evidence: T-1 (scene loads), T-2/T-3 (player spawn at -25,1,0), T-4/T-5/T-6 (exit Area3D exists and wired). AC-2 evidence: T-18 through T-23 (6 named zone floors present). AC-3 evidence: T-11/T-25 (BoxShape3D, collision_mask=3), T-17/T-28 (RespawnZone monitors falls), LeftWall and RightWall StaticBody3D nodes present. AC-4 evidence: T-2/T-3 (SpawnPosition Marker3D at -25,1,0), T-30 (LevelExit Area3D at X>=88). |
 
 ## NEXT ACTION
-Engine Integration Agent: build `scenes/levels/containment_hall_01/containment_hall_01.tscn` per the spec at `agent_context/agents/2_spec/containment_hall_01_spec.md` and the full node-tree contract in that document. All 38 tests in `tests/levels/test_containment_hall_01.gd` (T-1 through T-30 plus T-ADV-31 through T-ADV-38) must go green. Key adversarial constraints added by Test Breaker: (1) all StaticBody3D shapes must be BoxShape3D specifically; (2) all gameplay floor top surfaces must have Y >= -3.0; (3) all 4 enemies must have X < 80; (4) LevelExit.position.x >= 80; (5) exactly one WorldEnvironment in the full scene tree; (6) SpawnPosition.position.y > 0; (7) RespawnZone.monitorable == true; (8) skill-check platform gaps must be strictly > 0 (non-overlapping). Do not modify test_movement_3d.tscn or project.godot (Task 5 handles main scene change).
+
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Human |
+| Status | BLOCKED on manual verification |
+| Reason | Acceptance criteria AC-1 through AC-4 are fully satisfied by the 38-test automated suite (run_tests.sh exits 0, zero regressions). AC-5 — human-playable in-editor without debug overlays — cannot be satisfied by any automated test and has not yet been documented as completed by a human reviewer. The ticket cannot advance to COMPLETE until a human opens containment_hall_01.tscn in the Godot editor, plays through the level, and confirms all five sub-items listed in Blocking Issues above. Once confirmed, a human or delegated agent should update Validation Status with the verification evidence and set Stage to COMPLETE. |
+| Required Input Schema | Human confirmation note documenting: editor version used, each of the 5 sub-items in Blocking Issues confirmed as pass or fail, and any visual defects found. |
 
 ---
 
