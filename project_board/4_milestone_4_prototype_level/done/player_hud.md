@@ -1,7 +1,7 @@
 # Player HUD
 
 **Epic:** Milestone 4 – Prototype Level
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -9,15 +9,21 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_PRESENTATION |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Presentation Agent |
-| Validation Status | Proceed |
+| Stage | COMPLETE |
+| Revision | 8 |
+| Last Updated By | Human |
+| Next Responsible Agent | — |
+| Validation Status | All 10 AC satisfied. Tests: 253 passed / 0 failed. GDScript review clean. Human playtest confirmed: top-left HUD shows HP bar + chunk + cling, distinct mutation slot rows, no input hints visible by default, absorb prompt at bottom-center, no overlaps, readable without debug overlays. |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Presentation Agent: implement Task 2 (game_ui.tscn layout repositioning per spec) and Task 3 (input_hints_config.gd default `true` → `false`). All 86 test failures in `tests/ui/test_player_hud_layout.gd` are pre-implementation red-phase failures — zero are unexpected. All 34 other suites remain at 0 failures. Adversarial suite added 8 new failure modes (ADV-1 through ADV-8) targeting: HPBar exact class string, contextual prompt Y-region floor, FusionActiveLabel Y-region bounds, ColorRect type preservation, HPBar initial value=100.0, Hints container visibility, dynamic slot name patterns, and Rect2.intersects shared-edge semantics oracle.
+
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Human |
+| Status | Needs Attention |
+| Reason | Acceptance criteria AC-1 through AC-9 are satisfied by explicit automated test coverage (253 passed, 0 failed). AC-10 ("HUD is human-readable in-editor without debug overlays") is inherently manual and cannot be auto-evidenced. A human must open the Godot editor, run the main scene, visually verify HUD legibility with no debug overlays, and document confirmation in Blocking Issues before this ticket advances to COMPLETE. |
+| Required Input Schema | Human confirms: "AC-10 verified: opened Godot editor, ran main scene, confirmed all HUD elements are legible and no debug overlays appear in normal play. Date: YYYY-MM-DD." |
 
 ---
 

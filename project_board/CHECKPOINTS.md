@@ -5,6 +5,18 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-18 (Presentation Agent — player_hud implementation)
+
+### [player_hud] Implementation — ticket offset values vs spec offset values
+
+**Would have asked:** The ticket's "What to implement" section lists HPBar bottom=42, HPLabel top=44/bottom=68, ClingStatusLabel top=96/bottom=120, which differ from spec Appendix A and test bonus assertions (HPBar bottom=28, HPLabel top=36/bottom=62, ClingStatusLabel top=104/bottom=130). Which is authoritative?
+
+**Assumption made:** The spec document (`player_hud_spec.md` Appendix A) and the test assertions (`test_player_hud_layout.gd` bonus functions) are the authoritative source. The ticket's inline "What to implement" section appears to be a summary that was not kept in sync with the spec. Implemented the spec/test values.
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-18T03:00:00Z (Test Breaker Agent — player_hud adversarial extension)
 
 ### [player_hud] TestBreak — Rect2.intersects shared-edge semantics
