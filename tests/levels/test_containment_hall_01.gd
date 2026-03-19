@@ -826,6 +826,366 @@ func test_t30_level_exit_x_position() -> void:
 	root.free()
 
 
+# ===========================================================================
+# ADVERSARIAL TESTS (T-ADV-31 through T-ADV-38)
+# Added by Test Breaker Agent — 2026-03-19
+# Each test exposes a vulnerability that T-1 through T-30 do not cover.
+# All tests are headless-safe: no physics tick, no await.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# T-ADV-31: Every StaticBody3D CollisionShape3D.shape is specifically BoxShape3D
+#            (not SphereShape3D, CapsuleShape3D, CylinderShape3D, etc.)
+#
+# Vulnerability: T-11 confirms shape is non-zero and "is BoxShape3D" but its
+# failure path uses `continue`, allowing a SphereShape3D on one node to produce
+# a type-mismatch fail message without a per-node PASS/FAIL for the type assertion.
+# A SphereShape3D has non-zero size and satisfies "non-zero shape" conceptually,
+# so an ambiguous T-11 message could be overlooked. T-ADV-31 emits a dedicated
+# named assertion per node for the BoxShape3D type.
+#
+# Spec: KEY_ARCH-2 "Geometry via StaticBody3D + BoxMesh + BoxShape3D."
+# ---------------------------------------------------------------------------
+func test_tadv31_all_static_bodies_use_box_shape3d() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	for node_name in STATIC_BODY_NAMES:
+		var node: Node = root.get_node_or_null(node_name)
+		if node == null:
+			_fail_test("T-ADV-31_" + node_name + "_shape_type", node_name + " node not found")
+			continue
+		var col: CollisionShape3D = _get_collision_shape(node)
+		if col == null or col.shape == null:
+			_fail_test("T-ADV-31_" + node_name + "_shape_type",
+				node_name + " has no CollisionShape3D or shape is null")
+			continue
+		_assert_true(
+			col.shape is BoxShape3D,
+			"T-ADV-31_" + node_name + "_is_box_shape3d",
+			node_name + " shape is " + col.shape.get_class() +
+			" — must be BoxShape3D (SphereShape3D/CapsuleShape3D would pass non-zero check but violate spec)"
+		)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-32: Gameplay floors have top surface Y >= -3.0; SkillCheckFloorBase
+#            top surface is <= -3.0 (confirmed below kill plane)
+#
+# Vulnerability: A floor placed at Y < -3.0 top surface is below or at the
+# CHUNK_KILL_Y=-4.0 boundary. A floor at Y=-3.5 is above CHUNK_KILL_Y but
+# below the RespawnZone trigger (zone spans Y: -9 to -1 in world space).
+# The player could land on such a floor and be unable to jump out, creating
+# a softlock.
+#
+# Spec: GEO-4 "SkillCheckFloorBase top surface at Y=-4.0"; all other floors
+# at Y=0. CHUNK_KILL_Y=-4.0 from player_controller_3d.gd.
+# ---------------------------------------------------------------------------
+func test_tadv32_floor_top_surfaces_above_kill_plane() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+
+	# Floors that must be at or above Y=-3.0 (reachable gameplay surfaces).
+	var gameplay_floor_names: Array[String] = [
+		"EntryFloor",
+		"MutationTeaseFloor",
+		"MutationTeasePlatform",
+		"FusionFloor",
+		"FusionPlatformA",
+		"FusionPlatformB",
+		"SkillCheckPlatform1",
+		"SkillCheckPlatform2",
+		"SkillCheckPlatform3",
+		"MiniBossFloor",
+		"ExitFloor",
+	]
+
+	for node_name in gameplay_floor_names:
+		var node: Node = root.get_node_or_null(node_name)
+		if node == null:
+			_fail_test("T-ADV-32_" + node_name + "_top_y", node_name + " not found")
+			continue
+		var col: CollisionShape3D = _get_collision_shape(node)
+		if col == null or col.shape == null or not (col.shape is BoxShape3D):
+			_fail_test("T-ADV-32_" + node_name + "_top_y", node_name + " has no valid BoxShape3D")
+			continue
+		var box: BoxShape3D = col.shape as BoxShape3D
+		var node_y: float = (node as Node3D).position.y
+		var col_offset_y: float = col.position.y
+		var top_surface_y: float = node_y + col_offset_y + (box.size.y * 0.5)
+		_assert_true(
+			top_surface_y >= -3.0,
+			"T-ADV-32_" + node_name + "_top_y_ge_neg3",
+			node_name + " top surface Y = " + str(top_surface_y) +
+			" is below -3.0 m — floor is unreachable or creates softlock near kill plane"
+		)
+
+	# SkillCheckFloorBase must be BELOW -3.0 (intentionally below kill plane).
+	var catch_floor: Node = root.get_node_or_null("SkillCheckFloorBase")
+	if catch_floor == null:
+		_fail_test("T-ADV-32_SkillCheckFloorBase_top_y", "SkillCheckFloorBase not found")
+	else:
+		var col: CollisionShape3D = _get_collision_shape(catch_floor)
+		if col == null or col.shape == null or not (col.shape is BoxShape3D):
+			_fail_test("T-ADV-32_SkillCheckFloorBase_top_y", "SkillCheckFloorBase has no valid BoxShape3D")
+		else:
+			var box: BoxShape3D = col.shape as BoxShape3D
+			var node_y: float = (catch_floor as Node3D).position.y
+			var col_offset_y: float = col.position.y
+			var top_surface_y: float = node_y + col_offset_y + (box.size.y * 0.5)
+			_assert_true(
+				top_surface_y <= -3.0,
+				"T-ADV-32_SkillCheckFloorBase_top_y_le_neg3",
+				"SkillCheckFloorBase top surface Y = " + str(top_surface_y) +
+				" — expected <= -3.0 (visual catch floor must be below kill plane)"
+			)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-33: All 4 enemies have position.x < 80.0 (not in exit corridor)
+#
+# Vulnerability: T-24 checks exact positions within ±0.1 m tolerance. If an
+# implementer places EnemyMiniBoss at X=82 (inside exit corridor), T-24 fails
+# because X=82 is >0.1 from X=67, but the failure message says "position out
+# of tolerance" — not "enemy blocks exit corridor". T-ADV-33 produces a
+# semantic failure: "enemy in exit corridor blocks traversal".
+#
+# Spec: ENC-1, zone layout table "Exit corridor X: 80 to 95 — Level exit trigger
+# (Area3D)." No enemy is assigned to this zone.
+# ---------------------------------------------------------------------------
+func test_tadv33_all_enemies_outside_exit_corridor() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	for enemy_name in ENEMY_NODE_NAMES:
+		var node: Node = root.get_node_or_null(enemy_name)
+		if node == null:
+			_fail_test("T-ADV-33_" + enemy_name + "_x_lt_80", enemy_name + " not found")
+			continue
+		var x_pos: float = (node as Node3D).position.x
+		_assert_true(
+			x_pos < 80.0,
+			"T-ADV-33_" + enemy_name + "_not_in_exit_corridor",
+			enemy_name + " position.x = " + str(x_pos) +
+			" — enemy is in or beyond exit corridor (X >= 80), which blocks level traversal"
+		)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-34: LevelExit position.x >= 80.0 (must not be inside gameplay zones)
+#
+# Vulnerability: T-30 asserts x >= 88.0 (tight spec value). A mutant that
+# places LevelExit at X=75 (inside mini-boss arena, X: 55-80) would allow
+# the player to trigger "level_complete" without defeating the mini-boss.
+# T-ADV-34 uses the zone-boundary value X=80 as the conservative guard,
+# separate from T-30's spec-precision check. Both tests must pass — they
+# fail on different mutation vectors.
+#
+# Spec: zone layout "Exit corridor X: 80 to 95"; EXIT-1 AC-EXIT-1.5 x >= 88.
+# ---------------------------------------------------------------------------
+func test_tadv34_level_exit_not_in_combat_zones() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	var node: Node = root.get_node_or_null("LevelExit")
+	if node == null:
+		_fail_test("T-ADV-34_level_exit_zone", "LevelExit not found")
+		root.free()
+		return
+	var x_pos: float = (node as Node3D).position.x
+	_assert_true(
+		x_pos >= 80.0,
+		"T-ADV-34_level_exit_x_ge_80",
+		"LevelExit position.x = " + str(x_pos) +
+		" — exit trigger is inside a gameplay zone (X < 80), allowing premature level completion"
+	)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-35: Exactly one WorldEnvironment node exists in the scene tree
+#
+# Vulnerability: T-26 asserts the node exists by name at root level. A scene
+# built by copy-paste of sub-trees could introduce a second WorldEnvironment
+# (e.g. as a child of an instanced sub-scene). Two WorldEnvironment nodes in
+# Godot 4 cause unpredictable compositing: one silently overrides the other,
+# making the level appear black or incorrectly lit. T-26 cannot detect a
+# second WorldEnvironment nested inside a child node. T-ADV-35 scans the
+# full tree recursively and counts all WorldEnvironment instances.
+#
+# Spec: ENV-1 AC-ENV-1.1; ticket AC "human-playable...visible and readable
+# without debug overlays."
+# ---------------------------------------------------------------------------
+func test_tadv35_exactly_one_world_environment() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	var count: int = _count_nodes_of_class(root, "WorldEnvironment")
+	_assert_true(
+		count == 1,
+		"T-ADV-35_exactly_one_world_environment",
+		"Found " + str(count) + " WorldEnvironment node(s) in scene tree — expected exactly 1. " +
+		"Zero causes a black render; two causes unpredictable compositing."
+	)
+	root.free()
+
+
+# Recursive helper: count nodes whose class string matches class_name.
+func _count_nodes_of_class(node: Node, class_name_str: String) -> int:
+	var count: int = 0
+	if node.get_class() == class_name_str:
+		count += 1
+	for i in range(node.get_child_count()):
+		count += _count_nodes_of_class(node.get_child(i), class_name_str)
+	return count
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-36: SpawnPosition.position.y > 0.0 (above floor surface, prevents
+#            player spawning inside geometry)
+#
+# Vulnerability: T-3 checks SpawnPosition is within ±0.5 m of (-25, 1, 0).
+# A spawn at Y=0.0 is exactly on the floor surface — the player origin is at
+# the floor top, which means half the player's collision shape is below the
+# floor. This causes the physics engine to push the player upward on the first
+# frame, which is usually harmless, but a spawn at Y=-0.1 (inside the floor)
+# can cause a one-frame fall-through before collision resolves, resulting in an
+# immediate respawn on level load. T-3 would fail for Y=-0.1 (|−0.1−1.0|=1.1 >
+# 0.5), but would pass for Y=0.6 (inside the tolerance). T-ADV-36 asserts the
+# invariant explicitly with a semantic label.
+#
+# Spec: SPAWN-1 "Y=1 placement puts player 1 m above floor — consistent with
+# test_movement_3d.tscn pattern."
+# ---------------------------------------------------------------------------
+func test_tadv36_spawn_position_above_floor() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	var node: Node = root.get_node_or_null("SpawnPosition")
+	if node == null:
+		_fail_test("T-ADV-36_spawn_y_above_floor", "SpawnPosition not found")
+		root.free()
+		return
+	var y_pos: float = (node as Node3D).position.y
+	_assert_true(
+		y_pos > 0.0,
+		"T-ADV-36_spawn_position_y_gt_0",
+		"SpawnPosition.position.y = " + str(y_pos) +
+		" — spawn at or below Y=0 places player inside or on floor surface, risking softlock on level load"
+	)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-37: RespawnZone.monitorable == true
+#            (distinct from monitoring — both flags must be true)
+#
+# Vulnerability: T-17 checks `monitoring == true`. Godot 4's Area3D has two
+# separate flags:
+#   - monitoring: whether this Area3D detects bodies/areas entering it
+#   - monitorable: whether other Area3Ds/physics bodies can detect this Area3D
+# A RespawnZone with monitorable=false still fires body_entered for the player
+# (monitoring=true is sufficient), BUT if a future LevelExit or zone system
+# uses area_entered to detect the RespawnZone, monitorable=false silently
+# breaks that detection. The spec states "Uses Godot 4 Area3D defaults" which
+# means monitorable=true must not be overridden.
+#
+# Spec: RESPAWN-1 "Uses Godot 4 Area3D defaults (layer 1, mask 1). No explicit
+# override needed." The default for monitorable in Godot 4 is true.
+# CHECKPOINT: conservative assumption — both monitoring and monitorable must
+# equal the Godot 4 Area3D default (true).
+# ---------------------------------------------------------------------------
+func test_tadv37_respawn_zone_monitorable() -> void:  # CHECKPOINT
+	var root: Node = _load_scene()
+	if root == null:
+		return
+	var zone: Node = root.get_node_or_null("RespawnZone")
+	if zone == null:
+		_fail_test("T-ADV-37_respawn_monitorable", "RespawnZone not found")
+		root.free()
+		return
+	_assert_true(
+		(zone as Area3D).monitorable == true,
+		"T-ADV-37_respawn_zone_monitorable_true",
+		"RespawnZone.monitorable is false — spec requires Godot 4 Area3D defaults (monitorable=true). " +
+		"Setting monitorable=false breaks any future area_entered detection of this zone."
+	)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# T-ADV-38: Skill-check platform gaps are strictly positive (platforms do not
+#            overlap or touch)
+#
+# Vulnerability: The spec requires gaps <= 1.5 m (T-27) but does not explicitly
+# state gaps must be > 0 in the AC text. T-27 includes `gap > 0.0` checks, but
+# those checks are embedded inside a compound function alongside the <= 1.5 check.
+# T-ADV-38 isolates the "strictly positive gap" assertion as a standalone named
+# mutation target. If a refactor of T-27 drops the > 0.0 check, or if an
+# implementer places Platform2 immediately adjacent to Platform1 (gap = 0 —
+# platforms touching but not overlapping), this dedicated test catches it with
+# an unambiguous semantic label: "platforms are touching, no skill-check gap exists."
+#
+# Spec: GEO-4 "Gap 1: 1.0 m. Gap 2: 1.0 m." Both must be strictly positive.
+# Max jump range = 1.98 m; a gap of 0 is trivially passable but violates the
+# level design intent of requiring a jump.
+# ---------------------------------------------------------------------------
+func test_tadv38_skill_check_gaps_strictly_positive() -> void:
+	var root: Node = _load_scene()
+	if root == null:
+		return
+
+	var platform_names: Array[String] = ["SkillCheckPlatform1", "SkillCheckPlatform2", "SkillCheckPlatform3"]
+	var rights: Array[float] = []
+	var lefts: Array[float] = []
+	var valid: bool = true
+
+	for name in platform_names:
+		var node: Node = root.get_node_or_null(name)
+		if node == null:
+			_fail_test("T-ADV-38_gap_" + name + "_missing", name + " not found")
+			valid = false
+			continue
+		var col: CollisionShape3D = _get_collision_shape(node)
+		if col == null or col.shape == null or not (col.shape is BoxShape3D):
+			_fail_test("T-ADV-38_gap_" + name + "_no_box", name + " has no valid BoxShape3D")
+			valid = false
+			continue
+		var box: BoxShape3D = col.shape as BoxShape3D
+		var node_x: float = (node as Node3D).position.x
+		var col_offset_x: float = col.position.x
+		var center_x: float = node_x + col_offset_x
+		var half_w: float = box.size.x * 0.5
+		lefts.append(center_x - half_w)
+		rights.append(center_x + half_w)
+
+	if not valid:
+		root.free()
+		return
+
+	var gap1: float = lefts[1] - rights[0]
+	_assert_true(
+		gap1 > 0.0,
+		"T-ADV-38_gap1_strictly_positive",
+		"SkillCheckPlatform1 and SkillCheckPlatform2 are touching or overlapping " +
+		"(gap = " + str(gap1) + " m). The skill check requires a real jump; gap must be > 0."
+	)
+
+	var gap2: float = lefts[2] - rights[1]
+	_assert_true(
+		gap2 > 0.0,
+		"T-ADV-38_gap2_strictly_positive",
+		"SkillCheckPlatform2 and SkillCheckPlatform3 are touching or overlapping " +
+		"(gap = " + str(gap2) + " m). The skill check requires a real jump; gap must be > 0."
+	)
+
+	root.free()
+
+
 # ---------------------------------------------------------------------------
 # run_all — invoked by tests/run_tests.gd
 # ---------------------------------------------------------------------------
@@ -864,6 +1224,14 @@ func run_all() -> int:
 	test_t28_respawn_zone_shape_y_ge_8()
 	test_t29_mutation_tease_platform_top_surface_height()
 	test_t30_level_exit_x_position()
+	test_tadv31_all_static_bodies_use_box_shape3d()
+	test_tadv32_floor_top_surfaces_above_kill_plane()
+	test_tadv33_all_enemies_outside_exit_corridor()
+	test_tadv34_level_exit_not_in_combat_zones()
+	test_tadv35_exactly_one_world_environment()
+	test_tadv36_spawn_position_above_floor()
+	test_tadv37_respawn_zone_monitorable()
+	test_tadv38_skill_check_gaps_strictly_positive()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

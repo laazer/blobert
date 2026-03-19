@@ -1461,3 +1461,85 @@ Tickets queued: containment_hall_01_layout.md
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-19 (Test Breaker Agent — containment_hall_01 adversarial extension)
+
+### [containment_hall_01_layout] TestBreak — BoxShape3D type enforcement per node vs collective
+
+**Would have asked:** T-11 already checks that every StaticBody3D's CollisionShape3D has a BoxShape3D with non-zero extents, but the failure path in T-11 for a non-BoxShape3D uses `continue` and records a type failure. Should there be a dedicated adversarial test that explicitly enumerates every node and asserts `is BoxShape3D` rather than relying on T-11's compound logic to surface a SphereShape3D mutation?
+
+**Assumption made:** Added T-ADV-31 which iterates every StaticBody3D and asserts `col.shape is BoxShape3D` with a single named assertion per node. This is a distinct adversarial mutation target: an implementer who accidentally uses SphereShape3D would pass T-11's non-zero check (SphereShape3D has a non-zero radius that could satisfy a different check) but fail T-ADV-31's strict type guard.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — SkillCheckFloorBase reachability kill-plane boundary
+
+**Would have asked:** The spec places SkillCheckFloorBase top surface at Y=-4.0, which is exactly at CHUNK_KILL_Y. The spec says the player respawns before reaching it. However, no test verifies that every non-catch floor has a top surface >= -3.0 m (safely above the kill plane). Should the test explicitly enumerate all "playable" floors (excluding SkillCheckFloorBase) and assert their top surface Y >= -3.0?
+
+**Assumption made:** Added T-ADV-32 which computes the top surface Y for every gameplay floor (all StaticBody3D nodes except SkillCheckFloorBase) and asserts it is >= -3.0. SkillCheckFloorBase is explicitly excluded and asserted to have a top surface <= -3.0 (confirming it IS below the kill plane). This encodes both the requirement and the intentional exception.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — Enemy X-axis zone boundary (exit corridor exclusion)
+
+**Would have asked:** The spec places enemies only in zones X: -10 to 80. No test checks the upper X boundary per-enemy. An enemy placed at X=85 (exit corridor) would pass T-24 if the Y coordinate is wrong but would block level traversal. Should a dedicated test assert all enemies have X < 80?
+
+**Assumption made:** Added T-ADV-33 which iterates all four canonical enemy nodes and asserts `position.x < 80.0`. This is orthogonal to T-24's position-exact tolerance check: T-24 could still pass if the implementer places an enemy at X=67 and Y=0.4 (within 0.1 m Y tolerance), while T-ADV-33 purely guards the zone boundary.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — LevelExit premature-exit guard (X >= 80)
+
+**Would have asked:** T-30 asserts `LevelExit.position.x >= 88`. The spec's AC-EXIT-1.5 uses 88. But the exit corridor starts at X=80. If an implementer places LevelExit at X=70 (inside the mini-boss arena, X: 55-80), a player could trigger "level_complete" before defeating the mini-boss. Should there be a separate adversarial test using the more conservative X >= 80 bound to catch placement inside the mini-boss zone?
+
+**Assumption made:** Added T-ADV-34 asserting `LevelExit.position.x >= 80.0` (corridor start) as a distinct adversarial mutation. T-30 retains the 88.0 precision check. T-ADV-34 catches the case where the exit is placed anywhere inside gameplay zones (X < 80) even if T-30 also fails, providing an independent failure signal with a clear semantic label.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — Exactly one WorldEnvironment (not zero, not two)
+
+**Would have asked:** T-26 asserts that a WorldEnvironment node exists by name. But Godot 4 allows multiple WorldEnvironment nodes; having two can cause unexpected rendering compositing. Should a test count WorldEnvironment nodes in the full tree to assert exactly one?
+
+**Assumption made:** Added T-ADV-35 which recursively scans the entire instantiated scene tree, counts all nodes whose class is "WorldEnvironment", and asserts the count is exactly 1. This catches both the missing case (T-26 already catches this) and the duplicate case (two WorldEnvironments from a copy-paste error during scene authoring), which T-26 cannot detect.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — SpawnPosition Y above floor surface (softlock guard)
+
+**Would have asked:** T-3 checks SpawnPosition within 0.5 m of (-25, 1, 0). A position of (-25, -0.3, 0) is within 0.5 m Y tolerance of Y=1 only if the tolerance envelope passes — wait, 1.3 m difference fails POS_TOL=0.5. But the spec's SPAWN-1 only requires Y > 0 (above floor). Should a dedicated adversarial assertion check `SpawnPosition.position.y > 0` to prevent the player spawning inside geometry?
+
+**Assumption made:** Added T-ADV-36 asserting `SpawnPosition.position.y > 0.0`. T-3 uses POS_TOL=0.5 which means Y as low as 0.5 passes T-3. But a Y of 0.1 would also pass T-3 (expected Y=1.0, tolerance 0.5, actual 0.6 — wait 0.1 fails T-3 since |0.1-1.0|=0.9 > 0.5). Conservative: T-ADV-36 guards the invariant explicitly with a clear semantic name, independent of coordinate-tolerance arithmetic.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestBreak — RespawnZone monitorable flag (distinct from monitoring)
+
+**Would have asked:** T-17 checks `monitoring == true`. But Area3D has two flags: `monitoring` (whether it detects bodies entering it) and `monitorable` (whether other areas can detect it). If `monitorable = false`, the RespawnZone can still detect the player via `body_entered`, so functionally the respawn works. However, if a future Area3D (e.g. LevelExit) is set to detect the RespawnZone via area_entered, monitorable=false would break that. Should T-17 be extended or a new test added for monitorable?
+
+**Assumption made:** Added T-ADV-37 asserting `RespawnZone.monitorable == true`. This is a separate flag from `monitoring` and is not tested anywhere in T-1 through T-30. While not critical for the current implementation (no area-detection of RespawnZone is wired), the spec RESPAWN-1 says "Uses Godot 4 Area3D defaults (layer 1, mask 1)" which implies no default properties are overridden — including monitorable. The test encodes this implicit invariant. Marked with CHECKPOINT comment.
+
+**Confidence:** Medium
+
+---
+
+### [containment_hall_01_layout] TestBreak — Skill-check platforms strictly non-overlapping (adversarial gap=0 mutation)
+
+**Would have asked:** T-27 already includes `gap > 0.0` checks. Should a separate adversarial test isolate this assertion with a clear mutation-target name so that if T-27 is refactored and the positive-gap check is dropped, the adversarial test still catches it independently?
+
+**Assumption made:** Added T-ADV-38 as a standalone test whose sole purpose is to assert both skill-check gaps are strictly positive (non-overlapping). This is a dedicated mutation target: if an implementer sets Platform2 center at X=41 (same as Platform1 right edge), the gap computes to 0.0, which passes `<= 1.5` but must fail `> 0.0`. Isolating the check in a named adversarial test makes the failure mode unambiguous in the test output.
+
+**Confidence:** High
+
+---

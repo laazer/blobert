@@ -9,15 +9,15 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_ENGINE |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Validation Status | Proceed |
 | Blocking Issues | — |
 
 ## NEXT ACTION
-Test Breaker Agent: review and adversarially extend `tests/levels/test_containment_hall_01.gd`. Verify all 30 primary tests fail correctly in red phase (scene absent). Add adversarial assertions per ticket Task 4: verify floor collision_mask includes layer 1, verify no StaticBody3D has zero-size shape, verify RespawnZone shape Y extent >= 8 m, verify LevelExit monitoring == true. Reference `test_movement_3d.tscn` for collision layer values. All adversarial tests must also be headless-safe.
+Engine Integration Agent: build `scenes/levels/containment_hall_01/containment_hall_01.tscn` per the spec at `agent_context/agents/2_spec/containment_hall_01_spec.md` and the full node-tree contract in that document. All 38 tests in `tests/levels/test_containment_hall_01.gd` (T-1 through T-30 plus T-ADV-31 through T-ADV-38) must go green. Key adversarial constraints added by Test Breaker: (1) all StaticBody3D shapes must be BoxShape3D specifically; (2) all gameplay floor top surfaces must have Y >= -3.0; (3) all 4 enemies must have X < 80; (4) LevelExit.position.x >= 80; (5) exactly one WorldEnvironment in the full scene tree; (6) SpawnPosition.position.y > 0; (7) RespawnZone.monitorable == true; (8) skill-check platform gaps must be strictly > 0 (non-overlapping). Do not modify test_movement_3d.tscn or project.godot (Task 5 handles main scene change).
 
 ---
 
