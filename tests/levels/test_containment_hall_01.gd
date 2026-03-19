@@ -56,7 +56,7 @@ const POS_TOL_STRICT: float = 0.1
 const STATIC_BODY_NAMES: Array[String] = [
 	"EntryFloor",
 	"EntryLeftWall",
-	"EntryRightBoundary",
+
 	"MutationTeaseFloor",
 	"MutationTeasePlatform",
 	"FusionFloor",
