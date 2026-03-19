@@ -1362,3 +1362,102 @@ Tickets queued: player_hud.md (SPECIFICATION stage — Spec Agent authoring)
 
 ---
 
+
+## Run: 2026-03-17T02:00:00Z
+Tickets queued: containment_hall_01_layout.md
+
+---
+
+## Run: 2026-03-18T14:00:00Z (Spec Agent — containment_hall_01 specification)
+
+### [containment_hall_01_layout] Spec — Skill check gap width: 3 m initial layout exceeds safe jump range
+
+**Would have asked:** The initial zone layout placed platforms 3 m apart in the skill check zone (X: 35–55). The derived max horizontal jump range is ~1.98 m. Should the gap be reduced to be crossable, and to what value?
+
+**Assumption made:** Gap reduced to 1.0 m for both skill-check gaps (Platform1→Platform2 and Platform2→Platform3). 1.0 m is approximately 50% of maximum jump range (1.98 m), giving >25% safety margin even accounting for imperfect player timing. Platform widths set to 4 m (Platform1, Platform2) and 8 m (Platform3, landing zone). All coordinates specified in spec Appendix A and GEO-4.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] Spec — Enemy Y position: enemy origin height unknown
+
+**Would have asked:** The enemy scene's collision mesh height is not specified in the ticket or any readily accessible file. What Y offset should be used for enemies placed atop platforms (top Y=0.8) and the main floor (top Y=0)?
+
+**Assumption made:** Enemy collision origin is assumed to be at the center of a ~1.0 m tall mesh, placing the base 0.5 m below the origin. Platform-standing enemies: Y = platform_top + 0.5 = 0.8 + 0.5 = 1.3 m. Floor-standing enemy (MiniBoss): Y = 0.0 + 0.5 = 0.5 m. Tolerance ±0.1 m on all enemy position tests to absorb any deviation from the actual mesh height.
+
+**Confidence:** Medium
+
+---
+
+### [containment_hall_01_layout] Spec — RespawnZone shape width: level spans 125 m
+
+**Would have asked:** The sandbox level uses a 60 m wide RespawnZone. The containment hall is 125 m wide (X: -30 to 95). Should the zone be sized to match?
+
+**Assumption made:** RespawnZone CollisionShape3D BoxShape3D width set to 130 m (covers full -30 to 95 span with 2.5 m margin on each end), centered at X=32.5. This ensures no falling player or chunk exits the zone's X bounds. Conservative — wider than necessary but costs nothing.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] Spec — EntryRightBoundary: thin wall or no wall at X=-10
+
+**Would have asked:** The ticket does not specify whether a dividing wall exists between the entry corridor and the mutation tease room. Should a thin barrier exist at X=-10 or should the zone be open?
+
+**Assumption made:** A thin 0.5 m wide StaticBody3D named `EntryRightBoundary` is included at X=-10 for visual level readability (per ticket AC: "level is human-playable in-editor: geometry visible and readable"). It acts as a visual zone separator, not a gameplay blocker. Its collision shape means the player's right side contacts it at X≈-10.25 when walking right — but at 0.5 m width the player simply passes through the gap (the wall is a visual element; if it blocks traversal the Implementer should make it a MeshInstance3D without collision, but the spec includes it as StaticBody3D by default for simplicity).
+
+**Confidence:** Low
+
+---
+
+### [containment_hall_01_layout] Spec — Player initial position in .tscn: must match SpawnPosition
+
+**Would have asked:** Should the Player3D instance's transform in the .tscn file be set to the SpawnPosition coordinates (-25, 1, 0), or should the scene use a script to move the player to SpawnPosition on _ready?
+
+**Assumption made:** The Player3D instance's transform is set directly to (-25, 1, 0) in the .tscn file (same approach used in test_movement_3d.tscn which has no spawn-position script). No _ready script is needed. The RespawnZone handles repositioning on fall-death. This is the conservative zero-code approach.
+
+**Confidence:** High
+
+---
+
+## Run: 2026-03-18 (Test Designer Agent — containment_hall_01_layout)
+
+### [containment_hall_01_layout] TestDesign — player group detection method
+
+**Would have asked:** The spec's AC-ENC-1.x tests require verifying enemy nodes exist, but nodes instantiated without a scene tree do not run _ready, so group membership set in _ready would be absent. Should tests assert group membership, or only node existence?
+
+**Assumption made:** Tests assert node existence by name and class (not group membership), because group assignment happens in _ready which does not run on a bare PackedScene.instantiate() without a scene tree. The "at least 4 enemies" test counts direct children matching the known enemy node names from the spec (EnemyMutationTease, EnemyFusionA, EnemyFusionB, EnemyMiniBoss). The "player group" test from the ticket task description is converted to a Player3D node existence test instead.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestDesign — InfectionUI vs GameUI node name
+
+**Would have asked:** The ticket task description says "GameUI CanvasLayer node exists" but the spec NODE-1 section specifies the node is named "InfectionUI" (matching test_movement_3d.tscn convention). Which name is authoritative?
+
+**Assumption made:** The spec document (NODE-1, risk analysis paragraph) is authoritative: the GameUI instance node name is "InfectionUI", matching the reference scene test_movement_3d.tscn. The ticket task description used a generic label. Test asserts get_node_or_null("InfectionUI") is non-null.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestDesign — collision_mask headless readability
+
+**Would have asked:** Is collision_mask readable on a StaticBody3D that has been instantiated without being added to the scene tree? Some Godot 4 physics properties require PhysicsServer3D registration.
+
+**Assumption made:** collision_mask is a plain integer property on PhysicsBody3D and is readable before tree entry without PhysicsServer3D involvement. The value is stored in the node, not the server. Tests assert collision_mask == 3 directly on the node.
+
+**Confidence:** High
+
+---
+
+### [containment_hall_01_layout] TestDesign — RespawnZone spawn_point resolution without tree
+
+**Would have asked:** The RespawnZone.spawn_point is a NodePath. get_node_or_null(NodePath) on a node that is not inside the tree will return null even if the path is valid. How can the test verify the path resolves to a real node?
+
+**Assumption made:** The test verifies (a) spawn_point NodePath is non-empty (structural test, headless-safe) and (b) the target node name extracted from the NodePath string matches "SpawnPosition". Full resolution requires tree insertion; that is left for integration tests. This is the strictest defensible headless-safe assertion.
+
+**Confidence:** High
+
+---
