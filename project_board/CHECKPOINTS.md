@@ -1543,3 +1543,31 @@ Tickets queued: containment_hall_01_layout.md
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-19 (Engine Integration Agent — containment_hall_01_layout implementation)
+
+### [containment_hall_01_layout] Implementation — RespawnZone CollisionShape3D position
+
+**Would have asked:** The spec places the RespawnZone node at position (32.5, 0, 0) and the CollisionShape3D at transform offset (0, -5, 0). But the test_movement_3d.tscn reference places the respawn shape offset on the CollisionShape3D child with the node itself at origin. Should the X centering offset go on the node transform or the CollisionShape3D child?
+
+**Assumption made:** Applied the X centering offset (32.5) to the CollisionShape3D child transform (32.5, -5, 0) and left the RespawnZone node at world origin. This matches the test_movement_3d.tscn pattern where the CollisionShape3D carries the positional offset. All T-17 and T-28 tests pass with size.y = 8.
+
+**Confidence:** High
+
+### [containment_hall_01_layout] Implementation — LevelExit inline script signal connection
+
+**Would have asked:** The spec says the body_entered signal must be connected via a [connection] block in the .tscn file. However, an inline GDScript in the scene that connects the signal in _ready() is also valid. Which approach should be used?
+
+**Assumption made:** Used an inline GDScript that connects body_entered in _ready(). This avoids relying on a [connection] block which requires the signal source and target paths to be correct at parse time. The _ready() approach is self-contained and resilient to node ordering changes. The LevelExit node has monitoring=true (Area3D default).
+
+**Confidence:** High
+
+### [containment_hall_01_layout] Implementation — project.godot main scene update (Task 5)
+
+**Would have asked:** The ticket instructs updating project.godot only after all 38 tests pass. Should test_movement_3d.tscn remain as a fallback reference noted in a comment?
+
+**Assumption made:** Updated run/main_scene in project.godot directly. No comment added — the git history (test_movement_3d.tscn was the prior value) and CLAUDE.md already document the sandbox scene. Ran full test suite after the change to confirm zero regressions.
+
+**Confidence:** High
+
+---

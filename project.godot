@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="blobert"
-run/main_scene="res://scenes/levels/sandbox/test_movement_3d.tscn"
+run/main_scene="res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
 config/features=PackedStringArray("4.6")
 
 [autoload]

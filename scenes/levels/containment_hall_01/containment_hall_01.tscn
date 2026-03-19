@@ -1,0 +1,358 @@
+[gd_scene format=3 uid="uid://containment_hall_01"]
+
+[ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
+[ext_resource type="PackedScene" uid="uid://bnenemy_infection_3d" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" uid="uid://cgame_ui001" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.2, 0.25, 0.3, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.35, 0.4, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_platform"]
+albedo_color = Color(0.4, 0.45, 0.5, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_exit"]
+albedo_color = Color(0.3, 0.5, 0.3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_entry_floor"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_entry_floor"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_entry_left_wall"]
+size = Vector3(1, 8, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_entry_left_wall"]
+size = Vector3(1, 8, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_entry_right_boundary"]
+size = Vector3(0.5, 8, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_entry_right_boundary"]
+size = Vector3(0.5, 8, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mutation_tease_floor"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mutation_tease_floor"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mutation_tease_platform"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mutation_tease_platform"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fusion_floor"]
+size = Vector3(25, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fusion_floor"]
+size = Vector3(25, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fusion_platform_a"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fusion_platform_a"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fusion_platform_b"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fusion_platform_b"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_skill_check_floor_base"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_skill_check_floor_base"]
+size = Vector3(20, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_skill_check_p1"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_skill_check_p1"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_skill_check_p2"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_skill_check_p2"]
+size = Vector3(4, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_skill_check_p3"]
+size = Vector3(8, 1, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_skill_check_p3"]
+size = Vector3(8, 1, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mini_boss_floor"]
+size = Vector3(25, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mini_boss_floor"]
+size = Vector3(25, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit_floor"]
+size = Vector3(15, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit_floor"]
+size = Vector3(15, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(130, 8, 15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_level_exit"]
+size = Vector3(4, 6, 10)
+
+[sub_resource type="GDScript" id="GDScript_level_exit"]
+script/source = "extends Area3D
+
+func _ready() -> void:
+	body_entered.connect(_on_body_entered)
+
+func _on_body_entered(body: Node3D) -> void:
+	if body.is_in_group(\"player\"):
+		print(\"level_complete\")
+"
+
+[node name="ContainmentHall01" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 5, 10, 5)
+shadow_enabled = true
+
+[node name="InfectionInteractionHandler" type="Node" parent="."]
+script = ExtResource("3_infection_handler")
+
+[node name="SpawnPosition" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 1, 0)
+
+[node name="RespawnZone" type="Area3D" parent="."]
+script = ExtResource("2_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.5, -5, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[node name="LevelExit" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 93, 1, 0)
+script = SubResource("GDScript_level_exit")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LevelExit"]
+shape = SubResource("BoxShape3D_level_exit")
+
+[node name="InfectionUI" parent="." instance=ExtResource("5_game_ui")]
+
+[node name="EntryFloor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EntryFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_entry_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EntryFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_floor")
+mesh = SubResource("BoxMesh_entry_floor")
+
+[node name="EntryLeftWall" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31, 2, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EntryLeftWall"]
+shape = SubResource("BoxShape3D_entry_left_wall")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EntryLeftWall"]
+material_override = SubResource("Material_wall")
+mesh = SubResource("BoxMesh_entry_left_wall")
+
+[node name="EntryRightBoundary" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="EntryRightBoundary"]
+shape = SubResource("BoxShape3D_entry_right_boundary")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EntryRightBoundary"]
+material_override = SubResource("Material_wall")
+mesh = SubResource("BoxMesh_entry_right_boundary")
+
+[node name="MutationTeaseFloor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MutationTeaseFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_mutation_tease_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MutationTeaseFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_floor")
+mesh = SubResource("BoxMesh_mutation_tease_floor")
+
+[node name="MutationTeasePlatform" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MutationTeasePlatform"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_mutation_tease_platform")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MutationTeasePlatform"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_mutation_tease_platform")
+
+[node name="FusionFloor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FusionFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_fusion_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FusionFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_floor")
+mesh = SubResource("BoxMesh_fusion_floor")
+
+[node name="FusionPlatformA" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FusionPlatformA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_fusion_platform_a")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FusionPlatformA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_fusion_platform_a")
+
+[node name="FusionPlatformB" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FusionPlatformB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_fusion_platform_b")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="FusionPlatformB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_fusion_platform_b")
+
+[node name="SkillCheckFloorBase" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SkillCheckFloorBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.5, 0)
+shape = SubResource("BoxShape3D_skill_check_floor_base")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SkillCheckFloorBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.5, 0)
+material_override = SubResource("Material_floor")
+mesh = SubResource("BoxMesh_skill_check_floor_base")
+
+[node name="SkillCheckPlatform1" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SkillCheckPlatform1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_skill_check_p1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SkillCheckPlatform1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_skill_check_p1")
+
+[node name="SkillCheckPlatform2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SkillCheckPlatform2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_skill_check_p2")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SkillCheckPlatform2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_skill_check_p2")
+
+[node name="SkillCheckPlatform3" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SkillCheckPlatform3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_skill_check_p3")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SkillCheckPlatform3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_platform")
+mesh = SubResource("BoxMesh_skill_check_p3")
+
+[node name="MiniBossFloor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.5, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MiniBossFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_mini_boss_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MiniBossFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_floor")
+mesh = SubResource("BoxMesh_mini_boss_floor")
+
+[node name="ExitFloor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 87.5, 0, 0)
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_exit_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("Material_exit")
+mesh = SubResource("BoxMesh_exit_floor")
+
+[node name="EnemyMutationTease" parent="." instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+
+[node name="EnemyFusionA" parent="." instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.3, 0)
+
+[node name="EnemyFusionB" parent="." instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 1.3, 0)
+
+[node name="EnemyMiniBoss" parent="." instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67, 0.5, 0)
+
+[node name="Player3D" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 1, 0)
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]
