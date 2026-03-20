@@ -5,6 +5,58 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-19 (Spec Agent — fusion_opportunity_room specification)
+
+### [fusion_opportunity_room] Spec — T-34 collision_mask duplication with T-25
+
+**Would have asked:** The ticket's Task 2 specifies T-34 as "FusionFloor collision_mask == 3; FusionPlatformA collision_mask == 3; FusionPlatformB collision_mask == 3." T-25 in test_containment_hall_01.gd already asserts collision_mask == 3 for ALL static bodies including these three nodes. Emitting duplicate named assertions would be redundant. Should T-34 cover the gap assertion instead?
+
+**Assumption made:** T-34 is remapped to the FUSE-GEO-4 gap assertion (platform gap width and reachability bound). This avoids duplicating T-25 and adds genuinely new coverage. The spec documents this remapping explicitly in the FUSE-GEO-4 NOTE block. The collision_mask requirement is satisfied by reference to T-25.
+
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] Spec — T-35 and T-36 duplication with T-24 enemy positions
+
+**Would have asked:** T-24 already asserts EnemyFusionA at (15, 1.3, 0) ±0.1 m and EnemyFusionB at (28, 1.3, 0) ±0.1 m. T-35 and T-36 in the ticket's Task 2 list also assert enemy positions. Emitting duplicate position assertions violates NFR-3. What should T-35 and T-36 cover instead?
+
+**Assumption made:** T-35 covers EnemyFusionA scene path (get_scene_file_path contains "enemy_infection_3d.tscn") and the Y-above-platform guard (EnemyFusionA.position.y > FusionPlatformA.position.y). T-36 covers the same for EnemyFusionB. These are genuinely new assertions not present in T-1 through T-30. The spec documents this explicitly in FUSE-ENC-1.
+
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] Spec — T-37 duplication with T-9 and T-16 InfectionInteractionHandler
+
+**Would have asked:** T-9 asserts InfectionInteractionHandler node exists and is a Node. T-16 asserts the script path contains "infection_interaction_handler.gd". Should T-37 duplicate these?
+
+**Assumption made:** T-37 covers only what T-9 and T-16 do NOT cover: the presence of the `get_mutation_slot_manager` method via `has_method("get_mutation_slot_manager")`. This is a new assertion. The node existence and script path assertions are satisfied by reference to T-9 and T-16.
+
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] Spec — get_scene_file_path() availability for instanced nodes
+
+**Would have asked:** Does `get_scene_file_path()` return a non-empty string for EnemyFusionA and EnemyFusionB, which are direct child instances of the level root (not sub-scene children)?
+
+**Assumption made:** Yes. In Godot 4, `get_scene_file_path()` returns the non-empty path for the root node of an instanced PackedScene. EnemyFusionA is the root of its instanced enemy_infection_3d.tscn, so the call returns "res://scenes/enemy/enemy_infection_3d.tscn". This is confirmed by the scene file which shows `[node name="EnemyFusionA" parent="." instance=ExtResource("4_enemy")]`.
+
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] Spec — T-38 requires scene tree for _ready() to run
+
+**Would have asked:** InfectionInteractionHandler._ready() instantiates _slot_manager. If the test does not add the scene to the scene tree, _ready() does not run and get_mutation_slot_manager() returns null. Should T-38 require tree insertion?
+
+**Assumption made:** Yes. T-38 must add the root to the scene tree via `Engine.get_main_loop() as SceneTree; tree.root.add_child(root)` before calling get_mutation_slot_manager(). This follows the established pattern from CHECKPOINTS.md [player_hud] TestDesign. The test must remove and free the root after the assertion.
+
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-18 (Presentation Agent — player_hud implementation)
 
 ### [player_hud] Implementation — ticket offset values vs spec offset values
@@ -102,6 +154,16 @@ Tickets queued: player_hud.md (Test Designer Agent)
 
 ---
 
+### [player_hud] TestDesign — add_child pattern for CanvasLayer in headless test
+
+**Would have asked:** The spec says `add_child(ui)` in the test, but the test class extends Object (no scene tree). How do we add the CanvasLayer to the tree so InfectionUI._ready() has a valid get_tree() call?
+
+**Assumption made:** Used `Engine.get_main_loop() as SceneTree` and `tree.root.add_child(ui)`, matching the pattern in `tests/scenes/levels/test_3d_scene.gd`. InfectionUI._ready() calls `get_tree().get_first_node_in_group("player")` which returns null safely in headless (no player in tree). No crash risk confirmed by running the suite.
+
+**Confidence:** High
+
+---
+
 ### [player_hud] TestDesign — T-6.8 red-phase criterion for zero-area nodes
 
 **Would have asked:** The current scene has nodes like HPLabel with offset_right == offset_left == 20.0, making them zero-area. These technically fit within the 3200x1880 viewport (AC-5.2 passes trivially). Should T-6.8 also assert width > 0 to create a meaningful red phase?
@@ -136,35 +198,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ---
 
 ## Run: 2026-03-17T02:00:00Z
-Tickets queued: visual_clarity_hybrid_state.md
-
----
-
-### [visual_clarity_hybrid_state] TestDesign — InfectionUI headless instantiation strategy
-
-**Would have asked:** InfectionUI extends CanvasLayer and cannot be `.new()`'d headlessly. How do we test the color-selection logic and field/method presence without instantiating the full node?
-
-**Assumption made:** Three-track strategy: (1) Constant presence and values: read via `GDScript.get_script_constant_map()` on the loaded script resource -- no instantiation required. (2) Method and field presence: read via `GDScript.get_script_method_list()` and `GDScript.get_script_property_list()` on the loaded script resource. (3) Algorithm correctness: inner-class `LogicHarness extends RefCounted` implements the spec's color-selection matrix verbatim and is tested directly -- the harness constants must match the real script constants (verified by track 1). This pattern means logic tests pass immediately (harness is correct by construction) while script-shape tests fail until implementation adds the required symbols.
-
-**Confidence:** High
-
----
-
-### [visual_clarity_hybrid_state] TestDesign — RefCounted vs Object for doubles
-
-**Would have asked:** The existing test suite (test_fusion_resolver.gd) uses `extends Object` with manual `free()`. Should new doubles follow the same pattern or use RefCounted?
-
-**Assumption made:** RefCounted. The existing pattern works for top-level doubles that are freed at test-method end, but fails when `free_all()` is called on a manager that holds inner-slot references while still on the call stack (Godot "Object is locked" error). RefCounted eliminates all manual memory management, prevents the locked-object error, and is strictly safer for inner-class doubles that do not need to be freed in a specific order.
-
-**Confidence:** High
-
----
-
-## Run: 2026-03-16T00:00:00Z
-Tickets queued: visual_clarity_hybrid_state.md
-
----
----
 
 ### [fusion_rules_and_hybrid] GDScript Fix — C2 expiry branch removes slot re-query
 
@@ -418,6 +451,7 @@ Tickets queued: input_hint_polish_core_mechanics.md
 **Assumption made:** For this ticket, calling `resolve_absorb` with a null inventory is treated as a strict no-op: the enemy state and mutation inventory must remain unchanged, and the call must never crash. Tests mark this as a CHECKPOINT and assert no state change when `inv == null`.
 
 **Confidence:** Medium
+
 ---
 
 ### [input_hint_polish_core_mechanics] Planner — Duplicate ticket blocks
@@ -1205,7 +1239,7 @@ Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
 
 **Would have asked:** After fusion fires and both slots clear, `both_filled` becomes `false`. Does `FusePromptLabel.visible` go to `false` automatically (because it's driven by `both_filled`)? Or is there a separate clear/hide step needed?
 
-**Assumption made:** FusePromptLabel hides automatically because `_process` evaluates `both_filled` fresh each frame from slot state, and with both slots empty `both_filled == false` drives `fuse_label.visible = false`. The adversarial test encodes this: it verifies that the transition from both-filled to both-empty (slot-clear simulated) results in `both_filled == false`, which MUST make the fuse prompt hidden. This is a regression guard -- any implementation that accidentally caches `both_filled` or uses a separate flag could regress it. # CHECKPOINT
+**Assumption made:** FusePromptLabel hides automatically because `_process` evaluates `both_filled` fresh each frame from slot state, and with both slots empty `both_filled == false` drives `fuse_label.visible = false`. The adversarial test encodes this: it verifies that the transition from both-filled to both-empty (slot-clear simulated) results in `both_filled == false`, which MUST make the fuse prompt hidden. This is a regression guard -- any implementation that accidentally caches `both_filled` or uses a separate flag could regress it.
 
 **Confidence:** High
 
@@ -1215,7 +1249,7 @@ Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
 
 **Would have asked:** If `_post_fusion_flash_until_ms` is set to exactly `Time.get_ticks_msec()` (i.e. duration zero), does the flash trigger at all? The spec says `now_ms < _post_fusion_flash_until_ms` so duration=0 means the condition is immediately false. Should the test cover this as a boundary?
 
-**Assumption made:** Yes, this is a real boundary. A zero-duration flash (set to `now` not `now + 600`) means the flash condition is `now < now` which is always false -- the flash never renders. The adversarial test must verify that the flash-active path requires a STRICTLY FUTURE timestamp, and that setting `_post_fusion_flash_until_ms = now` (not `now + 600`) results in no flash. This catches an off-by-one bug where a developer writes `=` instead of `+` in the timer assignment. # CHECKPOINT
+**Assumption made:** Yes, this is a real boundary. A zero-duration flash (set to `now` not `now + 600`) means the flash condition is `now < now` which is always false -- the flash never renders. The adversarial test must verify that the flash-active path requires a STRICTLY FUTURE timestamp, and that setting `_post_fusion_flash_until_ms = now` (not `now + 600`) results in no flash. This catches an off-by-one bug where a developer writes `=` instead of `+` in the timer assignment.
 
 **Confidence:** High
 
@@ -1225,7 +1259,7 @@ Tickets queued: visual_clarity_hybrid_state.md (Test Breaker Agent)
 
 **Would have asked:** The spec says label text changes when mutation_id changes. But if a naive implementation only changes text and not modulate, the test suite would still pass (primary tests only check color via the harness, not the real label node). How do we catch this?
 
-**Assumption made:** Add an adversarial test that drives the LogicHarness for a mutation-id-change scenario and explicitly asserts the LABEL color is `COLOR_LABEL_SINGLE_FILLED` (not the legacy hard-coded `Color(0.9, 1.0, 0.9, 1.0)` magic value). If the implementer forgets to use the named constant and uses the legacy magic number, this test fails because the adversarial harness computes `COLOR_LABEL_SINGLE_FILLED` from the constant map. The gap: the primary test checks the harness, the adversarial test checks that the real constant VALUE matches the harness constant (ensuring no magic-number drift). # CHECKPOINT
+**Assumption made:** Add an adversarial test that drives the LogicHarness for a mutation-id-change scenario and explicitly asserts the LABEL color is `COLOR_LABEL_SINGLE_FILLED` (not the legacy hard-coded `Color(0.9, 1.0, 0.9, 1.0)` magic value). If the implementer forgets to use the named constant and uses the legacy magic number, this test fails because the adversarial harness computes `COLOR_LABEL_SINGLE_FILLED` from the constant map. The gap: the primary test checks the harness, the adversarial test checks that the real constant VALUE matches the harness constant (ensuring no magic-number drift).
 
 **Confidence:** Medium
 
@@ -1528,7 +1562,7 @@ Tickets queued: containment_hall_01_layout.md
 
 **Would have asked:** T-17 checks `monitoring == true`. But Area3D has two flags: `monitoring` (whether it detects bodies entering it) and `monitorable` (whether other areas can detect it). If `monitorable = false`, the RespawnZone can still detect the player via `body_entered`, so functionally the respawn works. However, if a future Area3D (e.g. LevelExit) is set to detect the RespawnZone via area_entered, monitorable=false would break that. Should T-17 be extended or a new test added for monitorable?
 
-**Assumption made:** Added T-ADV-37 asserting `RespawnZone.monitorable == true`. This is a separate flag from `monitoring` and is not tested anywhere in T-1 through T-30. While not critical for the current implementation (no area-detection of RespawnZone is wired), the spec RESPAWN-1 says "Uses Godot 4 Area3D defaults (layer 1, mask 1)" which implies no default properties are overridden — including monitorable. The test encodes this implicit invariant. Marked with CHECKPOINT comment.
+**Assumption made:** Added T-ADV-37 asserting `RespawnZone.monitorable == true`. This is a separate flag from `monitoring` and is not tested anywhere in T-1 through T-30. While not critical for the current implementation (no area-detection of RespawnZone is wired), the spec RESPAWN-1 says "Uses Godot 4 Area3D defaults (layer 1, mask 1)" which implies no default properties are overridden — including monitorable. The test encodes this implicit invariant.
 
 **Confidence:** Medium
 
@@ -1568,6 +1602,46 @@ Tickets queued: containment_hall_01_layout.md
 
 **Assumption made:** Updated run/main_scene in project.godot directly. No comment added — the git history (test_movement_3d.tscn was the prior value) and CLAUDE.md already document the sandbox scene. Ran full test suite after the change to confirm zero regressions.
 
+**Confidence:** High
+
+---
+
+## Run: 2026-03-19T00:00:00Z
+Tickets queued: fusion_opportunity_room.md, light_skill_check.md, mini_boss_encounter.md, mutation_tease_room.md, start_finish_flow.md
+
+---
+
+### [fusion_opportunity_room] Planning — Zone boundary interpretation
+**Would have asked:** The ticket says "X: 10→35" for the Fusion Opportunity Room. The scene has FusionFloor at origin X=22.5 with size 25 (covering X=10→35) and platforms at X=15 and X=28. Are X=10 and X=35 hard boundaries, or approximate?
+**Assumption made:** X=10→35 are derived from FusionFloor extents (22.5 ± 12.5). They are spec boundaries, not collision boundaries. Platforms at X=15 and X=28 fall inside the zone. Spec will use ±0.5 m tolerance on all position assertions.
+**Confidence:** High
+
+### [fusion_opportunity_room] Planning — No existing spec file
+**Would have asked:** `agent_context/agents/2_spec/containment_hall_01_spec.md` does not exist. Should the Spec Agent create it, or only create `fusion_opportunity_room_spec.md`?
+**Assumption made:** The Spec Agent for this ticket creates only `fusion_opportunity_room_spec.md`. The containment_hall_01 baseline spec is out of scope for this ticket.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-19 (Test Designer Agent — fusion_opportunity_room tests T-31 through T-42)
+
+### [fusion_opportunity_room] TestDesign — T-39/T-40 overlap with test_fusion_resolver.gd
+**Would have asked:** T-39 and T-40 cover FUSE-WIRE-2 (can_fuse gate, resolve_fusion side effects), but tests/fusion/test_fusion_resolver.gd already comprehensively covers this behavior. Should T-39/T-40 be omitted as redundant, or included as traceability tests with distinct names?
+**Assumption made:** T-39 and T-40 are kept as additive FOR-spec traceability tests. They use distinct test name prefixes (T-39_* and T-40_*) and do not duplicate any assertion name from test_fusion_resolver.gd. They confirm that FusionResolver behaves correctly in the FOR context, providing a 1:1 mapping between spec AC-FUSE-WIRE-2.1–2.7 and test IDs.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestDesign — T-38 _ready() propagation in headless
+**Would have asked:** The spec says adding the scene to the tree triggers _ready(). But in headless Godot test runs, _ready() is not guaranteed to fire on add_child alone. Should the test explicitly call handler._ready()?
+**Assumption made:** Explicitly calling `handler._ready()` after `tree.root.add_child(root)` is the correct pattern, consistent with test_3d_scene.gd which manually calls `player._ready()`. The resulting null-tree warning from `get_first_node_in_group("player")` is non-fatal and expected — the test passes correctly.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestDesign — RefCounted objects must not be freed
+**Would have asked:** FusionResolver and MutationSlotManager extend RefCounted. Should .free() be called on them in T-39/T-40?
+**Assumption made:** RefCounted objects must NOT have .free() called (Godot raises a runtime error). They are auto-freed when they go out of scope. Removed all .free() calls from T-39 and T-40. The existing test_fusion_resolver.gd also calls .free() on RefCounted objects (causing the same error throughout the suite); T-39/T-40 were corrected to not repeat that pattern.
 **Confidence:** High
 
 ---
