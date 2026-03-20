@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Engine Integration Agent |
-| Validation Status | Adversarial suite complete — 43/43 assertions pass |
+| Stage | INTEGRATION |
+| Revision | 6 |
+| Last Updated By | Engine Integration Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
+| Validation Status | All 253 tests pass (0 failures) — T-31–T-42 and ADV-FOR-01–21 confirmed green |
 | Blocking Issues | None |
 
 ---
@@ -148,7 +148,7 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Adversarial suite delivered at `tests/levels/test_fusion_opportunity_room_adversarial.gd`. 21 adversarial cases, 43 assertions, all pass. Coverage matrix:
+Engine Integration Agent ran full test suite: 253 passed, 0 failed. Tests T-31–T-42 (primary suite) and ADV-FOR-01–21 (adversarial suite) all green. Scene `containment_hall_01.tscn` required no modifications — all geometry, wiring, and HUD nodes were already correctly configured. Advancing to INTEGRATION for AC-6 human playthrough verification. Coverage matrix:
 - ADV-FOR-01: Platform gap strict <= 10 m boundary (independent arithmetic path from T-34)
 - ADV-FOR-02/21: Enemy Y above platform TOP SURFACE (col offset + half-height formula, not just node origin — T-35/36 used node origin only)
 - ADV-FOR-03: FusionFloor top surface Y in [-0.1, 0.1] — floor is at ground level, not floating
