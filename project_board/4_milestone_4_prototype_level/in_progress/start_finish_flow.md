@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Stage | SPECIFICATION |
-| Revision | 2 |
-| Last Updated By | Planner Agent |
-| Next Responsible Agent | Spec Agent |
+| Stage | TEST_BREAK |
+| Revision | 4 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Test Breaker Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -34,7 +34,7 @@ Ensure full start-to-finish flow: player spawns at start, plays through mutation
 
 # NEXT ACTION
 ## Next Responsible Agent
-Spec Agent
+Test Breaker Agent
 
 ## Status
 Proceed
