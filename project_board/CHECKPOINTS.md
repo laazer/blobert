@@ -164,6 +164,50 @@ Tickets queued: player_hud.md (Test Designer Agent)
 
 ---
 
+## Run: 2026-03-19 (Test Breaker Agent — fusion_opportunity_room adversarial extension)
+
+### [fusion_opportunity_room] TestBreak — null slot_manager passed to resolve_fusion
+**Would have asked:** The spec's AC-FUSE-WIRE-2.5 tests 0-filled manager, but not a literal null manager. resolve_fusion guards via can_fuse(null) which returns false — so null manager is a no-op. Should the adversarial suite separately assert that resolve_fusion(null, null) does not crash and produces no side effects distinct from the 0-filled case?
+**Assumption made:** Added a dedicated adversarial case (ADV-FOR-05) that calls resolve_fusion(null, null) directly and asserts: no crash, and a fresh manager created before/after still reads both slots as unfilled. This distinguishes the null-manager path from the zero-filled-manager path, which is a separate code path in can_fuse.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestBreak — EnemyFusionA and EnemyFusionB are distinct node paths
+**Would have asked:** The spec requires two distinct enemies. If a scene authoring error accidentally names both enemies "EnemyFusionA" (the second silently shadows the first in the scene tree), T-35 and T-36 would both succeed on the same node. Should the adversarial suite assert the node_paths are different?
+**Assumption made:** Added ADV-FOR-09 that asserts EnemyFusionA.get_path() != EnemyFusionB.get_path(). This is a mutation test for the "duplicate node name" failure mode that T-35/T-36 individually cannot catch.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestBreak — CollisionShape3D extents non-zero for both platforms
+**Would have asked:** T-32 and T-33 already assert exact box sizes. Does the adversarial suite need a separate non-zero extents check or is the exact-size check sufficient?
+**Assumption made:** Added ADV-FOR-07 as a pure non-zero extents guard (size.x > 0, size.y > 0, size.z > 0) for both platforms, distinct from the exact-value assertion in T-32/T-33. This fails if a shape is accidentally assigned a default BoxShape3D with size (0,0,0), which T-32/T-33 would also catch but with a less targeted message. Retained as a distinct adversarial category.
+**Confidence:** Medium
+
+---
+
+### [fusion_opportunity_room] TestBreak — fill_next_available with empty string id
+**Would have asked:** MutationSlotManager.fill_next_available("") calls push_error and returns without filling. Does the slot stay unfilled? Should the adversarial suite verify the manager's defensive behavior prevents a bad state that would cause can_fuse to incorrectly return true?
+**Assumption made:** Added ADV-FOR-11 that calls fill_next_available("") on a fresh manager, then asserts both slots remain unfilled and can_fuse returns false. This tests the manager's null-mutation-id guard and the implied contract that an empty string never fills a slot.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestBreak — get_slot_count hardcoded vs slot array size
+**Would have asked:** MutationSlotManager.get_slot_count() returns a hardcoded 2 (not _slots.size()). If _slots is somehow corrupted or overwritten, get_slot_count() still returns 2 but get_slot(0) could return null. Should the adversarial suite separately verify get_slot(0) and get_slot(1) return non-null on a fresh manager?
+**Assumption made:** Added ADV-FOR-12 asserting both get_slot(0) and get_slot(1) return non-null on a fresh MutationSlotManager. This exposes the gap between the hardcoded count and the actual array state.
+**Confidence:** High
+
+---
+
+### [fusion_opportunity_room] TestBreak — FusionFloor top surface Y <= 0.1 (floor is at ground level)
+**Would have asked:** T-31 verifies FusionFloor position X and box dimensions, but does not verify the floor is actually at ground level (Y ≈ 0). If the floor is accidentally raised (e.g., Y=5), enemies and players would fall through. Should the adversarial suite add a ground-level Y guard?
+**Assumption made:** Added ADV-FOR-03 asserting the FusionFloor computed top surface Y (node.y + col.y + box.half_y) is in the range [-0.1, 0.1] (i.e., approximately Y=0). This is a geometry invariant distinct from T-31's dimension checks.
+**Confidence:** High
+
+---
+
 ### [player_hud] TestDesign — T-6.8 red-phase criterion for zero-area nodes
 
 **Would have asked:** The current scene has nodes like HPLabel with offset_right == offset_left == 20.0, making them zero-area. These technically fit within the 3200x1880 viewport (AC-5.2 passes trivially). Should T-6.8 also assert width > 0 to create a meaningful red phase?
