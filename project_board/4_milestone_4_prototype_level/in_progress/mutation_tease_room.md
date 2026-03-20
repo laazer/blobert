@@ -10,11 +10,12 @@
 | Field | Value |
 |---|---|
 | Stage | INTEGRATION |
-| Revision | 5 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | All headless tests pass (T-63–T-72, ADV-MTR-01–ADV-MTR-06): 0 failures |
-| Blocking Issues | None |
+| Revision | 6 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | HEADLESS: T-63–T-72 and ADV-MTR-01–ADV-MTR-06 all pass (0 failures). AC-1 (room reachable), AC-3 (connects to fusion zone), AC-4 (no dead ends) have full automated coverage. AC-2 structural geometry (elevated platform, enemy above platform) is covered by T-65/T-66/T-67/T-68; however, the visual component — whether the enemy is camera-visible from the corridor approach — is INTEGRATION-only and has no documented human verification. AC-5 (human-playable in-editor, environment and tease object visible without debug overlays) is inherently manual and has no documented human verification. |
+| Blocking Issues | 1. AC-2 (visual confirmation): Automated tests confirm platform elevation and enemy Y-position, but do not verify that the enemy on the platform is visible from the player camera during corridor approach. Human must run the scene, walk from entry spawn toward the tease zone, and confirm the enemy is visible before engaging. No evidence of this verification is documented. 2. AC-5 (human-playable in-editor): No human playthrough evidence exists confirming that the environment, tease object, and any UI prompts are visible and understandable without debug overlays. This is a hard manual requirement that cannot be automated. |
+| Escalation Notes | Ticket cannot advance to COMPLETE until a human documents completion of both manual checks above. The checks may be recorded as a brief note in Validation Status (e.g., "Human playthrough [date]: enemy visible from spawn approach; tease zone navigable end-to-end; no debug overlays required"). After that documentation is added, the Acceptance Criteria Gatekeeper Agent may re-evaluate. |
 
 ---
 
@@ -134,24 +135,25 @@ These are verified by human playthrough in the Godot editor only:
 ## NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "spec_file": "agent_context/agents/2_spec/mutation_tease_room_spec.md",
-  "output_path": "tests/levels/test_mutation_tease_room.gd",
-  "prior_test_files": [
-    "tests/levels/test_containment_hall_01.gd",
-    "tests/levels/test_fusion_opportunity_room.gd",
-    "tests/levels/test_light_skill_check.gd",
-    "tests/levels/test_mini_boss_encounter.gd"
+  "action": "manual_playthrough_verification",
+  "steps": [
+    "Open the Godot editor and run res://scenes/levels/sandbox/test_movement_3d.tscn (or containment_hall_01.tscn directly if reachable standalone).",
+    "Walk from the level entry spawn toward the Mutation Tease Room zone (X: -10 to 10).",
+    "Confirm the EnemyMutationTease on MutationTeasePlatform is visible from the corridor approach before engaging — no debug overlays required to see it.",
+    "Confirm the full zone is navigable: player can enter, approach the enemy, and exit in both directions without softlock.",
+    "Confirm no debug overlays, placeholder meshes, or missing assets are visible in the tease zone.",
+    "Document the result (pass or fail with details) as a note in Validation Status, then set Next Responsible Agent back to Acceptance Criteria Gatekeeper Agent."
   ]
 }
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-All headless tests T-63 through T-72 and ADV-MTR-01 through ADV-MTR-06 pass against the existing containment_hall_01.tscn with no scene modifications required. The scene geometry confirmed: MutationTeaseFloor at X=0 with BoxShape3D (20,1,10) and top surface Y=0.0; MutationTeasePlatform with BoxShape3D (4,1,6) and top surface Y=0.8; EnemyMutationTease at Y=1.3; right edge of tease floor (10.0) <= left edge of FusionFloor (10.0). INTEGRATION-only acceptance criteria (human playthrough) remain for the Acceptance Criteria Gatekeeper Agent to verify.
+All 16 headless tests (T-63–T-72, ADV-MTR-01–ADV-MTR-06) pass. Acceptance criteria AC-1, AC-3, and AC-4 have full automated coverage. AC-2 has structural automated coverage but the visual camera-visibility component (enemy visible from corridor approach) has no documented human verification. AC-5 (human-playable in-editor, environment and tease visible without debug overlays) is inherently manual with no documented human verification. Both gaps must be resolved by a human playthrough before this ticket can advance to COMPLETE.

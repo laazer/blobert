@@ -10,11 +10,11 @@
 | Field | Value |
 |---|---|
 | Stage | INTEGRATION |
-| Revision | 6 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | All 253 tests pass (0 failures) — T-31–T-42 and ADV-FOR-01–21 confirmed green |
-| Blocking Issues | None |
+| Revision | 7 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC-1 COVERED: T-31 (FusionFloor origin X, BoxShape3D size exact), T-34 (gap arithmetic), ADV-FOR-03 (floor Y at ground level), ADV-FOR-07 (all-axis non-zero extent) — all passing in 253-test suite. AC-2 COVERED: T-35/T-36 (enemy scene path contains "enemy_infection_3d.tscn"; enemy Y above platform node origin), ADV-FOR-02/ADV-FOR-21 (enemy Y above platform top surface using col offset + half-height formula), ADV-FOR-09/ADV-FOR-10 (distinct node instances with different names) — all passing. AC-3 COVERED: T-37 (has_method "get_mutation_slot_manager"), T-38 (returns non-null after tree insertion; get_slot_count()==2), ADV-FOR-04 (exact int equality), ADV-FOR-12 (get_slot(0) and get_slot(1) non-null) — all passing. AC-4 COVERED: T-39 (can_fuse false with 0 slots, true with both filled), T-40 (resolve_fusion clears both slots; no-op with 0 slots), ADV-FOR-05 (null manager no crash), ADV-FOR-06 (can_fuse(null) guard), ADV-FOR-11 (empty id never fills slot), ADV-FOR-13/ADV-FOR-14 (get_slot out-of-range returns null), ADV-FOR-15 (fill-consume-refill idempotency), ADV-FOR-16 (one slot cleared → can_fuse false), ADV-FOR-19 (player without apply_fusion_effect → slots still cleared), ADV-FOR-20 (third fill overwrites slot B) — all passing. AC-5 COVERED: T-41 (all six HUD nodes non-null in game_ui.tscn), T-42 (non-zero size, within 3200×1880, FusePromptLabel and FusionActiveLabel visible==false by default), ADV-FOR-08/ADV-FOR-18 (FusePromptLabel and FusionActiveLabel hidden standalone assertions), ADV-FOR-17 (MutationIcon1/2 are ColorRect type) — all passing. AC-6 NOT COVERED: Requires human in-editor playthrough; no automated test can verify the full weaken→infect→absorb×2→G flow end-to-end. No evidence of this verification having been performed is documented. Static QA: GDScript review returned 0 CRITICAL issues. |
+| Blocking Issues | AC-6 unverified — human manual playthrough has not been performed or documented. Required evidence: human opens containment_hall_01.tscn in Godot editor, completes the full weaken→infect→absorb EnemyFusionA (Slot 1 fills) → weaken→infect→absorb EnemyFusionB (Slot 2 fills) → press G (fusion activates, both slots clear, FUSION ACTIVE label appears) in a single uninterrupted session without crash or soft-lock, and documents the result in this ticket. Ticket cannot advance to COMPLETE until this is recorded. |
 
 ---
 
@@ -131,39 +131,19 @@ This ticket is about **validating and documenting** that the zone correctly supp
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket": "project_board/4_milestone_4_prototype_level/in_progress/fusion_opportunity_room.md",
-  "spec": "agent_context/agents/2_spec/fusion_opportunity_room_spec.md",
-  "primary_tests": "tests/levels/test_fusion_opportunity_room.gd",
-  "adversarial_tests": "tests/levels/test_fusion_opportunity_room_adversarial.gd",
-  "scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn"
+  "scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn",
+  "action": "Open containment_hall_01.tscn in Godot editor. Run the scene. Complete the full flow: move to FusionPlatformA, weaken/infect/absorb EnemyFusionA (verify Slot 1 fills); move to FusionPlatformB, weaken/infect/absorb EnemyFusionB (verify Slot 2 fills); press G (verify fusion activates: both slots clear, FUSION ACTIVE label appears, no crash or soft-lock). Document result in Blocking Issues. If successful, check AC-6 checkbox, clear Blocking Issues, set Stage to COMPLETE, move ticket to done/ folder."
 }
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Engine Integration Agent ran full test suite: 253 passed, 0 failed. Tests T-31–T-42 (primary suite) and ADV-FOR-01–21 (adversarial suite) all green. Scene `containment_hall_01.tscn` required no modifications — all geometry, wiring, and HUD nodes were already correctly configured. Advancing to INTEGRATION for AC-6 human playthrough verification. Coverage matrix:
-- ADV-FOR-01: Platform gap strict <= 10 m boundary (independent arithmetic path from T-34)
-- ADV-FOR-02/21: Enemy Y above platform TOP SURFACE (col offset + half-height formula, not just node origin — T-35/36 used node origin only)
-- ADV-FOR-03: FusionFloor top surface Y in [-0.1, 0.1] — floor is at ground level, not floating
-- ADV-FOR-04: get_slot_count() exact int equality (distinct from T-38's scene-based check)
-- ADV-FOR-05: resolve_fusion(null, null) no crash + no global state mutation (null manager path, distinct from T-40's 0-filled path)
-- ADV-FOR-06: can_fuse(null) targeted mutation guard
-- ADV-FOR-07: Both platform BoxShape3D all-axis non-zero extent guard
-- ADV-FOR-08/18: FusePromptLabel and FusionActiveLabel hidden by default (standalone targeted assertions separate from T-42 loop)
-- ADV-FOR-09/10: Enemies and platforms are distinct node instances with different names (catches duplicate-node-name scene authoring error)
-- ADV-FOR-11: fill_next_available("") guard — empty id never fills a slot, can_fuse stays false
-- ADV-FOR-12: get_slot(0) and get_slot(1) non-null (hardcoded count vs array state gap)
-- ADV-FOR-13/14: get_slot(-1) and get_slot(2) return null (out-of-range boundary values)
-- ADV-FOR-15: Fill-consume-refill cycle idempotency
-- ADV-FOR-16: can_fuse false after one-of-two slots cleared (AND vs OR mutation)
-- ADV-FOR-17: MutationIcon1/2 are ColorRect type (not Label/Panel)
-- ADV-FOR-19: Player without apply_fusion_effect → slots still cleared (push_error must not abort consume)
-- ADV-FOR-20: Third fill overwrites slot B (last-absorb-wins policy verification)
-No assertion duplicates T-31–T-42 or T-1–T-30 names. Headless-safe, no await, no physics. Engine Integration Agent: run tests to confirm all pass then execute AC-6 human playthrough.
+AC-1 through AC-5 are fully evidenced by automated tests (T-31–T-42 primary suite, ADV-FOR-01–21 adversarial suite, 253 total passing, 0 failing) and GDScript static review (0 CRITICAL issues). AC-6 requires human in-editor playthrough verification; no automated test can satisfy this criterion and no prior human verification is documented in this ticket. Stage is held at INTEGRATION. Ticket cannot advance to COMPLETE until a human performs and documents the AC-6 playthrough described in Blocking Issues.

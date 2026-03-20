@@ -519,6 +519,10 @@ Queue mode: single ticket
 Queue scope: project_board/4_milestone_4_prototype_level/in_progress/start_finish_flow.md
 
 ---
+### [start_finish_flow] — OUTCOME: COMPLETE
+Human verified full in-editor start-to-finish loop completed with no issues; ticket advanced to COMPLETE and moved to done.
+
+---
 ## Run: 2026-03-20 (Planner Agent — start_finish_flow planning)
 
 ### [start_finish_flow] Planning — assumed completion path
@@ -532,5 +536,22 @@ Queue scope: project_board/4_milestone_4_prototype_level/in_progress/start_finis
 ### [start_finish_flow] Planning — infect instruction risk
 **Assumption made:** The UI currently does not display an explicit “infect” key hint (`infect` = `F` in `project.godot`); the flow-clarity spec will rely on enemy state feedback (blinking when weakened/infected) and the subsequent appearance of `AbsorbPromptLabel` after infect. If playtest shows confusion, a follow-up ticket should add an `InfectHint`/prompt.
 **Confidence:** Medium
+
+---
+### [start_finish_flow] Spec — automated coverage vs manual-only ACs
+**Assumption made:** This ticket’s “start→finish flow” ACs are primarily validated via composition of existing automated suites (scene structural checks in `tests/levels/test_containment_hall_01.gd`, plus zone/UI suites for mutation tease, fusion opportunity, light skill check, and mini-boss). New headless tests for this ticket should therefore stay narrowly scoped to end-to-end wiring signals (UI prompt/hint presence + initial visibility, strict left-to-right zone ordering, respawn/exit trigger wiring).
+**Assumption made:** “Objectives/clarity” has no dedicated objective system node in `containment_hall_01.tscn`; testable “objectives” are the existing UI cue nodes (`AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, mutation-slot labels/icons) plus the always-present input hints.
+**Assumption made:** The level-complete completion trigger is spatial (player entering `LevelExit`), and the spec will not require that `EnemyMiniBoss` is dead unless code inspection shows otherwise. As a result, “mini-boss is not skippable” must be checked during the required manual playthrough.
+**Confidence:** Medium
+
+---
+## Run: 2026-03-20T17:33:59-04:00
+Queue mode: single ticket
+Queue scope: project_board/4_milestone_4_prototype_level/in_progress/mini_boss_encounter.md
+
+### [mini_boss_encounter] INTEGRATION — Human verification required before COMPLETE
+**Would have asked:** Did the human playtest satisfy AC-2 (winnable with movement + mutations, no softlock), AC-4 (defeat without mandatory fusion; difficulty not a barrier), and AC-5 (arena/boss/exit visually clear without debug overlays)?
+**Assumption made:** None — ticket remains at `INTEGRATION` until explicit answers are recorded in the ticket `WORKFLOW STATE` / `Validation Status` (per Acceptance Criteria Gatekeeper rules).
+**Confidence:** High
 
 ---

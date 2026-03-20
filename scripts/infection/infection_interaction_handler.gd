@@ -90,3 +90,13 @@ func get_mutation_slot_manager() -> RefCounted:
 
 func get_mutation_slot() -> RefCounted:
 	return _slot_manager.get_slot(0)
+
+
+## Auto-resolve absorb after chunk DoT (tick 3). Same as pressing absorb when infected.
+func resolve_absorb_for_esm(esm: EnemyStateMachine) -> void:
+	if _resolver == null or esm == null:
+		return
+	if not _resolver.can_absorb(esm):
+		return
+	_resolver.resolve_absorb(esm, _inventory, _slot_manager)
+	absorb_resolved.emit(esm)

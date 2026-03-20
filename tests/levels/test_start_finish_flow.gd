@@ -119,6 +119,9 @@ func _world_x_edges_for_box(node: Node, test_name_prefix: String) -> Dictionary:
 		return {}
 
 	var n3: Node3D = node as Node3D
+	if n3 == null:
+		_fail(test_name_prefix + "_node_is_node3d", "Node is " + node.get_class() + ", expected Node3D to read transform position")
+		return {}
 	var center_x: float = n3.position.x + col.position.x
 	var half_w: float = box.size.x * 0.5
 	return {

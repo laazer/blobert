@@ -635,7 +635,7 @@ func test_t24_enemy_positions() -> void:
 		"EnemyMutationTease": Vector3(0.0, 1.3, 0.0),
 		"EnemyFusionA": Vector3(15.0, 1.3, 0.0),
 		"EnemyFusionB": Vector3(28.0, 1.3, 0.0),
-		"EnemyMiniBoss": Vector3(67.0, 0.5, 0.0),
+		"EnemyMiniBoss": Vector3(78.0, 1.3, 0.0),
 	}
 
 	for enemy_name in expected_positions:

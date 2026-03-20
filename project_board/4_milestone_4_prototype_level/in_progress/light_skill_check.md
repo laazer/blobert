@@ -9,12 +9,13 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE |
-| Revision | 4 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Engine Integration Agent |
-| Validation Status | Not started |
-| Blocking Issues | None |
+| Stage | INTEGRATION |
+| Revision | 6 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC-1 (passable with core movement): COVERED — T-47 confirms P1→P2 gap ≤ 1.5 m; T-48 confirms P2→P3 gap ≤ 1.5 m (both within spec-derived safe jump range of 1.98 m). AC-2 (failure consequence, no softlock): COVERED — T-49 confirms RespawnZone exists as Area3D with respawn_zone.gd and non-empty spawn_point; T-50 confirms SpawnPosition.x < 35 and position.y ≥ 0 (at corridor level, before zone); ADV-SKC-02 confirms RespawnZone CollisionShape3D size.x ≥ 20; ADV-SKC-03 confirms size.y ≥ 6; ADV-SKC-04 confirms Y center < 0 (zone is below corridor, catches falls). AC-3 (difficulty is "light"): NOT COVERED — requires human playtest; no evidence documented. AC-4 (placed appropriately): COVERED — T-52 confirms SkillCheckPlatform1.x > FusionPlatformB.x and SkillCheckPlatform3.x < MiniBossFloor.x. AC-5 (human-playable in-editor): NOT COVERED — requires human in-editor verification; no evidence documented. |
+| Blocking Issues | AC-3: No automated or manual verification documented for "difficulty is light: completable in a few attempts by target audience." Human must run the scene, navigate to X≈35–55, attempt to cross all three platforms with core movement, and confirm the crossing is achievable within a few attempts before this criterion can be satisfied. AC-5: No automated or manual verification documented for "skill check encounter is human-playable in-editor: layout, hazards, and any instructional UI are visible and understandable without debug overlays." Human must open the project in the Godot editor, run the scene, and confirm the zone layout (platforms, pit, respawn flow) is visually clear without any debug overlays required to understand the hazard. See Task 6 for the full manual verification checklist. |
+| Escalation Notes | AC-1, AC-2, and AC-4 have explicit, objective test coverage across T-43 through T-52 and ADV-SKC-01 through ADV-SKC-08 (253/253 tests pass, 0 failures, no regressions). The ticket cannot advance to COMPLETE until AC-3 and AC-5 have documented human verification results written into Blocking Issues, the checkboxes for those ACs are checked, Blocking Issues is cleared, and the ticket is moved to the done/ folder per the folder rule. |
 
 ---
 
@@ -172,7 +173,7 @@ This ticket is about **validating** the existing zone, not building new content.
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -187,7 +188,7 @@ Engine Integration Agent
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Adversarial test suite complete. All eight ADV-SKC-01 through ADV-SKC-08 tests written in `tests/levels/test_light_skill_check_adversarial.gd`. Each test targets a distinct failure mode not covered by the T-43–T-52 compound tests: pit-floor Y invariant (ADV-SKC-01), RespawnZone width (ADV-SKC-02), RespawnZone depth (ADV-SKC-03), RespawnZone Y-center sign (ADV-SKC-04), SpawnPosition corridor-height bounds (ADV-SKC-05), P3-wider-than-P1 landing pad invariant (ADV-SKC-06), non-zero platform extents on X and Z axes (ADV-SKC-07), and minimum center-to-center platform spacing (ADV-SKC-08). Engine Integration Agent should run `run_tests.sh`, confirm T-43–T-52 and all ADV-SKC-* pass, and commit.
+AC-1, AC-2, and AC-4 are fully satisfied by passing automated tests (T-43 through T-52, ADV-SKC-01 through ADV-SKC-08; 253/253 passing). AC-3 ("difficulty is light: completable in a few attempts") and AC-5 ("human-playable in-editor: layout and hazards visible without debug overlays") cannot be verified by any automated test and have no documented human verification on record. Stage is held at INTEGRATION. Human must complete the manual playtest checklist in Task 6, document results in Blocking Issues, check AC-3 and AC-5, clear Blocking Issues, set Stage to COMPLETE, and move the ticket to the done/ folder.

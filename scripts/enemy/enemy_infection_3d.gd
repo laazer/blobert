@@ -2,7 +2,7 @@
 #
 # 3D engine-integration node for the infection loop: holds an EnemyStateMachine,
 # exposes it to InfectionInteractionHandler for target/absorb, and detects
-# player (for set_target_esm/clear_target) and chunk (for weaken + infect).
+# player (for set_target_esm/clear_target) and chunk (contact → chunk_attached; DoT in PlayerController3D).
 # Uses BasePhysicsEntity3D so the enemy is affected by gravity and collides with objects.
 # Same contract as enemy_infection.gd but with Area3D and Node3D.
 
@@ -31,6 +31,17 @@ func get_esm() -> EnemyStateMachine:
 	return _esm
 
 
+## Containment Hall mini-boss uses the same scene with a larger instance scale.
+func is_mini_boss_unit() -> bool:
+	return name == "EnemyMiniBoss"
+
+
+func unregister_attached_chunk(chunk: RigidBody3D) -> void:
+	var idx: int = _attached_chunks.find(chunk)
+	if idx >= 0:
+		_attached_chunks.remove_at(idx)
+
+
 func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		if _handler != null:
@@ -41,10 +52,8 @@ func _on_body_entered(body: Node3D) -> void:
 			return
 		if _esm.get_state() == "dead":
 			return
-		if _esm.get_state() == "weakened":
-			_esm.apply_infection_event()
-		else:
-			_esm.apply_weaken_event()
+		# Weaken / infect / absorb are driven by PlayerController3D chunk DoT ticks
+		# (3 physics ticks) so blob damage can apply once per tick, then auto-return.
 		chunk_attached.emit(chunk)
 		_attached_chunks.append(chunk)
 

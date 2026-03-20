@@ -21,6 +21,13 @@ var _recall_in_progress: Array = [false, false]
 var _recall_timer: Array = [0.0, 0.0]
 var _chunk_stuck: Array = [false, false]      # true while frozen on an enemy
 var _chunk_stuck_enemy: Array = [null, null]  # EnemyInfection3D per slot
+## Chunk DoT: 3 steps (weaken → infect → release or mini-boss absorb), spaced by interval.
+var _chunk_dot_ticks_remaining: Array[int] = [0, 0]
+var _chunk_dot_time_accum: Array[float] = [0.0, 0.0]
+var _infection_handler: Node = null
+
+## Seconds between chunk damage steps while stuck on an enemy.
+@export var chunk_dot_step_interval: float = 0.45
 # True after a spawn until detach_just goes false — prevents the same
 # just_pressed event from immediately triggering a recall on the next
 # physics tick within the same display frame.
@@ -85,6 +92,7 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		var handler: Node = root.get_node_or_null("InfectionInteractionHandler")
+		_infection_handler = handler
 		if handler != null:
 			if handler.has_method("get_mutation_slot_manager"):
 				_mutation_slot = handler.call("get_mutation_slot_manager")
@@ -198,6 +206,12 @@ func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulati
 	var prev_has: bool = _get_has_chunk(i)
 	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 
+	if _chunk_stuck[i] and _chunk_dot_ticks_remaining[i] > 0:
+		_chunk_dot_time_accum[i] += delta
+		if _chunk_dot_time_accum[i] >= chunk_dot_step_interval:
+			_chunk_dot_time_accum[i] -= chunk_dot_step_interval
+			_apply_chunk_dot_step(i)
+
 	# Kill-plane: recover a live chunk that has fallen below the platform.
 	# Threshold matches the respawn zone bottom (-9 m) with some margin.
 	const CHUNK_KILL_Y: float = -4.0
@@ -310,7 +324,61 @@ func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> vo
 			chunk.reparent(enemy, true)
 			_chunk_stuck[i] = true
 			_chunk_stuck_enemy[i] = enemy
+			_chunk_dot_ticks_remaining[i] = 3
+			_chunk_dot_time_accum[i] = 0.0
 			return
+
+
+func _release_chunk_after_dot(i: int) -> void:
+	var enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
+	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
+	if chunk == null or not is_instance_valid(chunk) or enemy == null or not is_instance_valid(enemy):
+		_chunk_dot_ticks_remaining[i] = 0
+		_chunk_dot_time_accum[i] = 0.0
+		return
+	var level_root: Node = enemy.get_parent()
+	if level_root == null:
+		return
+	enemy.unregister_attached_chunk(chunk)
+	_chunk_dot_ticks_remaining[i] = 0
+	_chunk_dot_time_accum[i] = 0.0
+	# Keep world pose so the blob does not snap (e.g. under a scaled boss).
+	chunk.reparent(level_root, true)
+	chunk.freeze = false
+	chunk.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	chunk.linear_velocity = Vector3.ZERO
+	_chunk_stuck[i] = false
+	_chunk_stuck_enemy[i] = null
+	_recall_in_progress[i] = true
+	_recall_timer[i] = 0.0
+	_emit_recall_started(i)
+
+
+func _apply_chunk_dot_step(i: int) -> void:
+	var enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
+	if enemy == null or not is_instance_valid(enemy):
+		_chunk_dot_ticks_remaining[i] = 0
+		_chunk_dot_time_accum[i] = 0.0
+		return
+	var esm: EnemyStateMachine = enemy.get_esm()
+	if esm == null:
+		_chunk_dot_ticks_remaining[i] = 0
+		_chunk_dot_time_accum[i] = 0.0
+		return
+	var remaining: int = _chunk_dot_ticks_remaining[i]
+	if remaining == 3:
+		esm.apply_weaken_event()
+		_chunk_dot_ticks_remaining[i] = 2
+		return
+	if remaining == 2:
+		esm.apply_infection_event()
+		_chunk_dot_ticks_remaining[i] = 1
+		return
+	if remaining != 1:
+		return
+	# Mini-boss and regular enemies: third step only releases the blob (recall).
+	# Absorb the enemy with R after chunk returns; infected boss stays in place until then.
+	_release_chunk_after_dot(i)
 
 
 func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
@@ -318,13 +386,20 @@ func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
 		var stuck_enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
 		if _chunk_stuck[i] and stuck_enemy != null and is_instance_valid(stuck_enemy):
 			if stuck_enemy.get_esm() == esm:
+				_chunk_dot_ticks_remaining[i] = 0
+				_chunk_dot_time_accum[i] = 0.0
 				var chunk: RigidBody3D = _chunks[i] as RigidBody3D
 				if chunk != null and is_instance_valid(chunk):
+					stuck_enemy.unregister_attached_chunk(chunk)
 					chunk.queue_free()
 				_chunks[i] = null
 				_set_has_chunk(i, true)
 				_chunk_stuck[i] = false
 				_chunk_stuck_enemy[i] = null
+	_current_state.current_hp = minf(
+		_simulation.max_hp,
+		_current_state.current_hp + _simulation.hp_cost_per_detach
+	)
 
 
 func _get_has_chunk(i: int) -> bool:

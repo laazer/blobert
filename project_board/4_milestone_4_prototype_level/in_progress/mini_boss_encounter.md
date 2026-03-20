@@ -10,11 +10,11 @@
 | Field | Value |
 |---|---|
 | Stage | INTEGRATION |
-| Revision | 6 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | T-53–T-62 passing (45/45); ADV-MBA-01–ADV-MBA-08 passing (21/21); T-1–T-52 no regressions |
-| Blocking Issues | None |
+| Revision | 7 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC-1 (distinct enemy/arena): COVERED — T-53 (dedicated 25 m MiniBossFloor), ADV-MBA-03 (EnemyMiniBoss X spatially separated from EnemyFusionA/B/EnemyMutationTease by >1 m), ADV-MBA-06 (MiniBossFloor does not overlap SkillCheck zone), ADV-MBA-07 (EnemyMiniBoss within own arena bounds), ADV-MBA-08 (distinct node name). Structural headless coverage is sufficient for this criterion. AC-2 (winnable with movement and mutations): NOT COVERED — no automated test can assert a combat outcome; human playtest required. AC-3 (victory connects to level completion): COVERED — T-59 (LevelExit exists as Area3D, positioned after ExitFloor), T-60 (inline script source contains "level_complete"), T-61/T-62 (spatial ordering: boss zone after skill check, exit after boss zone). AC-4 (no mandatory fusion, appropriate difficulty): PARTIALLY COVERED — T-55 confirms EnemyMiniBoss uses standard enemy_infection_3d.tscn (same base mechanics as all other enemies); T-57 confirms distinct node identity. Difficulty tuning and absence of a fusion requirement cannot be verified headlessly; human playtest required. AC-5 (human-playable in-editor, visually clear): NOT COVERED — visual clarity, arena readability, and in-editor appearance are inherently manual; human playtest required. T-53–T-62 passing (45/45); ADV-MBA-01–ADV-MBA-08 passing (21/21); T-1–T-52 no regressions. |
+| Blocking Issues | AC-2: No automated or headless test can confirm the encounter is winnable using only movement and available mutations. Human must engage EnemyMiniBoss in a live run and confirm a successful defeat path exists without softlock. Evidence must be documented before this AC is closed. AC-4: Difficulty level and absence of mandatory fusion cannot be assessed headlessly. Human must verify during playtest that (a) EnemyMiniBoss can be defeated without performing a fusion, and (b) the encounter is not so difficult as to be a barrier. Evidence must be documented before this AC is closed. AC-5: Visual clarity of the mini-boss arena, enemy, telegraphs, and exit trigger cannot be verified headlessly. Human must open the project in the Godot editor, run containment_hall_01.tscn, navigate to X≈55–80, and confirm all elements are visible and understandable without debug overlays. Evidence must be documented before this AC is closed. |
 
 ---
 
@@ -229,23 +229,20 @@ The enemy uses `enemy_infection_3d.tscn` (gobot GLB model, CharacterBody3D, Infe
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket": "project_board/4_milestone_4_prototype_level/in_progress/mini_boss_encounter.md",
-  "spec": "agent_context/agents/2_spec/mini_boss_encounter_spec.md",
-  "existing_tests_t1_t30": "tests/levels/test_containment_hall_01.gd",
-  "existing_tests_t31_t42": "tests/levels/test_fusion_opportunity_room.gd",
-  "existing_tests_t43_t52": "tests/levels/test_light_skill_check.gd",
-  "output_test": "tests/levels/test_mini_boss_encounter.gd",
-  "output_adversarial": "tests/levels/test_mini_boss_encounter_adversarial.gd"
+  "action": "Manual playtest of containment_hall_01.tscn per Task 6 instructions",
+  "acs_requiring_human_verification": ["AC-2", "AC-4", "AC-5"],
+  "acs_structurally_covered": ["AC-1", "AC-3"]
 }
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Integration complete. All T-53–T-62 (45 assertions) and ADV-MBA-01–ADV-MBA-08 (21 assertions) pass with 0 failures. No regressions in T-1–T-52. Two test assertion corrections were applied: (1) T-57 switched from get_path() to node.name comparison — get_path() returns empty NodePath for unrooted instances causing false failures; (2) ADV-MBA-06 relaxed from strict > to >= — the MiniBossFloor left edge and SkillCheckPlatform3 right edge are exactly adjacent at 55.0, which is correct design. No scene geometry was modified. Acceptance Criteria Gatekeeper Agent should map T-53–T-62 and ADV-MBA-01–ADV-MBA-08 to AC-1 through AC-5 and flag AC-2, AC-4, AC-5 as requiring human playtest.
+AC-1 and AC-3 are structurally covered by passing headless tests (T-53–T-62, ADV-MBA-01–ADV-MBA-08, 66 total assertions, 0 failures, no regressions in T-1–T-52). Three acceptance criteria cannot be satisfied by automated testing and require documented human playtest evidence before the ticket may advance to COMPLETE: AC-2 (encounter is winnable with movement and available mutations — combat outcome cannot be automated), AC-4 (no mandatory fusion, appropriate difficulty — difficulty tuning is a qualitative judgment), AC-5 (mini-boss arena, enemy, telegraphs, and exit are visually clear in-editor without debug overlays — visual clarity is inherently manual). Human must follow Task 6 playtest steps, document results in Blocking Issues, check all AC boxes if satisfied, clear Blocking Issues, set Stage to COMPLETE, and move ticket to the done/ folder.

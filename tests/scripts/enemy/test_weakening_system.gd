@@ -252,10 +252,8 @@ func test_blink_frequency_configuration() -> void:
 # ---------------------------------------------------------------------------
 
 func test_chunk_contact_calls_weaken_event() -> void:
-	# This test verifies the wiring: when a chunk body enters the enemy's
-	# interaction area, the enemy's _on_body_entered handler calls
-	# apply_weaken_event() on the state machine.
-	# (This is verified via EnemyInfection3D integration, not a pure unit test.)
+	# Chunk contact emits chunk_attached only; PlayerController3D applies DoT on
+	# physics ticks (tick 1 = weaken). Enemy no longer advances ESM in _on_body_entered.
 	var enemy: Node3D = _make_enemy_infection_3d()
 	if enemy == null:
 		return
@@ -269,16 +267,16 @@ func test_chunk_contact_calls_weaken_event() -> void:
 	esm.reset()
 	_assert_state("idle", esm.get_state(), "weakening_chunk_contact_start")
 
-	# Simulate chunk contact by calling the _on_body_entered handler directly.
-	# (In a full integration test, this would be a physics collision.)
 	var chunk: Node3D = _make_chunk_3d()
 	if chunk != null and enemy.has_method("_on_body_entered"):
 		enemy._on_body_entered(chunk)
-		# After chunk contact, enemy should be weakened.
+		_assert_state("idle", esm.get_state(), "weakening_chunk_contact_idle_after_touch — ESM unchanged until DoT tick")
+		# Simulate PlayerController3D DoT tick 1 (same as apply_weaken_event in production).
+		esm.apply_weaken_event()
 		_assert_state(
 			"weakened",
 			esm.get_state(),
-			"weakening_chunk_contact_weaken — chunk contact triggers weaken event"
+			"weakening_chunk_contact_weaken — first DoT tick weakens"
 		)
 		chunk.free()
 	else:
@@ -291,7 +289,7 @@ func test_chunk_contact_calls_weaken_event() -> void:
 
 
 func test_chunk_contact_infection_from_weakened() -> void:
-	# Wiring: chunk contact on a weakened enemy applies infection event.
+	# DoT tick 2 applies infection after tick 1 weakened (PlayerController3D).
 	var enemy: Node3D = _make_enemy_infection_3d()
 	if enemy == null:
 		return
@@ -303,17 +301,18 @@ func test_chunk_contact_infection_from_weakened() -> void:
 		return
 
 	esm.reset()
-	esm.apply_weaken_event()  # Pre-weaken.
+	esm.apply_weaken_event()  # Pre-weaken (after tick 1 in a real fight).
 	_assert_state("weakened", esm.get_state(), "weakening_chunk_infection_start")
 
-	# Chunk contact on weakened enemy should trigger infection.
 	var chunk: Node3D = _make_chunk_3d()
 	if chunk != null and enemy.has_method("_on_body_entered"):
 		enemy._on_body_entered(chunk)
+		_assert_state("weakened", esm.get_state(), "weakening_chunk_infection_still_weakened_after_touch — contact alone does not infect")
+		esm.apply_infection_event()
 		_assert_state(
 			"infected",
 			esm.get_state(),
-			"weakening_chunk_contact_infect — chunk contact on weakened enemy triggers infection"
+			"weakening_chunk_contact_infect — second DoT tick infects"
 		)
 		chunk.free()
 	else:
