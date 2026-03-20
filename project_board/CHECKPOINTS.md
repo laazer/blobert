@@ -5,6 +5,25 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-20 (Test Breaker Agent — mini_boss_encounter ADV-MBA-01 through ADV-MBA-08)
+
+### [mini_boss_encounter] TestBreak — ADV-MBA-06 strict vs. lenient left-edge comparison
+**Would have asked:** SkillCheckPlatform3 right edge (51 + 4 = 55.0) equals MiniBossFloor left edge (67.5 - 12.5 = 55.0) exactly. Should the assertion be strict (>) or lenient (>=)? Strict fails on the current scene geometry.
+**Assumption made:** Used strict inequality (>) as specified in the ticket. The current geometry produces floor_left_edge == p3_right_edge == 55.0, so this test will fail in red phase. The Engine Integration Agent must resolve the zone boundary (either move MiniBossFloor slightly right or accept that the zones touch and the test should use >=). Documented the strict > intent in the test failure message.
+**Confidence:** Medium
+
+### [mini_boss_encounter] TestBreak — ADV-MBA-08 dual assertion strategy (name equality + mutual distinctness)
+**Would have asked:** The ticket specifies only "all four enemy node names are distinct strings." Should the test also assert the exact expected names (catching Godot auto-rename), or only mutual distinctness?
+**Assumption made:** Added both: (1) exact name assertions ("EnemyMiniBoss", "EnemyFusionA", etc.) to catch Godot auto-dedup renames, and (2) pairwise distinctness assertions. This exposes the root cause (wrong name) separately from the symptom (duplicate names). The exact-name assertions are the adversarial surface not covered by T-57 path comparisons.
+**Confidence:** High
+
+### [mini_boss_encounter] TestBreak — ADV-MBA-07 col.position.x dynamic read vs. assumed zero
+**Would have asked:** MiniBossFloor CollisionShape3D X offset is confirmed as 0 in the scene file. Should the test read it dynamically (matching T-62's pattern) or hardcode 0 for clarity?
+**Assumption made:** Read col.position.x dynamically, consistent with T-62 and the spec's explicit risk mitigation note: "If the CollisionShape3D X offset for MiniBossFloor is non-zero in a future edit, the right-edge formula must include col.position.x." ADV-MBA-07 follows the same pattern for the left-edge computation.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-20 (Test Designer Agent — mini_boss_encounter T-53 through T-62)
 
 ### [mini_boss_encounter] TestDesign — T-53 and T-54 as separate methods vs. merged

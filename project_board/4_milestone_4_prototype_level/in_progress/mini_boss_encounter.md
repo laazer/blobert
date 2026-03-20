@@ -9,10 +9,10 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_ENGINE |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -248,4 +248,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test design complete. `tests/levels/test_mini_boss_encounter.gd` implements T-53 through T-62 as headless-safe behavioral tests. All MBA-GEO-*, MBA-BOSS-*, and MBA-FLOW-* requirements have direct test coverage. MBA-GEO-3 inlined in T-53 as T-53_mini_boss_floor_box_size_x_ge_25. MBA-BOSS-3 inlined in T-55 as T-55_infection_interaction_handler_has_set_target_esm. T-60 implements primary source_code check with has_method fallback. No collision_mask assertions emitted (covered by T-25). No assertion names duplicate any T-1 through T-52 names. Test Breaker Agent must implement ADV-MBA-01 through ADV-MBA-08 in `tests/levels/test_mini_boss_encounter_adversarial.gd`.
+Adversarial suite complete. `tests/levels/test_mini_boss_encounter_adversarial.gd` implements ADV-MBA-01 through ADV-MBA-08. Each test targets a distinct failure mode not independently covered by T-53–T-62: boundary elevation (ADV-MBA-01), uninitialized shape (ADV-MBA-02), spatial co-location (ADV-MBA-03), degenerate trigger (ADV-MBA-04), absolute exit placement (ADV-MBA-05), geometric zone overlap (ADV-MBA-06), dynamic floor bounds (ADV-MBA-07), and Godot auto-rename detection (ADV-MBA-08). All test names use ADV-MBA- prefix; no duplicates of T-1–T-62. Checkpoint note: ADV-MBA-06 uses strict > on left_edge vs p3_right_edge; current scene geometry produces 55.0 == 55.0, so this test will fail in red phase — Engine Integration Agent must resolve (move MiniBossFloor or relax to >=). Engine Integration Agent must run full suite and apply minimal scene corrections to achieve green phase for all T-53–T-62 and ADV-MBA-01–ADV-MBA-08.
