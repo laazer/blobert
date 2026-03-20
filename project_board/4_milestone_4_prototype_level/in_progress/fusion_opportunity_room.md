@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
-| Validation Status | Not started |
+| Stage | IMPLEMENTATION_ENGINE |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
+| Validation Status | Adversarial suite complete — 43/43 assertions pass |
 | Blocking Issues | None |
 
 ---
@@ -131,7 +131,7 @@ This ticket is about **validating and documenting** that the zone correctly supp
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
@@ -139,7 +139,8 @@ Test Breaker Agent
   "ticket": "project_board/4_milestone_4_prototype_level/in_progress/fusion_opportunity_room.md",
   "spec": "agent_context/agents/2_spec/fusion_opportunity_room_spec.md",
   "primary_tests": "tests/levels/test_fusion_opportunity_room.gd",
-  "output_adversarial": "tests/levels/test_fusion_opportunity_room_adversarial.gd"
+  "adversarial_tests": "tests/levels/test_fusion_opportunity_room_adversarial.gd",
+  "scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn"
 }
 ```
 
@@ -147,4 +148,22 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Tests T-31 through T-42 delivered at `tests/levels/test_fusion_opportunity_room.gd`. All 96 assertions pass (green phase: scene, scripts, and HUD are already implemented). Tests are headless-safe, use distinct names with T-31_* through T-42_* prefixes, and are fully traced to spec ACs. T-38 explicitly calls handler._ready() after tree insertion to ensure _slot_manager is initialised (headless-safe pattern). T-39/T-40 are pure unit tests against FusionResolver and MutationSlotManager with no scene load. T-41/T-42 load game_ui.tscn directly. No duplicate assertion names vs. T-1 through T-30 or test_player_hud_layout.gd. Test Breaker Agent must read the spec and the new test file before writing the adversarial extension.
+Adversarial suite delivered at `tests/levels/test_fusion_opportunity_room_adversarial.gd`. 21 adversarial cases, 43 assertions, all pass. Coverage matrix:
+- ADV-FOR-01: Platform gap strict <= 10 m boundary (independent arithmetic path from T-34)
+- ADV-FOR-02/21: Enemy Y above platform TOP SURFACE (col offset + half-height formula, not just node origin — T-35/36 used node origin only)
+- ADV-FOR-03: FusionFloor top surface Y in [-0.1, 0.1] — floor is at ground level, not floating
+- ADV-FOR-04: get_slot_count() exact int equality (distinct from T-38's scene-based check)
+- ADV-FOR-05: resolve_fusion(null, null) no crash + no global state mutation (null manager path, distinct from T-40's 0-filled path)
+- ADV-FOR-06: can_fuse(null) targeted mutation guard
+- ADV-FOR-07: Both platform BoxShape3D all-axis non-zero extent guard
+- ADV-FOR-08/18: FusePromptLabel and FusionActiveLabel hidden by default (standalone targeted assertions separate from T-42 loop)
+- ADV-FOR-09/10: Enemies and platforms are distinct node instances with different names (catches duplicate-node-name scene authoring error)
+- ADV-FOR-11: fill_next_available("") guard — empty id never fills a slot, can_fuse stays false
+- ADV-FOR-12: get_slot(0) and get_slot(1) non-null (hardcoded count vs array state gap)
+- ADV-FOR-13/14: get_slot(-1) and get_slot(2) return null (out-of-range boundary values)
+- ADV-FOR-15: Fill-consume-refill cycle idempotency
+- ADV-FOR-16: can_fuse false after one-of-two slots cleared (AND vs OR mutation)
+- ADV-FOR-17: MutationIcon1/2 are ColorRect type (not Label/Panel)
+- ADV-FOR-19: Player without apply_fusion_effect → slots still cleared (push_error must not abort consume)
+- ADV-FOR-20: Third fill overwrites slot B (last-absorb-wins policy verification)
+No assertion duplicates T-31–T-42 or T-1–T-30 names. Headless-safe, no await, no physics. Engine Integration Agent: run tests to confirm all pass then execute AC-6 human playthrough.
