@@ -74,6 +74,15 @@ func _load_game_ui() -> Node:
 		return null
 	return inst
 
+func _read_res_file_as_text(res_path: String) -> String:
+	# Reads a res:// file deterministically for inline-script parsing.
+	var f: FileAccess = FileAccess.open(res_path, FileAccess.READ)
+	if f == null:
+		return ""
+	var content: String = f.get_as_text()
+	f.close()
+	return content
+
 func _get_first_collision_shape(parent: Node) -> CollisionShape3D:
 	if parent == null:
 		return null
@@ -345,6 +354,329 @@ func test_stf_respawn_zone_retry_wiring_exists() -> void:
 
 	root.free()
 
+# ---------------------------------------------------------------------------
+# ST-5: Integration gap — box-edge ordering across rooms
+# Uses collision box edges (not node origins) to catch accidental overlaps
+# and/or off-by-half-width boundary regressions between sequential rooms.
+# ---------------------------------------------------------------------------
+func test_stf_box_edge_adjacency_across_rooms() -> void:
+	var root: Node = _load_level_scene()
+	if root == null:
+		return
+
+	var fusion_platform_b: Node = root.get_node_or_null("FusionPlatformB")
+	var skill_check_p1: Node = root.get_node_or_null("SkillCheckPlatform1")
+	var skill_check_p3: Node = root.get_node_or_null("SkillCheckPlatform3")
+	var mini_boss_floor: Node = root.get_node_or_null("MiniBossFloor")
+	var exit_floor: Node = root.get_node_or_null("ExitFloor")
+
+	_assert_true(fusion_platform_b != null, "stf_box_adj_fusion_platform_b_exists")
+	_assert_true(skill_check_p1 != null, "stf_box_adj_skill_check_platform1_exists")
+	_assert_true(skill_check_p3 != null, "stf_box_adj_skill_check_platform3_exists")
+	_assert_true(mini_boss_floor != null, "stf_box_adj_mini_boss_floor_exists")
+	_assert_true(exit_floor != null, "stf_box_adj_exit_floor_exists")
+
+	if fusion_platform_b == null or skill_check_p1 == null or skill_check_p3 == null or mini_boss_floor == null or exit_floor == null:
+		root.free()
+		return
+
+	var edges_fb: Dictionary = _world_x_edges_for_box(fusion_platform_b, "stf_box_adj_fusion_platform_b")
+	var edges_p1: Dictionary = _world_x_edges_for_box(skill_check_p1, "stf_box_adj_skill_check_platform1")
+	var edges_p3: Dictionary = _world_x_edges_for_box(skill_check_p3, "stf_box_adj_skill_check_platform3")
+	var edges_boss: Dictionary = _world_x_edges_for_box(mini_boss_floor, "stf_box_adj_mini_boss_floor")
+	var edges_exit: Dictionary = _world_x_edges_for_box(exit_floor, "stf_box_adj_exit_floor")
+
+	_assert_true(edges_fb.size() > 0 and edges_p1.size() > 0, "stf_box_adj_fusion_b_and_p1_edges_computed")
+	_assert_true(edges_p3.size() > 0 and edges_boss.size() > 0, "stf_box_adj_p3_and_boss_edges_computed")
+	_assert_true(edges_exit.size() > 0 and edges_boss.size() > 0, "stf_box_adj_exit_and_boss_edges_computed")
+
+	# Conservative room adjacency: previous right edge must not be to the right of next left edge.
+	_assert_true(
+		edges_fb["right"] <= edges_p1["left"],
+		"stf_box_adj_fusion_platform_b_right_le_skill_check_platform1_left",
+		"FusionPlatformB right edge (" + str(edges_fb["right"]) + ") must be <= SkillCheckPlatform1 left edge (" + str(edges_p1["left"]) + ")"
+	)
+
+	_assert_true(
+		edges_p3["right"] <= edges_boss["left"],
+		"stf_box_adj_skill_check_platform3_right_le_mini_boss_floor_left",
+		"SkillCheckPlatform3 right edge (" + str(edges_p3["right"]) + ") must be <= MiniBossFloor left edge (" + str(edges_boss["left"]) + ")"
+	)
+
+	_assert_true(
+		edges_boss["right"] <= edges_exit["left"],
+		"stf_box_adj_mini_boss_floor_right_le_exit_floor_left",
+		"MiniBossFloor right edge (" + str(edges_boss["right"]) + ") must be <= ExitFloor left edge (" + str(edges_exit["left"]) + ")"
+	)
+
+	root.free()
+
+# ---------------------------------------------------------------------------
+# ST-6: Spec-gap checkpoint — LevelExit completion must not be gated on mini-boss state
+#
+# CHECKPOINT: Conservative assumption used by ticket: normal completion is triggered
+# solely when a "player" body enters LevelExit; the LevelExit inline script should
+# not reference EnemyMiniBoss / mini-boss defeat state at all.
+# ---------------------------------------------------------------------------
+func test_stf_checkpoint_level_exit_is_unconditional_completion_trigger() -> void:
+	var root: Node = _load_level_scene()
+	if root == null:
+		return
+
+	var level_exit: Node = root.get_node_or_null("LevelExit")
+	_assert_true(level_exit != null, "stf_checkpoint_level_exit_exists")
+	if level_exit == null:
+		root.free()
+		return
+
+	# CHECKPOINT: encode that completion is driven by player-entering LevelExit, not by any mini-boss state variable.
+	var tscn_text: String = _read_res_file_as_text(LEVEL_SCENE_PATH)
+	_assert_true(
+		tscn_text != "",
+		"stf_checkpoint_level_exit_tscn_reads",
+		"Failed to read level tscn text from " + LEVEL_SCENE_PATH
+	)
+
+	var start_idx: int = tscn_text.find("GDScript_level_exit")
+	_assert_true(
+		start_idx != -1,
+		"stf_checkpoint_level_exit_section_start_found",
+		"Could not locate GDScript_level_exit sub-resource in " + LEVEL_SCENE_PATH
+	)
+	if start_idx == -1:
+		root.free()
+		return
+
+	var end_idx: int = tscn_text.find('[node name="ContainmentHall01"', start_idx)
+	if end_idx == -1:
+		end_idx = min(start_idx + 5000, tscn_text.length())
+
+	var section: String = tscn_text.substr(start_idx, end_idx - start_idx)
+	var section_lower: String = section.to_lower()
+
+	_assert_true(
+		section.contains("level_complete"),
+		"stf_checkpoint_level_exit_section_contains_level_complete"
+	)
+	_assert_true(
+		section.contains("body_entered.connect(_on_body_entered)") or section.contains("body_entered.connect"),
+		"stf_checkpoint_level_exit_section_connects_body_entered"
+	)
+	_assert_true(
+		section_lower.contains("is_in_group") and section_lower.contains("player"),
+		"stf_checkpoint_level_exit_section_filters_player_group"
+	)
+
+	# Anti-gating assertions: LevelExit should not mention miniboss defeat/state identifiers.
+	_assert_true(
+		section_lower.find("miniboss") == -1 and section_lower.find("enemymonster") == -1,
+		"stf_checkpoint_level_exit_section_has_no_miniboss_references",
+		"LevelExit inline script references miniboss identifiers; this violates the ticket's conservative completion trigger assumption."
+	)
+	_assert_true(
+		section_lower.find("enemimini") == -1,
+		"stf_checkpoint_level_exit_section_has_no_enemyminiboss_references"
+	)
+
+	root.free()
+
+# ---------------------------------------------------------------------------
+# ST-7: Edge-case — player initial transform should match SpawnPosition marker
+# Prevents scenes where SpawnPosition is correct but Player3D isn't actually placed at it.
+# ---------------------------------------------------------------------------
+func test_stf_player_spawn_position_matches_player_transform() -> void:
+	var root: Node = _load_level_scene()
+	if root == null:
+		return
+
+	var spawn: Node = root.get_node_or_null("SpawnPosition")
+	var player: Node = root.get_node_or_null("Player3D")
+	_assert_true(spawn != null, "stf_spawn_marker_exists_for_player_alignment")
+	_assert_true(player != null, "stf_player_exists_for_player_alignment")
+	if spawn == null or player == null:
+		root.free()
+		return
+
+	_assert_true(
+		(spawn is Marker3D),
+		"stf_spawn_marker_is_marker3d",
+		"SpawnPosition is " + spawn.get_class() + ", expected Marker3D"
+	)
+	_assert_true(
+		(player is Node3D),
+		"stf_player_is_node3d_for_alignment",
+		"Player3D is " + player.get_class() + ", expected Node3D-based transform"
+	)
+
+	var spawn_pos: Vector3 = (spawn as Node3D).position
+	var player_pos: Vector3 = (player as Node3D).position
+
+	var tol: float = 0.001
+	_assert_true(
+		absf(spawn_pos.x - player_pos.x) <= tol and absf(spawn_pos.y - player_pos.y) <= tol and absf(spawn_pos.z - player_pos.z) <= tol,
+		"stf_player_position_matches_spawnposition_with_tolerance",
+		"Player3D.position (" + str(player_pos) + ") must match SpawnPosition.position (" + str(spawn_pos) + ") within tol=" + str(tol)
+	)
+
+	root.free()
+
+# ---------------------------------------------------------------------------
+# ST-8: Flow clarity — InfectionUI must include objective prompts + input hints
+#
+# Structural guard for the human-playable AC: even if prompts are hidden at start,
+# they must exist in the level's UI tree and not be removed/replaced.
+# ---------------------------------------------------------------------------
+func test_stf_infection_ui_has_prompt_labels_and_hints() -> void:
+	var root: Node = _load_level_scene()
+	if root == null:
+		return
+
+	var infection_ui: Node = root.get_node_or_null("InfectionUI")
+	_assert_true(infection_ui != null, "stf_infection_ui_exists")
+	if infection_ui == null:
+		root.free()
+		return
+
+	var required_labels: Array[String] = [
+		"AbsorbPromptLabel",
+		"FusePromptLabel",
+		"FusionActiveLabel"
+	]
+	for label_name in required_labels:
+		var n: Node = infection_ui.get_node_or_null(label_name)
+		_assert_true(n != null, "stf_ui_has_" + label_name.to_lower() + "_exists", "Missing " + label_name + " under InfectionUI")
+		if n == null:
+			continue
+		_assert_true(
+			n is Label,
+			"stf_ui_has_" + label_name.to_lower() + "_is_label",
+			label_name + " is " + n.get_class() + ", expected Label"
+		)
+
+	# These contextual prompts start hidden by default in the shipped scene.
+	var absorb_prompt: Node = infection_ui.get_node_or_null("AbsorbPromptLabel")
+	if absorb_prompt != null:
+		_assert_true(!absorb_prompt.visible, "stf_ui_absorb_prompt_hidden_by_default")
+
+	var fuse_prompt: Node = infection_ui.get_node_or_null("FusePromptLabel")
+	if fuse_prompt != null:
+		_assert_true(!fuse_prompt.visible, "stf_ui_fuse_prompt_hidden_by_default")
+
+	var fusion_active: Node = infection_ui.get_node_or_null("FusionActiveLabel")
+	if fusion_active != null:
+		_assert_true(!fusion_active.visible, "stf_ui_fusion_active_label_hidden_by_default")
+
+	# Always-visible hints container (signposting/navigation support).
+	var hints: Node = infection_ui.get_node_or_null("Hints")
+	_assert_true(hints != null, "stf_ui_hints_container_exists")
+	if hints == null:
+		root.free()
+		return
+	_assert_true(
+		(hints is Control),
+		"stf_ui_hints_is_control",
+		"Hints is " + hints.get_class() + ", expected Control"
+	)
+
+	var required_hint_labels: Array[String] = ["MoveHint", "JumpHint", "DetachRecallHint", "AbsorbHint"]
+	for hint_name in required_hint_labels:
+		var hint_node: Node = hints.get_node_or_null(hint_name)
+		_assert_true(hint_node != null, "stf_ui_hints_has_" + hint_name.to_lower() + "_exists", "Missing hint label " + hint_name)
+		if hint_node == null:
+			continue
+		_assert_true(hint_node is Label, "stf_ui_hints_has_" + hint_name.to_lower() + "_is_label")
+		var hint_script: Script = hint_node.get_script() as Script
+		_assert_true(
+			hint_script != null and hint_script.resource_path.contains("input_hint_label.gd"),
+			"stf_ui_hint_script_is_input_hint_label",
+			hint_name + " script resource_path '" + (hint_script.resource_path if hint_script != null else "null") + "' does not contain input_hint_label.gd"
+		)
+
+	root.free()
+
+# ---------------------------------------------------------------------------
+# ST-9: Edge-case — respawn trigger is non-degenerate and spawn_point is the SpawnPosition marker
+# ---------------------------------------------------------------------------
+func test_stf_respawn_zone_spawn_point_is_spawn_position_and_trigger_non_degenerate() -> void:
+	var root: Node = _load_level_scene()
+	if root == null:
+		return
+
+	var zone: Node = root.get_node_or_null("RespawnZone")
+	_assert_true(zone != null, "stf_adv_respawn_zone_exists")
+	if zone == null:
+		root.free()
+		return
+
+	_assert_true(zone is Area3D, "stf_adv_respawn_zone_is_area3d")
+
+	var box: BoxShape3D = _require_box_shape_collision_shape(zone, "stf_adv_respawn_zone_collision_box")
+	if box == null:
+		root.free()
+		return
+	_assert_true(box.size.x > 0.0, "stf_adv_respawn_zone_collision_box_size_x_nonzero")
+	_assert_true(box.size.y > 0.0, "stf_adv_respawn_zone_collision_box_size_y_nonzero")
+	_assert_true(box.size.z > 0.0, "stf_adv_respawn_zone_collision_box_size_z_nonzero")
+
+	# spawn_point should resolve to SpawnPosition (retry safety for the skill-check pit).
+	var spawn_point_val = zone.get("spawn_point")
+	_assert_true(spawn_point_val != null and String(spawn_point_val) != "", "stf_adv_respawn_zone_spawn_point_non_empty")
+	if spawn_point_val == null or String(spawn_point_val) == "":
+		root.free()
+		return
+
+	var resolved: Node = zone.get_node_or_null(spawn_point_val as NodePath)
+	_assert_true(resolved != null, "stf_adv_respawn_zone_spawn_point_resolves")
+	if resolved == null:
+		root.free()
+		return
+	_assert_true(resolved.name == "SpawnPosition", "stf_adv_respawn_zone_spawn_point_is_spawn_position", "spawn_point resolves to '" + resolved.name + "', expected 'SpawnPosition'")
+	_assert_true(resolved is Marker3D, "stf_adv_respawn_zone_spawn_point_is_marker3d")
+
+	_assert_true(zone.has_method("_on_body_entered"), "stf_adv_respawn_zone_has_on_body_entered")
+
+	root.free()
+
+# ---------------------------------------------------------------------------
+# ST-10: Stress — repeated instantiation stays structurally valid
+# Headless suite must be robust to repeated scene instantiation in CI.
+# ---------------------------------------------------------------------------
+func test_stf_stress_repeated_scene_instantiation() -> void:
+	const ITERATIONS: int = 6
+
+	var first_failure: String = ""
+	for i in range(ITERATIONS):
+		var root: Node = _load_level_scene()
+		if root == null:
+			first_failure = "instantiate returned null at iteration " + str(i)
+			break
+
+		# Keep checks minimal (structural only).
+		if root.get_node_or_null("SpawnPosition") == null:
+			first_failure = "missing SpawnPosition at iteration " + str(i)
+			root.free()
+			break
+		if root.get_node_or_null("LevelExit") == null:
+			first_failure = "missing LevelExit at iteration " + str(i)
+			root.free()
+			break
+		if root.get_node_or_null("MutationTeaseFloor") == null:
+			first_failure = "missing MutationTeaseFloor at iteration " + str(i)
+			root.free()
+			break
+		if root.get_node_or_null("SkillCheckFloorBase") == null:
+			first_failure = "missing SkillCheckFloorBase at iteration " + str(i)
+			root.free()
+			break
+		if root.get_node_or_null("MiniBossFloor") == null:
+			first_failure = "missing MiniBossFloor at iteration " + str(i)
+			root.free()
+			break
+
+		root.free()
+
+	_assert_true(first_failure == "", "stf_stress_repeated_instantiation_ok", first_failure)
+
 func run_all() -> int:
 	print("--- tests/levels/test_start_finish_flow.gd ---")
 	_pass_count = 0
@@ -361,6 +693,24 @@ func run_all() -> int:
 
 	# ST-4: Respawn zone wiring exists (retry safety around skill check pit).
 	test_stf_respawn_zone_retry_wiring_exists()
+
+	# ST-5: Integration gap — box-edge ordering across rooms.
+	test_stf_box_edge_adjacency_across_rooms()
+
+	# ST-6: Spec-gap checkpoint — LevelExit completion is unconditional.
+	test_stf_checkpoint_level_exit_is_unconditional_completion_trigger()
+
+	# ST-7: Edge-case — Player3D transform matches SpawnPosition.
+	test_stf_player_spawn_position_matches_player_transform()
+
+	# ST-8: Flow clarity — InfectionUI includes objective prompts + input hints.
+	test_stf_infection_ui_has_prompt_labels_and_hints()
+
+	# ST-9: Edge-case — respawn trigger non-degenerate + spawn_point resolves to SpawnPosition.
+	test_stf_respawn_zone_spawn_point_is_spawn_position_and_trigger_non_degenerate()
+
+	# ST-10: Stress — repeated scene instantiation remains structurally valid.
+	test_stf_stress_repeated_scene_instantiation()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
