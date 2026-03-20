@@ -24,6 +24,15 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-20 (Engine Integration Agent — mutation_tease_room integration)
+
+### [mutation_tease_room] Implementation — All tests pass, no scene changes needed
+**Would have asked:** Do any of T-63 through T-72 or ADV-MTR-01 through ADV-MTR-06 fail against the existing containment_hall_01.tscn, requiring scene correction?
+**Assumption made:** All 18 MTR tests (T-63 through T-72, ADV-MTR-01 through ADV-MTR-06) pass against the existing scene without modification. The scene geometry already matches the spec: MutationTeaseFloor at X=0, BoxShape3D (20,1,10), top surface Y=0; MutationTeasePlatform at Y=0 with collider offset +0.3 (top surface 0.8); EnemyMutationTease at Y=1.3; zone adjacency at X=10.0 satisfies <=. No scene changes were authored.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-20 (Planner Agent — mutation_tease_room planning)
 
 ### [mutation_tease_room] Planning — EnemyMutationTease position.y assertion strategy

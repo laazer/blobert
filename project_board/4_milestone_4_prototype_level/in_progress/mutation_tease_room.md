@@ -9,11 +9,11 @@
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Engine Integration Agent |
-| Validation Status | Not started |
+| Stage | INTEGRATION |
+| Revision | 5 |
+| Last Updated By | Engine Integration Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
+| Validation Status | All headless tests pass (T-63–T-72, ADV-MTR-01–ADV-MTR-06): 0 failures |
 | Blocking Issues | None |
 
 ---
@@ -154,4 +154,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Test file `tests/levels/test_mutation_tease_room.gd` is complete with T-63 through T-72 (primary, headless-safe) and ADV-MTR-01 through ADV-MTR-06 (adversarial). All tests extend Object, use run_all() -> int, call root.free() before returning, use node.name for distinctness checks (NFR-6), and include the T-25 collision_mask NOTE comment on every StaticBody3D function. T-72 is a traceability stub only (_pass_test unconditionally). Engine Integration Agent must verify all tests PASS against the existing containment_hall_01.tscn, or make minimal scene changes if any fail.
+All headless tests T-63 through T-72 and ADV-MTR-01 through ADV-MTR-06 pass against the existing containment_hall_01.tscn with no scene modifications required. The scene geometry confirmed: MutationTeaseFloor at X=0 with BoxShape3D (20,1,10) and top surface Y=0.0; MutationTeasePlatform with BoxShape3D (4,1,6) and top surface Y=0.8; EnemyMutationTease at Y=1.3; right edge of tease floor (10.0) <= left edge of FusionFloor (10.0). INTEGRATION-only acceptance criteria (human playthrough) remain for the Acceptance Criteria Gatekeeper Agent to verify.
