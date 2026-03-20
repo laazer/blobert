@@ -5,6 +5,59 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-20 (Test Designer Agent — mutation_tease_room T-63 through T-72 + ADV-MTR-01 through ADV-MTR-06)
+
+### [mutation_tease_room] TestDesign — T-72 stub: pass unconditionally or skip entirely
+**Would have asked:** T-72 is a traceability stub for collision_mask already covered by T-25. Should it call _pass_test unconditionally (incrementing pass_count) or emit no call at all and rely only on the NOTE comment?
+**Assumption made:** Called _pass_test("T-72_collision_mask_note_see_T25") unconditionally, consistent with NFR-5 in the spec and the T-43 NOTE / T-44 NOTE pattern in the existing suite. This keeps the stub visible in CI output and confirms the function was reached.
+**Confidence:** High
+
+### [mutation_tease_room] TestDesign — ADV-MTR-04 pairwise distinctness scope: three pairs or six pairs
+**Would have asked:** T-70 checks EnemyMutationTease.name against the other three only (3 pairs). ADV-MTR-04 spec says "all four enemy names pairwise distinct." Should ADV-MTR-04 check all six pairwise combinations (C(4,2)=6), or only the three pairs involving EnemyMutationTease?
+**Assumption made:** Checked all six pairwise combinations (tease/A, tease/B, tease/boss, A/B, A/boss, B/boss) plus exact name assertions for all four nodes. This matches the ADV-MBA-08 pattern which also checks all pairs, not just those involving the focal node. The broader pairwise check catches a FusionA/FusionB name collision that neither T-70 nor T-57 would surface.
+**Confidence:** High
+
+### [mutation_tease_room] TestDesign — T-69 <= operator: spec confirmed, no deviation needed
+**Would have asked:** The spec zones are exactly adjacent at X=10.0 (MutationTeaseFloor right edge == FusionFloor left edge). Should the test use <= or < for the flow assertion?
+**Assumption made:** Used <= as mandated by spec AC-MTR-FLOW-1.1 and the zone adjacency note. This is consistent with the ADV-MBA-06 Engine Integration Agent resolution (>= relaxation for touching boundaries). No deviation from spec required.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-20 (Planner Agent — mutation_tease_room planning)
+
+### [mutation_tease_room] Planning — EnemyMutationTease position.y assertion strategy
+
+**Would have asked:** The scene file shows `EnemyMutationTease` at Y=1.3, and `MutationTeasePlatform` CollisionShape3D Y offset is +0.3 (box half-height 0.5, so top surface world Y = 0 + 0.3 + 0.5 = 0.8). Y=1.3 is above the platform top surface. Should T-65 assert Y > platform top surface Y (computed), or simply Y > MutationTeasePlatform.position.y?
+**Assumption made:** Assert `EnemyMutationTease.position.y > MutationTeasePlatform.position.y` (node origin, not computed top surface). This matches the established pattern from T-35/T-36 (EnemyFusionA/B Y > FusionPlatformA/B.position.y). The platform node is at Y=0, enemy is at Y=1.3, so the assertion passes. Using the raw node position is simpler and headless-safe.
+**Confidence:** High
+
+### [mutation_tease_room] Planning — MutationTeaseFloor X position assertion
+
+**Would have asked:** The scene file shows `MutationTeaseFloor` at position X=0 (transform identity). The ticket says zone is X: -10 to 10, implying center at X=0. Should T-63 assert position.x ≈ 0 ±1.0, or use a range [−12, 12] for the zone bounds?
+**Assumption made:** Assert `abs(position.x) <= 1.0` (i.e., center X ≈ 0 ±1.0). This mirrors the floor-geometry pattern from T-31 (FusionFloor X ≈ 22.5 ±1.0) and T-43 (SkillCheckFloorBase X ≈ 45 ±1.0). The scene-confirmed value of X=0 satisfies this.
+**Confidence:** High
+
+### [mutation_tease_room] Planning — MutationTeasePlatform X position and elevation values
+
+**Would have asked:** The scene shows `MutationTeasePlatform` at position X=0 (identity transform) but the ticket says "at X=3, elevated platform." The CollisionShape3D Y offset is +0.3 meaning top surface Y = 0.8. Is X=3 from the ticket wrong, or is the scene incorrect?
+**Assumption made:** The scene file is the ground truth — it shows position X=0 with CollisionShape3D Y offset +0.3. The ticket's "X=3" is a description shorthand for the zone being slightly right of center, not an exact node position. The spec and tests will use the scene-confirmed value X ≈ 0 ±2.0 (wider tolerance to account for intent vs. exact). Platform top surface Y is confirmed as 0.8 (node Y=0 + col.y=0.3 + half_y=0.5). Tests will assert top surface Y in [0.5, 1.5] to cover this.
+**Confidence:** Medium
+
+### [mutation_tease_room] Planning — Level flow placement: MTR zone precedes fusion zone
+
+**Would have asked:** Is there a cross-zone flow assertion needed between the Mutation Tease zone (X: -10 to 10) and the Fusion Opportunity Room (FusionFloor at X ≈ 22.5)? Should T-68 verify MutationTeaseFloor.right_edge < FusionFloor.left_edge?
+**Assumption made:** Yes. This follows the pattern of T-52 (skill check after fusion) and T-61 (mini-boss after skill check). The right edge of MutationTeaseFloor is 0 + 0 + 10 = 10.0; FusionFloor left edge is 22.5 - 12.5 = 10.0 — they are exactly adjacent. The flow assertion must use >= (not >) consistent with the ADV-MBA-06 precedent where zones touch at exact boundaries. The spec will document this explicitly.
+**Confidence:** High
+
+### [mutation_tease_room] Planning — No scripted tease mechanic — AC validation approach
+
+**Would have asked:** The ticket AC says "Tease is clear (e.g. locked door, preview enemy, or scripted moment)" but the context says there is no locked door or scripted moment — only visual layout (enemy on elevated platform). How should the AC be validated as "tease is clear" in a headless test?
+**Assumption made:** The headless validation proxy for "tease is clear" is: (1) EnemyMutationTease exists on or above the elevated platform (Y above floor level), (2) MutationTeasePlatform is elevated (top surface Y > 0), (3) the zone is reachable (not behind a wall). The subjective "clarity" AC is marked as INTEGRATION only. A human playthrough validation note is added to the spec.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-20 (Engine Integration Agent — mini_boss_encounter T-53–T-62 + ADV-MBA-01–ADV-MBA-08)
 
 ### [mini_boss_encounter] Implementation — T-57 get_path() vs node name comparison
@@ -421,358 +474,29 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 
 ---
 
-### [chunk_sticks_to_enemy] Test Break — chunk_attached emission for body in both "chunk" AND "player" groups
+## Run: 2026-03-20 (Spec Agent — mutation_tease_room specification)
 
-**Would have asked:** If a body is in both the "chunk" group and the "player" group simultaneously (unusual but possible), should chunk_attached be emitted or suppressed?
+### [mutation_tease_room] Spec — MutationTeasePlatform X tolerance: ±2.0 vs ±1.0
 
-**Assumption made:** The spec says the signal fires for bodies in the "chunk" group and NOT for player bodies. The existing _on_body_entered code checks player group first. Conservative assumption: the chunk group check takes precedence in the stub (it checks "chunk" without a prior player-group exclusion). This edge case is unlikely in production but is documented for the implementation agent.
-
+**Would have asked:** The planning checkpoint notes Medium confidence on MutationTeasePlatform X ±2.0 m tolerance (scene shows X=0, ticket mentions X=3). Should the spec use ±1.0 m (matching MutationTeaseFloor) or ±2.0 m to account for potential future repositioning?
+**Assumption made:** Used ±2.0 m for MutationTeasePlatform.position.x. The planning document explicitly chose a wider tolerance (Medium confidence) because the ticket's "X=3" description conflicts with the scene's X=0. The wider tolerance accommodates both the current scene value and the described intent without tightening to ±1.0 m prematurely. Scene value X=0.0 falls well within [-2.0, 2.0].
 **Confidence:** Medium
 
----
+### [mutation_tease_room] Spec — MTR-FLOW-1 uses <= not < for zone adjacency
 
-### [chunk_sticks_to_enemy] Test Break — dead-state enemy headless testability
-
-**Would have asked:** Can we drive EnemyStateMachine to a "dead" state headlessly without instantiating a full scene?
-
-**Assumption made:** The deepest testable state headlessly is "infected" (idle → weakened → infected). There is no apply_dead_event() confirmed available headlessly. SPEC-CSE-1 says the signal fires regardless of state including "dead." The test covers "infected" as the deepest verified proxy for "dead" state behavior.
-
+**Would have asked:** MutationTeaseFloor right edge and FusionFloor left edge are both exactly 10.0. Should the flow assertion use <= (zones adjacent is valid) or < (strictly separated)?
+**Assumption made:** Used <= for AC-MTR-FLOW-1.1. This is consistent with the ADV-MBA-06 resolution and Engine Integration Agent's relaxation of the mini-boss left-edge check for the same geometric reason: touching boundaries are valid zone adjacency, not overlap. Using < would produce a false failure on the current scene.
 **Confidence:** High
 
----
+### [mutation_tease_room] Spec — T-72 as traceability stub, not a real assertion
 
-### [chunk_sticks_to_enemy] Test Break — freed enemy node prevents flag clear on absorb
-
-**Would have asked:** If _chunk_stuck_enemy is freed before absorb_resolved fires, the is_instance_valid guard skips the entire slot block, leaving _chunk_stuck_on_enemy=true. Is this acceptable or should the flag be cleared even when the enemy ref is invalid?
-
-**Assumption made:** Per SPEC-CSE-10 risk note: "If the stuck flag is not cleared when the chunk node is invalid, the recall guard will permanently block recall for that slot, creating a softlock." However, SPEC-CSE-10 only addresses the chunk node being freed, not the enemy node being freed. When the ENEMY node is freed (not the chunk), the implementation skips the block and flags remain — this is a known risk per spec. The test documents this behavior without asserting flag state, only asserting no crash.
-
-**Confidence:** Medium
-
----
-
-## Run: 2026-03-05T12:00:00Z
-Tickets queued: input_hint_polish_core_mechanics.md
-
----
-
-### [infection_interaction] Planner — Weakened state definition
-
-**Would have asked:** Is the "weakened" enemy state already defined and implemented elsewhere?
-
-**Assumption made:** Yes. EnemyStateMachine in the codebase already defines `STATE_WEAKENED` and transitions idle/active → weakened (weaken event), weakened → infected (infection event). Execution plan assumes dependency on enemy state machine / weakened-state behavior being in place; no separate task to define weakened.
-
+**Would have asked:** T-72 is listed in the test plan as covering MTR-GEO-1 collision_mask, but T-25 already covers this for all StaticBody3D nodes. Should T-72 emit a real assertion duplicating T-25, or be a stub?
+**Assumption made:** T-72 is a stub only: calls _pass_test unconditionally with a NOTE comment pointing to T-25. This matches the T-43 NOTE and T-44 NOTE pattern established in the test suite. Emitting a real assertion would violate NFR-3 (no duplication with T-1 through T-62).
 **Confidence:** High
 
----
+### [mutation_tease_room] Spec — EnemyMutationTease distinctness check uses node.name not get_path()
 
-### [infection_interaction] Planner — Chunk contact vs key press
-
-**Would have asked:** Should both chunk contact and key press trigger infection, or should the spec choose one?
-
-**Assumption made:** Both are in scope per AC ("e.g. chunk contact, key press"). Spec Agent will define the exact interaction(s); implementation tasks include key/infect action (already present in InfectionInteractionHandler) and chunk-contact trigger (e.g. chunk body entering area of weakened enemy). If spec narrows to one trigger, implementation follows spec.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Planner — Existing infection code
-
-**Would have asked:** The repo already has InfectionInteractionHandler, InfectionAbsorbResolver, MutationInventory, infection tests. Should the plan assume greenfield or align with existing code?
-
-**Assumption made:** Plan drives spec-first. Spec is the authority; Test Design and Implementation tasks align or fill gaps. Existing code is reconciled with the spec (e.g. chunk-contact wiring may be missing; one mutation "usable" may need UI or gameplay hook). No task assumes delete-and-rewrite; implementation tasks may be "wire chunk contact," "ensure one mutation granted and visible/usable," "add/align visual feedback."
-
+**Would have asked:** T-70 / MTR-FLOW-2 must check that EnemyMutationTease is distinct from the other three enemies. Should it use node.name or node.get_path()? The mini-boss encounter spec uses node.name after discovering get_path() returns empty for non-tree nodes.
+**Assumption made:** Used node.name for all distinctness comparisons in T-70 and ADV-MTR-04. This is consistent with the CHECKPOINT resolution for T-57 ([mini_boss_encounter] Implementation) and is documented in NFR-6 of this spec.
 **Confidence:** High
 
----
-
-### [infection_interaction] Planner — One mutation "usable"
-
-**Would have asked:** What does "at least one mutation is granted and usable after absorb" mean — UI visibility only, or an actual gameplay effect?
-
-**Assumption made:** Minimum: one mutation ID is granted to the player (MutationInventory.grant) and is visible or confirmable (e.g. in UI or inventory). "Usable" for this milestone means the player can observe that the mutation was gained; a concrete gameplay effect (e.g. stat buff, ability) may be placeholder or minimal. Spec Agent will clarify; implementation may deliver UI/inventory display plus a minimal placeholder effect if needed to satisfy AC.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Planner — Visual feedback scope
-
-**Would have asked:** What level of visual/audio feedback is required for weakened, infected, and absorb states to count as "visually clear and discoverable without debug overlays"?
-
-**Assumption made:** Minimum feedback includes distinct coloration or sprite change for weakened vs infected enemies, a short infection FX (e.g. pulse, particles) when infection occurs, and a clear on-screen cue when a mutation is gained (e.g. HUD toast or inventory highlight). No complex animation set is required for this milestone; Presentation and Spec Agents will choose the simplest assets/effects that satisfy clarity.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Planner — Softlock definition
-
-**Would have asked:** For this feature, what scenarios count as a "softlock or undefined state" that must be prevented?
-
-**Assumption made:** A softlock is any infection/absorb sequence that leaves the game running but the player unable to continue normal play without manually resetting the scene (e.g. enemy stuck in an intermediate state, infection cannot be cleared, absorb never completes, or mutation inventory enters an invalid state). Tests and implementation must ensure all transitions (normal, repeated, cancelled, or interrupted) converge to a valid, recoverable state: enemy dead or reset, infection cleared or resolved, and player input restored.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Test Designer — Infect input action coverage
-
-**Would have asked:** Should primary tests assert that the `infect` input action (via `Input.is_action_just_pressed("infect")` in `InfectionInteractionHandler`) correctly routes to `EnemyStateMachine.apply_infection_event()` from weakened state, or is that mapping treated as higher-level engine integration?
-
-**Assumption made:** For this ticket, primary Test Designer coverage focuses on pure logic and deterministic wiring that is testable without simulating real-time input. Infection triggers are verified at the state machine level and via chunk-contact engine wiring (`EnemyInfection._on_body_entered`), while the exact Godot input mapping for `infect` is treated as engine-integration / manual QA responsibility. No tests attempt to fake `Input` state.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Test Designer — Mutation "usable" via InfectionUI
-
-**Would have asked:** Does "at least one mutation is granted and usable after absorb" require a concrete gameplay effect, or is a visible mutation indicator in the infection-loop HUD sufficient for this milestone?
-
-**Assumption made:** For this milestone, a mutation is considered "usable" if it is (a) granted into `MutationInventory` and (b) made clearly visible to the player via InfectionUI (e.g. `MutationLabel`/`MutationIcon` driven from `get_mutation_inventory()` and `get_granted_count()`). Tests enforce that a non-zero mutation count makes the mutation label visible; any deeper gameplay effect is left to future tickets.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Test Designer — Infection FX text and tint mapping
-
-**Would have asked:** Should the infection state FX contract specify exact label text and color tints for weakened/infected/dead, or only require that each state is visually distinct?
-
-**Assumption made:** The strictest defensible contract for this ticket is that `infection_state_fx.gd` produces distinct visuals and explicit state labels: "Weakened", "Infected", and "Dead", with weakened/infected tinted away from the idle/default color and dead rendered dimmer (alpha < 1). Tests assert these concrete label strings and basic tint/dim relationships rather than exact RGB values, so future visual tweaks remain possible while keeping states clearly distinguishable.
-
-**Confidence:** Medium
-
----
-
-### [infection_interaction] Test Breaker — resolve_absorb null inventory semantics
-
-**Would have asked:** When `InfectionAbsorbResolver.resolve_absorb` is invoked with a non-null, infected `EnemyStateMachine` but a null mutation inventory, should the resolver still kill the enemy or treat the call as a strict no-op?
-
-**Assumption made:** For this ticket, calling `resolve_absorb` with a null inventory is treated as a strict no-op: the enemy state and mutation inventory must remain unchanged, and the call must never crash. Tests mark this as a CHECKPOINT and assert no state change when `inv == null`.
-
-**Confidence:** Medium
-
----
-
-## Run: 2026-03-05T12:00:00Z
-Tickets queued: input_hint_polish_core_mechanics.md
-
----
-
-### [input_hint_polish_core_mechanics] Planner — Duplicate ticket blocks
-
-**Would have asked:** The ticket file for `input_hint_polish_core_mechanics` currently contains two full ticket blocks with different Revisions (2 and 1); should the lower block be treated as historical context and left untouched, or should the file be normalized to a single ticket definition?
-
-**Assumption made:** The first ticket block (Revision 2) is the authoritative current state and the second block (Revision 1) is retained as historical context. For this run, only the first block's WORKFLOW STATE and NEXT ACTION fields will be updated (to Stage SPECIFICATION, Revision incremented, and handoff information adjusted), and the lower block will be left unchanged.
-
-**Confidence:** Medium
-
----
-
-## Run: 2026-03-19 (Planner Agent — light_skill_check planning)
-
-### [light_skill_check] Planning — spec ID namespace for skill check requirements
-
-**Would have asked:** Should spec requirement IDs use "SKC-" prefix (as the ticket states) or follow the existing pattern of matching the zone's abbreviated name (e.g. "SC-GEO-" for Skill Check Geometry)?
-
-**Assumption made:** Used "SKC-" prefix as stated in the ticket prompt. This is consistent with the ticket's own requirement naming suggestion (SKC-GEO-*, SKC-RETRY-*, SKC-PLACE-*) and avoids collision with the existing GEO-* namespace used by containment_hall_01_spec.md.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] Planning — SkillCheckFloorBase Y position interpretation
-
-**Would have asked:** The scene has SkillCheckFloorBase at node Y=0 with CollisionShape3D offset Y=-4.5 and BoxShape3D size Y=1. This makes the floor top surface at world Y = 0 + (-4.5) + 0.5 = -4.0, placing it 4 m below the platforms (which have top surface Y=0). This means the floor is a pit floor, not the same level as the surrounding corridor. Is this intentional?
-
-**Assumption made:** Yes, this is intentional. The RespawnZone's CollisionShape3D is centered at Y=-5 with height 8, catching bodies that fall below Y≈-1. The SkillCheckFloorBase at Y=-4.0 (top surface) is the pit floor that the RespawnZone catches. The platforms (P1, P2, P3) are all at top surface Y≈0.0 — same as the corridor. The skill check is a platforming section over a pit, not a height-varied sequence. This matches the "light platforming" description.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] Planning — test numbering starting at T-43
-
-**Would have asked:** T-31 through T-42 are taken by test_fusion_opportunity_room.gd. The ticket says start at T-43. Are there any other test files that might use T-43 or beyond that could conflict?
-
-**Assumption made:** T-43 is safe. Existing test files cover T-1 through T-30 (test_containment_hall_01.gd) and T-31 through T-42 (test_fusion_opportunity_room.gd). No other test file in tests/levels/ uses T-43 or higher. The new file test_light_skill_check.gd will start at T-43.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] Planning — "passable with core movement" AC structural test approach
-
-**Would have asked:** The AC says skill check is "passable with core movement." Without running physics, this can only be tested structurally. What structural properties constitute "passable"?
-
-**Assumption made:** Three structural properties are testable headlessly: (1) all platform top surfaces are at the same Y level (≈0.0) as the entry floor so no height variance requires elevated jump; (2) gap between adjacent platforms is within the player's max horizontal jump range (≈1.98 m per containment_hall_01_spec.md, with the scene showing ~1.0 m gaps which is well within range); (3) all platforms have positive-area BoxShape3D collision so they are solid. This is the same structural approach used for FusionPlatform gap tests in T-34.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] Planning — adversarial file naming convention
-
-**Would have asked:** Should the adversarial file be named test_light_skill_check_adversarial.gd (matching fusion_opportunity_room pattern) or test_light_skill_check_adv.gd (shorter)?
-
-**Assumption made:** Used test_light_skill_check_adversarial.gd to match the existing naming pattern established by test_fusion_opportunity_room_adversarial.gd. Consistency is more important than brevity here.
-
-**Confidence:** High
-
----
-
-## Run: 2026-03-20 (Test Breaker Agent — light_skill_check adversarial extension)
-
-### [light_skill_check] TestBreak — ADV-SKC-06 P3>P1 vs P3>P2 scope decision
-
-**Would have asked:** The ticket states ADV-SKC-06 as "SkillCheckPlatform3 BoxShape3D size.x > SkillCheckPlatform1 BoxShape3D size.x (landing pad wider)". T-46 already asserts P3 > P1 AND P3 > P2. Should ADV-SKC-06 only check P3>P1 (as the ticket literally states) or also P3>P2?
-
-**Assumption made:** ADV-SKC-06 checks only P3>P1 as the ticket literally states. The P3>P2 check is covered by T-46. ADV-SKC-06's adversarial purpose is to independently guard the most likely regression (P3 accidentally given the same 4 m width as all other platforms). T-46 covers both comparisons in the compound test; ADV-SKC-06 provides independent coverage for the P3>P1 assertion only, keeping the adversarial test focused on the single mutation it is designed to catch.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] TestBreak — ADV-SKC-07 zero-size default value in Godot 4
-
-**Would have asked:** Does Godot 4 actually default a new BoxShape3D to (0.2, 0.2, 0.2) rather than exactly (0, 0, 0)? If the default is nonzero, the test may not catch the "uninitialized shape" case unless size is truly 0.
-
-**Assumption made:** The Godot 4 default BoxShape3D size is Vector3(0.2, 0.2, 0.2) (visible in the inspector as "Size: 0.2, 0.2, 0.2"). The adversarial test asserts size.x > 0 and size.z > 0, which would pass even for the 0.2 default. The vulnerability being probed is not the exact-default case but the "manually set to zero" mutation (e.g. editor drag to 0). This is consistent with the mutation-testing category in the adversarial matrix. The exact-size assertions in T-44/T-45/T-46 separately catch the "wrong non-zero" case.
-
-**Confidence:** High
-
----
-
-## Run: 2026-03-19 (Spec Agent — light_skill_check specification)
-
-### [light_skill_check] Spec — NodePath resolution strategy for RespawnZone.spawn_point
-
-**Would have asked:** The RespawnZone spawn_point NodePath is `"../SpawnPosition"` (relative, going up one level). In a headless test, calling `root.get_node_or_null(NodePath("../SpawnPosition"))` will fail because `..` from the scene root has no parent. How should AC-SKC-RETRY-1.4 resolve the NodePath to confirm it is valid?
-
-**Assumption made:** The test must call `respawn_zone_node.get_node_or_null(spawn_point_value)` — resolving the NodePath relative to the RespawnZone node itself (not relative to the scene root). This matches how Godot resolves the NodePath at runtime. With spawn_point = NodePath("../SpawnPosition") and RespawnZone as a child of the scene root, `"../SpawnPosition"` navigates up to the scene root then finds SpawnPosition, returning the correct node. This is documented in AC-SKC-RETRY-1.4 and the Risk section of SKC-RETRY-1.
-
-**Confidence:** High
-
----
-
-### [light_skill_check] Spec — AC-SKC-RETRY-2.4 upper Y bound derivation
-
-**Would have asked:** The ticket requirement for SpawnPosition states only `position.y >= 0`. Should the spec add an upper bound on Y to guard against accidental floating spawn positions?
-
-**Assumption made:** Added AC-SKC-RETRY-2.4 asserting `position.y <= 3.0`. Rationale: the current value is Y=1.0; a position above Y=3.0 would cause the player to drop significantly on respawn, creating a jarring experience. The [0, 3] range matches the corridor height conventions established elsewhere (enemies spawn at Y=1.3, player at Y=1.0). This is an additive defensive guard not in the original ticket AC but consistent with the ticket's "no softlock" intent.
-
-**Confidence:** Medium
-
----
-
-### [light_skill_check] Spec — AC-SKC-GEO-4.8 P3 wider-than-P1-and-P2 assertion scope
-
-**Would have asked:** The ticket Task 2 adversarial cases (Task 3) include "Platform3 is wider than Platform1 and Platform2." The primary spec (Task 1) and test suite (Task 2) cover T-43 through T-52. Should the P3 width comparison be a primary test (T-46) or reserved for the adversarial file (ADV-SKC-*)?
-
-**Assumption made:** Included as AC-SKC-GEO-4.8 in the primary spec and mapped to T-46 in the traceability table. Rationale: the width comparison is a structural invariant derivable from the scene file without physics, and it supports AC-1 (passability) by confirming the landing pad is wider. The adversarial file (Task 3) will add further adversarial variants around this constraint; the primary assertion belongs in the primary test.
-
-**Confidence:** High
-
----
-
-
-### [light_skill_check] — OUTCOME: INTEGRATION
-All automated tests (T-43–T-52, ADV-SKC-01–08) passed first run with zero scene modifications. Ticket held at INTEGRATION pending human verification of AC-3 (light difficulty) and AC-5 (human-playable in-editor).
-
----
-
-## Run: 2026-03-20 (Planner Agent — mini_boss_encounter planning)
-
-### [mini_boss_encounter] Planning — "distinct" enemy without a new script or scene file
-
-**Would have asked:** AC-1 requires the mini-boss to be "distinct from regular enemies (behavior, health, or arena)." The EnemyMiniBoss node in containment_hall_01.tscn currently instances the same enemy_infection_3d.tscn as EnemyMutationTease, EnemyFusionA, and EnemyFusionB, with no overrides. A material color override on MeshInstance3D (set in the .tscn via property override, no new script needed) satisfies "visually distinct" under the "(behavior, health, or arena)" OR condition — the AC does not require ALL three categories, only at least one. Visual distinction via arena (a dedicated, larger arena floor that regular enemies don't occupy) already provides one axis. The color override adds a second. Does "distinct" require a GDScript behavior change, or is color + dedicated arena sufficient?
-
-**Assumption made:** Color override on MeshInstance3D in the scene + the dedicated MiniBossFloor arena (25×1×10 at X=67.5, larger than the regular corridor sections) together satisfy AC-1 for this milestone. The arena is a structural distinction; the color is a visual distinction. Both are testable headlessly. A behavioral distinction (e.g. higher health, patrol, custom state machine) is deferred to a future ticket if the human playtest finds AC-1 unsatisfied. This is the "conservative, reversible, no new GDScript" approach called out in the ticket prompt.
-
-**Confidence:** Medium
-
-### [mini_boss_encounter] Planning — EnemyMiniBoss position Y discrepancy
-
-**Would have asked:** EnemyMiniBoss is at Y=0.5 in the .tscn, while all other enemies (EnemyMutationTease, EnemyFusionA, EnemyFusionB) are at Y=1.3. The floor surface is at Y=0 (top surface of MiniBossFloor: node.y=0 + col.offset.y=-0.5 + box.half_y=0.5 = 0.0). At Y=0.5 the enemy base is 0.5 m above the floor surface. Is Y=0.5 correct, or should it be Y=1.3 to match other enemies?
-
-**Assumption made:** Y=0.5 is accepted as-is. The enemy has its own CharacterBody3D physics (via BasePhysicsEntity3D); gravity will settle it onto the floor at runtime. Tests will assert Y > 0 (above floor surface) not an exact value. If the Spec Agent determines Y=1.3 is required for correct presentation, that is a scene edit within the Engine Integration Agent's scope and does not require a new planning decision.
-
-**Confidence:** Medium
-
-### [mini_boss_encounter] Planning — test numbering starting at T-53
-
-**Would have asked:** T-53 is the next available number after T-52 (light_skill_check). Are there any in-flight test files that might claim T-53 before this ticket completes?
-
-**Assumption made:** No other in-progress ticket has claimed T-53 or higher. The active in-progress tickets (mutation_tease_room.md, start_finish_flow.md, containment_hall_01_layout.md, fusion_opportunity_room.md, light_skill_check.md, mini_boss_encounter.md) have all used T-1 through T-52. T-53 is safe.
-
-**Confidence:** High
-
-### [mini_boss_encounter] Planning — adversarial file naming convention
-
-**Would have asked:** Should the adversarial test file be named test_mini_boss_encounter_adversarial.gd to match the fusion_opportunity_room and light_skill_check patterns?
-
-**Assumption made:** Yes. Used test_mini_boss_encounter_adversarial.gd for consistency with the established naming pattern.
-
-**Confidence:** High
-
-### [mini_boss_encounter] Planning — Victory connection (AC-3) scope for structural testing
-
-**Would have asked:** AC-3 requires "victory connects to level completion or next section." The scene has a LevelExit Area3D at X=93 with a script that prints "level_complete" when the player body enters. Is the presence of LevelExit with a correct script sufficient for structural AC-3 coverage, or does the test need to simulate the player reaching it?
-
-**Assumption made:** Structural test coverage is: LevelExit node exists as Area3D; CollisionShape3D is present with non-zero BoxShape3D; LevelExit is positioned at X > MiniBossFloor right edge (X=80); the inline script contains the string "level_complete" (verifiable by loading the sub-resource and checking script/source). Physics simulation of the player walking through is an INTEGRATION/manual test. This matches the structural approach used for RespawnZone in T-49.
-
-**Confidence:** High
-
-### [mini_boss_encounter] Planning — MeshInstance3D color override testability
-
-**Would have asked:** If the Spec Agent requires the mini-boss MeshInstance3D to have a distinct albedo color override, how can this be tested headlessly? The enemy is an instanced scene (enemy_infection_3d.tscn); overrides on instanced nodes in Godot 4 .tscn files are set via property paths in the parent scene. Can a test read these override values from the instantiated node without running _ready()?
-
-**Assumption made:** Yes. After `PackedScene.instantiate()`, child node properties are populated from the parent scene's overrides before _ready() runs. A test can call `enemy_node.get_node_or_null("MeshInstance3D")` (or the actual mesh child name from enemy_infection_3d.tscn) and read `material_override` or surface material properties directly. The Spec Agent must confirm the exact mesh child node path after reading enemy_infection_3d.tscn. If no material override is present (pre-implementation state), the test fails red-phase. If Engine Integration applies the override, it passes green-phase.
-
-**Confidence:** Medium
-
----
-
-## Run: 2026-03-20 (Spec Agent — mini_boss_encounter specification)
-
-### [mini_boss_encounter] Spec — Arena distinctness: size.x >= 25 vs strictly greater
-
-**Would have asked:** FusionFloor and MiniBossFloor both have BoxShape3D size.x == 25. The ticket asks for MBA-GEO-3 to assert arena distinctness by size. Should the assertion be size.x > FusionFloor.size.x (which fails because they are equal) or size.x >= 25 (which passes)?
-
-**Assumption made:** Used size.x >= 25 as the threshold. Arena distinctness for AC-1 is justified by positional and contextual factors: MiniBossFloor is the only floor in zone X: 55–80 with a single dedicated enemy and no platforming obstacles. FusionFloor hosts two elevated platforms and two enemies — structurally different despite equal width. The width threshold >= 25 establishes the floor as a large dedicated space; the design distinction is documented in the spec Overview.
-
-**Confidence:** High
-
----
-
-### [mini_boss_encounter] Spec — MBA-BOSS-3 placement: standalone requirement vs inline in T-55
-
-**Would have asked:** MBA-BOSS-3 requires InfectionInteractionHandler.has_method("set_target_esm"). T-37 already covers has_method("get_mutation_slot_manager") for the fusion context. Should MBA-BOSS-3 be a separate test or folded into T-55?
-
-**Assumption made:** Folded into T-55 as an additional assertion named T-55_infection_interaction_handler_has_set_target_esm. This avoids creating a trivially short standalone test function and keeps the InfectionInteractionHandler method guards grouped with the enemy context that relies on them. NFR-5 and NFR-6 document this choice explicitly.
-
-**Confidence:** High
-
----
-
-### [mini_boss_encounter] Spec — MBA-GEO-3 placement: inline in T-53 vs standalone requirement
-
-**Would have asked:** MBA-GEO-3 (arena width >= 25) is already partially covered by the exact-value assertion T-53_mini_boss_floor_box_size_x (size.x == 25.0). Should MBA-GEO-3 be a separate test or folded into T-53?
-
-**Assumption made:** Folded into T-53 as an additional assertion named T-53_mini_boss_floor_box_size_x_ge_25. The exact-value assertion (size.x == 25.0) provides regression protection; the >= 25 assertion provides the semantic floor for arena distinctness. Both are needed in the spec; one test function handles both without redundancy.
-
-**Confidence:** High
-
----
-
-### [mini_boss_encounter] Spec — LevelExit source_code accessibility in headless mode
-
-**Would have asked:** Does `get_script().source_code` on an inline GDScript sub-resource return the raw source string after `PackedScene.instantiate()` in Godot 4 headless mode, or is it empty after compilation?
-
-**Assumption made:** The behavior is uncertain in headless mode. The spec documents a fallback: if source_code is empty, the test should fall back to asserting `has_method("_on_body_entered")` as a proxy. The Test Designer Agent must probe this during implementation and choose the appropriate path. The fallback is documented in MBA-FLOW-3 Risk section and AC-MBA-FLOW-3.2.
-
-**Confidence:** Medium
-
----
