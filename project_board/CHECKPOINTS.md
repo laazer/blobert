@@ -509,3 +509,28 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 **Assumption made:** Used node.name for all distinctness comparisons in T-70 and ADV-MTR-04. This is consistent with the CHECKPOINT resolution for T-57 ([mini_boss_encounter] Implementation) and is documented in NFR-6 of this spec.
 **Confidence:** High
 
+
+### [mutation_tease_room] — OUTCOME: INTEGRATION
+All 18 tests (T-63–T-72, ADV-MTR-01–06) passed first run with zero scene modifications. Ticket held at INTEGRATION pending human verification of AC-2 (visual tease clarity) and AC-5 (human-playable in-editor).
+
+---
+## Run: 2026-03-20T08:42:19-04:00
+Queue mode: single ticket
+Queue scope: project_board/4_milestone_4_prototype_level/in_progress/start_finish_flow.md
+
+---
+## Run: 2026-03-20 (Planner Agent — start_finish_flow planning)
+
+### [start_finish_flow] Planning — assumed completion path
+**Assumption made:** `LevelExit` is treated as the completion trigger in the normal flow; the spec will not require that `EnemyMiniBoss` is dead unless code inspection shows `level_complete` is gated on mini-boss state.
+**Confidence:** Medium
+
+### [start_finish_flow] Planning — “critical UI/objectives” mapping
+**Assumption made:** The human-playable clarity AC will be validated by observing existing in-scene UI prompts/labels: `AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, and the mutation-slot labels/icons, plus infection visual feedback (enemy blinking / disappearing on dead). There is no dedicated “objective” system node in `containment_hall_01.tscn`, so objectives are represented by these UI cues.
+**Confidence:** Medium
+
+### [start_finish_flow] Planning — infect instruction risk
+**Assumption made:** The UI currently does not display an explicit “infect” key hint (`infect` = `F` in `project.godot`); the flow-clarity spec will rely on enemy state feedback (blinking when weakened/infected) and the subsequent appearance of `AbsorbPromptLabel` after infect. If playtest shows confusion, a follow-up ticket should add an `InfectHint`/prompt.
+**Confidence:** Medium
+
+---
