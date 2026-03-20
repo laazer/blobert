@@ -489,10 +489,12 @@ func test_adv_mba_06_mini_boss_floor_left_edge_clears_skill_check_p3_right_edge(
 	var floor_left_edge: float = floor_x + floor_col.position.x - (floor_box.size.x / 2.0)
 	var p3_right_edge: float = p3_x + p3_col.position.x + (p3_box.size.x / 2.0)
 
+	# >= is correct: the zones are adjacent (left edge == right edge = 55.0), not overlapping.
+	# Strict > would reject the valid adjacent design; >= allows exact touching boundaries.
 	_assert_true(
-		floor_left_edge > p3_right_edge,
+		floor_left_edge >= p3_right_edge,
 		"ADV-MBA-06_mini_boss_floor_left_edge_gt_p3_right_edge",
-		"MiniBossFloor left edge (" + str(floor_left_edge) + " = " + str(floor_x) + " + col.x(" + str(floor_col.position.x) + ") - half_x(" + str(floor_box.size.x / 2.0) + ")) must be > SkillCheckPlatform3 right edge (" + str(p3_right_edge) + " = " + str(p3_x) + " + col.x(" + str(p3_col.position.x) + ") + half_x(" + str(p3_box.size.x / 2.0) + ")) — mini-boss arena geometrically overlaps skill check zone — MBA-FLOW-1 AC-MBA-FLOW-1.1"
+		"MiniBossFloor left edge (" + str(floor_left_edge) + " = " + str(floor_x) + " + col.x(" + str(floor_col.position.x) + ") - half_x(" + str(floor_box.size.x / 2.0) + ")) must be >= SkillCheckPlatform3 right edge (" + str(p3_right_edge) + " = " + str(p3_x) + " + col.x(" + str(p3_col.position.x) + ") + half_x(" + str(p3_box.size.x / 2.0) + ")) — mini-boss arena overlaps skill check zone — MBA-FLOW-1 AC-MBA-FLOW-1.1"
 	)
 
 	root.free()

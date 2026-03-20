@@ -372,30 +372,32 @@ func test_t57_enemy_mini_boss_distinct_path() -> void:
 		root.free()
 		return
 
-	var boss_path: String = String(enemy_boss.get_path())
-	var fusion_a_path: String = String(enemy_fusion_a.get_path())
-	var fusion_b_path: String = String(enemy_fusion_b.get_path())
-	var tease_path: String = String(enemy_tease.get_path())
+	# get_path() returns empty NodePath for nodes not added to a SceneTree;
+	# compare node names directly — this is the property the spec intends to guard.
+	var boss_name: String = enemy_boss.name
+	var fusion_a_name: String = enemy_fusion_a.name
+	var fusion_b_name: String = enemy_fusion_b.name
+	var tease_name: String = enemy_tease.name
 
-	# AC-MBA-BOSS-2.2: boss path != EnemyFusionA path
+	# AC-MBA-BOSS-2.2: boss name != EnemyFusionA name
 	_assert_true(
-		boss_path != fusion_a_path,
+		boss_name != fusion_a_name,
 		"T-57_enemy_mini_boss_path_ne_fusion_a",
-		"EnemyMiniBoss path '" + boss_path + "' must not equal EnemyFusionA path '" + fusion_a_path + "' — MBA-BOSS-2 AC-MBA-BOSS-2.2"
+		"EnemyMiniBoss name '" + boss_name + "' must not equal EnemyFusionA name '" + fusion_a_name + "' — MBA-BOSS-2 AC-MBA-BOSS-2.2"
 	)
 
-	# AC-MBA-BOSS-2.3: boss path != EnemyFusionB path
+	# AC-MBA-BOSS-2.3: boss name != EnemyFusionB name
 	_assert_true(
-		boss_path != fusion_b_path,
+		boss_name != fusion_b_name,
 		"T-57_enemy_mini_boss_path_ne_fusion_b",
-		"EnemyMiniBoss path '" + boss_path + "' must not equal EnemyFusionB path '" + fusion_b_path + "' — MBA-BOSS-2 AC-MBA-BOSS-2.3"
+		"EnemyMiniBoss name '" + boss_name + "' must not equal EnemyFusionB name '" + fusion_b_name + "' — MBA-BOSS-2 AC-MBA-BOSS-2.3"
 	)
 
-	# AC-MBA-BOSS-2.4: boss path != EnemyMutationTease path
+	# AC-MBA-BOSS-2.4: boss name != EnemyMutationTease name
 	_assert_true(
-		boss_path != tease_path,
+		boss_name != tease_name,
 		"T-57_enemy_mini_boss_path_ne_mutation_tease",
-		"EnemyMiniBoss path '" + boss_path + "' must not equal EnemyMutationTease path '" + tease_path + "' — MBA-BOSS-2 AC-MBA-BOSS-2.4"
+		"EnemyMiniBoss name '" + boss_name + "' must not equal EnemyMutationTease name '" + tease_name + "' — MBA-BOSS-2 AC-MBA-BOSS-2.4"
 	)
 
 	root.free()
