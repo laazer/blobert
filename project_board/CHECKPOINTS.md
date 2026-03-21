@@ -5,6 +5,25 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-21 (Test Designer Agent — enemy_base_script EB-* + ADV-EB-* test suites)
+
+### [enemy_base_script] TestDesign — no class_name on test files
+**Would have asked:** Every existing test file in the project uses class_name (e.g., EnemyStateMachineTests, DualChunkControllerTests). The task prompt says "no class_name" for the two new test files. Should the files follow the project convention (add a class_name) or the task instruction (omit it)?
+**Assumption made:** Omitted class_name from both test_enemy_base.gd and test_enemy_base_adversarial.gd per the explicit task instruction. The run_tests.gd runner uses script.new().run_all() which works on extends Object without class_name. The runner does not depend on class_name being present.
+**Confidence:** High
+
+### [enemy_base_script] TestDesign — ADV-EB-01 set_base_state call with out-of-range int
+**Would have asked:** set_base_state signature is typed as (state: State) -> void. Passing a bare int literal 99 without a cast may cause a GDScript type mismatch warning or runtime error in strict mode. Should the test cast to int explicitly, rely on implicit coercion, or use a workaround?
+**Assumption made:** Used `body.set_base_state(99 as int)` with an explicit cast to int. The spec documents GDScript pass-through behavior (no clamping, no crash). The "as int" cast makes the test intent explicit and avoids any ambiguity about whether a type-checking layer could reject the call.
+**Confidence:** Medium
+
+### [enemy_base_script] TestDesign — ADV-EB-07 "extends Node" false positive check
+**Would have asked:** The check for "does not extend Node" could produce a false positive if the source contains the string "extends Node" as part of a comment or as a substring of "extends Node3D". How should the check be scoped?
+**Assumption made:** Checked for "extends Node\n" (with newline) and "extends Node " (with trailing space) as delimiters, which avoids matching "extends Node3D" or "extends NodeBody". Also confirmed the positive check "extends CharacterBody3D" is present. The two assertions together form a sufficient contract.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-20 (Test Designer Agent — mutation_tease_room T-63 through T-72 + ADV-MTR-01 through ADV-MTR-06)
 
 ### [mutation_tease_room] TestDesign — T-72 stub: pass unconditionally or skip entirely
@@ -529,19 +548,19 @@ Human verified full in-editor start-to-finish loop completed with no issues; tic
 **Assumption made:** `LevelExit` is treated as the completion trigger in the normal flow; the spec will not require that `EnemyMiniBoss` is dead unless code inspection shows `level_complete` is gated on mini-boss state.
 **Confidence:** Medium
 
-### [start_finish_flow] Planning — “critical UI/objectives” mapping
-**Assumption made:** The human-playable clarity AC will be validated by observing existing in-scene UI prompts/labels: `AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, and the mutation-slot labels/icons, plus infection visual feedback (enemy blinking / disappearing on dead). There is no dedicated “objective” system node in `containment_hall_01.tscn`, so objectives are represented by these UI cues.
+### [start_finish_flow] Planning — "critical UI/objectives" mapping
+**Assumption made:** The human-playable clarity AC will be validated by observing existing in-scene UI prompts/labels: `AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, and the mutation-slot labels/icons, plus infection visual feedback (enemy blinking / disappearing on dead). There is no dedicated "objective" system node in `containment_hall_01.tscn`, so objectives are represented by these UI cues.
 **Confidence:** Medium
 
 ### [start_finish_flow] Planning — infect instruction risk
-**Assumption made:** The UI currently does not display an explicit “infect” key hint (`infect` = `F` in `project.godot`); the flow-clarity spec will rely on enemy state feedback (blinking when weakened/infected) and the subsequent appearance of `AbsorbPromptLabel` after infect. If playtest shows confusion, a follow-up ticket should add an `InfectHint`/prompt.
+**Assumption made:** The UI currently does not display an explicit "infect" key hint (`infect` = `F` in `project.godot`); the flow-clarity spec will rely on enemy state feedback (blinking when weakened/infected) and the subsequent appearance of `AbsorbPromptLabel` after infect. If playtest shows confusion, a follow-up ticket should add an `InfectHint`/prompt.
 **Confidence:** Medium
 
 ---
 ### [start_finish_flow] Spec — automated coverage vs manual-only ACs
-**Assumption made:** This ticket’s “start→finish flow” ACs are primarily validated via composition of existing automated suites (scene structural checks in `tests/levels/test_containment_hall_01.gd`, plus zone/UI suites for mutation tease, fusion opportunity, light skill check, and mini-boss). New headless tests for this ticket should therefore stay narrowly scoped to end-to-end wiring signals (UI prompt/hint presence + initial visibility, strict left-to-right zone ordering, respawn/exit trigger wiring).
-**Assumption made:** “Objectives/clarity” has no dedicated objective system node in `containment_hall_01.tscn`; testable “objectives” are the existing UI cue nodes (`AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, mutation-slot labels/icons) plus the always-present input hints.
-**Assumption made:** The level-complete completion trigger is spatial (player entering `LevelExit`), and the spec will not require that `EnemyMiniBoss` is dead unless code inspection shows otherwise. As a result, “mini-boss is not skippable” must be checked during the required manual playthrough.
+**Assumption made:** This ticket's "start→finish flow" ACs are primarily validated via composition of existing automated suites (scene structural checks in `tests/levels/test_containment_hall_01.gd`, plus zone/UI suites for mutation tease, fusion opportunity, light skill check, and mini-boss). New headless tests for this ticket should therefore stay narrowly scoped to end-to-end wiring signals (UI prompt/hint presence + initial visibility, strict left-to-right zone ordering, respawn/exit trigger wiring).
+**Assumption made:** "Objectives/clarity" has no dedicated objective system node in `containment_hall_01.tscn`; testable "objectives" are the existing UI cue nodes (`AbsorbPromptLabel`, `FusePromptLabel`, `FusionActiveLabel`, mutation-slot labels/icons) plus the always-present input hints.
+**Assumption made:** The level-complete completion trigger is spatial (player entering `LevelExit`), and the spec will not require that `EnemyMiniBoss` is dead unless code inspection shows otherwise. As a result, "mini-boss is not skippable" must be checked during the required manual playthrough.
 **Confidence:** Medium
 
 ---
@@ -564,3 +583,76 @@ Queue scope: project_board/4_milestone_4_prototype_level/in_progress/
 Ticket was already COMPLETE in done/ (completed during prior session). No further action needed.
 
 ---
+
+## Run: 2026-03-21T12:00:00Z
+Queue mode: all backlog (M5 + M6)
+Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
+
+### [blender_parts_library] Planning — Blender not installed
+**Would have asked:** Blender is not installed on this machine. Should we skip or block?
+**Assumption made:** BLOCKED. No Blender = no .blend file authoring possible. Ticket set to BLOCKED.
+**Confidence:** High
+
+### [blender_python_generator] Planning — Blender not installed
+**Would have asked:** Same as above — Blender required.
+**Assumption made:** BLOCKED. Depends on Blender CLI. Ticket set to BLOCKED.
+**Confidence:** High
+
+### [godot_scene_generator_validation] Planning — No GLB assets exist
+**Would have asked:** assets/enemies/generated_glb/ directory has no .glb files. Cannot validate the scene generator without input assets.
+**Assumption made:** BLOCKED. Depends on blender_python_generator producing GLBs first.
+**Confidence:** High
+
+### [first_4_families_in_level] Planning — No GLB assets exist
+**Would have asked:** Placing enemy variants requires generated .glb scenes that don't exist yet.
+**Assumption made:** BLOCKED. Depends on godot_scene_generator_validation producing .tscn scenes first.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Planner Agent — enemy_base_script planning)
+
+### [enemy_base_script] Planning — extends CharacterBody3D vs extends Node3D
+**Would have asked:** load_assets.gd uses `USE_CHARACTER_BODY = true` and creates a CharacterBody3D root, then calls `root.set_script(script_res)`. Should enemy_base.gd extend CharacterBody3D directly, or extend Node3D (more general)?
+**Assumption made:** enemy_base.gd extends CharacterBody3D. The ticket AC explicitly states "attaches cleanly to CharacterBody3D generated scenes" and load_assets.gd creates CharacterBody3D roots. Extending CharacterBody3D ensures @export vars are resolved at attach-time and the script is structurally correct for the generated scene root type. A Node3D base would lose type safety.
+**Confidence:** High
+
+### [enemy_base_script] Planning — State enum mapping to EnemyStateMachine string states
+**Would have asked:** EnemyStateMachine uses String constants ("idle", "active", "weakened", "infected", "dead"). The ticket requires a State enum: NORMAL, WEAKENED, INFECTED. Should the enum map exactly to the ESM string states, or is it an independent display-layer enum?
+**Assumption made:** The State enum is an independent display/gameplay layer enum on enemy_base.gd. It is NOT a replacement for EnemyStateMachine's internal string states. The three enum values (NORMAL, WEAKENED, INFECTED) map to the ESM-driven concept that external systems (procedurally generated enemies) care about: normal behavior, weakened, or infected/absorb-ready. The base script will expose a `set_state(state: State)` hook and a `get_base_state() -> State` accessor. The ESM continues to own lifecycle state internally; the base script enum is the public contract for procedural enemies.
+**Confidence:** Medium
+
+### [enemy_base_script] Planning — No class_name conflict with EnemyInfection3D
+**Would have asked:** EnemyInfection3D extends BasePhysicsEntity3D (which extends CharacterBody3D). If enemy_base.gd also extends CharacterBody3D with class_name EnemyBase, is there a conflict?
+**Assumption made:** No conflict. EnemyInfection3D extends BasePhysicsEntity3D, not EnemyBase. They are parallel hierarchies: existing enemies use BasePhysicsEntity3D; procedurally generated enemies use EnemyBase. No existing file is modified.
+**Confidence:** High
+
+### [enemy_base_script] Planning — Headless testability: CharacterBody3D instantiation in tests
+**Would have asked:** CharacterBody3D requires a physics server RID. Can it be instantiated headlessly in tests/run_tests.gd without causing a crash or hang?
+**Assumption made:** CharacterBody3D.new() is safe headlessly — the existing test_base_physics_entity_3d.gd already instantiates BasePhysicsEntity3D (which extends CharacterBody3D) headlessly without issues. The test suite can use CharacterBody3D.new() as the host node to test EnemyBase script attachment and export property reads.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Spec Agent — enemy_base_script specification)
+
+### [enemy_base_script] Spec — current_state vs _base_state variable name
+**Would have asked:** The task prompt specifies `var _base_state: State = State.NORMAL` (private, underscore-prefixed). The ticket's canonical Acceptance Criteria and the Test Design table (EB-STATE-1 through EB-STATE-5) use `current_state` (public, no underscore). Which name is authoritative?
+**Assumption made:** `current_state` is the canonical name. The ticket's Acceptance Criteria section is the normative source of truth per workflow_enforcement_v1.md ("Ticket file is single source of truth"). The task prompt's mention of `_base_state` is superseded. The test table's assertion names explicitly reference `current_state`. All spec requirements use `current_state`.
+**Confidence:** High
+
+### [enemy_base_script] Spec — set_base_state / get_base_state naming: no Godot built-in collision
+**Would have asked:** The ticket's Execution Plan says rename to `apply_state`/`query_state` only if there is a Godot built-in collision. Are `set_base_state` and `get_base_state` safe?
+**Assumption made:** Safe. Neither `set_base_state` nor `get_base_state` appears in CharacterBody3D, PhysicsBody3D, CollisionObject3D, Node3D, or Node built-in APIs. Confirmed by source inspection of existing scripts which use no such methods. Names are retained as-is.
+**Confidence:** High
+
+### [enemy_base_script] Spec — GDScript enum instance access syntax for tests
+**Would have asked:** Should tests access enum values via `EnemyBase.State.NORMAL` (class cache path) or `instance.State.NORMAL` (instance property path)?
+**Assumption made:** Tests must use `instance.State.NORMAL` (or `script_res.State.NORMAL` after load()). `EnemyBase.State.NORMAL` requires the class to be registered in the cache before the test runner initializes, which is not guaranteed in the headless load()+set_script() pattern. The instance property path is always available after set_script(). Documented in the spec's "Headless Test Instantiation Pattern" section.
+**Confidence:** High
+
+### [enemy_base_script] Spec — ADV-EB-01 out-of-range cast behavior
+**Would have asked:** When `set_base_state(99 as State)` is called, should the script clamp the value, reject it, or store it as-is?
+**Assumption made:** Store as-is. GDScript 4 enums are int-backed with no runtime range validation. The spec does not add validation logic in this ticket. The adversarial test (ADV-EB-01) verifies the pass-through behavior. Higher-level systems are responsible for valid state transitions.
+**Confidence:** High
+
