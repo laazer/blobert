@@ -5,6 +5,15 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-21 (Core Simulation Agent — run_state_manager implementation)
+
+### [run_state_manager] Implementation — match arm ordering for DEAD+WIN restart
+**Would have asked:** The task prompt shows a combined match arm `[State.DEAD, "restart"], [State.WIN, "restart"]:` but GDScript 4 match does not support multiple patterns sharing a body via comma-separated array literals. Should these be two separate arms or merged differently?
+**Assumption made:** Wrote two separate match arms — one for `[State.DEAD, "restart"]` and one for `[State.WIN, "restart"]` — each with identical bodies. This is the syntactically correct GDScript 4 form; the combined-arm syntax from the task prompt is pseudocode, not valid GDScript.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-21 (Test Designer Agent — run_state_manager RSM-* + ADV-RSM-* test suites)
 
 ### [run_state_manager] TestDesign — get_state_id() return case: lowercase vs uppercase
@@ -394,7 +403,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ---
 
 ### [fusion_rules_and_hybrid] TEST_DESIGN — FRH-2-AC-6 malformed manager simulation
-
 **Would have asked:** FRH-2-AC-6 requires testing `can_fuse` when `get_slot(0)` returns null. MutationSlotManager never returns null for valid indices. How to simulate a malformed manager?
 
 **Assumption made:** Pass a plain `Object.new()` (which has no `get_slot` method at all) to `can_fuse`. This is a strictly stricter case than a manager that returns null from `get_slot` — it tests the duck-typing null-safety guard more thoroughly. The spec says "malformed manager"; a missing method is the simplest headless-safe simulation of this.
@@ -619,3 +627,74 @@ Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
 **Assumption made:** Return type is `RefCounted`, not `MutationSlotManager`. This avoids a hard typed class name reference and matches the existing project convention in `InfectionInteractionHandler`. Callers that need slot manager methods use duck-typing or rely on the known runtime type.
 **Confidence:** High
 
+---
+
+## Run: 2026-03-21 (Planner Agent — soft_death_and_restart planning)
+
+### [soft_death_and_restart] Planning — Death detection: polling vs signal
+**Would have asked:** Should the coordinator poll `player.get_current_hp() <= 0.0` every `_process` frame, or should PlayerController3D emit a `player_hp_empty` signal when HP hits the floor?
+**Assumption made:** Polling in `_process` guarded by a `_dead` flag. PlayerController3D does not currently have a death signal, and adding one requires a spec change to that file. Polling is the minimal-coupling approach: the coordinator reads the public `get_current_hp()` API (already exists) and fires once. This matches the architecture of the existing `InfectionUI._process` HP display pattern. If a signal is preferred long-term, a follow-up refactor ticket should add it — this ticket does not modify the HP detection mechanism.
+**Confidence:** High
+
+### [soft_death_and_restart] Planning — Mutation slot clearing: RSM internal vs scene InfectionInteractionHandler
+**Would have asked:** `RunStateManager.apply_event("player_died")` already calls `_slot_manager.clear_all()` on its own internal slot manager. But the scene's `InfectionInteractionHandler` holds a separate slot manager reference used by the player and UI. Are these the same object or different?
+**Assumption made:** They are different objects. RSM creates its own `MutationSlotManager` in `_init()`. The scene's handler has its own. The coordinator must also call `clear_all()` (or equivalent) on the InfectionInteractionHandler's slot manager. Spec Agent must verify by reading `infection_interaction_handler.gd` and confirm whether a single shared reference can be injected into RSM to unify them, or if the coordinator must clear both separately. This is flagged as an escalation note.
+**Confidence:** Medium
+
+### [soft_death_and_restart] Planning — "New room layout on each restart" AC scoping
+**Would have asked:** The ticket AC says "New room layout is generated on each restart." The procedural_room_chaining ticket is backlog and unimplemented. Should this AC be blocked, deferred, or satisfied by a placeholder (same room reloaded)?
+**Assumption made:** Deferred. The restart resets the player in-place within containment_hall_01. The room layout AC is out-of-scope for this ticket and will be addressed by procedural_room_chaining. This is documented in the ticket's Escalation Notes for Spec Agent acknowledgment. The ticket's core ACs (position reset, HP reset, slots empty, 2-second window) are all satisfiable without room generation.
+**Confidence:** High
+
+### [soft_death_and_restart] Planning — Visual feedback (fade/dissolve) staging
+**Would have asked:** Should the dissolve/fade tween be implemented in the same implementation pass as the core logic, or separately?
+**Assumption made:** Separately. Part 1 (core logic) is IMPLEMENTATION_BACKEND — headlessly testable. Part 2 (visual) requires a running scene and human eye, so it must land at INTEGRATION. Mixing them would force the entire ticket to INTEGRATION before core logic is even validated. Two-pass approach keeps the critical-path AC coverage fully automated.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Spec Agent — soft_death_and_restart specification)
+
+### [soft_death_and_restart] Spec — Slot manager object identity: RSM internal vs InfectionInteractionHandler
+**Would have asked:** Is `RunStateManager._slot_manager` the same object reference as `InfectionInteractionHandler._slot_manager`? If so, RSM's `apply_event("player_died")` calling `clear_all()` would be sufficient. If not, the coordinator must also call `clear_all()` on the handler's manager.
+**Assumption made:** They are distinct objects. Confirmed by reading both source files: `RunStateManager._init()` calls `_slot_manager = preload(...).new()` and `InfectionInteractionHandler._ready()` calls `_slot_manager = _MutationSlotManagerScript.new()`. Each creates a separate instance. The coordinator must explicitly call `handler_node.get_mutation_slot_manager().clear_all()` in `_reset_run()` to clear the scene's active slot manager. RSM's internal `clear_all()` only affects RSM's own instance (used for headless test verification only).
+**Confidence:** High
+
+### [soft_death_and_restart] Spec — RSM state after _reset_run: DEAD→START vs DEAD→ACTIVE
+**Would have asked:** After `_reset_run()` fires, should RSM be in START state or ACTIVE state? The task prompt specifies only `apply_event("restart")`, which moves RSM DEAD→START. But for the next death cycle to be detectable, RSM must be ACTIVE.
+**Assumption made:** `_reset_run()` must call both `apply_event("restart")` (DEAD→START) and `apply_event("start_run")` (START→ACTIVE). Both calls are required. Without `apply_event("start_run")`, the coordinator's `_process()` check (`_rsm.get_state() == ACTIVE`) would never re-arm, and the next death would not be detected. This is consistent with `_ready()` also calling `apply_event("start_run")` for initial activation.
+**Confidence:** High
+
+### [soft_death_and_restart] Spec — _on_player_died double-fire guard: RSM state guard vs _dead flag
+**Would have asked:** The task prompt specifies `if _dead: return` inside `_on_player_died()`. Is this redundant given that `_process()` already guards on `_dead` before calling `apply_event("player_died")`?
+**Assumption made:** Not redundant. The `_process()` guard prevents double `apply_event("player_died")` calls. The `if _dead: return` guard inside `_on_player_died()` prevents the callback itself from being executed twice (e.g., if the signal were connected multiple times or called from a code path other than `_process()`). Both guards serve distinct purposes and are both required.
+**Confidence:** High
+
+### [soft_death_and_restart] Spec — Tween ownership: player_node.create_tween() vs coordinator create_tween()
+**Would have asked:** Should the dissolve tween be created on the coordinator (`self.create_tween()`) or on the player node (`player_node.create_tween()`)? The choice affects pause behavior and tween lifecycle.
+**Assumption made:** Tween created on `player_node` via `player_node.create_tween()`. This binds the tween lifecycle to the player node, which is consistent with how all other juice tweens are created in `player_controller_3d.gd` (see `_juice_jump_stretch()`, `_juice_land_squash()`, etc.). The player node is never freed or paused in this ticket, so both approaches would behave identically at runtime. Using the player node follows the project's established pattern.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Test Designer Agent — soft_death_and_restart SDR-* + ADV-SDR-* test suites)
+
+### [soft_death_and_restart] TestDesign — SDR-COORD-5 spec gap: _process_death_check vs _process
+**Would have asked:** The task prompt defines SDR-COORD-5 as "RSM reaches DEAD state after `_process_death_check()` called with HP=0" but the spec defines no method named `_process_death_check()`. The actual detection method is `_process(delta)`. Should SDR-COORD-5 call `_process()` directly, or is there a separate private extraction?
+**Assumption made:** Used direct RSM manipulation (`rsm.apply_event("player_died")`) to verify the DEAD state transition, rather than calling a non-existent `_process_death_check()`. This tests the same observable outcome (RSM in DEAD after player death signal) without depending on an internal method that the spec does not define. The SDR-PROC-1 test ID (calling `_process(0.016)`) is the correct spec-aligned test for the detection path; SDR-COORD-5 tests the RSM state contract.
+**Confidence:** High
+
+### [soft_death_and_restart] TestDesign — _on_player_died() requires SceneTree for get_tree().create_timer()
+**Would have asked:** ADV-SDR-01 calls `_on_player_died()` twice. The first call invokes `get_tree().create_timer(1.5)`. Does this crash if the coordinator is not in a SceneTree? Should the test skip or add the coordinator to tree.root?
+**Assumption made:** Added the coordinator to `tree.root` before calling `_on_player_died()` in ADV-SDR-01. This follows the same pattern used in `tests/scenes/levels/test_3d_scene.gd` for physics-requiring tests. If `Engine.get_main_loop()` returns null (non-SceneTree context), the test prints a SKIP message instead of crashing. The timer created by the first call is harmless in the test context because `_reset_run()` (the timer callback) requires a player NodePath which is not configured.
+**Confidence:** High
+
+### [soft_death_and_restart] TestDesign — test file name: test_soft_death_and_restart.gd vs test_death_restart_coordinator.gd
+**Would have asked:** The task prompt specifies the output path as `tests/system/test_soft_death_and_restart.gd` but the ticket NEXT ACTION block shows `tests/system/test_death_restart_coordinator.gd`. Which name governs?
+**Assumption made:** Used `tests/system/test_soft_death_and_restart.gd` per the explicit task prompt instruction ("Write: tests/system/test_soft_death_and_restart.gd"). The ticket NEXT ACTION appears to be an earlier draft that was superseded. The file covers both the coordinator tests and the broader SDR-* test matrix, making the broader name more accurate.
+**Confidence:** High
+
+### [soft_death_and_restart] TestDesign — PlayerController3D global_position requires SceneTree
+**Would have asked:** reset_position() tests (SDR-P1-4, SDR-P1-5, ADV-SDR-02) assign `global_position` which requires the node to be inside a SceneTree. The task prompt says to use `Engine.get_main_loop().root.add_child(player)`. Does this work in headless Object-based tests (not SceneTree-based tests)?
+**Assumption made:** Yes — the test runner runs as a SceneTree (`run_tests.gd extends SceneTree`), so `Engine.get_main_loop() as SceneTree` returns a valid tree in all test runs. Pattern confirmed by `tests/scenes/levels/test_3d_scene.gd` lines 201-213. All three position tests use the add_child/remove_child/free cleanup cycle.
+**Confidence:** High
