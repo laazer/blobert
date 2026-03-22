@@ -1,5 +1,20 @@
 Title:
 Validate and finalize Godot scene auto-generator
+---
+
+## WORKFLOW STATE
+
+| Field | Value |
+|---|---|
+| Stage | BLOCKED |
+| Revision | 1 |
+| Last Updated By | Autopilot Orchestrator |
+| Next Responsible Agent | Human |
+| Validation Status | Not started |
+| Blocking Issues | Requires Blender installation / generated GLB assets. Cannot proceed without external tool. |
+
+---
+
 
 Description:
 The scene generator (scripts/asset_generation/load_assets.gd) already exists.

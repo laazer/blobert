@@ -247,18 +247,18 @@ Tests must be RED before the file exists and GREEN after implementation. Test fi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_CORE
+COMPLETE
 
 ## Revision
-4
+6
 
 ## Last Updated By
-Test Designer Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Not Run
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PASSED — run_tests.sh 253/253 passed, 0 failed (2026-03-21)
+- Static QA: PASSED — no CRITICAL, no WARNING, no INFO issues found
+- Integration: PASSED — full test suite exits 0, zero regressions
 
 ## Blocking Issues
 - None
@@ -266,31 +266,33 @@ Test Designer Agent
 ## Escalation Notes
 - None
 
+## AC Sign-Off
+
+| Acceptance Criterion | Status | Evidence |
+|---|---|---|
+| `scripts/enemies/enemy_base.gd` exists and parses without errors | PASS | EB-LOAD-1: load() returns non-null GDScript |
+| Script extends CharacterBody3D and has `class_name EnemyBase` | PASS | EB-LOAD-2 (is CharacterBody3D); ADV-EB-07 (source contains "extends CharacterBody3D"); ADV-EB-08 (source contains "class_name EnemyBase") |
+| `@export var enemy_id: String` defaults to `""` | PASS | EB-EXPORT-1 |
+| `@export var enemy_family: String` defaults to `""` | PASS | EB-EXPORT-2 |
+| `@export var mutation_drop: String` defaults to `""` | PASS | EB-EXPORT-3 |
+| `enum State { NORMAL, WEAKENED, INFECTED }` defined | PASS | EB-ENUM-1 through EB-ENUM-5; ADV-EB-06 (State.keys() returns Array) |
+| `NORMAL == 0`, `WEAKENED == 1`, `INFECTED == 2` | PASS | EB-ENUM-2, EB-ENUM-3, EB-ENUM-4 |
+| `var current_state: State = State.NORMAL` readable | PASS | EB-STATE-1 (defaults to 0) |
+| `set_base_state(state: State) -> void` callable | PASS | EB-STATE-2, EB-STATE-3, EB-STATE-4 |
+| `get_base_state() -> State` callable | PASS | EB-STATE-2 through EB-STATE-4; ADV-EB-05 (returns TYPE_INT) |
+| Script attaches cleanly to CharacterBody3D headlessly | PASS | EB-LOAD-2 (no crash, no parse error) |
+| `root.set("enemy_id", "foo")` sets the exported property | PASS | EB-EXPORT-4, EB-INTEGRATE-1, ADV-EB-02 |
+| Existing test suite passes with zero regressions | PASS | run_tests.sh: 253 passed, 0 failed |
+
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
-
-## Required Input Schema
-```json
-{
-  "ticket_path": "project_board/5_milestone_5_procedural_enemy_generation/in_progress/enemy_base_script.md",
-  "spec_path": "agent_context/agents/2_spec/enemy_base_spec.md",
-  "primary_test_path": "tests/scripts/enemy/test_enemy_base.gd",
-  "adversarial_test_path": "tests/scripts/enemy/test_enemy_base_adversarial.gd",
-  "output_script_path": "scripts/enemies/enemy_base.gd",
-  "source_files_to_read": [
-    "scripts/asset_generation/load_assets.gd",
-    "scripts/enemy/enemy_state_machine.gd",
-    "scripts/player/base_physics_entity_3d.gd"
-  ]
-}
-```
+Human
 
 ## Status
 Proceed
 
 ## Reason
-Primary test file (tests/scripts/enemy/test_enemy_base.gd) and adversarial test file (tests/scripts/enemy/test_enemy_base_adversarial.gd) are written. All EB-* and ADV-EB-* test IDs are implemented. Tests are in red phase (scripts/enemies/enemy_base.gd does not yet exist). Core Simulation Agent must create scripts/enemies/enemy_base.gd (and the scripts/enemies/ directory) such that all tests pass. See spec at agent_context/agents/2_spec/enemy_base_spec.md for the normative function contracts and instantiation pattern constraints.
+All 11 Acceptance Criteria verified by headless test execution (run_tests.sh 253/253 passed). Static QA found no issues. Ticket is COMPLETE. Moved to done/.

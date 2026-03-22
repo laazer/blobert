@@ -1,0 +1,12 @@
+# Small_Ice_hard Enemy Stats
+extends Resource
+class_name Small_Ice_hardStats
+
+export var health: int = 63
+export var damage: int = 23
+export var speed: float = 2.40
+export var armor: int = 8
+export var size_modifier: float = 0.70
+export var threat_level: String = "Low (Hard)"
+export var special_abilities: PoolStringArray = ['Shape Shifting', 'Frost Aura', 'Speed Burst']
+export var weaknesses: PoolStringArray = ['Vulnerable to Fire', 'Piercing Damage', 'Low Health']

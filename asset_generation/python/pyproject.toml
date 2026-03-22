@@ -1,0 +1,25 @@
+[project]
+name = "blender-experiments"
+version = "0.1.0"
+description = "Procedural 3D enemy generation pipeline for Blender"
+requires-python = ">=3.11"
+
+# No pip-installable runtime dependencies.
+# All pipeline code runs inside Blender, which bundles bpy, mathutils, and bmesh.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    # Type stubs for bpy — enables IDE completion without a full Blender install.
+    # Match the stub version to your installed Blender version, e.g.:
+    #   pip install fake-bpy-module-4-3   (Blender 4.3)
+    #   pip install fake-bpy-module-4-2   (Blender 4.2)
+    # Stubs are not required to run the test suite; tests mock bpy at runtime.
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Ensures "from src." imports resolve from the project root without installing
+# the package or manually adjusting sys.path.
+pythonpath = ["."]

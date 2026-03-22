@@ -1,5 +1,20 @@
 Title:
 Write Blender Python enemy generator script
+---
+
+## WORKFLOW STATE
+
+| Field | Value |
+|---|---|
+| Stage | BLOCKED |
+| Revision | 1 |
+| Last Updated By | Autopilot Orchestrator |
+| Next Responsible Agent | Human |
+| Validation Status | Not started |
+| Blocking Issues | Requires Blender installation / generated GLB assets. Cannot proceed without external tool. |
+
+---
+
 
 Description:
 Python script that assembles enemies from the parts library using recipes per family.

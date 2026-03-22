@@ -1,0 +1,13 @@
+// adhesion_bug Enemy Stats
+[System.Serializable]
+public class adhesion_bugStats : EnemyStats
+{
+    public int health = 200;
+    public int damage = 50;
+    public float speed = 1.50f;
+    public int armor = 10;
+    public float sizeModifier = 1.00f;
+    public string threatLevel = "Medium (Nightmare)";
+    public string[] specialAbilities = { "Multi-limb Attack", "Wall Climbing" };
+    public string[] weaknesses = { "Area Effects" };
+}

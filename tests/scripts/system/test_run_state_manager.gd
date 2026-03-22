@@ -12,7 +12,7 @@
 # Test IDs covered:
 #   RSM-STRUCT-1 through RSM-STRUCT-4
 #   RSM-TRANS-1  through RSM-TRANS-5
-#   RSM-SIGNAL-1 through RSM-SIGNAL-5
+#   RSM-SIGNAL-1 through RSM-SIGNAL-6
 #   RSM-RESET-1  through RSM-RESET-2
 #   RSM-NOOP-1   through RSM-NOOP-4
 #
@@ -288,6 +288,26 @@ func test_rsm_signal_5_run_restarted_emits_on_win_to_start() -> void:
 	rsm.free()
 
 
+func test_rsm_signal_6_emit_before_state_change() -> void:
+	# RSM-SIGNAL-6: Signal fires BEFORE _state is updated (emit-first contract).
+	# Connect to run_started; inside the handler, capture get_state().
+	# After apply_event("start_run"), the captured state must equal State.START (0),
+	# proving the state had not yet advanced to ACTIVE at emission time.
+	var rsm: Object = _make_rsm()
+	if rsm == null:
+		_fail("RSM-SIGNAL-6", "RunStateManager script missing")
+		return
+	var captured_state: int = -1
+	rsm.connect("run_started", func(): captured_state = rsm.get_state())
+	rsm.apply_event("start_run")
+	_assert_eq_int(
+		0,
+		captured_state,
+		"RSM-SIGNAL-6 — get_state() inside run_started handler equals State.START (0); signal fired before state updated"
+	)
+	rsm.free()
+
+
 # ---------------------------------------------------------------------------
 # RSM-RESET: Slot manager is cleared on DEAD and WIN transitions
 # ---------------------------------------------------------------------------
@@ -448,6 +468,7 @@ func run_all() -> int:
 	test_rsm_signal_3_run_won_emits_on_active_to_win()
 	test_rsm_signal_4_run_restarted_emits_on_dead_to_start()
 	test_rsm_signal_5_run_restarted_emits_on_win_to_start()
+	test_rsm_signal_6_emit_before_state_change()
 
 	# Slot reset
 	test_rsm_reset_1_slots_cleared_after_active_to_dead()

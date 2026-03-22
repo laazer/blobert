@@ -1,5 +1,20 @@
 Title:
 Place first 4 enemy families in prototype level
+---
+
+## WORKFLOW STATE
+
+| Field | Value |
+|---|---|
+| Stage | BLOCKED |
+| Revision | 1 |
+| Last Updated By | Autopilot Orchestrator |
+| Next Responsible Agent | Human |
+| Validation Status | Not started |
+| Blocking Issues | Requires Blender installation / generated GLB assets. Cannot proceed without external tool. |
+
+---
+
 
 Description:
 Place at least one variant from each of the first 4 families (adhesion, acid, claw, carapace)
