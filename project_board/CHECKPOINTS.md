@@ -70,7 +70,7 @@ Review these after autopilot completes.
 **Confidence:** Medium
 
 ### [run_state_manager] TestDesign — ADV-RSM-04 State enum access via inst.State
-**Would have asked:** The spec notes that in headless tests, enum access is via `inst.State.START` on the instance (not `RunStateManager.State`). Is `inst.State` a Dictionary in GDScript 4 for script-level enums on RefCounted?
+**Would have asked:** The spec notes that in headless tests, enum access is via `inst.State` on the instance (not `RunStateManager.State`). Is `inst.State` a Dictionary in GDScript 4 for script-level enums on RefCounted?
 **Assumption made:** Yes. The spec explicitly documents this: "GDScript enum access on a RefCounted instance: inst.State returns the enum as a Dictionary". The test uses typeof(state_dict) != TYPE_DICTIONARY as a guard before calling .keys().
 **Confidence:** High
 
@@ -384,9 +384,7 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 
 ### [fusion_rules_and_hybrid] TEST_BREAK — NullSlotDouble: get_slot returns null on all indices
 **Would have asked:** The spec says can_fuse should return false when get_slot(0) returns null (FRH-2-AC-6). The primary suite tests a plain Object with no get_slot method at all. Should the adversarial suite additionally test a manager that HAS get_slot but returns null from it?
-
 **Assumption made:** Yes. Create a NullSlotDouble inner class with a get_slot method that returns null. This is a distinct vulnerability from the "no get_slot at all" case — an implementation that does has_method("get_slot") before calling, then calls without null-checking the return value, passes the primary suite but fails here.
-
 **Confidence:** High
 
 ---
@@ -445,7 +443,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 **Would have asked:** If chunk_attached fires twice for the same chunk node (two different enemies contact the same in-flight chunk simultaneously), does the second attach overwrite the stored enemy reference, or is it silently ignored?
 
 **Assumption made:** The second call to _on_enemy_chunk_attached fires the if/elif branch again (chunk == _chunk_node matches), so _chunk_stuck_enemy is overwritten to the second enemy. The stuck flag remains true. This means "last enemy wins." The absorb handler must match against the current _chunk_stuck_enemy reference.
-
 **Confidence:** Medium
 
 ---
@@ -799,4 +796,100 @@ Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
 **Would have asked:** The per-room loop records individual pass/fail, then a second _pass_test is recorded at the end if all_pass is true. This means a fully-passing run records both per-room passes and an "all rooms" summary pass. Is double-counting acceptable?
 **Assumption made:** Acceptable. The per-room pass records are granular diagnostic output (useful for debugging partial failures). The summary pass record is a single contract assertion matching the spec's "for all 5 rooms" language. This matches the pattern used in other suites (e.g., test_containment_hall_01.gd T-25 records per-node passes inside the loop plus a summary). The _pass_count inflation is harmless — only _fail_count is returned.
 **Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Planner Agent — procedural_room_chaining planning)
+
+### [PRC] Planning — Sequence mismatch: "fusion room" in AC not present in room pool
+**Would have asked:** The ticket description says "intro → N combat rooms → mutation tease → fusion room → boss" but the available room template pool has no fusion room scene. The room_template_system produced: 1 intro, 2 combat, 1 mutation_tease, 1 boss. Should the sequence include a fusion room slot (blocking until a scene is authored), or treat the current sequence as intro → combat (2) → mutation_tease → boss?
+**Assumption made:** Treat the sequence as intro (1) → combat (2) → mutation_tease (1) → boss (1), totaling 4 rooms. The "fusion room" in the ticket description refers to a room type that does not yet exist in the template pool. The PRC system must be built against the 4-room sequence that is actually available. A follow-up ticket (add fusion room template + extend sequence) will address this. This decision is logged here as a CHECKPOINT and referenced in the spec so Spec Agent documents it explicitly.
+**Confidence:** High
+
+### [PRC] Planning — RoomChainGenerator scope: pure list vs scene instantiation
+**Would have asked:** Should `RoomChainGenerator` (extends RefCounted) only produce an Array of scene-path records (pure logic, no SceneTree API), or should it also call `ResourceLoader.load()` and return PackedScenes?
+**Assumption made:** `RoomChainGenerator` produces only an `Array[Dictionary]` of records — each record contains `{ "scene_path": String, "category": String }`. It does NOT call `ResourceLoader.load()`, does NOT instantiate scenes, and does NOT touch the SceneTree. All scene loading and Node3D positioning is the responsibility of a separate engine-integration layer (a `RunSceneAssembler` Node that consumes the array). This preserves headless testability of the pure-logic class.
+**Confidence:** High
+
+### [PRC] Planning — Invocation point: DeathRestartCoordinator vs new RunManager
+**Would have asked:** Where is `RoomChainGenerator` invoked — inside `DeathRestartCoordinator._reset_run()` (adding to an existing node), or by a new `RunManager` Node that owns the room chain lifecycle?
+**Assumption made:** Invoked by a new `RunSceneAssembler` Node (not `DeathRestartCoordinator`). Reasoning: `DeathRestartCoordinator` already has a well-defined single responsibility (death detection and player reset). Adding room chain assembly to it would violate SRP and require modifying a stable, tested file. The new `RunSceneAssembler` is a separate Node in the level scene that listens to `RunStateManager.run_started` and triggers room assembly. `DeathRestartCoordinator._reset_run()` emits the restart event via RSM; `RunSceneAssembler` listens and rebuilds rooms. This keeps each component's blast radius minimal.
+**Confidence:** Medium
+
+### [PRC] Planning — "No room repeated" test strategy with only 2 combat rooms drawing 2
+**Would have asked:** The AC says "no room repeated in a single run." The combat pool has exactly 2 rooms and we draw exactly 2. With only 2 items in the pool, deduplication is trivially guaranteed — there is literally no other option. Should the test be: (a) a pure unit test that verifies the generator uses shuffle+take-without-replacement, or (b) a property-based test that runs the generator with a custom 3-room pool and verifies no repeats appear when drawing 2?
+**Assumption made:** Both. PRC-SEQ-4 tests the actual 2-room pool (all 2 combat rooms appear, no repeat possible). PRC-ADV-3 tests the deduplication logic with a synthetic 4-room combat pool where a naive random.randi_range implementation WOULD produce repeats, verifying the shuffle-without-replacement algorithm is correct independently of pool size. This separates the correctness of the sequence (PRC-SEQ) from the correctness of the deduplication algorithm (PRC-ADV).
+**Confidence:** High
+
+### [PRC] Planning — Room positioning: Exit.x as anchor for next room Entry.x
+**Would have asked:** All rooms have Entry at local (0,1,0) and the room root is a Node3D. The context says "Room N's Exit.x position defines where Room N+1's Entry.x starts." In practice: room_root_N+1.position.x = room_root_N.position.x + exit_N.position.x. Is this the correct formula, and does it assume Entry is always at local x=0?
+**Assumption made:** Yes. The formula for placing Room N+1 is: `room_root_N1.position.x = room_root_N.position.x + exit_N_local.position.x`. Since Entry for all rooms is at local (0,1,0), placing the root at the world X where the previous room's Exit lands is sufficient. The y-axis placement follows the same pattern (room roots at Y=0 so Entry at world Y=1). This is documented in the spec as an invariant.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Spec Agent — procedural_room_chaining specification)
+
+### [PRC] Spec — Sequence length 4 vs 5
+**Would have asked:** The ticket description prose says "4 rooms total" but the Required Input Schema lists `run_sequence: ["intro","combat","combat","mutation_tease","boss"]` which has 5 elements. Which is authoritative?
+**Assumption made:** The `run_sequence` array in the Required Input Schema is authoritative — 5 elements, 5 rooms. The prose "4 rooms total" was counting 4 distinct template categories (intro pool, combat pool, mutation_tease pool, boss pool) rather than 5 slots. All spec requirements use 5 as the run length. `generate()` returns an Array of length 5.
+**Confidence:** High
+
+### [PRC] Spec — RSM ownership: RunSceneAssembler creates its own RSM
+**Would have asked:** `DeathRestartCoordinator` owns a private `_rsm: RunStateManager` instance that is inaccessible. `RunSceneAssembler` needs to connect to `run_started` and `run_restarted`. Should it share the DRC's RSM (requires modifying DRC), or create its own?
+**Assumption made:** `RunSceneAssembler` creates its own `RunStateManager` instance in `_ready()`. Modifying `DeathRestartCoordinator` is explicitly prohibited. The two RSMs are independent lifecycles: DRC manages death/restart state; RSA manages room assembly state. Integration between DRC restart and RSA room rebuild is deferred to a future integration ticket. The `rsm_path` export is retained as a future hook but is unused in the initial implementation.
+**Confidence:** Medium
+
+### [PRC] Spec — Node strip strategy: free() before add_child vs queue_free() after add_child
+**Would have asked:** Should WorldEnvironment and DirectionalLight3D be stripped from room instances before or after adding them to the SceneTree? Before (using free()) avoids any brief period where duplicate lights exist; after (using queue_free()) is safer if the node needs to be in-tree first.
+**Assumption made:** Strip before add_child using `free()` (synchronous, immediate). The nodes are freshly instantiated and not yet in any tree, so `free()` is safe and avoids any single-frame duplicate-WorldEnvironment state. This is the conservative approach specified in the task prompt.
+**Confidence:** High
+
+### [PRC] Spec — Exit marker fallback value: 30.0 units
+**Would have asked:** If a room instance has no "Exit" Marker3D child (e.g., due to a future malformed room scene), what should `cumulative_x` advance by?
+**Assumption made:** Fall back to 30.0 world units (the standard room width confirmed for 4 of 5 existing rooms) and emit `push_warning()`. This prevents silent zero-advancement that would cause all rooms to stack at the same X position. The fallback is documented in the spec and the implementer must emit the warning.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-22 (Spec Agent — procedural_room_chaining specification revision 2)
+
+### [PRC] Spec Rev2 — API signature changed: generate(sequence, pool, seed) replaces generate(seed)
+**Would have asked:** Revision 1 specified `generate(seed: int) -> Array` returning Dicts. The ticket's current Required Input Schema specifies `generate(sequence: Array[String], pool: Dictionary, seed: int) -> Array[String]`. Which is authoritative when the two specs conflict?
+**Assumption made:** The ticket's Required Input Schema governs. Revision 1 was written before the schema was finalized. Revision 2 supersedes Revision 1 entirely. The new signature accepts sequence and pool as parameters (caller-supplied) rather than having them hardcoded in the class. This makes `RoomChainGenerator` more reusable and testable in isolation. The return type is `Array[String]` (scene paths only, no Dicts). All Revision 1 test IDs (PRC-SEQ-*, PRC-DEDUP-*, PRC-SCHEMA-*, PRC-POOL-*) are superseded by PRC-GEN-*, PRC-SEED-*, PRC-ADV-*.
+**Confidence:** High
+
+### [PRC] Spec Rev2 — Input validation: empty category returns [] vs partial array
+**Would have asked:** When a pool category is empty (or missing), should `generate()` return `[]` (abort entirely) or the partial array built before the error was encountered?
+**Assumption made:** Two distinct behaviors: (a) empty/missing pool category discovered during the initial validation phase (before any draws happen) → return `[]`. (b) pool exhaustion discovered during draw phase (after some items have been drawn) → return partial array. This distinction allows callers to distinguish "invalid pool" from "pool ran out mid-sequence." Both cases emit `push_error`.
+**Confidence:** Medium
+
+### [PRC] Spec Rev2 — rsm_path export removed from RunSceneAssembler
+**Would have asked:** Revision 1 kept `rsm_path: NodePath` as a "future integration hook" on RunSceneAssembler. The new ticket schema does not mention this export. Should it be retained for future compatibility, or removed to keep the API minimal?
+**Assumption made:** Removed in Revision 2. The export was never used (assembler creates its own RSM internally) and added confusion about what the export does. Keeping unused exports violates the project's code style of minimal, purposeful declarations. Future integration will add the export back when it has a concrete use case.
+**Confidence:** High
+
+### [PRC] Spec Rev2 — PRC-SEED-2 seed pair validity (seeds 1 and 999999)
+**Would have asked:** The ticket specifies seeds 1 and 999999 as the concrete test pair for PRC-SEED-2 (different seeds produce different outputs). With a 2-item combat pool, there is ~50% probability these two seeds produce the same output. Are seeds 1 and 999999 guaranteed to diverge?
+**Assumption made:** Declared the seed pair as provisional — the Test Designer Agent must verify at implementation time by running `RoomChainGenerator.new().generate(SEQUENCE, POOL, 1)` and `RoomChainGenerator.new().generate(SEQUENCE, POOL, 999999)` and confirming divergence. If they converge, the agent must file a CHECKPOINT with an alternate pair. The spec uses seeds 1 and 999999 per the ticket instruction but explicitly calls this out as a pre-computation requirement.
+**Confidence:** Medium
+
+---
+
+## Run: 2026-03-22 (Test Designer Agent — procedural_room_chaining test suite)
+
+### [PRC] Test Design — PRC-GEN-7 definition conflict between task brief and spec Rev2
+**Would have asked:** The task brief maps PRC-GEN-7 to "pool has category with empty array [] → generate() returns []". The authoritative spec Rev2 maps PRC-GEN-7 to "pool has 1 combat item, sequence requests it twice → partial array + push_error" (pool exhaustion mid-draw). The task brief's PRC-GEN-7 behavior (empty array → []) is actually covered by PRC-GEN-6 in the spec. Which definition governs?
+**Assumption made:** The authoritative spec Rev2 governs. PRC-GEN-7 tests the pool-exhaustion mid-sequence partial-return behavior. The task brief appears to have an off-by-one shift in test ID assignments for error cases. The empty-array-returns-[] case is covered by PRC-GEN-6 (which matches both the task brief and the spec). PRC-GEN-7 follows the spec's definition for pool exhaustion → partial array.
+**Confidence:** High
+
+### [PRC] Test Design — PRC-SEED-2 seed pair cannot be pre-computed (red phase)
+**Would have asked:** The spec and Spec Agent's checkpoint both require the Test Designer Agent to pre-compute whether seeds 1 and 999999 produce diverging combat orderings before writing PRC-SEED-2. Since `RoomChainGenerator` does not exist yet (red phase), this pre-computation is impossible.
+**Assumption made:** The test is written with seeds 1 and 999999 per the task spec. If both seeds happen to produce the same combat ordering on a correct implementation, the Test Breaker Agent or Implementation Agent must identify the collision and file a new CHECKPOINT with a confirmed diverging seed pair. The test includes a comment documenting this theoretical ~50% false-failure risk for 2-item pools.
+**Confidence:** Medium
+
+### [PRC] Test Design — PRC-ADV-10 acceptance: [] vs partial both valid
+**Would have asked:** PRC-ADV-10 says "returns [] or partial (no crash)". The spec's validation phase logic states missing key returns [] (not partial). Should the test assert exactly [] or accept both outcomes?
+**Assumption made:** The test accepts any non-null Array (including []) as a passing outcome. The primary observable requirement is no crash. If the implementation Agent produces exactly [] (per spec validation-phase abort), the test passes. If it produces a partial array due to a different implementation strategy, the test also passes — the no-crash contract is met. A stricter assertion of exactly [] would be a PRC-ADV-10b test that the Test Breaker Agent can add.
+**Confidence:** Medium
 
