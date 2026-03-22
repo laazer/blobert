@@ -193,45 +193,48 @@ Geometry constraints (spec must document exact values):
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_INTEGRATION
+INTEGRATION
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
-
-## Next Responsible Agent
 Engine Integration Agent
 
+## Next Responsible Agent
+Acceptance Criteria Gatekeeper Agent
+
 ## Validation Status
-- Tests: Not Run
+- Tests: PARTIAL — all RTS-* tests pass except RTS-ADV-16 (4 failures) due to test design defect (EnemyVisual child node inside enemy_infection_3d.tscn contains "Enemy" substring, causing recursive count to return 2 instead of expected 1). All primary RTS-LOAD-*, RTS-STRUCT-*, RTS-ENTRY-*, RTS-EXIT-*, RTS-GEO-*, RTS-ENC-*, RTS-NO-PLAYER-*, RTS-ADV-1 through RTS-ADV-15, RTS-ADV-17 through RTS-ADV-24 pass. Pre-existing failures (RSM-SIGNAL-*, SDR-*, ADV-RSM-*, ADV-SDR-*) are unrelated to this ticket.
 - Static QA: Not Run
-- Integration: Not Run
+- Integration: Pending human visual check
 
 ## Blocking Issues
-None
+None — rooms need human visual check. RTS-ADV-16 test defect should be resolved by Acceptance Criteria Gatekeeper Agent.
 
 ## Escalation Notes
-- Task 3 (scene authoring) requires creating unique Godot UIDs. The Engine Integration Agent must verify no UID collision with existing scenes. A safe pattern is to use descriptive UIDs like `uid://room_intro_01`, `uid://room_combat_01`, etc. — but if the Godot editor generates UIDs differently, the agent must use editor-generated values. Log any UID generation decision as a CHECKPOINT.
-- RTS-ADV-17 asserts intro room has exactly 5 direct children. If the scene requires a structural container node, log a CHECKPOINT and update the assertion value.
+- RTS-ADV-16 test counts "Enemy" substring recursively across entire scene tree. `enemy_infection_3d.tscn` contains a child node named `EnemyVisual`, which causes the count to be 2 per room. Fix options: (1) update RTS-ADV-16 to count only direct children of room root, or (2) rename EnemyVisual in enemy_infection_3d.tscn. Both require agent outside Engine Integration scope. CHECKPOINT logged.
+- UIDs used: uid://room_intro_01, uid://room_combat_01, uid://room_combat_02, uid://room_mutation_tease_01, uid://room_boss_01. No collision with existing project UIDs verified.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "spec_path": "/Users/jacobbrandt/Library/Mobile Documents/com~apple~CloudDocs/Workspace/blobert_agent_context/agents/2_spec/room_template_system_spec.md",
-  "primary_test_file": "tests/rooms/test_room_templates.gd",
-  "adversarial_test_file": "tests/rooms/test_room_templates_adversarial.gd",
-  "scene_output_directory": "scenes/rooms/",
-  "reference_scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn",
-  "enemy_scene_path": "res://scenes/enemy/enemy_infection_3d.tscn"
+  "scene_files": [
+    "scenes/rooms/room_intro_01.tscn",
+    "scenes/rooms/room_combat_01.tscn",
+    "scenes/rooms/room_combat_02.tscn",
+    "scenes/rooms/room_mutation_tease_01.tscn",
+    "scenes/rooms/room_boss_01.tscn"
+  ],
+  "test_results": "All RTS-* pass except RTS-ADV-16 (4 failures, test design defect — see CHECKPOINTS.md)",
+  "open_issue": "RTS-ADV-16 test design defect: EnemyVisual child counts as 'Enemy' in recursive substring search"
 }
 ```
 
@@ -239,4 +242,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Test Breaker Agent extended `tests/rooms/test_room_templates_adversarial.gd` with 14 new tests (RTS-ADV-11 through RTS-ADV-24) and fixed two memory-leak bugs in RTS-ADV-1 and RTS-ADV-2. Gaps covered: Entry/Exit direct-child enforcement, Entry.x == 0 constraint, WorldEnvironment+DirectionalLight3D existence (RTS-ENV spec gap), physics_interpolation_mode == 1 on enemies, enemy Z=0 constraint, exact enemy count upper bound, intro room child count bound, MeshInstance3D presence on floor nodes, floor node position X, enemy Y above surface, boss scale not-default guard, boss floor width 40-not-30 guard, canonical enemy scene path count in .tscn text, and Entry/Exit swap detection. Engine Integration Agent must author all 5 room .tscn files and make all RTS-* tests pass (green phase).
+Engine Integration Agent authored all 5 room .tscn files in scenes/rooms/. All primary RTS-* and adversarial tests pass except RTS-ADV-16 which has a test design defect — the recursive "Enemy" substring count includes EnemyVisual inside the instanced enemy sub-scene. Rooms require human visual check. Acceptance Criteria Gatekeeper Agent must decide whether to fix the test or accept the rooms as correct per the spec.

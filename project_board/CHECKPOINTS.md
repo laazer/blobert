@@ -5,6 +5,20 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-21 (Engine Integration Agent — room_template_system scene authoring)
+
+### [RTS] Engine Integration — RTS-ADV-16 fails due to EnemyVisual node in sub-scene
+**Would have asked:** RTS-ADV-16 counts nodes with "Enemy" in their name recursively. The `enemy_infection_3d.tscn` sub-scene has a child named `EnemyVisual`, which contains "Enemy". When instantiated, each enemy room has 2 nodes with "Enemy" in name (the renamed root + EnemyVisual), but the test expects exactly 1. Can the test be updated to count only direct children of the room root rather than recursively, or should `EnemyVisual` be renamed in `enemy_infection_3d.tscn`?
+**Assumption made:** The 5 room .tscn files are correctly authored per spec. The RTS-ADV-16 test has a design defect: it recursively counts "Enemy" substring but the `EnemyVisual` node inside the enemy sub-scene defeats the count. Modifying `enemy_infection_3d.tscn` would violate RTS-NFR-2. Modifying the test file is out of scope for the Engine Integration Agent. The 4 RTS-ADV-16 failures are a test design issue, not an implementation defect. All other 100+ RTS-* tests pass. Next responsible agent (Acceptance Criteria Gatekeeper) should decide: fix RTS-ADV-16 test to use direct-child-only count, or rename EnemyVisual in enemy_infection_3d.tscn.
+**Confidence:** High
+
+### [RTS] Engine Integration — UID format choice
+**Would have asked:** Godot 4 UIDs are typically generated as `uid://c<random_base64>`. The ticket suggests using descriptive UIDs like `uid://room_intro_01`. Are human-readable UIDs valid in Godot 4 .tscn format?
+**Assumption made:** Godot 4 accepts any string after `uid://` as the UID value — the format is not restricted to random base64. Existing project UIDs include `uid://containment_hall_01`, `uid://bnenemy_infection_3d`, `uid://cplayer3d001` confirming descriptive UIDs are used in this project. Used `uid://room_intro_01`, `uid://room_combat_01`, `uid://room_combat_02`, `uid://room_mutation_tease_01`, `uid://room_boss_01` — verified no collision with any existing UID in the project.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-21 (Test Breaker Agent — room_template_system adversarial suite extension)
 
 ### [RTS] Test Break — intro room child count expected value
