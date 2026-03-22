@@ -5,6 +5,30 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-21 (Test Breaker Agent — room_template_system adversarial suite extension)
+
+### [RTS] Test Break — intro room child count expected value
+**Would have asked:** RTS-ADV-17 bounds the intro room's direct child count to exactly 5. The spec lists IntroFloor, Entry, Exit, WorldEnvironment, DirectionalLight3D. Is 5 the correct expected count, or could the Engine Integration Agent add extra organisational nodes (e.g. a "Geometry" Node3D container)?
+**Assumption made:** 5 is correct and exact. The spec explicitly says "Nodes IN room scenes: Entry Marker3D, Exit Marker3D, floor geometry, WorldEnvironment, DirectionalLight3D" with no mention of container nodes. Any deviation is an authoring mistake. If the Engine Integration Agent needs a container node they should log a CHECKPOINT and update this test.
+**Confidence:** Medium
+
+### [RTS] Test Break — enemy count heuristic relies on "Enemy" substring
+**Would have asked:** RTS-ADV-16 and RTS-ADV-17 count enemies by checking for "Enemy" in node name. If an enemy node is renamed to something without "Enemy" (e.g., "Mob01"), the count check would miss it. Should a scene-path-based check (via FileAccess) be used instead?
+**Assumption made:** The name-substring heuristic is consistent with RTS-ENC-1 in the primary suite and is sufficient for now. The spec explicitly names all enemy nodes (EnemyCombat01, EnemyMutationTease, EnemyBoss) and RTS-ENC-* checks these exact names. The count test adds an upper-bound guard; exact-name checks in the primary suite catch wrong naming. No change needed.
+**Confidence:** High
+
+### [RTS] Test Break — RTS-ADV-23 counts ext_resource occurrences vs instance references
+**Would have asked:** In a Godot 4 .tscn file, an instanced sub-scene appears as a single ext_resource declaration and one or more node section references. RTS-ADV-23 counts occurrences of "enemy_infection_3d.tscn" in the file text. With one enemy per room the ext_resource appears once. Is "count >= 1" the right assertion, or should it be "count == 1"?
+**Assumption made:** Used ">= expected_count" (>= 1) rather than "== 1" to avoid fragility if Godot places multiple references in the file (e.g., for sub-resource inlining). This is a soft lower-bound. The primary RTS-ENC-* tests and RTS-ADV-16 together enforce the exact-one-enemy contract more precisely.
+**Confidence:** High
+
+### [RTS] Test Break — memory leak in original RTS-ADV-1 and RTS-ADV-2
+**Would have asked:** The original RTS-ADV-1 and RTS-ADV-2 did not call root.free() when the Entry/Exit node was null (failure branch had no free before continue). Should the fix be applied in place or should the original tests be left as-is and a note added?
+**Assumption made:** Fixed in-place. The fix is unambiguous (add root.free() before the continue in the null branch). This is a correctness fix, not a behavior change — the test logic is identical, just the cleanup is ensured. No behavior change to test outcomes.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-21 (Core Simulation Agent — run_state_manager implementation)
 
 ### [run_state_manager] Implementation — match arm ordering for DEAD+WIN restart

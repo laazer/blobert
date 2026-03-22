@@ -193,16 +193,16 @@ Geometry constraints (spec must document exact values):
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_INTEGRATION
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -214,22 +214,24 @@ None
 
 ## Escalation Notes
 - Task 3 (scene authoring) requires creating unique Godot UIDs. The Engine Integration Agent must verify no UID collision with existing scenes. A safe pattern is to use descriptive UIDs like `uid://room_intro_01`, `uid://room_combat_01`, etc. — but if the Godot editor generates UIDs differently, the agent must use editor-generated values. Log any UID generation decision as a CHECKPOINT.
+- RTS-ADV-17 asserts intro room has exactly 5 direct children. If the scene requires a structural container node, log a CHECKPOINT and update the assertion value.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
 {
   "spec_path": "/Users/jacobbrandt/Library/Mobile Documents/com~apple~CloudDocs/Workspace/blobert_agent_context/agents/2_spec/room_template_system_spec.md",
-  "primary_test_output": "tests/rooms/test_room_templates.gd",
-  "adversarial_test_output": "tests/rooms/test_room_templates_adversarial.gd",
-  "pattern_reference_primary": "tests/levels/test_containment_hall_01.gd",
-  "pattern_reference_adversarial": "tests/levels/test_mini_boss_encounter.gd"
+  "primary_test_file": "tests/rooms/test_room_templates.gd",
+  "adversarial_test_file": "tests/rooms/test_room_templates_adversarial.gd",
+  "scene_output_directory": "scenes/rooms/",
+  "reference_scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn",
+  "enemy_scene_path": "res://scenes/enemy/enemy_infection_3d.tscn"
 }
 ```
 
@@ -237,4 +239,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Primary test suite `tests/rooms/test_room_templates.gd` and adversarial suite `tests/rooms/test_room_templates_adversarial.gd` are complete. Both files follow the `extends Object` / `run_all() -> int` pattern and are auto-discovered by the test runner (no runner modification needed). Red phase: all 5 scene paths are missing so all RTS-LOAD-* through RTS-ENC-* tests will produce explicit FAIL messages with the missing path, not crashes. Test Breaker Agent should verify red-phase behavior by running `timeout 300 godot -s tests/run_tests.gd` and confirming all RTS-* tests FAIL explicitly, then review the test logic for any gaps to report back.
+Test Breaker Agent extended `tests/rooms/test_room_templates_adversarial.gd` with 14 new tests (RTS-ADV-11 through RTS-ADV-24) and fixed two memory-leak bugs in RTS-ADV-1 and RTS-ADV-2. Gaps covered: Entry/Exit direct-child enforcement, Entry.x == 0 constraint, WorldEnvironment+DirectionalLight3D existence (RTS-ENV spec gap), physics_interpolation_mode == 1 on enemies, enemy Z=0 constraint, exact enemy count upper bound, intro room child count bound, MeshInstance3D presence on floor nodes, floor node position X, enemy Y above surface, boss scale not-default guard, boss floor width 40-not-30 guard, canonical enemy scene path count in .tscn text, and Entry/Exit swap detection. Engine Integration Agent must author all 5 room .tscn files and make all RTS-* tests pass (green phase).
