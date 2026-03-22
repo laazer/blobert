@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
 [ext_resource type="PackedScene" uid="uid://bnenemy_infection_3d" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
 [ext_resource type="PackedScene" uid="uid://cgame_ui001" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="Script" path="res://scripts/system/death_restart_coordinator.gd" id="6_death_restart_coordinator"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -338,5 +339,11 @@ transform = Transform3D(1.75, 0, 0, 0, 1.75, 0, 0, 0, 1.75, 78, 1.3, 0)
 
 [node name="Player3D" parent="." instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 1, 0)
+
+[node name="DeathRestartCoordinator" type="Node" parent="."]
+script = ExtResource("6_death_restart_coordinator")
+player = NodePath("../Player3D")
+spawn_position = NodePath("../SpawnPosition")
+infection_handler = NodePath("../InfectionInteractionHandler")
 
 [connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]
