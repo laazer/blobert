@@ -24,16 +24,16 @@ Dependencies:
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_CORE
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Next Responsible Agent
-Test Breaker Agent
+Core Simulation Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -53,7 +53,7 @@ None
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Core Simulation Agent
 
 ## Required Input Schema
 ```json
@@ -82,4 +82,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test suite complete. Two test files written at tests/rooms/test_room_chain_generator.gd (9 tests: PRC-GEN-1 through PRC-GEN-7, PRC-SEED-1, PRC-SEED-2) and tests/rooms/test_room_chain_generator_adversarial.gd (10 tests: PRC-ADV-1 through PRC-ADV-10). All tests confirmed to parse and execute in red phase (all FAILing with "script not found" — correct behavior before implementation). Staged CHECKPOINTS from prc_spec_rev2_checkpoints.md merged into CHECKPOINTS.md. Three new Test Design checkpoints filed. Test Breaker Agent should attempt to find flaws in the test logic and spec coverage before passing to Implementation Agent.
+Test Breaker Agent has extended the adversarial suite. 15 new tests added in tests/rooms/test_room_chain_generator_adversarial_2.gd (PRC-ADV2-01 through PRC-ADV2-15). Coverage gaps filled: duplicate pool entries (dedup-by-index contract), non-Array pool value (caller contract violation path), empty-string and whitespace category sequences, 3-slot / 2-room and 5-slot / 2-room exhaustion chains (extending PRC-GEN-7), exact-path assertions at indices 0/3/4, pool mutation invariant, negative seeds (-1, INT32_MIN), cross-instance determinism, stability over 10 seeds, and RNG state isolation between successive calls. Three CHECKPOINTS filed. Implementation Agent should implement RoomChainGenerator to pass all three test files: test_room_chain_generator.gd, test_room_chain_generator_adversarial.gd, and test_room_chain_generator_adversarial_2.gd.

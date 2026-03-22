@@ -5,6 +5,25 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-22 (Test Breaker Agent — procedural_room_chaining adversarial suite 2)
+
+### [PRC] Test Break — duplicate pool entries
+**Would have asked:** When pool["combat"] = ["room_a.tscn", "room_a.tscn"] (two identical strings), should the result contain the same path twice (dedup by slot index) or be treated as a 1-item effective pool (dedup by value)?
+**Assumption made:** Dedup is by slot index per the spec's draw-index mechanism — the pool is shuffled and each slot draws from the next index. Identical strings at different indices are independent draws. The result may legally contain the same string twice in this edge case. The test (PRC-ADV2-01) verifies no crash and returns length 2 without asserting uniqueness. This exposes any impl using a Set-based dedup that would incorrectly reduce the effective pool size.
+**Confidence:** High
+
+### [PRC] Test Break — non-Array pool value behavior
+**Would have asked:** Spec says "If a pool value is not an Array, GDScript runtime errors may occur — this is a caller contract violation." Should the test assert a graceful return [] or simply document that the impl has no guard here?
+**Assumption made:** The test (PRC-ADV2-02) calls generate() with a String pool value and accepts any non-null return as passing. Its purpose is documentation and detection, not enforcement of graceful behavior. The spec explicitly shifts responsibility to the caller. If the call panics, the runner will surface it as a process error — which is also informative.
+**Confidence:** High
+
+### [PRC] Test Break — whitespace category behavior
+**Would have asked:** Should a category of " " (one space) be treated as a missing key (push_error + return []) or normalized via strip_edges() to "" before lookup?
+**Assumption made:** Normalization is NOT required by the spec — the spec says only "if category not present as key in pool, push_error and return []". A space character is a distinct key. The test (PRC-ADV2-13) asserts no crash and that no whitespace-only string appears in the result. It does not assert the return length, since either [] or a partial 1-element array are acceptable outcomes.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-21 (Engine Integration Agent — room_template_system scene authoring)
 
 ### [RTS] Engine Integration — RTS-ADV-16 fails due to EnemyVisual node in sub-scene
