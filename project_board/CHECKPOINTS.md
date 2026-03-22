@@ -48,11 +48,6 @@ Review these after autopilot completes.
 ### [enemy_base_script] TestDesign — ADV-EB-01 set_base_state call with out-of-range int
 **Would have asked:** set_base_state signature is typed as (state: State) -> void. Passing a bare int literal 99 without a cast may cause a GDScript type mismatch warning or runtime error in strict mode. Should the test cast to int explicitly, rely on implicit coercion, or use a workaround?
 **Assumption made:** Used `body.set_base_state(99 as int)` with an explicit cast to int. The spec documents GDScript pass-through behavior (no clamping, no crash). The "as int" cast makes the test intent explicit and avoids any ambiguity about whether a type-checking layer could reject the call.
-**Confidence:** Medium
-
-### [enemy_base_script] TestDesign — ADV-EB-07 "extends Node" false positive check
-**Would have asked:** The check for "does not extend Node" could produce a false positive if the source contains the string "extends Node" as part of a comment or as a substring of "extends Node3D". How should the check be scoped?
-**Assumption made:** Checked for "extends Node\n" (with newline) and "extends Node " (with trailing space) as delimiters, which avoids matching "extends Node3D" or "extends NodeBody". Also confirmed the positive check "extends CharacterBody3D" is present. The two assertions together form a sufficient contract.
 **Confidence:** High
 
 ---
@@ -100,19 +95,16 @@ Review these after autopilot completes.
 **Confidence:** High
 
 ### [mutation_tease_room] Planning — MutationTeasePlatform X position and elevation values
-
 **Would have asked:** The scene shows `MutationTeasePlatform` at position X=0 (identity transform) but the ticket says "at X=3, elevated platform." The CollisionShape3D Y offset is +0.3 meaning top surface Y = 0.8. Is X=3 from the ticket wrong, or is the scene incorrect?
 **Assumption made:** The scene file is the ground truth — it shows position X=0 with CollisionShape3D Y offset +0.3. The ticket's "X=3" is a description shorthand for the zone being slightly right of center, not an exact node position. The spec and tests will use the scene-confirmed value X ≈ 0 ±2.0 (wider tolerance to account for intent vs. exact). Platform top surface Y is confirmed as 0.8 (node Y=0 + col.y=0.3 + half_y=0.5). Tests will assert top surface Y in [0.5, 1.5] to cover this.
 **Confidence:** Medium
 
 ### [mutation_tease_room] Planning — Level flow placement: MTR zone precedes fusion zone
-
 **Would have asked:** Is there a cross-zone flow assertion needed between the Mutation Tease zone (X: -10 to 10) and the Fusion Opportunity Room (FusionFloor at X ≈ 22.5)? Should T-68 verify MutationTeaseFloor.right_edge < FusionFloor.left_edge?
 **Assumption made:** Yes. This follows the pattern of T-52 (skill check after fusion) and T-61 (mini-boss after skill check). The right edge of MutationTeaseFloor is 0 + 0 + 10 = 10.0; FusionFloor left edge is 22.5 - 12.5 = 10.0 — they are exactly adjacent. The flow assertion must use >= (not >) consistent with the ADV-MBA-06 precedent where zones touch at exact boundaries. The spec will document this explicitly.
 **Confidence:** High
 
 ### [mutation_tease_room] Planning — No scripted tease mechanic — AC validation approach
-
 **Would have asked:** The ticket AC says "Tease is clear (e.g. locked door, preview enemy, or scripted moment)" but the context says there is no locked door or scripted moment — only visual layout (enemy on elevated platform). How should the AC be validated as "tease is clear" in a headless test?
 **Assumption made:** The headless validation proxy for "tease is clear" is: (1) EnemyMutationTease exists on or above the elevated platform (Y above floor level), (2) MutationTeasePlatform is elevated (top surface Y > 0), (3) the zone is reachable (not behind a wall). The subjective "clarity" AC is marked as INTEGRATION only. A human playthrough validation note is added to the spec.
 **Confidence:** High
@@ -353,7 +345,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ---
 
 ### [fusion_rules_and_hybrid] TEST_BREAK — NullSlotDouble: get_slot returns null on all indices
-
 **Would have asked:** The spec says can_fuse should return false when get_slot(0) returns null (FRH-2-AC-6). The primary suite tests a plain Object with no get_slot method at all. Should the adversarial suite additionally test a manager that HAS get_slot but returns null from it?
 
 **Assumption made:** Yes. Create a NullSlotDouble inner class with a get_slot method that returns null. This is a distinct vulnerability from the "no get_slot at all" case — an implementation that does has_method("get_slot") before calling, then calls without null-checking the return value, passes the primary suite but fails here.
@@ -698,3 +689,76 @@ Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
 **Would have asked:** reset_position() tests (SDR-P1-4, SDR-P1-5, ADV-SDR-02) assign `global_position` which requires the node to be inside a SceneTree. The task prompt says to use `Engine.get_main_loop().root.add_child(player)`. Does this work in headless Object-based tests (not SceneTree-based tests)?
 **Assumption made:** Yes — the test runner runs as a SceneTree (`run_tests.gd extends SceneTree`), so `Engine.get_main_loop() as SceneTree` returns a valid tree in all test runs. Pattern confirmed by `tests/scenes/levels/test_3d_scene.gd` lines 201-213. All three position tests use the add_child/remove_child/free cleanup cycle.
 **Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Planner Agent — room_template_system planning)
+
+### [RTS] Planning — Room scene directory
+**Would have asked:** Where should room scenes live — `scenes/rooms/` (flat), `scenes/levels/rooms/` (under levels), or another path?
+**Assumption made:** `scenes/rooms/` as a sibling of `scenes/levels/`. Rooms are reusable building blocks, not individual levels. Keeping them separate from `scenes/levels/` (which contains monolithic prototype levels) prevents naming conflicts and signals the procedural-vs-hand-authored distinction. The procedural_room_chaining system will reference this path directly.
+**Confidence:** High
+
+### [RTS] Planning — Standard room width
+**Would have asked:** What is the canonical room width in world units? The containment_hall_01 zones range from 15 to 25 units wide. Should all rooms be the same width, or can it vary by category?
+**Assumption made:** Standard width is 30 units for all rooms. Rationale: the largest zone (MiniBossFloor, FusionFloor) is 25 units; 30 units provides comfortable margin without being too large. Entry marker at X=0, Exit marker at X=30 for all rooms. The boss room may be wider (40 units) to allow arena maneuvering — this is the only permitted exception, documented in the spec.
+**Confidence:** Medium
+
+### [RTS] Planning — Entry and Exit Marker3D positions within each room
+**Would have asked:** Should Entry be at X=0 or at the left edge of the room floor? Should Exit be at X=room_width or at the right edge of the room floor?
+**Assumption made:** Entry Marker3D at local position (0, 1, 0) — X=0 is the left edge of the room, Y=1 places the player 1m above the floor top surface (consistent with SpawnPosition in containment_hall_01). Exit Marker3D at (30, 1, 0) for standard rooms, (40, 1, 0) for boss room. Both markers are direct children of the room root node. Floor top surface at world Y=0, so Y=1 for markers is consistent with the existing SpawnPosition convention.
+**Confidence:** High
+
+### [RTS] Planning — What nodes rooms should NOT contain
+**Would have asked:** Should rooms contain RespawnZone, Player3D, InfectionInteractionHandler, WorldEnvironment, or GameUI? These are present in containment_hall_01 but would be redundant (or conflict with) the level controller's scene.
+**Assumption made:** Rooms are minimal self-contained geometry+enemy containers. They must NOT include: Player3D, RespawnZone, InfectionInteractionHandler, GameUI/InfectionUI. They MUST include: Entry Marker3D, Exit Marker3D, floor geometry (StaticBody3D), WorldEnvironment, DirectionalLight3D (so rooms are visually correct when previewed standalone), and any enemies appropriate to the category. The level controller injects player and systems when assembling the run. WorldEnvironment and DirectionalLight3D are kept in room scenes for standalone editor previewing; the level controller can suppress duplicates if needed.
+**Confidence:** Medium
+
+### [RTS] Planning — Minimum room set required by this ticket
+**Would have asked:** The ticket says minimum 1 intro, 2 combat, 1 mutation_tease, 1 boss. The description says categories: intro (1), combat (3+), mutation_tease (2), fusion_opportunity (1), cooldown (1), boss (1). Should we target the minimum or the full set?
+**Assumption made:** Target the minimum required by the ticket Acceptance Criteria: 1 intro, 2 combat, 1 mutation_tease, 1 boss — 5 rooms total. Additional rooms (fusion_opportunity, cooldown, 3rd combat) are deferred to follow-up tickets or future iterations. This minimizes implementation scope while satisfying all ACs and unblocking procedural_room_chaining.
+**Confidence:** High
+
+### [RTS] Planning — Room naming convention
+**Would have asked:** What file naming convention should rooms follow? `room_combat_01.tscn`? `combat_room_01.tscn`? Something else?
+**Assumption made:** File naming: `room_<category>_<variant_number>.tscn` in lowercase with underscores. Examples: `room_intro_01.tscn`, `room_combat_01.tscn`, `room_combat_02.tscn`, `room_mutation_tease_01.tscn`, `room_boss_01.tscn`. Root node name mirrors the file name in PascalCase: `RoomIntro01`, `RoomCombat01`, etc. This is consistent with the project's existing scene naming (e.g., `containment_hall_01.tscn` → root `ContainmentHall01`).
+**Confidence:** High
+
+### [RTS] Planning — Test file location
+**Would have asked:** Where should room template tests live — `tests/rooms/` (new directory), `tests/levels/` (alongside containment_hall tests), or `tests/scenes/`?
+**Assumption made:** `tests/rooms/` as a new top-level test subdirectory. This mirrors the source structure (`scenes/rooms/`), keeps room tests separate from level tests, and the test runner auto-discovers all `test_*.gd` files recursively from `tests/` so no runner change is needed.
+**Confidence:** High
+
+### [RTS] Planning — Whether rooms need enemies at all
+**Would have asked:** The intro room should be enemy-free (safety zone). The combat rooms need enemies. Should enemy instances be authored directly into room scenes, or should they be spawned at runtime by a room controller script?
+**Assumption made:** Enemies authored directly into room `.tscn` files as instanced sub-scenes (same pattern as containment_hall_01). No room controller script is needed for this ticket — runtime enemy spawning is a future concern. The intro room has no enemies. Combat rooms have 1 enemy each. Mutation tease has 1 enemy on an elevated platform (mirrors MutationTeasePlatform pattern). Boss has 1 boss enemy (scaled like EnemyMiniBoss in containment_hall_01).
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Spec Agent — room_template_system specification)
+
+### [RTS] Spec — Enemy scene path: scenes/enemy_infection_3d.tscn vs scenes/enemy/enemy_infection_3d.tscn
+**Would have asked:** Two files exist on disk: `scenes/enemy_infection_3d.tscn` (root-level) and `scenes/enemy/enemy_infection_3d.tscn` (subdirectory). `containment_hall_01.tscn` references `res://scenes/enemy/enemy_infection_3d.tscn`. The ticket Task 3 also specifies `res://scenes/enemy/enemy_infection_3d.tscn`. Which path is canonical for new room scenes?
+**Assumption made:** `res://scenes/enemy/enemy_infection_3d.tscn` is canonical. Both `containment_hall_01.tscn` (existing level) and the ticket's Task 3 instructions agree on this path. The root-level `scenes/enemy_infection_3d.tscn` is likely a stale duplicate or un-relocated copy. All new room scenes must use `res://scenes/enemy/enemy_infection_3d.tscn`.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-21 (Test Designer Agent — room_template_system RTS-* test suites)
+
+### [RTS] TestDesign — RTS-ENC enemy scene path: runtime property vs .tscn file text
+**Would have asked:** After `PackedScene.instantiate()`, there is no standard runtime API to read an instanced node's source .tscn path. The spec (RTS-ENC risk section) says to use `FileAccess.open` to read the .tscn as text and check for `enemy_infection_3d.tscn`. Is this acceptable, or should the test use indirect behavioral evidence (e.g., checking for a script method that only the enemy scene provides)?
+**Assumption made:** Used `FileAccess.open` + substring search for `"enemy_infection_3d.tscn"` in the room's .tscn file text. This is the approach explicitly recommended by the spec. It is headless-safe, deterministic, and directly verifies the ext_resource declaration without depending on a specific script API that could change. The check runs after `root.free()` so it does not conflict with the live instantiation.
+**Confidence:** High
+
+### [RTS] TestDesign — RTS-ADV-6 scope: direct children only vs full recursive walk
+**Would have asked:** The spec's RTS-ADV-6 risk note says to restrict the collision_mask check to StaticBody3D nodes that are direct children of the room root, not nodes inside instanced enemy sub-scenes. However, the primary acceptance criteria says "every StaticBody3D node in the tree". Which governs?
+**Assumption made:** The risk note governs. The spec explicitly calls out that enemy sub-scenes have their own collision_mask contract and restricts the room-level check to direct children. Using a full recursive walk would cause false failures if the enemy scene uses a different collision_mask (e.g., 2 for the enemy layer). The adversarial test uses `_get_direct_static_bodies(root)` which iterates only `root.get_child(i)`.
+**Confidence:** High
+
+### [RTS] TestDesign — RTS-ADV-1/2 duplicate pass record when all_pass is true
+**Would have asked:** The per-room loop records individual pass/fail, then a second _pass_test is recorded at the end if all_pass is true. This means a fully-passing run records both per-room passes and an "all rooms" summary pass. Is double-counting acceptable?
+**Assumption made:** Acceptable. The per-room pass records are granular diagnostic output (useful for debugging partial failures). The summary pass record is a single contract assertion matching the spec's "for all 5 rooms" language. This matches the pattern used in other suites (e.g., test_containment_hall_01.gd T-25 records per-node passes inside the loop plus a summary). The _pass_count inflation is harmless — only _fail_count is returned.
+**Confidence:** High
+
