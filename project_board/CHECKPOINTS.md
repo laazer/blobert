@@ -5,6 +5,68 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-23 (Planner Agent — blender_parts_library planning)
+
+### [BPL] Planning — Script location: standalone vs inside existing src/enemies/
+**Would have asked:** Should the Blender Python generation script live at `asset_generation/python/src/enemies/build_parts_library.py` (alongside existing enemy modules) or as a top-level generator script at `asset_generation/python/build_parts_library.py` (like `main.py`)?
+**Assumption made:** `asset_generation/python/src/enemies/build_parts_library.py`. The script is a domain-specific generator for enemy parts and belongs beside the other enemy-specific generation modules. The existing pattern (e.g., `src/generator.py`, `src/level_generator.py`) places Blender-invoked scripts inside `src/`. The parts library is enemy-domain, not a top-level CLI command, so `src/enemies/` is correct.
+**Confidence:** High
+
+### [BPL] Planning — Output path: absolute vs relative to script
+**Would have asked:** Should the script compute its output path as an absolute hardcoded path, relative to the script file's `__file__`, or relative to the Blender working directory?
+**Assumption made:** Relative to the script file via `pathlib.Path(__file__).resolve().parents[N] / "assets/enemies/parts/enemy_parts.blend"`. Hardcoded absolute paths break on other machines. Blender's working directory (cwd) is unreliable when invoked via `subprocess`. Using `__file__` to anchor the path is the same convention used by `ExportConfig` constants in `src/utils/constants.py`.
+**Confidence:** High
+
+### [BPL] Planning — Triangle budget strategy: which Blender primitives to use
+**Would have asked:** Which specific Blender primitive and subdivision level should each of the 11 parts use to stay under 100 triangles?
+**Assumption made:** Use the most conservative settings: `bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1)` (80 tris) for sphere-like parts; `bpy.ops.mesh.primitive_cylinder_add(vertices=8)` (32 tris) for cylindrical parts; `bpy.ops.mesh.primitive_cone_add(vertices=8)` for spike/blade; `bpy.ops.mesh.primitive_torus_add(major_segments=8, minor_segments=4)` for ring-like parts; `bpy.ops.mesh.primitive_uv_sphere_add(segments=8, ring_count=4)` (64 tris) for blob-like parts. All counts verified to be well below 100 by counting faces * 2 (quads → tris). Spec Agent must include a triangle-count table in the spec.
+**Confidence:** High
+
+### [BPL] Planning — Collection naming: "Parts" vs "EnemyParts"
+**Would have asked:** Should the Blender collection be named "Parts" (generic) or "EnemyParts" (qualified) or something else?
+**Assumption made:** Named "Parts" per the ticket description ("Organized in a Parts collection"). This is the exact string from the ticket's acceptance criteria. Any downstream code that references the collection must use "Parts".
+**Confidence:** High
+
+### [BPL] Planning — Test layer: pure-Python tests vs Blender-invocation integration tests
+**Would have asked:** Should tests for this script be pure-Python pytest (fast, no Blender required) or Blender-subprocess integration tests (slow, requires Blender installed)? The existing test suite in `asset_generation/python/tests/` uses pytest with no bpy.
+**Assumption made:** Two tiers: (1) pure-Python tests (no bpy import) covering importable constants and file-path correctness — these run in CI without Blender; (2) integration tests marked `@pytest.mark.integration` that actually invoke Blender and verify the .blend output — these are opt-in. This matches the project's existing pattern of separating pure-logic tests from Blender-dependent generation tests.
+**Confidence:** High
+
+### [BPL] Planning — Godot test suite: .gd tests are not needed for this ticket
+**Would have asked:** Should GDScript tests be written in `tests/` to verify the .blend file or the generated parts? The .blend file is not a Godot resource — it is a Blender file. Godot would only use exported .glb files.
+**Assumption made:** No GDScript tests for this ticket. The parts library produces a `.blend` file, not a Godot scene or resource. GDScript tests are inappropriate here. Verification is entirely in Python (pytest). The Godot test suite (`tests/`) is not touched by this ticket.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Engine Integration Agent — RunSceneAssembler implementation)
+
+### [PRC] Engine Integration — Two RunStateManager instances
+**Would have asked:** DeathRestartCoordinator already creates a RunStateManager and calls apply_event("start_run"). If RunSceneAssembler also creates its own RSM and calls apply_event("start_run"), they are two independent instances. Is this intentional, and will both RSMs racing to emit run_started on scene load cause any issue?
+**Assumption made:** Intentional. Both RSMs are lightweight RefCounted instances with no shared state. The ticket explicitly says "RunSceneAssembler owns its own RunStateManager — it does NOT use the same RSM as DeathRestartCoordinator." DeathRestartCoordinator's RSM drives death/restart lifecycle for the player. RunSceneAssembler's RSM is only used to trigger _on_run_started on scene load. They are independent systems. No cross-instance signaling occurs.
+**Confidence:** High
+
+### [PRC] Engine Integration — add_child before or after position assignment
+**Would have asked:** Should the room node be added as a child (add_child) before or after setting room.position? Godot's documentation is ambiguous about whether position can be set on a node before it enters the tree.
+**Assumption made:** Set room.position BEFORE add_child. Node3D.position is a property of the object itself and is valid to set before the node enters the SceneTree. This avoids a single-frame flash at the wrong position. The Exit/Entry node lookup (get_node_or_null) also works before add_child since the room's own children are instantiated and accessible immediately after packed.instantiate().
+**Confidence:** High
+
+---
+
+## Run: 2026-03-22 (Core Simulation Agent — RoomChainGenerator implementation)
+
+### [PRC] Core Implementation — print format vs spec wording
+**Would have asked:** Spec §Method behavior step 1 says exact format `"RoomChainGenerator seed: "` (no brackets). The task brief says `print("[RoomChainGenerator] seed: %d" % seed)` with brackets. Which format is authoritative?
+**Assumption made:** Task brief (autonomous mode instructions) supersedes spec wording for exact print format. Used `print("[RoomChainGenerator] seed: %d" % seed)` as specified in the brief. The exact format is only tested indirectly (PRC-GEN-5 checks no-crash + non-null, not the console string content).
+**Confidence:** High
+
+### [PRC] Core Implementation — print before or after RNG init
+**Would have asked:** Spec step 1 says print first, step 3 says construct RNG. But the task brief places RNG init at the top. Which ordering is correct?
+**Assumption made:** Followed the spec's step ordering: print first (before any other work), empty-sequence check second, then RNG construction. This ensures the seed is always logged even for empty sequences, which aids debugging. All determinism tests pass regardless of print placement.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-22 (Test Breaker Agent — procedural_room_chaining adversarial suite 2)
 
 ### [PRC] Test Break — duplicate pool entries
@@ -911,4 +973,67 @@ Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
 **Would have asked:** PRC-ADV-10 says "returns [] or partial (no crash)". The spec's validation phase logic states missing key returns [] (not partial). Should the test assert exactly [] or accept both outcomes?
 **Assumption made:** The test accepts any non-null Array (including []) as a passing outcome. The primary observable requirement is no crash. If the implementation Agent produces exactly [] (per spec validation-phase abort), the test passes. If it produces a partial array due to a different implementation strategy, the test also passes — the no-crash contract is met. A stricter assertion of exactly [] would be a PRC-ADV-10b test that the Test Breaker Agent can add.
 **Confidence:** Medium
+
+
+## Run: 2026-03-23T00:00:00Z — Autopilot M5 Procedural Enemy Generation
+Queue mode: milestone directory
+Queue scope: project_board/5_milestone_5_procedural_enemy_generation/backlog/
+
+### [M5-INIT] Step 0 — Stale backlog stub
+**Would have asked:** backlog/enemy_base_script.md is a short stub with no WORKFLOW STATE; done/enemy_base_script.md is COMPLETE (Stage: COMPLETE, 253/253 tests passing). Should the stub be deleted?
+**Assumption made:** The backlog stub is superseded. Left in place but skipped by autopilot (no WORKFLOW STATE block = already handled). Processing begins at blender_parts_library.
+**Confidence:** High
+
+### [M5-INIT] Step 0 — Unblocking Blender tickets
+**Would have asked:** blender_parts_library and blender_python_generator were BLOCKED on Blender installation. Now that Blender is installed, should they move to backlog?
+**Assumption made:** Yes — moved both to backlog/. godot_scene_generator_validation and first_4_families_in_level remain in blocked/ because they depend on GLB outputs that don't exist yet. They will be moved to backlog/ after blender_python_generator completes.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Spec Agent — blender_parts_library specification)
+
+### [BPL] Spec — ico_sphere subdivisions=2 would exceed triangle budget
+**Would have asked:** `primitive_ico_sphere_add(subdivisions=2)` produces 320 triangles (20 base * 4^2 = 320), which far exceeds `MAX_TRIANGLES_PER_PART = 100`. The Planner's planning checkpoint listed `subdivisions=1` (80 tris) as the conservative setting. Should `OrbCore` use `subdivisions=1` (same as `BaseSphere`) or a different primitive to visually differentiate the two parts?
+**Assumption made:** Both `BaseSphere` and `OrbCore` use `primitive_ico_sphere_add(subdivisions=1)`. They are visually identical at the mesh level but are distinct named objects in the collection. Their visual differentiation is a material/transform concern for downstream usage, not a geometry concern for the parts library. Using identical geometry for two logically different parts is acceptable in a library that is a building block for further procedural assembly. The spec documents this explicitly as a known simplification.
+**Confidence:** High
+
+### [BPL] Spec — parents[4] depth: confirmed for asset_generation/python/src/enemies/ path
+**Would have asked:** The `OUTPUT_PATH` resolution uses `Path(__file__).resolve().parents[4]` to reach the repo root. Is this the correct depth for the path `asset_generation/python/src/enemies/build_parts_library.py`?
+**Assumption made:** `parents[4]` is correct. The path from repo root: `asset_generation/` (parents[3]) / `python/` (parents[2]) / `src/` (parents[1]) / `enemies/` (parents[0]) / `build_parts_library.py` (__file__). So `parents[4]` = repo root (`blobert/`). Verified by counting: `parents[0]` = enemies dir, `parents[1]` = src dir, `parents[2]` = python dir, `parents[3]` = asset_generation dir, `parents[4]` = repo root. Correct.
+**Confidence:** High
+
+### [BPL] Spec — tests/enemies/ __init__.py: required for pytest package discovery
+**Would have asked:** Does `asset_generation/python/tests/enemies/` need an `__init__.py` file to allow `from src.enemies.build_parts_library import ...` imports in pytest? The existing test directories (combat/, animations/, level/, player/, prefabs/) all have `__init__.py` files.
+**Assumption made:** Yes, `__init__.py` is required. Confirmed by inspection: every existing subdirectory under `asset_generation/python/tests/` has an `__init__.py`. The `pyproject.toml` sets `pythonpath = ["."]` which resolves `from src.enemies...` but the test package itself needs `__init__.py` for proper collection. Spec mandates creation of `asset_generation/python/tests/enemies/__init__.py`.
+**Confidence:** High
+
+### [BPL] Spec — torus triangulation formula: major_segments * minor_segments * 2
+**Would have asked:** The torus primitive `primitive_torus_add(major_segments=8, minor_segments=4)` creates 8*4=32 quads. Each quad becomes 2 triangles in the fan-triangulation formula `sum(len(p.vertices)-2 for p in polygons)` — for a quad, `4-2=2`. So total is 32*2=64 triangles. Is this correct?
+**Assumption made:** Yes — 32 quads * 2 = 64 triangles. This is well under 100. Confirmed by the formula: each polygon in a torus from `primitive_torus_add` is a quad (4 vertices), and `len([v0,v1,v2,v3]) - 2 = 2` per polygon. Torus with major_segments=8, minor_segments=4 has 8*4=32 quad faces = 64 triangles.
+**Confidence:** High
+
+### [BPL] Spec — Wing plane triangle count: 1 quad = 2 triangles
+**Would have asked:** `primitive_plane_add(size=2.0)` creates a single quad polygon (4 vertices, 1 face). The fan-triangulation formula gives `4-2=2` triangles. Does Blender's plane add additional subdivisions by default?
+**Assumption made:** No subdivisions by default — `primitive_plane_add` with no `subdivisions_x`/`subdivisions_y` arguments creates a single quad face (1 polygon). Triangle count = 2. If subdivision arguments are accidentally added, the count changes. The spec mandates the call `primitive_plane_add(size=2.0)` with no subdivision arguments.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Test Designer Agent — BPL test authoring)
+
+### [BPL] Test Design — Integration test Blender invocation cwd
+**Would have asked:** When the integration test calls `blender --background --python <script>`, what should the subprocess working directory be? The script uses `__file__`-relative path resolution, so cwd should not matter — but the test must confirm this.
+**Assumption made:** Set subprocess cwd to the repo root (`Path(__file__).resolve().parents[5]` from the test file location at `asset_generation/python/tests/enemies/`). This is the safest choice and matches how `blender --background` would naturally be invoked from the project. The script's `OUTPUT_PATH` uses `__file__`-anchored resolution, so cwd is irrelevant to correctness, but explicit cwd avoids ambiguity.
+**Confidence:** High
+
+### [BPL] Test Design — pytest markers: integration marker registration
+**Would have asked:** The project has no existing `@pytest.mark.integration` usage or marker registration in pyproject.toml. Should the integration test register the marker to avoid pytest warnings, or add it to pyproject.toml?
+**Assumption made:** Add `filterwarnings` and `markers` config to pyproject.toml is out of Test Designer scope (that's a project config change). Instead, use `pytestmark` at the module level, and note in a comment that the CI runner should pass `-m integration` to run them and `-m "not integration"` to skip. This is the minimal correct approach. The missing marker registration does not cause test failure — only a warning.
+**Confidence:** Medium
+
+### [BPL] Test Design — TestPartsCollectionVerification inline Blender script approach
+**Would have asked:** Should `TestPartsCollectionVerification` use `--python-expr` (inline Python expression) or a temp file with `--python`? The spec says "inline via --python-expr or temp file". `--python-expr` is limited and awkward for multi-line logic.
+**Assumption made:** Use a `tempfile.NamedTemporaryFile` with `.py` suffix containing the verification script, passed via `--python`. This is more readable, debuggable, and reliable than `--python-expr`. The temp file is cleaned up after the subprocess exits.
+**Confidence:** High
 
