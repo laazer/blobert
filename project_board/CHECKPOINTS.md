@@ -456,7 +456,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ### [fusion_rules_and_hybrid] TEST_BREAK — re-trigger timer reset verification without physics tick
 
 **Would have asked:** FRH-4-AC-7 says calling apply_fusion_effect twice resets the timer, not stacks it. PlayerController3D does not exist yet and cannot be instantiated headlessly without a scene. How do we test this via FusionResolver alone?
-
 **Assumption made:** Test via PlayerDouble only: call resolve_fusion twice with fills in between (first fuse consumes slots, refill, fuse again). Verify apply_fusion_effect_call_count == 2 and that the second call used the same duration/multiplier as the first (last_duration == 5.0, last_multiplier == 1.5). This verifies the resolver passes correct args to re-trigger; the reset-not-stack behavior is a PlayerController3D concern tested separately. Document the gap clearly.
 
 **Confidence:** High
@@ -655,107 +654,7 @@ Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
 
 ### [enemy_base_script] Planning — Headless testability: CharacterBody3D instantiation in tests
 **Would have asked:** CharacterBody3D requires a physics server RID. Can it be instantiated headlessly in tests/run_tests.gd without causing a crash or hang?
-**Assumption made:** CharacterBody3D.new() is safe headlessly — the existing test_base_physics_entity_3d.gd already instantiates BasePhysicsEntity3D (which extends CharacterBody3D) headlessly without issues. The test suite can use CharacterBody3D.new() as the host node to test EnemyBase script attachment and export property reads.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Spec Agent — enemy_base_script specification)
-
-### [enemy_base_script] Spec — current_state vs _base_state variable name
-**Would have asked:** The task prompt specifies `var _base_state: State = State.NORMAL` (private, underscore-prefixed). The ticket's canonical Acceptance Criteria and the Test Design table (EB-STATE-1 through EB-STATE-5) use `current_state` (public, no underscore). Which name is authoritative?
-**Assumption made:** `current_state` is the canonical name. The ticket's Acceptance Criteria section is the normative source of truth per workflow_enforcement_v1.md ("Ticket file is single source of truth"). The task prompt's mention of `_base_state` is superseded. The test table's assertion names explicitly reference `current_state`. All spec requirements use `current_state`.
-**Confidence:** High
-
-### [enemy_base_script] Spec — set_base_state / get_base_state naming: no Godot built-in collision
-**Would have asked:** The ticket's Execution Plan says rename to `apply_state`/`query_state` only if there is a Godot built-in collision. Are `set_base_state` and `get_base_state` safe?
-**Assumption made:** Safe. Neither `set_base_state` nor `get_base_state` appears in CharacterBody3D, PhysicsBody3D, CollisionObject3D, Node3D, or Node built-in APIs. Confirmed by source inspection of existing scripts which use no such methods. Names are retained as-is.
-**Confidence:** High
-
-### [enemy_base_script] Spec — GDScript enum instance access syntax for tests
-**Would have asked:** Should tests access enum values via `EnemyBase.State.NORMAL` (class cache path) or `instance.State.NORMAL` (instance property path)?
-**Assumption made:** Tests must use `instance.State.NORMAL` (or `script_res.State.NORMAL` after load()). `EnemyBase.State.NORMAL` requires the class to be registered in the cache before the test runner initializes, which is not guaranteed in the headless load()+set_script() pattern. The instance property path is always available after set_script(). Documented in the spec's "Headless Test Instantiation Pattern" section.
-**Confidence:** High
-
-### [enemy_base_script] Spec — ADV-EB-01 out-of-range cast behavior
-**Would have asked:** When `set_base_state(99 as State)` is called, should the script clamp the value, reject it, or store it as-is?
-**Assumption made:** Store as-is. GDScript 4 enums are int-backed with no runtime range validation. The spec does not add validation logic in this ticket. The adversarial test (ADV-EB-01) verifies the pass-through behavior. Higher-level systems are responsible for valid state transitions.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Core Simulation Agent — enemy_base_script Implementation)
-
-### [enemy_base_script] Implementation — explicit enum integer values
-**Would have asked:** The spec says explicit integer assignment (NORMAL = 0, etc.) is optional since GDScript assigns sequentially by default. Should explicit values be written for clarity or omitted to rely on defaults?
-**Assumption made:** Explicit integer values included (`NORMAL = 0`, `WEAKENED = 1`, `INFECTED = 2`). The spec permits this and it eliminates any ambiguity about ordering if a future editor reorders lines. The test suite verifies exact integer values regardless.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Planner Agent — run_state_manager planning)
-
-### [run_state_manager] Planning — signal emission order: before or after state update
-**Would have asked:** Should `run_started`, `player_died`, `run_won`, and `run_restarted` signals emit before or after `_state` is updated? This affects whether a connected listener sees the old or new state when the signal fires.
-**Assumption made:** Signals emit BEFORE the state variable is updated. This matches the pattern used in similar event-driven state machines in the project and allows listeners to capture the pre-transition state if needed. The emit-first contract is explicitly specified in the transition table and must be tested by RSM-SIGNAL-6.
-**Confidence:** High
-
-### [run_state_manager] Planning — MutationSlotManager ownership: injected vs internally created
-**Would have asked:** Should `RunStateManager` own its own `MutationSlotManager` instance (created in `_init()`), or should it accept one via injection (constructor parameter or setter) to allow the real game scene's slot manager to be reset?
-**Assumption made:** The base class creates its own `MutationSlotManager` in `_init()`. In v1, the consumer scene-level coordinator is responsible for wiring resets: on DEAD/WIN signals, the coordinator calls `clear_all()` on the scene's `InfectionInteractionHandler` slot manager directly. The internal slot manager in `RunStateManager` is for headless test verification only and documents the reset intent. This keeps the base class pure-logic with zero scene coupling.
-**Confidence:** Medium
-
-### [run_state_manager] Planning — Scene loading side effect: autoload vs scene-level node
-**Would have asked:** The ticket says transitions must trigger "run restarted from entry room." Should `RunStateManager` call `get_tree().change_scene_to_file()` directly, or emit a signal and let a consumer handle it?
-**Assumption made:** `RunStateManager` never calls scene-loading APIs. It emits `run_restarted` and consumers handle scene reload. This preserves headless testability. The spec will explicitly document this as a non-functional requirement (NFR): "base class must not contain any call to get_tree(), change_scene_to_file(), or any Godot SceneTree API."
-**Confidence:** High
-
-### [run_state_manager] Planning — Autoload registration in project.godot
-**Would have asked:** Should `RunStateManager` be registered as a Godot autoload in `project.godot`? The ticket says "autoload or scene-level manager."
-**Assumption made:** The base class (`scripts/system/run_state_manager.gd`) is NOT registered as an autoload. Autoload wiring is a separate integration concern outside this ticket's scope. The spec and tests cover only the pure-logic class. A follow-up integration ticket will handle autoload registration and scene-level wiring.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Spec Agent — run_state_manager specification)
-
-### [run_state_manager] Spec — event name mismatch: task prompt vs ticket
-**Would have asked:** The task prompt specifies event names `"start"`, `"die"`, `"win"`, `"restart"`. The ticket's canonical transition table uses `"start_run"`, `"player_died"`, `"run_won"`, `"restart"`. Which names are authoritative?
-**Assumption made:** The ticket's transition table is authoritative. Per workflow_enforcement_v1.md, "Ticket file is single source of truth." The task prompt's event names (`"start"`, `"die"`, `"win"`) are superseded by the ticket's names (`"start_run"`, `"player_died"`, `"run_won"`). All spec requirements and the implementation must use the ticket's event strings.
-**Confidence:** High
-
-### [run_state_manager] Spec — clear_all() execution order: after state update or after signal
-**Would have asked:** The ticket says signal fires before state update. `clear_all()` is a side effect listed in the transition table. Is `clear_all()` called before the state update (between signal and state change), or after the state update?
-**Assumption made:** `clear_all()` is called AFTER `_state` is updated. The execution sequence for ACTIVE→DEAD is: (1) `player_died.emit()`, (2) `_state = State.DEAD`, (3) `_slot_manager.clear_all()`. This is consistent with: the emit-first contract (signal fires first), state update follows, then side effects. A signal handler that checks slot state will see filled slots if it captures them at signal-fire time; this is acceptable per the ticket spec which does not constrain slot state visibility during signal emission.
-**Confidence:** High
-
-### [run_state_manager] Spec — get_slot_manager() return type: RefCounted vs MutationSlotManager
-**Would have asked:** Should `get_slot_manager()` return type be annotated as `MutationSlotManager` (concrete) or `RefCounted` (abstract)? InfectionInteractionHandler uses `RefCounted` for its `get_mutation_slot_manager()`.
-**Assumption made:** Return type is `RefCounted`, not `MutationSlotManager`. This avoids a hard typed class name reference and matches the existing project convention in `InfectionInteractionHandler`. Callers that need slot manager methods use duck-typing or rely on the known runtime type.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Planner Agent — soft_death_and_restart planning)
-
-### [soft_death_and_restart] Planning — Death detection: polling vs signal
-**Would have asked:** Should the coordinator poll `player.get_current_hp() <= 0.0` every `_process` frame, or should PlayerController3D emit a `player_hp_empty` signal when HP hits the floor?
-**Assumption made:** Polling in `_process` guarded by a `_dead` flag. PlayerController3D does not currently have a death signal, and adding one requires a spec change to that file. Polling is the minimal-coupling approach: the coordinator reads the public `get_current_hp()` API (already exists) and fires once. This matches the architecture of the existing `InfectionUI._process` HP display pattern. If a signal is preferred long-term, a follow-up refactor ticket should add it — this ticket does not modify the HP detection mechanism.
-**Confidence:** High
-
-### [soft_death_and_restart] Planning — Mutation slot clearing: RSM internal vs scene InfectionInteractionHandler
-**Would have asked:** `RunStateManager.apply_event("player_died")` already calls `_slot_manager.clear_all()` on its own internal slot manager. But the scene's `InfectionInteractionHandler` holds a separate slot manager reference used by the player and UI. Are these the same object or different?
-**Assumption made:** They are different objects. RSM creates its own `MutationSlotManager` in `_init()`. The scene's handler has its own. The coordinator must also call `clear_all()` (or equivalent) on the InfectionInteractionHandler's slot manager. Spec Agent must verify by reading `infection_interaction_handler.gd` and confirm whether a single shared reference can be injected into RSM to unify them, or if the coordinator must clear both separately. This is flagged as an escalation note.
-**Confidence:** Medium
-
-### [soft_death_and_restart] Planning — "New room layout on each restart" AC scoping
-**Would have asked:** The ticket AC says "New room layout is generated on each restart." The procedural_room_chaining ticket is backlog and unimplemented. Should this AC be blocked, deferred, or satisfied by a placeholder (same room reloaded)?
-**Assumption made:** Deferred. The restart resets the player in-place within containment_hall_01. The room layout AC is out-of-scope for this ticket and will be addressed by procedural_room_chaining. This is documented in the ticket's Escalation Notes for Spec Agent acknowledgment. The ticket's core ACs (position reset, HP reset, slots empty, 2-second window) are all satisfiable without room generation.
-**Confidence:** High
-
-### [soft_death_and_restart] Planning — Visual feedback (fade/dissolve) staging
-**Would have asked:** Should the dissolve/fade tween be implemented in the same implementation pass as the core logic, or separately?
-**Assumption made:** Separately. Part 1 (core logic) is IMPLEMENTATION_BACKEND — headlessly testable. Part 2 (visual) requires a running scene and human eye, so it must land at INTEGRATION. Mixing them would force the entire ticket to INTEGRATION before core logic is even validated. Two-pass approach keeps the critical-path AC coverage fully automated.
+**Assumption made:** Yes — the project already instantiates CharacterBody3D headlessly in multiple test files (e.g., `test_3d_scene.gd` adds a full level with physics nodes to the tree). CharacterBody3D instantiation in headless mode allocates a physics RID but does not crash. Physics simulation does not run without a physics tick, so the character just stays at its spawn position. All existing test patterns confirm this is safe.
 **Confidence:** High
 
 ---
@@ -1037,3 +936,87 @@ Queue scope: project_board/5_milestone_5_procedural_enemy_generation/backlog/
 **Assumption made:** Use a `tempfile.NamedTemporaryFile` with `.py` suffix containing the verification script, passed via `--python`. This is more readable, debuggable, and reliable than `--python-expr`. The temp file is cleaned up after the subprocess exits.
 **Confidence:** High
 
+
+### [M5-CORRECTION] Pipeline Discovery — blender_parts_library superseded
+**Would have asked:** The blender_parts_library and blender_python_generator tickets assumed the enemy generation pipeline did not exist. In reality, asset_generation/python/ is a full pipeline with animated enemy classes, materials, and a CLI. Should the tickets be rewritten?
+**Assumption made:** Yes. Deleted stale spec + test artifacts for blender_parts_library; marked it BLOCKED/superseded. Rewrote blender_python_generator to describe the actual remaining work: adding AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk to the existing pipeline. Resumed autopilot on the revised blender_python_generator ticket.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Planner Agent — blender_python_generator animated enemy classes)
+
+### [BPG] Planner — attack profile entries for 3 new enemies
+**Would have asked:** The existing animated enemies (adhesion_bug, tar_slug, ember_imp) each have entries in `src/combat/enemy_attack_profiles.py`. Should the 3 new animated enemies (acid_spitter, claw_crawler, carapace_husk) also require new attack profile entries as part of this ticket?
+**Assumption made:** No. Attack profiles are not part of the ticket's acceptance criteria. The ticket only requires: class definitions, builder registration, constants updates, material theme, GLB generation, and tests verifying those items. Adding attack profiles is a separate concern and would require modifying `enemy_attack_profiles.py` and its tests — outside the scope stated by the acceptance criteria. The existing `get_attack_profile()` function already returns `[]` for unknown types gracefully. Adding profiles is deferred to a follow-up ticket.
+**Confidence:** High
+
+### [BPG] Planner — body geometry for AnimatedAcidSpitter (BLOB type)
+**Would have asked:** The ticket says AcidSpitter → BLOB body type. Should it reuse `create_blob_armature` (same as TarSlug) or differentiate itself with a custom body shape?
+**Assumption made:** Reuse `create_blob_armature`. The BLOB body type is determined by `get_body_type()` returning `EnemyBodyTypes.BLOB`, which automatically drives the animation system. The body geometry is distinct (a pulsing sac shape using a sphere with different scale ratios than TarSlug), but the armature type is shared. This matches the `example_new_enemy.py` pattern where ExampleGhost reuses `create_blob_armature` with a different body shape.
+**Confidence:** High
+
+### [BPG] Planner — body geometry for AnimatedClawCrawler (QUADRUPED type)
+**Would have asked:** ClawCrawler → QUADRUPED body type. Should it reuse the exact same 6-legged leg layout as AdhesionBug, or have a distinct body structure?
+**Assumption made:** Distinct body structure — a low, flat body with prominent front claw appendages (2 thicker cylinder "claws" replacing front legs), plus 4 regular legs. It uses `create_quadruped_armature` (same armature type as AdhesionBug) but with visually different proportions. The claw cylinders are scaled wider and shorter than leg cylinders to visually differentiate the enemy.
+**Confidence:** Medium
+
+### [BPG] Planner — body geometry for AnimatedCarapaceHusk (HUMANOID type)
+**Would have asked:** CarapaceHusk → HUMANOID body type. Should it be a direct copy of AnimatedEmberImp with different materials, or meaningfully different geometry?
+**Assumption made:** Meaningfully different — a heavier, wider cylindrical body (larger body_width variance) with shorter legs and no hands (the arm "hands" become flat spike protrusions). It uses `create_humanoid_armature` (same as EmberImp). The body proportions emphasize bulk: body_height variance is smaller relative to body_width to convey a heavy, charge-type enemy per the ticket description.
+**Confidence:** Medium
+
+### [BPG] Planner — test runner for GLB generation tests
+**Would have asked:** Verifying that `python main.py animated acid_spitter 3` produces 3 GLBs requires actually invoking Blender. The existing pytest tests in `asset_generation/python/tests/` are pure-Python (no Blender). Should GLB generation tests be integration tests (subprocess calls) or skipped in the test suite?
+**Assumption made:** GLB generation tests are pure-Python only. The tests verify: class registration in `AnimatedEnemyBuilder.ENEMY_CLASSES`, `EnemyTypes.get_animated()` returns all 6 types, `MaterialThemes.has_theme()` returns True for all 3 new types, and `EnemyTypes.get_static()` no longer contains acid_spitter/claw_crawler. The actual `python main.py animated X 3` invocations are run as part of the acceptance check outside pytest (CI/human verification step). This matches the project's existing test tier separation: pure-Python pytest for logic, manual/CI run for Blender generation.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Spec Agent — BPG animated enemy classes specification)
+
+### [BPG] Spec — carapace_husk material theme color ordering
+**Would have asked:** The ticket suggests STONE_GRAY, BONE_WHITE, CHROME_SILVER for carapace_husk but does not specify which slot (body/head/limbs) each maps to. What is the correct assignment?
+**Assumption made:** `[body=STONE_GRAY, head=BONE_WHITE, limbs=CHROME_SILVER]`. Rationale: (1) existing themes follow `[primary_body_color, secondary_head_color, limb_color]` order (confirmed from adhesion_bug, tar_slug, ember_imp entries); (2) STONE_GRAY reads as the carapace shell (large body area), BONE_WHITE as the pale dome head, CHROME_SILVER as the metallic arm/leg protrusions. This ordering is the most visually coherent for a heavy armoured enemy.
+**Confidence:** High
+
+### [BPG] Spec — CARAPACE_HUSK placement in get_static() vs get_animated()
+**Would have asked:** CARAPACE_HUSK is a new constant. Should it be added only to get_animated() (since it has an animated class), or also to get_static() as a future-expansion placeholder?
+**Assumption made:** Added ONLY to get_animated(). The ticket acceptance criteria explicitly state "EnemyTypes.get_animated() returns all 6 types" and there is no AC for get_static() including carapace_husk. Adding it to get_static() would also break BPG-CONST-10 (get_animated() and get_static() must be disjoint).
+**Confidence:** High
+
+### [BPG] Spec — AcidSpitter body proportions: distinguishable from TarSlug
+**Would have asked:** Both AcidSpitter (BLOB) and TarSlug (BLOB) use create_blob_armature. How different should the body proportions be to ensure they are visually distinct?
+**Assumption made:** AcidSpitter body is roughly spherical (X≈Y≈1.0, Z≈0.9) with near-equal XY dimensions. TarSlug is elongated (length≈2.0, width≈0.8, height≈0.6). The key differentiator is X:Y:Z ratio — AcidSpitter is compact and squat, TarSlug is elongated and flat. Additionally, AcidSpitter has two drip-tendrils hanging below (acid visual) vs TarSlug's eye-stalk appendages. These geometry differences are sufficient for visual distinctiveness.
+**Confidence:** High
+
+### [BPG] Spec — ClawCrawler leg count: 6 total (2 claws + 4 legs) matches quadruped armature
+**Would have asked:** The quadruped armature (create_quadruped_armature) is designed for 6 legs. ClawCrawler has 2 front claws + 4 regular legs = 6 appendages total. Does this correctly bind to the armature's 6 bone slots?
+**Assumption made:** Yes. The quadruped armature has 6 leg bones (leg_fl, leg_fr, leg_ml, leg_mr, leg_bl, leg_br) per BoneNames constants. ClawCrawler's 2 claws map to the front leg positions (fl/fr) and the 4 regular legs map to middle/back positions (ml/mr/bl/br). The bone binding is handled by bind_mesh_to_armature in blender_utils — it does not require exact geometry correspondence, only that the mesh is bound to the armature object. Geometry differentiation (wider claws) does not affect armature compatibility.
+**Confidence:** High
+
+### [BPG] Spec — CarapaceHusk arm rotation: Euler import required
+**Would have asked:** CarapaceHusk's create_limbs method sets arm rotation via `arm.rotation_euler = Euler((0, 0, math.pi/2))`, matching EmberImp. `Euler` is imported from `mathutils` at the top of `animated_enemies.py` (line 6). Is this import safe for pure-Python tests?
+**Assumption made:** The existing `from mathutils import Euler` at line 6 of animated_enemies.py is pre-existing and already handled by the test environment (tests currently pass per ticket). No new top-level Blender imports are added. BPG-NFR-1-AC1 applies only to NEW code added by this ticket.
+**Confidence:** High
+
+### [BPG] Spec — Test method for BPG-CLASS-*: inspect.getsource vs source_code attribute
+**Would have asked:** Pure-Python tests cannot instantiate the new classes (create_body calls bpy functions). Should structural tests use inspect.getsource() (Python stdlib) or a source-code string read via open(__file__) on the source module?
+**Assumption made:** Use `inspect.getsource(method)` for per-method source inspection. This is standard Python, works in pytest without Blender, and is used in the existing GDScript test suite (ADV-RSM-07 uses script.source_code for the same purpose). `inspect.getsource` works on any importable class method and does not require Blender.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-23 (Test Designer Agent — BPG animated enemy classes tests)
+
+### [BPG] Test Design — bpy stub strategy for pure-Python test isolation
+**Would have asked:** The spec requires tests to be importable without bpy, but `animated_enemies.py` imports `blender_utils` at module level, which does `import bpy` at its own module level. The existing spec checkpoint says "the test environment handles this" — but there is no conftest.py or bpy stub anywhere in the project. Should the Test Designer create a conftest.py bpy stub, or should the implementation agent be responsible for making animated_enemies.py importable without bpy?
+**Assumption made:** Test Designer creates `tests/enemies/conftest.py` with a `sys.modules` stub for `bpy`, `bmesh`, and `mathutils` registered before collection. This is the canonical pytest pattern for Blender projects. It is scoped to `tests/enemies/` only so it does not affect any existing test suite. The stub installs `MagicMock` objects so that module-level attribute access on `bpy`, `mathutils.Euler`, etc. does not raise. This is a test-infrastructure concern, not a production code concern, so it falls within Test Designer's ownership.
+**Confidence:** High
+
+### [BPG] Test Design — Import path: from src.enemies.animated_enemies vs from src.enemies
+**Would have asked:** The spec says classes are importable from `src.enemies.animated_enemies`. `src/enemies/__init__.py` re-exports from both `base_enemy` and `animated_enemies`. Should tests import directly from the submodule path or from the package root?
+**Assumption made:** Import directly from `src.enemies.animated_enemies` and `src.enemies.base_enemy` (full submodule paths). This matches the spec's "importable from src.enemies.animated_enemies" wording and avoids triggering the `__init__.py` re-export chain which would also pull in bpy. After the conftest stub is installed, both paths work, but direct submodule imports are more precise.
+**Confidence:** High
+
+---
