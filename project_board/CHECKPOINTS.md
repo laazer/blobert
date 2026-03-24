@@ -1020,3 +1020,22 @@ Queue scope: project_board/5_milestone_5_procedural_enemy_generation/backlog/
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-24 (Test Breaker Agent — BPG adversarial suite)
+
+### [BPG] Test Breaker — Wrong-key absence checks in apply_materials
+**Would have asked:** Should adversarial apply_materials tests assert absence of ALL five wrong keys (e.g. check for 'tar_slug', 'ember_imp', 'adhesion_bug', and the other two new keys) or only the most likely copy-paste sources?
+**Assumption made:** Assert absence of all five wrong keys in every new class's apply_materials. This maximises mutation surface coverage at negligible cost — all five strings are literal and deterministic to check, and the test is clear about intent.
+**Confidence:** High
+
+### [BPG] Test Breaker — get_animated() return type: list vs Sequence
+**Would have asked:** Should the return-type adversarial tests assert exactly `list`, or accept any `Sequence` (e.g. tuple)? The spec says "list" but existing code returns a list literal.
+**Assumption made:** Assert exactly `list` via `assertIsInstance(result, list)`. The spec and existing implementation both use `list`. Accepting `tuple` or generator would widen the contract beyond what the spec defines, and the implementation agents should follow the spec strictly.
+**Confidence:** High
+
+### [BPG] Test Breaker — Abstract method check: __abstractmethods__ vs ABC registration
+**Would have asked:** Is it safe to check `__abstractmethods__` to verify a class is concrete, given that BaseEnemy may not use `abc.ABC` formally?
+**Assumption made:** Checking `getattr(cls, '__abstractmethods__', frozenset()) == frozenset()` is correct for both ABC and non-ABC classes. If BaseEnemy does not use ABC, `__abstractmethods__` will be absent, and the getattr default of `frozenset()` will correctly assert the class is concrete. The test is conservative and produces no false positives.
+**Confidence:** High
+
+---

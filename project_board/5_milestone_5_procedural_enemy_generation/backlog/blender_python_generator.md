@@ -6,10 +6,10 @@ Add acid_spitter, claw_crawler, and carapace_husk animated enemy classes
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 5 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_ENGINE |
+| Revision | 6 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -68,7 +68,7 @@ and generates the GLB files for each (3 variants per family = 9 new GLBs).
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
@@ -92,4 +92,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test suite authored (43 tests across 6 classes). Tests are confirmed RED: collection fails with `ImportError: cannot import name 'AnimatedAcidSpitter'` because the 3 new classes do not yet exist in animated_enemies.py. A bpy/mathutils/bmesh stub conftest.py was created at tests/enemies/conftest.py enabling pure-Python import of the animated_enemies module without Blender. All 168 pre-existing tests continue to pass. Test Breaker Agent must verify the tests fail for the right reasons and flag any spec gaps before Implementation Agent proceeds.
+Adversarial suite authored: `tests/enemies/test_animated_enemy_classes_adversarial.py` (46 tests across 4 classes). Tests confirmed RED: collection fails with `ImportError: cannot import name 'AnimatedAcidSpitter'` — same root cause as primary suite. All 168 pre-existing tests remain GREEN. Adversarial suite targets: dict value aliasing, key type invariants, return type enforcement (list not set/generator), order stability, cross-method wrong-key copy-paste mutations, class object identity, abstract method residue, union/disjoint completeness, and material theme structural invariants. Engine Integration Agent should implement the 3 new classes in animated_enemies.py, update constants.py, and update materials.py per spec; both test suites must turn GREEN.
