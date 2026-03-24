@@ -6,10 +6,10 @@ Add acid_spitter, claw_crawler, and carapace_husk animated enemy classes
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE |
-| Revision | 6 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Engine Integration Agent |
+| Stage | IMPLEMENTATION_ENGINE_COMPLETE |
+| Revision | 7 |
+| Last Updated By | Engine Integration Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -92,4 +92,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Adversarial suite authored: `tests/enemies/test_animated_enemy_classes_adversarial.py` (46 tests across 4 classes). Tests confirmed RED: collection fails with `ImportError: cannot import name 'AnimatedAcidSpitter'` — same root cause as primary suite. All 168 pre-existing tests remain GREEN. Adversarial suite targets: dict value aliasing, key type invariants, return type enforcement (list not set/generator), order stability, cross-method wrong-key copy-paste mutations, class object identity, abstract method residue, union/disjoint completeness, and material theme structural invariants. Engine Integration Agent should implement the 3 new classes in animated_enemies.py, update constants.py, and update materials.py per spec; both test suites must turn GREEN.
+Implementation complete. AnimatedAcidSpitter (BLOB), AnimatedClawCrawler (QUADRUPED), AnimatedCarapaceHusk (HUMANOID) added to animated_enemies.py. constants.py updated: CARAPACE_HUSK added, ACID_SPITTER and CLAW_CRAWLER moved to get_animated(). materials.py updated: carapace_husk theme added. All 91 enemy tests pass (primary + adversarial). Full suite: 259/259 GREEN. GLBs generated: 3x acid_spitter, 3x claw_crawler, 3x carapace_husk — all exit 0 in animated_exports/.

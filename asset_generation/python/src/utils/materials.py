@@ -108,6 +108,7 @@ class MaterialThemes:
         'frost_jelly': [MaterialNames.ICE_WHITE, MaterialNames.FROST_BLUE, MaterialNames.CRYSTAL_PURPLE],
         'stone_burrower': [MaterialNames.STONE_GRAY, MaterialNames.DIRT_BROWN, MaterialNames.RUST_ORANGE],
         'ferro_drone': [MaterialNames.CHROME_SILVER, MaterialNames.METAL_GRAY, MaterialNames.COPPER_GREEN],
+        'carapace_husk': [MaterialNames.STONE_GRAY, MaterialNames.BONE_WHITE, MaterialNames.CHROME_SILVER],
     }
     
     @classmethod

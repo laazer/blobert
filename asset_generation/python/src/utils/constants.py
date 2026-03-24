@@ -13,26 +13,29 @@ class EnemyTypes:
     TAR_SLUG = "tar_slug"  
     EMBER_IMP = "ember_imp"
     
+    # Animated enemies (extended)
+    ACID_SPITTER = "acid_spitter"
+    CLAW_CRAWLER = "claw_crawler"
+    CARAPACE_HUSK = "carapace_husk"
+
     # Static enemies (future expansion)
     GLUE_DRONE = "glue_drone"
-    ACID_SPITTER = "acid_spitter"
     MELT_WORM = "melt_worm"
-    CLAW_CRAWLER = "claw_crawler"
     FROST_JELLY = "frost_jelly"
     STONE_BURROWER = "stone_burrower"
     FERRO_DRONE = "ferro_drone"
-    
+
     @classmethod
     def get_animated(cls) -> List[str]:
         """Get list of animated enemy types"""
-        return [cls.ADHESION_BUG, cls.TAR_SLUG, cls.EMBER_IMP]
+        return [cls.ADHESION_BUG, cls.TAR_SLUG, cls.EMBER_IMP, cls.ACID_SPITTER, cls.CLAW_CRAWLER, cls.CARAPACE_HUSK]
 
     @classmethod
     def get_static(cls) -> List[str]:
         """Get list of static-only enemy types (no animation support)"""
         return [
-            cls.GLUE_DRONE, cls.ACID_SPITTER, cls.MELT_WORM,
-            cls.CLAW_CRAWLER, cls.FROST_JELLY, cls.STONE_BURROWER, cls.FERRO_DRONE
+            cls.GLUE_DRONE, cls.MELT_WORM,
+            cls.FROST_JELLY, cls.STONE_BURROWER, cls.FERRO_DRONE
         ]
 
     @classmethod

@@ -1039,3 +1039,17 @@ Queue scope: project_board/5_milestone_5_procedural_enemy_generation/backlog/
 **Confidence:** High
 
 ---
+
+## Run: 2026-03-24 (Engine Integration Agent — BPG animated enemy classes implementation)
+
+### [BPG] Implementation — claw_crawler body_scale reference in create_armature
+**Would have asked:** The spec does not specify whether to pass `self.body_width` or `self.body_height` to `create_quadruped_armature` for ClawCrawler.
+**Assumption made:** Pass `self.body_width` as it is the dominant spatial dimension for a flat disc body, matching the pattern where AdhesionBug passes `self.body_scale` (its dominant dimension).
+**Confidence:** High
+
+### [BPG] Implementation — acid_spitter body Y scale inline vs stored
+**Would have asked:** Should the Y scale of acid_spitter's sac body (computed as `body_scale * random_variance(...)`) be stored as a named attribute?
+**Assumption made:** Y scale is not referenced by any other method. Only `self.body_scale` (X) and `self.height` (Z) are stored, as those are the only values that `create_armature` and `create_head` need.
+**Confidence:** High
+
+---

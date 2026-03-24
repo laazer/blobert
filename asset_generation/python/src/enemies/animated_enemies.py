@@ -248,13 +248,227 @@ class AnimatedEmberImp(BaseEnemy):
         return EnemyBodyTypes.HUMANOID
 
 
+class AnimatedAcidSpitter(BaseEnemy):
+    """Squat acid sac with blob movement"""
+
+    def create_body(self):
+        """Create squat pulsing sac body"""
+        body_scale = random_variance(1.0, 0.15, self.rng)
+        height = random_variance(0.9, 0.1, self.rng)
+        body = create_sphere(location=(0, 0, height * 0.5), scale=(body_scale, body_scale * random_variance(1.0, 0.15, self.rng), height))
+        self.parts.append(body)
+        self.body_scale = body_scale
+        self.height = height
+
+    def create_head(self):
+        """Create small forward-facing head nub"""
+        head_scale = self.body_scale * random_variance(0.35, 0.08, self.rng)
+        head = create_sphere(location=(self.body_scale * 0.8, 0, self.height * 0.9), scale=(head_scale, head_scale, head_scale))
+        self.parts.append(head)
+        self.head_scale = head_scale
+
+    def create_limbs(self):
+        """Create two drip-tendrils below the body"""
+        for side in [-1, 1]:
+            tendril_length = random_variance(0.4, 0.1, self.rng)
+            tendril = create_cylinder(
+                location=(side * self.body_scale * 0.3, 0, 0),
+                scale=(0.07, 0.07, tendril_length),
+                vertices=6
+            )
+            self.parts.append(tendril)
+
+    def apply_materials(self):
+        """Apply acid-themed materials"""
+        enemy_mats = get_enemy_materials('acid_spitter', self.materials, self.rng)
+        apply_material_to_object(self.parts[0], enemy_mats['body'])    # Body - acid yellow
+        apply_material_to_object(self.parts[1], enemy_mats['head'])    # Head - toxic green
+        for part in self.parts[2:]:  # Tendrils
+            apply_material_to_object(part, enemy_mats['limbs'])
+
+    def create_armature(self):
+        """Create blob armature for acid spitter"""
+        return create_blob_armature("acid_spitter", self.height)
+
+    def get_body_type(self):
+        """Return body type for animation system"""
+        from ..utils.constants import EnemyBodyTypes
+        return EnemyBodyTypes.BLOB
+
+
+class AnimatedClawCrawler(BaseEnemy):
+    """Flat disc body with large front claws and quadruped movement"""
+
+    def create_body(self):
+        """Create flat disc body"""
+        body_width = random_variance(1.2, 0.2, self.rng)
+        body_height = random_variance(0.4, 0.05, self.rng)
+        body = create_cylinder(
+            location=(0, 0, body_height * 0.5),
+            scale=(body_width, body_width, body_height),
+            vertices=12
+        )
+        self.parts.append(body)
+        self.body_width = body_width
+        self.body_height = body_height
+
+    def create_head(self):
+        """Create flat head disc at front of body"""
+        head_scale = self.body_width * random_variance(0.4, 0.08, self.rng)
+        head = create_sphere(
+            location=(self.body_width * 0.9, 0, self.body_height * 0.6),
+            scale=(head_scale, head_scale * 0.7, head_scale * 0.5)
+        )
+        self.parts.append(head)
+        self.head_scale = head_scale
+
+    def create_limbs(self):
+        """Create 2 large front claws and 4 regular legs"""
+        # Front claws (wide short cylinders)
+        claw_length = random_variance(0.6, 0.1, self.rng)
+        for side in [-1, 1]:
+            claw = create_cylinder(
+                location=(self.body_width * 0.7, side * self.body_width * 0.5, 0),
+                scale=(0.18, 0.18, claw_length),
+                vertices=8
+            )
+            self.parts.append(claw)
+
+        # Regular legs (4 total)
+        leg_positions = [
+            (0, self.body_width * 0.5, 0),    # middle left
+            (0, -self.body_width * 0.5, 0),   # middle right
+            (-self.body_width * 0.5, self.body_width * 0.4, 0),  # back left
+            (-self.body_width * 0.5, -self.body_width * 0.4, 0), # back right
+        ]
+        for leg_x, leg_y, leg_z in leg_positions:
+            leg_length = random_variance(0.35, 0.08, self.rng)
+            leg = create_cylinder(
+                location=(leg_x, leg_y, leg_z),
+                scale=(0.1, 0.1, leg_length),
+                vertices=6
+            )
+            self.parts.append(leg)
+
+    def apply_materials(self):
+        """Apply stone/earth themed materials"""
+        enemy_mats = get_enemy_materials('claw_crawler', self.materials, self.rng)
+        apply_material_to_object(self.parts[0], enemy_mats['body'])    # Body - stone gray
+        apply_material_to_object(self.parts[1], enemy_mats['head'])    # Head - dirt brown
+        claw_material = enemy_mats['extra']    # Claws - bone white
+        limb_material = enemy_mats['limbs']    # Legs - stone gray
+        part_index = 2
+        # Claws
+        for _ in range(2):
+            apply_material_to_object(self.parts[part_index], claw_material)
+            part_index += 1
+        # Legs
+        for _ in range(4):
+            apply_material_to_object(self.parts[part_index], limb_material)
+            part_index += 1
+
+    def create_armature(self):
+        """Create quadruped armature for claw crawler"""
+        return create_quadruped_armature("claw_crawler", self.body_width)
+
+    def get_body_type(self):
+        """Return body type for animation system"""
+        from ..utils.constants import EnemyBodyTypes
+        return EnemyBodyTypes.QUADRUPED
+
+
+class AnimatedCarapaceHusk(BaseEnemy):
+    """Heavy wide humanoid with thick arms and short legs"""
+
+    def create_body(self):
+        """Create wide cylindrical carapace body"""
+        body_height = random_variance(1.4, 0.2, self.rng)
+        body_width = random_variance(0.65, 0.1, self.rng)
+        body = create_cylinder(
+            location=(0, 0, body_height * 0.5),
+            scale=(body_width, body_width, body_height),
+            vertices=10
+        )
+        self.parts.append(body)
+        self.body_height = body_height
+        self.body_width = body_width
+
+    def create_head(self):
+        """Create wide spherical head"""
+        head_scale = self.body_width * 1.2
+        head = create_sphere(
+            location=(0, 0, self.body_height + head_scale * 0.6),
+            scale=(head_scale, head_scale, head_scale * 0.85)
+        )
+        self.parts.append(head)
+
+    def create_limbs(self):
+        """Create thick arms with protrusions and short stubby legs"""
+        # Arms (thick cylinders with arm protrusions)
+        arm_length = random_variance(0.9, 0.15, self.rng)
+        for side in [-1, 1]:
+            arm = create_cylinder(
+                location=(side * (self.body_width + arm_length * 0.5), 0, self.body_height * 0.72),
+                scale=(0.2, 0.2, arm_length),
+                vertices=8
+            )
+            arm.rotation_euler = Euler((0, 0, math.pi / 2))
+            self.parts.append(arm)
+
+            protrusion = create_sphere(
+                location=(side * (self.body_width + arm_length), 0, self.body_height * 0.72),
+                scale=(0.22, 0.22, 0.22)
+            )
+            self.parts.append(protrusion)
+
+        # Short stubby legs
+        leg_length = random_variance(0.45, 0.08, self.rng)
+        for side in [-1, 1]:
+            leg = create_cylinder(
+                location=(side * self.body_width * 0.35, 0, leg_length * 0.5),
+                scale=(0.18, 0.18, leg_length),
+                vertices=8
+            )
+            self.parts.append(leg)
+
+    def apply_materials(self):
+        """Apply carapace-themed materials"""
+        enemy_mats = get_enemy_materials('carapace_husk', self.materials, self.rng)
+        apply_material_to_object(self.parts[0], enemy_mats['body'])    # Body - stone gray
+        apply_material_to_object(self.parts[1], enemy_mats['head'])    # Head - bone white
+        limb_material = enemy_mats['limbs']    # Arms - chrome silver
+        extra_material = enemy_mats['extra']   # Protrusions - random theme color
+        part_index = 2
+        # Arms and protrusions
+        for _ in range(2):
+            apply_material_to_object(self.parts[part_index], limb_material)      # Arm
+            apply_material_to_object(self.parts[part_index + 1], extra_material) # Protrusion
+            part_index += 2
+        # Legs
+        for _ in range(2):
+            apply_material_to_object(self.parts[part_index], limb_material)
+            part_index += 1
+
+    def create_armature(self):
+        """Create humanoid armature for carapace husk"""
+        return create_humanoid_armature("carapace_husk", self.body_height)
+
+    def get_body_type(self):
+        """Return body type for animation system"""
+        from ..utils.constants import EnemyBodyTypes
+        return EnemyBodyTypes.HUMANOID
+
+
 class AnimatedEnemyBuilder:
     """Factory for creating animated enemies"""
-    
+
     ENEMY_CLASSES = {
         'adhesion_bug': AnimatedAdhesionBug,
         'tar_slug': AnimatedTarSlug,
         'ember_imp': AnimatedEmberImp,
+        'acid_spitter': AnimatedAcidSpitter,
+        'claw_crawler': AnimatedClawCrawler,
+        'carapace_husk': AnimatedCarapaceHusk,
     }
     
     @classmethod
