@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bnenemy_infection_3d" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
 [ext_resource type="PackedScene" uid="uid://cgame_ui001" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
 [ext_resource type="Script" path="res://scripts/system/death_restart_coordinator.gd" id="6_death_restart_coordinator"]
+[ext_resource type="Script" uid="uid://run_scene_assembler" path="res://scripts/system/run_scene_assembler.gd" id="7_run_scene_assembler"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -345,5 +346,8 @@ script = ExtResource("6_death_restart_coordinator")
 player = NodePath("../Player3D")
 spawn_position = NodePath("../SpawnPosition")
 infection_handler = NodePath("../InfectionInteractionHandler")
+
+[node name="RunSceneAssembler" type="Node" parent="."]
+script = ExtResource("7_run_scene_assembler")
 
 [connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]

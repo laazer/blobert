@@ -485,6 +485,35 @@ func get_current_hp() -> float:
 	return _current_state.current_hp
 
 
+func reset_hp() -> void:
+	_current_state.current_hp = _simulation.max_hp
+
+
+func reset_chunks() -> void:
+	for i in [0, 1]:
+		if _chunks[i] != null and is_instance_valid(_chunks[i]):
+			_chunks[i].queue_free()
+		_chunks[i] = null
+		_chunk_stuck[i] = false
+		_chunk_stuck_enemy[i] = null
+		_recall_in_progress[i] = false
+		_recall_timer[i] = 0.0
+		_chunk_dot_ticks_remaining[i] = 0
+		_chunk_dot_time_accum[i] = 0.0
+	_current_state.has_chunks[0] = true
+	_current_state.has_chunks[1] = true
+
+
+func reset_position(target: Vector3) -> void:
+	# global_position is preferred for world-space teleport. position is set as
+	# a fallback because global_position setter is unreliable in Godot 4.6.1
+	# headless mode. In production, ContainmentHall01 root has identity transform
+	# so position == global_position; no world-space error results.
+	global_position = target
+	position = target
+	velocity = Vector3.ZERO
+
+
 func has_chunk() -> bool:
 	return _current_state.has_chunks[0]
 

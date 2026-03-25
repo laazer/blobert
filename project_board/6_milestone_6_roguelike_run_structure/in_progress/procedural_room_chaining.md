@@ -24,62 +24,57 @@ Dependencies:
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_CORE
+INTEGRATION
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Next Responsible Agent
-Core Simulation Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Not Run
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PASS — all 34 PRC-* headless tests pass (9 primary + 10 adversarial + 15 adversarial-2); 7 pre-existing RSM-SIGNAL-*/ADV-RSM-02 failures unrelated to this ticket. Total suite: 253 passed, 0 failed (excluding pre-existing).
+- Static QA: GDScript reviewer found no CRITICAL issues in RoomChainGenerator; randi_range fix applied
+- Integration: RunSceneAssembler node added to containment_hall_01.tscn; AC "Transitions between rooms feel seamless (no visible load pop)" requires human in-editor playtest
 
 ## Blocking Issues
-None
+AC "Transitions between rooms feel seamless (no visible load pop)" — human in-editor verification required
+
+## Status
+Needs Attention
 
 ## Escalation Notes
 - The ticket description listed "fusion room" in the sequence but no fusion room .tscn exists. Resolved by treating the run sequence as intro → combat (2) → mutation_tease → boss. Logged in CHECKPOINTS.md [PRC] Planning — Sequence mismatch.
 - Spec Rev2 supersedes Rev1 (2026-03-21). API signature changed: `generate(sequence: Array[String], pool: Dictionary, seed: int) -> Array[String]`. Return type is now Array[String] (paths only, not Dicts). All Rev1 test IDs (PRC-SEQ-*, PRC-DEDUP-*, PRC-SCHEMA-*, PRC-POOL-*) are superseded by PRC-GEN-*, PRC-SEED-*, PRC-ADV-*. See spec file for full breakage notes.
-- Pending CHECKPOINTS.md entries staged at: `agent_context/agents/2_spec/prc_spec_rev2_checkpoints.md` — must be appended to CHECKPOINTS.md.
+- Pending CHECKPOINTS.md entries staged at: `agent_context/agents/2_spec/prc_spec_rev2_checkpoints.md` — must be appended to CHECKPOINTS.md (file not found at local path; may be in iCloud workspace).
+- RoomChainGenerator implemented at `scripts/system/room_chain_generator.gd`. Pure RefCounted, no SceneTree. Fisher-Yates with rng.randi(), pool immutability via .duplicate(), fresh RNG per call for cross-instance determinism.
+- PRC-SEED-2 (seeds 1 vs 999999 produce different combat orderings): provisional seed pair from spec. If it fails, Engine Integration Agent must update the seed pair and file a checkpoint.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Core Simulation Agent
+Acceptance Criteria Gatekeeper Agent
 
-## Required Input Schema
-```json
-{
-  "spec_file": "agent_context/agents/2_spec/procedural_room_chaining_spec.md",
-  "spec_revision": 2,
-  "room_pool": {
-    "intro": ["res://scenes/rooms/room_intro_01.tscn"],
-    "combat": ["res://scenes/rooms/room_combat_01.tscn", "res://scenes/rooms/room_combat_02.tscn"],
-    "mutation_tease": ["res://scenes/rooms/room_mutation_tease_01.tscn"],
-    "boss": ["res://scenes/rooms/room_boss_01.tscn"]
-  },
-  "run_sequence": ["intro", "combat", "combat", "mutation_tease", "boss"],
-  "RoomChainGenerator_class": "extends RefCounted — pure logic, no SceneTree API",
-  "RoomChainGenerator_signature": "func generate(sequence: Array[String], pool: Dictionary, seed: int) -> Array[String]",
-  "RunSceneAssembler_class": "extends Node — scene loading + positioning, owns its own RunStateManager instance",
-  "test_prefix": "PRC-",
-  "test_paths": {
-    "primary": "res://tests/rooms/test_room_chain_generator.gd",
-    "adversarial": "res://tests/rooms/test_room_chain_generator_adversarial.gd"
-  }
-}
-```
+## Required Input
+Verify all Acceptance Criteria against the running game:
+- Run layout generated fresh each run start (automated: covered by PRC-GEN-* tests)
+- Sequence always follows fixed category order: intro → combat (x2) → mutation_tease → boss (automated: covered by PRC-GEN-* tests)
+- No room repeated in a single run (automated: covered by PRC-GEN-* tests)
+- RNG seed printed to console for reproducibility during testing (automated: PRC-GEN-5 passes; console output visible at runtime)
+- Transitions between rooms feel seamless (no visible load pop) — REQUIRES human in-editor playtest
+
+Key files:
+- `scripts/system/run_scene_assembler.gd` — Node that assembles rooms on run_started
+- `scripts/system/room_chain_generator.gd` — Pure RefCounted generator (no SceneTree)
+- `scenes/levels/containment_hall_01/containment_hall_01.tscn` — RunSceneAssembler node wired as child of ContainmentHall01
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-Test Breaker Agent has extended the adversarial suite. 15 new tests added in tests/rooms/test_room_chain_generator_adversarial_2.gd (PRC-ADV2-01 through PRC-ADV2-15). Coverage gaps filled: duplicate pool entries (dedup-by-index contract), non-Array pool value (caller contract violation path), empty-string and whitespace category sequences, 3-slot / 2-room and 5-slot / 2-room exhaustion chains (extending PRC-GEN-7), exact-path assertions at indices 0/3/4, pool mutation invariant, negative seeds (-1, INT32_MIN), cross-instance determinism, stability over 10 seeds, and RNG state isolation between successive calls. Three CHECKPOINTS filed. Implementation Agent should implement RoomChainGenerator to pass all three test files: test_room_chain_generator.gd, test_room_chain_generator_adversarial.gd, and test_room_chain_generator_adversarial_2.gd.
+All 34 PRC-* headless tests pass. RunSceneAssembler implemented and wired into main test scene. One AC ("Transitions between rooms feel seamless") cannot be verified headlessly — requires human playtest.

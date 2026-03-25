@@ -720,9 +720,13 @@ func test_rts_adv_16_exactly_one_enemy_in_single_enemy_rooms() -> void:
 			all_pass = false
 			continue
 		var room_label: String = scene_path.get_file()
-		# Count nodes anywhere in the tree with "Enemy" in their name.
-		# This is the same heuristic used by the primary suite for RTS-ENC-1.
-		var enemy_count: int = _count_nodes_with_name_substring(root, "Enemy")
+		# Count only DIRECT children of the room root with "Enemy" in their name.
+		# Recursive search is incorrect: enemy_infection_3d.tscn has a child
+		# "EnemyVisual" which would inflate the count to 2.
+		var enemy_count: int = 0
+		for i in range(root.get_child_count()):
+			if "Enemy" in root.get_child(i).name:
+				enemy_count += 1
 		if enemy_count == 1:
 			_pass_test("RTS-ADV-16_" + room_label + "_exactly_one_enemy")
 		else:
