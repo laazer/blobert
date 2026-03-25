@@ -6,12 +6,13 @@ Validate and finalize Godot scene auto-generator
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE_COMPLETE |
-| Revision | 7 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | Not started |
-| Blocking Issues | None |
+| Stage | COMPLETE |
+| Revision | 8 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | Tests: GSV-UTIL-1 through GSV-UTIL-18 plus GSV-UTIL-8b (20 primary tests) passed 20/20; GSV-ADV-1 through GSV-ADV-15 (adversarial suite) passed 15+/15+. Full run_tests.sh: 7 pre-existing failures (RSM-SIGNAL-*, ADV-RSM-02) confirmed to predate this ticket — no regressions introduced. Static QA: @tool and preload call site confirmed in load_assets.gd. Integration: 12 GLBs confirmed on disk in assets/enemies/generated_glb/ (4 families x 3 variants). EnemyNameUtils.extract_family_name confirmed at load_assets.gd line 120. PENDING_MANUAL: AC "Generator processes all .glb files in assets/enemies/generated_glb/ without errors" requires human to run the EditorScript (File > Run) inside the Godot editor. AC "Each generated .tscn has Visual/Model, CollisionShape3D, Hurtbox Area3D, AttackOrigin, ChunkAttachPoint, PickupAnchor, VisibleOnScreenNotifier3D" and AC "Metadata (enemy_id, enemy_family, mutation_drop) is correctly set from filename for all 4 families" both depend on the same EditorScript run. AC "Generated scenes can be instantiated without errors" and AC "Collision shape is not zero-sized" are self-skipping in the headless test suite until generated .tscn files exist (by AC design). |
+| Blocking Issues | None — all code-verifiable ACs confirmed. Three ACs require human manual verification after running load_assets.gd as an EditorScript in the Godot editor (see Validation Status). These are not code defects; they are editor-workflow steps gated on the human operator. |
+| Escalation Notes | Human must: (1) open Godot editor, (2) run godot --import if not yet done, (3) open scripts/asset_generation/load_assets.gd and execute File > Run (EditorScript), (4) confirm scenes/enemies/generated/ contains 12 .tscn files, (5) spot-check one .tscn for required node structure and metadata. After that, all AC items are fully satisfied. |
 
 ---
 
@@ -65,18 +66,21 @@ Do NOT copy: _integrated variants, ember_imp, tar_slug, Small_Ice, Large_Fire, S
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "spec_file": "agent_context/agents/2_spec/godot_scene_generator_validation_spec.md",
-  "test_file_path": "tests/asset_generation/test_enemy_name_utils.gd",
-  "script_under_test": "scripts/asset_generation/enemy_name_utils.gd",
-  "test_ids_passed": ["GSV-UTIL-1 through GSV-UTIL-18 (plus 8b)", "GSV-ADV-1 through GSV-ADV-15"],
-  "total_test_count": 37,
-  "glb_count": 12,
-  "glb_dir": "assets/enemies/generated_glb/"
+  "action": "manual_editor_verification",
+  "steps": [
+    "Run godot --import if not already done after last GLB copy",
+    "Open Godot editor and open scripts/asset_generation/load_assets.gd",
+    "Execute File > Run to run the EditorScript",
+    "Confirm scenes/enemies/generated/ contains 12 .tscn files",
+    "Spot-check one .tscn: verify node tree has Visual/Model, CollisionShape3D, Hurtbox Area3D, AttackOrigin, ChunkAttachPoint, PickupAnchor, VisibleOnScreenNotifier3D",
+    "Verify metadata keys enemy_id, enemy_family, mutation_drop are set on at least one generated scene",
+    "Confirm CollisionShape3D shape is non-zero-sized"
+  ]
 }
 ```
 
@@ -84,4 +88,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Engine Integration Agent completed all three deliverables: (1) `scripts/asset_generation/enemy_name_utils.gd` created with `static func extract_family_name`; (2) `load_assets.gd` modified — preload constant added, `_extract_family_name` body delegates to EnemyNameUtils; (3) 12 GLBs copied to `assets/enemies/generated_glb/`. Primary suite: 20 passed, 0 failed. Adversarial suite: 17 passed, 0 failed. No regressions introduced. Remaining test failures (RSM-SIGNAL, ADV-RSM) are pre-existing and out of scope.
+All code-verifiable acceptance criteria are confirmed: 12 GLBs on disk, enemy_name_utils.gd exists with correct static function, extract_family_name logic confirmed correct by 20 primary and 15+ adversarial passing tests, load_assets.gd uses EnemyNameUtils.extract_family_name at the call site, and run_tests.sh shows no regressions attributable to this ticket. Three remaining ACs (generator runs without errors, .tscn node structure, metadata correctness) require a human to execute the EditorScript once inside the Godot editor. The AC text itself designates these as human-run steps. Ticket is COMPLETE pending that one manual editor pass; code is correct and no blocking defects exist.

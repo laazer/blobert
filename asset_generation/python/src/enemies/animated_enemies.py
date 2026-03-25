@@ -301,23 +301,20 @@ class AnimatedClawCrawler(BaseEnemy):
 
     def create_body(self):
         """Create flat disc body"""
-        body_width = random_variance(1.2, 0.2, self.rng)
-        body_height = random_variance(0.4, 0.05, self.rng)
-        body = create_cylinder(
-            location=(0, 0, body_height * 0.5),
-            scale=(body_width, body_width, body_height),
-            vertices=12
+        body_scale = random_variance(1.0, 0.2, self.rng)
+        body = create_sphere(
+            location=(0, 0, 0.2),
+            scale=(body_scale, body_scale * random_variance(0.9, 0.1, self.rng), body_scale * 0.35)
         )
         self.parts.append(body)
-        self.body_width = body_width
-        self.body_height = body_height
+        self.body_scale = body_scale
 
     def create_head(self):
         """Create flat head disc at front of body"""
-        head_scale = self.body_width * random_variance(0.4, 0.08, self.rng)
+        head_scale = self.body_scale * random_variance(0.4, 0.1, self.rng)
         head = create_sphere(
-            location=(self.body_width * 0.9, 0, self.body_height * 0.6),
-            scale=(head_scale, head_scale * 0.7, head_scale * 0.5)
+            location=(self.body_scale * 1.1, 0, 0.25),
+            scale=(head_scale, head_scale, head_scale * 0.7)
         )
         self.parts.append(head)
         self.head_scale = head_scale
@@ -325,27 +322,27 @@ class AnimatedClawCrawler(BaseEnemy):
     def create_limbs(self):
         """Create 2 large front claws and 4 regular legs"""
         # Front claws (wide short cylinders)
-        claw_length = random_variance(0.6, 0.1, self.rng)
         for side in [-1, 1]:
+            claw_length = random_variance(0.35, 0.08, self.rng)
             claw = create_cylinder(
-                location=(self.body_width * 0.7, side * self.body_width * 0.5, 0),
-                scale=(0.18, 0.18, claw_length),
-                vertices=8
+                location=(self.body_scale * 0.6, side * self.body_scale * 0.5, 0.1),
+                scale=(0.15, 0.15, claw_length),
+                vertices=6
             )
             self.parts.append(claw)
 
         # Regular legs (4 total)
         leg_positions = [
-            (0, self.body_width * 0.5, 0),    # middle left
-            (0, -self.body_width * 0.5, 0),   # middle right
-            (-self.body_width * 0.5, self.body_width * 0.4, 0),  # back left
-            (-self.body_width * 0.5, -self.body_width * 0.4, 0), # back right
+            (0, self.body_scale * 0.5, 0),                          # middle left
+            (0, -self.body_scale * 0.5, 0),                         # middle right
+            (-self.body_scale * 0.4, self.body_scale * 0.4, 0),    # back left
+            (-self.body_scale * 0.4, -self.body_scale * 0.4, 0),   # back right
         ]
         for leg_x, leg_y, leg_z in leg_positions:
-            leg_length = random_variance(0.35, 0.08, self.rng)
+            leg_length = random_variance(0.3, 0.08, self.rng)
             leg = create_cylinder(
                 location=(leg_x, leg_y, leg_z),
-                scale=(0.1, 0.1, leg_length),
+                scale=(0.08, 0.08, leg_length),
                 vertices=6
             )
             self.parts.append(leg)
@@ -356,7 +353,7 @@ class AnimatedClawCrawler(BaseEnemy):
         apply_material_to_object(self.parts[0], enemy_mats['body'])    # Body - stone gray
         apply_material_to_object(self.parts[1], enemy_mats['head'])    # Head - dirt brown
         claw_material = enemy_mats['extra']    # Claws - bone white
-        limb_material = enemy_mats['limbs']    # Legs - stone gray
+        limb_material = enemy_mats['limbs']    # Legs - bone white
         part_index = 2
         # Claws
         for _ in range(2):
@@ -369,7 +366,7 @@ class AnimatedClawCrawler(BaseEnemy):
 
     def create_armature(self):
         """Create quadruped armature for claw crawler"""
-        return create_quadruped_armature("claw_crawler", self.body_width)
+        return create_quadruped_armature("claw_crawler", self.body_scale)
 
     def get_body_type(self):
         """Return body type for animation system"""
@@ -382,12 +379,12 @@ class AnimatedCarapaceHusk(BaseEnemy):
 
     def create_body(self):
         """Create wide cylindrical carapace body"""
-        body_height = random_variance(1.4, 0.2, self.rng)
-        body_width = random_variance(0.65, 0.1, self.rng)
+        body_height = random_variance(1.0, 0.15, self.rng)
+        body_width = random_variance(0.7, 0.1, self.rng)
         body = create_cylinder(
             location=(0, 0, body_height * 0.5),
             scale=(body_width, body_width, body_height),
-            vertices=10
+            vertices=8
         )
         self.parts.append(body)
         self.body_height = body_height
@@ -395,7 +392,7 @@ class AnimatedCarapaceHusk(BaseEnemy):
 
     def create_head(self):
         """Create wide spherical head"""
-        head_scale = self.body_width * 1.2
+        head_scale = self.body_width * random_variance(1.2, 0.1, self.rng)
         head = create_sphere(
             location=(0, 0, self.body_height + head_scale * 0.6),
             scale=(head_scale, head_scale, head_scale * 0.85)
@@ -403,31 +400,25 @@ class AnimatedCarapaceHusk(BaseEnemy):
         self.parts.append(head)
 
     def create_limbs(self):
-        """Create thick arms with protrusions and short stubby legs"""
-        # Arms (thick cylinders with arm protrusions)
-        arm_length = random_variance(0.9, 0.15, self.rng)
+        """Create thick arms and short stubby legs"""
+        # Arms (thick cylinders, no hand spheres)
+        arm_length = random_variance(0.5, 0.1, self.rng)
         for side in [-1, 1]:
             arm = create_cylinder(
-                location=(side * (self.body_width + arm_length * 0.5), 0, self.body_height * 0.72),
-                scale=(0.2, 0.2, arm_length),
-                vertices=8
+                location=(side * (self.body_width + arm_length * 0.5), 0, self.body_height * 0.75),
+                scale=(0.18, 0.18, arm_length),
+                vertices=6
             )
             arm.rotation_euler = Euler((0, 0, math.pi / 2))
             self.parts.append(arm)
 
-            protrusion = create_sphere(
-                location=(side * (self.body_width + arm_length), 0, self.body_height * 0.72),
-                scale=(0.22, 0.22, 0.22)
-            )
-            self.parts.append(protrusion)
-
         # Short stubby legs
-        leg_length = random_variance(0.45, 0.08, self.rng)
+        leg_length = random_variance(0.5, 0.1, self.rng)
         for side in [-1, 1]:
             leg = create_cylinder(
                 location=(side * self.body_width * 0.35, 0, leg_length * 0.5),
                 scale=(0.18, 0.18, leg_length),
-                vertices=8
+                vertices=6
             )
             self.parts.append(leg)
 
@@ -436,18 +427,9 @@ class AnimatedCarapaceHusk(BaseEnemy):
         enemy_mats = get_enemy_materials('carapace_husk', self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats['body'])    # Body - stone gray
         apply_material_to_object(self.parts[1], enemy_mats['head'])    # Head - bone white
-        limb_material = enemy_mats['limbs']    # Arms - chrome silver
-        extra_material = enemy_mats['extra']   # Protrusions - random theme color
-        part_index = 2
-        # Arms and protrusions
-        for _ in range(2):
-            apply_material_to_object(self.parts[part_index], limb_material)      # Arm
-            apply_material_to_object(self.parts[part_index + 1], extra_material) # Protrusion
-            part_index += 2
-        # Legs
-        for _ in range(2):
-            apply_material_to_object(self.parts[part_index], limb_material)
-            part_index += 1
+        limb_material = enemy_mats['limbs']    # Arms and legs - chrome silver
+        for part in self.parts[2:]:
+            apply_material_to_object(part, limb_material)
 
     def create_armature(self):
         """Create humanoid armature for carapace husk"""

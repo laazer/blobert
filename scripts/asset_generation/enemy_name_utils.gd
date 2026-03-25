@@ -1,6 +1,7 @@
 class_name EnemyNameUtils
 extends RefCounted
 
+
 static func extract_family_name(file_name: String) -> String:
 	var parts := file_name.split("_")
 	# Remove trailing numeric variant index

@@ -361,3 +361,311 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: This reduces the search space for manual verification by ruling out missing UI nodes as a first-order failure cause.
 
 ---
+
+## [soft_death_and_restart] — 21 SDR-* tests passing; ticket at INTEGRATION pending scene wiring and human visual verification.
+
+*Completed (headless phase): 2026-03-21*
+
+### Learnings
+
+- category: testing
+  insight: In Godot 4.6.1 headless mode, `global_position` getter and setter are unreliable on CharacterBody3D nodes even when the node is added to a Node3D scene tree via `add_child()`. The property appears to read/write a stale or zero transform. `position` is fully reliable in the same context when the parent node has an identity transform (position == global_position when parent = identity).
+  impact: SDR-CORE-6 (`reset_position()` asserts player position equals spawn position) required a fallback from `global_position` to `position`. If undetected, the test would have passed vacuously (global_position always returning Vector3.ZERO, matching a zero spawn point), masking a real implementation defect.
+  prevention: In headless tests that verify node position after a reset, always use `position` when the parent's transform is identity. Never use `global_position` in headless test assertions for CharacterBody3D or similar physics nodes. Document this in a comment in the test file.
+  severity: high
+
+- category: testing
+  insight: GDScript 4.6.1 lambda capture semantics for primitive types (`bool`, `int`, `float`) prevent lambdas from updating outer local variables. A lambda like `func(): fired = true` captures the value of `fired` at creation time — it does not hold a reference to the outer variable. The outer variable is never mutated.
+  impact: Pre-existing RSM-SIGNAL-* tests in `test_run_state_manager.gd` use this pattern to assert signal emission by checking a `fired` bool after `await`. All 7 RSM-SIGNAL-* tests fail for this reason — not because RunStateManager is broken. These failures were misread as regressions when first encountered during the SDR ticket, causing diagnostic effort before the root cause was confirmed as a known GDScript limitation.
+  prevention: Never use `func(): local_bool = true` to test signal emission in GDScript 4. Use a counter on an Object (`class Counter extends RefCounted: var n = 0`) or connect to a method on a RefCounted that mutates an array/dict (reference types are captured by reference). Document this constraint in the Test Design Agent prompt.
+  severity: high
+
+- category: testing
+  insight: Calling `.free()` on a RefCounted object generates a "Can't free a RefCounted object" runtime error in Godot. In `test_run_state_manager.gd`, `rsm.free()` was called in teardown despite RunStateManager extending RefCounted. The error fires after test assertions and therefore does not flip any test from pass to fail, but it pollutes output and delays diagnosis of real failures.
+  impact: Noise in test output caused confusion during SDR ticket integration phase when 7 pre-existing failures appeared alongside this error. The error had appeared in prior runs but was not cleaned up, compounding across tickets.
+  prevention: Static QA Agent must flag any `.free()` call in test files where the freed object's class extends RefCounted (not Object). This pattern was already documented in [fusion_opportunity_room] learnings but the existing test file was not corrected. Add a one-time cleanup task for `test_run_state_manager.gd` teardown.
+  severity: medium
+
+- category: architecture
+  insight: RSM's internal MutationSlotManager and the scene InfectionInteractionHandler's MutationSlotManager are separate object instances with independent state. A reset that calls `rsm.apply_event("restart")` only clears RSM's internal slot manager; the handler's slots remain dirty until explicitly cleared via `handler_node.get_mutation_slot_manager().clear_all()`.
+  impact: This caused a spec-phase escalation. If the coordinator had only cleared the RSM internal instance, mutation UI would have appeared empty to the logic layer but visually populated to the player after restart. The Spec Agent caught and resolved this before any test was written.
+  prevention: When a feature creates multiple instances of the same service class (e.g. slot manager) with no shared reference, document all instance boundaries explicitly in the spec's Architecture section. Any "reset" or "clear" operation must enumerate which instances it touches — not just the one accessible through the primary coordinator path.
+  severity: medium
+
+- category: process
+  insight: Ticket revision numbers reaching 6+ with INTEGRATION-blocking issues remaining at scene-wiring (Engine Integration Agent not yet invoked) indicate a workflow sequencing gap. The headless phase completed correctly but the ticket has no mechanism to automatically hand off to the Engine Integration Agent; it waits in INTEGRATION status with a documented "Next Responsible Agent" that must be invoked externally.
+  impact: SDR ticket is structurally complete at headless scope but not progressing. Human visual verification cannot begin until scene wiring is done, and scene wiring cannot begin until the Engine Integration Agent is invoked. Each waiting step adds latency with no automated trigger.
+  prevention: When a ticket's NEXT ACTION names a specific agent, the Acceptance Criteria Gatekeeper should explicitly tag the ticket for that agent's queue rather than leaving it in a generic INTEGRATION status. The project board should distinguish "INTEGRATION — waiting for Engine Integration Agent" from "INTEGRATION — waiting for human."
+  severity: low
+
+### Anti-Patterns
+
+- description: Using `global_position` in headless CharacterBody3D tests to assert reset behavior. The property is unreliable in headless mode even with a valid scene tree parent.
+  detection_signal: A test for a position-reset method asserts `node.global_position == expected_vector` on a CharacterBody3D that was added to a Node3D root, but the assertion always passes even with the reset logic commented out.
+  prevention: Replace `global_position` with `position` in headless position assertions when the parent has an identity transform. Add a comment citing Godot 4.6.1 headless compatibility as the reason.
+
+- description: Lambda-based signal detection (`func(): fired = true`) for bool variables in GDScript 4.6.1. The lambda captures the primitive value, not a reference to the outer variable. Signal emissions are silently missed.
+  detection_signal: A test asserts `assert(fired == true)` after `await some_signal` but the assertion fails intermittently or always, even though the signal is confirmed to be emitted by other means.
+  prevention: Use a reference-type counter (RefCounted with a field, or an Array with one element) for signal detection in lambdas. Never use a bare bool/int local variable as the capture target.
+
+### Prompt Patches
+
+- agent: Test Design Agent
+  change: "In headless tests that assert node position after a reset, use `node.position` instead of `node.global_position` for CharacterBody3D nodes. `global_position` getter and setter are unreliable in Godot 4.6.1 headless mode even when the node is added to a Node3D parent. This equivalence holds when the parent has an identity transform. Add a comment: # global_position unreliable in headless (Godot 4.6.1); use position when parent = identity."
+  reason: SDR-CORE-6 required this fallback at test-write time. Without this rule, position tests pass vacuously in headless mode, masking real implementation defects.
+
+- agent: Test Design Agent
+  change: "Never use a `bool`, `int`, or `float` local variable as the capture target in a GDScript lambda to detect signal emission. GDScript 4.6.1 lambdas capture primitive types by value, not by reference. The outer variable is never mutated. Use instead: `var counter = [0]` (array) and `func(): counter[0] += 1` inside the lambda, then assert `counter[0] == expected_count`."
+  reason: RSM-SIGNAL-* failures in test_run_state_manager.gd are all caused by this exact pattern. 7 tests are permanently broken because of it. The fix is a one-line pattern change.
+
+- agent: Static QA Agent
+  change: "When reviewing test files, flag any `.free()` call where the target object's class (or its ancestor) extends RefCounted. RefCounted objects must not be manually freed. Add a Static QA check: grep test files for `.free()` and verify the freed object's class hierarchy. Report any RefCounted `.free()` call as a defect even if it does not flip test pass/fail."
+  reason: RefCounted `.free()` errors are non-fatal but generate persistent noise in test output that obscures real failures. The error has appeared across multiple tickets without being cleaned up.
+
+### Workflow Improvements
+
+- issue: The ticket reached INTEGRATION state with headless coverage complete, but no automated mechanism exists to invoke the Engine Integration Agent. The "Next Responsible Agent" field in the ticket is documentation only — it does not trigger any action.
+  improvement: When a ticket transitions to INTEGRATION with a named Next Responsible Agent, the project board workflow should create an explicit task entry or flag in the agent queue for that agent. The distinction between "waiting for Engine Integration Agent" and "waiting for human" should be reflected in the ticket's Stage field (e.g. INTEGRATION:engine-wiring vs INTEGRATION:human-verification).
+  expected_benefit: Prevents tickets from sitting in INTEGRATION indefinitely with completed headless coverage. Reduces latency between headless completion and scene wiring.
+
+- issue: Pre-existing test failures (RSM-SIGNAL-*) in sibling test files were encountered during the SDR integration run and required diagnostic effort to confirm they were pre-existing and unrelated, not regressions introduced by SDR changes.
+  improvement: The test runner output should include a comparison against a known-failing baseline list. Pre-existing failures should be annotated as such in the run report so the Integration Agent does not need to re-diagnose them on each ticket. The known-failing list should be maintained in a file (e.g. `tests/known_failures.txt`) with a brief note per entry.
+  expected_benefit: Eliminates recurring diagnostic effort for the same pre-existing failures. Keeps Integration Agent focus on net-new failures only.
+
+### Keep / Reinforce
+
+- practice: The coordinator node uses a `_dead` flag guard on the death detection path to prevent double-fire when `_on_player_died()` is called from both the polling path and an external caller during the same frame.
+  reason: Without the guard, two rapid HP=0 frames could trigger two restart cycles, resulting in corrupted state. The double-fire guard was explicitly tested (SDR-CORE-8 / ADV-SDR-01) and passed. This pattern should be reused in any state transition coordinator that detects conditions via polling.
+
+- practice: The ticket explicitly staged the visual (tween/dissolve) work as Part 2 after the core logic was verified headlessly, and the integration test plan enumerated exactly which ACs are headless-testable vs human-only. This clean separation prevented wasted effort automating unautomatable criteria.
+  reason: Consistent with the pattern established in [fusion_opportunity_room] and [light_skill_check]. The separation is working and should be enforced as a default for all tickets with mixed headless/visual ACs.
+
+---
+
+## [room_template_system] — 5 room .tscn files authored; all primary RTS-* tests pass; RTS-ADV-16 revealed a test design defect in recursive node-name counting.
+
+*Completed (headless phase): 2026-03-21*
+
+### Learnings
+
+- category: testing
+  insight: Recursive scene-tree searches for a node-name substring (e.g. `find_nodes("*Enemy*")`) false-positive when instanced sub-scenes contain child nodes whose names also match the substring. In this ticket, `enemy_infection_3d.tscn` has a child named `EnemyVisual`; a recursive count of "Enemy" in the room tree returned 2 instead of the expected 1 per combat/boss room.
+  impact: RTS-ADV-16 failed for all 4 rooms that contain enemies. The rooms were correctly authored per spec; the defect was entirely in the test. This was not caught by the Test Designer Agent because the internal structure of the enemy sub-scene was not examined before writing the count assertion.
+  prevention: When writing node-count assertions for instanced sub-scenes, restrict the search to direct children of the query root (e.g. iterate `root.get_child(i)` and check name, rather than using `find_nodes` or recursive `get_all_children`). Before finalizing a count assertion, inspect the target sub-scene to identify any child nodes whose names would match the search pattern.
+  severity: high
+
+- category: testing
+  insight: The RTS-ADV-6 collision_mask check was correctly scoped to direct StaticBody3D children of the room root (not a full recursive walk) because the enemy sub-scene has its own StaticBody3D nodes with a different collision_mask contract. The spec's risk note explicitly governed over the general "every StaticBody3D in the tree" language in the acceptance criteria.
+  impact: If the full recursive walk had been used, every room with an enemy would have generated a false failure on RTS-ADV-6 because the enemy's collision layers differ from the floor's. The correct direct-child scoping was used and all RTS-ADV-6 assertions passed.
+  prevention: Any spec that mixes room-geometry nodes with instanced enemy sub-scenes must explicitly state whether structural assertions (collision_mask, node type, count) apply to the full tree or only to direct children. The risk note takes precedence; the Test Design Agent must read spec risk notes before writing structural count or property assertions.
+  severity: medium
+
+- category: architecture
+  insight: Instanced sub-scenes introduce invisible child nodes into the parent scene's runtime tree. Node names, collision properties, and script attachments from the sub-scene's interior are present at runtime even though they are not authored as direct children of the parent. Test assertions that assume a flat tree silently include these inherited nodes.
+  impact: Across this ticket and prior ones, the sub-scene interior has caused false failures in count assertions, collision assertions, and name-substring checks. The pattern recurs whenever a new sub-scene type is introduced.
+  prevention: When authoring tests for any scene that instances a sub-scene, first enumerate the sub-scene's complete node tree and identify all nodes whose properties (name, type, script, collision_mask) could satisfy a search condition intended only for the parent scene's own nodes. Explicitly scope all assertions to the correct tree depth.
+  severity: high
+
+- category: process
+  insight: The Test Designer Agent used `FileAccess.open` + text substring search on the .tscn source file to verify enemy scene path (RTS-ENC). This is the only headless-safe method since no runtime API exposes an instanced node's source .tscn path. The approach was explicitly recommended by the spec and worked correctly.
+  impact: RTS-ENC-2 through RTS-ENC-5 all passed in green phase. The file-text approach is deterministic and does not require physics ticks or scene tree wiring.
+  prevention: Document this pattern as the canonical approach for verifying instanced sub-scene identity in headless tests. Do not attempt to infer scene path from runtime node properties (class name, script methods) — these are indirect and can be shared across scene variants.
+  severity: low
+
+### Anti-Patterns
+
+- description: Using `find_nodes("*Substring*")` or any recursive name-search to count expected nodes when the target nodes are instances of a sub-scene that has children with overlapping name patterns.
+  detection_signal: A count assertion for N expected instances of a node type returns N*K where K > 1 — the extra counts come from children inside the sub-scene's interior. The rooms are correctly authored but the test fails.
+  prevention: Replace `find_nodes` with a direct-child iteration (`for i in root.get_child_count(): var c = root.get_child(i)`) and apply the name/type filter only at depth 1. Add a comment explaining the scope restriction and which sub-scene prompted it.
+
+- description: Writing structural property assertions (collision_mask, node type, count) for scenes with instanced sub-scenes without first auditing the sub-scene's internal node tree.
+  detection_signal: A test passes in isolation when the sub-scene is absent but fails after the sub-scene is instanced into the parent. The test failure message shows unexpected extra nodes or unexpected property values that were not authored in the parent scene.
+  prevention: Before finalizing any structural test for a scene that instances sub-scenes, open each sub-scene and list all nodes at all depths. Tag which assertions need depth scoping. This step takes under 2 minutes and prevents rework.
+
+### Prompt Patches
+
+- agent: Test Design Agent
+  change: "Before writing any `find_nodes`, recursive tree walk, or node-count assertion for a scene that instances sub-scenes, read each sub-scene file and list its complete node tree. If any child node's name, type, or property would satisfy the search condition, restrict the assertion to direct children only using `root.get_child(i)` iteration instead of `find_nodes`. Add a comment explaining the depth restriction and citing the sub-scene that prompted it."
+  reason: RTS-ADV-16 failed for 4 rooms because the Test Designer Agent did not inspect `enemy_infection_3d.tscn` before writing the recursive "Enemy" substring count. The rooms were correctly authored; only the test was wrong. This added a blocker that required escalation to the Acceptance Criteria Gatekeeper.
+
+- agent: Test Design Agent
+  change: "To verify that a room scene instances a specific sub-scene (e.g. an enemy), use `FileAccess.open(room_path, FileAccess.READ).get_as_text()` and check for the sub-scene filename as a substring. Do not attempt to infer sub-scene identity from runtime node class names, script methods, or exported properties — these are indirect and non-deterministic. Call this pattern 'file-text scene-path verification'."
+  reason: There is no runtime API in Godot 4 that returns an instanced node's source .tscn path. The file-text approach is the only headless-safe, deterministic method confirmed to work in this project.
+
+- agent: Spec Agent
+  change: "For every structural assertion in a spec (count, property, collision_mask), explicitly state the tree depth scope: 'direct children of room root only' or 'full recursive tree'. When the assertion targets parent-scene nodes that could be confused with sub-scene interior nodes, mandate direct-child-only scope in the test requirement and add a risk note naming the sub-scene and its conflicting child node names."
+  reason: RTS-ADV-6 was correctly scoped because the spec's risk note explicitly governed; RTS-ADV-16 was not because the spec lacked an explicit depth scope for the enemy count. Explicit scoping in the spec prevents the Test Design Agent from defaulting to recursive search.
+
+### Workflow Improvements
+
+- issue: The Test Designer Agent wrote RTS-ADV-16 with a recursive count assertion without auditing the enemy sub-scene structure. This was only discovered after Engine Integration authored all 5 rooms and ran the full test suite — late in the pipeline.
+  improvement: Add a mandatory pre-write step to the Test Design Agent workflow: for each test involving an instanced sub-scene, read the sub-scene file and enumerate its node tree before writing the assertion. This should be documented as a checklist item in the Test Design Agent prompt, not left to judgment.
+  expected_benefit: Catches the recursive-count false-positive pattern before any implementation work begins. Eliminates a class of test design defects that only surface at green-phase validation.
+
+- issue: RTS-ADV-16's test design defect required escalation to the Acceptance Criteria Gatekeeper Agent to resolve. Neither the Test Designer nor the Engine Integration Agent had authority to fix the test (Engine Integration must not modify existing files; Test Designer had already handed off). This created an unnecessary escalation step for a simple fix.
+  improvement: Define a "test defect fix" authority rule: if a test assertion is demonstrably wrong (not an implementation issue), the Acceptance Criteria Gatekeeper Agent is authorized to fix the test directly without a full re-run of the Test Design Agent. Document this authority in the Acceptance Criteria Gatekeeper Agent prompt.
+  expected_benefit: Reduces escalation latency. A one-line fix to a broken assertion should not require re-invoking the full Test Design Agent pipeline.
+
+### Keep / Reinforce
+
+- practice: Using `FileAccess.open` + text substring search on the .tscn source file to verify enemy scene path in headless tests (RTS-ENC). No runtime API equivalent exists; this is the only deterministic method.
+  reason: RTS-ENC-2 through RTS-ENC-5 passed cleanly. The pattern is reusable for any ticket that needs to verify which sub-scene is instanced inside a room or level .tscn file without running physics.
+
+- practice: Scoping collision_mask assertions to direct children of the room root only, not the full recursive tree, when the room contains instanced enemy sub-scenes with their own collision layer contract.
+  reason: RTS-ADV-6 passed for all 5 rooms because of this correct scoping. Had the recursive walk been used, every room with an enemy would have generated a false failure. Direct-child scoping is the safe default for any room-geometry structural assertion.
+
+---
+
+## [BPG] — Read existing infrastructure before planning; reviewer catches copy-paste geometry bugs; AC Gatekeeper requires filesystem access
+*Completed: 2026-03-24*
+
+### Learnings
+
+- category: process
+  insight: Autopilot ran three full pipeline stages (Planner, Spec, Test Designer) on blender_parts_library before discovering the pipeline already existed in asset_generation/python. The root cause was that the Planner Agent did not read the existing directory structure before generating a plan. READMEs and existing source trees are the ground truth for "what already exists" — not the ticket description.
+  impact: Stale spec and test artifacts were generated and then deleted. Three agent stages of work were wasted. The ticket had to be rewritten entirely.
+  prevention: The Planner Agent must read the project's relevant directory tree and any README before authoring a plan for a ticket that involves adding to an existing system. If a README exists, it must be read first.
+  severity: high
+
+- category: testing
+  insight: The Code Reviewer caught 9 critical geometry bugs (copy-paste errors, wrong primitive parameters) in AnimatedClawCrawler and AnimatedCarapaceHusk. These bugs would have silently produced wrong GLB outputs because Blender does not error on malformed geometry — it simply renders incorrectly. The pure-Python test suite could not catch them because tests were isolated from bpy and only verified structural registration, not rendered output.
+  impact: If the reviewer stage had been skipped, 6 of 9 GLBs would have had incorrect geometry shipped to the game pipeline with no automated signal of failure.
+  prevention: For code that generates binary assets (GLBs, blend files, images), the reviewer stage is mandatory even when all pure-Python tests pass. Test isolation from the rendering backend (bpy stubs) creates a coverage gap for geometry-correctness — reviewer inspection is the only in-pipeline safeguard before generation.
+  severity: high
+
+- category: infra
+  insight: The AC Gatekeeper Agent issued a false BLOCKED verdict because it ran in a sandboxed context where it could not see GLB files that were confirmed on disk. The Gatekeeper was checking for file existence as part of AC verification, but its filesystem access was restricted. This produced a false negative that required orchestrator override.
+  impact: A false BLOCKED created an unnecessary override step and undermined confidence in the Gatekeeper's verdict. If the override mechanism did not exist, the ticket would have stalled.
+  prevention: The AC Gatekeeper must not issue a BLOCKED verdict based solely on file-not-found results when its filesystem access is sandboxed or restricted. It should log the access limitation as a CHECKPOINT and request human confirmation for filesystem-dependent ACs, rather than treating a failed file lookup as an AC failure.
+  severity: high
+
+- category: process
+  insight: The blender_parts_library ticket described work that had already been done differently. The ticket backlog was based on an outdated picture of the codebase — the pipeline had been built independently of the ticket system. No agent checked whether the ticket's described deliverables already existed before starting pipeline execution.
+  impact: Wasted three agent stages, required a ticket rewrite, and produced artifacts that had to be cleaned up. Discovery only happened when the Orchestrator intervened mid-run.
+  prevention: Add a mandatory "existence check" step at the start of any implementation run: before the Planner Agent runs, verify that the primary deliverable files listed in the ticket's "Files to Modify / Create" section do not already exist with conflicting content. If they do, flag for human review before proceeding.
+  severity: critical
+
+### Anti-Patterns
+
+- description: Planning and speccing a system that already exists. The pipeline proceeded through three stages generating plans and tests for blender_parts_library without any agent confirming whether the described pipeline was already present in the codebase.
+  detection_signal: Ticket describes creating files that already exist in the codebase at the named paths, OR ticket describes functionality that is already exercised by existing tests.
+  prevention: Planner Agent must run a targeted file existence check on all "Files to Create" entries before authoring any plan. If a named file already exists, halt and log a CHECKPOINT before proceeding.
+
+- description: Using bpy stubs in pure-Python tests creates a false sense of test coverage for geometry-producing code. All structural tests pass even when the underlying Blender calls contain copy-paste bugs that produce visually wrong output.
+  detection_signal: Test suite achieves full pass rate against bpy-mocked classes, but no test exercises actual rendered geometry dimensions or primitive parameter values.
+  prevention: For each new enemy class or Blender geometry generator, require at least one source-inspection test (via inspect.getsource) that asserts the specific primitive type and scale parameters expected — not just that the method exists.
+
+- description: AC Gatekeeper treating a file-not-found lookup failure as an AC failure when running in a restricted/sandboxed environment. The absence of a file in the Gatekeeper's view does not mean the file is absent on disk.
+  detection_signal: AC Gatekeeper issues BLOCKED for a filesystem-existence AC, but there is no corroborating evidence (e.g., no build error, no generation error logged) that the file was not produced.
+  prevention: AC Gatekeeper should cross-reference filesystem AC failures against the implementation agent's own logged evidence. A BLOCKED verdict for a file-existence AC requires at least one corroborating source beyond the Gatekeeper's own lookup.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: "Before authoring any plan for a ticket that adds to an existing system, read the project's relevant directory tree and any README file in that directory. If the README or existing source files describe functionality that overlaps with the ticket's deliverables, log a CHECKPOINT before proceeding. Do not generate a plan that assumes the described pipeline does not exist without first verifying."
+  reason: The blender_parts_library autopilot ran 3 full stages before discovering the pipeline already existed. A pre-plan existence check would have prevented all wasted work.
+
+- agent: AC Gatekeeper Agent
+  change: "When verifying a filesystem-existence AC (e.g., 'file X exists on disk'), do not issue BLOCKED solely based on a failed file lookup. If your environment may be sandboxed or have restricted filesystem access, log the limitation as a CHECKPOINT and request human confirmation. A file-not-found result is only a valid BLOCKED signal if the implementation agent's own output also reported a generation failure."
+  reason: The AC Gatekeeper issued a false BLOCKED for GLB file presence because it could not access the filesystem where the files were confirmed to exist. This required orchestrator override and undermined trust in the Gatekeeper verdict.
+
+- agent: Code Reviewer Agent
+  change: "For any code that invokes Blender geometry primitives (primitive_sphere_add, primitive_cylinder_add, primitive_cube_add, etc.), inspect each call site for copy-paste errors: verify that parameter values (radius, vertices, scale) are semantically correct for the named body part, not carried over from a similar-looking method in an adjacent class. Flag any call where the parameter values are identical to those in a sibling class that represents a visually distinct enemy part."
+  reason: 9 geometry bugs in AnimatedClawCrawler and AnimatedCarapaceHusk were copy-paste errors where primitive parameters were not updated from the source class. The Reviewer catching these before GLB generation was the only in-pipeline safeguard.
+
+### Workflow Improvements
+
+- issue: No pipeline step verified whether the primary deliverables of a ticket already existed before Planner, Spec, and Test Designer ran. The discovery that blender_parts_library was superseded happened only when the Orchestrator intervened mid-run after three wasted stages.
+  improvement: Add a pre-flight existence check as step 0 of autopilot execution for any ticket with a "Files to Create" section. The Orchestrator should confirm that the named files do not already exist with conflicting content before handing off to the Planner Agent. If they do, the ticket should be flagged NEEDS_REVIEW before any agent runs.
+  expected_benefit: Prevents multiple agent stages of wasted work when the codebase has diverged from the ticket backlog. Saves time and eliminates stale artifact cleanup.
+
+- issue: The AC Gatekeeper cannot reliably verify filesystem-existence ACs when running in a sandboxed context, but it issues definitive verdicts (BLOCKED) regardless. There is no mechanism for the Gatekeeper to signal "I could not verify this AC due to environment limitations."
+  improvement: Add a CANNOT_VERIFY verdict state to the AC Gatekeeper's vocabulary. When a filesystem check fails in a context where sandbox restrictions may be present, the Gatekeeper issues CANNOT_VERIFY with a note, rather than BLOCKED. The Orchestrator then routes CANNOT_VERIFY items to human confirmation before deciding to block.
+  expected_benefit: Eliminates false BLOCKED verdicts caused by environment restrictions. Keeps the BLOCKED signal meaningful — reserved for cases where the Gatekeeper has positive evidence of failure.
+
+### Keep / Reinforce
+
+- practice: Having the Code Reviewer Agent inspect Blender geometry generator classes before GLB generation runs. In this ticket, 9 critical bugs were caught that pure-Python tests could not detect due to bpy stub isolation.
+  reason: Blender geometry code has a silent-failure mode: wrong primitive parameters produce wrong shapes but no error. The reviewer is the only agent in the pipeline that reads the source holistically and can catch copy-paste parameter errors across sibling classes.
+
+- practice: Using inspect.getsource() in pure-Python tests to verify structural properties of bpy-dependent methods without invoking Blender. This is the correct tool for asserting that a method references a particular primitive type or key string when bpy is mocked.
+  reason: BPG test suite used this pattern successfully for apply_materials and class registration checks. It provides meaningful structural coverage that complements the bpy-mocked isolation boundary.
+
+---
+
+## [godot_scene_generator_validation] — Extract pipeline-convention-sensitive logic to testable utilities before integration, not after
+*Completed: 2026-03-25*
+
+### Learnings
+
+- category: architecture
+  insight: When a naming convention is defined by one pipeline stage (Python asset exporter) and consumed by another (Godot scene generator), the consuming code's parsing assumptions are the most fragile part. Inline private functions are opaque to tests and the first place mismatch hides.
+  impact: `_extract_family_name` inside `load_assets.gd` silently produced `"acid_spitter_animated"` instead of `"acid_spitter"` for the entire `_animated_` family of filenames — a naming convention that the Python pipeline introduced but the Godot side was never updated to match. The bug was only discovered when the ticket explicitly required validation against real GLB output.
+  prevention: Any function that parses filenames or tokens produced by an upstream pipeline must live in a standalone, headlessly-testable utility class from its first commit. Do not inline parsing logic in @tool or EditorScript classes where it cannot be reached by the test runner.
+  severity: high
+
+- category: testing
+  insight: `@tool extends EditorScript` classes are structurally untestable in a headless Godot test suite. Any business logic inside them — regardless of how simple — is invisible to automated tests until extracted to a `RefCounted`-based utility.
+  impact: Three acceptance criteria (generator runs without errors, .tscn node structure correct, metadata set correctly) were permanently deferred to PENDING_MANUAL because the only entry point is `File > Run` in the Godot editor. There is no headless equivalent.
+  prevention: Tickets that involve EditorScript deliverables must explicitly label any AC that depends on editor execution as PENDING_MANUAL from the spec phase, not discovered at gatekeeper time. All logic that can be extracted (parsing, path construction, data mapping) must be extracted, leaving only the editor lifecycle calls inside the EditorScript itself.
+  severity: medium
+
+- category: architecture
+  insight: Introducing a utility wrapper function (e.g. `_extract_family_name` that only calls `EnemyNameUtils.extract_family_name`) adds a call-site indirection layer with no benefit and creates a code review finding that requires a fix iteration.
+  impact: The Code Reviewer flagged the wrapper as unnecessary; the Implementation Agent had to remove it and wire the call site directly. This added a revision pass that would not have existed if the utility had been called directly at the single call site from the start.
+  prevention: When refactoring inline logic to an external utility, replace every call site with the direct utility call. Do not preserve a private wrapper function as a "compatibility shim" unless there are multiple call sites that would benefit from a shared local alias.
+  severity: low
+
+- category: testing
+  insight: The "animated" infix removal algorithm is position-agnostic (removes all segments exactly equal to "animated"), not position-restricted (only removes it when it is the penultimate segment). This is a broader contract than the primary use case suggests, and implementations that use a fixed-offset removal pass the primary suite but fail the adversarial suite.
+  impact: Eight adversarial edge cases were required to pin the contract: "animated" as the sole segment, "animated" in prefix position, case-sensitive rejection ("Animated" is not removed), negative trailing integers, and single-segment inputs. Without these, a fixed-offset implementation would have passed all primary tests.
+  prevention: For any parsing algorithm, the Test Breaker Agent must enumerate mutation classes: positional assumptions, case sensitivity, boundary segment counts (0, 1, 2), and off-by-one positions. Primary tests cover the happy path; adversarial tests must cover each of these classes explicitly.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Pipeline-convention mismatches (where one tool outputs names in format A and a consumer assumes format B) are invisible to unit tests until real pipeline output is used as test fixtures.
+  detection_signal: A function parses filenames using a strip/split algorithm but is only tested with manually authored strings that match the expected format, not actual output from the upstream tool.
+  prevention: At spec time, examine a representative sample of actual upstream tool output (e.g. the real .glb filenames in `asset_generation/python/animated_exports/`) and include at least one verbatim upstream filename as a primary test case.
+
+- description: Keeping a private wrapper function in the host class after extracting logic to a utility. The wrapper provides no value when there is only one call site and creates a reviewer finding.
+  detection_signal: A private function whose entire body is a single delegating call to an external utility function and has exactly one call site in the file.
+  prevention: When extracting logic to a utility, inline the utility call directly. Remove the private wrapper in the same commit.
+
+- description: PENDING_MANUAL ACs discovered at gatekeeper time rather than designated at spec time, causing surprise at the end of the ticket workflow.
+  detection_signal: An AC that requires editor execution (EditorScript, @tool script, scene generation into the file system) is written as a standard verifiable AC without a PENDING_MANUAL label in the spec's AC table.
+  prevention: The Spec Agent must classify each AC by verification method (HEADLESS, MANUAL, SKIPPED_UNTIL) in the AC table. Any AC that depends on `File > Run` in the editor must be labeled MANUAL from the spec phase.
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "When speccing a ticket that involves a @tool or EditorScript class, classify each acceptance criterion by verification method in the AC table: HEADLESS (runnable in headless test suite), MANUAL (requires running in the Godot editor), or SKIPPED_UNTIL (conditional on prior step). Never write a MANUAL AC without a 'PENDING_MANUAL' label and an explicit escalation note describing who runs it and what to observe."
+  reason: Three ACs were discovered to be PENDING_MANUAL only at gatekeeper time. Pre-labeling at spec time prevents surprise deferrals and makes the human's manual verification responsibilities clear from the beginning of the ticket.
+
+- agent: Implementation Agent
+  change: "When replacing inline logic with an external utility call, replace every call site with the direct utility invocation. Do not preserve a private wrapper method that solely delegates to the utility. If there is exactly one call site, the wrapper is unnecessary and will be flagged by the Code Reviewer."
+  reason: The `_extract_family_name` wrapper finding required an additional review-fix iteration that would not have been needed if the call site had been wired directly to `EnemyNameUtils.extract_family_name`.
+
+- agent: Test Breaker Agent
+  change: "For any parsing or string-manipulation function, enumerate these mutation classes before writing adversarial tests: (1) positional assumptions (does the algorithm assume the target segment is at a fixed index?), (2) case sensitivity (does the algorithm handle mixed-case versions of a sentinel string?), (3) boundary segment counts (empty input, single-segment input, two-segment input), (4) sentinel in prefix vs. suffix vs. middle position. Write at least one adversarial test per class unless the spec explicitly excludes the variant."
+  reason: The GSV adversarial suite required 8 edge cases to fully pin the `extract_family_name` contract. Without a structured enumeration of mutation classes, it is easy to write adversarial tests that all target the same failure mode while leaving other mutation paths uncovered.
+
+### Workflow Improvements
+
+- issue: The ticket's "Known Issues to Fix" section identified the naming mismatch and the EditorScript testability gap before any agent ran, but these were described as pre-work rather than triggering immediate AC classification (HEADLESS vs MANUAL) at spec time.
+  improvement: When a ticket's description includes a "Known Issues" section that mentions @tool, EditorScript, or editor-only workflows, the Spec Agent must classify all dependent ACs as MANUAL at the beginning of spec authoring, before writing any other AC. Do not wait until the AC table is complete to apply classification.
+  expected_benefit: Prevents late-stage discovery of PENDING_MANUAL verdicts after three other agents have already run. Surfaces the manual verification scope to the human at the earliest possible point.
+
+- issue: Pre-existing parse warnings in `load_assets.gd` were confirmed out of scope but have no tracking mechanism; future agents will re-confirm the same findings as out-of-scope on subsequent tickets.
+  improvement: When an Implementation Agent encounters pre-existing test failures or parse warnings confirmed out of scope, append a one-line entry to `project_board/KNOWN_ISSUES.md` (creating it if absent) noting the file, line range, and nature of the defect.
+  expected_benefit: Prevents repeated re-discovery of the same pre-existing issues. Creates a lightweight defect backlog without blocking the current ticket.
+
+### Keep / Reinforce
+
+- practice: Extracting testable pure logic (family name parsing) into a `RefCounted`-based utility class (`EnemyNameUtils`) so it can be covered by the headless test suite, even when the host class (`load_assets.gd`) cannot be instantiated headlessly.
+  reason: This is the correct architectural response to @tool and EditorScript testability constraints. The pattern is generalizable: any EditorScript that contains non-trivial logic should delegate to a plain utility class. The 20 primary and 15 adversarial tests that resulted would not have been possible without this extraction.
+
+- practice: The stash/restore baseline comparison method used by the Implementation Agent to confirm that pre-existing test failures (RSM-SIGNAL, ADV-RSM) predated the current changes and were not regressions.
+  reason: This is a reliable, deterministic method for distinguishing pre-existing failures from regressions introduced by the current ticket. It produces strong evidence for the gatekeeper without requiring manual bisection. Should be reinforced as standard practice when `run_tests.sh` exits non-zero.
+
+---

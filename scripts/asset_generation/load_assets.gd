@@ -117,7 +117,7 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 		return
 
 	var file_name := glb_path.get_file().get_basename() # e.g. acid_spitter_00
-	var family_name := _extract_family_name(file_name)  # e.g. acid_spitter
+	var family_name := EnemyNameUtils.extract_family_name(file_name)  # e.g. acid_spitter
 	var mutation := MUTATION_BY_FAMILY.get(family_name, "unknown")
 
 	var root: Node3D
@@ -215,9 +215,6 @@ func _ensure_dir(path: String) -> void:
 	if DirAccess.dir_exists_absolute(path):
 		return
 	DirAccess.make_dir_recursive_absolute(path)
-
-func _extract_family_name(file_name: String) -> String:
-	return EnemyNameUtils.extract_family_name(file_name)
 
 func _add_marker(root: Node3D, marker_name: String, position: Vector3) -> void:
 	var marker := Marker3D.new()
