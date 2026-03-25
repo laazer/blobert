@@ -7,6 +7,9 @@
 export.cfg
 export_credentials.cfg
 
+# Godot import sidecar files (auto-generated next to assets)
+*.import
+
 # Imported translations (automatically generated from CSV files)
 *.translation
 
@@ -23,3 +26,13 @@ mono_crash.*.json
 
 # macOS metadata
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Blender working/backup files
+*.blend1
+asset_generation/python/animated_exports/*.blend
+asset_generation/python/exports/*.blend
