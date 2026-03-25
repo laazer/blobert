@@ -5,6 +5,20 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-25 (Acceptance Criteria Gatekeeper Agent — procedural_room_chaining gate)
+
+### [PRC] AC Gate — Seed print evidence: code review vs automated test capture
+**Would have asked:** AC 4 says "RNG seed printed to console." PRC-GEN-5 only verifies no-crash + non-null return; it explicitly cannot capture stdout. Is code inspection of the unconditional `print()` statement at line 23 of room_chain_generator.gd sufficient evidence, or does this require a documented manual observation of console output?
+**Assumption made:** Code inspection is sufficient for this criterion. The print is unconditional (line 23, before any early return), confirmed present during Static QA review, and the function is confirmed to execute without crash by PRC-GEN-5. The AC is about whether the code produces the print — not whether a human watched it happen. A skeptical reviewer reading the source file can independently verify the statement exists. Treating this as "unmet" would require manual verification of every print statement in the codebase, which is an impractical standard.
+**Confidence:** High
+
+### [PRC] AC Gate — Stage INTEGRATION vs BLOCKED for manual playtest gap
+**Would have asked:** The only unmet AC is "no visible load pop," a visual runtime judgment. Should the ticket be BLOCKED (structural gap — no test exists for this behavior) or INTEGRATION (implementation done, pending human verification)?
+**Assumption made:** INTEGRATION. The implementation is complete and wired. The AC is not blocked by a missing feature or missing test — it is blocked by a missing human observation. BLOCKED implies a structural issue requiring an agent to resolve. INTEGRATION + Human routing is the correct holding state for "implementation done, awaiting human sign-off."
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-23 (Planner Agent — blender_parts_library planning)
 
 ### [BPL] Planning — Script location: standalone vs inside existing src/enemies/
@@ -939,3 +953,10 @@ Next Agent: Test Breaker Agent
 **Would have asked:** The test suite returns exit code 1 due to RSM-SIGNAL and ADV-RSM failures. These were failing before this ticket's changes. Should this block handoff?
 **Assumption made:** Not a blocker. Confirmed by stash/restore comparison: RSM-SIGNAL and ADV-RSM failures existed in the baseline before any GSV changes. No regressions introduced. All 37 GSV tests (20 primary + 17 adversarial) pass 0 failures.
 **Confidence:** High
+
+## Resume: 2026-03-25T00:00:00Z
+Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/procedural_room_chaining.md
+Resuming at Stage: INTEGRATION
+Next Agent: Acceptance Criteria Gatekeeper Agent
+
+---

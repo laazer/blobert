@@ -224,6 +224,91 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [procedural_room_chaining] — Spec API churn and ticket description drift caused full test suite invalidation mid-cycle
+*Completed: 2026-03-25*
+
+### Learnings
+
+- category: process
+  insight: A ticket description that references an artifact (the "fusion room") that does not exist in the project forces a planning pivot that propagates a corrected scope to every downstream agent. The correction is cheap individually but compounds if it reaches the Spec Agent before validation.
+  impact: The Planner had to file a checkpoint, annotate the ticket description, and document the corrected sequence. Any downstream agent that had not read the checkpoint would spec or test against the wrong sequence.
+  prevention: Before the Planner writes an execution plan, require an explicit "dependency artifact check": verify that every scene, script, or asset named in the ticket description exists at the stated path. Treat any missing artifact as a spec gap that must be resolved in the planning document before execution begins.
+  severity: high
+
+- category: process
+  insight: A mid-cycle API redesign (Spec Rev2 replacing Rev1) that changes function signature and return type voids every previously planned test ID. All PRC-SEQ-*, PRC-DEDUP-*, PRC-SCHEMA-*, PRC-POOL-* IDs from Rev1 were superseded, requiring the Test Designer to start from a clean test map.
+  impact: This caused a full re-spec and re-test-design cycle. The root cause was that Rev1 was written against the ticket's prose schema ("generate(seed)") without validating consistency against the broader architecture spec that defined the authoritative API.
+  prevention: The Spec Agent must resolve the authoritative API signature in the first revision pass, cross-checking the ticket's Required Input Schema against any referenced system spec documents. If a conflict exists between prose and schema, file a checkpoint and resolve before publishing Rev1. A second revision cycle is a workflow smell that indicates insufficient upfront API arbitration.
+  severity: high
+
+- category: testing
+  insight: Randomized deduplication tests on small pools (e.g. exactly 2 items drawn from a 2-item combat pool) have an irreducible false-certainty problem: the no-repeat property is structurally guaranteed by pool exhaustion, not by the algorithm. A naive implementation would also pass.
+  impact: PRC-GEN-3 ("no duplicate paths") passes even with a broken Fisher-Yates implementation because there are only 2 combat items. PRC-ADV-3 was added to test with a synthetic 4-item pool where a naive randi_range implementation would produce repeats, providing the only real coverage of the deduplication algorithm.
+  prevention: When the production pool size equals the draw count for any category, the Test Designer must add a synthetic-pool adversarial test that uses a larger pool (e.g. 4 items, draw 2) to ensure the deduplication algorithm is independently verified. Document this as a mandatory companion test whenever pool_size == draw_count.
+  severity: medium
+
+- category: testing
+  insight: Headless GDScript test runners cannot capture stdout, so any AC that requires observing console output (e.g. "RNG seed printed to console") cannot be verified by automated tests and must fall back to code inspection as its sole evidence basis.
+  impact: PRC AC "RNG seed printed to console" was evidenced only by code review of the unconditional `print()` call. If the print is ever moved behind a conditional or removed, all existing tests continue to pass and the AC silently regresses with no detection.
+  prevention: For any AC that requires observable console output, either: (a) add a testable side effect (e.g. expose a `last_seed` property on the class so tests can assert the value without stdout), or (b) explicitly label the AC as "code-inspection-only" in the ticket validation status and document the exact file and line number that satisfies it. Option (a) is preferred and should be spec'd as an explicit property on pure-logic classes.
+  severity: medium
+
+- category: architecture
+  insight: When two coordinating systems (DeathRestartCoordinator and RunSceneAssembler) each own independent instances of the same state machine (RunStateManager), the two lifecycles are silently decoupled. A restart signal from DRC does not propagate to RSA; the room chain does not rebuild on run restart.
+  impact: Integration between DRC restart and RSA room rebuild was explicitly deferred to a future ticket. This means the "restart" flow is architecturally incomplete — the room chain only assembles on first load, not on each run. The deferral was a reasonable short-term decision but creates a gap that is invisible to automated tests.
+  prevention: When a spec makes a "defer integration to future ticket" decision that leaves a partial behavior (e.g. "room chain does not rebuild on restart"), the Spec Agent must add a concrete follow-up ticket reference or a failing test stub that documents the missing behavior. Deferral decisions without a test stub are invisible debt.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Ticket prose names a specific artifact (scene, resource, node name) that does not exist in the project at planning time. This causes a scope correction that must be manually propagated to every subsequent agent in the chain.
+  detection_signal: Any artifact path or scene name in the ticket description that cannot be resolved by a glob or file check at planning time.
+  prevention: Planner Agent must glob-check every artifact named in the ticket description before writing the execution plan. Unresolved artifacts must be flagged as blocking gaps — not silently worked around.
+
+- description: An API spec revision that changes the function signature and return type mid-cycle, without a mechanism to invalidate or version-lock downstream test plans that referenced the old API.
+  detection_signal: A checkpoint entry saying "Spec RevN supersedes RevM; all prior test IDs are voided."
+  prevention: The Spec Agent must resolve the canonical API in Rev1 by explicitly cross-referencing the ticket schema, any referenced architecture documents, and existing implementations. Rev2 rewrites are a signal that Rev1 was published too early.
+
+- description: Using a provisional (unverified) seed pair in a deterministic-output test when the pool is small enough that the seeds may collide, without a verification step at any stage of the pipeline.
+  detection_signal: A test comment noting that the seed pair has "~50% false-failure risk" or "provisional — must be verified at implementation."
+  prevention: The Spec Agent must mark provisional seed pairs with a blocking TODO for the Implementation Agent or Test Breaker Agent to verify. If the agent cannot pre-compute the seed collision at spec time (red phase), the CHECKPOINTS.md must record the seed pair as unconfirmed with an explicit resolution gate.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: Before writing the execution plan, run a dependency artifact check: for every scene path, script path, and named resource in the ticket description, confirm the file exists at the stated location. If any artifact is missing, add a "missing artifact" section to the planning document that names the gap, blocks execution of dependent tasks, and proposes a resolution (add artifact, remove reference, or create follow-up ticket). Do not proceed to execution planning until all missing artifacts are resolved or explicitly scoped out.
+  reason: The "fusion room" gap required a mid-cycle correction that propagated to spec, test, and checkpoint. An upfront artifact check at planning time eliminates this class of scope drift entirely.
+
+- agent: Spec Agent
+  change: When writing the first spec revision for a system ticket, resolve the authoritative function signature before publishing. Cross-check: (1) the ticket's Required Input Schema, (2) any referenced architecture or design documents, (3) any existing callers in the codebase. If two sources conflict, file a checkpoint with the conflict and resolution before publishing the spec. Do not publish a spec with an unresolved API conflict — a second revision that changes the signature and voids all prior test IDs is a workflow failure, not a refinement.
+  reason: The PRC Rev1 → Rev2 API change voided all test IDs and required a full re-spec. The conflict between the ticket prose API and the Required Input Schema should have been resolved before Rev1 was published.
+
+- agent: Spec Agent
+  change: When a spec decision defers integration between two systems to a future ticket (e.g. "RSA does not rebuild on DRC restart — deferred"), add a failing test stub to the test suite that documents the missing behavior. Name the stub "TODO_[description]" and mark it with `pending()` or equivalent. This stub is not a test to be implemented now — it is executable documentation of the integration gap.
+  reason: Deferral decisions without a test stub are invisible architectural debt. The PRC deferral of DRC-RSA restart integration left the behavior gap undocumented and undetectable by the test suite.
+
+### Workflow Improvements
+
+- issue: The INTEGRATION-class AC "Transitions between rooms feel seamless (no visible load pop)" was not accompanied by a Manual QA Checklist at spec time. This is the fourth consecutive ticket where this gap occurred. The prompt patches from [containment_hall_01_layout], [fusion_opportunity_room], and [light_skill_check] have not been applied to the Spec Agent's active prompt.
+  improvement: The "Manual QA Checklist" prompt patch identified in [fusion_opportunity_room] learnings must be applied to the Spec Agent's prompt as a standing rule. The instruction must be: "For any AC that requires human observation (visual, audio, runtime behavior), emit a numbered Manual QA Checklist section with atomic steps in the format: open [scene] → trigger [action] → observe [exact expected output]. The checklist must appear in the spec document, not only in the ticket's Next Action block."
+  expected_benefit: This has recurred on every ticket with a visual AC. A prompt-level rule is the only fix — individual learning entries have not stopped the recurrence.
+
+- issue: The seed pair for PRC-SEED-2 was declared provisional at spec time, acknowledged as unverifiable in red phase, and passed through test design with a comment noting the risk. No agent in the chain was assigned ownership of resolving the provisional status before the test was finalized.
+  improvement: When a spec creates a provisional assumption (seed pair, threshold value, path string) that requires verification at a later phase, the CHECKPOINTS.md entry must include an explicit "resolution owner" field naming the agent responsible for confirming or correcting the assumption. The Implementation Agent or Static QA Agent must check all open provisional assumptions before signing off.
+  expected_benefit: Prevents provisional values from being silently locked in by the time the implementation is complete, where changing them requires a test suite update and a new checkpoint.
+
+### Keep / Reinforce
+
+- practice: Separating RoomChainGenerator (pure RefCounted, no SceneTree) from RunSceneAssembler (Node, SceneTree caller) allowed the entire generation logic to be tested headlessly with 34 tests, zero SceneTree dependencies, and high confidence in the algorithm's correctness.
+  reason: This architectural split is a strong pattern for any system where a pure-logic computation must be combined with Godot scene graph operations. The pure layer is testable; the integration layer is audited by code review and manual playtest. Reinforce this pattern for all future systems that combine data generation with scene assembly.
+
+- practice: The Fisher-Yates shuffle with a seeded RandomNumberGenerator, constructed fresh per call, guarantees cross-instance determinism without shared state. This was explicitly called out in the implementation notes and verified by the adversarial seed tests.
+  reason: Shared RNG state across instances is a common source of non-determinism in procedural generation. The per-call construction pattern prevents this class of bug and should be the default for any new seeded random system in the project.
+
+---
+
+---
+
 ## [mini_boss_encounter] — 66 tests passing (T-53–T-62 + ADV-MBA-01–08); ticket at INTEGRATION pending human playtest.
 
 *Completed: 2026-03-20*

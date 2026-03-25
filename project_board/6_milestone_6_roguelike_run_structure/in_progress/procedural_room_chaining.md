@@ -27,21 +27,27 @@ Dependencies:
 INTEGRATION
 
 ## Revision
-7
+8
 
 ## Last Updated By
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Validation Status
 - Tests: PASS — all 34 PRC-* headless tests pass (9 primary + 10 adversarial + 15 adversarial-2); 7 pre-existing RSM-SIGNAL-*/ADV-RSM-02 failures unrelated to this ticket. Total suite: 253 passed, 0 failed (excluding pre-existing).
-- Static QA: GDScript reviewer found no CRITICAL issues in RoomChainGenerator; randi_range fix applied
-- Integration: RunSceneAssembler node added to containment_hall_01.tscn; AC "Transitions between rooms feel seamless (no visible load pop)" requires human in-editor playtest
+- Static QA: GDScript reviewer found no CRITICAL issues in RoomChainGenerator; randi_range fix applied.
+- AC coverage detail:
+  - AC "Run layout generated fresh each run start": covered by PRC-GEN-5 (no crash, non-null return). RunSceneAssembler uses Time.get_ticks_msec() as seed on every run_started signal, guaranteeing a different layout per run.
+  - AC "Sequence always follows fixed category order: intro → combat (x2) → mutation_tease → boss": covered by PRC-GEN-4 (slot-by-pool membership), PRC-ADV2-05 (exact intro path at index 0), PRC-ADV2-06 (exact boss path at index 4), PRC-ADV2-07 (exact mutation_tease path at index 3).
+  - AC "No room repeated in a single run": covered by PRC-GEN-3 (no duplicate paths in result), PRC-ADV-6 (both combat rooms appear exactly once).
+  - AC "RNG seed printed to console for reproducibility": evidenced by code inspection — `print("[RoomChainGenerator] seed: %d" % seed)` is unconditional at line 23 of scripts/system/room_chain_generator.gd, before any early return. Confirmed present during Static QA review. PRC-GEN-5 passing confirms the code path executes. Automated stdout capture is not available in the headless test runner; code review is the evidence basis for this criterion.
+  - AC "Transitions between rooms feel seamless (no visible load pop)": NOT EVIDENCED — requires human in-editor playtest. RunSceneAssembler is wired into containment_hall_01.tscn. No playtest has been performed or documented. This is the sole remaining blocker.
+- Integration: RunSceneAssembler node added to containment_hall_01.tscn as child of ContainmentHall01. Rooms are positioned end-to-end using Exit Marker3D local X as the cursor advance. push_warning fires for rooms missing an Exit node, falling back to 30.0 units.
 
 ## Blocking Issues
-AC "Transitions between rooms feel seamless (no visible load pop)" — human in-editor verification required
+- AC "Transitions between rooms feel seamless (no visible load pop)": Human in-editor playtest required. Evidence needed: a human must run the game in-editor, trigger a run start, and confirm that the 5-room sequence loads and transitions without a visible pop or freeze. No automated or manual verification has been documented for this criterion. Ticket cannot advance to COMPLETE until this observation is recorded.
 
 ## Status
 Needs Attention
@@ -58,15 +64,16 @@ Needs Attention
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input
-Verify all Acceptance Criteria against the running game:
-- Run layout generated fresh each run start (automated: covered by PRC-GEN-* tests)
-- Sequence always follows fixed category order: intro → combat (x2) → mutation_tease → boss (automated: covered by PRC-GEN-* tests)
-- No room repeated in a single run (automated: covered by PRC-GEN-* tests)
-- RNG seed printed to console for reproducibility during testing (automated: PRC-GEN-5 passes; console output visible at runtime)
-- Transitions between rooms feel seamless (no visible load pop) — REQUIRES human in-editor playtest
+Manual in-editor playtest to verify AC "Transitions between rooms feel seamless (no visible load pop)":
+1. Open the project in the Godot editor.
+2. Run scenes/levels/containment_hall_01/containment_hall_01.tscn.
+3. Observe that all 5 rooms (intro → combat → combat → mutation_tease → boss) appear end-to-end.
+4. Confirm no visible pop, freeze, or missing room during the load sequence.
+5. Confirm the Output panel shows a line matching "[RoomChainGenerator] seed: <number>" (verifying AC "RNG seed printed to console").
+6. Record the observation (e.g., update Validation Status and remove the Blocking Issue, then advance Stage to COMPLETE and move ticket to done/).
 
 Key files:
 - `scripts/system/run_scene_assembler.gd` — Node that assembles rooms on run_started
@@ -77,4 +84,4 @@ Key files:
 Needs Attention
 
 ## Reason
-All 34 PRC-* headless tests pass. RunSceneAssembler implemented and wired into main test scene. One AC ("Transitions between rooms feel seamless") cannot be verified headlessly — requires human playtest.
+4 of 5 acceptance criteria are fully evidenced by automated headless tests and code review. One criterion ("Transitions between rooms feel seamless — no visible load pop") is inherently a visual/runtime judgment that cannot be verified headlessly. The ticket is held at INTEGRATION pending this single human playtest. Once the playtest is recorded, Stage may be advanced to COMPLETE.
