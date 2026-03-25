@@ -1,6 +1,8 @@
 @tool
 extends EditorScript
 
+const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")
+
 const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
 
@@ -215,11 +217,7 @@ func _ensure_dir(path: String) -> void:
 	DirAccess.make_dir_recursive_absolute(path)
 
 func _extract_family_name(file_name: String) -> String:
-	# acid_spitter_00 -> acid_spitter
-	var parts := file_name.split("_")
-	if parts.size() >= 2 and parts[-1].is_valid_int():
-		parts.remove_at(parts.size() - 1)
-	return "_".join(parts)
+	return EnemyNameUtils.extract_family_name(file_name)
 
 func _add_marker(root: Node3D, marker_name: String, position: Vector3) -> void:
 	var marker := Marker3D.new()
