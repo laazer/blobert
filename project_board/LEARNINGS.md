@@ -754,3 +754,66 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: This is a reliable, deterministic method for distinguishing pre-existing failures from regressions introduced by the current ticket. It produces strong evidence for the gatekeeper without requiring manual bisection. Should be reinforced as standard practice when `run_tests.sh` exits non-zero.
 
 ---
+
+## [missing-movement-simulation-path] — preload path mismatch caused by directory restructure without global reference update
+*Completed: 2026-03-25*
+
+### Learnings
+
+- category: infra
+  insight: A GDScript `preload()` call using an absolute `res://` path silently becomes a parse-time crash when the target file is moved to a subdirectory, because GDScript evaluates `preload()` at parse time — before any frame runs. The error surfaces only when the scene chain that attaches the script is loaded, not when the script file itself is opened or edited.
+  impact: The player controller failed to load in `containment_hall_01.tscn` entirely, not with a graceful runtime error. The bad path was present in HEAD while the fix existed only in the working tree, creating a confusing split state where on-disk code appeared correct but runtime behavior matched the committed (broken) version.
+  prevention: Whenever a script file is moved to a subdirectory, run a codebase-wide search for the old path across all `.gd`, `.tscn`, and `.tres` files before committing the move. Treat the move commit and the reference-update commit as an atomic pair — never separate them.
+  severity: high
+
+- category: testing
+  insight: No existing test covered the `preload` path in `player_controller_3d.gd`. The test suite passed green even though the committed file contained a broken import path, because tests that did not instantiate the player controller did not trigger the parse-time failure.
+  impact: The bug was only discovered at runtime, not by `run_tests.sh`. A regression test using `load()` plus `source_code` inspection would have caught this in CI before the bad commit was visible to anyone.
+  prevention: For every core script that uses `preload()` to depend on another script, add a headless regression test that: (1) loads the script via `load()` with a null-guard, (2) reads `source_code` to assert the correct path string is present, and (3) asserts the wrong path string is absent. This test costs approximately 5 lines and directly prevents this class of bug.
+  severity: high
+
+- category: infra
+  insight: The `.godot/uid_cache.bin` binary file can carry a stale UID-to-path mapping that causes Godot to resolve the old path even after the preload string in source is corrected. Text grep cannot validate the full binary content; the only reliable remediation is `godot --import` to force a cache rebuild.
+  impact: The ticket had to document `godot --import` as a recommended post-fix step rather than a confirmed AC item, because the binary cache state was not provably clean through text inspection alone.
+  prevention: After any resource move or path fix, include `godot --import` as a mandatory step in the implementation runbook — not an optional recommendation. Treat a non-rebuilt UID cache as a blocking risk until a successful headless run confirms it.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Moving a script file to a new directory without updating all `preload()` and `load()` references atomically in the same commit. The working tree carried the fix but HEAD did not, producing a "works on my machine" state that misled any agent reading file contents directly.
+  detection_signal: `git status` shows a core script modified-not-staged, while `run_tests.sh` passes — meaning tests do not exercise the broken committed version.
+  prevention: Any file move that changes a `res://` path must be accompanied by a codebase-wide reference update in the same commit. Search for the old path before committing and verify zero remaining references.
+
+- description: The test suite provided false confidence that the codebase was runnable because tests avoided instantiating the component that was broken. Green CI did not mean the game would launch.
+  detection_signal: A script central to gameplay (player controller, core system) has no test that performs even a `load()` on it.
+  prevention: Every script under `scripts/player/` and `scripts/system/` should have at least one headless smoke test that calls `load()` and asserts non-null. This catches parse-time failures before any integration step.
+
+### Prompt Patches
+
+- agent: Implementation Agent
+  change: "Before committing any file move or directory restructure, search all `.gd`, `.tscn`, and `.tres` files for the old path string and confirm zero matches. If any match is found, update all references in the same commit as the move. Never commit a file move and defer reference updates to a follow-up commit."
+  reason: This bug was caused by a move that left a stale `preload()` path in a committed file. A single search-before-commit check would have prevented the bad state from entering HEAD.
+
+- agent: Test Breaker Agent
+  change: "For any test suite covering a core script (player controller, system coordinator, scene assembler), include at least one test that calls `load(\"res://path/to/script.gd\")`, asserts the result is non-null, and — if `source_code` is non-empty — asserts that every explicit `preload()` path string in the source corresponds to a file that actually exists. This is the minimum viable regression guard against parse-time import errors."
+  reason: The missing-movement-simulation-path bug had zero test coverage that would have caught it. A load-and-source-inspect test is the lowest-cost prevention for this entire class of failure.
+
+### Workflow Improvements
+
+- issue: The Spec Agent observed a discrepancy between HEAD and working-tree state: the fix existed on disk but not in git. This is easy to misread — an agent inspecting file contents may conclude the bug is already resolved while the committed version seen by CI is still broken.
+  improvement: When `git status` shows a core script as modified-not-staged, the Spec Agent must explicitly identify the committed vs working-tree discrepancy in the diagnosis section and confirm whether the reported error reproduces against HEAD or the working tree. This distinction must appear in the ticket before any other agent proceeds.
+  expected_benefit: Prevents an agent from declaring a bug resolved based on working-tree contents while the committed version remains broken in CI and for other developers.
+
+- issue: The workflow enforcement module's stage enum did not include `IMPLEMENTATION_COMPLETE`, but a task instruction directed the Engine Integration Agent to use that exact stage name. This caused a checkpoint deviation that had to be resolved by assumption.
+  improvement: The stage enum in the workflow enforcement module must be kept in sync with all stage names used across all agent task instructions. Any new stage label introduced in a task instruction must also be added to the enforcement enum in the same update cycle.
+  expected_benefit: Eliminates spurious checkpoint deviations caused by stale enum definitions, reducing noise in CHECKPOINTS.md.
+
+### Keep / Reinforce
+
+- practice: Using `script.source_code` inspection in headless tests to assert both the presence of correct path strings and the absence of incorrect path strings. This pattern is established in `test_soft_death_and_restart.gd` and was correctly applied as the regression mechanism for this bug.
+  reason: It is the only headless-safe method to catch parse-time `preload()` path errors without triggering them. The absence assertion is the critical half — it would have made this bug a CI failure before it ever reached HEAD.
+
+- practice: The stash/restore baseline method used by the Implementation Agent to confirm that 7 pre-existing RSM-SIGNAL failures predated the current fix and were not regressions introduced by it.
+  reason: Deterministic and low-cost. Produces unambiguous evidence for the gatekeeper without requiring manual bisection. Should remain standard practice whenever `run_tests.sh` exits non-zero after a fix is applied.
+
+---

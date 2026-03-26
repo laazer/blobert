@@ -123,9 +123,19 @@ None. The test pattern is established in this codebase (`test_adv_sdr_05` in `te
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_COMPLETE |
-| Revision | 4 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | All BUG-MMSP-01 assertions pass (AC-1, AC-2, AC-3). 7 pre-existing RSM-SIGNAL failures confirmed pre-existing; not introduced by this fix. |
+| Stage | COMPLETE |
+| Revision | 5 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC verified: (1) `player_controller_3d.gd` line 11 contains the correct path `res://scripts/movement/movement_simulation.gd` — confirmed by direct file read. (2) The bad path `res://scripts/movement_simulation.gd` is absent from all `.tscn` and `.tres` files (grep: zero matches); the only `.gd` hits are in the regression test file itself, appearing only inside comment text and assertion strings that check for the path's *absence* — not as any live `preload()` or `load()` call. (3) Regression test `tests/bugfix/test_player_controller_preload_path.gd` exists, implements BUG-MMSP-01 covering spec AC-1 through AC-4, exposes `run_all()` for auto-discovery by `run_tests.gd`, and Validation Status from Engine Integration Agent confirms all BUG-MMSP-01 assertions pass. (4) 7 RSM-SIGNAL failures are pre-existing and confirmed not introduced by this fix, consistent with instructions. All top-level and spec-level acceptance criteria have objective, traceable evidence. |
 | Blocking Issues | None |
+| Escalation Notes | Human should confirm the UID cache rebuild (`godot --import`) was performed after the commit, per Risk R-1 in the ticket. This is a recommended post-fix step, not a blocking criterion, because the preload string fix and the test coverage satisfy all stated AC items. |
+
+## NEXT ACTION
+
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Human |
+| Status | COMPLETE |
+| Reason | All acceptance criteria are satisfied with explicit, traceable evidence: the correct preload path is present in `player_controller_3d.gd`, the wrong path is absent from all scene and resource files, the regression test BUG-MMSP-01 exists and passes, and pre-existing test failures are accounted for. Ticket is ready to close. Recommended (non-blocking) follow-up: run `godot --import` to confirm UID cache is clean per ticket Risk R-1. |
+| Required Input Schema | None |
