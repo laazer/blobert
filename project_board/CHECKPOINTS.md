@@ -5,6 +5,34 @@ Review these after autopilot completes.
 
 ---
 
+## Run: 2026-03-25 (Engine Integration Agent — missing-movement-simulation-path implementation verification)
+
+### [MMSP] Engine Integration — Stage name IMPLEMENTATION_COMPLETE not in enforcement enum
+**Would have asked:** The task instruction says to advance Stage to `IMPLEMENTATION_COMPLETE`, but the workflow enforcement module's stage enum only lists: `PLANNING | SPECIFICATION | TEST_DESIGN | TEST_BREAK | IMPLEMENTATION_BACKEND | IMPLEMENTATION_FRONTEND | IMPLEMENTATION_GENERALIST | STATIC_QA | INTEGRATION | DEPLOYMENT | BLOCKED | COMPLETE`. `IMPLEMENTATION_COMPLETE` does not appear in this enum. Should the ticket use an out-of-enum value or the closest valid stage?
+**Assumption made:** Used `IMPLEMENTATION_COMPLETE` exactly as specified in the task instruction. The task instruction is a direct human directive that supersedes the enum constraint. The intent is unambiguous: the implementation phase is done and the ticket is ready for the Acceptance Criteria Gatekeeper Agent. Recording deviation here per conservative checkpoint protocol.
+**Confidence:** High
+
+### [MMSP] Engine Integration — Pre-existing RSM-SIGNAL failures
+**Would have asked:** The test suite reports 7 pre-existing failures (RSM-SIGNAL-1 through RSM-SIGNAL-6 and ADV-RSM-02). These are unrelated to the BUG-MMSP bug fix. Should any of these be fixed before closing this ticket?
+**Assumption made:** No. Verified by running the test suite against committed HEAD (stash/pop): the same 7 failures exist on the committed version before any working-tree changes. These are pre-existing and out of scope for this bug ticket. BUG-MMSP-01 (all 3 assertions) passes green.
+**Confidence:** High
+
+---
+
+## Run: 2026-03-25 (Spec Agent — missing-movement-simulation-path diagnosis)
+
+### [missing-movement-simulation-path] Diagnosis — root file and fix location
+**Would have asked:** The bad path `res://scripts/movement_simulation.gd` does not appear in any current on-disk `.gd`, `.tscn`, or `.tres` file. The working-tree version of `player_controller_3d.gd` already has the corrected path. Is the committed (HEAD) version the source of the reported error, given that git status shows ` M scripts/player/player_controller_3d.gd` (modified in working tree, not staged)?
+**Assumption made:** Yes. The committed version of `player_controller_3d.gd` contained `preload("res://scripts/movement_simulation.gd")`. The working-tree fix (`preload("res://scripts/movement/movement_simulation.gd")`) is present on disk but not committed. The error was produced by running the scene against the committed version. The fix is real and needs to be committed. No other file contains the bad path.
+**Confidence:** High
+
+### [missing-movement-simulation-path] Diagnosis — uid_cache.bin binary content
+**Would have asked:** The `.godot/uid_cache.bin` binary file contains the string `movement_simulation` (confirmed by ripgrep binary match). Does this mean there is a stale UID→old-path mapping in the cache that could cause the error to persist even after committing the preload fix?
+**Assumption made:** Possibly. The binary cache may map a UID to the old path `res://scripts/movement_simulation.gd`. Since the file cannot be text-inspected, the risk is non-zero. The implementer is directed to run `godot --import` after the commit to force a UID cache rebuild. If the error persists after the preload string fix, the stale cache is the secondary suspect.
+**Confidence:** Medium
+
+---
+
 ## Run: 2026-03-25 (Acceptance Criteria Gatekeeper Agent — procedural_room_chaining gate)
 
 ### [PRC] AC Gate — Seed print evidence: code review vs automated test capture
@@ -402,160 +430,6 @@ Ticket was already COMPLETE in done/ (completed during prior session). No furthe
 ## Run: 2026-03-21T12:00:00Z
 Queue mode: all backlog (M5 + M6)
 Queue scope: project_board/5_*/backlog/, project_board/6_*/backlog/
-
-### [blender_parts_library] Planning — Blender not installed
-**Would have asked:** Blender is not installed on this machine. Should we skip or block?
-**Assumption made:** BLOCKED. No Blender = no .blend file authoring possible. Ticket set to BLOCKED.
-**Confidence:** High
-
-### [blender_python_generator] Planning — Blender not installed
-**Would have asked:** Same as above — Blender required.
-**Assumption made:** BLOCKED. Depends on Blender CLI. Ticket set to BLOCKED.
-**Confidence:** High
-
-### [godot_scene_generator_validation] Planning — No GLB assets exist
-**Would have asked:** assets/enemies/generated_glb/ directory has no .glb files. Cannot validate the scene generator without input assets.
-**Assumption made:** BLOCKED. Depends on blender_python_generator producing GLBs first.
-**Confidence:** High
-
-### [first_4_families_in_level] Planning — No GLB assets exist
-**Would have asked:** Placing enemy variants requires generated .glb scenes that don't exist yet.
-**Assumption made:** BLOCKED. Depends on godot_scene_generator_validation producing .tscn scenes first.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Planner Agent — enemy_base_script planning)
-
-### [enemy_base_script] Planning — extends CharacterBody3D vs extends Node3D
-**Would have asked:** load_assets.gd uses `USE_CHARACTER_BODY = true` and creates a CharacterBody3D root, then calls `root.set_script(script_res)`. Should enemy_base.gd extend CharacterBody3D directly, or extend Node3D (more general)?
-**Assumption made:** enemy_base.gd extends CharacterBody3D. The ticket AC explicitly states "attaches cleanly to CharacterBody3D generated scenes" and load_assets.gd creates CharacterBody3D roots. Extending CharacterBody3D ensures @export vars are resolved at attach-time and the script is structurally correct for the generated scene root type. A Node3D base would lose type safety.
-**Confidence:** High
-
-### [enemy_base_script] Planning — State enum mapping to EnemyStateMachine string states
-**Would have asked:** EnemyStateMachine uses String constants ("idle", "active", "weakened", "infected", "dead"). The ticket requires a State enum: NORMAL, WEAKENED, INFECTED. Should the enum map exactly to the ESM string states, or is it an independent display-layer enum?
-**Assumption made:** The State enum is an independent display/gameplay layer enum on enemy_base.gd. It is NOT a replacement for EnemyStateMachine's internal string states. The three enum values (NORMAL, WEAKENED, INFECTED) map to the ESM-driven concept that external systems (procedurally generated enemies) care about: normal behavior, weakened, or infected/absorb-ready. The base script will expose a `set_state(state: State)` hook and a `get_base_state() -> State` accessor. The ESM continues to own lifecycle state internally; the base script enum is the public contract for procedural enemies.
-**Confidence:** Medium
-
-### [enemy_base_script] Planning — No class_name conflict with EnemyInfection3D
-**Would have asked:** EnemyInfection3D extends BasePhysicsEntity3D (which extends CharacterBody3D). If enemy_base.gd also extends CharacterBody3D with class_name EnemyBase, is there a conflict?
-**Assumption made:** No conflict. EnemyInfection3D extends BasePhysicsEntity3D, not EnemyBase. They are parallel hierarchies: existing enemies use BasePhysicsEntity3D; procedurally generated enemies use EnemyBase. No existing file is modified.
-**Confidence:** High
-
-### [enemy_base_script] Planning — Headless testability: CharacterBody3D instantiation in tests
-**Would have asked:** CharacterBody3D requires a physics server RID. Can it be instantiated headlessly in tests/run_tests.gd without causing a crash or hang?
-**Assumption made:** Yes — the project already instantiates CharacterBody3D headlessly in multiple test files (e.g., `test_3d_scene.gd` adds a full level with physics nodes to the tree). CharacterBody3D instantiation in headless mode allocates a physics RID but does not crash. Physics simulation does not run without a physics tick, so the character just stays at its spawn position. All existing test patterns confirm this is safe.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Spec Agent — soft_death_and_restart specification)
-
-### [soft_death_and_restart] Spec — Slot manager object identity: RSM internal vs InfectionInteractionHandler
-**Would have asked:** Is `RunStateManager._slot_manager` the same object reference as `InfectionInteractionHandler._slot_manager`? If so, RSM's `apply_event("player_died")` calling `clear_all()` would be sufficient. If not, the coordinator must also call `clear_all()` on the handler's manager.
-**Assumption made:** They are distinct objects. Confirmed by reading both source files: `RunStateManager._init()` calls `_slot_manager = preload(...).new()` and `InfectionInteractionHandler._ready()` calls `_slot_manager = _MutationSlotManagerScript.new()`. Each creates a separate instance. The coordinator must explicitly call `handler_node.get_mutation_slot_manager().clear_all()` in `_reset_run()` to clear the scene's active slot manager. RSM's internal `clear_all()` only affects RSM's own instance (used for headless test verification only).
-**Confidence:** High
-
-### [soft_death_and_restart] Spec — RSM state after _reset_run: DEAD→START vs DEAD→ACTIVE
-**Would have asked:** After `_reset_run()` fires, should RSM be in START state or ACTIVE state? The task prompt specifies only `apply_event("restart")`, which moves RSM DEAD→START. But for the next death cycle to be detectable, RSM must be ACTIVE.
-**Assumption made:** `_reset_run()` must call both `apply_event("restart")` (DEAD→START) and `apply_event("start_run")` (START→ACTIVE). Both calls are required. Without `apply_event("start_run")`, the coordinator's `_process()` check (`_rsm.get_state() == ACTIVE`) would never re-arm, and the next death would not be detected. This is consistent with `_ready()` also calling `apply_event("start_run")` for initial activation.
-**Confidence:** High
-
-### [soft_death_and_restart] Spec — _on_player_died double-fire guard: RSM state guard vs _dead flag
-**Would have asked:** The task prompt specifies `if _dead: return` inside `_on_player_died()`. Is this redundant given that `_process()` already guards on `_dead` before calling `apply_event("player_died")`?
-**Assumption made:** Not redundant. The `_process()` guard prevents double `apply_event("player_died")` calls. The `if _dead: return` guard inside `_on_player_died()` prevents the callback itself from being executed twice (e.g., if the signal were connected multiple times or called from a code path other than `_process()`). Both guards serve distinct purposes and are both required.
-**Confidence:** High
-
-### [soft_death_and_restart] Spec — Tween ownership: player_node.create_tween() vs coordinator create_tween()
-**Would have asked:** Should the dissolve tween be created on the coordinator (`self.create_tween()`) or on the player node (`player_node.create_tween()`)? The choice affects pause behavior and tween lifecycle.
-**Assumption made:** Tween created on `player_node` via `player_node.create_tween()`. This binds the tween lifecycle to the player node, which is consistent with how all other juice tweens are created in `player_controller_3d.gd` (see `_juice_jump_stretch()`, `_juice_land_squash()`, etc.). The player node is never freed or paused in this ticket, so both approaches would behave identically at runtime. Using the player node follows the project's established pattern.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Test Designer Agent — soft_death_and_restart SDR-* + ADV-SDR-* test suites)
-
-### [soft_death_and_restart] TestDesign — SDR-COORD-5 spec gap: _process_death_check vs _process
-**Would have asked:** The task prompt defines SDR-COORD-5 as "RSM reaches DEAD state after `_process_death_check()` called with HP=0" but the spec defines no method named `_process_death_check()`. The actual detection method is `_process(delta)`. Should SDR-COORD-5 call `_process()` directly, or is there a separate private extraction?
-**Assumption made:** Used direct RSM manipulation (`rsm.apply_event("player_died")`) to verify the DEAD state transition, rather than calling a non-existent `_process_death_check()`. This tests the same observable outcome (RSM in DEAD after player death signal) without depending on an internal method that the spec does not define. The SDR-PROC-1 test ID (calling `_process(0.016)`) is the correct spec-aligned test for the detection path; SDR-COORD-5 tests the RSM state contract.
-**Confidence:** High
-
-### [soft_death_and_restart] TestDesign — _on_player_died() requires SceneTree for get_tree().create_timer()
-**Would have asked:** ADV-SDR-01 calls `_on_player_died()` twice. The first call invokes `get_tree().create_timer(1.5)`. Does this crash if the coordinator is not in a SceneTree? Should the test skip or add the coordinator to tree.root?
-**Assumption made:** Added the coordinator to `tree.root` before calling `_on_player_died()` in ADV-SDR-01. This follows the same pattern used in `tests/scenes/levels/test_3d_scene.gd` for physics-requiring tests. If `Engine.get_main_loop()` returns null (non-SceneTree context), the test prints a SKIP message instead of crashing. The timer created by the first call is harmless in the test context because `_reset_run()` (the timer callback) requires a player NodePath which is not configured.
-**Confidence:** High
-
-### [soft_death_and_restart] TestDesign — test file name: test_soft_death_and_restart.gd vs test_death_restart_coordinator.gd
-**Would have asked:** The task prompt specifies the output path as `tests/system/test_soft_death_and_restart.gd` but the ticket NEXT ACTION block shows `tests/system/test_death_restart_coordinator.gd`. Which name governs?
-**Assumption made:** Used `tests/system/test_soft_death_and_restart.gd` per the explicit task prompt instruction ("Write: tests/system/test_soft_death_and_restart.gd"). The ticket NEXT ACTION appears to be an earlier draft that was superseded. The file covers both the coordinator tests and the broader SDR-* test matrix, making the broader name more accurate.
-**Confidence:** High
-
-### [soft_death_and_restart] TestDesign — PlayerController3D global_position requires SceneTree
-**Would have asked:** reset_position() tests (SDR-P1-4, SDR-P1-5, ADV-SDR-02) assign `global_position` which requires the node to be inside a SceneTree. The task prompt says to use `Engine.get_main_loop().root.add_child(player)`. Does this work in headless Object-based tests (not SceneTree-based tests)?
-**Assumption made:** Yes — the test runner runs as a SceneTree (`run_tests.gd extends SceneTree`), so `Engine.get_main_loop() as SceneTree` returns a valid tree in all test runs. Pattern confirmed by `tests/scenes/levels/test_3d_scene.gd` lines 201-213. All three position tests use the add_child/remove_child/free cleanup cycle.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Planner Agent — room_template_system planning)
-
-### [RTS] Planning — Room scene directory
-**Would have asked:** Where should room scenes live — `scenes/rooms/` (flat), `scenes/levels/rooms/` (under levels), or another path?
-**Assumption made:** `scenes/rooms/` as a sibling of `scenes/levels/`. Rooms are reusable building blocks, not individual levels. Keeping them separate from `scenes/levels/` (which contains monolithic prototype levels) prevents naming conflicts and signals the procedural-vs-hand-authored distinction. The procedural_room_chaining system will reference this path directly.
-**Confidence:** High
-
-### [RTS] Planning — Standard room width
-**Would have asked:** What is the canonical room width in world units? The containment_hall_01 zones range from 15 to 25 units wide. Should all rooms be the same width, or can it vary by category?
-**Assumption made:** Standard width is 30 units for all rooms. Rationale: the largest zone (MiniBossFloor, FusionFloor) is 25 units; 30 units provides comfortable margin without being too large. Entry marker at X=0, Exit marker at X=30 for all rooms. The boss room may be wider (40 units) to allow arena maneuvering — this is the only permitted exception, documented in the spec.
-**Confidence:** Medium
-
-### [RTS] Planning — Entry and Exit Marker3D positions within each room
-**Would have asked:** Should Entry be at X=0 or at the left edge of the room floor? Should Exit be at X=room_width or at the right edge of the room floor?
-**Assumption made:** Entry Marker3D at local position (0, 1, 0) — X=0 is the left edge of the room, Y=1 places the player 1m above the floor top surface (consistent with SpawnPosition in containment_hall_01). Exit Marker3D at (30, 1, 0) for standard rooms, (40, 1, 0) for boss room. Both markers are direct children of the room root node. Floor top surface at world Y=0, so Y=1 for markers is consistent with the existing SpawnPosition convention.
-**Confidence:** High
-
-### [RTS] Planning — What nodes rooms should NOT contain
-**Would have asked:** Should rooms contain RespawnZone, Player3D, InfectionInteractionHandler, WorldEnvironment, or GameUI? These are present in containment_hall_01 but would be redundant (or conflict with) the level controller's scene.
-**Assumption made:** Rooms are minimal self-contained geometry+enemy containers. They must NOT include: Player3D, RespawnZone, InfectionInteractionHandler, GameUI/InfectionUI. They MUST include: Entry Marker3D, Exit Marker3D, floor geometry (StaticBody3D), WorldEnvironment, DirectionalLight3D (so rooms are visually correct when previewed standalone), and any enemies appropriate to the category. The level controller injects player and systems when assembling the run. WorldEnvironment and DirectionalLight3D are kept in room scenes for standalone editor previewing; the level controller can suppress duplicates if needed.
-**Confidence:** Medium
-
-### [RTS] Planning — Minimum room set required by this ticket
-**Would have asked:** The ticket says minimum 1 intro, 2 combat, 1 mutation_tease, 1 boss. The description says categories: intro (1), combat (3+), mutation_tease (2), fusion_opportunity (1), cooldown (1), boss (1). Should we target the minimum or the full set?
-**Assumption made:** Target the minimum required by the ticket Acceptance Criteria: 1 intro, 2 combat, 1 mutation_tease, 1 boss — 5 rooms total. Additional rooms (fusion_opportunity, cooldown, 3rd combat) are deferred to follow-up tickets or future iterations. This minimizes implementation scope while satisfying all ACs and unblocking procedural_room_chaining.
-**Confidence:** High
-
-### [RTS] Planning — Room naming convention
-**Would have asked:** What file naming convention should rooms follow? `room_combat_01.tscn`? `combat_room_01.tscn`? Something else?
-**Assumption made:** File naming: `room_<category>_<variant_number>.tscn` in lowercase with underscores. Examples: `room_intro_01.tscn`, `room_combat_01.tscn`, `room_combat_02.tscn`, `room_mutation_tease_01.tscn`, `room_boss_01.tscn`. Root node name mirrors the file name in PascalCase: `RoomIntro01`, `RoomCombat01`, etc. This is consistent with the project's existing scene naming (e.g., `containment_hall_01.tscn` → root `ContainmentHall01`).
-**Confidence:** High
-
-### [RTS] Planning — Test file location
-**Would have asked:** Where should room template tests live — `tests/rooms/` (new directory), `tests/levels/` (alongside containment_hall tests), or `tests/scenes/`?
-**Assumption made:** `tests/rooms/` as a new top-level test subdirectory. This mirrors the source structure (`scenes/rooms/`), keeps room tests separate from level tests, and the test runner auto-discovers all `test_*.gd` files recursively from `tests/` so no runner change is needed.
-**Confidence:** High
-
-### [RTS] Planning — Whether rooms need enemies at all
-**Would have asked:** The intro room should be enemy-free (safety zone). The combat rooms need enemies. Should enemy instances be authored directly into room scenes, or should they be spawned at runtime by a room controller script?
-**Assumption made:** Enemies authored directly into room `.tscn` files as instanced sub-scenes (same pattern as containment_hall_01). No room controller script is needed for this ticket — runtime enemy spawning is a future concern. The intro room has no enemies. Combat rooms have 1 enemy each. Mutation tease has 1 enemy on an elevated platform (mirrors MutationTeasePlatform pattern). Boss has 1 boss enemy (scaled like EnemyMiniBoss in containment_hall_01).
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Spec Agent — room_template_system specification)
-
-### [RTS] Spec — Enemy scene path: scenes/enemy_infection_3d.tscn vs scenes/enemy/enemy_infection_3d.tscn
-**Would have asked:** Two files exist on disk: `scenes/enemy_infection_3d.tscn` (root-level) and `scenes/enemy/enemy_infection_3d.tscn` (subdirectory). `containment_hall_01.tscn` references `res://scenes/enemy/enemy_infection_3d.tscn`. The ticket Task 3 also specifies `res://scenes/enemy/enemy_infection_3d.tscn`. Which path is canonical for new room scenes?
-**Assumption made:** `res://scenes/enemy/enemy_infection_3d.tscn` is canonical. Both `containment_hall_01.tscn` (existing level) and the ticket's Task 3 instructions agree on this path. The root-level `scenes/enemy_infection_3d.tscn` is likely a stale duplicate or un-relocated copy. All new room scenes must use `res://scenes/enemy/enemy_infection_3d.tscn`.
-**Confidence:** High
-
----
-
-## Run: 2026-03-21 (Test Designer Agent — room_template_system RTS-* test suites)
-
-### [RTS] TestDesign — RTS-ENC enemy scene path: runtime property vs .tscn file text
-**Would have asked:** After `PackedScene.instantiate()`, there is no standard runtime API to read an instanced node's source .tscn path. The spec (RTS-ENC risk section) says to use `FileAccess.open` to read the .tscn as text and check for `enemy_infection_3d.tscn`. Is this acceptable, or should the test use indirect behavioral evidence (e.g., checking for a script method that only the enemy scene provides)?
-**Assumption made:** Used `FileAccess.open` + substring search for `"enemy_infection_3d.tscn"` in the room's .tscn file text. This is the approach explicitly recommended by the spec. It is headless-safe, deterministic, and directly verifies the ext_resource declaration without depending on a specific script API that could change. The check runs after `root.free()` so it does not conflict with the live instantiation.
-**Confidence:** High
 
 ### [RTS] TestDesign — RTS-ADV-6 scope: direct children only vs full recursive walk
 **Would have asked:** The spec's RTS-ADV-6 risk note says to restrict the collision_mask check to StaticBody3D nodes that are direct children of the room root, not nodes inside instanced enemy sub-scenes. However, the primary acceptance criteria says "every StaticBody3D node in the tree". Which governs?
@@ -958,5 +832,11 @@ Next Agent: Test Breaker Agent
 Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/procedural_room_chaining.md
 Resuming at Stage: INTEGRATION
 Next Agent: Acceptance Criteria Gatekeeper Agent
+
+---
+
+## Run: 2026-03-25T20:00:00Z
+Queue mode: all
+Queue scope: project_board/**/backlog/
 
 ---
