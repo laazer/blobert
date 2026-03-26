@@ -47,16 +47,16 @@ This scene replaces `containment_hall_01.tscn` as the test vehicle for the
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_ENGINE_INTEGRATION
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Red Phase (25 primary PRS-* + 12 adversarial ADV-PRS-* tests written; all scene-dependent tests fail correctly due to missing scene file)
+- Tests: Red Phase extended (25 primary PRS-* + 24 adversarial ADV-PRS-* tests written; all scene-dependent tests fail correctly due to missing scene file; source-inspection tests ADV-PRS-19/ADV-PRS-23 pass on existing files)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -65,19 +65,20 @@ Test Designer Agent
 
 ## Escalation Notes
 - Spec file written at: `agent_context/agents/2_spec/procedural_run_scene_spec.md`
-- 26 primary test IDs (PRS-*) and 12 adversarial test IDs (ADV-PRS-*) defined in spec.
+- 25 primary test IDs (PRS-*) and 24 adversarial test IDs (ADV-PRS-*) now implemented.
 - SpawnPosition Marker3D is specified at (0,1,0); DeathRestartCoordinator.spawn_position export must be set to NodePath("SpawnPosition").
 - DeathRestartCoordinator.infection_handler export must also be set to NodePath("InfectionInteractionHandler") — ticket Input Schema omitted this but it is required for mutation slot clearing on death-restart.
 - PRS-RUNTIME-1 (seed log line) is not headlessly automatable; evidence is code inspection of room_chain_generator.gd line 23 (unconditional print).
 - PRS-RUNTIME-2 (runtime room count after _ready()) is not headlessly testable via pure instantiation; it is [INTG-ONLY] and requires scene entry into a SceneTree.
-- SPEC GAP (ADV-PRS-09): run_scene_assembler.gd line 13 contains a comment "Does NOT use get_tree().reload_current_scene()" — the substring "reload_current_scene" appears in the architectural constraint comment. ADV-PRS-09 will permanently fail until the comment is removed or reworded (e.g., "Does NOT call the scene reload method"). The spec says "source does not contain substring" without exempting comments. Generalist Agent must either remove the comment or rephrase it so the substring is absent. Alternatively, Spec Agent may update spec to only check executable lines.
+- SPEC GAP (ADV-PRS-09): run_scene_assembler.gd line 13 contains a comment "Does NOT use get_tree().reload_current_scene()" — the substring "reload_current_scene" appears in the architectural constraint comment. ADV-PRS-09 will permanently fail until the comment is removed or reworded (e.g., "Does NOT call the scene reload method"). Engine Integration Agent must reword this comment when authoring the scene so the substring is absent.
+- NEW GAPS CLOSED (Test Breaker Agent, ADV-PRS-13..24): node base class checks for RSA/DRC/IIH/Player3D; explicit parent-object-identity checks for all five non-root nodes; project.godot main_scene invariant (PRS-NFR-3); CSGBox3D/CSGCombiner3D/GridMap geometry gaps (PRS-SCENE-6); player_3d.tscn unmodified check (PRS-PLAYER-3/PRS-NFR-4). See test file header for full traceability.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
@@ -93,4 +94,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Tests are written (red phase confirmed). 25 primary PRS-* tests and 12 adversarial ADV-PRS-* tests are implemented at tests/levels/test_procedural_run.gd and tests/levels/test_procedural_run_adversarial.gd. All scene-dependent tests fail correctly because the scene does not yet exist. Two script-inspection tests (ADV-PRS-09, ADV-PRS-10) pass/fail on the existing .gd files; ADV-PRS-09 has a known spec gap (see Escalation Notes). Test Breaker Agent must review the test suite for gaps, ambiguities, or exploitable weaknesses before Generalist Agent implements the scene.
+Test Breaker Agent extended the adversarial suite from 12 to 24 tests (ADV-PRS-13 through ADV-PRS-24), closing 12 exploitable gaps: missing node base-class assertions for RSA/DRC/IIH/Player3D, missing parent-object-identity checks for all five non-root nodes, missing project.godot main_scene invariant test, three missing geometry-type tests (CSGBox3D/CSGCombiner3D/GridMap), and a missing player_3d.tscn unmodified assertion. All new tests are headless-safe and in red phase. Engine Integration Agent must author scenes/levels/procedural_run.tscn so all 25 primary + 24 adversarial tests go green, and must also reword the ADV-PRS-09 comment in run_scene_assembler.gd to remove the "reload_current_scene" substring.
