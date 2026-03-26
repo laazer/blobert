@@ -859,3 +859,13 @@ Queue mode: all
 Queue scope: project_board/**/backlog/
 
 ---
+
+### [FEAT-20260326-procedural-run-scene] GDScript Review — NodePath exports pre-existing
+**Would have asked:** Should we fix the `NodePath` export pattern (Godot 3 style) in `death_restart_coordinator.gd` as part of this ticket?
+**Assumption made:** This script was authored under `soft_death_and_restart` ticket, not this one. Out of scope here. Filed as a follow-up concern for that ticket.
+**Confidence:** High
+
+## Resume: 2026-03-26
+Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-20260326-procedural-run-scene.md
+Resuming at Stage: IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
+Next Agent: Acceptance Criteria Gatekeeper Agent

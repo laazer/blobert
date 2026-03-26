@@ -18,9 +18,13 @@ var _attached_chunks: Array[RigidBody3D] = []
 
 
 func _ready() -> void:
-	var root: Node = get_parent()
-	if root != null:
-		_handler = root.get_node_or_null("InfectionInteractionHandler") as InfectionInteractionHandler
+	var p: Node = get_parent()
+	while p != null:
+		var candidate := p.get_node_or_null("InfectionInteractionHandler") as InfectionInteractionHandler
+		if candidate != null:
+			_handler = candidate
+			break
+		p = p.get_parent()
 	_area = get_node_or_null("InteractionArea") as Area3D
 	if _area != null:
 		_area.body_entered.connect(_on_body_entered)
@@ -74,5 +78,4 @@ func _physics_process(delta: float) -> void:
 		if velocity.y != 0.0:
 			Logging.trace("enemy landed, clearing velocity from " + str(velocity.y))
 		velocity.y = 0.0
-	else:
-		Logging.debug("enemy falling, velocity " + str(velocity.y))
+

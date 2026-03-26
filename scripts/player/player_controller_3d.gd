@@ -102,11 +102,14 @@ func _ready() -> void:
 		var enemies: Array = root.find_children("*", "EnemyInfection3D", true, false)
 		for enemy in enemies:
 			enemy.chunk_attached.connect(_on_enemy_chunk_attached.bind(enemy))
+	get_tree().node_added.connect(_on_node_added_to_tree)
 
 
 func _exit_tree() -> void:
 	if not is_inside_tree():
 		return
+	if get_tree().node_added.is_connected(_on_node_added_to_tree):
+		get_tree().node_added.disconnect(_on_node_added_to_tree)
 	var root: Node = get_parent()
 	if root == null:
 		return
@@ -114,6 +117,12 @@ func _exit_tree() -> void:
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.chunk_attached.is_connected(_on_enemy_chunk_attached):
 			enemy.chunk_attached.disconnect(_on_enemy_chunk_attached)
+
+
+func _on_node_added_to_tree(node: Node) -> void:
+	if node is EnemyInfection3D:
+		if not node.chunk_attached.is_connected(_on_enemy_chunk_attached):
+			node.chunk_attached.connect(_on_enemy_chunk_attached.bind(node))
 
 
 func _process(_delta: float) -> void:

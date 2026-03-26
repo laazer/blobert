@@ -817,3 +817,80 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Deterministic and low-cost. Produces unambiguous evidence for the gatekeeper without requiring manual bisection. Should remain standard practice whenever `run_tests.sh` exits non-zero after a fix is applied.
 
 ---
+
+## [FEAT-20260326-procedural-run-scene] — Recursive sub-scene descent produced an irreconcilable test defect; source-code substring checks must exclude comment lines
+*Completed: 2026-03-26*
+
+### Learnings
+
+- category: testing
+  insight: A recursive geometry check that descends into packed-sub-scene internals cannot coexist with a spec requirement that a specific sub-scene (e.g. the player) must remain unmodified. The test PRS-GEO-2 asserted zero MeshInstance3D nodes anywhere in the instantiated tree; the player_3d.tscn sub-scene expanded at runtime, exposing its internal SlimeVisual/MeshInstance3D. Satisfying the test required either removing the mesh (violating PRS-NFR-4) or writing the test differently. The scene was correctly authored; only the test was wrong.
+  impact: One test was ruled a design defect and marked for future remediation. The Acceptance Criteria Gatekeeper had to adjudicate, consuming an escalation step. This is the third ticket in sequence (RTS-ADV-16, room_template_system, now PRS-GEO-2) to produce a false failure from recursive descent into sub-scene internals.
+  prevention: Geometry and node-type absence assertions must never use full recursive tree walks when the scene instances a sub-scene with known internal nodes. Restrict the walk to direct children of root using `for i in root.get_child_count()` — unless the spec explicitly states "recursively including sub-scene internals." This is a pattern reinforcement of the room_template_system learning that was not applied when writing the PRS geometry spec.
+  severity: high
+
+- category: testing
+  insight: A source-code substring check (`source_code.contains("reload_current_scene")`) is fragile when the implementation file may contain comments that reference the forbidden pattern. ADV-PRS-09 passed only because the implementation comment on run_scene_assembler.gd line 12 deliberately used the paraphrase "scene reload method" instead of the literal forbidden identifier. If the implementation had written "# Does NOT call reload_current_scene" as a natural comment, the test would have failed as a false positive despite correct implementation.
+  impact: The spec noted "Already resolved" — the implementation author was aware of the risk and worked around it — but the test itself has no scoping to exclude comment lines. A future developer adding a clarifying comment using the literal method name would silently break a passing test with no implementation change.
+  prevention: When using `source_code.contains(forbidden_string)` as an absence assertion, strip comment lines (lines that begin with `#` after whitespace trimming) before applying the check. Alternatively, assert on the call-site pattern specifically (e.g., `get_tree().reload_current_scene(` rather than bare `reload_current_scene`) to reduce false-positive surface area. The test must include a comment explaining this risk.
+  severity: medium
+
+- category: process
+  insight: A CRITICAL-flagged GDScript code review finding (NodePath export using Godot 3 style in death_restart_coordinator.gd) was correctly deferred as out of scope because the script was authored under a prior ticket. However, the deferral left no downstream task or backlog entry. Future reviewers encountering the same flag must re-derive the "out of scope / prior ticket" ruling from CHECKPOINTS.md, which is not a task queue.
+  impact: The NodePath export style issue remained unresolved across at least two tickets with no ownership. Each checkpoint recorded the same finding and the same resolution without advancing toward remediation.
+  prevention: Any time a CRITICAL finding is deferred, a backlog entry or labeled CHECKPOINTS section must name the specific file, the required change, and which ticket or milestone should own it. A CRITICAL finding that generates no downstream work item is not properly triaged.
+  severity: low
+
+- category: testing
+  insight: Two runtime ACs (seed log line on scene run; 5-room child count after _ready()) are inherently unautomatable headlessly because they depend on SceneTree entry and physics initialization. Strong code-inspection proxy evidence was accepted in lieu of automation, but no documented standard governs what constitutes an acceptable proxy. Each gatekeeper must re-derive sufficiency from ticket prose.
+  impact: The gatekeeper accepted the proxies and escalated both items to the human. The outcome was correct, but the reasoning had to be reconstructed per-ticket rather than derived from a standard.
+  prevention: When a spec is authored, any AC that requires SceneTree entry should be tagged `[INTG-ONLY]` and the spec must list the specific code evidence that constitutes a headless proxy (e.g., "unconditional print() call at code line X is sufficient code-inspection proxy for the log AC"). This eliminates per-ticket gatekeeper adjudication for a predictable class of cases.
+  severity: low
+
+### Anti-Patterns
+
+- description: Writing geometry-absence assertions using full recursive subtree walks when the scene instances a packed sub-scene with known internal mesh nodes. The test becomes irreconcilable with a spec requirement that the sub-scene must not be modified.
+  detection_signal: A geometry-absence test fails after the scene is correctly authored, and passing the test would require modifying a sub-scene that a separate NFR explicitly forbids modifying.
+  prevention: Scope all geometry-absence assertions to direct children of the stated root node. Never use `find_nodes` or unconstrained recursive iteration for geometry checks. This failure pattern has now occurred three times across three tickets.
+
+- description: Using `source_code.contains(forbidden_identifier)` to enforce a "no call to X" requirement without stripping comment lines first. A natural documentation comment that uses the literal forbidden identifier will produce a false failure with no code change.
+  detection_signal: An absence assertion passes, but only because the implementation author paraphrased the forbidden identifier in comments. A reviewer adding a clarifying comment with the literal name breaks the test.
+  prevention: Strip comment lines from source_code before applying contains() absence checks, or use the full call-site pattern (e.g., `some_object.forbidden_method(`) instead of the bare identifier to reduce comment-line collision risk.
+
+- description: Deferred CRITICAL code-review findings recorded only in CHECKPOINTS.md with no downstream task or backlog entry. Each subsequent ticket must rediscover the finding and re-derive the same "out of scope" ruling.
+  detection_signal: The same CRITICAL flag appears across multiple ticket CHECKPOINTS entries with identical "out of scope for this ticket" resolution and no reference to an open backlog item or a ticket that owns the fix.
+  prevention: Every deferred CRITICAL finding must generate a named backlog entry or a labeled CHECKPOINTS note with a specific file, required change, and suggested owning ticket. The checkpoint entry alone is not sufficient.
+
+### Prompt Patches
+
+- agent: Test Design Agent
+  change: "When writing any geometry-type absence assertion (no MeshInstance3D, no StaticBody3D, no CSGBox3D, etc.) for a scene that instances one or more packed sub-scenes, restrict the check to direct children of the stated root node using `root.get_child(i)` iteration. Do not use `find_nodes` or any recursive walk for geometry-absence assertions. Add a comment: '# Depth-limited to direct children only — packed-sub-scene internals are excluded.' If the spec text says 'anywhere in the subtree', flag this as a potential spec defect before writing the test and confirm with the spec author."
+  reason: PRS-GEO-2 and RTS-ADV-16 both produced irreconcilable false failures because recursive geometry walks descended into packed-sub-scene internals. The scenes were correctly authored in both cases; only the tests were wrong. This pattern has now occurred three times.
+
+- agent: Test Design Agent
+  change: "When writing a source_code absence assertion (e.g., `not source_code.contains('some_identifier')`), strip comment lines from source_code before applying the check. Use: `var stripped = \"\\n\".join(source_code.split(\"\\n\").filter(func(l): return not l.strip_edges().begins_with(\"#\")))`. Then assert `not stripped.contains(forbidden_identifier)`. Add a comment: '# Comment lines stripped before check to prevent false positives from documentation references to the forbidden identifier.'"
+  reason: ADV-PRS-09 passed only because the implementation author avoided writing the literal forbidden identifier in comments. A documentation edit using the literal name would produce a false failure with no implementation change.
+
+- agent: Static QA Agent
+  change: "When a CRITICAL finding is deferred as out of scope for the current ticket, you must append a labeled entry to CHECKPOINTS.md: 'DEFERRED CRITICAL — File: <path>, Finding: <one-line description>, Suggested owner: <ticket-id or milestone>'. This entry is required output. A CRITICAL finding that generates no downstream work item is not properly triaged."
+  reason: The NodePath export CRITICAL flag was correctly deferred but left no trace in any task queue. Future agents encountering the same finding must re-derive a ruling that has already been made, wasting time and producing duplicate checkpoint entries.
+
+### Workflow Improvements
+
+- issue: The spec for PRS-GEO-2 wrote "anywhere in the subtree" for the geometry-absence requirement without noting that the player packed-scene instantiated as a direct child of root would expose internal mesh nodes to a recursive walk. The spec defect was only discovered at Engine Integration phase after full scene authoring.
+  improvement: The Spec Agent must, before finalizing any absence assertion with recursive scope, enumerate the direct children of the target root node and identify which are packed-scene instances. For each packed-scene instance, the spec must state whether its internal nodes are in scope. If a packed-scene instance must remain unmodified per an NFR, the assertion scope must explicitly exclude it.
+  expected_benefit: Catches the recursive-descent spec defect at authoring time, before any test is written or scene implemented. Prevents the escalation cycle that occurred here and in room_template_system.
+
+- issue: INTEGRATION-class ACs requiring SceneTree entry have no standard proxy-evidence format. Each ticket requires the gatekeeper to adjudicate whether code-inspection evidence is sufficient for sign-off, producing per-ticket reasoning that is not reusable.
+  improvement: The Spec Agent must tag any AC requiring SceneTree entry as `[INTG-ONLY]` and list the specific code evidence that constitutes an acceptable headless proxy (e.g., "unconditional print() at line X confirmed by code inspection"). The gatekeeper can then apply the proxy standard without re-deriving it from ticket prose.
+  expected_benefit: Reduces ticket revision count and gatekeeper adjudication time for a predictable and recurring class of integration-only ACs.
+
+### Keep / Reinforce
+
+- practice: The Acceptance Criteria Gatekeeper's ruling on PRS-GEO-2 named both the root cause (spec over-specified "anywhere in the subtree") and the exact remediation (restrict walk to direct children or explicitly exclude packed-sub-scene-internal nodes). The ruling cited both the failing test and the conflicting NFR.
+  reason: A gatekeeper ruling that identifies root cause and remediation prevents the same defect from being regenerated in a future ticket. This format is the correct standard for all defect rulings.
+
+- practice: The ticket's Escalation Notes section explicitly surfaced omissions from the original input schema (SpawnPosition NodePath, infection_handler export) rather than silently absorbing them as assumptions. Each was stated with the required action.
+  reason: Surfacing input-schema omissions explicitly in escalation notes prevents them from becoming silent implementation defects. Future agents reading the ticket can confirm that out-of-spec wiring decisions were intentional and traceable.
+
+---

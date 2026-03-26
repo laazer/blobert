@@ -43,6 +43,7 @@ func _on_run_started() -> void:
 
 	var generator := RoomChainGenerator.new()
 	var paths: Array[String] = generator.generate(SEQUENCE, POOL, Time.get_ticks_msec())
+	Logging.info("RunSceneAssembler: room layout → %s" % str(paths))
 
 	var cursor_x: float = 0.0
 	var level_root: Node = get_parent()
@@ -72,7 +73,7 @@ func _on_run_started() -> void:
 			)
 			exit_local_x = _DEFAULT_ROOM_WIDTH
 
-		level_root.add_child(room)
+		level_root.add_child.call_deferred(room)
 		_active_rooms.append(room)
 
 		cursor_x += exit_local_x
