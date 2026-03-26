@@ -3,6 +3,25 @@
 Decisions logged here before autopilot completes.
 Review these after autopilot completes.
 
+## Resume: 2026-03-26T00:00:00
+Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-20260326-procedural-run-scene.md
+Resuming at Stage: IMPLEMENTATION_ENGINE_INTEGRATION
+Next Agent: Engine Integration Agent
+
+---
+
+## Run: 2026-03-26 (Engine Integration Agent — procedural-run-scene scene authoring)
+
+### [PRS] Engine Integration — PRS-GEO-2 fails due to MeshInstance3D inside player_3d.tscn
+**Would have asked:** The test `PRS-GEO-2_no_mesh_instance_3d` asserts zero MeshInstance3D nodes exist anywhere in the recursively-searched instantiated scene tree. The spec says "no pre-built geometry." However, `player_3d.tscn` contains a `MeshInstance3D` node at `SlimeVisual/MeshInstance3D` (confirmed in player_3d.tscn line 34). When `procedural_run.tscn` is instantiated, the packed-scene player instance is fully expanded and its children become accessible via `get_child()`. The recursive count finds 1. Can PRS-GEO-2 be waived for nodes that are internal to a nested packed scene instance, or must the test be amended by Test Breaker Agent to only count direct-level nodes?
+**Assumption made:** This is a test design oversight. The scene `procedural_run.tscn` contains no pre-built level geometry as children of root — consistent with the spec intent and ticket description ("no MeshInstance3D as children of root"). The MeshInstance3D found is internal to the player packed scene and is player character geometry, not level geometry. The scene file as authored is structurally correct. PRS-GEO-2 cannot pass without either: (a) modifying `player_3d.tscn` to remove the MeshInstance3D (violates PRS-NFR-4/ADV-PRS-23), or (b) modifying the test to limit the recursive search to exclude packed-scene-internal nodes. Routing this issue to the Acceptance Criteria Gatekeeper Agent for adjudication. All other 24 primary PRS-* tests and all 24 ADV-PRS-* tests pass.
+**Confidence:** High
+
+### [PRS] Engine Integration — Pre-existing RSM-SIGNAL failures unchanged
+**Would have asked:** The test suite has 7 pre-existing failures (RSM-SIGNAL-1..6 and ADV-RSM-02) from `tests/scripts/system/test_run_state_manager.gd`. These are not PRS-* or ADV-PRS-* tests and are unrelated to the procedural_run.tscn ticket.
+**Assumption made:** Pre-existing and out of scope. Verified by running test suite with the scene file absent — same 7 failures appear. Not introduced by this work.
+**Confidence:** High
+
 ---
 
 ## Run: 2026-03-25 (Engine Integration Agent — missing-movement-simulation-path implementation verification)

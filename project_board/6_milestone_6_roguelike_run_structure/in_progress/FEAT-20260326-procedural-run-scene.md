@@ -47,21 +47,21 @@ This scene replaces `containment_hall_01.tscn` as the test vehicle for the
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_ENGINE_INTEGRATION
+IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Tests: Red Phase extended (25 primary PRS-* + 24 adversarial ADV-PRS-* tests written; all scene-dependent tests fail correctly due to missing scene file; source-inspection tests ADV-PRS-19/ADV-PRS-23 pass on existing files)
+- Tests: 48 of 49 scene-dependent PRS-*/ADV-PRS-* tests pass. 1 blocked: PRS-GEO-2 fails because player_3d.tscn contains a MeshInstance3D node (SlimeVisual/MeshInstance3D) that is found by the recursive search when the packed scene is instantiated. This is a test design oversight — the player mesh is not level geometry. The scene file itself is structurally correct per spec.
 - Static QA: Not Run
-- Integration: Not Run
+- Integration: Not Run (PRS-RUNTIME-2 is [INTG-ONLY])
 
 ## Blocking Issues
-- None
+- PRS-GEO-2 (test design conflict): The test `test_prs_geo_2_no_mesh_instance_3d` uses a recursive `_count_nodes_of_class(root, "MeshInstance3D")` and asserts count == 0. However `player_3d.tscn` contains a `MeshInstance3D` at `SlimeVisual/MeshInstance3D` which is expanded when the packed scene is instantiated. The scene cannot pass this test without modifying `player_3d.tscn` (violates PRS-NFR-4/ADV-PRS-23) or modifying the test. Resolution requires Test Breaker Agent or Acceptance Criteria Gatekeeper Agent to amend `PRS-GEO-2` to either: (a) limit recursion to exclude packed-scene-internal nodes, or (b) explicitly scope "no pre-built geometry" to direct children of root only (consistent with ticket description).
 
 ## Escalation Notes
 - Spec file written at: `agent_context/agents/2_spec/procedural_run_scene_spec.md`
@@ -70,15 +70,16 @@ Test Breaker Agent
 - DeathRestartCoordinator.infection_handler export must also be set to NodePath("InfectionInteractionHandler") — ticket Input Schema omitted this but it is required for mutation slot clearing on death-restart.
 - PRS-RUNTIME-1 (seed log line) is not headlessly automatable; evidence is code inspection of room_chain_generator.gd line 23 (unconditional print).
 - PRS-RUNTIME-2 (runtime room count after _ready()) is not headlessly testable via pure instantiation; it is [INTG-ONLY] and requires scene entry into a SceneTree.
-- SPEC GAP (ADV-PRS-09): run_scene_assembler.gd line 13 contains a comment "Does NOT use get_tree().reload_current_scene()" — the substring "reload_current_scene" appears in the architectural constraint comment. ADV-PRS-09 will permanently fail until the comment is removed or reworded (e.g., "Does NOT call the scene reload method"). Engine Integration Agent must reword this comment when authoring the scene so the substring is absent.
+- ADV-PRS-09 (reload_current_scene comment): Already resolved — run_scene_assembler.gd line 12 reads "Does NOT call the scene reload method." (no "reload_current_scene" substring). ADV-PRS-09 passes.
 - NEW GAPS CLOSED (Test Breaker Agent, ADV-PRS-13..24): node base class checks for RSA/DRC/IIH/Player3D; explicit parent-object-identity checks for all five non-root nodes; project.godot main_scene invariant (PRS-NFR-3); CSGBox3D/CSGCombiner3D/GridMap geometry gaps (PRS-SCENE-6); player_3d.tscn unmodified check (PRS-PLAYER-3/PRS-NFR-4). See test file header for full traceability.
+- Scene authored at: `scenes/levels/procedural_run.tscn`. UID: `uid://procedural_run_01`. All node types, scripts, positions, and NodePath exports are wired per spec.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -86,7 +87,9 @@ Engine Integration Agent
   "primary_tests": "tests/levels/test_procedural_run.gd",
   "adversarial_tests": "tests/levels/test_procedural_run_adversarial.gd",
   "spec_file": "agent_context/agents/2_spec/procedural_run_scene_spec.md",
-  "scene_path": "res://scenes/levels/procedural_run.tscn"
+  "scene_path": "res://scenes/levels/procedural_run.tscn",
+  "blocking_test": "PRS-GEO-2",
+  "blocking_reason": "player_3d.tscn has MeshInstance3D internally; recursive search finds it; test design conflict with PRS-NFR-4"
 }
 ```
 
@@ -94,4 +97,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Test Breaker Agent extended the adversarial suite from 12 to 24 tests (ADV-PRS-13 through ADV-PRS-24), closing 12 exploitable gaps: missing node base-class assertions for RSA/DRC/IIH/Player3D, missing parent-object-identity checks for all five non-root nodes, missing project.godot main_scene invariant test, three missing geometry-type tests (CSGBox3D/CSGCombiner3D/GridMap), and a missing player_3d.tscn unmodified assertion. All new tests are headless-safe and in red phase. Engine Integration Agent must author scenes/levels/procedural_run.tscn so all 25 primary + 24 adversarial tests go green, and must also reword the ADV-PRS-09 comment in run_scene_assembler.gd to remove the "reload_current_scene" substring.
+Engine Integration Agent authored scenes/levels/procedural_run.tscn. The scene is structurally complete: Node3D root named ProceduralRun, 5 direct children (Player3D instance of player_3d.tscn at (0,1,0), SpawnPosition Marker3D at (0,1,0), RunSceneAssembler with correct script, DeathRestartCoordinator with correct script and all 3 NodePath exports wired, InfectionInteractionHandler with correct script), no pre-built level geometry, format=3, unique UID. 48 of 49 PRS-*/ADV-PRS-* tests pass. PRS-GEO-2 requires adjudication: test checks entire recursive subtree for MeshInstance3D but player_3d.tscn contains one internally. Acceptance Criteria Gatekeeper Agent must rule on whether PRS-GEO-2 should be amended or waived.

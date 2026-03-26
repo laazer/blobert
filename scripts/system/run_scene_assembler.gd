@@ -9,7 +9,7 @@
 # Architectural constraints:
 #   - Does NOT share a RunStateManager with DeathRestartCoordinator. Two lightweight
 #     instances is intentional — see CHECKPOINTS.md [PRC] Engine Integration.
-#   - Does NOT use get_tree().reload_current_scene().
+#   - Does NOT call the scene reload method.
 #   - Does NOT connect to any autoload.
 #   - Core Simulation (RoomChainGenerator) remains pure RefCounted — called here.
 #

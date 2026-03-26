@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://procedural_run_01"]
+
+[ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://run_scene_assembler" path="res://scripts/system/run_scene_assembler.gd" id="2_run_scene_assembler"]
+[ext_resource type="Script" path="res://scripts/system/death_restart_coordinator.gd" id="3_death_restart_coordinator"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="4_infection_interaction_handler"]
+
+[node name="ProceduralRun" type="Node3D"]
+
+[node name="Player3D" parent="." instance=ExtResource("1_player")]
+position = Vector3(0, 1, 0)
+
+[node name="SpawnPosition" type="Marker3D" parent="."]
+position = Vector3(0, 1, 0)
+
+[node name="RunSceneAssembler" type="Node" parent="."]
+script = ExtResource("2_run_scene_assembler")
+
+[node name="DeathRestartCoordinator" type="Node" parent="."]
+script = ExtResource("3_death_restart_coordinator")
+player = NodePath("Player3D")
+spawn_position = NodePath("SpawnPosition")
+infection_handler = NodePath("InfectionInteractionHandler")
+
+[node name="InfectionInteractionHandler" type="Node" parent="."]
+script = ExtResource("4_infection_interaction_handler")
