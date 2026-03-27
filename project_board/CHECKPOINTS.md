@@ -931,3 +931,25 @@ Queue scope: project_board/4_milestone_4_prototype_level/blocked/scene_state_mac
 **Would have asked:** The `scene_variant_controller_3d.gd` and its scene node were already authored by the Core Simulation Agent before this handoff. The integration test `test_scene_state_integration_3d.gd` passes (7/7). Should the Engine Integration Agent re-author anything or consider this wiring complete?
 **Assumption made:** The wiring is structurally complete. The controller owns a SceneStateMachine, exposes `get_state_machine()`, `select_baseline()`, and `select_infection_demo()`, and is a child node of the root in `test_movement_3d.tscn`. All 7 integration tests pass. The prior agent placed a comment in the controller noting it "does not yet wire feature systems," which relates to AC-4. However, the task-specified integration test (`test_scene_state_integration_3d.gd`) covers only AC-3 (two concrete configurations) and all its assertions pass. No test asserts feature system gating (AC-4), so that gap is a validation coverage issue for the Acceptance Criteria Gatekeeper Agent to evaluate — not a wiring change for this agent. Proceeding to ticket update with IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE.
 **Confidence:** High
+
+## Run: 2026-03-27 (Engine Integration Agent — GDScript WARNING fixes)
+
+### [SSM] GDScript Fix — apply_event parameter typing
+**Would have asked:** Should `event_id: Variant` be used even though the runtime type check via `typeof()` already guards non-String inputs?
+**Assumption made:** Yes — explicit `Variant` annotation satisfies the static analyzer without changing runtime semantics; the `typeof()` guard remains intact.
+**Confidence:** High
+
+### [SSM] GDScript Fix — get_config() explicit STATE_BASELINE arm
+**Would have asked:** The wildcard `_:` previously returned a valid BASELINE dictionary; making it a `push_error` + empty `{}` return changes the return contract for unknown states. Is that acceptable?
+**Assumption made:** Yes — the three explicit arms now cover all reachable states. The `_:` arm with `push_error` is purely defensive for future programming errors; it is unreachable under correct usage.
+**Confidence:** High
+
+### [SSM] GDScript Fix — EVENT_SELECT_* constants on SceneStateMachine
+**Would have asked:** The task asked for event constants; should they live on SceneStateMachine (engine-agnostic) or on the controller?
+**Assumption made:** Constants placed on SceneStateMachine so the controller can reference them via `SceneStateMachine.EVENT_SELECT_*`, keeping the event strings as a single source of truth in the pure-logic class.
+**Confidence:** High
+
+### [SSM] GDScript Fix — _init() vs _ready() for _state_machine construction
+**Would have asked:** The task said remove lazy-init from `get_state_machine()` because `_ready()` constructs it — but integration tests instantiate the node without adding it to the scene tree, so `_ready()` never fires and `get_state_machine()` returned null. Move construction to `_init()` or restore lazy-init?
+**Assumption made:** Moved construction to `_init()`, which fires at `instantiate()` time regardless of scene tree membership. This satisfies both the "single construction site" goal and the tests. `_ready()` was removed entirely as it had no remaining content.
+**Confidence:** High

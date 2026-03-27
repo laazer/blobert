@@ -29,6 +29,10 @@ const STATE_BASELINE: String = "BASELINE"
 const STATE_INFECTION_DEMO: String = "INFECTION_DEMO"
 const STATE_ENEMY_PLAYTEST: String = "ENEMY_PLAYTEST"
 
+const EVENT_SELECT_BASELINE: String = "select_baseline"
+const EVENT_SELECT_INFECTION_DEMO: String = "select_infection_demo"
+const EVENT_SELECT_ENEMY_PLAYTEST: String = "select_enemy_playtest"
+
 
 var _state_id: String = STATE_BASELINE
 
@@ -42,6 +46,12 @@ func get_config() -> Dictionary:
 	# Dictionary instance on every call to ensure external mutation cannot
 	# affect internal state.
 	match _state_id:
+		STATE_BASELINE:
+			return {
+				"enable_infection_loop": false,
+				"enable_enemies": false,
+				"enable_prototype_hud": true,
+			}
 		STATE_INFECTION_DEMO:
 			return {
 				"enable_infection_loop": true,
@@ -55,15 +65,11 @@ func get_config() -> Dictionary:
 				"enable_prototype_hud": true,
 			}
 		_:
-			# BASELINE (default)
-			return {
-				"enable_infection_loop": false,
-				"enable_enemies": false,
-				"enable_prototype_hud": true,
-			}
+			push_error("SceneStateMachine: unhandled state in get_config: " + _state_id)
+			return {}
 
 
-func apply_event(event_id) -> void:
+func apply_event(event_id: Variant) -> void:
 	# Non-String event identifiers are treated as strict no-ops.
 	if typeof(event_id) != TYPE_STRING:
 		return
@@ -72,11 +78,11 @@ func apply_event(event_id) -> void:
 	var target_state: String = _state_id
 
 	match event_str:
-		"select_baseline":
+		EVENT_SELECT_BASELINE:
 			target_state = STATE_BASELINE
-		"select_infection_demo":
+		EVENT_SELECT_INFECTION_DEMO:
 			target_state = STATE_INFECTION_DEMO
-		"select_enemy_playtest":
+		EVENT_SELECT_ENEMY_PLAYTEST:
 			target_state = STATE_ENEMY_PLAYTEST
 		_:
 			# Unknown event ID: strict no-op.
