@@ -23,7 +23,12 @@ echo ""
 PROMPT="Read the agent role definition at agent_context/agents/10_blog_post/blog_post_v1.md and follow it exactly. This is a non-interactive run triggered by a pre-push git hook — no live session conversation is available. Use git history, CHECKPOINTS.md, LEARNINGS.md, and the diff of these commits as your primary sources. The session commits were: $SESSION_COMMITS"
 
 cd "$ROOT"
-claude --print "$PROMPT"
+if claude --print "$PROMPT"; then
+  rm -f "$LOG"
+else
+  echo "blog-post: claude exited with an error — session log preserved at $LOG"
+  echo "           Re-run manually: claude --print \"\$(cat $LOG)\""
+fi
 
-# Clear the session log after the post is written.
-rm -f "$LOG"
+# Always exit 0 — blog post failure must not block the push.
+exit 0
