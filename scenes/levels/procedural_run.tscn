@@ -4,6 +4,8 @@
 [ext_resource type="Script" uid="uid://run_scene_assembler" path="res://scripts/system/run_scene_assembler.gd" id="2_run_scene_assembler"]
 [ext_resource type="Script" path="res://scripts/system/death_restart_coordinator.gd" id="3_death_restart_coordinator"]
 [ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="4_infection_interaction_handler"]
+[ext_resource type="PackedScene" uid="uid://cgame_ui001" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="6_respawn"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -11,6 +13,9 @@ background_color = Color(0.2, 0.25, 0.3, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.6, 0.65, 0.7, 1)
 ambient_light_energy = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(300, 8, 30)
 
 [node name="ProceduralRun" type="Node3D"]
 
@@ -38,3 +43,15 @@ infection_handler = NodePath("InfectionInteractionHandler")
 
 [node name="InfectionInteractionHandler" type="Node" parent="."]
 script = ExtResource("4_infection_interaction_handler")
+
+[node name="InfectionUI" parent="." instance=ExtResource("5_game_ui")]
+
+[node name="RespawnZone" type="Area3D" parent="."]
+script = ExtResource("6_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, -5, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]
