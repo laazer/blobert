@@ -1,0 +1,35 @@
+# Git hooks for blobert (Godot 4 game + Blender asset pipeline).
+# Install:  lefthook install
+# Skip:     LEFTHOOK=0 git commit / git push
+#
+# pre-commit — fast checks on staged files only:
+#   - py-parse: syntax-check staged Python files in asset_generation/python/
+#
+# pre-push — full test suites gated by changed domains:
+#   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
+#   - py-tests:    pytest in asset_generation/python/ (any .py change there)
+#
+# Requires:
+#   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
+#   - python3 on PATH
+#   - For py-tests: pip install -e ".[dev]" in asset_generation/python/
+
+pre-commit:
+  parallel: true
+  commands:
+    py-parse:
+      name: Python parse check (asset_generation)
+      glob: "asset_generation/python/**/*.py"
+      run: python3 -m py_compile {staged_files}
+
+pre-push:
+  parallel: false
+  commands:
+    godot-tests:
+      name: Godot test suite
+      glob: "**/*.{gd,tscn,tres,gdshader}"
+      run: .lefthook/scripts/godot-tests.sh
+    py-tests:
+      name: Python tests (asset_generation)
+      glob: "asset_generation/python/**/*.py"
+      run: .lefthook/scripts/py-tests.sh
