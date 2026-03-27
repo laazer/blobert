@@ -116,26 +116,27 @@ A tween-based dissolve/fade on the player's `SlimeVisual` node, driven by the `p
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-INTEGRATION
+COMPLETE
 
 ## Revision
-7
+9
 
 ## Last Updated By
-Engine Integration Agent
+Human
 
 ## Validation Status
-- Tests: 21 SDR-* tests ALL PASS (15 primary + 6 adversarial). run_tests.sh confirmed. Headless coverage maps to AC items as follows: "Death does not hard-crash or hang" — covered by SDR-STRUCT-1, SDR-STRUCT-2, SDR-CORE-1, SDR-CORE-8, SDR-NOOP-1, SDR-NOOP-2. "Run resets within 2 seconds" — covered by SDR-CORE-7 (elapsed ≤ 2.0 s). "Mutation slots empty on restart" — covered by SDR-CORE-4. "Player position and HP fully reset" — covered by SDR-CORE-3 and SDR-CORE-6. 7 pre-existing RSM-SIGNAL-* failures are unrelated to this ticket (GDScript 4.6.1 lambda capture issue in RSM test file). Tests confirmed passing after scene wiring.
-- Static QA: GDScript review passed (no crashes, null guards correct, signal wiring correct). `position = target` fallback in `reset_position()` documented as necessary for Godot 4.6.1 headless compatibility.
-- Integration: `DeathRestartCoordinator` node is now wired in `scenes/levels/containment_hall_01/containment_hall_01.tscn`. NodePath exports set: `player = NodePath("../Player3D")`, `spawn_position = NodePath("../SpawnPosition")`, `infection_handler = NodePath("../InfectionInteractionHandler")`. Script registered with UID `uid://death_restart_coord`. In-editor playtest path now unblocked. AC "Brief visual feedback on death (dissolve or fade)" maps to SDR-VIS-1 and SDR-VIS-2 — human-only verification items, not yet performed.
-- Deferred AC: "New room layout is generated on each restart" is explicitly deferred to the `procedural_room_chaining` ticket. Acceptance by Spec Agent is documented in Escalation Notes. This deferral is in-scope and does not block this ticket.
+- Tests: 21 SDR-* tests ALL PASS (15 primary + 6 adversarial).
+- SDR-VIS-1 PASS: SlimeVisual fades/dissolves on death — confirmed by human playtest 2026-03-27 using procedural_run.tscn with debug_kill (K key).
+- SDR-VIS-2 PASS: SlimeVisual restores to full scale after reset — confirmed same session.
+- All other ACs evidenced headlessly (no crash, resets within 2s, mutation slots cleared, HP/position reset).
+- Deferred AC: "New room layout on each restart" — explicitly deferred to procedural_room_chaining ticket; accepted by Spec Agent.
 
 ## Blocking Issues
-- [AC: "Brief visual feedback on death (dissolve or fade)"] Human visual verification of SDR-VIS-1 (SlimeVisual fades out on death) and SDR-VIS-2 (SlimeVisual restores after reset) has not been performed or documented. No evidence exists for this criterion. Ticket cannot advance to COMPLETE until a human documents confirmation of both items in Validation Status.
+None
 
 ## Escalation Notes
-- AC "New room layout is generated on each restart" is deferred — confirmed acceptable by Spec Agent. This ticket treats containment_hall_01 as the fixed reset target. The `procedural_room_chaining` ticket will address procedural layout in a future milestone.
-- InfectionInteractionHandler slot manager reference — RESOLVED by Spec Agent: RSM's `_slot_manager` and InfectionInteractionHandler's `_slot_manager` are distinct objects (each created independently in their respective `_init()`/`_ready()` methods). The coordinator must call `handler_node.get_mutation_slot_manager().clear_all()` explicitly in `_reset_run()`. See `agent_context/agents/2_spec/soft_death_and_restart_spec.md` Escalation Resolution section.
+- AC "New room layout is generated on each restart" is deferred — confirmed acceptable by Spec Agent.
+- InfectionInteractionHandler slot manager reference — RESOLVED.
 
 ---
 
@@ -144,15 +145,8 @@ Engine Integration Agent
 ## Next Responsible Agent
 Human
 
-## Required Input Schema
-```json
-{
-  "task": "Open containment_hall_01 in the Godot editor and run the scene in-editor. Trigger player death (reduce HP to 0) and verify: (SDR-VIS-1) SlimeVisual fades out (dissolves or scales to zero) on death, and (SDR-VIS-2) SlimeVisual restores to full scale/alpha after the reset fires. Document pass/fail for both items in Validation Status and advance ticket to COMPLETE if both pass."
-}
-```
-
 ## Status
-Needs Attention
+Proceed
 
 ## Reason
-All 21 SDR-* headless tests pass and `DeathRestartCoordinator` is now wired in `containment_hall_01.tscn` with correct NodePath exports. One blocking issue remains: human visual verification of SDR-VIS-1 (SlimeVisual fades out on death) and SDR-VIS-2 (SlimeVisual restores after reset). These are in-editor playtest items that cannot be verified headlessly. Human must perform the playtest and document the result.
+All acceptance criteria are met. Human playtest 2026-03-27 confirmed SDR-VIS-1 and SDR-VIS-2. Ticket is COMPLETE.

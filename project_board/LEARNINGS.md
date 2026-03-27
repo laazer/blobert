@@ -894,3 +894,76 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Surfacing input-schema omissions explicitly in escalation notes prevents them from becoming silent implementation defects. Future agents reading the ticket can confirm that out-of-spec wiring decisions were intentional and traceable.
 
 ---
+
+## [AP-CONTINUE-2026-03-27] — 7 tickets correctly held at INTEGRATION; zero false completions; playtest-result-capture path is missing from the workflow
+*Completed: 2026-03-27*
+
+### Learnings
+
+- category: process
+  insight: All 7 in-progress tickets (5 M4 + 2 M6) are structurally complete — automated test suites pass, scene wiring is done, and the AC Gatekeeper correctly identified the sole remaining blocker on each as a human-only visual or runtime observation. The AC Gatekeeper's hold behavior is correct and should be treated as expected steady state for tickets with subjective ACs.
+  impact: Zero false completions occurred. The Gatekeeper's conservative stance prevents premature COMPLETE advancement. However, the pipeline has no affordance for a human to record evidence inline — the tickets contain a Manual QA Checklist section and a documented task, but there is no standard handoff mechanism that routes the human to those instructions or captures their response back into the ticket file.
+  prevention: The workflow needs an explicit "human verification handoff" mechanism: a short summary document or notification that lists all INTEGRATION-blocked tickets, their scene to open, and the exact numbered checklist steps. Without this, playtest evidence accumulates nowhere and tickets remain at INTEGRATION indefinitely despite correct automated coverage.
+  severity: high
+
+- category: process
+  insight: The "Manual QA Checklist" prompt patch for the Spec Agent has been documented in learnings entries for [containment_hall_01_layout], [fusion_opportunity_room], [light_skill_check], [procedural_room_chaining], and [FEAT-20260326-procedural-run-scene] — five consecutive mentions — and the checklists are now appearing in tickets (mini_boss_encounter, soft_death_and_restart, procedural_room_chaining all have explicit numbered playtest task blocks). However, none of these tickets have been completed because the human has not performed and recorded the playtests. The spec-side fix is working; the human-response side is the remaining gap.
+  impact: Playtest checklists exist and are well-formed. The blocker is not spec quality — it is that playtest results have no path back into the ticket. The workflow has no actor responsible for consuming the checklist and writing evidence into Validation Status.
+  prevention: Distinguish the two distinct sub-problems: (a) checklist creation at spec time — now solved; (b) evidence capture after playtest — still unsolved. Future workflow improvements should focus exclusively on (b).
+  severity: high
+
+- category: process
+  insight: When an ap-continue run processes multiple tickets and all are held at INTEGRATION by the same class of blocker (human visual verification), the run produces zero new code and zero ticket state transitions. From a pipeline efficiency perspective, an ap-continue run in this state is a no-op — it confirms the correct hold state but advances nothing. This is not a failure; it is a structural signal that the pipeline is waiting for an out-of-band human input.
+  impact: Autopilot runtime was consumed confirming already-correct state across 7 tickets. No rework occurred. The AC Gatekeeper behaved correctly on all 7. If this pattern recurs, the Orchestrator should recognize "all in-progress tickets at INTEGRATION with visual-only remaining blocker" as a condition to short-circuit the run and surface the playtest queue directly to the human rather than cycling through each ticket.
+  prevention: When the Orchestrator begins an ap-continue run and finds that all in-progress tickets have Stage: INTEGRATION and all blocking issues are labeled "human playtest required," it should emit a single "Playtest Queue" summary rather than re-running the AC Gatekeeper per ticket.
+  severity: medium
+
+- category: process
+  insight: The persistent 7 RSM-SIGNAL-* pre-existing test failures appear in every run log across multiple tickets (SDR, MMSP, PRS, PRC). Each integration agent spends time confirming they are pre-existing using the stash/restore method. The `known_failures.txt` improvement (identified in [soft_death_and_restart] learnings) was never implemented. Every subsequent agent rediscovers and re-confirms the same failures.
+  impact: Compounding diagnostic overhead. The stash/restore confirmation method is fast, but the effort is entirely duplicated across each ticket's Integration Agent. Across 7 recent tickets, this diagnostic has been performed 7+ times for the identical failures.
+  prevention: Create `tests/known_failures.txt` with the 7 RSM-SIGNAL-* test names and a one-line explanation. This file should be checked before declaring any test failure a regression. This improvement was identified in [soft_death_and_restart] and has not been actioned.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Logging a workflow improvement about creating `tests/known_failures.txt` across multiple learning entries without it ever being created. Logged once in [soft_death_and_restart] and still absent as of this run — it became a recurring anti-pattern where the insight is re-derived rather than actioned.
+  detection_signal: A learning entry's "prevention" step refers to creating a specific file, but that file does not exist after two or more ticket cycles have passed since the entry was written.
+  prevention: When an improvement requires creating a new project-level file, the Learning Agent must note it as an open directive for the next agent that touches the relevant directory, not only log it in LEARNINGS.md.
+
+- description: An autopilot run that confirms correct hold state across all tickets but has no short-circuit path — each ticket is processed fully even when the outcome is deterministic (all are INTEGRATION, all have human-only remaining blockers).
+  detection_signal: All in-progress tickets have Stage: INTEGRATION and all Blocking Issues contain the phrase "human" or "playtest required" at the start of the run.
+  prevention: The Orchestrator should check the Stage and Blocking Issues fields of all in-progress tickets at the start of an ap-continue run. If all are INTEGRATION with human-only blockers, emit the playtest queue and halt rather than cycling each through the AC Gatekeeper.
+
+### Prompt Patches
+
+- agent: AC Gatekeeper Agent
+  change: "At the start of any ap-continue run, before processing individual tickets, check the Stage and Blocking Issues of every in-progress ticket. If all tickets have Stage: INTEGRATION and all Blocking Issues contain only human-observation requirements (visual, runtime, playtest), emit a 'Playtest Queue' block listing: ticket name, scene to open, and the exact numbered checklist steps from each ticket's Manual QA task. Then halt without cycling through each ticket's gatekeeper logic individually."
+  reason: The 2026-03-27 ap-continue run consumed runtime confirming correct hold state on 7 tickets with zero state transitions possible. Short-circuiting this case reduces cycle time and surfaces the actionable items (playtests) directly to the human.
+
+- agent: Planner Agent
+  change: "When creating or reviewing a ticket that will reach INTEGRATION with human-only remaining ACs, append the ticket name and its playtest task to `project_board/PLAYTEST_QUEUE.md` (create the file if absent). Each entry must include: ticket name, scene path, and the numbered Manual QA Checklist steps. This file is the human's input queue for in-editor verification."
+  reason: Playtest checklists now exist in individual tickets but there is no consolidated view. The human must open each ticket to find what needs verification. A dedicated queue file surfaces all pending playtests at a glance.
+
+- agent: Spec Agent
+  change: "When authoring the Manual QA Checklist section for an INTEGRATION-class AC, append a 'Playtest Result Recording' subsection with these four verbatim steps: (1) Update the relevant Validation Status row from 'NOT EVIDENCED' to 'PASS — [your initials] [date]'; (2) Clear the Blocking Issues section; (3) Set Stage to COMPLETE; (4) Run `git mv project_board/<milestone>/in_progress/<ticket>.md project_board/<milestone>/done/<ticket>.md`."
+  reason: All 7 INTEGRATION-held tickets have well-formed checklists but no instructions for how the human records evidence back into the ticket file. Without the result-recording steps, the human has no clear path to close the ticket after a successful playtest.
+
+### Workflow Improvements
+
+- issue: After a human performs a playtest, there is no documented mechanism for recording the result and closing the ticket. All 7 INTEGRATION tickets have playtest task blocks but none have result-recording steps. This is the structural gap that prevents closure.
+  improvement: Every ticket that enters INTEGRATION with a human-only blocking AC must include a "Playtest Result Recording" subsection in its Manual QA task block (see Spec Agent prompt patch above). The subsection must appear in the ticket before it transitions to INTEGRATION — not as an afterthought.
+  expected_benefit: Converts playtest completion from an open-ended task into a deterministic 4-step procedure. Eliminates the ambiguity about what the human does after verifying the playtest.
+
+- issue: The `tests/known_failures.txt` file improvement has appeared in LEARNINGS.md since the [soft_death_and_restart] entry and has not been created. Improvements requiring a new artifact do not self-execute; they need an explicit owner.
+  improvement: The next agent that processes `tests/` files (Test Design Agent, Engine Integration Agent, or Static QA Agent) should treat the creation of `tests/known_failures.txt` as a mandatory pre-step, listing at minimum: RSM-SIGNAL-1 through RSM-SIGNAL-6 and ADV-RSM-02, each with a one-line note identifying the root cause (lambda primitive capture in GDScript 4.6.1) and the ticket where it was diagnosed ([soft_death_and_restart]).
+  expected_benefit: Ends the recurring stash/restore diagnostic for known-broken tests. Reduces noise that obscures real regressions.
+
+### Keep / Reinforce
+
+- practice: The AC Gatekeeper held all 7 tickets at INTEGRATION without advancing any prematurely, even across multiple ap-continue runs. All blocking issues were accurately identified as human-observation-only.
+  reason: This is the correct behavior. The Gatekeeper's conservative stance is working. The remaining gap is human-side evidence capture, not gatekeeper logic. Reinforce this hold behavior as the correct default for all tickets where any AC requires runtime visual confirmation.
+
+- practice: Every blocked ticket has a well-formed Manual QA Checklist with numbered steps specifying the exact scene path, trigger action, and expected observable outcome. The spec-side fix for the recurring "checklist missing" anti-pattern is working.
+  reason: Tickets now contain executable verification procedures. The problem is no longer checklist quality — it is that the human has no consolidated entry point to discover and act on the queue, and no instructions for recording results. The spec practice is sound; the workflow gap is the aggregation and result-capture layer.
+
+---

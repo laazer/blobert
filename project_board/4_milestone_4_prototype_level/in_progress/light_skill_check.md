@@ -10,7 +10,7 @@
 | Field | Value |
 |---|---|
 | Stage | INTEGRATION |
-| Revision | 6 |
+| Revision | 7 |
 | Last Updated By | Acceptance Criteria Gatekeeper Agent |
 | Next Responsible Agent | Human |
 | Validation Status | AC-1 (passable with core movement): COVERED — T-47 confirms P1→P2 gap ≤ 1.5 m; T-48 confirms P2→P3 gap ≤ 1.5 m (both within spec-derived safe jump range of 1.98 m). AC-2 (failure consequence, no softlock): COVERED — T-49 confirms RespawnZone exists as Area3D with respawn_zone.gd and non-empty spawn_point; T-50 confirms SpawnPosition.x < 35 and position.y ≥ 0 (at corridor level, before zone); ADV-SKC-02 confirms RespawnZone CollisionShape3D size.x ≥ 20; ADV-SKC-03 confirms size.y ≥ 6; ADV-SKC-04 confirms Y center < 0 (zone is below corridor, catches falls). AC-3 (difficulty is "light"): NOT COVERED — requires human playtest; no evidence documented. AC-4 (placed appropriately): COVERED — T-52 confirms SkillCheckPlatform1.x > FusionPlatformB.x and SkillCheckPlatform3.x < MiniBossFloor.x. AC-5 (human-playable in-editor): NOT COVERED — requires human in-editor verification; no evidence documented. |
@@ -173,17 +173,14 @@ This ticket is about **validating** the existing zone, not building new content.
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket": "project_board/4_milestone_4_prototype_level/in_progress/light_skill_check.md",
-  "spec": "agent_context/agents/2_spec/light_skill_check_spec.md",
   "scene": "scenes/levels/containment_hall_01/containment_hall_01.tscn",
-  "primary_tests": "tests/levels/test_light_skill_check.gd",
-  "adversarial_tests": "tests/levels/test_light_skill_check_adversarial.gd",
-  "test_runner": "tests/run_tests.gd"
+  "action": "Open containment_hall_01.tscn in Godot editor. Run the scene. Navigate to X≈35–55. Attempt to cross all three platforms with core movement. Verify AC-3: crossing is achievable in a few attempts (light difficulty). Deliberately fall off a platform and confirm respawn at SpawnPosition with no softlock. Verify AC-5: the zone layout is visually clear — platforms visible, pit apparent, no debug overlays required. Document pass/fail for both items in Blocking Issues. If both pass: check AC-3 and AC-5 checkboxes, clear Blocking Issues, set Stage to COMPLETE, and move ticket to done/ folder."
 }
 ```
 
@@ -191,4 +188,4 @@ Acceptance Criteria Gatekeeper Agent
 Needs Attention
 
 ## Reason
-AC-1, AC-2, and AC-4 are fully satisfied by passing automated tests (T-43 through T-52, ADV-SKC-01 through ADV-SKC-08; 253/253 passing). AC-3 ("difficulty is light: completable in a few attempts") and AC-5 ("human-playable in-editor: layout and hazards visible without debug overlays") cannot be verified by any automated test and have no documented human verification on record. Stage is held at INTEGRATION. Human must complete the manual playtest checklist in Task 6, document results in Blocking Issues, check AC-3 and AC-5, clear Blocking Issues, set Stage to COMPLETE, and move the ticket to the done/ folder.
+AC-1, AC-2, and AC-4 are fully satisfied by passing automated tests (T-43 through T-52, ADV-SKC-01 through ADV-SKC-08; 253/253 passing). AC-3 ("difficulty is light: completable in a few attempts") and AC-5 ("human-playable in-editor: layout and hazards visible without debug overlays") cannot be verified by any automated test and have no documented human verification on record. Stage is held at INTEGRATION. Human must complete the manual playtest checklist described in Task 6, document results in Blocking Issues, check AC-3 and AC-5, clear Blocking Issues, set Stage to COMPLETE, and move the ticket to the done/ folder. (Note: a prior revision left Next Responsible Agent pointing to Acceptance Criteria Gatekeeper Agent in error; corrected in this pass.)

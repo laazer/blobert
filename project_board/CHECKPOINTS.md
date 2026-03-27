@@ -869,3 +869,34 @@ Queue scope: project_board/**/backlog/
 Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-20260326-procedural-run-scene.md
 Resuming at Stage: IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
 Next Agent: Acceptance Criteria Gatekeeper Agent
+
+## Resume: 2026-03-27
+Ticket: project_board/4_milestone_4_prototype_level/in_progress/containment_hall_01_layout.md
+Resuming at Stage: INTEGRATION
+Next Agent: Acceptance Criteria Gatekeeper Agent
+
+---
+
+## Run: 2026-03-27 (Acceptance Criteria Gatekeeper Agent — 7-ticket batch gate)
+
+Tickets processed: containment_hall_01_layout, fusion_opportunity_room, light_skill_check, mini_boss_encounter, mutation_tease_room, procedural_room_chaining, soft_death_and_restart.
+
+### [AC-GATE-BATCH] Decision — No new automated evidence for any M4 ticket
+**Would have asked:** None of the 5 M4 tickets have new validation evidence since the last gatekeeper pass. Should revision be bumped for a "no change" confirmation pass?
+**Assumption made:** No revision bump for tickets where no state change is made. workflow_enforcement_v1 is explicit: "No change → no revision bump." Tickets containment_hall_01_layout (Rev 7), fusion_opportunity_room (Rev 7), mini_boss_encounter (Rev 7), and mutation_tease_room (Rev 6) are correctly held at INTEGRATION with Human as Next Responsible Agent. No action taken on these four.
+**Confidence:** High
+
+### [AC-GATE-BATCH] Fix — light_skill_check NEXT ACTION pointed to wrong agent
+**Would have asked:** The light_skill_check.md NEXT ACTION block said `Next Responsible Agent: Acceptance Criteria Gatekeeper Agent` even though Validation Status and Blocking Issues had already been populated by a prior gatekeeper pass. Should this be corrected?
+**Assumption made:** Yes, corrected. This was a stale NEXT ACTION that was never updated after the first gatekeeper pass wrote the Validation Status. The correct routing is to Human, consistent with Blocking Issues (AC-3 and AC-5 require human playtest). Revision bumped 6 → 7 for this correction.
+**Confidence:** High
+
+### [AC-GATE-BATCH] Decision — procedural_room_chaining "seamless transitions" AC still unmet
+**Would have asked:** The task prompt says `scenes/levels/procedural_run.tscn` now exists and is confirmed working (rooms load, player moves, lighting correct). Does "rooms load, player moves, lighting correct" satisfy the AC "Transitions between rooms feel seamless (no visible load pop)"?
+**Assumption made:** No. The instruction explicitly states "ACs requiring human observation of visual feedback (death dissolve, seamless transitions) still require explicit human confirmation." The confirmation of rooms loading and player moving addresses structural ACs (scene integrity, node wiring, player controllability). The "no visible load pop" criterion is specifically about the absence of a visual artifact during the load sequence — a subjective runtime visual judgment. The structural evidence covers other criteria but does not substitute for a human observing the transition in real time. Ticket remains INTEGRATION with the existing Blocking Issue. No revision bump (no state change).
+**Confidence:** High
+
+### [AC-GATE-BATCH] First gatekeeper pass — soft_death_and_restart
+**Would have asked:** The soft_death_and_restart ticket was last updated by Engine Integration Agent (not Gatekeeper). Should the Gatekeeper take ownership of Validation Status even though Engine Integration Agent already populated it correctly?
+**Assumption made:** Yes. The Gatekeeper's role is to own the final validation assessment and set Last Updated By. The Engine Integration Agent's Validation Status content was accurate and is preserved; the Gatekeeper added explicit AC-coverage labels (COVERED / NOT EVIDENCED) to each line and sharpened the Blocking Issues text to be more actionable for the human. Revision bumped 7 → 8. No stage change — INTEGRATION is correct.
+**Confidence:** High
