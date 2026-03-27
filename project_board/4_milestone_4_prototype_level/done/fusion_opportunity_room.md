@@ -9,12 +9,12 @@
 
 | Field | Value |
 |---|---|
-| Stage | INTEGRATION |
+| Stage | COMPLETE |
 | Revision | 7 |
-| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
-| Validation Status | AC-1 COVERED: T-31 (FusionFloor origin X, BoxShape3D size exact), T-34 (gap arithmetic), ADV-FOR-03 (floor Y at ground level), ADV-FOR-07 (all-axis non-zero extent) — all passing in 253-test suite. AC-2 COVERED: T-35/T-36 (enemy scene path contains "enemy_infection_3d.tscn"; enemy Y above platform node origin), ADV-FOR-02/ADV-FOR-21 (enemy Y above platform top surface using col offset + half-height formula), ADV-FOR-09/ADV-FOR-10 (distinct node instances with different names) — all passing. AC-3 COVERED: T-37 (has_method "get_mutation_slot_manager"), T-38 (returns non-null after tree insertion; get_slot_count()==2), ADV-FOR-04 (exact int equality), ADV-FOR-12 (get_slot(0) and get_slot(1) non-null) — all passing. AC-4 COVERED: T-39 (can_fuse false with 0 slots, true with both filled), T-40 (resolve_fusion clears both slots; no-op with 0 slots), ADV-FOR-05 (null manager no crash), ADV-FOR-06 (can_fuse(null) guard), ADV-FOR-11 (empty id never fills slot), ADV-FOR-13/ADV-FOR-14 (get_slot out-of-range returns null), ADV-FOR-15 (fill-consume-refill idempotency), ADV-FOR-16 (one slot cleared → can_fuse false), ADV-FOR-19 (player without apply_fusion_effect → slots still cleared), ADV-FOR-20 (third fill overwrites slot B) — all passing. AC-5 COVERED: T-41 (all six HUD nodes non-null in game_ui.tscn), T-42 (non-zero size, within 3200×1880, FusePromptLabel and FusionActiveLabel visible==false by default), ADV-FOR-08/ADV-FOR-18 (FusePromptLabel and FusionActiveLabel hidden standalone assertions), ADV-FOR-17 (MutationIcon1/2 are ColorRect type) — all passing. AC-6 NOT COVERED: Requires human in-editor playthrough; no automated test can verify the full weaken→infect→absorb×2→G flow end-to-end. No evidence of this verification having been performed is documented. Static QA: GDScript review returned 0 CRITICAL issues. |
-| Blocking Issues | AC-6 unverified — human manual playthrough has not been performed or documented. Required evidence: human opens containment_hall_01.tscn in Godot editor, completes the full weaken→infect→absorb EnemyFusionA (Slot 1 fills) → weaken→infect→absorb EnemyFusionB (Slot 2 fills) → press G (fusion activates, both slots clear, FUSION ACTIVE label appears) in a single uninterrupted session without crash or soft-lock, and documents the result in this ticket. Ticket cannot advance to COMPLETE until this is recorded. |
+| Validation Status | AC-1 through AC-5 fully covered by automated tests (253-test suite, all passing). Human playtest 2026-03-27: PASS — full weaken→infect→absorb×2→G flow completed; both slots filled; fusion activated; FUSION ACTIVE label appeared; no crash or soft-lock. |
+| Blocking Issues | None |
 
 ---
 
@@ -143,7 +143,7 @@ Human
 ```
 
 ## Status
-Needs Attention
+Proceed
 
 ## Reason
-AC-1 through AC-5 are fully evidenced by automated tests (T-31–T-42 primary suite, ADV-FOR-01–21 adversarial suite, 253 total passing, 0 failing) and GDScript static review (0 CRITICAL issues). AC-6 requires human in-editor playthrough verification; no automated test can satisfy this criterion and no prior human verification is documented in this ticket. Stage is held at INTEGRATION. Ticket cannot advance to COMPLETE until a human performs and documents the AC-6 playthrough described in Blocking Issues.
+All acceptance criteria satisfied. Human playtest 2026-03-27 confirmed AC-6. Ticket complete.

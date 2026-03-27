@@ -9,12 +9,12 @@
 
 | Field | Value |
 |---|---|
-| Stage | INTEGRATION |
+| Stage | COMPLETE |
 | Revision | 7 |
-| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
-| Validation Status | AC-1 (distinct enemy/arena): COVERED — T-53 (dedicated 25 m MiniBossFloor), ADV-MBA-03 (EnemyMiniBoss X spatially separated from EnemyFusionA/B/EnemyMutationTease by >1 m), ADV-MBA-06 (MiniBossFloor does not overlap SkillCheck zone), ADV-MBA-07 (EnemyMiniBoss within own arena bounds), ADV-MBA-08 (distinct node name). Structural headless coverage is sufficient for this criterion. AC-2 (winnable with movement and mutations): NOT COVERED — no automated test can assert a combat outcome; human playtest required. AC-3 (victory connects to level completion): COVERED — T-59 (LevelExit exists as Area3D, positioned after ExitFloor), T-60 (inline script source contains "level_complete"), T-61/T-62 (spatial ordering: boss zone after skill check, exit after boss zone). AC-4 (no mandatory fusion, appropriate difficulty): PARTIALLY COVERED — T-55 confirms EnemyMiniBoss uses standard enemy_infection_3d.tscn (same base mechanics as all other enemies); T-57 confirms distinct node identity. Difficulty tuning and absence of a fusion requirement cannot be verified headlessly; human playtest required. AC-5 (human-playable in-editor, visually clear): NOT COVERED — visual clarity, arena readability, and in-editor appearance are inherently manual; human playtest required. T-53–T-62 passing (45/45); ADV-MBA-01–ADV-MBA-08 passing (21/21); T-1–T-52 no regressions. |
-| Blocking Issues | AC-2: No automated or headless test can confirm the encounter is winnable using only movement and available mutations. Human must engage EnemyMiniBoss in a live run and confirm a successful defeat path exists without softlock. Evidence must be documented before this AC is closed. AC-4: Difficulty level and absence of mandatory fusion cannot be assessed headlessly. Human must verify during playtest that (a) EnemyMiniBoss can be defeated without performing a fusion, and (b) the encounter is not so difficult as to be a barrier. Evidence must be documented before this AC is closed. AC-5: Visual clarity of the mini-boss arena, enemy, telegraphs, and exit trigger cannot be verified headlessly. Human must open the project in the Godot editor, run containment_hall_01.tscn, navigate to X≈55–80, and confirm all elements are visible and understandable without debug overlays. Evidence must be documented before this AC is closed. |
+| Validation Status | AC-1 (distinct enemy/arena): COVERED — T-53/ADV-MBA-* all passing. AC-3 (victory connects to level completion): COVERED — T-59/T-60/T-61/T-62 all passing. Human playtest 2026-03-27: PASS — EnemyMiniBoss defeated without fusion; encounter beatable; level exit fires after boss; arena visually clear without debug overlays. |
+| Blocking Issues | None |
 
 ---
 
@@ -242,7 +242,7 @@ Human
 ```
 
 ## Status
-Needs Attention
+Proceed
 
 ## Reason
-AC-1 and AC-3 are structurally covered by passing headless tests (T-53–T-62, ADV-MBA-01–ADV-MBA-08, 66 total assertions, 0 failures, no regressions in T-1–T-52). Three acceptance criteria cannot be satisfied by automated testing and require documented human playtest evidence before the ticket may advance to COMPLETE: AC-2 (encounter is winnable with movement and available mutations — combat outcome cannot be automated), AC-4 (no mandatory fusion, appropriate difficulty — difficulty tuning is a qualitative judgment), AC-5 (mini-boss arena, enemy, telegraphs, and exit are visually clear in-editor without debug overlays — visual clarity is inherently manual). Human must follow Task 6 playtest steps, document results in Blocking Issues, check all AC boxes if satisfied, clear Blocking Issues, set Stage to COMPLETE, and move ticket to the done/ folder.
+All acceptance criteria satisfied. Human playtest 2026-03-27 confirmed AC-2, AC-4, and AC-5. Ticket complete.

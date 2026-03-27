@@ -9,12 +9,12 @@
 
 | Field | Value |
 |---|---|
-| Stage | INTEGRATION |
+| Stage | COMPLETE |
 | Revision | 7 |
-| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
-| Validation Status | AC-1 (passable with core movement): COVERED — T-47 confirms P1→P2 gap ≤ 1.5 m; T-48 confirms P2→P3 gap ≤ 1.5 m (both within spec-derived safe jump range of 1.98 m). AC-2 (failure consequence, no softlock): COVERED — T-49 confirms RespawnZone exists as Area3D with respawn_zone.gd and non-empty spawn_point; T-50 confirms SpawnPosition.x < 35 and position.y ≥ 0 (at corridor level, before zone); ADV-SKC-02 confirms RespawnZone CollisionShape3D size.x ≥ 20; ADV-SKC-03 confirms size.y ≥ 6; ADV-SKC-04 confirms Y center < 0 (zone is below corridor, catches falls). AC-3 (difficulty is "light"): NOT COVERED — requires human playtest; no evidence documented. AC-4 (placed appropriately): COVERED — T-52 confirms SkillCheckPlatform1.x > FusionPlatformB.x and SkillCheckPlatform3.x < MiniBossFloor.x. AC-5 (human-playable in-editor): NOT COVERED — requires human in-editor verification; no evidence documented. |
-| Blocking Issues | AC-3: No automated or manual verification documented for "difficulty is light: completable in a few attempts by target audience." Human must run the scene, navigate to X≈35–55, attempt to cross all three platforms with core movement, and confirm the crossing is achievable within a few attempts before this criterion can be satisfied. AC-5: No automated or manual verification documented for "skill check encounter is human-playable in-editor: layout, hazards, and any instructional UI are visible and understandable without debug overlays." Human must open the project in the Godot editor, run the scene, and confirm the zone layout (platforms, pit, respawn flow) is visually clear without any debug overlays required to understand the hazard. See Task 6 for the full manual verification checklist. |
+| Validation Status | AC-1 (passable with core movement): COVERED — T-47/T-48 confirm gaps within safe jump range. AC-2 (failure consequence, no softlock): COVERED — T-49/T-50 and ADV-SKC-* confirm RespawnZone geometry. AC-4 (placed appropriately): COVERED — T-52. Human playtest 2026-03-27: PASS — all 3 platforms crossable with core movement in a few attempts; fall respawns correctly; layout visually clear without debug overlays. |
+| Blocking Issues | None |
 | Escalation Notes | AC-1, AC-2, and AC-4 have explicit, objective test coverage across T-43 through T-52 and ADV-SKC-01 through ADV-SKC-08 (253/253 tests pass, 0 failures, no regressions). The ticket cannot advance to COMPLETE until AC-3 and AC-5 have documented human verification results written into Blocking Issues, the checkboxes for those ACs are checked, Blocking Issues is cleared, and the ticket is moved to the done/ folder per the folder rule. |
 
 ---
@@ -185,7 +185,7 @@ Human
 ```
 
 ## Status
-Needs Attention
+Proceed
 
 ## Reason
-AC-1, AC-2, and AC-4 are fully satisfied by passing automated tests (T-43 through T-52, ADV-SKC-01 through ADV-SKC-08; 253/253 passing). AC-3 ("difficulty is light: completable in a few attempts") and AC-5 ("human-playable in-editor: layout and hazards visible without debug overlays") cannot be verified by any automated test and have no documented human verification on record. Stage is held at INTEGRATION. Human must complete the manual playtest checklist described in Task 6, document results in Blocking Issues, check AC-3 and AC-5, clear Blocking Issues, set Stage to COMPLETE, and move the ticket to the done/ folder. (Note: a prior revision left Next Responsible Agent pointing to Acceptance Criteria Gatekeeper Agent in error; corrected in this pass.)
+All acceptance criteria satisfied. Human playtest 2026-03-27 confirmed AC-3 and AC-5. Ticket complete.

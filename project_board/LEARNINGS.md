@@ -967,3 +967,81 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Tickets now contain executable verification procedures. The problem is no longer checklist quality — it is that the human has no consolidated entry point to discover and act on the queue, and no instructions for recording results. The spec practice is sound; the workflow gap is the aggregation and result-capture layer.
 
 ---
+
+## [scene_state_machine] — Stale BLOCKED ticket, cross-domain handoff noise, and `_init()` vs `_ready()` for headless-tested nodes
+
+*Completed: 2026-03-27*
+
+### Learnings
+
+- category: process
+  insight: A ticket can be marked BLOCKED based on a test-failure report that was accurate at the time of writing but stale by the time it is re-read. The implementation was already correct; the block was a snapshot of an earlier incomplete state.
+  impact: The autopilot restarted the ticket from BLOCKED, rediscovered the correct implementation, and had to reason through whether the failure report was current before making progress. No code changed — only the ticket state was wrong.
+  prevention: When an agent marks a ticket BLOCKED due to test failures, it must record the exact test run hash, timestamp, or commit SHA alongside the failure report. Any agent resuming the ticket must re-run the suite before accepting the prior failure report as current. A stale failure report without a re-run is not valid blocking evidence.
+  severity: high
+
+- category: architecture
+  insight: When the Core Simulation Agent authors both the pure-logic module and the Node controller/wiring as part of its scope, the Engine Integration Agent finds the handoff artifact already complete and must decide whether to re-verify, re-author, or simply validate. This ambiguity causes unnecessary deliberation and a checkpoint entry.
+  impact: The Engine Integration Agent correctly determined the wiring was complete and moved on, but the decision cost a checkpoint and an explicit deliberation pass that would not have been needed with clearer scope boundaries.
+  prevention: The ticket handoff between Core Simulation and Engine Integration must explicitly state which artifacts are pre-authored and which require the Engine Integration Agent's attention. A "pre-authored artifacts" list in the ticket's WORKFLOW STATE block eliminates the ambiguity without requiring the receiving agent to re-inspect.
+  severity: medium
+
+- category: testing
+  insight: Constructing a Node-based controller's owned state in `_ready()` makes the controller untestable headlessly: integration tests that instantiate the node without inserting it into a SceneTree never trigger `_ready()`, and any property initialized there remains null.
+  impact: The integration tests called `get_state_machine()` and received null because `_ready()` had not fired. The fix was to move construction to `_init()`, which fires at instantiation time regardless of scene tree membership.
+  prevention: For any Node subclass that owns a pure-logic object (RefCounted or Object) that must be accessible in headless tests, initialize that owned object in `_init()`, not `_ready()`. Reserve `_ready()` only for initialization that genuinely requires a live SceneTree (node queries, signal connections to other tree nodes, etc.).
+  severity: high
+
+- category: architecture
+  insight: When a pure-logic class acts as the sole source of truth for event string constants (e.g. `EVENT_SELECT_*`), those constants belong on that class rather than on the consuming controller, even if the controller is the only current consumer. Splitting string literals across two files creates divergence risk.
+  impact: The GDScript review correctly placed `EVENT_SELECT_*` constants on `SceneStateMachine` rather than on the controller. This eliminated the only magic-string duplication risk in the event dispatch path.
+  prevention: For any pure-logic class that defines a transition protocol (events, states, or config keys), co-locate all string/enum constants for that protocol on the pure-logic class. Controllers reference constants via class qualifier (`SceneStateMachine.EVENT_SELECT_*`), never via inline literals.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Marking a ticket BLOCKED based on a test-failure report without recording a run timestamp or commit reference. A resuming agent accepts the report as current and spends deliberation budget before re-running to discover the block is stale.
+  detection_signal: A BLOCKED ticket whose failure report contains no timestamp, commit SHA, or test-run identifier alongside the listed failures.
+  prevention: Blocking evidence must be time-stamped. Any agent that resumes a BLOCKED ticket must re-run the test suite as its first action, before reading the prior failure report.
+
+- description: Implementing AC gating behavior (AC-4: "feature systems gated on state") via a method with no consumers. `get_config()` existed and was correct, but nothing called it — meaning the AC was technically present in code but zero-impact at runtime.
+  detection_signal: An AC that requires "system X gated on state Y" but no test or code path calls the gating method to make a behavioral decision.
+  prevention: For any AC that requires state-dependent gating, the Gatekeeper must verify that at least one consumer of the gating method exists (either a runtime consumer or a headless query helper called by integration tests). A method with no callers does not satisfy a gating AC.
+
+- description: An untyped parameter on a dispatch method (e.g. `apply_event(event_id)` without annotation) that relies solely on a runtime `typeof()` guard for type safety. Static analysis tools flag this and the annotation adds zero runtime cost.
+  detection_signal: A GDScript review pass that flags untyped parameters on public dispatch methods.
+  prevention: All public method parameters on pure-logic modules must have explicit type annotations (use `Variant` when the type is intentionally polymorphic). Runtime guards are not a substitute for static type annotations.
+
+### Prompt Patches
+
+- agent: Engine Integration Agent
+  change: At the start of any handoff, check the ticket's WORKFLOW STATE block for a "Pre-authored artifacts" list. If such a list exists, treat those artifacts as already complete and limit your scope to the items explicitly assigned to Engine Integration. If no such list exists, file a checkpoint naming each artifact you found pre-authored and your basis for accepting or rejecting it, before proceeding.
+  reason: The SSM handoff caused deliberation overhead because the scope boundary was implicit. An explicit pre-authored artifact list in the ticket eliminates the re-inspection pass.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: For any AC of the form "X is gated on state Y" or "X is enabled/disabled based on Z", verify that at least one consumer of the gating method exists — either a runtime caller in scene code or a headless integration test that calls the query helper and asserts a behavioral outcome. A method that exists but has no callers does not satisfy a gating AC.
+  reason: AC-4 on the SSM ticket had `get_config()` implemented but with zero consumers until the Engine Integration Agent added feature-gate query helpers. The gating AC was satisfied in letter (method exists) but not in spirit (nothing used it to make a decision).
+
+- agent: Core Simulation Agent
+  change: For any Node subclass that owns a pure-logic object (e.g. a RefCounted state machine, manager, or resolver) that will be accessed in headless integration tests, initialize the owned object in `_init()`, not `_ready()`. Add a comment: "# Constructed in _init() so headless tests that skip scene tree insertion can still access this object."
+  reason: The SSM `SceneVariantController` initialized its state machine in `_ready()`, causing null returns in headless tests. Moving construction to `_init()` is a one-line fix with no behavior change in production but eliminates an entire class of headless null-dereference failures.
+
+### Workflow Improvements
+
+- issue: The ticket spent a full deliberation cycle on a stale BLOCKED state before the blocking condition was re-evaluated. No workflow step required re-running the test suite before acting on the block.
+  improvement: Add a mandatory first step to the autopilot's BLOCKED ticket restart procedure: "Before reading the prior failure report, re-run the test suite. If the suite passes, update the ticket stage and proceed. Only act on prior failure descriptions if the re-run confirms them."
+  expected_benefit: Eliminates the class of false-BLOCKED tickets where a prior agent's incomplete run left a stale failure report. Converts a deliberation cost into a single test-run step.
+
+- issue: The two-agent split (Core Simulation → Engine Integration) produced overlapping scope: Core Simulation authored the controller and wiring that Engine Integration was expected to produce. The handoff had no artifact inventory, so Engine Integration could not distinguish "pre-built by prior agent" from "I missed something."
+  improvement: The ticket's WORKFLOW STATE block should include a "Pre-authored artifacts" section populated by each agent before handoff, listing every file it created or modified. The receiving agent reads this section to scope its own work without re-inspecting the full codebase.
+  expected_benefit: Reduces per-handoff checkpoint entries from "figure out what was already done" to a direct scope check against an explicit inventory.
+
+### Keep / Reinforce
+
+- practice: The GDScript review pass caught untyped parameters and magic strings before the Gatekeeper evaluated AC coverage. Fixing these before the AC audit prevented the Gatekeeper from seeing a noisy warning list alongside substantive AC gaps.
+  reason: Separating static-analysis cleanup from AC coverage evaluation keeps the Gatekeeper's decision clean. Static QA is a prerequisite to Gatekeeper review, not concurrent with it.
+
+- practice: Extending `RefCounted` (not `Node`) for the pure-logic `SceneStateMachine` allowed 15 headless tests with zero SceneTree setup and no teardown risk. The entire state-machine contract was verified without any scene or process context.
+  reason: This is the established pattern for pure-logic modules in this project (reinforced in [procedural_room_chaining]). It continues to eliminate the largest category of headless test friction. Every new system that is computation-only should extend RefCounted, not Node.
+
+---

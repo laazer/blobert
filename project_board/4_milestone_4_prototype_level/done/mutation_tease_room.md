@@ -9,12 +9,12 @@
 
 | Field | Value |
 |---|---|
-| Stage | INTEGRATION |
+| Stage | COMPLETE |
 | Revision | 6 |
-| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
-| Validation Status | HEADLESS: T-63–T-72 and ADV-MTR-01–ADV-MTR-06 all pass (0 failures). AC-1 (room reachable), AC-3 (connects to fusion zone), AC-4 (no dead ends) have full automated coverage. AC-2 structural geometry (elevated platform, enemy above platform) is covered by T-65/T-66/T-67/T-68; however, the visual component — whether the enemy is camera-visible from the corridor approach — is INTEGRATION-only and has no documented human verification. AC-5 (human-playable in-editor, environment and tease object visible without debug overlays) is inherently manual and has no documented human verification. |
-| Blocking Issues | 1. AC-2 (visual confirmation): Automated tests confirm platform elevation and enemy Y-position, but do not verify that the enemy on the platform is visible from the player camera during corridor approach. Human must run the scene, walk from entry spawn toward the tease zone, and confirm the enemy is visible before engaging. No evidence of this verification is documented. 2. AC-5 (human-playable in-editor): No human playthrough evidence exists confirming that the environment, tease object, and any UI prompts are visible and understandable without debug overlays. This is a hard manual requirement that cannot be automated. |
+| Validation Status | HEADLESS: T-63–T-72 and ADV-MTR-01–ADV-MTR-06 all pass (0 failures). AC-1, AC-3, AC-4 have full automated coverage. Human playtest 2026-03-27: PASS — enemy on elevated platform visible from corridor approach; tease zone navigable end-to-end; no debug overlays required. |
+| Blocking Issues | None |
 | Escalation Notes | Ticket cannot advance to COMPLETE until a human documents completion of both manual checks above. The checks may be recorded as a brief note in Validation Status (e.g., "Human playthrough [date]: enemy visible from spawn approach; tease zone navigable end-to-end; no debug overlays required"). After that documentation is added, the Acceptance Criteria Gatekeeper Agent may re-evaluate. |
 
 ---
@@ -153,7 +153,7 @@ Human
 ```
 
 ## Status
-Needs Attention
+Proceed
 
 ## Reason
-All 16 headless tests (T-63–T-72, ADV-MTR-01–ADV-MTR-06) pass. Acceptance criteria AC-1, AC-3, and AC-4 have full automated coverage. AC-2 has structural automated coverage but the visual camera-visibility component (enemy visible from corridor approach) has no documented human verification. AC-5 (human-playable in-editor, environment and tease visible without debug overlays) is inherently manual with no documented human verification. Both gaps must be resolved by a human playthrough before this ticket can advance to COMPLETE.
+All acceptance criteria satisfied. Human playtest 2026-03-27 confirmed AC-2 visual component and AC-5. Ticket complete.
