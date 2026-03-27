@@ -223,10 +223,10 @@ func test_rsm_signal_1_run_started_emits_on_start_to_active() -> void:
 	if rsm == null:
 		_fail("RSM-SIGNAL-1", "RunStateManager script missing")
 		return
-	var fired: bool = false
-	rsm.connect("run_started", func(): fired = true)
+	var flags := [false]  # Array capture — GDScript 2.0 lambdas copy primitives by value
+	rsm.connect("run_started", func(): flags[0] = true)
 	rsm.apply_event("start_run")
-	_assert_true(fired, "RSM-SIGNAL-1 — run_started signal emits on START→ACTIVE")
+	_assert_true(flags[0], "RSM-SIGNAL-1 — run_started signal emits on START→ACTIVE")
 	rsm.free()
 
 
@@ -237,10 +237,10 @@ func test_rsm_signal_2_player_died_emits_on_active_to_dead() -> void:
 		_fail("RSM-SIGNAL-2", "RunStateManager script missing")
 		return
 	rsm.apply_event("start_run")
-	var fired: bool = false
-	rsm.connect("player_died", func(): fired = true)
+	var flags := [false]
+	rsm.connect("player_died", func(): flags[0] = true)
 	rsm.apply_event("player_died")
-	_assert_true(fired, "RSM-SIGNAL-2 — player_died signal emits on ACTIVE→DEAD")
+	_assert_true(flags[0], "RSM-SIGNAL-2 — player_died signal emits on ACTIVE→DEAD")
 	rsm.free()
 
 
@@ -251,10 +251,10 @@ func test_rsm_signal_3_run_won_emits_on_active_to_win() -> void:
 		_fail("RSM-SIGNAL-3", "RunStateManager script missing")
 		return
 	rsm.apply_event("start_run")
-	var fired: bool = false
-	rsm.connect("run_won", func(): fired = true)
+	var flags := [false]
+	rsm.connect("run_won", func(): flags[0] = true)
 	rsm.apply_event("run_won")
-	_assert_true(fired, "RSM-SIGNAL-3 — run_won signal emits on ACTIVE→WIN")
+	_assert_true(flags[0], "RSM-SIGNAL-3 — run_won signal emits on ACTIVE→WIN")
 	rsm.free()
 
 
@@ -266,10 +266,10 @@ func test_rsm_signal_4_run_restarted_emits_on_dead_to_start() -> void:
 		return
 	rsm.apply_event("start_run")
 	rsm.apply_event("player_died")
-	var fired: bool = false
-	rsm.connect("run_restarted", func(): fired = true)
+	var flags := [false]
+	rsm.connect("run_restarted", func(): flags[0] = true)
 	rsm.apply_event("restart")
-	_assert_true(fired, "RSM-SIGNAL-4 — run_restarted signal emits on DEAD→START")
+	_assert_true(flags[0], "RSM-SIGNAL-4 — run_restarted signal emits on DEAD→START")
 	rsm.free()
 
 
@@ -281,10 +281,10 @@ func test_rsm_signal_5_run_restarted_emits_on_win_to_start() -> void:
 		return
 	rsm.apply_event("start_run")
 	rsm.apply_event("run_won")
-	var fired: bool = false
-	rsm.connect("run_restarted", func(): fired = true)
+	var flags := [false]
+	rsm.connect("run_restarted", func(): flags[0] = true)
 	rsm.apply_event("restart")
-	_assert_true(fired, "RSM-SIGNAL-5 — run_restarted signal emits on WIN→START")
+	_assert_true(flags[0], "RSM-SIGNAL-5 — run_restarted signal emits on WIN→START")
 	rsm.free()
 
 
@@ -297,12 +297,12 @@ func test_rsm_signal_6_emit_before_state_change() -> void:
 	if rsm == null:
 		_fail("RSM-SIGNAL-6", "RunStateManager script missing")
 		return
-	var captured_state: int = -1
-	rsm.connect("run_started", func(): captured_state = rsm.get_state())
+	var captured := [-1]  # Array capture — GDScript 2.0 lambdas copy primitives by value
+	rsm.connect("run_started", func(): captured[0] = rsm.get_state())
 	rsm.apply_event("start_run")
 	_assert_eq_int(
 		0,
-		captured_state,
+		captured[0],
 		"RSM-SIGNAL-6 — get_state() inside run_started handler equals State.START (0); signal fired before state updated"
 	)
 	rsm.free()

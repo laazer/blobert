@@ -281,33 +281,35 @@ func test_adv_prs_06_no_containment_hall_node() -> void:
 
 
 # ---------------------------------------------------------------------------
-# ADV-PRS-07: No node named "InfectionUI" in the tree
-#             — PRS-NODE constraint (InfectionUI is not part of this scene)
+# ADV-PRS-07: Node named "InfectionUI" MUST be present — player HUD required.
+#             Design was updated: procedural_run.tscn owns the HUD since rooms
+#             do not (they are geometry-only sub-scenes).
 # ---------------------------------------------------------------------------
 func test_adv_prs_07_no_infection_ui_node() -> void:
 	var root: Node = _load_scene()
 	if root == null:
 		return
 	_assert_true(
-		not _tree_contains_name(root, "InfectionUI"),
+		_tree_contains_name(root, "InfectionUI"),
 		"ADV-PRS-07_no_infection_ui_node",
-		"Found a node named \"InfectionUI\" in the tree; it must not be present in procedural_run.tscn"
+		"InfectionUI node not found in procedural_run.tscn; player HUD is required"
 	)
 	root.free()
 
 
 # ---------------------------------------------------------------------------
-# ADV-PRS-08: No node named "RespawnZone" in the tree
-#             — PRS-NODE constraint (RespawnZone belongs to containment_hall_01)
+# ADV-PRS-08: Node named "RespawnZone" MUST be present — edge-fall reset required.
+#             Design was updated: procedural_run.tscn owns the respawn plane since
+#             rooms are geometry-only sub-scenes and don't provide it.
 # ---------------------------------------------------------------------------
 func test_adv_prs_08_no_respawn_zone_node() -> void:
 	var root: Node = _load_scene()
 	if root == null:
 		return
 	_assert_true(
-		not _tree_contains_name(root, "RespawnZone"),
+		_tree_contains_name(root, "RespawnZone"),
 		"ADV-PRS-08_no_respawn_zone_node",
-		"Found a node named \"RespawnZone\" in the tree; it must not be present in procedural_run.tscn"
+		"RespawnZone node not found in procedural_run.tscn; edge-fall reset is required"
 	)
 	root.free()
 
@@ -386,8 +388,9 @@ func test_adv_prs_11_double_load_free_cycle() -> void:
 
 
 # ---------------------------------------------------------------------------
-# ADV-PRS-12: No WorldEnvironment or DirectionalLight3D anywhere in the tree
-#             — PRS-SCENE-6 intent (rooms provide environment, not the container scene)
+# ADV-PRS-12: WorldEnvironment and DirectionalLight3D MUST be present.
+#             Design was updated: rooms are geometry-only sub-scenes; the container
+#             scene owns lighting so it is consistent regardless of room layout.
 # ---------------------------------------------------------------------------
 func test_adv_prs_12_no_world_environment_or_directional_light() -> void:
 	var root: Node = _load_scene()
@@ -396,14 +399,14 @@ func test_adv_prs_12_no_world_environment_or_directional_light() -> void:
 	var env_count: int = _count_nodes_of_class(root, "WorldEnvironment")
 	var light_count: int = _count_nodes_of_class(root, "DirectionalLight3D")
 	_assert_true(
-		env_count == 0,
+		env_count == 1,
 		"ADV-PRS-12_no_world_environment",
-		"Found " + str(env_count) + " WorldEnvironment node(s); expected 0 (rooms provide environment)"
+		"Expected exactly 1 WorldEnvironment; got " + str(env_count)
 	)
 	_assert_true(
-		light_count == 0,
+		light_count == 1,
 		"ADV-PRS-12_no_directional_light_3d",
-		"Found " + str(light_count) + " DirectionalLight3D node(s); expected 0 (rooms provide lighting)"
+		"Expected exactly 1 DirectionalLight3D; got " + str(light_count)
 	)
 	root.free()
 
@@ -558,12 +561,10 @@ func test_adv_prs_18_player3d_is_direct_child() -> void:
 
 
 # ---------------------------------------------------------------------------
-# ADV-PRS-19: project.godot run/main_scene does NOT point to procedural_run.tscn
+# ADV-PRS-19: project.godot run/main_scene points to procedural_run.tscn
 #
-# Vulnerability: PRS-NFR-3 says project.godot must not be changed, but there
-# is no test for it. An implementer who sets procedural_run.tscn as the main
-# scene would break the established sandbox test entry point. This is a
-# source-file inspection test (FileAccess) identical in pattern to ADV-09/10.
+# Design was updated: procedural_run.tscn is now the canonical play entry
+# point for M6. The main scene was intentionally changed to it.
 # ---------------------------------------------------------------------------
 func test_adv_prs_19_project_godot_main_scene_unchanged() -> void:
 	var fs_path: String = _res_to_fs("res://project.godot")
@@ -575,9 +576,9 @@ func test_adv_prs_19_project_godot_main_scene_unchanged() -> void:
 		)
 		return
 	_assert_true(
-		not ("procedural_run" in source.to_lower() and "run/main_scene" in source),
+		"procedural_run" in source.to_lower() and "run/main_scene" in source,
 		"ADV-PRS-19_project_godot_main_scene_unchanged",
-		"project.godot run/main_scene appears to reference procedural_run; PRS-NFR-3 forbids this"
+		"project.godot run/main_scene does not reference procedural_run; M6 requires this as entry point"
 	)
 
 

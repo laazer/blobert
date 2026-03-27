@@ -116,8 +116,8 @@ func test_adv_rsm_02_player_died_twice_signal_fires_once() -> void:
 		_fail("ADV-RSM-02", "RunStateManager script missing")
 		return
 	rsm.apply_event("start_run")
-	var fire_count: int = 0
-	rsm.connect("player_died", func(): fire_count += 1)
+	var counts := [0]  # Array capture — GDScript 2.0 lambdas copy primitives by value
+	rsm.connect("player_died", func(): counts[0] += 1)
 	rsm.apply_event("player_died")
 	rsm.apply_event("player_died")
 	_assert_eq_int(
@@ -125,7 +125,7 @@ func test_adv_rsm_02_player_died_twice_signal_fires_once() -> void:
 		"ADV-RSM-02 — state is DEAD (2) after two player_died calls"
 	)
 	_assert_eq_int(
-		1, fire_count,
+		1, counts[0],
 		"ADV-RSM-02 — player_died signal fired exactly once total"
 	)
 	rsm.free()

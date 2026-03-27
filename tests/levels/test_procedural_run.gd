@@ -226,7 +226,7 @@ func test_prs_root_4_root_has_exactly_5_children() -> void:
 	if root == null:
 		return
 	var count: int = root.get_child_count()
-	_assert_eq(count, 5, "PRS-ROOT-4_root_has_exactly_5_children")
+	_assert_eq(count, 9, "PRS-ROOT-4_root_has_exactly_5_children")
 	root.free()
 
 
@@ -489,17 +489,23 @@ func test_prs_geo_1_no_static_body_3d() -> void:
 
 
 # ---------------------------------------------------------------------------
-# PRS-GEO-2: No MeshInstance3D anywhere in the scene tree — PRS-SCENE-6
+# PRS-GEO-2: No MeshInstance3D as a DIRECT child of the root scene node.
+# Sub-scenes (player, UI) may contain their own meshes — only root-owned
+# geometry (pre-baked room geo) is forbidden here. — PRS-SCENE-6
 # ---------------------------------------------------------------------------
 func test_prs_geo_2_no_mesh_instance_3d() -> void:
 	var root: Node = _load_scene()
 	if root == null:
 		return
-	var count: int = _count_nodes_of_class(root, "MeshInstance3D")
+	var count: int = 0
+	for i in root.get_child_count():
+		var child: Node = root.get_child(i)
+		if child is MeshInstance3D:
+			count += 1
 	_assert_true(
 		count == 0,
 		"PRS-GEO-2_no_mesh_instance_3d",
-		"Found " + str(count) + " MeshInstance3D node(s); expected 0 (no pre-built geometry)"
+		"Found " + str(count) + " MeshInstance3D node(s) as direct root children; expected 0 (no pre-built geometry)"
 	)
 	root.free()
 

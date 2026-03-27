@@ -142,6 +142,9 @@ func _physics_process(delta: float) -> void:
 	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
 	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
 
+	if OS.is_debug_build() and Input.is_action_just_pressed("debug_kill"):
+		_current_state.current_hp = 0.0
+
 	_current_state.is_on_floor = is_on_floor()
 
 	var is_on_wall_now: bool = is_on_wall()

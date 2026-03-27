@@ -575,6 +575,10 @@ func test_rts_adv_12_entry_x_is_zero_all_rooms() -> void:
 # time and could fail a runtime environment query. This test fills the spec gap.
 # ---------------------------------------------------------------------------
 func test_rts_adv_13_env_and_light_present_all_rooms() -> void:
+	# Design update: rooms are geometry-only sub-scenes. Lighting is owned by the
+	# container scene (procedural_run.tscn) so it stays consistent across all room
+	# combinations. Rooms must NOT contain WorldEnvironment or DirectionalLight3D —
+	# stacking multiple lights causes washed-out rendering.
 	var all_pass: bool = true
 	for scene_path in ALL_SCENES:
 		var root: Node = _load_scene(scene_path, "RTS-ADV-13")
@@ -584,42 +588,22 @@ func test_rts_adv_13_env_and_light_present_all_rooms() -> void:
 		var room_label: String = scene_path.get_file()
 		var room_ok: bool = true
 		var world_env: Node = root.get_node_or_null("WorldEnvironment")
-		if world_env == null:
+		if world_env != null:
 			_fail_test("RTS-ADV-13_" + room_label + "_world_env_missing",
-				"WorldEnvironment node not found as direct child of root")
-			room_ok = false
-			all_pass = false
-		elif not (world_env is WorldEnvironment):
-			_fail_test("RTS-ADV-13_" + room_label + "_world_env_wrong_type",
-				"WorldEnvironment node type is " + world_env.get_class() + ", expected WorldEnvironment")
-			room_ok = false
-			all_pass = false
-		elif world_env.get_parent() != root:
-			_fail_test("RTS-ADV-13_" + room_label + "_world_env_not_direct_child",
-				"WorldEnvironment parent is " + world_env.get_parent().name + ", expected root")
+				"WorldEnvironment found in room; rooms must not own lighting (container scene provides it)")
 			room_ok = false
 			all_pass = false
 		var dir_light: Node = root.get_node_or_null("DirectionalLight3D")
-		if dir_light == null:
+		if dir_light != null:
 			_fail_test("RTS-ADV-13_" + room_label + "_directional_light_missing",
-				"DirectionalLight3D node not found as direct child of root")
-			room_ok = false
-			all_pass = false
-		elif not (dir_light is DirectionalLight3D):
-			_fail_test("RTS-ADV-13_" + room_label + "_directional_light_wrong_type",
-				"DirectionalLight3D node type is " + dir_light.get_class() + ", expected DirectionalLight3D")
-			room_ok = false
-			all_pass = false
-		elif dir_light.get_parent() != root:
-			_fail_test("RTS-ADV-13_" + room_label + "_directional_light_not_direct_child",
-				"DirectionalLight3D parent is " + dir_light.get_parent().name + ", expected root")
+				"DirectionalLight3D found in room; rooms must not own lighting (container scene provides it)")
 			room_ok = false
 			all_pass = false
 		if room_ok:
-			_pass_test("RTS-ADV-13_" + room_label + "_env_and_light_ok")
+			_pass_test("RTS-ADV-13_" + room_label + "_no_stacked_lighting_ok")
 		root.free()
 	if all_pass:
-		_pass_test("RTS-ADV-13_all_rooms_env_and_light_present")
+		_pass_test("RTS-ADV-13_all_rooms_no_stacked_lighting")
 
 
 # ---------------------------------------------------------------------------
@@ -753,12 +737,12 @@ func test_rts_adv_17_intro_room_child_count_bounded() -> void:
 	var root: Node = _load_scene(SCENE_INTRO_01, "RTS-ADV-17")
 	if root == null:
 		return
-	# Expected direct children per spec: IntroFloor, Entry, Exit, WorldEnvironment, DirectionalLight3D
-	var expected_direct_child_count: int = 5
+	# Expected direct children: IntroFloor, Entry, Exit (lighting removed — owned by container).
+	var expected_direct_child_count: int = 3
 	var actual: int = root.get_child_count()
 	_assert_true(actual == expected_direct_child_count, "RTS-ADV-17_intro_room_child_count",
 		"RoomIntro01 has " + str(actual) + " direct children, expected " + str(expected_direct_child_count) +
-		" (IntroFloor, Entry, Exit, WorldEnvironment, DirectionalLight3D)")
+		" (IntroFloor, Entry, Exit)")
 	root.free()
 
 
