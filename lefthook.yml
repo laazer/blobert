@@ -1,18 +1,30 @@
 # Git hooks for blobert (Godot 4 game + Blender asset pipeline).
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
+# Skip blog post only: SKIP_BLOG_POST=1 git push
+#
+# post-commit — session tracking:
+#   - log-commit: appends commit hash + subject to .blog-session.log
 #
 # pre-commit — fast checks on staged files only:
 #   - py-parse: syntax-check staged Python files in asset_generation/python/
 #
-# pre-push — full test suites gated by changed domains:
+# pre-push — full test suites + blog post:
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
 #   - py-tests:    pytest in asset_generation/python/ (any .py change there)
+#   - blog-post:   generate blog post for session commits via claude --print
 #
 # Requires:
 #   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
 #   - python3 on PATH
+#   - claude CLI on PATH (for blog-post)
 #   - For py-tests: pip install -e ".[dev]" in asset_generation/python/
+
+post-commit:
+  commands:
+    log-commit:
+      name: Log commit to session blog queue
+      run: .lefthook/scripts/log-commit.sh
 
 pre-commit:
   parallel: true
@@ -33,3 +45,6 @@ pre-push:
       name: Python tests (asset_generation)
       glob: "asset_generation/python/**/*.py"
       run: .lefthook/scripts/py-tests.sh
+    blog-post:
+      name: Generate blog post for session
+      run: .lefthook/scripts/blog-post-on-push.sh
