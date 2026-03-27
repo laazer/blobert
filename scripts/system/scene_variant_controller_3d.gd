@@ -1,11 +1,10 @@
 ## scene_variant_controller_3d.gd
 ##
 ## Lightweight controller that owns a SceneStateMachine instance for the 3D
-## main scene and exposes a simple API for selecting variants in tests or
-## debug flows. For this ticket, it is intentionally minimal and does not yet
-## wire feature systems; it ensures that the state machine can be constructed
-## and driven in a scene context without Node dependencies inside the
-## SceneStateMachine itself.
+## main scene and exposes a simple API for selecting variants and querying
+## feature-gate flags. Feature systems in the scene (or in tests) call
+## is_infection_enabled(), is_enemies_enabled(), and is_prototype_hud_enabled()
+## to determine whether they should be active for the current state.
 
 extends Node
 
@@ -43,4 +42,27 @@ func select_enemy_playtest() -> void:
 		push_error("SceneVariantController3D: _state_machine is null in select_enemy_playtest")
 		return
 	_state_machine.apply_event(SceneStateMachine.EVENT_SELECT_ENEMY_PLAYTEST)
+
+
+## Feature-gate query helpers.
+## These are the canonical read surface for any feature system that needs to
+## change behaviour based on scene state. All three delegate to get_config()
+## on the owned SceneStateMachine so the truth always lives in one place.
+
+func is_infection_enabled() -> bool:
+	if _state_machine == null:
+		return false
+	return _state_machine.get_config().get("enable_infection_loop", false)
+
+
+func is_enemies_enabled() -> bool:
+	if _state_machine == null:
+		return false
+	return _state_machine.get_config().get("enable_enemies", false)
+
+
+func is_prototype_hud_enabled() -> bool:
+	if _state_machine == null:
+		return false
+	return _state_machine.get_config().get("enable_prototype_hud", false)
 

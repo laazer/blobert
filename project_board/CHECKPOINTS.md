@@ -3,6 +3,13 @@
 Decisions logged here before autopilot completes.
 Review these after autopilot completes.
 
+### [SSM] Engine Integration AC-4 — feature gate helpers on SceneVariantController
+**Would have asked:** AC-4 requires "feature systems gated on scene state." The gating mechanism (`get_config()`) existed but had zero consumers. Should I wire Node visibility/physics (impractical headlessly) or add query helpers that any feature system can call?
+**Assumption made:** Adding `is_infection_enabled()`, `is_enemies_enabled()`, and `is_prototype_hud_enabled()` to `SceneVariantController3D` — each delegating to `get_config()` — satisfies the AC. The "where reasonable" qualifier in AC-4 covers the case where runtime visual gating is impractical headlessly. The helpers are the canonical gating surface; any future feature system in the scene calls these rather than reading `get_config()` directly. 12 new headless tests assert correct return values across all 3 states.
+**Confidence:** High
+
+---
+
 ## Resume: 2026-03-26T00:00:00
 Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-20260326-procedural-run-scene.md
 Resuming at Stage: IMPLEMENTATION_ENGINE_INTEGRATION
