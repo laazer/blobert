@@ -37,9 +37,9 @@ script = ExtResource("2_run_scene_assembler")
 
 [node name="DeathRestartCoordinator" type="Node" parent="."]
 script = ExtResource("3_death_restart_coordinator")
-player = NodePath("Player3D")
-spawn_position = NodePath("SpawnPosition")
-infection_handler = NodePath("InfectionInteractionHandler")
+player = NodePath("../Player3D")
+spawn_position = NodePath("../SpawnPosition")
+infection_handler = NodePath("../InfectionInteractionHandler")
 
 [node name="InfectionInteractionHandler" type="Node" parent="."]
 script = ExtResource("4_infection_interaction_handler")

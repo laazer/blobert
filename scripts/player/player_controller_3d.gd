@@ -209,7 +209,11 @@ func _physics_process(delta: float) -> void:
 	_current_state.cling_timer = next_state.cling_timer
 	_current_state.current_hp = next_state.current_hp
 
-	var detach_inputs: Array = [detach_just_pressed, detach_2_just_pressed]
+	var can_afford_throw: bool = _current_state.current_hp >= _simulation.hp_cost_per_detach
+	var detach_inputs: Array = [
+		detach_just_pressed and can_afford_throw,
+		detach_2_just_pressed and can_afford_throw,
+	]
 	for i in 2:
 		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
 

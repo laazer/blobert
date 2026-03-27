@@ -433,7 +433,7 @@ func test_prs_wire_1_drc_player_nodepath() -> void:
 		root.free()
 		return
 	var val: Variant = drc.get("player")
-	_assert_eq(val, NodePath("Player3D"), "PRS-WIRE-1_drc_player_nodepath")
+	_assert_eq(val, NodePath("../Player3D"), "PRS-WIRE-1_drc_player_nodepath")
 	root.free()
 
 
@@ -450,7 +450,7 @@ func test_prs_wire_2_drc_spawn_position_nodepath() -> void:
 		root.free()
 		return
 	var val: Variant = drc.get("spawn_position")
-	_assert_eq(val, NodePath("SpawnPosition"), "PRS-WIRE-2_drc_spawn_position_nodepath")
+	_assert_eq(val, NodePath("../SpawnPosition"), "PRS-WIRE-2_drc_spawn_position_nodepath")
 	root.free()
 
 
@@ -468,7 +468,7 @@ func test_prs_wire_3_drc_infection_handler_nodepath() -> void:
 		root.free()
 		return
 	var val: Variant = drc.get("infection_handler")
-	_assert_eq(val, NodePath("InfectionInteractionHandler"), "PRS-WIRE-3_drc_infection_handler_nodepath")
+	_assert_eq(val, NodePath("../InfectionInteractionHandler"), "PRS-WIRE-3_drc_infection_handler_nodepath")
 	root.free()
 
 
