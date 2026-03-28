@@ -20,7 +20,7 @@
 #   SPEC-14 — (all local variables and helper signatures are typed throughout)
 
 class_name MovementSimulationTests
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 # ---------------------------------------------------------------------------
 # CHECKPOINT [TD-001]: Epsilon for floating-point comparisons.
@@ -35,45 +35,6 @@ const EPSILON: float = 1e-4
 # Counts for summary reporting.
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-func _approx_eq(a: float, b: float) -> bool:
-	return abs(a - b) < EPSILON
-
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String) -> void:
-	if condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected true, got false")
-
-
-func _assert_approx(a: float, b: float, test_name: String) -> void:
-	if _approx_eq(a, b):
-		_pass(test_name)
-	else:
-		_fail(test_name, "got " + str(a) + " expected " + str(b) + " (delta " + str(abs(a - b)) + ")")
-
-
-func _assert_vec2_approx(a: Vector2, b: Vector2, test_name: String) -> void:
-	if _approx_eq(a.x, b.x) and _approx_eq(a.y, b.y):
-		_pass(test_name)
-	else:
-		_fail(test_name, "got " + str(a) + " expected " + str(b))
 
 
 # ---------------------------------------------------------------------------

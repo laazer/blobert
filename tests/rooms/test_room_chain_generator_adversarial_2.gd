@@ -64,7 +64,7 @@
 #   - extends Object; run_all() -> int pattern.
 #   - Script loaded via load() so red-phase null returns FAIL immediately.
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 # ---------------------------------------------------------------------------
 # Script under test
@@ -97,16 +97,6 @@ const BOSS_PATH:    String = "res://scenes/rooms/room_boss_01.tscn"
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-func _pass(test_id: String) -> void:
-	_pass_count += 1
-	print("  PASS [" + test_id + "]")
-
-
-func _fail(test_id: String, reason: String) -> void:
-	_fail_count += 1
-	print("  FAIL [" + test_id + "] " + reason)
 
 
 func _make_generator(test_id: String) -> Object:

@@ -46,7 +46,7 @@
 #   - Scene cleanup: add_to_tree nodes are removed and freed before method returns.
 #   - All test names prefixed with ADV-FOR- to ensure no collision with T-* names.
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const SCENE_PATH: String = "res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
 const GAME_UI_PATH: String = "res://scenes/ui/game_ui.tscn"
@@ -58,37 +58,6 @@ var _fail_count: int = 0
 # ---------------------------------------------------------------------------
 # Helpers — mirror the pattern from test_fusion_opportunity_room.gd
 # ---------------------------------------------------------------------------
-
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " -- " + message)
-
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
-
-func _assert_false(condition: bool, test_name: String, fail_msg: String = "expected false, got true") -> void:
-	if not condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
-
-func _assert_eq_int(expected: int, actual: int, test_name: String) -> void:
-	if actual == expected:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected " + str(expected) + ", got " + str(actual))
-
 
 func _load_level_scene() -> Node:
 	var packed: PackedScene = load(SCENE_PATH) as PackedScene

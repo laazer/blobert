@@ -33,7 +33,7 @@
 #   - All test names prefixed with ADV-MBA- to ensure no collision with T-* assertion names.
 #   - collision_mask not retested; covered by T-25 in test_containment_hall_01.gd.
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const SCENE_PATH: String = "res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
 
@@ -44,23 +44,6 @@ var _fail_count: int = 0
 # ---------------------------------------------------------------------------
 # Helpers — mirror the pattern from test_light_skill_check_adversarial.gd
 # ---------------------------------------------------------------------------
-
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " -- " + message)
-
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
 
 func _load_level_scene() -> Node:
 	var packed: PackedScene = load(SCENE_PATH) as PackedScene

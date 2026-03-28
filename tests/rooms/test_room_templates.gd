@@ -24,7 +24,7 @@
 #   - Scene cleanup: root.free() called before each test method returns.
 #   - Test IDs use RTS-* prefix; no duplicates with T-1..T-72, SDR-*, RSM-*, EB-* namespaces.
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 # ---------------------------------------------------------------------------
 # Scene paths under test
@@ -64,30 +64,6 @@ var _fail_count: int = 0
 # Assertion helpers
 # ---------------------------------------------------------------------------
 
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
-
-func _assert_eq_str(actual: String, expected: String, test_name: String) -> void:
-	if actual == expected:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected \"" + expected + "\", got \"" + actual + "\"")
-
-
 # Load a packed scene; null-guards and records FAIL on missing file (red phase).
 func _load_packed(scene_path: String, test_prefix: String) -> PackedScene:
 	var packed: PackedScene = ResourceLoader.load(scene_path) as PackedScene
@@ -104,20 +80,6 @@ func _instantiate(packed: PackedScene, test_prefix: String) -> Node:
 	if inst == null:
 		_fail_test(test_prefix + "_instantiate", "instantiate() returned null")
 	return inst
-
-
-# Assert two float values are within tolerance.
-func _near(a: float, b: float, tol: float) -> bool:
-	return absf(a - b) <= tol
-
-
-# Assert a Vector3 position component-wise within tolerance, records pass/fail.
-func _assert_vec3_near(actual: Vector3, expected: Vector3, tol: float, test_name: String) -> void:
-	var ok: bool = _near(actual.x, expected.x, tol) and _near(actual.y, expected.y, tol) and _near(actual.z, expected.z, tol)
-	if ok:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected ~" + str(expected) + " (tol " + str(tol) + "), got " + str(actual))
 
 
 # Get first CollisionShape3D child of a node, or null.

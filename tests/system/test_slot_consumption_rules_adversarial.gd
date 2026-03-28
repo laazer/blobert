@@ -44,7 +44,7 @@
 # | ADV-24 | 10-cycle endurance  | 10 full fill→consume cycles — no accumulation, each cycle ends clean          |
 
 class_name SlotConsumptionRulesAdversarialTests
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const _MANAGER_PATH: String = "res://scripts/mutation/mutation_slot_manager.gd"
 
@@ -55,37 +55,6 @@ var _fail_count: int = 0
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String) -> void:
-	if condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected true, got false")
-
-
-func _assert_false(condition: bool, test_name: String) -> void:
-	if not condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected false, got true")
-
-
-func _assert_eq(a: Variant, b: Variant, test_name: String) -> void:
-	if a == b:
-		_pass(test_name)
-	else:
-		_fail(test_name, "got " + str(a) + " expected " + str(b))
-
 
 # Creates a fresh MutationSlotManager instance.
 func _new_manager() -> RefCounted:

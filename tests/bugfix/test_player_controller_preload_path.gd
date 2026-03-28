@@ -21,25 +21,11 @@
 #   PASS (green).
 #
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
 
 
 # ---------------------------------------------------------------------------

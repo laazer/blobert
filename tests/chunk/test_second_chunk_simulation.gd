@@ -31,51 +31,12 @@
 #   [second_chunk_logic] Test Designer — HP step 20 reads result.current_hp not prior
 
 class_name SecondChunkSimulationTests
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const EPSILON: float = 1e-4
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-func _approx_eq(a: float, b: float) -> bool:
-	return abs(a - b) < EPSILON
-
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String) -> void:
-	if condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected true, got false")
-
-
-func _assert_false(condition: bool, test_name: String) -> void:
-	if not condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected false, got true")
-
-
-func _assert_approx(a: float, b: float, test_name: String) -> void:
-	if _approx_eq(a, b):
-		_pass(test_name)
-	else:
-		_fail(test_name, "got " + str(a) + " expected " + str(b) + " (delta " + str(abs(a - b)) + ")")
 
 
 # ---------------------------------------------------------------------------

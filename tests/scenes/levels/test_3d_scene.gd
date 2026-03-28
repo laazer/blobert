@@ -7,36 +7,12 @@
 #
 
 # class_name omitted to avoid parse-order issues when run_tests.gd references this script.
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const EPSILON: float = 1e-3
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String) -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected true, got false")
-
-
-func _assert_false(condition: bool, test_name: String) -> void:
-	if not condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected false, got true")
 
 
 func _load_3d_scene() -> Node:

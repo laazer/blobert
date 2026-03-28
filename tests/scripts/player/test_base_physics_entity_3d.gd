@@ -6,24 +6,10 @@
 # directly to ensure gravity modifies velocity as expected.
 
 class_name BasePhysicsEntity3DTests
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-func _assert_true(cond: bool, test_name: String) -> void:
-	if cond:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected true, got false")
 
 func test_gravity_applied() -> void:
 	var body = BasePhysicsEntity3D.new()

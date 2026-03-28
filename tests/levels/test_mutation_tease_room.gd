@@ -50,7 +50,7 @@
 #   - No test name duplicates any T-1 through T-62 assertion name.
 #   - node.name used for enemy distinctness checks (not get_path() — NFR-6, see CHECKPOINTS.md).
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const SCENE_PATH: String = "res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
 
@@ -61,30 +61,6 @@ var _fail_count: int = 0
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
-
-func _assert_eq_float(expected: float, actual: float, test_name: String) -> void:
-	if absf(actual - expected) < 0.0001:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected " + str(expected) + ", got " + str(actual))
-
 
 # Load the level scene. Returns null and records failure when the file is absent.
 func _load_level_scene() -> Node:

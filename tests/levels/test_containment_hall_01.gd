@@ -41,7 +41,7 @@
 #   T-29  → GEO-2 (AC-GEO-2.4) — platform top surface within jump reach
 #   T-30  → EXIT-1 (AC-EXIT-1.5) — LevelExit X position in exit corridor
 
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 # Scene path under test.
 const SCENE_PATH: String = "res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
@@ -80,30 +80,6 @@ const ENEMY_NODE_NAMES: Array[String] = [
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-func _pass_test(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-
-func _fail_test(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, fail_msg)
-
-
-func _assert_eq(a: Variant, b: Variant, test_name: String) -> void:
-	if a == b:
-		_pass_test(test_name)
-	else:
-		_fail_test(test_name, "expected " + str(b) + ", got " + str(a))
 
 
 # Load and instantiate the scene. Returns null and records the failure when

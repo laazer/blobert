@@ -21,33 +21,13 @@
 # - Actual human completion time (6–8 minutes) and actual input-driven playthrough.
 #   Headless tests in this repo are intentionally structural/deterministic.
 #
-extends Object
+extends "res://tests/utils/test_utils.gd"
 
 const LEVEL_SCENE_PATH: String = "res://scenes/levels/containment_hall_01/containment_hall_01.tscn"
 const GAME_UI_PATH: String = "res://scenes/ui/game_ui.tscn"
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-func _pass(test_name: String) -> void:
-	_pass_count += 1
-	print("  PASS: " + test_name)
-
-func _fail(test_name: String, message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: " + test_name + " — " + message)
-
-func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
-	if condition:
-		_pass(test_name)
-	else:
-		_fail(test_name, fail_msg)
-
-func _assert_eq_float(expected: float, actual: float, test_name: String) -> void:
-	if absf(actual - expected) < 0.0001:
-		_pass(test_name)
-	else:
-		_fail(test_name, "expected " + str(expected) + ", got " + str(actual))
 
 func _load_packed_scene(scene_path: String) -> PackedScene:
 	return load(scene_path) as PackedScene
