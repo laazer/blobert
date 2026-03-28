@@ -394,16 +394,16 @@ While a mutation slot is active on the player, Blobert's mesh color shifts to vi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_PRESENTATION
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: 11 pass / 4 fail (adversarial); 2 pass / 10 fail (primary) — all failures against unimplemented stub; expected
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -418,13 +418,15 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Presentation Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-20260328-mutation-active-color.md",
-  "spec_requirements": ["MAC-1","MAC-2","MAC-3","MAC-4","MAC-5","MAC-6","MAC-7","MAC-8","MAC-9","MAC-10"]
+  "spec_requirements": ["MAC-1","MAC-2","MAC-3","MAC-4","MAC-5","MAC-6","MAC-7","MAC-8","MAC-9","MAC-10"],
+  "primary_test_file": "tests/scripts/fx/test_mutation_active_color.gd",
+  "adversarial_test_file": "tests/scripts/fx/test_mutation_active_color_adversarial.gd"
 }
 ```
 
@@ -432,4 +434,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary behavioral test suite written at tests/scripts/fx/test_mutation_active_color.gd. 12 tests covering MAC-1 through MAC-9 plus bonus AC-3 and two guard cases. All 10 non-guard tests fail against the current stub (expected — implementation not written). 2 guard tests pass trivially (no side effects on stub). No existing tests regressed (pre-existing failures unchanged). Test Breaker Agent must attempt adversarial edge-case tests against this suite.
+Adversarial test suite written at tests/scripts/fx/test_mutation_active_color_adversarial.gd. 8 adversarial tests (ADV-MAC-1 through ADV-MAC-8) covering: freed-manager is_instance_valid guard, poll suppression when _mesh_ready=false, null material_override crash safety, organic bidirectional color transition sequence, get_mutation_slot_manager() null-return contract, 100-frame write-once stress test, color constant distinctness sanity, and duplicate() independence. 4 of 8 tests fail against the unimplemented stub (expected); 11 assertions pass. Total suite failures unchanged at 14 (all against stub). No regressions.

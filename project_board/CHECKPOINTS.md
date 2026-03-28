@@ -3,6 +3,25 @@
 Decisions logged here before autopilot completes.
 Review these after autopilot completes.
 
+## Run: 2026-03-28 (Test Breaker Agent — FEAT-20260328-mutation-active-color adversarial)
+
+### [MAC] ADV — is_instance_valid() guard vs null-only guard
+**Would have asked:** ADV-MAC-1 tests a freed Object passed as _mutation_slot_manager. In Godot 4, freed Objects have is_instance_valid() return false but == null returns false too (the pointer is non-null, just dangling). Should the guard be `== null or not is_instance_valid()`, or just `is_instance_valid()`? The spec (MAC-6 step 2) says both: `_mutation_slot_manager == null or not is_instance_valid(_mutation_slot_manager)`.
+**Assumption made:** Testing the freed-instance path is valid and catches the `== null` only implementation. The freed instance test is deterministic: free the stub Object before calling _process(), then assert the color did not change and no crash occurred.
+**Confidence:** High
+
+### [MAC] ADV — PlayerStub for ADV-MAC-5 null-return contract
+**Would have asked:** ADV-MAC-5 needs to verify get_mutation_slot_manager() returns null without constructing CharacterBody3D (hang risk). Is a minimal PlayerStub (extends Object, implements get_mutation_slot_manager() -> null) sufficient for the null-return contract test?
+**Assumption made:** Yes. The stub tests the SlimeVisualState contract: when the parent returns null from get_mutation_slot_manager(), _process() must be safe. The PlayerController3D method presence is verified separately via script inspection (carried over from primary suite ADV-MAC-5a).
+**Confidence:** High
+
+### [MAC] ADV — StandardMaterial3D.free() in ADV-MAC-8
+**Would have asked:** In ADV-MAC-8, after mesh.material_override = duplicated_mat, calling original_mat.free() is called explicitly. Should we also free duplicated_mat separately, or does freeing the mesh handle it?
+**Assumption made:** In Godot 4, when a MeshInstance3D is freed, the material_override reference count is decremented. For in-memory StandardMaterial3D objects created with .new(), explicit free() is required to avoid leaks. original_mat.free() is called because it was created standalone and replaced in mesh.material_override. The mesh.free() handles duplicated_mat's reference. This is the same pattern as the primary suite.
+**Confidence:** High
+
+---
+
 ## Run: 2026-03-28 (Test Designer Agent — FEAT-20260328-mutation-active-color)
 
 ### [MAC] Test Design — PlayerController3D instantiation in headless mode
