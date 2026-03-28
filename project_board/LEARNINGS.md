@@ -968,6 +968,75 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 ---
 
+## [run_state_manager] — Lambda primitive capture bug produced 7 persistent signal-test failures; AC Gatekeeper accepted implementation via code inspection while tests were broken
+*Completed: 2026-03-28*
+
+### Learnings
+
+- category: testing
+  insight: GDScript 4.6.1 lambda closures capture primitive types (`bool`, `int`, `float`) by value at creation time. A lambda `func(): fired = true` writes to a copy of `fired`, not the original outer variable. The outer variable is never mutated. All signal-emission tests written with this pattern silently fail regardless of whether the signal actually fires.
+  impact: RSM-SIGNAL-1 through RSM-SIGNAL-6 and ADV-RSM-02 were broken from the moment they were written. The failures persisted across 7 subsequent tickets (SDR, MMSP, PRC, PRS, GSV, AP-CONTINUE, scene_state_machine), requiring stash/restore diagnostic effort on every Integration Agent run. The fix — using an Array capture `var flags := [false]` — was made in a human cleanup commit outside the pipeline, not by any agent.
+  prevention: Never use a bare `bool`, `int`, or `float` local variable as the mutation target inside a GDScript signal-detection lambda. Always use `var flags := [false]` (single-element Array) and `func(): flags[0] = true`. This rule was documented in [soft_death_and_restart] learnings but not applied when the RSM test suite was written, because the Test Design Agent authored the tests before the rule was logged. Apply this rule at test-write time, before running.
+  severity: critical
+
+- category: process
+  insight: The AC Gatekeeper accepted the RSM ticket as COMPLETE by verifying the implementation via code inspection ("signal emits at lines 48–49, state updates at lines 49/53/57") rather than by running the automated test suite. The gatekeeper's evidence was correct — the implementation was right — but the 7 failing signal tests were not treated as a blocking condition. The ticket was marked COMPLETE while 7 of its own test IDs were failing.
+  impact: A pattern was established where an implementation can be gatekeeper-accepted while its dedicated test suite is broken. The tests' purpose (automated regression detection) was nullified for those 7 cases. Any future regression in signal emission would pass the suite without detection.
+  prevention: The AC Gatekeeper must run the test suite against the specific ticket's test files and treat failures in those files as blocking unless explicitly diagnosed as pre-existing (with a stash/restore comparison confirming they predated the ticket's implementation). Code inspection is a supplementary method, not a substitute for a passing test run.
+  severity: high
+
+- category: architecture
+  insight: The `extends RefCounted` pattern for a pure-logic state machine with parameterless signals produced a completely headless-testable, SceneTree-free implementation. Signal connections, state transitions, and slot manager integration were all verifiable via `load().new()` with zero scene setup.
+  impact: All structural and transition tests (RSM-STRUCT, RSM-TRANS, RSM-RESET, RSM-NOOP) passed first run. The architecture imposed no friction on test setup or teardown. This confirms that pure-logic state machines should always extend RefCounted when headless testability is a requirement.
+  prevention: No prevention needed — reinforce this as default architecture for state machines in this project.
+  severity: low
+
+- category: testing
+  insight: Signal emission timing (emit-before-state-change contract) is a subtle but load-bearing invariant that is invisible in transition tests. The implementation correctly emits signals before updating `_state`, but this contract can only be verified by a lambda that captures state at emit time (RSM-SIGNAL-6). If the emit-before-state test is written with the broken lambda pattern, the contract can silently regress with no test detection.
+  impact: RSM-SIGNAL-6 was broken along with the other 6 signal tests, meaning the emit-first contract had zero automated coverage for the duration of the failures. A regression that emitted after state change would have been undetectable.
+  prevention: The emit-before-state test is the highest-value single signal test for any state machine. It should be treated as a mandatory primary test (not adversarial), and its lambda capture must use the Array pattern to be valid.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Writing a signal-detection lambda with a bare primitive capture (`var fired: bool = false; rsm.connect("signal_name", func(): fired = true)`) when the intent is to detect whether the signal fired.
+  detection_signal: A signal test with `assert(fired)` after an `apply_event()` call always fails even though the signal is confirmed by code inspection to be emitted.
+  prevention: Replace `var fired: bool = false` with `var flags := [false]` and `func(): fired = true` with `func(): flags[0] = true`. This is a one-for-one substitution with no semantic change except correct GDScript 2.0 capture semantics.
+
+- description: Accepting a ticket as COMPLETE when the ticket's own test suite has failing tests, based solely on implementation code inspection as evidence. Tests that fail are not providing coverage; they are silently passing regardless of implementation correctness.
+  detection_signal: An AC Gatekeeper verdict that says "AC verified by code inspection at lines X–Y" for an AC that has a corresponding automated test ID that is failing.
+  prevention: Failing tests for the current ticket's ACs are a blocking condition. The Gatekeeper must treat any failure in `test_[ticket_name].gd` or `test_[ticket_name]_adversarial.gd` as blocking unless a stash/restore comparison demonstrates the failure predates the ticket. Code inspection supplements; it does not substitute.
+
+### Prompt Patches
+
+- agent: Test Design Agent
+  change: When writing any GDScript signal-detection lambda to assert that a signal was emitted, use Array-based capture exclusively. The pattern is: `var flags := [false]` and `func(): flags[0] = true`, then assert `flags[0]`. Never use `var fired: bool = false` with `func(): fired = true`. GDScript 4.6.1 captures `bool`, `int`, and `float` primitives by value in lambdas; mutations inside the lambda do not affect the outer variable. This applies to all signal tests, including emit-before-state-change tests.
+  reason: RSM-SIGNAL-1 through RSM-SIGNAL-6 and ADV-RSM-02 were all written with the broken primitive-capture pattern and all failed silently. Seven tests provided zero coverage for 7+ ticket cycles. The Array capture pattern was already documented in [soft_death_and_restart] but was not applied at test-write time for this ticket.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: Before issuing a COMPLETE verdict, run the test suite and check specifically for failures in `tests/scripts/system/test_[ticket_id].gd` and `tests/scripts/system/test_[ticket_id]_adversarial.gd` (or the appropriate test path for the ticket). Failures in the ticket's own test files are blocking unless a stash/restore comparison confirms they predate the implementation. Code inspection of the implementation is supplementary evidence only — it does not substitute for a passing test run against the ticket's own suite.
+  reason: The RSM gatekeeper accepted the ticket as COMPLETE while RSM-SIGNAL-1..6 and ADV-RSM-02 were failing. The implementation was correct but the tests were broken, eliminating regression detection for all signal behavior. A passing test run is the definitive AC evidence for headlessly-testable criteria.
+
+### Workflow Improvements
+
+- issue: A test design defect (broken lambda primitive capture) that was already documented in [soft_death_and_restart] learnings was not applied when the RSM test suite was authored in a later session. The learning was logged but not injected into the Test Design Agent's active behavior.
+  improvement: When a Test Design Agent begins writing signal-emission tests for any new class, it should explicitly check the most recent LEARNINGS.md for GDScript signal-testing rules before writing the first test. The lambda primitive capture rule must be consulted, not rediscovered.
+  expected_benefit: Prevents a documented failure pattern from recurring on the next ticket with signal tests. The [soft_death_and_restart] entry was available but not consulted.
+
+- issue: The stale RSM-SIGNAL failures persisted for 7+ tickets and were diagnosed from scratch each time using stash/restore. The `tests/known_failures.txt` improvement has now been logged in three separate learning entries ([soft_death_and_restart], [AP-CONTINUE-2026-03-27], now here) without being created.
+  improvement: The RSM-SIGNAL failures are now resolved (fixed in commit 55129da). If any new known failures emerge, `tests/known_failures.txt` should be created immediately with the test name, root cause, and diagnosing ticket. The file's absence is now the correct state (no known failures); it should be created only if a new pre-existing failure is confirmed.
+  expected_benefit: Closes the loop on a three-entry recurring improvement suggestion. The underlying problem (RSM-SIGNAL failures) is resolved; the process improvement (known_failures.txt) is only needed if a new pre-existing failure is introduced.
+
+### Keep / Reinforce
+
+- practice: Implementing the state machine as `extends RefCounted` with `_slot_manager` initialized in `_init()` (not `_ready()`), using parameterless signals for all transitions, and placing all logic in `apply_event()` with a match block. No SceneTree API anywhere in the file.
+  reason: This produced a file that is loadable headlessly, testable without a SceneTree, and trivially instantiable by consumers with no wiring overhead. The pattern also allowed `DeathRestartCoordinator._ready()` to wire signals without any scene path lookups. Reinforce this as the canonical design for all lifecycle state machines in this project.
+
+- practice: The emit-before-state-change contract (signal fires before `_state` is updated) being verified by RSM-SIGNAL-6 using a lambda that captures `rsm.get_state()` at emit time. This test type is the only headless-safe way to verify ordering between two synchronous side effects.
+  reason: Emit-before-state ordering is a contract that consumers depend on (e.g., a signal handler that reads state to branch behavior gets the pre-transition state). This test type should exist for any state machine that has an emit-first guarantee. Once the Array capture pattern is used, this test is reliable and provides real protection.
+
+---
+
 ## [scene_state_machine] — Stale BLOCKED ticket, cross-domain handoff noise, and `_init()` vs `_ready()` for headless-tested nodes
 
 *Completed: 2026-03-27*
