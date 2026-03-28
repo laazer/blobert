@@ -301,7 +301,6 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ---
 
 ### [fusion_rules_and_hybrid] TEST_BREAK — re-trigger timer reset verification without physics tick
-
 **Would have asked:** FRH-4-AC-7 says calling apply_fusion_effect twice resets the timer, not stacks it. PlayerController3D does not exist yet and cannot be instantiated headlessly without a scene. How do we test this via FusionResolver alone?
 **Assumption made:** Test via PlayerDouble only: call resolve_fusion twice with fills in between (first fuse consumes slots, refill, fuse again). Verify apply_fusion_effect_call_count == 2 and that the second call used the same duration/multiplier as the first (last_duration == 5.0, last_multiplier == 1.5). This verifies the resolver passes correct args to re-trigger; the reset-not-stack behavior is a PlayerController3D concern tested separately. Document the gap clearly.
 
@@ -327,10 +326,8 @@ Tickets queued: visual_clarity_hybrid_state.md (GDScript fix pass)
 ---
 
 ### [fusion_rules_and_hybrid] TEST_BREAK — resolve_fusion with player that has apply_fusion_effect but is a wrong-type Object
-
 **Would have asked:** Spec says push_error if player lacks apply_fusion_effect AND slots are still consumed. Should the adversarial suite verify that slots are consumed even when the player is a plain Object with no apply_fusion_effect method?
 **Assumption made:** Yes. Pass an Object that lacks apply_fusion_effect entirely. Verify: no crash, slots consumed (both empty after call). This is the exact path that triggers the push_error branch per spec FRH-3. The adversarial test documents this separately from the primary null-player test.
-
 **Confidence:** High
 
 ---
@@ -877,6 +874,7 @@ Ticket: project_board/6_milestone_6_roguelike_run_structure/in_progress/FEAT-202
 Resuming at Stage: IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
 Next Agent: Acceptance Criteria Gatekeeper Agent
 
+
 ## Resume: 2026-03-27
 Ticket: project_board/4_milestone_4_prototype_level/in_progress/containment_hall_01_layout.md
 Resuming at Stage: INTEGRATION
@@ -960,3 +958,70 @@ Queue scope: project_board/4_milestone_4_prototype_level/blocked/scene_state_mac
 **Would have asked:** The task said remove lazy-init from `get_state_machine()` because `_ready()` constructs it — but integration tests instantiate the node without adding it to the scene tree, so `_ready()` never fires and `get_state_machine()` returned null. Move construction to `_init()` or restore lazy-init?
 **Assumption made:** Moved construction to `_init()`, which fires at `instantiate()` time regardless of scene tree membership. This satisfies both the "single construction site" goal and the tests. `_ready()` was removed entirely as it had no remaining content.
 **Confidence:** High
+
+## Run: 2026-03-28T08:00:00Z
+Queue mode: single ticket
+Queue scope: project_board/maintenance/backlog/test_utility_consolidation.md
+
+---
+
+### [MAINT-TUC] Planning — TestBase extension mechanism: extends vs composition
+**Would have asked:** Should test files extend `TestBase` (class inheritance: `extends "res://tests/test_base.gd"`) or load and compose it (e.g., `var _base = preload("res://tests/test_base.gd").new()`)? Inheritance is simpler but requires all tests to switch from `extends Object` to `extends "res://tests/test_base.gd"`. Composition preserves `extends Object` but requires delegating every helper call.
+**Assumption made:** Use string-path inheritance (`extends "res://tests/test_base.gd"`). This is the idiomatic GDScript pattern for sharing utility methods — the subclass simply inherits all helpers. Test files that currently use `class_name` declarations will need to remove `extends Object` and substitute the new base. The 58 files using helpers all use `extends Object`; switching to `extends "res://tests/test_base.gd"` is a mechanical substitution. No test logic changes — only the base declaration and removal of the duplicated helper blocks.
+**Confidence:** High
+
+### [MAINT-TUC] Planning — class_name conflicts with test_base.gd
+**Would have asked:** `test_base.gd` must itself not declare a `class_name`, because the runner loads it as a string path. Roughly half of the existing test files declare `class_name` (e.g., `class_name EnemyStateMachineTests`). Can those test files keep their `class_name` while also extending `test_base.gd` via string path?
+**Assumption made:** Yes. A file can declare `class_name SomeName` while using `extends "res://tests/test_base.gd"`. GDScript permits this. `test_base.gd` itself must NOT declare a `class_name` to avoid global registry pollution. The Spec Agent must specify this constraint explicitly.
+**Confidence:** High
+
+### [MAINT-TUC] Planning — helper naming conflicts: _pass vs _pass_test
+**Would have asked:** Across 58 test files, most use `_pass(test_name)` and `_fail(test_name, message)`, but a subset (e.g., `test_room_templates.gd`, `test_3d_scene.gd`, `test_procedural_run.gd`) use `_pass_test(test_name)` and `_fail_test(test_name, message)`. Which name should `test_base.gd` standardize on? Using `_pass` is the majority convention (40+ files); switching `_pass_test` callers would require changing call sites.
+**Assumption made:** `test_base.gd` exposes both `_pass(name)` and `_pass_test(name)` as aliases pointing to the same implementation, and both `_fail(name, msg)` and `_fail_test(name, msg)` as aliases. Files with `_pass_test` callers do not need to change call sites. The Spec Agent must document the dual-name approach. This avoids a blast-radius rename across all call sites in the divergent files.
+**Confidence:** High
+
+### [MAINT-TUC] Planning — run_all() structure: test_base.gd cannot own it
+**Would have asked:** The runner calls `script.new().run_all()` on every discovered test file. `run_all()` is different in every file (different test invocations, different print header). Can `test_base.gd` provide any part of `run_all()`, or must it remain in each file?
+**Assumption made:** `test_base.gd` provides a `_begin_suite(suite_name: String)` helper that resets `_pass_count` and `_fail_count` and prints the `--- suite_name ---` header, and a `_end_suite() -> int` helper that prints the summary and returns `_fail_count`. Individual test files still implement `run_all()` but replace the boilerplate reset+print+return pattern with calls to `_begin_suite()` and `_end_suite()`. The `run_all()` method itself remains in each file because the ordered test invocations are file-specific.
+**Confidence:** High
+
+### [MAINT-TUC] Planning — migration scope: full vs partial
+**Would have asked:** The ticket says "majority preferred, partial acceptable." Should the Spec Agent target 100% migration or explicitly exclude certain files? `test_mutation_slot_system_single_adversarial.gd` is a stub with no helpers at all. `test_base_physics_entity_3d.gd` and `test_logging.gd` have minimal helpers. Are these worth migrating?
+**Assumption made:** Target full migration (all 58 files that define `func _pass` or `func _fail`). The stub file `test_mutation_slot_system_single_adversarial.gd` defines no helpers and requires no migration — it already has no duplication. The Spec Agent must enumerate any file explicitly excluded from migration and justify the exclusion. The Implementation Agent must not leave any file with both its own `_pass`/`_fail` definitions AND a `test_base.gd` extends — duplication must be fully removed from each migrated file.
+**Confidence:** High
+
+### [MAINT-TUC] Planning — DRY audit of scripts/ scope
+**Would have asked:** The ticket asks for a "brief DRY audit note" in Validation Status for `scripts/`. There are 31 script files. Should this be a full structural analysis or a pattern-level scan (e.g., grep for repeated function signatures, copy-paste blocks)?
+**Assumption made:** Pattern-level scan only — grep for shared patterns (e.g., `push_error` + `return null` guards, repeated `load()` call patterns, repeated `_rsm` initialization). The goal is to identify 2-5 high-value consolidation candidates and document them in the ticket's Validation Status. No consolidation of `scripts/` code is performed in this ticket — only identification. This keeps the ticket's blast radius minimal.
+**Confidence:** High
+
+### [MAINT-TUC] Spec — file naming: test_utils.gd vs test_base.gd; Option B variant
+**Would have asked:** The task prompt says to name the file `tests/utils/test_utils.gd` (Option B variant). This name begins with `test_`, so the runner discovers it and calls `run_all()`. Does the no-op `run_all() -> int: return 0` fully satisfy the runner's requirement?
+**Assumption made:** Yes. The runner at `tests/run_tests.gd` line 56 calls `script.new().run_all()` and adds the return value to `total_failures`. A return value of 0 adds nothing. The runner continues to the next file. The file prints nothing. This is fully transparent to the runner and produces zero pollution in the test output. The file is named `tests/utils/test_utils.gd` — the `tests/utils/` subdirectory is created as a new directory; the runner recursively scans into it normally.
+**Confidence:** High
+
+### [MAINT-TUC] Spec — _pass_count/_fail_count ownership: subclass not base
+**Would have asked:** Should `test_utils.gd` declare `_pass_count` and `_fail_count` to avoid a potential "member not found" error when the helpers reference them? GDScript may or may not resolve subclass instance vars from base class method bodies.
+**Assumption made:** GDScript resolves member variable lookups on `self` at runtime, not at parse time. A base class method that references `_pass_count` will find the variable on the subclass instance if the subclass declares it. This is the standard GDScript behavior for `extends`-based inheritance. The counters remain in each test file as instance variables; `test_utils.gd` does NOT declare them. The Generalist Agent must verify this assumption against the actual GDScript version (4.x) before implementing — if GDScript raises a "member not found" error at parse time for base class references to subclass vars, the fallback is to declare `var _pass_count: int = 0` and `var _fail_count: int = 0` in `test_utils.gd` as well (they are per-instance and will be shadowed correctly).
+**Confidence:** High
+
+### [MAINT-TUC] Spec — _assert_eq_string vs _assert_eq_str parameter order conflict
+**Would have asked:** Two naming conventions coexist: `_assert_eq_string(expected, actual, name)` and `_assert_eq_str(actual, expected, name)`. These are different methods with different argument orders, serving different call sites. Can both coexist in `test_utils.gd` without confusion?
+**Assumption made:** Both methods are included in `test_utils.gd` with their respective canonical parameter orders. The distinction is documented in the spec explicitly. No migration of call sites is required. The Generalist Agent must not rename either method and must not reorder their parameters. The two methods produce different failure messages (double-quote format vs single-quote format) which provides a secondary visual cue distinguishing them.
+**Confidence:** High
+
+### [MAINT-TUC] Spec — _assert_vec3_near threshold: 2 files not 3
+**Would have asked:** `_assert_vec3_near` appears in only 2 test files (not the 3-file threshold for inclusion). Should it be included in `test_utils.gd` anyway because it is the natural companion to `_near`?
+**Assumption made:** Yes, included. The rationale is that `_near` appears in 3 files (meeting the threshold), and `_assert_vec3_near` is mechanically dependent on `_near` — any file using `_assert_vec3_near` must also define `_near`. Separating them would require the 2 files that use `_assert_vec3_near` to retain a local `_near` definition while also inheriting the base's `_near`. This creates a shadowing ambiguity. Including both in the base is cleaner, and the 2-file appearance count for `_assert_vec3_near` is simply a consequence of it being a higher-level wrapper — it does not reflect lower utility.
+**Confidence:** High
+
+### [MAINT-TUC] Test Design — subclass counter dispatch via Object.set/get
+**Would have asked:** The spec states that `_pass_count`/`_fail_count` are NOT in `test_utils.gd` and are resolved via GDScript dynamic dispatch from the subclass. In the smoke test, how should the subclass ownership contract be exercised headlessly without writing a separate temp GDScript file?
+**Assumption made:** Used `Object.set("_pass_count", 0)` / `Object.get("_pass_count")` on an instance of the loaded `test_utils.gd` script. GDScript's `set()`/`get()` on an Object creates/reads dynamic properties on the instance, and the script methods reference `_pass_count` on `self` — which resolves to those properties. This faithfully exercises the dynamic dispatch contract without requiring a separate file. The behavioral assertion (counter incremented to 1 after one `_pass` call) is the definitive observable.
+**Confidence:** High
+
+### [MAINT-TUC] Test Design — custom fail_msg verification without print capture
+**Would have asked:** SMOKE-26 and SMOKE-27 assert that the optional `fail_msg` parameter to `_assert_true`/`_assert_false` is accepted and used. The message is written to stdout via `print()`, which cannot be captured headlessly. Should I skip these tests or assert a weaker proxy?
+**Assumption made:** Asserting that `_fail_count` is incremented (same as the default fail path) is sufficient to verify the optional parameter is handled without crashing. If the optional parameter caused a runtime error (wrong arity, wrong type), the test would fail with an error rather than a counter increment. The exact message content in print output is tested implicitly by the spec author's review of `run_tests.sh` output; it is not assertable in this framework.
+**Confidence:** High
+
