@@ -20,7 +20,7 @@ echo "blog-post: generating post for session commits..."
 echo "$SESSION_COMMITS"
 echo ""
 
-PROMPT="Read the agent role definition at agent_context/agents/10_blog_post/blog_post_v1.md and follow it exactly. This is a non-interactive run triggered by a pre-push git hook — no live session conversation is available. Use git history, CHECKPOINTS.md, LEARNINGS.md, and the diff of these commits as your primary sources. The session commits were: $SESSION_COMMITS"
+PROMPT="Read the agent role definition at agent_context/agents/10_blog_post/blog_post_v1.md and follow it exactly. This is a non-interactive run triggered by a pre-push git hook — no live session conversation is available. Use git history, project_board/checkpoints/ scoped logs, project_board/CHECKPOINTS.md index, LEARNINGS.md, and the diff of these commits as your primary sources. The session commits were: $SESSION_COMMITS"
 
 cd "$ROOT"
 if claude --print "$PROMPT"; then
