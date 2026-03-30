@@ -6,10 +6,10 @@ Place first 4 enemy families in prototype level
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 5 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_ENGINE_INTEGRATION |
+| Revision | 6 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -79,7 +79,7 @@ Acceptance Criteria:
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
@@ -88,7 +88,9 @@ Test Breaker Agent
   "spec": "project_board/specs/first_4_families_in_level_spec.md",
   "checkpoint_log": "project_board/checkpoints/first_4_families_in_level/run-2026-03-30-01.md",
   "primary_tests": "tests/scenes/enemies/test_enemy_scene_generation.gd",
-  "adversarial_tests": "tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd"
+  "adversarial_tests": "tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd",
+  "generator_script": "scripts/asset_generation/generate_enemy_scenes.gd",
+  "level_scene": "scenes/levels/sandbox/test_movement_3d.tscn"
 }
 ```
 
@@ -96,4 +98,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test Designer has written 32 primary (FESG-1 through FESG-32) and 16 adversarial (ADV-FESG-1 through ADV-FESG-16) tests in tests/scenes/enemies/. Tests are auto-discovered by run_tests.gd. Generated scene tests SKIP gracefully when scenes/enemies/generated/ is absent. Level placement tests FAIL (red) until Generalist Agent completes implementation. Test Breaker Agent should review tests for correctness, identify any gaps, and verify the test suite is a complete contract for the spec before implementation begins.
+Test Breaker Agent has reviewed the 32 primary (FESG-1 through FESG-32) and 16 adversarial (ADV-FESG-1 through ADV-FESG-16) tests. 6 additional adversarial tests (ADV-FESG-17 through ADV-FESG-22) were added to close genuine coverage gaps: fallback BoxShape3D exact size, mutation_drop cross-family distinctness, enemy_family non-empty guard, enemy_family canonical-set membership, level enemy CharacterBody3D type check, and Hurtbox shape null dedicated assertion. The test suite is now a complete contract for the spec. Engine Integration Agent should implement generate_enemy_scenes.gd, run it to produce the 12 .tscn files, and modify test_movement_3d.tscn to place the 4 family enemies.

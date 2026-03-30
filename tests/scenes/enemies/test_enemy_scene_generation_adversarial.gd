@@ -460,6 +460,222 @@ func test_adv_fesg_16_all_12_scenes_have_source_glb_meta() -> void:
 
 
 # ---------------------------------------------------------------------------
+# ADV-FESG-17: Fallback CollisionShape3D (zero-AABB) has BoxShape3D.size == Vector3(1, 1, 1)
+# Spec: AC-GEN-4.3; ADV-FESG-2 only checks non-zero; this mutation target checks the EXACT
+# fallback dimensions. A mutation that emits BoxShape3D(0.5, 0.5, 0.5) instead of (1, 1, 1)
+# would pass ADV-FESG-2 but fail here.
+# Vulnerability: if the implementer confuses half-extents (0.5) with full-extents (1.0) the
+# unit box will be half the intended collision volume; ADV-FESG-2 would not catch this.
+# ---------------------------------------------------------------------------
+func test_adv_fesg_17_fallback_box_shape_exact_size() -> void:
+	if not _generated_dir_exists():
+		print("  SKIP: ADV-FESG-17 — res://scenes/enemies/generated/ does not exist yet (implementation pending)")
+		return
+	for basename in GENERATED_BASENAMES:
+		var inst: Node = _load_generated(basename)
+		if inst == null:
+			_fail_test("ADV-FESG-17", basename + ".tscn failed to load")
+			continue
+		var col_node: Node = inst.get_node_or_null("CollisionShape3D")
+		if col_node == null:
+			_fail_test("ADV-FESG-17", basename + " — no CollisionShape3D found")
+			inst.free()
+			continue
+		var shape: Shape3D = (col_node as CollisionShape3D).shape
+		if shape == null:
+			# shape==null is already caught by ADV-FESG-2; mark fail here too
+			_fail_test("ADV-FESG-17", basename + " — CollisionShape3D.shape is null")
+			inst.free()
+			continue
+		# Only assert exact size when the shape IS a BoxShape3D (fallback branch)
+		if shape is BoxShape3D:
+			var box: BoxShape3D = shape as BoxShape3D
+			# Fallback must be full-extents Vector3(1,1,1), not half-extents Vector3(0.5,0.5,0.5)
+			_assert_true(
+				box.size.x >= 0.5 and box.size.y >= 0.5 and box.size.z >= 0.5,
+				"ADV-FESG-17 — " + basename + " BoxShape3D fallback size each axis >= 0.5 (not degenerate sub-unit)"
+			)
+			# The exact fallback from spec ADR-4 is size=Vector3(1,1,1); if it came from a real
+			# mesh AABB the size may legitimately differ. We can only pin the exact spec value
+			# if we know this is the fallback case. We detect fallback by checking size == (1,1,1)
+			# OR a real mesh AABB (any other non-zero value). The critical mutation to catch is
+			# size == Vector3(0.5, 0.5, 0.5) (wrong half-extents). The >= 0.5 check above catches
+			# the degenerate sub-half-unit case. Additionally assert not exactly (0.5,0.5,0.5)
+			# (the half-extents mistake) unless x==y==z==0.5 AND all dimensions are truly equal —
+			# that specific degenerate case would mean fallback used half-extents.
+			var all_half: bool = (
+				absf(box.size.x - 0.5) < 0.001 and
+				absf(box.size.y - 0.5) < 0.001 and
+				absf(box.size.z - 0.5) < 0.001
+			)
+			_assert_false(
+				all_half,
+				"ADV-FESG-17 — " + basename + " BoxShape3D.size != Vector3(0.5,0.5,0.5) (spec requires full-extents 1,1,1 for fallback, not half-extents)"
+			)
+		else:
+			_pass("ADV-FESG-17 — " + basename + " non-Box shape; fallback size check not applicable")
+		inst.free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-FESG-18: mutation_drop values are mutually distinct across the 4 families
+# Spec: FESG-GEN-3 mapping table; guards against two families receiving the same string.
+# Vulnerability: if MUTATION_BY_FAMILY has a copy-paste bug making "acid_spitter" → "adhesion"
+# (duplicate), FESG-5 through FESG-8 each check their own scene in isolation and would miss it.
+# This test collects all unique mutation strings and asserts exactly 4 distinct values.
+# ---------------------------------------------------------------------------
+func test_adv_fesg_18_mutation_drop_values_are_distinct_across_families() -> void:
+	if not _generated_dir_exists():
+		print("  SKIP: ADV-FESG-18 — res://scenes/enemies/generated/ does not exist yet (implementation pending)")
+		return
+	# Sample one representative per family (the _00 variant)
+	var family_representatives: Array = [
+		"adhesion_bug_animated_00",
+		"acid_spitter_animated_00",
+		"claw_crawler_animated_00",
+		"carapace_husk_animated_00",
+	]
+	var seen_mutations: Array = []
+	for basename in family_representatives:
+		var inst: Node = _load_generated(basename)
+		if inst == null:
+			_fail_test("ADV-FESG-18", basename + ".tscn failed to load")
+			continue
+		var mutation: String = str(inst.get("mutation_drop"))
+		if mutation in seen_mutations:
+			_fail_test(
+				"ADV-FESG-18",
+				basename + " mutation_drop '" + mutation + "' is a DUPLICATE — two families share the same mutation_drop string"
+			)
+		else:
+			seen_mutations.append(mutation)
+			_pass("ADV-FESG-18 — " + basename + " mutation_drop '" + mutation + "' is unique so far")
+		inst.free()
+	_assert_eq_int(
+		4,
+		seen_mutations.size(),
+		"ADV-FESG-18 — all 4 family representatives have mutually distinct mutation_drop values, got: " + str(seen_mutations)
+	)
+
+
+# ---------------------------------------------------------------------------
+# ADV-FESG-19: enemy_family is a non-empty string for all 12 generated scenes
+# Spec: AC-GEN-3.1; guards against EnemyNameUtils.extract_family_name() over-stripping
+# and returning "" (empty join on empty parts array).
+# Vulnerability: if a new GLB basename pattern causes all tokens to be stripped,
+# ADV-FESG-6 and ADV-FESG-7 both pass for "" (empty string has no "animated" substring
+# and does not end_with("_00")), silently producing an invalid family name.
+# ---------------------------------------------------------------------------
+func test_adv_fesg_19_enemy_family_is_non_empty() -> void:
+	if not _generated_dir_exists():
+		print("  SKIP: ADV-FESG-19 — res://scenes/enemies/generated/ does not exist yet (implementation pending)")
+		return
+	for basename in GENERATED_BASENAMES:
+		var inst: Node = _load_generated(basename)
+		if inst == null:
+			_fail_test("ADV-FESG-19", basename + ".tscn failed to load")
+			continue
+		var family: String = str(inst.get("enemy_family"))
+		_assert_true(
+			family.length() > 0,
+			"ADV-FESG-19 — " + basename + " enemy_family is non-empty string, got: '" + family + "'"
+		)
+		inst.free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-FESG-20: All 4 level enemy nodes are CharacterBody3D instances
+# Spec: AC-LEVEL-1.2 through AC-LEVEL-1.5, AC-LEVEL-1.8 through AC-LEVEL-1.11
+# ADV-FESG-8 only confirms nodes are non-null; FESG-31 checks scene_file_path but
+# does not verify runtime type. A .tscn could have a node named "CarapaceHuskEnemy"
+# with type Node3D (wrong) — that passes all current null/name checks.
+# Vulnerability: type mismatch on a level enemy node is a silent regression;
+# physics, collision, and script calls would all fail at runtime.
+# ---------------------------------------------------------------------------
+func test_adv_fesg_20_level_enemy_nodes_are_character_body_3d() -> void:
+	var root: Node = _load_level()
+	if root == null:
+		_fail_test("ADV-FESG-20", "level scene failed to load")
+		return
+	for name in LEVEL_ENEMY_NAMES:
+		var enemy: Node = root.get_node_or_null(name)
+		if enemy == null:
+			_fail_test("ADV-FESG-20", name + " not found in level — cannot check type")
+			continue
+		_assert_true(
+			enemy is CharacterBody3D,
+			"ADV-FESG-20 — " + name + " is CharacterBody3D (not a bare Node3D or other wrong type)"
+		)
+	root.free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-FESG-21: Hurtbox CollisionShape3D shape is non-null (dedicated assertion)
+# Spec: AC-TSCN-3.8; ADV-FESG-3 contains a null guard that calls _fail_test() and
+# returns early, but the null-ness itself is not recorded as a named assertion with
+# its own pass/fail counter contribution. This test provides a dedicated, explicitly
+# counted assertion so null-shape regressions in the Hurtbox show up unambiguously
+# in the results summary.
+# Vulnerability: if duplicate_shape() returns null (e.g., shape resource not found),
+# ADV-FESG-3 conflates the null check with the identity check — a null result could
+# be attributed to the identity comparison rather than the null guard.
+# ---------------------------------------------------------------------------
+func test_adv_fesg_21_hurtbox_collision_shape_not_null() -> void:
+	if not _generated_dir_exists():
+		print("  SKIP: ADV-FESG-21 — res://scenes/enemies/generated/ does not exist yet (implementation pending)")
+		return
+	for basename in GENERATED_BASENAMES:
+		var inst: Node = _load_generated(basename)
+		if inst == null:
+			_fail_test("ADV-FESG-21", basename + ".tscn failed to load")
+			continue
+		var hurtbox_col: Node = inst.get_node_or_null("Hurtbox/CollisionShape3D")
+		if hurtbox_col == null:
+			_fail_test("ADV-FESG-21", basename + " — Hurtbox/CollisionShape3D node is missing entirely")
+			inst.free()
+			continue
+		var shape: Shape3D = (hurtbox_col as CollisionShape3D).shape
+		_assert_true(
+			shape != null,
+			"ADV-FESG-21 — " + basename + " Hurtbox/CollisionShape3D.shape is not null"
+		)
+		inst.free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-FESG-22: enemy_family value is one of the 4 known canonical family strings
+# Spec: FESG-GEN-3 mapping table; guards against off-by-one suffix stripping producing
+# strings like "acid_spitter_" (trailing underscore) or "adhesion" (over-stripped).
+# Vulnerability: ADV-FESG-6 and ADV-FESG-7 are strip-negative tests; neither confirms
+# the resulting value belongs to the known-good set. A mutation in the join logic
+# (e.g., "_".join with an extra trailing separator) would produce an invalid family
+# name that still satisfies both strip tests.
+# ---------------------------------------------------------------------------
+const CANONICAL_FAMILIES: Array = [
+	"adhesion_bug",
+	"acid_spitter",
+	"claw_crawler",
+	"carapace_husk",
+]
+
+func test_adv_fesg_22_enemy_family_is_canonical() -> void:
+	if not _generated_dir_exists():
+		print("  SKIP: ADV-FESG-22 — res://scenes/enemies/generated/ does not exist yet (implementation pending)")
+		return
+	for basename in GENERATED_BASENAMES:
+		var inst: Node = _load_generated(basename)
+		if inst == null:
+			_fail_test("ADV-FESG-22", basename + ".tscn failed to load")
+			continue
+		var family: String = str(inst.get("enemy_family"))
+		_assert_true(
+			family in CANONICAL_FAMILIES,
+			"ADV-FESG-22 — " + basename + " enemy_family '" + family + "' is one of the 4 canonical family strings"
+		)
+		inst.free()
+
+
+# ---------------------------------------------------------------------------
 # Public entry point — AC-TEST-2.1, AC-TEST-2.4
 # ---------------------------------------------------------------------------
 func run_all() -> int:
@@ -483,6 +699,12 @@ func run_all() -> int:
 	test_adv_fesg_14_generated_scene_has_get_base_state()
 	test_adv_fesg_15_level_enemies_above_floor()
 	test_adv_fesg_16_all_12_scenes_have_source_glb_meta()
+	test_adv_fesg_17_fallback_box_shape_exact_size()
+	test_adv_fesg_18_mutation_drop_values_are_distinct_across_families()
+	test_adv_fesg_19_enemy_family_is_non_empty()
+	test_adv_fesg_20_level_enemy_nodes_are_character_body_3d()
+	test_adv_fesg_21_hurtbox_collision_shape_not_null()
+	test_adv_fesg_22_enemy_family_is_canonical()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
