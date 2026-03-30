@@ -7,8 +7,8 @@ Place first 4 enemy families in prototype level
 | Field | Value |
 |---|---|
 | Stage | IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE |
-| Revision | 7 |
-| Last Updated By | Engine Integration Agent |
+| Revision | 8 |
+| Last Updated By | Engine Integration Agent (GDScript review pass) |
 | Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
@@ -99,3 +99,5 @@ Proceed
 
 ## Reason
 Engine Integration Agent implemented generate_enemy_scenes.gd, ran the headless generator to produce all 12 .tscn files in scenes/enemies/generated/, and modified test_movement_3d.tscn to replace Enemy/Enemy2 with 4 family instances (AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy) at Y=1.0 positions. All 32 primary (FESG-1 through FESG-32) and 22 adversarial (ADV-FESG-1 through ADV-FESG-22) tests pass. run_tests.sh exits clean.
+
+GDScript review pass (Revision 8): applied 5 fixes to generate_enemy_scenes.gd — file header comment, str() Variant coercion, typed Array[MeshInstance3D] for meshes/_gather_mesh_instances, no-op AABB corner simplification, _ensure_dir return-value check. All tests continue to pass.
