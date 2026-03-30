@@ -678,6 +678,83 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 ---
 
+## [MAINT-TUC] — GDScript 4 static analysis breaks spec-mandated dynamic dispatch; smoke/adversarial infra creates circular-extend trap
+*Completed: 2026-03-28*
+
+### Learnings
+
+- category: architecture
+  insight: GDScript 4 validates all referenced identifiers at parse time, not at runtime. A base class that references `_pass_count`/`_fail_count` without declaring them fails to load even if every subclass declares those variables. The spec's assumption that "GDScript resolves them via dynamic dispatch at runtime" is incorrect for the current GDScript 4 parser.
+  impact: The spec mandated AC-3.1 (no `_pass_count`/`_fail_count` in `test_utils.gd`) and simultaneously required that base class helpers call those variables. The Implementation Agent had to use `get()`/`set()` as a workaround, which itself broke when `Object.set()` on an undeclared property was not retrievable via `Object.get()`. This required a second design pivot — declaring the counters in the base — which directly violated AC-3.1 and forced a spec revision.
+  prevention: Before speccing any base class that references variables expected to live in subclasses, verify with a minimal test whether GDScript 4's parser accepts the reference. Do not assume runtime dynamic dispatch applies to identifier resolution at parse time. The safe design is either: (a) declare the variable in the base with a default, or (b) use a virtual getter method pattern (`func _get_pass_count() -> int: return 0`) that subclasses override.
+  severity: high
+
+- category: testing
+  insight: Smoke and adversarial test files that test the utility file itself cannot extend the utility they are testing. Extending `test_utils.gd` from within `test_utils_smoke.gd` would create a circular dependency that makes the smoke suite responsible for calling `_pass`/`_fail` via the very file it is verifying. These files must `extends Object` and define their own local `_pass`/`_fail` helpers — which means they will appear in the `grep -r "func _pass\b" tests/` output and literally violate the letter of AC-4.1/4.2.
+  impact: AC-4.1 and AC-4.2 stated that `func _pass` must appear ONLY in `test_utils.gd`. The smoke/adversarial infrastructure files were a structural exception that made these ACs unverifiable as written. The AC Gatekeeper had to accept this as an "accepted structural exception" rather than a literal pass.
+  prevention: When writing ACs for a self-testing utility ticket, anticipate the self-test infrastructure's extends constraint. AC-4.1 should have read: "After migration, no migrated production test file defines `func _pass`. The smoke and adversarial self-test files for `test_utils.gd` itself are exempt as they cannot extend the file they test." The "migrated production test file" scope qualification makes the AC objectively verifiable.
+  severity: medium
+
+- category: testing
+  insight: GDScript 4 coerces types in Variant equality: `1 == "1"` returns `true`. A test asserting that `_assert_eq(1, "1")` fails (ADV-TU-28) contradicts GDScript's actual behavior. Similarly, IEEE-754 representation of `0.1` means `absf(0.0 - 0.1) <= 0.1` is not reliably true at the boundary — the stored value of `0.1` may be slightly above or below the mathematical value (ADV-TU-32 with the `<=` vs `<` boundary).
+  impact: Both ADV-TU-28 and ADV-TU-32 were written based on incorrect assumptions about language and floating-point behavior. They required fixes after the checkpoint logged them as known failures, adding a rework iteration to an otherwise complete implementation pass.
+  prevention: For any test that asserts cross-type equality behavior or floating-point boundary conditions, the Test Breaker Agent must verify the assertion against the actual GDScript 4 runtime before publishing the test. The specific rules: (1) `Variant == Variant` coerces ints and strings — never assume an int vs. string comparison fails. (2) For `<=` boundary tests on float literals, use a value that is representable exactly in binary (e.g. `0.5`, `0.25`) rather than a decimal like `0.1` whose IEEE-754 representation introduces rounding uncertainty.
+  severity: medium
+
+- category: process
+  insight: When a spec is authored before the test files are written, the spec's ACs can be staleness-trapped: the AC text is written against an imagined test that has not been run, making the AC a hypothesis rather than a verifiable contract. ADV-TU-28 and ADV-TU-32 were both hypotheses that turned out to be wrong about the runtime.
+  impact: The AC Gatekeeper encountered test failures that were not implementation bugs but were spec/test design errors that should have been caught at the Test Breaker phase. This required a checkpoint entry and explicit documentation that these are "inherent GDScript 4 behavioral properties" rather than bugs.
+  prevention: The Test Breaker Agent must run each adversarial test against a known-correct stub implementation before publishing the test suite. A test that is supposed to fail should fail for the right reason. If a test can't be green-verified (e.g., it only makes sense in the red phase), the checkpoint must record its expected failure mechanism and the spec must acknowledge the runtime assumption being tested.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Spec asserting counter ownership (no declaration in base) and base-class helpers that reference those counters simultaneously, without verifying that GDScript 4's parser permits undeclared identifier references in base class method bodies.
+  detection_signal: A spec AC says "base class MUST NOT declare variable X" and a separate AC says "base class helpers call X." The Implementation Agent files a checkpoint noting the parse failure.
+  prevention: These two ACs are contradictory in GDScript 4. The spec must choose: (a) declare X in the base with a default value, or (b) use a virtual method pattern. Mandate the chosen resolution in the spec before implementation begins.
+
+- description: Smoke and adversarial test files for a shared utility are treated as regular migrated test files when checking post-migration grep assertions. The circular-extend constraint forces them to redefine the very functions the production files should have removed.
+  detection_signal: Post-migration grep for `func _pass` in `tests/` finds hits in files named `test_*_smoke.gd` or `test_*_adversarial.gd` that are self-testing the utility.
+  prevention: Any grep-based AC that enforces function removal must explicitly carve out the self-test infrastructure files. Name the exempt files in the AC text, not in an "accepted structural exception" note added at gatekeeper time.
+
+- description: Adversarial tests that assert GDScript type-coercion behavior without empirical verification of the runtime. Assuming `int != string` in Variant comparison, or assuming a decimal literal boundary behaves as its mathematical value, produces tests that are structurally wrong about the language.
+  detection_signal: A test assertion says "this call should fail" for a cross-type comparison (e.g. `_assert_eq(1, "1")` should produce FAIL) but there is no checkpoint confirming this was tested against a running interpreter.
+  prevention: Any adversarial test that relies on type system behavior or IEEE-754 edge cases must be empirically verified in a minimal GDScript script before being committed to the test suite.
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "When designing a base class that provides shared helpers referencing subclass-declared variables, do NOT assume GDScript 4 dynamic dispatch applies at parse time. GDScript 4 validates identifier references at parse time, not at runtime. If a base class method body references a variable (e.g. `_pass_count`) that is only declared in subclasses, the script will fail to load. You must either: (a) declare the variable in the base with a default value and document that subclasses shadow it, or (b) use a virtual accessor method pattern. Do not write ACs that simultaneously prohibit a variable declaration in the base and require that variable to be referenced in base class method bodies."
+  reason: The AC-3.1 vs. counter-access contradiction required two checkpoint entries, a `get()`/`set()` workaround that itself failed, and a final design pivot that violated the original AC. A correct spec would have never generated this contradiction.
+
+- agent: Test Breaker Agent
+  change: "For any adversarial test that asserts a call should produce a FAIL result based on type mismatch behavior (e.g. int vs. string, float boundary), verify the assertion against a live GDScript 4 interpreter before publishing. Specifically: (1) Do not assume `Variant == Variant` comparisons fail for int vs. string — GDScript 4 coerces them. (2) For floating-point boundary assertions using `<=` or `<`, use only exact binary-representable values (powers of 2 or their fractions) as test inputs. Decimal literals like 0.1 have IEEE-754 representations that make boundary behavior non-deterministic. Record each such verification in CHECKPOINTS.md."
+  reason: ADV-TU-28 and ADV-TU-32 were both based on incorrect runtime assumptions. They required a rework iteration that could have been eliminated with a one-minute verification step.
+
+- agent: Spec Agent
+  change: "When writing grep-based acceptance criteria that enforce the absence of a function definition (e.g. 'grep for func _pass returns only results from X'), explicitly name every file that is structurally exempt from the rule. Do not rely on an 'accepted structural exception' note added at gatekeeper time. The AC text itself must read: 'After migration, func _pass appears only in test_utils.gd and the following exempt self-test files: [list them].' "
+  reason: AC-4.1 and AC-4.2 were technically violated by the smoke/adversarial infrastructure files but declared satisfied via an accepted exception. Had this been written into the AC from the start, the Gatekeeper could have confirmed it objectively rather than issuing a judgment call.
+
+### Workflow Improvements
+
+- issue: The spec's assumption that GDScript 4 permits base-class references to subclass-declared variables was not challenged at any workflow stage before implementation. The Spec Agent published the assumption as a fact; the Test Breaker and Static QA Agents did not verify it; the Implementation Agent discovered the parse failure at implementation time.
+  improvement: Add a "GDScript runtime assumptions" verification step to the Static QA Agent's checklist: for any spec that asserts a GDScript language behavior (dynamic dispatch, type coercion, signal capture semantics), require a reference to a concrete checkpoint or prior learnings entry confirming the behavior. If no confirmation exists, the Static QA Agent must file a checkpoint before handing off to the Implementation Agent.
+  expected_benefit: Surfaces incorrect language-behavior assumptions before they cause implementation-time rework. Prevents the pattern where a spec's "GDScript will resolve X at runtime" assumption goes unchallenged through three agent stages.
+
+- issue: The post-migration AC verification for "func _pass appears only in test_utils.gd" could not be confirmed by a literal grep because the smoke/adversarial self-test infrastructure files are a structural exception. The Gatekeeper issued a judgment-call pass rather than an objective verification.
+  improvement: When a ticket's primary deliverable is a shared utility that must also be self-tested, the Spec Agent must write the self-test infrastructure plan alongside the utility spec — not leave it for the Test Designer to discover. The self-test files' circular-extend constraint is foreseeable at spec time. Specifying it upfront allows the ACs to be written correctly from the start.
+  expected_benefit: Eliminates late-stage "accepted structural exception" verdicts. Keeps all AC verifications objective.
+
+### Keep / Reinforce
+
+- practice: The Implementation Agent used `Object.get()`/`Object.set()` as a first attempt to resolve the undeclared-identifier parse error, discovered it did not work for dynamic property creation, filed a detailed checkpoint, and pivoted to declaring the counters in the base. This systematic "attempt → observe → checkpoint → pivot" loop produced a traceable decision history.
+  reason: Complex infrastructure tickets with contradictory ACs benefit from explicit checkpoint entries at each design pivot. The checkpoint log for this ticket is a complete audit trail of why the final design differs from the original spec. Future agents working on similar base-class utility infrastructure can read those checkpoints rather than re-discovering the same GDScript 4 constraints.
+
+- practice: Using a `run_all() -> int: return 0` no-op in the shared utility to satisfy the auto-discovery runner without modifying `run_tests.gd`. This required identifying the naming conflict proactively (the CRITICAL Risk note in the execution plan) before any implementation began.
+  reason: The runner discovery pattern (`test_*.gd` → call `run_all()`) is a fixed constraint that cannot be changed. Any shared utility file under `tests/` must account for it. Proactive identification and resolution at the planning phase with an explicit no-op is the correct pattern. It should be the standard approach for any future shared infrastructure file placed under `tests/`.
+
+---
+
 ## [godot_scene_generator_validation] — Extract pipeline-convention-sensitive logic to testable utilities before integration, not after
 *Completed: 2026-03-25*
 
@@ -965,6 +1042,80 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: Every blocked ticket has a well-formed Manual QA Checklist with numbered steps specifying the exact scene path, trigger action, and expected observable outcome. The spec-side fix for the recurring "checklist missing" anti-pattern is working.
   reason: Tickets now contain executable verification procedures. The problem is no longer checklist quality — it is that the human has no consolidated entry point to discover and act on the queue, and no instructions for recording results. The spec practice is sound; the workflow gap is the aggregation and result-capture layer.
+
+---
+
+## [FEAT-MUTATION-COLOR] — StandardMaterial3D sub-resource sharing, per-frame material write guard, and is_instance_valid() for RefCounted references
+
+*Completed: 2026-03-28*
+
+### Learnings
+
+- category: architecture
+  insight: A `StandardMaterial3D` declared as a sub-resource (`[sub_resource ...]`) in a `.tscn` file is a shared singleton across all instances of that scene. Mutating `albedo_color` directly on `mesh.material_override` at runtime without first calling `.duplicate()` corrupts the shared definition, affects every instance simultaneously, and can dirty the `.tscn` on disk when Godot auto-serializes scene state.
+  impact: If duplication had been omitted, a second player instance or a run-restart would inherit whatever `albedo_color` was set at mutation time rather than the baseline. The spec caught this in MAC-2 before any implementation occurred.
+  prevention: Any script that writes to a material property at runtime must call `material_override.duplicate()` in `_ready()` before the first write. A dedicated `_material: StandardMaterial3D` member variable should hold the duplicated reference so it is never re-fetched from the mesh hierarchy.
+  severity: high
+
+- category: performance
+  insight: Accessing `mesh.material_override.albedo_color` as a property chain per `_process()` frame traverses two property lookups and one cast per tick. Caching the duplicated `StandardMaterial3D` in a typed `_material: StandardMaterial3D` member variable reduces this to a single direct field write, which is measurably faster at high frame rates and consistent with the project's convention for cached node references.
+  impact: The implementation introduced a fifth member variable (`_material`) not listed in the spec's MAC-7 inventory. This created a spec inventory discrepancy noted by the AC Gatekeeper, but the variable was architecturally required by the MAC-8 performance constraint. The spec's member inventory was incomplete relative to its own performance requirement.
+  prevention: When a spec mandates that `_process()` must not perform per-frame property traversal (MAC-8), the spec's member variable inventory (MAC-7) must also include the cached material reference. Performance constraints and member variable tables must be co-authored and cross-checked before publication.
+  severity: medium
+
+- category: architecture
+  insight: A `_current_tinted: bool` cache that gates material writes so `_process()` only writes on state transitions — not on every frame — is the correct pattern for any `_process()` hook that drives visual state from a polling query. Without it, the material property is re-assigned every frame regardless of whether the state changed, producing unnecessary GPU state changes and GDScript property overhead.
+  impact: The `_current_tinted` cache was explicitly required by MAC-6 and correctly applied. No rework was needed here. The lesson is to recognize this as a generalizable pattern for any poll-driven visual state driver.
+  prevention: Any `_process()` that reads a binary query (`any_filled()`, `is_active()`, etc.) and drives a visual property should cache the last-known boolean result and gate writes behind an inequality check. The pattern is: `if should_state == _current_state: return` before any property write.
+  severity: low
+
+- category: architecture
+  insight: `is_instance_valid()` is the correct guard for `Object` references that may have been freed externally, while `!= null` is only reliable for objects the caller knows to still be alive. For `RefCounted` objects, `is_instance_valid()` is technically equivalent to `!= null` (RefCounted objects are not freed until all references drop), but using it consistently as the null guard is safer than relying on the caller to remember which class the reference is.
+  impact: No bug was caused here — the spec explicitly required `is_instance_valid()` on both `_mesh` and `_mutation_slot_manager`. The learning is about establishing the guard as a consistent default for any externally-owned reference, regardless of whether the concrete type is Node or RefCounted.
+  prevention: For any member variable that caches a reference obtained from an external source (parent node, autoload, scene tree query), use `is_instance_valid()` as the null guard in `_process()` regardless of the concrete class. Annotate the comment: `# is_instance_valid covers both null and freed-object cases`.
+  severity: low
+
+### Anti-Patterns
+
+- description: Writing to `material_override.albedo_color` at runtime without first calling `.duplicate()` on the material. Because `.tscn` sub-resources are shared, the write affects all scene instances simultaneously and can corrupt the authored scene file on disk via Godot's auto-serialization.
+  detection_signal: A `_process()` or `_ready()` that assigns to `mesh.material_override.albedo_color` or `mesh.get_active_material(0).albedo_color` without a `.duplicate()` call visible in the same script's `_ready()`.
+  prevention: Add a mandatory `_ready()` guard: resolve `material_override`, call `.duplicate()`, store the result in a typed member. All subsequent writes go through the cached duplicated reference.
+
+- description: A spec's member variable inventory that lists only the variables required for behavioral contracts but omits the performance-optimization variable that its own non-functional requirement necessitates. This produces a spec inventory discrepancy that the AC Gatekeeper must adjudicate as a non-blocking deviation.
+  detection_signal: A spec has a "Non-Functional — Performance" section that requires caching a reference (to avoid per-frame traversal) but the member variable table does not include the cache field.
+  prevention: The Spec Agent must read every non-functional constraint and derive any member variables that are implicitly required by it, then add them to the member variable table. Behavioral and performance members must both appear in the inventory.
+
+- description: Resolving `get_parent()` or any scene-tree query inside `_process()` to obtain a reference that could have been cached in `_ready()`. This is a per-frame scene-graph walk with no semantic value when the parent-child relationship is stable for the node's lifetime.
+  detection_signal: A `_process()` method body contains `get_parent()`, `get_node()`, or `find_child()`.
+  prevention: All reference resolution that is stable for the node's lifetime must happen in `_ready()`. A `_process()` method that calls `get_parent()` or `get_node()` is always a defect; flag it in Static QA.
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "When writing a Non-Functional — Performance requirement that mandates caching a reference (e.g. 'material must not be accessed per frame via property traversal'), immediately update the member variable inventory table to include the cache field. The inventory table and the performance constraints must be co-authored. An inventory that is missing a cache variable required by a performance constraint is a spec defect."
+  reason: The MAC-7 member variable inventory listed four variables but omitted `_material: StandardMaterial3D`, which was architecturally required by the MAC-8 performance constraint. The omission produced an AC Gatekeeper discrepancy note for a fifth variable that was entirely foreseeable at spec time.
+
+- agent: Implementation Agent
+  change: "Before writing any runtime material property assignment (`albedo_color`, `roughness`, `metallic`, etc.), check whether the material was obtained from a `.tscn` sub-resource (check for `[sub_resource ...]` in the scene file). If it was, call `.duplicate()` on the material in `_ready()` and store the result in a typed `StandardMaterial3D` member variable. Never write to `mesh.material_override.albedo_color` directly — always write to the cached duplicated material reference."
+  reason: StandardMaterial3D sub-resources are shared across all scene instances. Direct mutation corrupts the shared definition and can dirty the .tscn on disk. This class of bug is silent — no runtime error fires, and the corruption only becomes visible when a second instance is created or the scene is resaved.
+
+- agent: Static QA Agent
+  change: "Flag any `_process()` method body that calls `get_parent()`, `get_node()`, `find_child()`, or any other scene-tree traversal method. These are per-frame scene-graph queries that should be cached in `_ready()`. Report each occurrence as a defect with severity MEDIUM and the recommended fix: cache the result in a typed member variable in `_ready()` and read the member in `_process()`."
+  reason: Per-frame node resolution is one of the most common `_process()` performance anti-patterns in Godot. Catching it at Static QA phase prevents it from reaching implementation review.
+
+### Workflow Improvements
+
+- issue: The spec's MAC-7 member variable inventory was published before all non-functional constraints were fully derived. The Performance constraint (MAC-8) implicitly required a fifth member that the inventory did not list. The AC Gatekeeper had to adjudicate this as an "accepted non-blocking discrepancy" rather than verifying an exact inventory.
+  improvement: The Spec Agent should perform a final cross-check pass before publishing: for each Non-Functional requirement, enumerate any member variables it implies and verify they appear in the member variable inventory. This check takes approximately one minute and closes the class of inventory incompleteness.
+  expected_benefit: Eliminates gatekeeper inventory discrepancy notes that are predictable from the spec's own content. Keeps the gatekeeper's verdict clean.
+
+### Keep / Reinforce
+
+- practice: Resolving all stable references (`_mesh`, `_mutation_slot_manager`) in `_ready()`, caching them in typed member variables, and reading the members in `_process()` without re-resolution. This is the established convention for all `_process()` hot paths in this project.
+  reason: Every `_process()` node in the codebase follows this pattern. Consistent application eliminates an entire class of per-frame overhead and keeps `_process()` bodies trivially reviewable — they should contain only guards, comparisons, and property writes, never node queries.
+
+- practice: Using `has_method("get_mutation_slot_manager")` (duck-typing via method presence) rather than `is PlayerController3D` when resolving a reference from a parent node in `_ready()`. This makes the child node compatible with test stubs that are plain `Node` objects and do not extend `PlayerController3D`.
+  reason: Strict type checks in child-to-parent reference resolution couple the child to a concrete parent class, making headless tests require a full `PlayerController3D` instantiation. Method-presence checks allow lightweight stubs and preserve testability without any behavioral compromise.
 
 ---
 

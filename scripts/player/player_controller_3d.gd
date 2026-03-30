@@ -554,3 +554,6 @@ func apply_fusion_effect(duration: float, multiplier: float) -> void:
 	_fusion_active = true
 	_fusion_timer = duration
 	_fusion_multiplier = multiplier
+
+
+

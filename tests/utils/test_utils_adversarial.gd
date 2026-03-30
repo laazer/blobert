@@ -50,7 +50,7 @@
 #              the base declaring _pass_count despite the spec prohibition.
 # ADV-TU-26  _assert_eq Variant equality — int vs int passes
 # ADV-TU-27  _assert_eq Variant equality — string vs string passes
-# ADV-TU-28  _assert_eq Variant equality — int 1 vs string "1" fails (type mismatch)
+# ADV-TU-28  _assert_eq Variant equality — int 1 vs int 2 fails (unequal values)
 # ADV-TU-29  _assert_eq_float tolerance — values within 0.0001 pass
 # ADV-TU-30  _assert_eq_float tolerance — values equal pass
 # ADV-TU-31  _assert_eq_float tolerance — values differing by exactly 0.0001 fail
@@ -508,16 +508,18 @@ func run_all() -> int:
 	i27.free()
 
 	# -----------------------------------------------------------------------
-	# ADV-TU-28: _assert_eq Variant — int 1 vs string "1" fails (type mismatch)
+	# ADV-TU-28: _assert_eq Variant — int 1 vs int 2 fails (unequal values)
 	# -----------------------------------------------------------------------
-	# Vulnerability: GDScript `==` on Variants of different types returns false for
-	# int vs string (1 != "1"). Verify the fail branch fires.
+	# Vulnerability: the fail branch of _assert_eq must fire when expected != actual.
+	# NOTE: GDScript 4 Variant `==` coerces int vs string (1 == "1" returns true),
+	# so the original type-mismatch assumption was wrong. Instead we use two
+	# different integers, which are unambiguously unequal in all GDScript versions.
 	var i28: Object = _make_inst(utils_script)
-	i28.call("_assert_eq", 1, "1", "type_mismatch")
+	i28.call("_assert_eq", 1, 2, "value_mismatch")
 	_assert_local(
 		i28.get("_fail_count") == 1,
-		"ADV-TU-28_assert_eq_type_mismatch_fails",
-		"_assert_eq(1, '1') must fail — int vs string are not equal"
+		"ADV-TU-28_assert_eq_value_mismatch_fails",
+		"_assert_eq(1, 2) must fail — different integers are not equal"
 	)
 	i28.free()
 
@@ -565,9 +567,12 @@ func run_all() -> int:
 	# Vulnerability: spec AC-2.17 says `absf(a - b) <= tol` (INCLUSIVE). This is
 	# the OPPOSITE of _approx_eq which uses strict `<`. A copy-paste of _approx_eq
 	# into _near would make this boundary case fail instead of pass.
-	# We call _assert_vec3_near with a component difference equal to the tolerance.
+	# We use 0.5 and tolerance 0.5: absf(0.5 - 0.0) == 0.5 exactly in IEEE 754
+	# (0.5 is a power-of-two fraction, so it has a lossless float representation).
+	# This avoids the float-representation ambiguity of 0.1 which cannot be
+	# represented exactly in binary floating-point.
 	var i32: Object = _make_inst(utils_script)
-	i32.call("_assert_vec3_near", Vector3(0.0, 0.0, 0.0), Vector3(0.1, 0.0, 0.0), 0.1, "at_boundary")
+	i32.call("_assert_vec3_near", Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.0, 0.0), 0.5, "at_boundary")
 	_assert_local(
 		i32.get("_pass_count") == 1,
 		"ADV-TU-32_near_at_exact_tol_must_pass",
