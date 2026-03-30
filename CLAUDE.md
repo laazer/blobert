@@ -15,6 +15,11 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 - **Movement logic:** Shared pure simulation in `scripts/movement/movement_simulation.gd` (no Node/Input); the 3D controller maps Vector2 → Vector3 and drives physics.
 - **New tests** should use the 3D scene (see `tests/scenes/levels/test_3d_scene.gd`).
 
+## Agent checkpoints (autopilot / autonomous agents)
+
+- **Full checkpoint text** (`Would have asked` / `Assumption made` / `Confidence`) belongs only in scoped files: `project_board/checkpoints/<ticket-id>/<run-id>.md`.
+- **`project_board/CHECKPOINTS.md` is index-only:** run headers, resume pointers, one-line outcomes, and `Log:` paths. Do **not** append full checkpoint bodies or `**Would have asked:**` blocks there.
+
 ## Common Commands
 
 `direnv` puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH automatically.
