@@ -6,10 +6,10 @@ Place first 4 enemy families in prototype level
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE_INTEGRATION |
-| Revision | 6 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Engine Integration Agent |
+| Stage | IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE |
+| Revision | 7 |
+| Last Updated By | Engine Integration Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Validation Status | Not started |
 | Blocking Issues | None |
 
@@ -98,4 +98,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Test Breaker Agent has reviewed the 32 primary (FESG-1 through FESG-32) and 16 adversarial (ADV-FESG-1 through ADV-FESG-16) tests. 6 additional adversarial tests (ADV-FESG-17 through ADV-FESG-22) were added to close genuine coverage gaps: fallback BoxShape3D exact size, mutation_drop cross-family distinctness, enemy_family non-empty guard, enemy_family canonical-set membership, level enemy CharacterBody3D type check, and Hurtbox shape null dedicated assertion. The test suite is now a complete contract for the spec. Engine Integration Agent should implement generate_enemy_scenes.gd, run it to produce the 12 .tscn files, and modify test_movement_3d.tscn to place the 4 family enemies.
+Engine Integration Agent implemented generate_enemy_scenes.gd, ran the headless generator to produce all 12 .tscn files in scenes/enemies/generated/, and modified test_movement_3d.tscn to replace Enemy/Enemy2 with 4 family instances (AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy) at Y=1.0 positions. All 32 primary (FESG-1 through FESG-32) and 22 adversarial (ADV-FESG-1 through ADV-FESG-22) tests pass. run_tests.sh exits clean.

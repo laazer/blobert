@@ -30,5 +30,6 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ### first_4_families_in_level / run-2026-03-30-01
 - Ticket: `project_board/5_milestone_5_procedural_enemy_generation/in_progress/first_4_families_in_level.md`
-- Stage: PLANNING (unblocked — Blender installed, 12 GLBs on disk)
+- Stage: IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
 - Log: `project_board/checkpoints/first_4_families_in_level/run-2026-03-30-01.md`
+- Outcome: generate_enemy_scenes.gd written; 12 .tscn files generated and committed; level updated with 4 family enemies; all 54 FESG tests pass.
