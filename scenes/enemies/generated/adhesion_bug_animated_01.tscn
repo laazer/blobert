@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_47u1x"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/adhesion_bug_animated_01.glb" id="2_nj348"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1sile"]
+size = Vector3(3.1859832, 1.9622642, 1.7442342)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_u3io3"]
+size = Vector3(3.1859832, 1.9622642, 1.7442342)
+
+[node name="adhesion_bug_animated_01" type="CharacterBody3D" unique_id=1164740132]
+script = ExtResource("1_47u1x")
+enemy_id = "adhesion_bug_animated_01"
+enemy_family = "adhesion_bug"
+mutation_drop = "adhesion"
+metadata/enemy_id = "adhesion_bug_animated_01"
+metadata/enemy_family = "adhesion_bug"
+metadata/mutation_drop = "adhesion"
+metadata/source_glb = "res://assets/enemies/generated_glb/adhesion_bug_animated_01.glb"
+
+[node name="Visual" type="Node3D" parent="." unique_id=1953567715]
+
+[node name="Model" type="Node3D" parent="Visual" unique_id=960775159 instance=ExtResource("2_nj348")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2043341575]
+shape = SubResource("BoxShape3D_1sile")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=746826607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=2029805342]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=1513399532]
+
+[node name="Hurtbox" type="Area3D" parent="." unique_id=290911382]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=1214214789]
+shape = SubResource("BoxShape3D_u3io3")
+
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=1131726632]
+aabb = AABB(-1.5929916, -0.9811321, -0.8721171, 3.1859832, 1.9622642, 1.7442342)

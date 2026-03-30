@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_v0v02"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/acid_spitter_animated_00.glb" id="2_ji1oe"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ie0kg"]
+size = Vector3(1.9743164, 1.9631053, 1.9965465)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3puea"]
+size = Vector3(1.9743164, 1.9631053, 1.9965465)
+
+[node name="acid_spitter_animated_00" type="CharacterBody3D" unique_id=1346588923]
+script = ExtResource("1_v0v02")
+enemy_id = "acid_spitter_animated_00"
+enemy_family = "acid_spitter"
+mutation_drop = "acid"
+metadata/enemy_id = "acid_spitter_animated_00"
+metadata/enemy_family = "acid_spitter"
+metadata/mutation_drop = "acid"
+metadata/source_glb = "res://assets/enemies/generated_glb/acid_spitter_animated_00.glb"
+
+[node name="Visual" type="Node3D" parent="." unique_id=1759893351]
+
+[node name="Model" type="Node3D" parent="Visual" unique_id=1514932855 instance=ExtResource("2_ji1oe")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=952801611]
+shape = SubResource("BoxShape3D_ie0kg")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=591926179]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=313959809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=785665103]
+
+[node name="Hurtbox" type="Area3D" parent="." unique_id=1893895853]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=993590630]
+shape = SubResource("BoxShape3D_3puea")
+
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=1201000350]
+aabb = AABB(-0.9871582, -0.98155266, -0.99827325, 1.9743164, 1.9631053, 1.9965465)

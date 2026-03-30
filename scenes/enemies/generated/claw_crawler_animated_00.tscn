@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_nkcjb"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/claw_crawler_animated_00.glb" id="2_m164g"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6boxy"]
+size = Vector3(2.2170234, 0.8303161, 1.4357129)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_im2v0"]
+size = Vector3(2.2170234, 0.8303161, 1.4357129)
+
+[node name="claw_crawler_animated_00" type="CharacterBody3D" unique_id=36970588]
+script = ExtResource("1_nkcjb")
+enemy_id = "claw_crawler_animated_00"
+enemy_family = "claw_crawler"
+mutation_drop = "claw"
+metadata/enemy_id = "claw_crawler_animated_00"
+metadata/enemy_family = "claw_crawler"
+metadata/mutation_drop = "claw"
+metadata/source_glb = "res://assets/enemies/generated_glb/claw_crawler_animated_00.glb"
+
+[node name="Visual" type="Node3D" parent="." unique_id=1366338251]
+
+[node name="Model" type="Node3D" parent="Visual" unique_id=319092947 instance=ExtResource("2_m164g")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1099948870]
+shape = SubResource("BoxShape3D_6boxy")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=1721361412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=1821658796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=33811410]
+
+[node name="Hurtbox" type="Area3D" parent="." unique_id=1168251009]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=1722933663]
+shape = SubResource("BoxShape3D_im2v0")
+
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=739491775]
+aabb = AABB(-1.1085117, -0.41515806, -0.71785647, 2.2170234, 0.8303161, 1.4357129)

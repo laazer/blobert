@@ -55,13 +55,21 @@ mesh = SubResource("BoxMesh_floor")
 
 [node name="SpawnPosition" type="Marker3D" parent="." unique_id=1577243293]
 
-[node name="Enemy" parent="." unique_id=186488895 instance=ExtResource("4_enemy")]
+[node name="AdhesionBugEnemy" parent="." unique_id=186488895 instance=ExtResource("4_enemy")]
 physics_interpolation_mode = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1, 0)
 
-[node name="Enemy2" parent="." unique_id=186488896 instance=ExtResource("4_enemy")]
+[node name="AcidSpitterEnemy" parent="." unique_id=186488896 instance=ExtResource("4_enemy")]
 physics_interpolation_mode = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1, 0)
+
+[node name="ClawCrawlerEnemy" parent="." unique_id=186488897 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
+
+[node name="CarapaceHuskEnemy" parent="." unique_id=186488898 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -4)
 
 [node name="InfectionUI" parent="." unique_id=1139678762 instance=ExtResource("5_game_ui")]
 

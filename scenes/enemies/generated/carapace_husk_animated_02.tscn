@@ -1,0 +1,43 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_1ij40"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/carapace_husk_animated_02.glb" id="2_0hgu0"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_yifpx"]
+size = Vector3(2.321662, 2.889411, 1.7722155)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7am8q"]
+size = Vector3(2.321662, 2.889411, 1.7722155)
+
+[node name="carapace_husk_animated_02" type="CharacterBody3D" unique_id=279171807]
+script = ExtResource("1_1ij40")
+enemy_id = "carapace_husk_animated_02"
+enemy_family = "carapace_husk"
+mutation_drop = "carapace"
+metadata/enemy_id = "carapace_husk_animated_02"
+metadata/enemy_family = "carapace_husk"
+metadata/mutation_drop = "carapace"
+metadata/source_glb = "res://assets/enemies/generated_glb/carapace_husk_animated_02.glb"
+
+[node name="Visual" type="Node3D" parent="." unique_id=458629622]
+
+[node name="Model" type="Node3D" parent="Visual" unique_id=87629201 instance=ExtResource("2_0hgu0")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1096423968]
+shape = SubResource("BoxShape3D_yifpx")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=1726707106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
+
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=1348270692]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
+
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=112372929]
+
+[node name="Hurtbox" type="Area3D" parent="." unique_id=933255128]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=1983244126]
+shape = SubResource("BoxShape3D_7am8q")
+
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=941086653]
+aabb = AABB(-1.160831, -1.4447055, -0.88610774, 2.321662, 2.889411, 1.7722155)
