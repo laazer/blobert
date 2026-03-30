@@ -1,3 +1,8 @@
+# generate_enemy_scenes.gd
+#
+# Headless CLI tool (extends SceneTree) that reads .glb files from
+# SOURCE_DIR and writes fully configured .tscn enemy scenes to OUTPUT_DIR.
+# Run with: godot -s scripts/asset_generation/generate_enemy_scenes.gd
 extends SceneTree
 
 const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")
@@ -112,7 +117,7 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 
 	var file_name := glb_path.get_file().get_basename()
 	var family_name := EnemyNameUtils.extract_family_name(file_name)
-	var mutation: String = MUTATION_BY_FAMILY.get(family_name, "unknown")
+	var mutation: String = str(MUTATION_BY_FAMILY.get(family_name, "unknown"))
 
 	var root := CharacterBody3D.new()
 	root.name = file_name
@@ -194,7 +199,9 @@ func _collect_glb_files(dir_path: String) -> Array[String]:
 func _ensure_dir(path: String) -> void:
 	if DirAccess.dir_exists_absolute(path):
 		return
-	DirAccess.make_dir_recursive_absolute(path)
+	var err := DirAccess.make_dir_recursive_absolute(path)
+	if err != OK:
+		push_warning("Could not create output dir %s: %s" % [path, error_string(err)])
 
 
 func _add_marker(root: Node3D, marker_name: String, position: Vector3) -> void:
@@ -260,10 +267,10 @@ func _compute_combined_aabb(node: Node) -> AABB:
 	var found := false
 	var combined := AABB()
 
-	var meshes := []
+	var meshes: Array[MeshInstance3D] = []
 	_gather_mesh_instances(node, meshes)
 
-	for mesh_instance: MeshInstance3D in meshes:
+	for mesh_instance in meshes:
 		if mesh_instance.mesh == null:
 			continue
 
@@ -287,7 +294,7 @@ func _compute_combined_aabb(node: Node) -> AABB:
 	return combined
 
 
-func _gather_mesh_instances(node: Node, out: Array) -> void:
+func _gather_mesh_instances(node: Node, out: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D:
 		out.append(node)
 	for child in node.get_children():
@@ -298,7 +305,7 @@ func _aabb_corners(aabb: AABB) -> Array[Vector3]:
 	var p := aabb.position
 	var s := aabb.size
 	return [
-		p + Vector3(0, 0, 0),
+		p,
 		p + Vector3(s.x, 0, 0),
 		p + Vector3(0, s.y, 0),
 		p + Vector3(0, 0, s.z),
