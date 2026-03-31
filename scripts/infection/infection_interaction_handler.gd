@@ -32,7 +32,7 @@ var _slot_manager: RefCounted
 var _fusion_resolver: FusionResolver
 
 var _target_esm: EnemyStateMachine = null
-var _target_enemy: Node3D = null
+var _target_enemy: EnemyInfection3D = null
 var _infection_ui: CanvasLayer = null
 var _player_node: Node = null
 
@@ -63,7 +63,7 @@ func _process(_delta: float) -> void:
 
 	if Input.is_action_just_pressed("absorb"):
 		if _resolver.can_absorb(_target_esm):
-			var mid: String = _target_enemy.get("mutation_drop") if _target_enemy != null else ""
+			var mid: String = _target_enemy.mutation_drop if _target_enemy != null else ""
 			_resolver.resolve_absorb(_target_esm, _inventory, _slot_manager, mid)
 			absorb_resolved.emit(_target_esm)
 
@@ -72,7 +72,7 @@ func _process(_delta: float) -> void:
 			_target_esm.apply_infection_event()
 
 
-func set_target_esm(esm: EnemyStateMachine, enemy_node: Node3D = null) -> void:
+func set_target_esm(esm: EnemyStateMachine, enemy_node: EnemyInfection3D = null) -> void:
 	_target_esm = esm
 	_target_enemy = enemy_node
 
