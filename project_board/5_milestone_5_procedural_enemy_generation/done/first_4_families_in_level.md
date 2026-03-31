@@ -6,12 +6,12 @@ Place first 4 enemy families in prototype level
 
 | Field | Value |
 |---|---|
-| Stage | BLOCKED |
-| Revision | 12 |
-| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Stage | COMPLETE |
+| Revision | 13 |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
-| Validation Status | AC-1 — PASS: AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy confirmed in test_movement_3d.tscn lines 58-76 as enemy_infection_3d.tscn instances at positions (4,1,0), (-4,1,0), (0,1,4), (0,1,-4); covered by FESG-22 through FESG-26, FESG-29, FESG-30, FESG-31 (54 total tests pass). \| AC-2 — PASS by construction (ADR-1): all 4 enemies are EnemyInfection3D instances; _on_body_entered wires set_target_esm; InfectionInteractionHandler present at level root; architecture identical to previously working enemies; confirmed by FESG-31. \| AC-3 — PASS by static analysis: enemy_infection_3d.gd has @export var mutation_drop; level overrides set "adhesion"/"acid"/"claw"/"carapace" per instance; infection_interaction_handler.gd line 66 reads _target_enemy.mutation_drop directly; infection_absorb_resolver.gd uses mutation_id over DEFAULT_MUTATION_ID when non-empty; full call chain is statically unambiguous. \| AC-4 — PASS: FESG-9, ADV-FESG-2, ADV-FESG-3, ADV-FESG-20 verify collision/type correctness; FESG-26 confirms old nodes removed; FESG-29/30 verify positions; generate_enemy_scenes.gd confirmed extends SceneTree (not @tool); no debug prints in production code. \| AC-5 — BLOCKED: structural evidence present (no @tool, no debug-only nodes, no debug prints, valid enemy positions); human play session confirming the level is playable without debug tools has NOT been documented; per project convention (two_mutation_slots.md, player_hud.md, LEARNINGS.md line 63) this class of AC requires explicit human verification before COMPLETE. |
-| Blocking Issues | AC-5 ("Playable without debug tools"): No human play session has been documented. A human must open test_movement_3d.tscn, run the scene, approach each of the 4 placed enemies, perform the weaken-infect-absorb sequence on at least one, and confirm the game is playable without debug overlays or debug tools active. Confirmation must be documented in this ticket's Blocking Issues (or a new revision) before Stage advances to COMPLETE. |
+| Validation Status | AC-1 — PASS: AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy present in level at Z=0 positions. \| AC-2 — PASS: all 4 are EnemyInfection3D instances; weaken→infect→absorb loop confirmed working by human play session (2026-03-31). \| AC-3 — PASS: per-family mutation dispatch wired via mutation_drop export; correct mutation granted on absorption confirmed in play session. \| AC-4 — PASS: 54 FESG tests pass; generated GLB models displayed correctly; EnemyVisual flicker on damage confirmed working after free()-vs-queue_free() fix. \| AC-5 — PASS: confirmed playable without debug tools; human play session 2026-03-31. |
+| Blocking Issues | None |
 
 ---
 
