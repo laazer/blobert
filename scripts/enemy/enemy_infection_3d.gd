@@ -11,6 +11,8 @@ extends BasePhysicsEntity3D
 
 signal chunk_attached(chunk: RigidBody3D)
 
+@export var mutation_drop: String = "infection_mutation_01"
+
 var _esm: EnemyStateMachine = EnemyStateMachine.new()
 var _handler: InfectionInteractionHandler
 var _area: Area3D
@@ -49,7 +51,7 @@ func unregister_attached_chunk(chunk: RigidBody3D) -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		if _handler != null:
-			_handler.set_target_esm(_esm)
+			_handler.set_target_esm(_esm, self)
 	if body.is_in_group("chunk"):
 		var chunk: RigidBody3D = body as RigidBody3D
 		if chunk in _attached_chunks:
@@ -78,4 +80,3 @@ func _physics_process(delta: float) -> void:
 		if velocity.y != 0.0:
 			Logging.trace("enemy landed, clearing velocity from " + str(velocity.y))
 		velocity.y = 0.0
-

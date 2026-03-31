@@ -7,10 +7,10 @@ Place first 4 enemy families in prototype level
 | Field | Value |
 |---|---|
 | Stage | IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE |
-| Revision | 8 |
-| Last Updated By | Engine Integration Agent (GDScript review pass) |
+| Revision | 11 |
+| Last Updated By | Engine Integration Agent |
 | Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | Not started |
+| Validation Status | AC-1: SATISFIED — AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy confirmed present in test_movement_3d.tscn as enemy_infection_3d.tscn instances; covered by FESG-22 through FESG-26, FESG-31. AC-2: SATISFIED by construction (ADR-1). AC-3: IMPLEMENTED — EnemyInfection3D now has @export var mutation_drop; set_target_esm now accepts optional enemy_node; _process reads mutation_drop from enemy node and passes to resolve_absorb; level .tscn sets mutation_drop overrides on all 4 enemies (adhesion/acid/claw/carapace); all tests pass. AC-4: SATISFIED — ClawCrawlerEnemy corrected to (0,1,4) and CarapaceHuskEnemy corrected to (0,1,-4); FESG-29 and FESG-30 now pass. AC-5: REQUIRES HUMAN MANUAL VERIFICATION — structural evidence present (no @tool, no debug-only nodes, no debug prints); human play session not yet documented. |
 | Blocking Issues | None |
 
 ---
@@ -79,17 +79,18 @@ Acceptance Criteria:
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket": "project_board/5_milestone_5_procedural_enemy_generation/in_progress/first_4_families_in_level.md",
   "spec": "project_board/specs/first_4_families_in_level_spec.md",
-  "checkpoint_log": "project_board/checkpoints/first_4_families_in_level/run-2026-03-30-01.md",
+  "resolver": "scripts/infection/infection_absorb_resolver.gd",
+  "handler": "scripts/infection/infection_interaction_handler.gd",
+  "enemy": "scripts/enemy/enemy_infection_3d.gd",
   "primary_tests": "tests/scenes/enemies/test_enemy_scene_generation.gd",
   "adversarial_tests": "tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd",
-  "generator_script": "scripts/asset_generation/generate_enemy_scenes.gd",
   "level_scene": "scenes/levels/sandbox/test_movement_3d.tscn"
 }
 ```
@@ -98,6 +99,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Engine Integration Agent implemented generate_enemy_scenes.gd, ran the headless generator to produce all 12 .tscn files in scenes/enemies/generated/, and modified test_movement_3d.tscn to replace Enemy/Enemy2 with 4 family instances (AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy) at Y=1.0 positions. All 32 primary (FESG-1 through FESG-32) and 22 adversarial (ADV-FESG-1 through ADV-FESG-22) tests pass. run_tests.sh exits clean.
-
-GDScript review pass (Revision 8): applied 5 fixes to generate_enemy_scenes.gd — file header comment, str() Variant coercion, typed Array[MeshInstance3D] for meshes/_gather_mesh_instances, no-op AABB corner simplification, _ensure_dir return-value check. All tests continue to pass.
+AC-3 and AC-4 blocking issues resolved. EnemyInfection3D now has mutation_drop export; InfectionInteractionHandler threads enemy node through to resolver; resolver accepts optional mutation_id and uses it over the default. Level positions corrected for ClawCrawlerEnemy and CarapaceHuskEnemy. run_tests.sh passes with all tests. AC-5 still requires human play session sign-off.

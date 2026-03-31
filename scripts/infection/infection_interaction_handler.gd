@@ -32,6 +32,7 @@ var _slot_manager: RefCounted
 var _fusion_resolver: FusionResolver
 
 var _target_esm: EnemyStateMachine = null
+var _target_enemy: Node3D = null
 var _infection_ui: CanvasLayer = null
 var _player_node: Node = null
 
@@ -62,7 +63,8 @@ func _process(_delta: float) -> void:
 
 	if Input.is_action_just_pressed("absorb"):
 		if _resolver.can_absorb(_target_esm):
-			_resolver.resolve_absorb(_target_esm, _inventory, _slot_manager)
+			var mid: String = _target_enemy.get("mutation_drop") if _target_enemy != null else ""
+			_resolver.resolve_absorb(_target_esm, _inventory, _slot_manager, mid)
 			absorb_resolved.emit(_target_esm)
 
 	if Input.is_action_just_pressed("infect"):
@@ -70,12 +72,14 @@ func _process(_delta: float) -> void:
 			_target_esm.apply_infection_event()
 
 
-func set_target_esm(esm: EnemyStateMachine) -> void:
+func set_target_esm(esm: EnemyStateMachine, enemy_node: Node3D = null) -> void:
 	_target_esm = esm
+	_target_enemy = enemy_node
 
 
 func clear_target() -> void:
 	_target_esm = null
+	_target_enemy = null
 
 
 func get_mutation_inventory() -> RefCounted:
@@ -93,10 +97,12 @@ func get_mutation_slot() -> RefCounted:
 
 
 ## Auto-resolve absorb after chunk DoT (tick 3). Same as pressing absorb when infected.
+## No enemy node reference is available here; falls back to DEFAULT_MUTATION_ID.
 func resolve_absorb_for_esm(esm: EnemyStateMachine) -> void:
 	if _resolver == null or esm == null:
 		return
 	if not _resolver.can_absorb(esm):
 		return
-	_resolver.resolve_absorb(esm, _inventory, _slot_manager)
+	Logging.trace("InfectionInteractionHandler: resolve_absorb_for_esm — no enemy node available, falling back to DEFAULT_MUTATION_ID")
+	_resolver.resolve_absorb(esm, _inventory, _slot_manager, "")
 	absorb_resolved.emit(esm)
