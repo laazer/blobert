@@ -39,7 +39,7 @@ func _ready() -> void:
 func _swap_model_scene() -> void:
 	var old_visual: Node = get_node_or_null("EnemyVisual")
 	if old_visual != null:
-		old_visual.queue_free()
+		old_visual.free()
 	var new_visual: Node3D = model_scene.instantiate() as Node3D
 	if new_visual != null:
 		new_visual.name = "EnemyVisual"
