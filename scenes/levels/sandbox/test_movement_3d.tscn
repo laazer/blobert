@@ -5,6 +5,10 @@
 [ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
 [ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/adhesion_bug_animated_00.glb" id="7_adhesion_glb"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/acid_spitter_animated_00.glb" id="8_acid_glb"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/claw_crawler_animated_00.glb" id="9_claw_glb"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/carapace_husk_animated_00.glb" id="10_carapace_glb"]
 [ext_resource type="Script" uid="uid://67hlquotuweb" path="res://scripts/system/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
 
 [sub_resource type="Environment" id="Environment_main"]
@@ -59,21 +63,25 @@ mesh = SubResource("BoxMesh_floor")
 physics_interpolation_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1, 0)
 mutation_drop = "adhesion"
+model_scene = ExtResource("7_adhesion_glb")
 
 [node name="AcidSpitterEnemy" parent="." unique_id=186488896 instance=ExtResource("4_enemy")]
 physics_interpolation_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1, 0)
 mutation_drop = "acid"
+model_scene = ExtResource("8_acid_glb")
 
 [node name="ClawCrawlerEnemy" parent="." unique_id=186488897 instance=ExtResource("4_enemy")]
 physics_interpolation_mode = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
 mutation_drop = "claw"
+model_scene = ExtResource("9_claw_glb")
 
 [node name="CarapaceHuskEnemy" parent="." unique_id=186488898 instance=ExtResource("4_enemy")]
 physics_interpolation_mode = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
 mutation_drop = "carapace"
+model_scene = ExtResource("10_carapace_glb")
 
 [node name="InfectionUI" parent="." unique_id=1139678762 instance=ExtResource("5_game_ui")]
 

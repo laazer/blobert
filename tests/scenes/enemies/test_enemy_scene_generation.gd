@@ -744,15 +744,15 @@ func test_fesg_29_level_claw_crawler_position() -> void:
 		return
 	_assert_vec3_near(
 		(enemy as Node3D).position,
-		Vector3(0.0, 1.0, 4.0),
+		Vector3(8.0, 1.0, 0.0),
 		POSITION_TOL,
-		"FESG-29 — ClawCrawlerEnemy.position approx Vector3(0.0, 1.0, 4.0)"
+		"FESG-29 — ClawCrawlerEnemy.position approx Vector3(8.0, 1.0, 0.0)"
 	)
 	root.free()
 
 
 # ---------------------------------------------------------------------------
-# FESG-30: CarapaceHuskEnemy position is approx Vector3(0.0, 1.0, -4.0)
+# FESG-30: CarapaceHuskEnemy position is approx Vector3(-8.0, 1.0, 0.0)
 # Spec: AC-LEVEL-1.16
 # ---------------------------------------------------------------------------
 func test_fesg_30_level_carapace_husk_position() -> void:
@@ -767,9 +767,9 @@ func test_fesg_30_level_carapace_husk_position() -> void:
 		return
 	_assert_vec3_near(
 		(enemy as Node3D).position,
-		Vector3(0.0, 1.0, -4.0),
+		Vector3(-8.0, 1.0, 0.0),
 		POSITION_TOL,
-		"FESG-30 — CarapaceHuskEnemy.position approx Vector3(0.0, 1.0, -4.0)"
+		"FESG-30 — CarapaceHuskEnemy.position approx Vector3(-8.0, 1.0, 0.0)"
 	)
 	root.free()
 
