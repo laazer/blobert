@@ -235,6 +235,21 @@ Active mutation identifiable from across the room without looking at UI.
 
 ------------------------------------------------------------
 
+Milestone 12 – Advanced Terrain
+Goal: The environment is dangerous — terrain hazards create navigation decisions tied to mutation identity.
+
+Includes:
+- Tar pits (slow, adhesion interaction)
+- Lava pits (burn damage, carapace interaction)
+- Spikes (static instant damage)
+- Spike traps (triggered, telegraphed)
+- Acid traps (area denial, acid interaction)
+
+Exit Criteria:
+All 5 hazards placeable in a level, deal damage/effects correctly, and at least one mutation interaction works per hazard type.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:
