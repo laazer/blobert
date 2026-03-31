@@ -1,6 +1,7 @@
 # Epic: Milestone 5 – Procedural Enemy Generation
 
 **Goal:** Blender → Godot enemy pipeline fully operational for first 4 families.
+Status: Done
 
 ## Scope
 

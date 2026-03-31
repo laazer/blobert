@@ -6,7 +6,7 @@ Build Blender primitive parts library
 
 | Field | Value |
 |---|---|
-| Stage | BLOCKED |
+| Stage | Done (the Python pipeline already handled this) |
 | Revision | 6 |
 | Last Updated By | Autopilot Orchestrator |
 | Next Responsible Agent | Human |

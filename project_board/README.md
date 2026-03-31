@@ -168,6 +168,73 @@ and ended (win or death) with clean state reset and restart.
 
 ------------------------------------------------------------
 
+Milestone 7 – Enemy Animation Wiring
+Goal: Generated enemies look alive — state-appropriate animations play in Godot.
+
+Includes:
+- Blender pipeline update to export named animation clips per family
+- AnimationPlayer wiring driven by EnemyStateMachine
+- Hit reaction and death animation play-through
+
+Exit Criteria:
+Enemies idle, react to hits, and play death animations. You can tell alive from dead at a glance.
+
+------------------------------------------------------------
+
+Milestone 8 – Enemy Attacks
+Goal: Enemies deal damage and telegraph intent — you can die to an enemy.
+
+Includes:
+- Attack patterns per family with hitbox timing
+- Player damage on hit
+- Basic telegraphing (wind-up or indicator)
+- Depends on M7 animation wiring
+
+Exit Criteria:
+Each of the 4 families has a distinct, readable attack. The player can die.
+
+------------------------------------------------------------
+
+Milestone 9 – Base Mutation Attacks
+Goal: Each base mutation gives Blobert a usable offensive move.
+
+Includes:
+- One distinct attack per base mutation (adhesion, acid, claw, carapace)
+- Input binding + cooldown framework
+- Attacks interact with enemy infection loop
+
+Exit Criteria:
+Player has 4 distinct offensive tools that feel different from each other.
+
+------------------------------------------------------------
+
+Milestone 10 – Fused Mutation Attacks
+Goal: Fusing mutations produces a distinct attack — fusing feels offensively rewarding.
+
+Includes:
+- One fused attack per fusion combination
+- Attacks meaningfully different from base mutations
+- Depends on M9 input/cooldown framework
+
+Exit Criteria:
+At least one fusion attack couldn't be achieved with either base mutation alone.
+
+------------------------------------------------------------
+
+Milestone 11 – Blobert Visual Identity
+Goal: Blobert's model reflects the active mutation — readable at a glance.
+
+Includes:
+- Blobert model/texture variants per base mutation
+- Fused state visually distinct from all base states
+- Smooth state transitions
+- Significant Blender asset production component
+
+Exit Criteria:
+Active mutation identifiable from across the room without looking at UI.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:
