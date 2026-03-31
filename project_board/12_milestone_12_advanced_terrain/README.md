@@ -21,9 +21,18 @@ Each hazard must:
 - Hazards should appear in the roguelike room templates (M6) as placeable elements
 - Asset generation: tar, lava, spike, and acid visuals may need Blender or shader work
 
+## Procedural Integration (M6)
+
+Hazards must be first-class citizens in the roguelike room template system:
+- Each hazard type is a placeable scene that room templates can reference
+- Room templates (combat, cooldown, tease) should be able to declare hazard density and type
+- Procedural room chaining (M6) treats hazard presence as a room property, not hardcoded layout
+- Hazard placement respects spawn-safe zones (player start, enemy spawn, pickup anchors)
+
 ## Dependencies
 
 - M4 (Prototype Level) — collision and physics baseline
+- M6 (Roguelike Run Structure) — room template system that hazards plug into
 - M9 (Base Mutation Attacks) — mutation identity established before immunity interactions are meaningful
 
 ## Exit Criteria

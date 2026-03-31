@@ -244,9 +244,10 @@ Includes:
 - Spikes (static instant damage)
 - Spike traps (triggered, telegraphed)
 - Acid traps (area denial, acid interaction)
+- Full integration with M6 room template + procedural chaining system
 
 Exit Criteria:
-All 5 hazards placeable in a level, deal damage/effects correctly, and at least one mutation interaction works per hazard type.
+All 5 hazards placeable in a level, deal damage/effects correctly, at least one mutation interaction works per hazard type, and hazards appear correctly in procedurally generated rooms.
 
 ------------------------------------------------------------
 
