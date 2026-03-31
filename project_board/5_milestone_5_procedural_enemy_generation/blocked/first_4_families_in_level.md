@@ -6,12 +6,12 @@ Place first 4 enemy families in prototype level
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE |
-| Revision | 11 |
-| Last Updated By | Engine Integration Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Validation Status | AC-1: SATISFIED — AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy confirmed present in test_movement_3d.tscn as enemy_infection_3d.tscn instances; covered by FESG-22 through FESG-26, FESG-31. AC-2: SATISFIED by construction (ADR-1). AC-3: IMPLEMENTED — EnemyInfection3D now has @export var mutation_drop; set_target_esm now accepts optional enemy_node; _process reads mutation_drop from enemy node and passes to resolve_absorb; level .tscn sets mutation_drop overrides on all 4 enemies (adhesion/acid/claw/carapace); all tests pass. AC-4: SATISFIED — ClawCrawlerEnemy corrected to (0,1,4) and CarapaceHuskEnemy corrected to (0,1,-4); FESG-29 and FESG-30 now pass. AC-5: REQUIRES HUMAN MANUAL VERIFICATION — structural evidence present (no @tool, no debug-only nodes, no debug prints); human play session not yet documented. |
-| Blocking Issues | None |
+| Stage | BLOCKED |
+| Revision | 12 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Validation Status | AC-1 — PASS: AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy confirmed in test_movement_3d.tscn lines 58-76 as enemy_infection_3d.tscn instances at positions (4,1,0), (-4,1,0), (0,1,4), (0,1,-4); covered by FESG-22 through FESG-26, FESG-29, FESG-30, FESG-31 (54 total tests pass). \| AC-2 — PASS by construction (ADR-1): all 4 enemies are EnemyInfection3D instances; _on_body_entered wires set_target_esm; InfectionInteractionHandler present at level root; architecture identical to previously working enemies; confirmed by FESG-31. \| AC-3 — PASS by static analysis: enemy_infection_3d.gd has @export var mutation_drop; level overrides set "adhesion"/"acid"/"claw"/"carapace" per instance; infection_interaction_handler.gd line 66 reads _target_enemy.mutation_drop directly; infection_absorb_resolver.gd uses mutation_id over DEFAULT_MUTATION_ID when non-empty; full call chain is statically unambiguous. \| AC-4 — PASS: FESG-9, ADV-FESG-2, ADV-FESG-3, ADV-FESG-20 verify collision/type correctness; FESG-26 confirms old nodes removed; FESG-29/30 verify positions; generate_enemy_scenes.gd confirmed extends SceneTree (not @tool); no debug prints in production code. \| AC-5 — BLOCKED: structural evidence present (no @tool, no debug-only nodes, no debug prints, valid enemy positions); human play session confirming the level is playable without debug tools has NOT been documented; per project convention (two_mutation_slots.md, player_hud.md, LEARNINGS.md line 63) this class of AC requires explicit human verification before COMPLETE. |
+| Blocking Issues | AC-5 ("Playable without debug tools"): No human play session has been documented. A human must open test_movement_3d.tscn, run the scene, approach each of the 4 placed enemies, perform the weaken-infect-absorb sequence on at least one, and confirm the game is playable without debug overlays or debug tools active. Confirmation must be documented in this ticket's Blocking Issues (or a new revision) before Stage advances to COMPLETE. |
 
 ---
 
@@ -79,24 +79,27 @@ Acceptance Criteria:
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "ticket": "project_board/5_milestone_5_procedural_enemy_generation/in_progress/first_4_families_in_level.md",
-  "spec": "project_board/specs/first_4_families_in_level_spec.md",
-  "resolver": "scripts/infection/infection_absorb_resolver.gd",
-  "handler": "scripts/infection/infection_interaction_handler.gd",
-  "enemy": "scripts/enemy/enemy_infection_3d.gd",
-  "primary_tests": "tests/scenes/enemies/test_enemy_scene_generation.gd",
-  "adversarial_tests": "tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd",
-  "level_scene": "scenes/levels/sandbox/test_movement_3d.tscn"
+  "action": "Manual play session verification for AC-5",
+  "steps": [
+    "1. Open Godot editor; load scenes/levels/sandbox/test_movement_3d.tscn as the main scene.",
+    "2. Run the scene (F5 or play button).",
+    "3. Confirm no debug overlays, no debug-only nodes, and no debug tools are required to play.",
+    "4. Approach each of the 4 placed enemies (AdhesionBugEnemy, AcidSpitterEnemy, ClawCrawlerEnemy, CarapaceHuskEnemy).",
+    "5. On at least one enemy: perform the full weaken-infect-absorb sequence and confirm the correct per-family mutation is granted.",
+    "6. Confirm the level is playable end-to-end without debug assistance.",
+    "7. Document confirmation in this ticket's Blocking Issues field, clearing the AC-5 block.",
+    "8. If all clear: set Stage to COMPLETE, move ticket to done/ folder, set Next Responsible Agent to Human, Status to Proceed."
+  ]
 }
 ```
 
 ## Status
-Proceed
+Needs Attention
 
 ## Reason
-AC-3 and AC-4 blocking issues resolved. EnemyInfection3D now has mutation_drop export; InfectionInteractionHandler threads enemy node through to resolver; resolver accepts optional mutation_id and uses it over the default. Level positions corrected for ClawCrawlerEnemy and CarapaceHuskEnemy. run_tests.sh passes with all tests. AC-5 still requires human play session sign-off.
+AC-1 through AC-4 are fully satisfied by automated tests and static code inspection (54 FESG tests pass; level file confirmed; per-family mutation call chain statically unambiguous; no regressions). AC-5 ("Playable without debug tools") requires a documented human play session per established project convention (see two_mutation_slots.md, player_hud.md, LEARNINGS.md). No such session has been documented. Ticket held at Stage INTEGRATION until human confirms and documents AC-5 sign-off.

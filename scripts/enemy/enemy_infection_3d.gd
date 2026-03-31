@@ -33,13 +33,17 @@ func _ready() -> void:
 		_area.body_entered.connect(_on_body_entered)
 		_area.body_exited.connect(_on_body_exited)
 	if model_scene != null:
-		var old_visual: Node = get_node_or_null("EnemyVisual")
-		if old_visual != null:
-			old_visual.queue_free()
-		var new_visual: Node3D = model_scene.instantiate() as Node3D
-		if new_visual != null:
-			new_visual.name = "EnemyVisual"
-			add_child(new_visual)
+		call_deferred("_swap_model_scene")
+
+
+func _swap_model_scene() -> void:
+	var old_visual: Node = get_node_or_null("EnemyVisual")
+	if old_visual != null:
+		old_visual.queue_free()
+	var new_visual: Node3D = model_scene.instantiate() as Node3D
+	if new_visual != null:
+		new_visual.name = "EnemyVisual"
+		add_child(new_visual)
 
 
 func get_esm() -> EnemyStateMachine:

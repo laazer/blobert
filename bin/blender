@@ -1,0 +1,40 @@
+#!/bin/bash
+# Wrapper: runs Blender headlessly (background mode, no UI).
+# Usage is identical to the Blender CLI — just omit --background.
+#
+# Searches for the Blender binary in platform-specific locations,
+# then falls back to whatever is on PATH.
+
+_find_blender() {
+  case "$(uname -s)" in
+    Darwin)
+      echo "/Applications/Blender.app/Contents/MacOS/Blender"
+      ;;
+    Linux)
+      for candidate in blender4 blender Blender; do
+        if command -v "$candidate" &>/dev/null; then
+          echo "$candidate"
+          return
+        fi
+      done
+      ;;
+    *)
+      if command -v blender &>/dev/null; then
+        echo "blender"
+      elif command -v Blender &>/dev/null; then
+        echo "Blender"
+      fi
+      ;;
+  esac
+}
+
+BLENDER_BIN="$(_find_blender)"
+
+if [[ -z "$BLENDER_BIN" || ! -x "$BLENDER_BIN" ]] && ! command -v "$BLENDER_BIN" &>/dev/null 2>&1; then
+  echo "ERROR: Blender binary not found." >&2
+  echo "  macOS: install Blender.app to /Applications/" >&2
+  echo "  Linux: install blender4 or blender and ensure it is on PATH" >&2
+  exit 1
+fi
+
+exec "$BLENDER_BIN" --background "$@"

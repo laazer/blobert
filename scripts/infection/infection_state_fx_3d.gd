@@ -51,7 +51,7 @@ func _get_esm_from_enemy() -> EnemyStateMachine:
 func _process(delta: float) -> void:
 	if _enemy == null:
 		_enemy = get_parent() as Node3D
-	if _visual == null:
+	if _visual == null or not is_instance_valid(_visual):
 		_visual = _get_visual_node()
 	if _esm == null:
 		_esm = _get_esm_from_enemy()

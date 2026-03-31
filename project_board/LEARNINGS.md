@@ -1265,3 +1265,87 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: This is the established pattern for pure-logic modules in this project (reinforced in [procedural_room_chaining]). It continues to eliminate the largest category of headless test friction. Every new system that is computation-only should extend RefCounted, not Node.
 
 ---
+
+## [first_4_families_in_level] — EditorScript cannot be run headlessly; infection call chain gaps survive static analysis; Variant-to-String coercion caught by GDScript reviewer; position mismatch caused by Engine Integration Agent not reading spec coordinates; AC-5 playability gate is structurally unautomatable
+
+*Completed: 2026-03-30*
+
+### Learnings
+
+- category: architecture
+  insight: An `@tool extends EditorScript` script cannot be driven headlessly. The only way to automate its logic is to replicate that logic in a new `extends SceneTree` script with `func _init()` as the entry point. The replication is a permanent maintenance fork — the two files diverge from the moment of creation.
+  impact: `load_assets.gd` (EditorScript) had to be partially replicated as `generate_enemy_scenes.gd` (SceneTree). Any future change to the asset-generation algorithm must be applied in both files or the generated output diverges from the editor-driven output.
+  prevention: When a ticket depends on an EditorScript as a prior deliverable, the Planner must immediately flag that EditorScript as a PENDING_MANUAL dependency. If automation is required, the Spec Agent must design the replacement as a headless SceneTree script from scratch — not as a modification to the EditorScript — and document the maintenance fork explicitly. This extends the [godot_scene_generator_validation] learning that EditorScript logic should be extracted to RefCounted utilities; the corollary is that the EditorScript shell itself can never be the headless entry point.
+  severity: high
+
+- category: architecture
+  insight: A per-family mutation drop system (`mutation_drop` export var plus per-instance override in the level scene) can coexist silently with a hardcoded default resolver (`infection_absorb_resolver.gd` using `DEFAULT_MUTATION_ID` unconditionally). The spec's own call chain analysis treated the export var as sufficient evidence that AC-3 was satisfied, but the resolver never read the export var. The two mechanisms existed independently with no wire between them until a second AC Gatekeeper invocation caught it.
+  impact: AC-3 ("correct mutation on absorption") was initially marked as satisfied by the Spec Agent and the first AC Gatekeeper invocation. The second Gatekeeper invocation correctly identified that the resolver hardcoded the default and the export var was never consulted. This required a full implementation pass to thread `mutation_drop` through the call chain.
+  prevention: When a spec verifies a call chain for correctness, it must trace each link to actual code — not infer that because an export var exists and a resolver exists, they are connected. Any AC that asserts "correct value X is passed to system Y" must name the exact line in each file where the handoff occurs. If no such line can be named, the AC is not satisfied.
+  severity: high
+
+- category: architecture
+  insight: `Object.get("property_name")` returns `Variant`, not the property's declared type. Assigning that result directly to a typed `String` field causes an implicit coercion that GDScript strict mode treats as a type warning or error. Replacing `.get()` with direct typed property access on a narrowed-type variable both eliminates the coercion and makes the call site statically verifiable.
+  impact: The GDScript reviewer caught this after initial tests passed, requiring a fix iteration. The fix also revealed that the field type (`_target_enemy`) could be narrowed from `Node3D` to `EnemyInfection3D`, improving static guarantees across the call chain.
+  prevention: When a script reads a property from a dynamically-typed variable via `.get()`, the Code Reviewer Agent must flag it and require either: (a) narrowing the variable type to the concrete class so direct property access is valid, or (b) casting the `.get()` result explicitly with `as TypeName`. Bare `.get()` returning Variant assigned to a typed field is always a Static QA finding.
+  severity: medium
+
+- category: testing
+  insight: The Engine Integration Agent placed two enemies at positions derived from its own spatial reasoning ("spread positions on X axis") rather than reading the spec's coordinate table. The spec defined `(0,1,4)` and `(0,1,-4)` (Z-axis spread); the implementation chose `(-6,1,0)` and `(6,1,0)` (X-axis spread). The tests encoded the spec's canonical coordinates and failed against the level file.
+  impact: A second AC Gatekeeper invocation was required to identify the mismatch. The level positions then had to be corrected in a separate fix pass. The Engine Integration Agent's test run had passed only because the tests were written to the spec — the agent did not cross-check its authored positions against the spec before declaring implementation complete.
+  prevention: The Engine Integration Agent must read the spec's position table and quote the exact coordinate values before editing any .tscn. After authoring, it must grep the node's transform origin in the .tscn text and confirm it matches the spec value verbatim before running tests.
+  severity: medium
+
+- category: process
+  insight: AC-5 ("playable without debug tools") is structurally unverifiable headlessly. All structural proxies passed (no `@tool`, no debug-only nodes, valid enemy positions, no debug prints), but none confirm that the game is actually playable from the player's perspective. This AC class recurs on every ticket involving placed interactive content and will always require a human play session.
+  impact: The ticket was held at BLOCKED awaiting human verification after all 54 automated tests passed. The AC Gatekeeper correctly declined to accept structural-only evidence for a playability AC, consistent with prior tickets. The blocking is correct behavior, not a workflow failure.
+  prevention: Tickets with an AC containing the word "playable" or requiring subjective runtime experience should have that AC labeled `[MANUAL-ONLY]` at spec time with the exact Manual QA Checklist and the Playtest Result Recording steps. No structural proxy can satisfy a playability AC — this boundary is absolute.
+  severity: low
+
+### Anti-Patterns
+
+- description: Verifying a data-flow AC by confirming that both the source (export var) and the sink (resolver) exist, without tracing the actual code path connecting them. Two systems that exist in parallel with no wire between them satisfy "both exist" trivially but fail "correct value flows end-to-end."
+  detection_signal: An AC Gatekeeper or Spec Agent describes the call chain in prose but cannot cite a specific line in each intermediate file where the value is read and forwarded.
+  prevention: For any AC asserting that a value produced at source A reaches consumer B, the gatekeeper must name the line in A where the value is produced, the function signature through which it is passed, and the line in B where it is consumed. If any link cannot be named, the AC is not satisfied.
+
+- description: The Engine Integration Agent placing scene nodes at positions derived from spatial intuition rather than the spec's coordinate table. "Spread positions" is ambiguous — X-axis and Z-axis spreads are both valid interpretations.
+  detection_signal: A position test (asserting a specific spec coordinate) fails against the authored level file even though the implementation agent reported a passing test run.
+  prevention: The Engine Integration Agent must read the spec's position table and quote exact coordinate values before editing the .tscn. After editing, it must grep the authored transform origin and confirm it matches the spec before running tests.
+
+- description: A headless `extends SceneTree` script that replicates an `@tool extends EditorScript` without a cross-reference comment in either file documenting the maintenance fork.
+  detection_signal: Two files with overlapping generation logic (e.g. `load_assets.gd` and `generate_enemy_scenes.gd`) with no comment indicating they must be kept in sync.
+  prevention: When a headless replication of an EditorScript is committed, add a comment at the top of both files: "MAINTENANCE NOTE: This file's generation logic is replicated from [other_file]. Changes to the generation algorithm must be applied to both files."
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "When verifying an AC that asserts a value flows from source A to consumer B (e.g., 'correct mutation is granted on absorption'), you must name the exact file and line where each intermediate handoff occurs. A prose description of the call chain is insufficient. If any link cannot be named with a file and line reference, mark the AC as NOT SATISFIED and document the missing link explicitly."
+  reason: The AC-3 call chain (mutation_drop export var to resolver) was accepted as satisfied in prose by the first Gatekeeper invocation, but the resolver never read the export var. Requiring named line references for each link prevents this class of false positive.
+
+- agent: Engine Integration Agent
+  change: "When placing nodes in a level .tscn, read the spec's coordinate table and quote the exact Vector3 position values for each node before editing the file. After authoring the .tscn, search the file text for each node's transform origin and confirm it matches the spec's value verbatim. Do not derive positions from spatial reasoning — always use the spec's explicit coordinates."
+  reason: ClawCrawlerEnemy and CarapaceHuskEnemy were placed at X-axis spread positions instead of the spec's Z-axis positions. The tests failed because they encoded the spec's correct coordinates. A pre-edit spec read and post-edit text confirmation would have caught the mismatch before running the test suite.
+
+- agent: Code Reviewer Agent
+  change: "Flag any `Object.get('property_name')` call whose return value is assigned to a typed variable without an explicit cast. GDScript strict mode treats implicit Variant-to-typed-field coercion as a warning or error. Require the caller to either: (a) narrow the receiving variable's type to the concrete class that declares the property and use direct field access, or (b) cast the result explicitly (e.g., `as String`). Report bare `.get()` assigned to a typed field as a Static QA defect."
+  reason: `_target_enemy.get("mutation_drop")` returning Variant assigned to a String-typed field was caught by the reviewer but required a fix iteration. The fix also enabled narrowing the field type from Node3D to EnemyInfection3D, improving static verifiability across the call chain.
+
+### Workflow Improvements
+
+- issue: The AC Gatekeeper's first invocation accepted AC-3 based on the existence of both the `mutation_drop` export var and the resolver, without tracing the actual call path. The second invocation caught the hardcoded default. Two Gatekeeper invocations were needed because the first did not apply the "name every link" standard.
+  improvement: The AC Gatekeeper prompt should require that for any data-flow AC (value produced at A, consumed at B), the verdict block must include a line-by-line call chain in the Evidence Matrix, not a prose summary. If the chain cannot be traced to specific lines, the AC must be marked NOT SATISFIED with a "missing link" note.
+  expected_benefit: Eliminates the class of false-positive AC verdicts where a data flow is assumed connected because both endpoints exist. Reduces Gatekeeper invocation count for tickets with integration-heavy ACs.
+
+- issue: The `extends SceneTree` replication of `load_assets.gd` is a permanent maintenance fork with no tracking mechanism. If the generation algorithm changes in `load_assets.gd`, `generate_enemy_scenes.gd` will silently diverge.
+  improvement: When a headless replication of an EditorScript is committed, the Planner Agent should append a note to `project_board/KNOWN_ISSUES.md` flagging the maintenance fork, the two files involved, and the condition under which they must be kept in sync.
+  expected_benefit: Prevents silent divergence between the editor-driven and headless-driven asset generation paths. Makes the maintenance obligation explicit and discoverable by future agents.
+
+### Keep / Reinforce
+
+- practice: The AC Gatekeeper's second invocation independently re-read the level .tscn and the resolver source code rather than forwarding the prior Gatekeeper's analysis. This re-reading found both the position mismatch and the hardcoded resolver that the first invocation missed.
+  reason: Gatekeeper invocations should always re-read primary evidence files rather than deferring to prior verdicts. The second invocation's independent read produced a materially more accurate result. Each Gatekeeper run is an independent audit.
+
+- practice: Threading `mutation_drop` through the call chain using optional/default parameters (`mutation_id: String = ""`) preserved backwards compatibility with all existing call sites. Zero existing tests regressed.
+  reason: When adding a new data-flow parameter to an established API, defaulting it to a sentinel value allows all existing callers to be unmodified while new callers pass the real value. This is the correct pattern for threading optional context through a settled call chain without a breaking change.
+
+---
