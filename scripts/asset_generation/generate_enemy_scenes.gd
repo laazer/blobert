@@ -10,6 +10,7 @@ const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.
 const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
 const DEFAULT_ENEMY_SCRIPT := "res://scripts/enemies/enemy_base.gd"
+const ANIMATION_CONTROLLER_SCRIPT := "res://scripts/enemies/enemy_animation_controller.gd"
 
 const MUTATION_BY_FAMILY := {
 	"adhesion_bug": "adhesion",
@@ -152,6 +153,15 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 		collision.shape = shape
 		root.add_child(collision)
 		collision.owner = root
+
+	if ResourceLoader.exists(ANIMATION_CONTROLLER_SCRIPT):
+		var anim_script_res := load(ANIMATION_CONTROLLER_SCRIPT)
+		if anim_script_res:
+			var anim_controller := Node.new()
+			anim_controller.name = "EnemyAnimationController"
+			anim_controller.set_script(anim_script_res)
+			root.add_child(anim_controller)
+			anim_controller.owner = root
 
 	_add_marker(root, "AttackOrigin", Vector3(0.6, 0.0, 0.0))
 	_add_marker(root, "ChunkAttachPoint", Vector3(0.0, 0.0, 0.2))
