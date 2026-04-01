@@ -251,6 +251,82 @@ All 5 hazards placeable in a level, deal damage/effects correctly, at least one 
 
 ------------------------------------------------------------
 
+Milestone 13 – Main Menu
+Goal: The game has a proper entry point and a clear run loop from launch to game over.
+
+Includes:
+- Main menu scene (Start Run, Quit)
+- Game Over / run-end screen with basic stats and Restart
+- Clean state on restart (mutations cleared, HP reset, room sequence regenerated)
+- Routes into existing RunStateManager / RunSceneAssembler
+
+Exit Criteria:
+Fresh launch lands on main menu. Player starts, plays, dies, sees game-over screen, restarts — all without the editor.
+
+------------------------------------------------------------
+
+Milestone 14 – HUD Cleanup
+Goal: The HUD shows only what the player needs — no debug labels, no legacy artifacts.
+
+Includes:
+- Audit and remove debug-quality text labels (ChunkStatusLabel, ClingStatusLabel)
+- Remove legacy backward-compat nodes (MutationSlotLabel, MutationIcon)
+- Mutation slots display family name or icon, not raw ID string
+- Input hints auto-hide after first use
+- HUD layout does not overlap key gameplay areas
+
+Exit Criteria:
+A non-developer can read HP, active mutations, and available actions at a glance. No placeholder or legacy nodes remain in the HUD scene.
+
+------------------------------------------------------------
+
+Milestone 15 – Enemy Navigation & AI
+Goal: Enemies actively pursue the player — a non-mutated player is in genuine danger.
+
+Includes:
+- Seek/pursue behavior toward player when in detection range
+- Idle/patrol when out of range
+- X-axis pursuit on the 2.5D constrained plane
+- Separation so enemies don't stack
+- Movement integrated with EnemyStateMachine (WEAKENED = slow, INFECTED = stop)
+
+Exit Criteria:
+At least one enemy family can reliably close distance and back a player into a corner with no mutations active.
+
+Note: Should be completed before M8 (Enemy Attacks) — attacks are only threatening if enemies can close distance.
+
+------------------------------------------------------------
+
+Milestone 16 – Camera & Screen Juice
+Goal: Hits feel impactful and abilities feel powerful — the game feels good to play, not just functional.
+
+Includes:
+- Screen shake on player hit, chunk impact, ability use, enemy death
+- Hit pause / hitstop (1–3 frames) on heavy hit confirmation
+- Camera lead (anticipates movement direction)
+- Room transition (smooth pan or fade, not instant cut)
+- All effects tunable via exported variables
+
+Exit Criteria:
+A 30-second combat clip looks noticeably more impactful than the same clip without juice. Screen shake and hitstop present on hits. Room transitions are not instant cuts.
+
+------------------------------------------------------------
+
+Milestone 17 – Tutorial & Onboarding
+Goal: A first-time player learns movement, chunk throw, infect, and absorb without reading a manual.
+
+Includes:
+- Intro room (no enemies) teaching movement and chunk mechanics via environment prompts
+- Progressive hint system: show the relevant prompt at the moment it's needed, dismiss on action
+- Infection tutorial room: one pre-placed weakened enemy with guided infect → absorb
+- Hints fire from existing InputHintsConfig nodes — made contextual rather than always-on
+- Tutorial rooms run within the existing RunSceneAssembler intro sequence
+
+Exit Criteria:
+A first-time player completes tutorial rooms and reaches the first combat room without help. All core mechanics demonstrated once before a threatening enemy appears.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:
