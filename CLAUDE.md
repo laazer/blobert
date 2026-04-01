@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **blobert** is a Godot 4+ game project. The primary scripting language is GDScript.
 
+## Reference projects (`reference_projects/`)
+
+Third-party and demo Godot projects live under `reference_projects/`. Subdirectories may be used for implementation reference (patterns, APIs, scene structure, `project.godot` examples) **except** under Godot’s official demo repo: **ignore `reference_projects/godot-demo-projects/2d/`** — those are pure 2D demos and do not match blobert’s 3D scene target; prefer `3d/`, `xr/`, `viewport/`, and other non-`2d/` trees inside `godot-demo-projects/` when relevant. Treat the tree as read-only upstream material: do not add blobert game code or assets under `reference_projects/`, and do not point blobert’s `project.godot` at resources inside it. Examples include `reference_projects/3D-Platformer-Kit/` and `reference_projects/godot-demo-projects/` (excluding `2d/` as above).
+
 ## Development target: 3D scenes
 
 Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
