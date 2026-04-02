@@ -1,16 +1,17 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_nkcjb"]
-[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/claw_crawler_animated_00.glb" id="2_m164g"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_m164g"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/claw_crawler_animated_00.glb" id="2_6boxy"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_animation_controller.gd" id="3_im2v0"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_6boxy"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_2tj84"]
 size = Vector3(2.2170234, 0.8303161, 1.4357129)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_im2v0"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_cb0dp"]
 size = Vector3(2.2170234, 0.8303161, 1.4357129)
 
-[node name="claw_crawler_animated_00" type="CharacterBody3D" unique_id=36970588]
-script = ExtResource("1_nkcjb")
+[node name="claw_crawler_animated_00" type="CharacterBody3D" unique_id=1825820275]
+script = ExtResource("1_m164g")
 enemy_id = "claw_crawler_animated_00"
 enemy_family = "claw_crawler"
 mutation_drop = "claw"
@@ -19,25 +20,30 @@ metadata/enemy_family = "claw_crawler"
 metadata/mutation_drop = "claw"
 metadata/source_glb = "res://assets/enemies/generated_glb/claw_crawler_animated_00.glb"
 
-[node name="Visual" type="Node3D" parent="." unique_id=1366338251]
+[node name="Visual" type="Node3D" parent="." unique_id=1985374444]
 
-[node name="Model" type="Node3D" parent="Visual" unique_id=319092947 instance=ExtResource("2_m164g")]
+[node name="Model" type="Node3D" parent="Visual" unique_id=319092947 instance=ExtResource("2_6boxy")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1099948870]
-shape = SubResource("BoxShape3D_6boxy")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=23979698]
+shape = SubResource("BoxShape3D_2tj84")
 
-[node name="AttackOrigin" type="Marker3D" parent="." unique_id=1721361412]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1339803024]
+
+[node name="EnemyAnimationController" type="Node" parent="." unique_id=1885972822]
+script = ExtResource("3_im2v0")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=1464706242]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
 
-[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=1821658796]
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=182071617]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
 
-[node name="PickupAnchor" type="Marker3D" parent="." unique_id=33811410]
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=1995741542]
 
-[node name="Hurtbox" type="Area3D" parent="." unique_id=1168251009]
+[node name="Hurtbox" type="Area3D" parent="." unique_id=805331996]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=1722933663]
-shape = SubResource("BoxShape3D_im2v0")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=735383693]
+shape = SubResource("BoxShape3D_cb0dp")
 
-[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=739491775]
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=370676080]
 aabb = AABB(-1.1085117, -0.41515806, -0.71785647, 2.2170234, 0.8303161, 1.4357129)

@@ -1,16 +1,17 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_6mxlw"]
-[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/acid_spitter_animated_02.glb" id="2_3cq7b"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_base.gd" id="1_3cq7b"]
+[ext_resource type="PackedScene" path="res://assets/enemies/generated_glb/acid_spitter_animated_02.glb" id="2_pw85i"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_animation_controller.gd" id="3_nbrfw"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_pw85i"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_on3av"]
 size = Vector3(1.8608545, 1.6214554, 1.6191108)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_nbrfw"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_kq87o"]
 size = Vector3(1.8608545, 1.6214554, 1.6191108)
 
-[node name="acid_spitter_animated_02" type="CharacterBody3D" unique_id=163506590]
-script = ExtResource("1_6mxlw")
+[node name="acid_spitter_animated_02" type="CharacterBody3D" unique_id=1970283951]
+script = ExtResource("1_3cq7b")
 enemy_id = "acid_spitter_animated_02"
 enemy_family = "acid_spitter"
 mutation_drop = "acid"
@@ -19,25 +20,30 @@ metadata/enemy_family = "acid_spitter"
 metadata/mutation_drop = "acid"
 metadata/source_glb = "res://assets/enemies/generated_glb/acid_spitter_animated_02.glb"
 
-[node name="Visual" type="Node3D" parent="." unique_id=1216690069]
+[node name="Visual" type="Node3D" parent="." unique_id=1582741681]
 
-[node name="Model" type="Node3D" parent="Visual" unique_id=153616910 instance=ExtResource("2_3cq7b")]
+[node name="Model" type="Node3D" parent="Visual" unique_id=153616910 instance=ExtResource("2_pw85i")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=584681269]
-shape = SubResource("BoxShape3D_pw85i")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=587695743]
+shape = SubResource("BoxShape3D_on3av")
 
-[node name="AttackOrigin" type="Marker3D" parent="." unique_id=1387759293]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=43800221]
+
+[node name="EnemyAnimationController" type="Node" parent="." unique_id=2047079471]
+script = ExtResource("3_nbrfw")
+
+[node name="AttackOrigin" type="Marker3D" parent="." unique_id=840837153]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 0)
 
-[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=1906501765]
+[node name="ChunkAttachPoint" type="Marker3D" parent="." unique_id=1234323942]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.2)
 
-[node name="PickupAnchor" type="Marker3D" parent="." unique_id=1878404697]
+[node name="PickupAnchor" type="Marker3D" parent="." unique_id=1896104796]
 
-[node name="Hurtbox" type="Area3D" parent="." unique_id=749784285]
+[node name="Hurtbox" type="Area3D" parent="." unique_id=2139971363]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=408442303]
-shape = SubResource("BoxShape3D_nbrfw")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox" unique_id=1791724802]
+shape = SubResource("BoxShape3D_kq87o")
 
-[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=1820221133]
+[node name="VisibleOnScreenNotifier3D" type="VisibleOnScreenNotifier3D" parent="." unique_id=875762172]
 aabb = AABB(-0.93042725, -0.8107277, -0.8095554, 1.8608545, 1.6214554, 1.6191108)

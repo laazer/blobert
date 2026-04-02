@@ -796,8 +796,13 @@ func test_fesg_31_level_enemies_use_infection_scene() -> void:
 
 
 # ---------------------------------------------------------------------------
-# FESG-32: Each generated scene root has exactly 7 direct children
+# FESG-32: Each generated scene root has exactly 9 direct children
 # Spec: AC-TSCN-3.11
+# Updated from 7 to 9 after AnimationPlayer and EnemyAnimationController were
+# added as direct children of the scene root (M7-ACS AC-1.3, AC-1.4).
+# Children: Visual, CollisionShape3D, AnimationPlayer, EnemyAnimationController,
+#           AttackOrigin, ChunkAttachPoint, PickupAnchor, Hurtbox,
+#           VisibleOnScreenNotifier3D (9 total).
 # ---------------------------------------------------------------------------
 func test_fesg_32_generated_scene_child_count() -> void:
 	if not _generated_dir_exists():
@@ -810,9 +815,9 @@ func test_fesg_32_generated_scene_child_count() -> void:
 			continue
 		var count: int = inst.get_child_count()
 		_assert_eq_int(
-			7,
+			9,
 			count,
-			"FESG-32 — " + basename + " root has exactly 7 direct children, got " + str(count)
+			"FESG-32 — " + basename + " root has exactly 9 direct children, got " + str(count)
 		)
 		inst.free()
 
