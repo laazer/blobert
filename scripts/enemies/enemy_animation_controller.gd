@@ -5,7 +5,10 @@
 # on the enemy's AnimationPlayer with crossfade blending.
 #
 # Attaches as a direct child of the enemy CharacterBody3D root produced by
-# generate_enemy_scenes.gd. Exports are wired in the generated .tscn.
+# generate_enemy_scenes.gd. The AnimationPlayer is resolved at _ready() via
+# find_child() when not injected directly (e.g. in tests).
+# EnemyStateMachine extends RefCounted so it cannot be an @export — wire it
+# via setup() or assign state_machine directly before calling _ready().
 #
 # Ticket: animation_controller_script
 # Spec:   project_board/7_milestone_7_enemy_animation_wiring/in_progress/
@@ -16,20 +19,29 @@ class_name EnemyAnimationController
 extends Node
 
 
-@export var animation_player = null
-@export var state_machine = null
+# animation_player: resolved at _ready() via find_child() when null.
+# Tests may inject directly: controller.animation_player = stub
+var animation_player: Object = null
+
+# state_machine: EnemyStateMachine extends RefCounted (not Node) so it
+# cannot be an @export. Assign via setup() or directly before _ready().
+var state_machine: Object = null
+
 @export var move_threshold: float = 0.1
 @export var blend_time: float = 0.15
 
 
-# Set to true in _ready() when both exports are valid. All per-frame
+# Set to true in _ready() when both dependencies are valid. All per-frame
 # logic is gated on this flag. Never reset after _ready() runs.
 var _ready_ok: bool = false
 
+# Parent body reference — stored in _ready() for velocity access.
+var _parent_body: Node = null
+
 # Tracks the last-applied (clip, speed, blend) tuple to avoid redundant
 # play() calls on unchanged state (ACS-5 idempotency). blend_time is
-# included so that runtime mutations to the export are reflected on the
-# very next transition.
+# included so runtime mutations to the export are reflected on the very
+# next transition.
 var _current_clip: String = ""
 var _current_speed: float = 1.0
 var _current_blend_time: float = -999.0  # Sentinel: forces first-tick play()
@@ -40,24 +52,42 @@ var _death_latched: bool = false
 
 # Hit one-shot state.
 var _hit_active: bool = false
+# _prior_clip / _prior_speed are set when trigger_hit_animation() is first
+# called (not on re-entrant calls). Resume uses live state re-evaluation
+# (AC-6.6), not these fields — they exist for test observability (EAC-17).
 var _prior_clip: String = ""
 var _prior_speed: float = 1.0
 
 
+# Wire the state machine reference. Called by the generator after instantiation.
+# In production, the real EnemyStateMachine will be passed here from M15
+# navigation/AI wiring. For now the generator passes null (pre-M15).
+func setup(esm: Object) -> void:
+	state_machine = esm
+
+
 func _ready() -> void:
+	# Resolve AnimationPlayer: prefer injected value, fall back to find_child().
+	if animation_player == null:
+		animation_player = get_parent().find_child("AnimationPlayer", true, false)
+
 	if animation_player == null:
 		push_warning(
 			"EnemyAnimationController (%s): animation_player export is null" % name
 		)
-		_ready_ok = false
 
 	if state_machine == null:
 		push_warning(
 			"EnemyAnimationController (%s): state_machine export is null" % name
 		)
-		_ready_ok = false
 
-	if animation_player != null and state_machine != null:
+	_parent_body = get_parent()
+	if _parent_body == null:
+		push_warning(
+			"EnemyAnimationController (%s): get_parent() returned null" % name
+		)
+
+	if animation_player != null and state_machine != null and _parent_body != null:
 		_ready_ok = true
 
 
@@ -69,8 +99,8 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	# Hit active window: while the hit clip is still playing, suppress all
-	# other dispatches — including death. Only exit hit mode when the clip
-	# ends (is_playing() false OR current_animation changed away from "Hit").
+	# other dispatches. Only exit hit mode when the clip ends
+	# (is_playing() false OR current_animation changed away from "Hit").
 	if _hit_active:
 		var hit_finished: bool = (
 			not animation_player.is_playing()
@@ -84,10 +114,15 @@ func _physics_process(_delta: float) -> void:
 		_hit_active = false
 		_current_clip = ""
 
-	# Resolve target (clip, speed) from current state and velocity.
-	var resolved := _resolve_target()
-	var clip: String = resolved[0]
-	var speed: float = resolved[1]
+	# Resolve target clip name and speed from current state and velocity.
+	var state: String = state_machine.get_state()
+	var vel_len: float = _parent_body.velocity.length()
+	var clip: String = _resolve_clip_name(state, vel_len)
+	# speed_scale uses == for float comparison intentionally: the controller
+	# only ever writes exact float literals (0.0, 0.5, 1.0) to _current_speed,
+	# matching the exact values returned by _resolve_speed(). This is safe for
+	# the test suite which sets the same exact literals.
+	var speed: float = _resolve_speed(state)
 
 	# Death branch: one-shot, immediate, latches forever.
 	if clip == "Death":
@@ -103,6 +138,9 @@ func _physics_process(_delta: float) -> void:
 	if clip == _current_clip and speed == _current_speed and blend_time == _current_blend_time:
 		return
 
+	# speed_scale is the correct approach for persistent per-state playback
+	# speed in Godot 4. AnimationPlayer.play()'s custom_speed parameter is not
+	# reliable for persistent speed across frames — speed_scale persists.
 	animation_player.speed_scale = speed
 	animation_player.play(clip, blend_time)
 	_current_clip = clip
@@ -110,28 +148,32 @@ func _physics_process(_delta: float) -> void:
 	_current_blend_time = blend_time
 
 
-# Returns [clip_name, speed] for the current state and velocity.
+# Returns the clip name for the current state and velocity.
 # Evaluated in priority order per ACS-4 resolution table.
-func _resolve_target() -> Array:
-	var state: String = state_machine.get_state()
-
+func _resolve_clip_name(state: String, vel_len: float) -> String:
 	if state == "dead":
-		return ["Death", 1.0]
-
+		return "Death"
 	if state == "infected":
-		return ["Idle", 0.0]
-
+		return "Idle"
 	if state == "weakened":
-		return ["Idle", 0.5]
-
+		return "Idle"
 	if state == "idle" or state == "active":
-		var vel_len: float = get_parent().velocity.length()
 		if vel_len >= move_threshold:
-			return ["Walk", 1.0]
-		return ["Idle", 1.0]
-
+			return "Walk"
+		return "Idle"
 	# Fallback for unknown/future state strings.
-	return ["Idle", 1.0]
+	return "Idle"
+
+
+# Returns the speed_scale value for the current state.
+func _resolve_speed(state: String) -> float:
+	if state == "dead":
+		return 1.0
+	if state == "infected":
+		return 0.0
+	if state == "weakened":
+		return 0.5
+	return 1.0
 
 
 # Plays the "Hit" clip as a one-shot. Suppresses normal state dispatch

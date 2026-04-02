@@ -154,6 +154,14 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 		root.add_child(collision)
 		collision.owner = root
 
+	# Add an AnimationPlayer node as a placeholder. No clips are attached here —
+	# clips will be added when the blender_animation_export ticket runs and
+	# exports GLBs with embedded animation tracks.
+	var anim_player := AnimationPlayer.new()
+	anim_player.name = "AnimationPlayer"
+	root.add_child(anim_player)
+	anim_player.owner = root
+
 	if ResourceLoader.exists(ANIMATION_CONTROLLER_SCRIPT):
 		var anim_script_res := load(ANIMATION_CONTROLLER_SCRIPT)
 		if anim_script_res:
@@ -162,6 +170,9 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 			anim_controller.set_script(anim_script_res)
 			root.add_child(anim_controller)
 			anim_controller.owner = root
+			# Pass null ESM — will keep _ready_ok = false until M15 wires
+			# navigation/AI and supplies the real EnemyStateMachine reference.
+			anim_controller.setup(null)
 
 	_add_marker(root, "AttackOrigin", Vector3(0.6, 0.0, 0.0))
 	_add_marker(root, "ChunkAttachPoint", Vector3(0.0, 0.0, 0.2))
@@ -199,7 +210,7 @@ func _collect_glb_files(dir_path: String) -> Array[String]:
 		if dir.current_is_dir():
 			continue
 		if file_name.to_lower().ends_with(".glb"):
-			result.append("%s/%s" % [dir_path, file_name])
+			result.append(dir_path.path_join(file_name))
 	dir.list_dir_end()
 
 	result.sort()
@@ -336,7 +347,9 @@ func _aabb_from_shape(shape: Shape3D) -> AABB:
 
 	if shape is CapsuleShape3D:
 		var capsule := shape as CapsuleShape3D
-		var size := Vector3(capsule.radius * 2.0, capsule.height + capsule.radius * 2.0, capsule.radius * 2.0)
+		# In Godot 4, CapsuleShape3D.height is the TOTAL height including both
+		# hemispherical caps — do not add radius * 2.0 again.
+		var size := Vector3(capsule.radius * 2.0, capsule.height, capsule.radius * 2.0)
 		return AABB(-size * 0.5, size)
 
 	return AABB(Vector3(-0.5, -0.5, -0.5), Vector3.ONE)
