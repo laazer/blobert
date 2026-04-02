@@ -33,3 +33,18 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 - Stage: IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE → resuming at AC Gatekeeper
 - Log: `project_board/checkpoints/first_4_families_in_level/run-2026-03-30-01.md`
 - Outcome: generate_enemy_scenes.gd written; 12 .tscn files generated and committed; level updated with 4 family enemies; all 54 FESG tests pass. Engine Integration Agent (run-2): fixed AC-4 positions (ClawCrawlerEnemy→(0,1,4), CarapaceHuskEnemy→(0,1,-4)); implemented AC-3 per-family mutation dispatch (mutation_drop export on EnemyInfection3D, optional enemy_node param on set_target_esm, optional mutation_id param on resolve_absorb, level mutation_drop overrides); all tests pass.
+
+## Run: 2026-04-01
+- Queue mode: milestone directory scan
+- Queue scope: `project_board/7_milestone_7_enemy_animation_wiring/backlog/`
+- Log root: project_board/checkpoints/
+
+### M7-ACS / run-2026-04-01-planning
+- Ticket: `project_board/7_milestone_7_enemy_animation_wiring/in_progress/animation_controller_script.md`
+- Stage: PLANNING → SPECIFICATION
+- Log: `project_board/checkpoints/M7-ACS/run-2026-04-01-planning.md`
+- Outcome: Decomposed into 6 tasks; resolved state system ambiguity (EnemyStateMachine strings are canonical), stub-based test strategy chosen, AnimationPlayer null-guard pattern documented.
+
+### M7-ACS — OUTCOME: COMPLETE
+State-driven AnimationController implemented with 39 tests (23 primary + 16 adversarial). Key rework: GDScript review caught untyped @export + RefCounted serialization conflict; generator re-run required after code changes; spec corrected to match accepted design. All 12 generated .tscn files contain AnimationPlayer + EnemyAnimationController nodes.
+Log: project_board/checkpoints/M7-ACS/
