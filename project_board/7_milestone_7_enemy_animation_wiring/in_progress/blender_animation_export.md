@@ -129,20 +129,42 @@ The existing Blender Python pipeline (`asset_generation/python/`) exports static
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_GENERALIST |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Status | Proceed |
 | Validation Status | — |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Run Test Breaker Agent. Test suite is complete and verified red-phase:
-- Python tests: `asset_generation/python/tests/utils/test_animation_export_names.py` (40 tests)
-  - 8 pass (existing-constant and get_length assertions on unmodified code)
-  - 32 fail red (require implementation of BAE-1 and BAE-2 changes)
-- GDScript tests: `tests/scenes/enemies/test_enemy_animation_clips.gd` (BAE-01..BAE-16)
-  - Will SKIP (not FAIL) until Task 3 GLBs are regenerated
-Test Breaker Agent must verify all required tests are red before implementation begins.
+Run Engine Integration Agent (Generalist scope). Adversarial test suite is complete and verified:
+
+**Python adversarial suite** (30 tests, `asset_generation/python/tests/utils/test_animation_export_names_adversarial.py`):
+- 6 pass (check invariants already true in unmodified code: export_animations=True, export_format=GLB, None-input safety, source contains `action=None`)
+- 24 fail red (require implementation of Tasks 1 and 2)
+
+**Primary Python suite** (`test_animation_export_names.py`, 40 tests):
+- 8 pass, 32 fail red (unchanged from Test Designer handoff)
+
+**GDScript adversarial suite** (new file `tests/scenes/enemies/test_enemy_animation_clips_adversarial.gd`):
+- All tests SKIP until Task 3 GLBs are regenerated
+
+**GDScript primary suite** (`test_enemy_animation_clips.gd`, BAE-01..BAE-16):
+- All SKIP until Task 3 GLBs are regenerated
+
+**Coverage gaps exposed by adversarial suite (will FAIL after implementation if incorrectly done):**
+- `get_export_name` fallback edge cases: empty string, all-underscore, numeric, consecutive underscores, leading/trailing underscores, ALL_CAPS input, naive-title-case-of-whole-string trap
+- Return type exactness: `type(result) is str` (not MagicMock subclass)
+- Mutation targets: `"move"` → `"Walk"` (not `"Move"`); `"damage"` → `"Hit"` (not `"Damage"`)
+- NLA strip `name` attribute must equal export name (not internal name)
+- NLA wiring for `animation_set='extended'` set (8 tracks, not 5 or 13)
+- Active-action leak: source must not contain `animation_data.action = created_actions[0]`
+- `export_nla_strips=True` in `bpy.ops.export_scene.gltf()` (bmesh mock fixed in adversarial file)
+- No map mutation: required mappings stable after unknown-name lookups
+- Partial export guard: all 4 GLB families present
+- Duplicate AnimationPlayer detection
+- Lowercase/wrong-case clip names absent from GLB
+- Title-case-fallback trap clips absent ("Move", "Damage")
+- Clip names do not carry family-name prefix

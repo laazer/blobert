@@ -230,7 +230,7 @@ as its final step (replacing the current line that sets it to `created_actions[0
 (conditionally, based on Blender version detection) to `bpy.ops.export_scene.gltf`.
 The spec defines both changes as required.
 
-**Confidence:** High
+**Confidence:** High (Spec Agent checkpoint block ends)
 
 ---
 
@@ -275,3 +275,88 @@ The spec defines both changes as required.
 **Assumption made:** The missing BAE-1.5 coverage is a genuine spec gap in the prior test run. A test class TestExportEnemyNLAFlag has been added to tests/utils/test_animation_export_names.py. It mocks bpy.ops.export_scene.gltf, calls export_enemy(), and asserts export_nla_strips=True is present in the captured kwargs. This test will be red (failing) until Task 1 implementation adds the kwarg to the gltf() call. The test is placed in the same file as other BAE-1/BAE-2 tests to keep export-pipeline tests colocated.
 
 **Confidence:** High
+
+---
+
+## Test Breaker Agent Checkpoints — 2026-04-02
+
+---
+
+### [M7-BAE] TestBreak — bmesh mock missing in TestExportEnemyNLAFlag
+
+**Would have asked:** `TestExportEnemyNLAFlag` imports `export_enemy` which transitively imports `blender_utils.py`, which does `import bmesh` at module level. `bmesh` is not added to `sys.modules` mock setup. Is this an infra bug that must be fixed in the test, or should the adversarial test leave it as-is and add a separate infrastructure regression?
+
+**Assumption made:** The intent of the test is to catch the missing `export_nla_strips=True` kwarg, not to fail on missing `bmesh`. The adversarial suite adds `sys.modules.setdefault('bmesh', MagicMock())` to the mock setup block in the new adversarial file. This is the same conservative pattern as the existing `bpy`/`mathutils` mock. The existing `test_animation_export_names.py` is not modified; the fix is localized to the new adversarial file's own copy of the export_enemy tests that properly mock `bmesh`. # CHECKPOINT
+
+**Confidence:** High
+
+---
+
+### [M7-BAE] TestBreak — PascalCase fallback boundary: empty string
+
+**Would have asked:** The spec says fallback splits on `_`, title-cases each word, joins without separator. What should `get_export_name("")` return — `""`, raise, or something else?
+
+**Assumption made:** `get_export_name("")` should return `""` (empty join of an empty split). The adversarial test asserts this. An implementation that raises AttributeError or returns None fails the test, exposing a crash path reachable if a calling loop ever passes an empty internal name. # CHECKPOINT
+
+**Confidence:** Medium
+
+---
+
+### [M7-BAE] TestBreak — PascalCase fallback: all-underscore input
+
+**Would have asked:** `get_export_name("___")` — each token after split is `""`. `"".title()` returns `""`. Should the output be `""` (3 empty tokens joined) or raise?
+
+**Assumption made:** Output is `""`. This is the most conservative mechanical interpretation of the spec's "split on _, title-case each word, join". # CHECKPOINT
+
+**Confidence:** Medium
+
+---
+
+### [M7-BAE] TestBreak — NLA strip name attribute must equal export name
+
+**Would have asked:** The existing `test_bae_nla_3_one_strip_per_track` verifies one strip per track but does not assert that `strip.name == export_name`. The spec (BAE-1.3) says `name` argument to `track.strips.new(name, start, action)` must be the export name. Is there an existing test for this?
+
+**Assumption made:** No existing test checks `strip.name`. Adding `test_bae_adv_strip_name_equals_export_name` exposes a mutation where the implementer passes the internal name as the strip name rather than the export name. # CHECKPOINT
+
+**Confidence:** High
+
+---
+
+### [M7-BAE] TestBreak — GDScript: AnimationPlayer on wrong node path
+
+**Would have asked:** The spec says `find_children("*", "AnimationPlayer", true, false)` must be used (recursive type search). A regression where the implementation uses a hardcoded path like `root.get_node("Armature/AnimationPlayer")` would pass if the path exists but fail silently on any GLB where the depth differs. Should the adversarial GDScript suite verify the search finds AnimationPlayer regardless of exact depth?
+
+**Assumption made:** Yes. The adversarial GDScript file adds a test that loads the GLB and asserts `find_children` discovers the same AnimationPlayer as `get_node_or_null` would at a hardcoded path — if both return null the test skips, but if `find_children` returns null and `get_node` finds it at a known path, that is a test failure (wrong search method used). # CHECKPOINT
+
+**Confidence:** Medium
+
+---
+
+### [M7-BAE] TestBreak — GDScript: lowercase clip name is NOT in animation list
+
+**Would have asked:** If the pipeline produces "idle" instead of "Idle" (case regression), the existing BAE-01 fails. But does any test explicitly assert that the wrong-case name is absent? Adding an explicit assertion that "idle" is absent catches the symmetric error where both "idle" and "Idle" are somehow present, or where only "idle" is present.
+
+**Assumption made:** The adversarial GDScript file adds checks that the internal lowercase names are absent. This is a mutation target: if the implementer exports both names, or exports only lowercase, the adversarial tests catch it while existing tests may pass. # CHECKPOINT
+
+**Confidence:** High
+
+---
+
+### [M7-BAE] TestBreak — Python: get_export_name return type is exactly str, not subclass
+
+**Would have asked:** Could `get_export_name` return a bytes or str-subclass that passes `assertIsInstance(result, str)` but breaks downstream Blender API calls that expect plain `str`?
+
+**Assumption made:** The adversarial test adds `assertIs(type(result), str)` (not just assertIsInstance) for the 4 required clip names. This catches a MagicMock leak where the mock returns a Mock object that passes isinstance checks but is not actually a str. # CHECKPOINT
+
+**Confidence:** Medium
+
+---
+
+### [M7-BAE] TestBreak — Stage transition: IMPLEMENTATION_ENGINE_INTEGRATION not in enum
+
+**Would have asked:** The task prompt says to advance Stage to `IMPLEMENTATION_ENGINE_INTEGRATION`. The workflow enforcement module's Stage enum is: `PLANNING | SPECIFICATION | TEST_DESIGN | TEST_BREAK | IMPLEMENTATION_BACKEND | IMPLEMENTATION_FRONTEND | IMPLEMENTATION_GENERALIST | STATIC_QA | INTEGRATION | DEPLOYMENT | BLOCKED | COMPLETE`. `IMPLEMENTATION_ENGINE_INTEGRATION` is not listed.
+
+**Assumption made:** The closest valid stage for this ticket (Tasks 1-2 = Blender Python pipeline, Tasks 3-5 = GLB regeneration + Godot headless wiring) is `IMPLEMENTATION_GENERALIST`. The Planner's intent with "Engine Integration Agent" aligns with the Generalist Agent's cross-domain scope in this project. Advancing to `IMPLEMENTATION_GENERALIST` and setting Next Responsible Agent to `Engine Integration Agent` (the Planner's label for the next executor). # CHECKPOINT
+
+**Confidence:** High
+
