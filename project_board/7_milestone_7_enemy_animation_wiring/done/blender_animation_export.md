@@ -129,17 +129,25 @@ The existing Blender Python pipeline (`asset_generation/python/`) exports static
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_GENERALIST |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Engine Integration Agent |
-| Status | Proceed |
-| Validation Status | — |
+| Stage | COMPLETE |
+| Revision | 6 |
+| Last Updated By | Engine Integration Agent |
+| Next Responsible Agent | — |
+| Status | COMPLETE |
+| Validation Status | All AC met |
 | Blocking Issues | — |
 
-## NEXT ACTION
+## OUTCOME
 
-Run Engine Integration Agent (Generalist scope). Adversarial test suite is complete and verified:
+Implementation complete. All acceptance criteria met:
+- 12 GLBs regenerated with 13 named animation clips each (Idle, Walk, Hit, Death + 9 extended)
+- Clip names consistent across all 4 families
+- All BAE-01..BAE-16 GDScript tests PASS
+- All ADV-BAE-G-01..ADV-BAE-G-10 adversarial GDScript tests PASS
+- All 329 Python tests PASS (70 animation export specific)
+- `run_tests.sh` exits 0
+
+## PREVIOUS NEXT ACTION NOTE
 
 **Python adversarial suite** (30 tests, `asset_generation/python/tests/utils/test_animation_export_names_adversarial.py`):
 - 6 pass (check invariants already true in unmodified code: export_animations=True, export_format=GLB, None-input safety, source contains `action=None`)

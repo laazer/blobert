@@ -42,23 +42,30 @@ def create_all_animations(armature, enemy_body_type, rng, animation_set='core'):
         animations = AnimationTypes.get_all()
     
     created_actions = []
-    
+
     for anim_name in animations:
-        # Create new action
-        action = bpy.data.actions.new(name=f"{anim_name}")
+        # Resolve the export name (PascalCase) for this internal animation name.
+        # The internal name is kept in anim_name for dispatch and length lookups;
+        # the export name is used only for naming the bpy action and NLA strip.
+        export_name = AnimationTypes.get_export_name(anim_name)
+
+        # Create new action using the export name so the GLB clip name matches
+        # what EnemyAnimationController expects in Godot (BAE-2.6).
+        action = bpy.data.actions.new(name=export_name)
         action.use_fake_user = True  # Prevent action from being lost
         created_actions.append(action)
         armature.animation_data_create()
         armature.animation_data.action = action
-        
-        # Set frame range for this animation
+
+        # Set frame range for this animation (uses internal name — LENGTHS keys
+        # are internal names; changing this would break AnimationConfig, BAE-2.7).
         length = AnimationConfig.get_length(anim_name)
         bpy.context.scene.frame_start = 1
         bpy.context.scene.frame_end = length
-        
+
         # Start at rest pose for perfect looping
         set_rest_pose_keyframe(armature, 1)
-        
+
         # Create the specific animation using the body type
         if anim_name == AnimationTypes.IDLE:
             body_type.create_idle_animation(length)
@@ -89,21 +96,34 @@ def create_all_animations(armature, enemy_body_type, rng, animation_set='core'):
             body_type.create_taunt_animation(length)
         else:
             print(f"Warning: Unknown animation type '{anim_name}', skipping.")
-        
+
         # End at rest pose (except death) for perfect looping
         if anim_name != AnimationTypes.DEATH:
             set_rest_pose_keyframe(armature, length)
-        
+
         # Set action frame range
         action.frame_range = (1, length)
-        
-        print(f"Created {anim_name} animation: frames 1-{length}")
-    
-    # Set idle action as the final active one for export
-    if created_actions:
-        armature.animation_data.action = created_actions[0]  # idle
-        print(f"Set '{created_actions[0].name}' as active for export")
-    
+
+        print(f"Created {export_name} animation: frames 1-{length}")
+
+    # Push all created actions into individual NLA tracks so the GLTF exporter
+    # emits all clips (BAE-1.1 through BAE-1.4).
+    # NLA track creation requires OBJECT mode; switching here is explicit even if
+    # the current mode is already OBJECT, to avoid context errors (Risk R1.2).
+    bpy.context.view_layer.objects.active = armature
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    for action in created_actions:
+        track = armature.animation_data.nla_tracks.new()
+        strip = track.strips.new(action.name, 0, action)
+        strip.action_frame_start = 1
+        strip.action_frame_end = action.frame_range[1]
+
+    # Set NLA-driven mode: action=None tells the GLTF exporter to export all NLA
+    # strips rather than a single active action (BAE-1.4).
+    armature.animation_data.action = None
+
+    print(f"NLA: {len(created_actions)} strips wired")
     print(f"✅ {len(created_actions)} self-contained animation actions created")
 
 

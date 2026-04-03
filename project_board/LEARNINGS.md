@@ -4,6 +4,55 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [wire_animations_to_generated_scenes] — Root AnimationPlayer wired from GLB; Godot lifecycle and `run_tests.sh` import hang
+
+*INTEGRATION (manual AC pending): 2026-04-03*
+
+### Learnings
+
+- category: testing
+  insight: After `add_child`, Godot runs `_ready()` deferred; assertions that read script state immediately after `add_child` see pre-`_ready()` values unless the test calls `_ready()` once or awaits a frame.
+  impact: WAGS tests initially failed on `_ready_ok` / `animation_player` despite correct scene structure; resolution required aligning test timing with engine semantics.
+  prevention: For “controller wired at load” tests, either await `process_frame` (async runner) or call `_ready()` explicitly after tree insertion when the suite is synchronous.
+  severity: medium
+
+- category: architecture
+  insight: In GDScript 2 on Godot 4.6.x, comparing `what == NOTIFICATION_ENTER_TREE` inside `_notification` can fail even when the engine sends `what == 24`; use an explicit numeric constant (or verify the enum resolves) when enter-tree side effects must run.
+  impact: AnimationPlayer resolution never ran; all WAGS controller checks failed until equality used literal `24`.
+  prevention: When depending on `Object` notification IDs in `_notification`, log or unit-check the constant once per engine version or use documented `Object.NOTIFICATION_*` only after confirming it matches runtime.
+  severity: high
+
+- category: infra
+  insight: `godot --import` without a timeout can block CI and local scripts indefinitely; wrapping it preserves the “reimport before tests” intent without hanging the pipeline.
+  impact: `ci/scripts/run_tests.sh` appeared stuck; AC “run_tests.sh exits 0” was not reliably testable.
+  prevention: Always bound import and test invocations with `timeout` (and prefer `--headless` for CI) per project CLAUDE guidance.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Treating `NOTIFICATION_ENTER_TREE` and unqualified `NOTIFICATION_ENTER_TREE` as identical in GDScript without verifying the numeric value.
+  detection_signal: `_notification` body never runs the expected branch; headless logs show `what=24` but no side effects.
+  prevention: Use a class-level `const _NOTIF_ENTER_TREE := 24` (with engine-version comment) or assert equality once in a tiny diagnostic script.
+
+### Prompt Patches
+
+- agent: Test Designer Agent
+  change: For any test that `add_child`s a PackedScene root and reads `_ready()`-initialized state, document whether the suite is sync or async; if sync, require an explicit `_ready()` call or a documented one-frame pump after add_child.
+  reason: Avoid false failures from deferred ready semantics.
+
+### Workflow Improvements
+
+- issue: Tickets mix “in-editor visual” ACs with headless-only automation; Gatekeeper correctly blocks COMPLETE without human evidence, leaving the ticket in INTEGRATION with an easy-to-miss next step.
+  improvement: Add a one-line “Manual QA” subsection template on tickets that require editor verification, with checkbox and date field for the human signer-off.
+  expected_benefit: Clear closure path and fewer stalled INTEGRATION tickets.
+
+### Keep / Reinforce (closure)
+
+- practice: After human confirms the editor AC, AC Gatekeeper immediately promoted ticket to `COMPLETE`, recorded sign-off in `Validation Status`, and `git mv` to `done/` — no extra spec churn.
+  reason: Closes the loop the gatekeeper opened at INTEGRATION without leaving orphan “pending manual” state.
+
+---
+
 ## [containment_hall_01_layout] — 3D scene construction for a linear level with four gameplay zones
 
 *Completed: 2026-03-17*
@@ -1347,5 +1396,88 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: Threading `mutation_drop` through the call chain using optional/default parameters (`mutation_id: String = ""`) preserved backwards compatibility with all existing call sites. Zero existing tests regressed.
   reason: When adding a new data-flow parameter to an established API, defaulting it to a sentinel value allows all existing callers to be unmodified while new callers pass the real value. This is the correct pattern for threading optional context through a settled call chain without a breaking change.
+
+---
+
+## [M7-ACS] — @export + RefCounted serialization conflict and stale generated scenes caused a full impl-fix iteration
+*Completed: 2026-03-31*
+
+### Learnings
+
+- category: architecture
+  insight: In Godot 4.6.1, `@export` annotations are enforced at runtime in headless mode. Assigning a plain Object stub to an `@export var field: AnimationPlayer` raises "Invalid assignment" and leaves the property null, silently breaking all tests that depend on stub injection.
+  impact: All 39 tests failed silently (controller returned early on null) after the initial implementation used `@export var animation_player: AnimationPlayer`. A full impl-fix iteration was required to remove the `@export` and resolve via `find_child()` + direct assignment bypass.
+  prevention: For any Node-type dependency that must be injected by tests (not the editor inspector), declare the var as a plain `var field: Object = null` with no `@export`. Document the rationale in the spec. The Spec Agent must flag this pattern explicitly when the tested node type cannot be subclassed by test stubs.
+  severity: high
+
+- category: architecture
+  insight: `RefCounted`-derived objects cannot be serialized through an `@export` in `.tscn` files. A `Node`-typed export rejects `RefCounted` assignment at runtime. The only correct injection pattern for a `RefCounted` dependency in a scene-file–instantiated Node is a `setup()` method or a plain `var` with `Object` typing.
+  impact: `EnemyStateMachine extends RefCounted` caused the initial `@export var state_machine: EnemyStateMachine` spec to be incorrect. The spec had to be retroactively corrected after implementation discovered the constraint.
+  prevention: The Spec Agent must check the inheritance chain of any dependency type before specifying it as `@export`. If the type extends `RefCounted` (not `Node`), the spec must require a `setup()` injection method or plain `var`, never `@export`.
+  severity: high
+
+- category: infra
+  insight: The scene generator (`generate_enemy_scenes.gd`) was updated to add `EnemyAnimationController` and `AnimationPlayer` nodes to generated enemy scenes, but the generator was not re-run. The committed `.tscn` files were stale — they did not contain the new nodes. The AC Gatekeeper caught this by directly reading a `.tscn` file and finding the node absent.
+  impact: The Gatekeeper correctly blocked completion and required an explicit re-run of the generator (commit 3bae3ea). Without the Gatekeeper's structural verification, the stale scenes would have shipped.
+  prevention: Whenever a generator script is modified, the Implementation Agent must re-run it and commit the regenerated output files in the same changeset. A post-implementation checklist item must read: "If any generator script was modified, regenerate all outputs and include them in the commit."
+  severity: high
+
+- category: testing
+  insight: A test file that statically types a variable as `EnemyAnimationController` will fail to parse if the implementation file does not yet exist, crashing the entire test runner and preventing all other suites from running.
+  impact: The Test Designer recognized this and used dynamic `load("res://...")` instead of static class references, allowing the test file to parse cleanly and emit per-test failures rather than a runner crash.
+  prevention: All test files for new scripts must use dynamic loading (`load(...).new()`) and untyped local vars when the target class file may not exist at test-break time. The Test Designer prompt should include this as an explicit requirement.
+  severity: medium
+
+- category: process
+  insight: The spec's test file path (`tests/unit/test_enemy_animation_controller.gd`) did not match the actual project convention (`tests/scripts/enemy/`). The Test Designer had to resolve this ambiguity, creating a low-priority but persistent discrepancy documented in the final Gatekeeper verdict.
+  impact: No test execution impact (the runner auto-discovers all `test_*.gd` files). However, the spec path was never corrected, leaving a documented inconsistency between spec and reality.
+  prevention: The Spec Agent must verify that any explicitly named test file path matches an existing directory in the project before writing the spec. If `tests/unit/` does not exist, the spec must use the actual convention.
+  severity: low
+
+### Anti-Patterns
+
+- description: Specifying `@export var field: SomeConcreteType` for a dependency that will be injected by unit test stubs, without verifying whether the concrete type is subclassable by test stubs or whether Godot 4 enforces the annotation at runtime.
+  detection_signal: The spec lists a typed `@export` for any field that the ACS-8 "stub contract" section says must be assignable from a plain `Object` or inner class.
+  prevention: When a spec simultaneously requires `@export` on a field and test stub injection into that same field, treat that as a contradiction and resolve it in the spec before handing off to implementation. The resolution is always: remove `@export`, use plain `var` with `Object` typing.
+
+- description: Writing a spec that requires running a generator script but does not include "re-run the generator" as an explicit implementation step, leaving it implicit and easily skipped under time pressure.
+  detection_signal: A spec section modifies a generator script's behavior but contains no explicit "regenerate outputs" step in the acceptance criteria.
+  prevention: Any AC that modifies a generator script must pair with an AC that verifies the generated output files were regenerated, committed, and match the new generator behavior.
+
+- description: The Impl Agent's first attempt used `@export var animation_player: Node` (weakened to Node) rather than removing the `@export` entirely. This was a partially correct fix — it resolved the type-enforcement crash but retained the serialization side-effect. Only the impl-fix pass, which used a plain `var`, produced the fully correct design.
+  detection_signal: An impl-fix iteration that changes `@export var T` to `@export var Node` to unblock tests, rather than questioning whether `@export` is needed at all.
+  prevention: When removing a typed `@export` to fix test injection, ask: "Does this field need to appear in the editor inspector or be serialized into the `.tscn`?" If no, remove `@export` entirely rather than weakening the type.
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "Before specifying any `@export` variable for a dependency that will be unit-tested via stubs: (1) check the dependency type's inheritance chain — if it extends `RefCounted`, the field must never be `@export`; (2) verify whether test stubs can subclass the declared type; (3) if tests must inject a plain Object stub, the field must be declared as `var field: Object = null` with no `@export`, and a `setup()` injection method must be provided. Document the rationale in the spec under 'Constraints'."
+  reason: The root cause of the impl-fix iteration was a spec that required `@export var animation_player: AnimationPlayer` and `@export var state_machine: EnemyStateMachine` without accounting for Godot 4.6.1 runtime type enforcement and RefCounted serialization limits. An earlier spec-phase check would have avoided the full rework.
+
+- agent: Implementation Agent
+  change: "After modifying any generator script (`generate_enemy_scenes.gd` or equivalent), re-run the generator immediately and verify that all generated output files (`.tscn`, `.tres`, etc.) reflect the changes. Include the regenerated files in the same commit as the generator change. Do not submit for AC Gatekeeper review until the generated outputs have been regenerated."
+  reason: The stale `.tscn` files (generator updated but not re-run) caused the Gatekeeper to block completion and required an additional commit. The fix is purely procedural: re-run the generator before closing the implementation stage.
+
+- agent: Test Designer Agent
+  change: "All test files for scripts that do not yet exist (test-break stage) must use dynamic loading: `var ScriptClass = load('res://path/to/script.gd')` and untyped vars (`var controller = ScriptClass.new()`). Never use static class-name references in test files for scripts that may not exist at test-break time. A parse error in one test file crashes the entire test runner and prevents all other suites from executing."
+  reason: The Test Designer for M7-ACS correctly applied this pattern, preventing a runner crash. Encoding it as an explicit rule prevents future Test Designers from using static class references in test-break files.
+
+### Workflow Improvements
+
+- issue: The initial spec specified `@export` for both `animation_player` and `state_machine` without noting the Godot 4 runtime type enforcement constraint for headless test injection. The constraint was only discovered by the Implementation Agent at test-run time, requiring a full impl-fix pass and a retroactive spec-fix pass.
+  improvement: Add a mandatory spec-phase check: for every `@export` field listed in the spec, confirm the type is either a primitive (float, int, String, bool) or a Node-subclass that test stubs can be assigned to without a runtime type error. If neither condition holds, remove `@export` from the spec before handoff.
+  expected_benefit: Eliminates the class of impl-fix iterations caused by `@export` type mismatches discovered only at test time. The spec-fix pass (a second Spec Agent run) would also be unnecessary.
+
+- issue: The spec explicitly named `tests/unit/test_enemy_animation_controller.gd` as the test file path, but this directory does not exist in the project. The Test Designer silently resolved this by using the correct convention, leaving the spec incorrect.
+  improvement: The Spec Agent must verify that any named file path (especially test paths) resolves to an existing directory structure before emitting the spec. If the directory does not exist, either create it in scope or use an existing path.
+  expected_benefit: Prevents spec-vs-reality discrepancies that future agents must silently work around, reducing compounding divergence across tickets.
+
+### Keep / Reinforce
+
+- practice: The AC Gatekeeper directly read a generated `.tscn` file to verify node structure rather than trusting that the generator had been re-run. This structural verification caught the stale scene files that implementation had missed.
+  reason: For any ticket that modifies a generator and requires the output to contain specific nodes, the Gatekeeper must read the actual output file, not infer from the generator source. Generator "was updated" does not mean "was run."
+
+- practice: The Test Designer added `play_call_count: int` to the stub class as a pure test-infrastructure additive that does not appear in the production ACS-8 spec. This allowed idempotency and latch tests to assert "no play() call was made" without modifying the production contract.
+  reason: Augmenting test stubs with call-counting fields beyond the minimum required interface is the correct pattern for negative-assertion tests ("not called"). It is additive, does not contaminate production code, and makes test intent explicit.
 
 ---

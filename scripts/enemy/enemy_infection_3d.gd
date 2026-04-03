@@ -21,6 +21,10 @@ var _attached_chunks: Array[RigidBody3D] = []
 
 
 func _ready() -> void:
+	var anim_ctrl: EnemyAnimationController = get_node_or_null("EnemyAnimationController") as EnemyAnimationController
+	if anim_ctrl != null:
+		anim_ctrl.setup(_esm)
+
 	var p: Node = get_parent()
 	while p != null:
 		var candidate := p.get_node_or_null("InfectionInteractionHandler") as InfectionInteractionHandler
@@ -34,6 +38,8 @@ func _ready() -> void:
 		_area.body_exited.connect(_on_body_exited)
 	if model_scene != null:
 		call_deferred("_swap_model_scene")
+	else:
+		call_deferred("_wire_and_notify_animation")
 
 
 func _swap_model_scene() -> void:
@@ -44,6 +50,44 @@ func _swap_model_scene() -> void:
 	if new_visual != null:
 		new_visual.name = "EnemyVisual"
 		add_child(new_visual)
+	call_deferred("_wire_and_notify_animation")
+
+
+func _wire_and_notify_animation() -> void:
+	_wire_glb_libraries_to_root_animation_player()
+	var anim_ctrl: EnemyAnimationController = get_node_or_null("EnemyAnimationController") as EnemyAnimationController
+	if anim_ctrl != null:
+		anim_ctrl.notify_root_animation_wired()
+
+
+func _wire_glb_libraries_to_root_animation_player() -> void:
+	var visual: Node = get_node_or_null("EnemyVisual")
+	var target: AnimationPlayer = get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if visual == null or target == null:
+		return
+	var lib_names: Array[StringName] = []
+	for ln in target.get_animation_library_list():
+		lib_names.append(ln)
+	for lib_name in lib_names:
+		target.remove_animation_library(lib_name)
+	var found: Array[Node] = visual.find_children("*", "AnimationPlayer", true, false)
+	if found.is_empty():
+		return
+	var src: AnimationPlayer = found[0] as AnimationPlayer
+	for lib_name in src.get_animation_library_list():
+		var lib: AnimationLibrary = src.get_animation_library(lib_name)
+		if lib == null:
+			continue
+		var dup: AnimationLibrary = lib.duplicate(true) as AnimationLibrary
+		if dup == null:
+			continue
+		var err: Error = target.add_animation_library(lib_name, dup)
+		if err != OK:
+			push_warning(
+				"EnemyInfection3D: add_animation_library(%s) failed: %s"
+				% [str(lib_name), error_string(err)]
+			)
+	target.root_node = NodePath("../EnemyVisual")
 
 
 func get_esm() -> EnemyStateMachine:

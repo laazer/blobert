@@ -152,6 +152,11 @@ def export_enemy(armature, mesh, filename, export_dir, attack_profile=None):
     bpy.ops.wm.save_as_mainfile(filepath=debug_filepath)
     print(f"Debug export: {debug_filepath}")
     
+    # export_nla_strips=True is required for Blender 3.6 to export all NLA tracks
+    # rather than only the single active action.  In Blender 4.x the parameter was
+    # removed and NLA export is automatic when armature.animation_data.action is
+    # None.  We pass it unconditionally here; if the installed Blender raises a
+    # TypeError for an unknown keyword, wrap this call and omit the parameter.
     bpy.ops.export_scene.gltf(
         filepath=filepath,
         use_selection=True,
@@ -160,7 +165,8 @@ def export_enemy(armature, mesh, filename, export_dir, attack_profile=None):
         export_apply=True,
         export_animations=True,
         export_frame_range=True,
-        export_frame_step=1
+        export_frame_step=1,
+        export_nla_strips=True
     )
     
     print(f"Exported: {filepath}")

@@ -5,8 +5,9 @@
 # on the enemy's AnimationPlayer with crossfade blending.
 #
 # Attaches as a direct child of the enemy CharacterBody3D root produced by
-# generate_enemy_scenes.gd. The AnimationPlayer is resolved at _ready() via
-# find_child() when not injected directly (e.g. in tests).
+# generate_enemy_scenes.gd. The AnimationPlayer is resolved on NOTIFICATION_ENTER_TREE
+# when not injected directly (e.g. in tests). That notification runs during add_child()
+# before _ready() is deferred, so the root AnimationPlayer sibling is always visible.
 # EnemyStateMachine extends RefCounted so it cannot be an @export — wire it
 # via setup() or assign state_machine directly before calling _ready().
 #
@@ -18,8 +19,11 @@
 class_name EnemyAnimationController
 extends Node
 
+const _GENERATED_ESM_STUB_NAME := "GeneratedEnemyEsmStub"
+# Object.NOTIFICATION_ENTER_TREE (unqualified NOTIFICATION_ENTER_TREE can mismatch in GDScript 2).
+const _NOTIF_ENTER_TREE := 24
 
-# animation_player: resolved at _ready() via find_child() when null.
+# animation_player: resolved on NOTIFICATION_ENTER_TREE when null.
 # Tests may inject directly: controller.animation_player = stub
 var animation_player: Object = null
 
@@ -62,14 +66,57 @@ var _prior_speed: float = 1.0
 # Wire the state machine reference. Called by the generator after instantiation.
 # In production, the real EnemyStateMachine will be passed here from M15
 # navigation/AI wiring. For now the generator passes null (pre-M15).
+# EnemyInfection3D calls setup(_esm) after _ready on children; use
+# notify_root_animation_wired() once the root AnimationPlayer has GLB libraries.
 func setup(esm: Object) -> void:
 	state_machine = esm
 
 
-func _ready() -> void:
-	# Resolve AnimationPlayer: prefer injected value, fall back to find_child().
+func notify_root_animation_wired() -> void:
+	_resolve_animation_player_from_parent()
+	_parent_body = get_parent()
+	if state_machine == null:
+		state_machine = find_child(_GENERATED_ESM_STUB_NAME, true, false)
+	var ap := animation_player as AnimationPlayer
+	if ap == null or _parent_body == null or state_machine == null:
+		return
+	var has_idle := false
+	for n in ap.get_animation_list():
+		if str(n) == "Idle":
+			has_idle = true
+			break
+	if not has_idle:
+		return
+	_ready_ok = true
+	_current_clip = ""
+	_current_blend_time = -999.0
+
+
+func _notification(what: int) -> void:
+	if what == _NOTIF_ENTER_TREE:
+		_resolve_animation_player_from_parent()
+
+
+func _resolve_animation_player_from_parent() -> void:
+	if animation_player != null:
+		return
+	var par: Node = get_parent()
+	if par == null:
+		return
+	for c: Node in par.get_children():
+		if str(c.name) == "AnimationPlayer" and c is AnimationPlayer:
+			animation_player = c
+			break
 	if animation_player == null:
-		animation_player = get_parent().find_child("AnimationPlayer", true, false)
+		animation_player = par.find_child("AnimationPlayer", true, false)
+
+
+func _ready() -> void:
+	if _ready_ok:
+		return
+	# Generated scenes embed a stub node; production wires RefCounted via setup().
+	if state_machine == null:
+		state_machine = find_child(_GENERATED_ESM_STUB_NAME, true, false)
 
 	if animation_player == null:
 		push_warning(
@@ -134,9 +181,17 @@ func _physics_process(_delta: float) -> void:
 		_current_blend_time = 0.0
 		return
 
-	# Idempotency: skip play() if clip, speed, and blend_time are all unchanged.
-	if clip == _current_clip and speed == _current_speed and blend_time == _current_blend_time:
-		return
+	# Idempotency: skip play() if clip, speed, and blend_time are unchanged AND the
+	# player is still actively playing that clip. GLB imports often set loop_mode to
+	# none; when the clip ends, is_playing() goes false while _current_clip still
+	# matches — without this check we would never call play() again.
+	if (
+		clip == _current_clip
+		and speed == _current_speed
+		and blend_time == _current_blend_time
+	):
+		if animation_player.is_playing() and str(animation_player.current_animation) == clip:
+			return
 
 	# speed_scale is the correct approach for persistent per-state playback
 	# speed in Godot 4. AnimationPlayer.play()'s custom_speed parameter is not

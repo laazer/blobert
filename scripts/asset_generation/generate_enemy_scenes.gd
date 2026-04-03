@@ -11,6 +11,7 @@ const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
 const DEFAULT_ENEMY_SCRIPT := "res://scripts/enemies/enemy_base.gd"
 const ANIMATION_CONTROLLER_SCRIPT := "res://scripts/enemies/enemy_animation_controller.gd"
+const GENERATED_ESM_STUB_SCRIPT := "res://scripts/enemies/enemy_generated_esm_stub.gd"
 
 const MUTATION_BY_FAMILY := {
 	"adhesion_bug": "adhesion",
@@ -105,6 +106,31 @@ func _init() -> void:
 	quit()
 
 
+func _wire_glb_animation_libraries_to_root_player(model_root: Node, target_player: AnimationPlayer) -> void:
+	var found: Array[Node] = model_root.find_children("*", "AnimationPlayer", true, false)
+	if found.is_empty():
+		push_warning(
+			"No AnimationPlayer under GLB subtree for '%s' — root AnimationPlayer will have no clips"
+			% model_root.name
+		)
+		return
+	var src: AnimationPlayer = found[0] as AnimationPlayer
+	for lib_name in src.get_animation_library_list():
+		var lib: AnimationLibrary = src.get_animation_library(lib_name)
+		if lib == null:
+			continue
+		var dup: AnimationLibrary = lib.duplicate(true) as AnimationLibrary
+		if dup == null:
+			continue
+		var err: Error = target_player.add_animation_library(lib_name, dup)
+		if err != OK:
+			push_warning(
+				"add_animation_library(%s) failed for '%s': %s"
+				% [str(lib_name), model_root.name, error_string(err)]
+			)
+	target_player.root_node = NodePath("../Visual/Model")
+
+
 func _generate_scene_for_glb(glb_path: String) -> void:
 	var glb_scene: PackedScene = load(glb_path)
 	if glb_scene == null:
@@ -154,11 +180,9 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 		root.add_child(collision)
 		collision.owner = root
 
-	# Add an AnimationPlayer node as a placeholder. No clips are attached here —
-	# clips will be added when the blender_animation_export ticket runs and
-	# exports GLBs with embedded animation tracks.
 	var anim_player := AnimationPlayer.new()
 	anim_player.name = "AnimationPlayer"
+	_wire_glb_animation_libraries_to_root_player(visual_instance, anim_player)
 	root.add_child(anim_player)
 	anim_player.owner = root
 
@@ -170,9 +194,14 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 			anim_controller.set_script(anim_script_res)
 			root.add_child(anim_controller)
 			anim_controller.owner = root
-			# Pass null ESM — will keep _ready_ok = false until M15 wires
-			# navigation/AI and supplies the real EnemyStateMachine reference.
-			anim_controller.setup(null)
+			if ResourceLoader.exists(GENERATED_ESM_STUB_SCRIPT):
+				var stub_script_res := load(GENERATED_ESM_STUB_SCRIPT) as GDScript
+				if stub_script_res:
+					var esm_stub := Node.new()
+					esm_stub.name = "GeneratedEnemyEsmStub"
+					esm_stub.set_script(stub_script_res)
+					anim_controller.add_child(esm_stub)
+					esm_stub.owner = root
 
 	_add_marker(root, "AttackOrigin", Vector3(0.6, 0.0, 0.0))
 	_add_marker(root, "ChunkAttachPoint", Vector3(0.0, 0.0, 0.2))

@@ -85,6 +85,39 @@ class AnimationTypes:
         """Get all damage animation variants"""
         return [cls.DAMAGE, cls.DAMAGE_HEAVY, cls.DAMAGE_FIRE, cls.DAMAGE_ICE]
 
+    # Mapping from internal animation name to GLB export name (PascalCase).
+    # The 4 required entries (idle, move, damage, death) are non-negotiable:
+    # they must match what EnemyAnimationController requests in Godot.
+    _EXPORT_NAME_MAP: Dict[str, str] = {
+        "idle":           "Idle",
+        "move":           "Walk",
+        "attack":         "Attack",
+        "damage":         "Hit",
+        "death":          "Death",
+        "spawn":          "Spawn",
+        "special_attack": "SpecialAttack",
+        "damage_heavy":   "DamageHeavy",
+        "damage_fire":    "DamageFire",
+        "damage_ice":     "DamageIce",
+        "stunned":        "Stunned",
+        "celebrate":      "Celebrate",
+        "taunt":          "Taunt",
+    }
+
+    @classmethod
+    def get_export_name(cls, internal_name: str) -> str:
+        """Return the PascalCase GLB clip name for a given internal animation name.
+
+        The 4 required mappings (idle→Idle, move→Walk, damage→Hit, death→Death)
+        must match exactly what EnemyAnimationController references in Godot.
+        Unknown internal names fall back to mechanical PascalCase conversion:
+        split on '_', title-case each word, concatenate without separator.
+        """
+        if internal_name in cls._EXPORT_NAME_MAP:
+            return cls._EXPORT_NAME_MAP[internal_name]
+        # Fallback: mechanical PascalCase (e.g. "some_new_anim" → "SomeNewAnim")
+        return "".join(word.title() for word in internal_name.split("_"))
+
 
 class EnemyBodyTypes:
     """Enemy body type classifications for animation"""
