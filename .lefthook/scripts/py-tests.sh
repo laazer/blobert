@@ -13,11 +13,13 @@ _run_pytest() {
   "$py" -m pytest tests/ -q
 }
 
-if command -v uv >/dev/null 2>&1; then
-  echo "pre-push: running asset_generation Python tests (uv, --extra dev)..."
-  uv run --extra dev pytest tests/ -q
-elif [ -x "$PY_ROOT/.venv/bin/python" ]; then
+# Prefer project .venv when it already has pytest (no index fetch; works behind broken mirrors).
+if [ -x "$PY_ROOT/.venv/bin/python" ] && "$PY_ROOT/.venv/bin/python" -c "import pytest" 2>/dev/null; then
+  echo "pre-push: running asset_generation Python tests (.venv)..."
   _run_pytest "$PY_ROOT/.venv/bin/python"
+elif command -v uv >/dev/null 2>&1; then
+  echo "pre-push: running asset_generation Python tests (uv run --extra dev)..."
+  uv run --extra dev pytest tests/ -q
 elif python3 -c "import pytest" 2>/dev/null; then
   _run_pytest python3
 else
