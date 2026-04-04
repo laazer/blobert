@@ -2,6 +2,8 @@
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
 # Skip blog post only: SKIP_BLOG_POST=1 git push
+# Blog provider: auto from environment (Claude Code → claude, Cursor → cursor-agent,
+#   else claude). Override: BLOG_POST_PROVIDER=claude|cursor. Binary: CURSOR_AGENT_BIN=...
 #
 # post-commit — session tracking:
 #   - log-commit: appends commit hash + subject to .blog-session.log
@@ -12,12 +14,14 @@
 # pre-push — full test suites + blog post:
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
 #   - py-tests:    pytest in asset_generation/python/ (any .py change there)
-#   - blog-post:   generate blog post for session commits via claude --print
+#   - blog-post:   generate blog post (Claude Code vs Cursor Agent — auto-detected)
+#                  (skips if .lefthook/.blog-last-blogged-commit matches HEAD;
+#                   rate-limit / auth messages do not fail the hook; always exit 0)
 #
 # Requires:
 #   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
 #   - python3 on PATH
-#   - claude CLI on PATH (for blog-post)
+#   - claude and/or cursor-agent on PATH (for blog-post; see BLOG_POST_PROVIDER)
 #   - For py-tests: uv sync --extra dev in asset_generation/python/ (uses .venv)
 
 post-commit:
