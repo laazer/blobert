@@ -89,3 +89,12 @@ Log: project_board/checkpoints/M7-ACS/
 - Stage: SPECIFICATION → TEST_DESIGN
 - Log: `project_board/checkpoints/M7-BAE/run-2026-03-31-planning.md` (appended)
 - Outcome: Full spec produced at `project_board/specs/blender_animation_export_spec.md`. NLA wiring pattern, export name mapping (13 clips), OBJECT mode guard, and GLTF export flag contract specified. Ticket advanced to TEST_DESIGN.
+
+## Run: 2026-04-04T00-00-00Z-autopilot
+- Queue mode: single ticket
+- Queue scope: `project_board/7_milestone_7_enemy_animation_wiring/backlog/death_animation_playthrough.md`
+- Log root: project_board/checkpoints/
+
+### [death_animation_playthrough] — OUTCOME: COMPLETE
+Death plays to completion then `queue_free` on enemy root; collision cleared on death; infection/absorb guards; missing-Death clip queues free immediately (GDScript review follow-up). Ticket: `project_board/7_milestone_7_enemy_animation_wiring/done/death_animation_playthrough.md`.
+Log: `project_board/checkpoints/death_animation_playthrough/` (planning, spec, test-design, test-break, implementation scoped logs).

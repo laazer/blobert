@@ -220,19 +220,22 @@ func _physics_process(_delta: float) -> void:
 	# the test suite which sets the same exact literals.
 	var speed: float = _resolve_speed(state)
 
-	# Death branch: one-shot, immediate, latches forever.
+	# Death branch: one-shot, latches forever. If Death exists, completion signal
+	# frees the root; if missing, free immediately (no animation_finished).
 	if clip == "Death":
-		_disable_enemy_collision_for_death_sequence()
-		animation_player.speed_scale = 1.0
 		var can_play_death: bool = true
 		if animation_player is AnimationPlayer:
 			can_play_death = (animation_player as AnimationPlayer).has_animation(&"Death")
-		if can_play_death:
-			animation_player.play("Death", 0.0)
+		_disable_enemy_collision_for_death_sequence()
+		animation_player.speed_scale = 1.0
 		_death_latched = true
 		_current_clip = "Death"
 		_current_speed = 1.0
 		_current_blend_time = 0.0
+		if can_play_death:
+			animation_player.play("Death", 0.0)
+		else:
+			_queue_enemy_root_for_deletion()
 		return
 
 	# Idempotency: skip play() if clip, speed, and blend_time are unchanged AND the
