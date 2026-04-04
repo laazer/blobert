@@ -52,16 +52,16 @@ Numbered tasks for downstream agents. Owners follow `agent_context/agents/` role
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Failed (expected failing-first: DAP-1.1 queue_free after Death ×4 families; DAP-1.2 collision zero; remainder pass)
+- Tests: Failed (expected pre-impl: DAP-1.1 queue_free after Death ×4 families + ADV mini-boss CHECKPOINT; DAP-1.2 collision zero; adversarial remainder pass)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -76,14 +76,14 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/7_milestone_7_enemy_animation_wiring/backlog/death_animation_playthrough.md",
   "spec_path": "project_board/specs/death_animation_playthrough_spec.md",
-  "checkpoint_log": "project_board/checkpoints/death_animation_playthrough/run-2026-04-04-test-design.md"
+  "checkpoint_log": "project_board/checkpoints/death_animation_playthrough/run-2026-04-04-test-break.md"
 }
 ```
 
@@ -91,4 +91,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test design complete: DAP-traceable suites added under `tests/`; `timeout 300 godot -s tests/run_tests.gd` reports 6 failing assertions (DAP-1.1/1.2 only) until engine-integration implements post-Death `queue_free` and collision clearing. Test Breaker shall stress adversarial cases per execution plan task 3.
+Test Breaker added `tests/scenes/enemies/test_death_animation_playthrough_adversarial.gd` (CHECKPOINT-marked cases: double death + hit, physics spam, freed `AnimationPlayer`, stripped `Death` clip, chunk burst, absorb+infect same tick, mini-boss name, concurrent completion signal fan-out). Full suite: 7 failing assertions until engine-integration satisfies DAP-1.1/DAP-1.2 (and mini-boss parity).
