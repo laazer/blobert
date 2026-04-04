@@ -342,6 +342,8 @@ func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> vo
 			_chunk_stuck_enemy[i] = enemy
 			_chunk_dot_ticks_remaining[i] = 3
 			_chunk_dot_time_accum[i] = 0.0
+			# Immediate damage feedback when the chunk sticks (before DoT ticks).
+			enemy.play_damage_hit_animation()
 			return
 
 
@@ -384,10 +386,12 @@ func _apply_chunk_dot_step(i: int) -> void:
 	var remaining: int = _chunk_dot_ticks_remaining[i]
 	if remaining == 3:
 		esm.apply_weaken_event()
+		enemy.play_damage_hit_animation()
 		_chunk_dot_ticks_remaining[i] = 2
 		return
 	if remaining == 2:
 		esm.apply_infection_event()
+		enemy.play_damage_hit_animation()
 		_chunk_dot_ticks_remaining[i] = 1
 		return
 	if remaining != 1:

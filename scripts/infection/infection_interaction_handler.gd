@@ -70,6 +70,8 @@ func _process(_delta: float) -> void:
 	if Input.is_action_just_pressed("infect"):
 		if _target_esm.get_state() == "weakened":
 			_target_esm.apply_infection_event()
+			if _target_enemy != null and is_instance_valid(_target_enemy):
+				_target_enemy.play_damage_hit_animation()
 
 
 func set_target_esm(esm: EnemyStateMachine, enemy_node: EnemyInfection3D = null) -> void:

@@ -11,7 +11,7 @@
 # Ticket: project_board/7_milestone_7_enemy_animation_wiring/in_progress/animation_controller_script.md
 # Requirements: ACS-3, ACS-4, ACS-5, ACS-6, ACS-7, ACS-NF1
 #
-# Test IDs: ADV-EAC-01 through ADV-EAC-16
+# Test IDs: ADV-EAC-01 through ADV-EAC-16, ADV-EAC-21
 #
 # Checkpoint: project_board/checkpoints/M7-ACS/run-2026-04-01-testbreak.md
 #
@@ -881,6 +881,44 @@ func test_adv_eac_16_negative_blend_time_passed_verbatim_to_play() -> void:
 	parent.free()
 
 
+# ===========================================================================
+# ADV-EAC-21 — Library-qualified Hit path must not end hit mode while playing.
+#
+# Godot reports current_animation as "SomeLibrary/Hit". Comparing to the bare
+# string "Hit" makes `current != "Hit"` true during playback, so hit mode exits
+# immediately and Idle overwrites Hit (frozen / no loop after first damage).
+# ===========================================================================
+
+func test_adv_eac_21_hit_library_path_stays_active_until_clip_ends() -> void:
+	var arr := _make_controller("ADV-EAC-21", "active", Vector3.ZERO)
+	if arr.is_empty():
+		return
+	var controller = arr[0]
+	var anim_stub: StubAnimationPlayer = arr[1]
+	var parent: StubParent = arr[3]
+
+	_tick(controller)
+	controller.trigger_hit_animation()
+	anim_stub.current_animation = "generated_glb/Hit"
+	_tick(controller)
+	_assert_true(
+		controller._hit_active,
+		"ADV-EAC-21: _hit_active stays true while library-qualified Hit is playing"
+	)
+	anim_stub.simulate_clip_end()
+	_tick(controller)
+	_assert_false(
+		controller._hit_active,
+		"ADV-EAC-21: after Hit ends, _hit_active clears so locomotion resumes"
+	)
+	_assert_eq_string(
+		"Idle",
+		anim_stub.last_played_name,
+		"ADV-EAC-21: resumes Idle for active+still after Hit completes"
+	)
+	parent.free()
+
+
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
@@ -906,6 +944,7 @@ func run_all() -> int:
 	test_adv_eac_14_large_velocity_resolves_to_walk()
 	test_adv_eac_15_single_state_change_mid_simulation_produces_two_play_calls()
 	test_adv_eac_16_negative_blend_time_passed_verbatim_to_play()
+	test_adv_eac_21_hit_library_path_stays_active_until_clip_ends()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

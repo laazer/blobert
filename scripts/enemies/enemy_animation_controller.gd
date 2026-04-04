@@ -60,11 +60,21 @@ var _death_free_requested: bool = false
 
 # Hit one-shot state.
 var _hit_active: bool = false
+# True once we have seen Hit actually playing (avoids treating library paths
+# like "glb/Hit" as "not Hit" and exiting hit mode before Idle overwrites).
+var _hit_playback_confirmed: bool = false
 # _prior_clip / _prior_speed are set when trigger_hit_animation() is first
 # called (not on re-entrant calls). Resume uses live state re-evaluation
 # (AC-6.6), not these fields — they exist for test observability (EAC-17).
 var _prior_clip: String = ""
 var _prior_speed: float = 1.0
+
+
+func _animation_base_name(anim_path: StringName) -> String:
+	var s: String = str(anim_path)
+	if s.is_empty():
+		return ""
+	return s.get_file()
 
 
 # Wire the state machine reference. Called by the generator after instantiation.
@@ -151,19 +161,22 @@ func _ensure_animation_finished_connected() -> void:
 	if not (ap_obj is AnimationPlayer):
 		return
 	var ap: AnimationPlayer = ap_obj as AnimationPlayer
-	if ap.animation_finished.is_connected(_on_animation_player_finished_death):
+	if ap.animation_finished.is_connected(_on_animation_player_finished):
 		return
-	ap.animation_finished.connect(_on_animation_player_finished_death)
+	ap.animation_finished.connect(_on_animation_player_finished)
 
 
-func _on_animation_player_finished_death(anim_name: StringName) -> void:
+func _on_animation_player_finished(anim_name: StringName) -> void:
 	if not is_instance_valid(self):
 		return
-	if not _death_latched:
+	var base: String = _animation_base_name(anim_name)
+	if base == "Hit" and _hit_active:
+		_hit_active = false
+		_hit_playback_confirmed = false
+		_current_clip = ""
 		return
-	if str(anim_name) != "Death":
-		return
-	_queue_enemy_root_for_deletion()
+	if _death_latched and base == "Death":
+		_queue_enemy_root_for_deletion()
 
 
 func _queue_enemy_root_for_deletion() -> void:
@@ -198,16 +211,27 @@ func _physics_process(_delta: float) -> void:
 	# other dispatches. Only exit hit mode when the clip ends
 	# (is_playing() false OR current_animation changed away from "Hit").
 	if _hit_active:
-		var hit_finished: bool = (
-			not animation_player.is_playing()
-			or animation_player.current_animation != "Hit"
-		)
+		var cur_base: String = _animation_base_name(animation_player.current_animation)
+		# Any frame where the active clip is Hit counts as "we entered hit" — including
+		# the post-stop frame where is_playing() is false but current_animation is still Hit.
+		if cur_base == "Hit":
+			_hit_playback_confirmed = true
+		var hit_finished: bool = false
+		if cur_base.is_empty():
+			# ADV-EAC-06: external clear to "" while is_playing() stays true.
+			# Natural end: empty name + not playing after we saw Hit → exit.
+			hit_finished = animation_player.is_playing() or _hit_playback_confirmed
+		elif cur_base != "Hit":
+			hit_finished = _hit_playback_confirmed
+		else:
+			hit_finished = _hit_playback_confirmed and not animation_player.is_playing()
 		if not hit_finished:
 			return
 		# Hit clip finished — clear flag and invalidate cached clip so the
 		# resume transition always fires even if the resolved clip matches
 		# what was playing before the hit.
 		_hit_active = false
+		_hit_playback_confirmed = false
 		_current_clip = ""
 
 	# Resolve target clip name and speed from current state and velocity.
@@ -247,7 +271,7 @@ func _physics_process(_delta: float) -> void:
 		and speed == _current_speed
 		and blend_time == _current_blend_time
 	):
-		if animation_player.is_playing() and str(animation_player.current_animation) == clip:
+		if animation_player.is_playing() and _animation_base_name(animation_player.current_animation) == clip:
 			return
 
 	# speed_scale is the correct approach for persistent per-state playback
@@ -301,11 +325,17 @@ func trigger_hit_animation() -> void:
 	if animation_player == null or not is_instance_valid(animation_player):
 		return
 
+	if animation_player is AnimationPlayer:
+		var ap_hit: AnimationPlayer = animation_player as AnimationPlayer
+		if not ap_hit.has_animation(&"Hit"):
+			return
+
 	if not _hit_active:
 		# Save prior clip for bookkeeping (not used for resume — live
 		# state re-evaluation is used instead per AC-6.6).
 		_prior_clip = _current_clip
 		_prior_speed = _current_speed
 		_hit_active = true
+	_hit_playback_confirmed = false
 
 	animation_player.play("Hit", 0.0)

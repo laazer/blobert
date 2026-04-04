@@ -94,6 +94,17 @@ func get_esm() -> EnemyStateMachine:
 	return _esm
 
 
+## Plays the one-shot Hit (damage) clip on the root AnimationPlayer, if wired.
+## No-op when dead or controller / Hit clip unavailable.
+func play_damage_hit_animation() -> void:
+	if _esm.get_state() == "dead":
+		return
+	var anim_ctrl: EnemyAnimationController = get_node_or_null("EnemyAnimationController") as EnemyAnimationController
+	if anim_ctrl == null:
+		return
+	anim_ctrl.trigger_hit_animation()
+
+
 ## Containment Hall mini-boss uses the same scene with a larger instance scale.
 func is_mini_boss_unit() -> bool:
 	return name == "EnemyMiniBoss"
