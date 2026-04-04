@@ -52,18 +52,19 @@ Numbered tasks for downstream agents. Owners follow `agent_context/agents/` role
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-04) — DAP death playthrough, adversarial, infection suites pass
-- Static QA: Pending (AC Gatekeeper)
-- Integration: Not Run
+- Tests: `./ci/scripts/run_tests.sh` / `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-04) — full suite; `=== ALL TESTS PASSED ===`
+- Tests ↔ AC: Death before `queue_free()` — `tests/scenes/enemies/test_death_animation_playthrough.gd` DAP-1.1 (all four `*_animated_00` families). Collision off during death — same file DAP-1.2. No chunk attach / absorb / infect / absorb-predicate while dead — `tests/scripts/enemy/test_death_animation_playthrough_infection.gd` DAP-1.3–1.6. Unload / detach during Death — DAP-1.7 in infection suite; adversarial freed-`AnimationPlayer` and missing-clip cases in `tests/scenes/enemies/test_death_animation_playthrough_adversarial.gd`. Four families — DAP-1.1/DAP-1.2 loops over adhesion_bug, acid_spitter, claw_crawler, carapace_husk variants. `run_tests.sh` exit 0 — verified same run.
+- Static QA: Passing (AC Gatekeeper — ticket ACs mapped to named test files; full runner green)
+- Integration: Not required — execution plan task 6; all listed ACs covered by automated tests; optional in-editor spot-check per spec not mandated by ticket AC list
 
 ## Blocking Issues
 - None
@@ -76,12 +77,12 @@ Engine Integration Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "project_board/7_milestone_7_enemy_animation_wiring/backlog/death_animation_playthrough.md",
+  "ticket_path": "project_board/7_milestone_7_enemy_animation_wiring/done/death_animation_playthrough.md",
   "spec_path": "project_board/specs/death_animation_playthrough_spec.md",
   "checkpoint_log": "project_board/checkpoints/death_animation_playthrough/run-2026-04-04-implementation.md"
 }
@@ -91,4 +92,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Engine Integration: `EnemyAnimationController` wires `AnimationPlayer.animation_finished` to idempotent `queue_free()` on enemy root after `Death`; clears `collision_layer`/`collision_mask` on death start; skips `play("Death")` when clip missing (no engine error spam); `trigger_hit_animation` null-guards player. `InfectionInteractionHandler`: absorb path rejects dead targets; `resolve_absorb_for_esm` no-op when dead; `_ready` uses `is_inside_tree()` before `get_tree()`. GameplaySystems cross-check (task 5) not required for observed test coverage; AC Gatekeeper to confirm full AC list and STATIC_QA sign-off.
+All acceptance criteria have explicit automated coverage documented in Validation Status (DAP primary, infection, adversarial suites; full `run_tests.sh` exit 0). Stage set to COMPLETE per gatekeeper; ticket moved to `done/`. Human owns merge, any optional playthrough, and commit/push if not already on main.
