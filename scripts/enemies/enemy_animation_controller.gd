@@ -54,6 +54,10 @@ var _current_blend_time: float = -999.0  # Sentinel: forces first-tick play()
 # and hit calls for the lifetime of this node.
 var _death_latched: bool = false
 
+# Idempotent guard: animation_finished may fan out to multiple listeners or
+# fire more than once; only one queue_free on the enemy root (DAP-1.1).
+var _death_free_requested: bool = false
+
 # Hit one-shot state.
 var _hit_active: bool = false
 # _prior_clip / _prior_speed are set when trigger_hit_animation() is first
@@ -90,6 +94,7 @@ func notify_root_animation_wired() -> void:
 	_ready_ok = true
 	_current_clip = ""
 	_current_blend_time = -999.0
+	_ensure_animation_finished_connected()
 
 
 func _notification(what: int) -> void:
@@ -136,6 +141,50 @@ func _ready() -> void:
 
 	if animation_player != null and state_machine != null and _parent_body != null:
 		_ready_ok = true
+		_ensure_animation_finished_connected()
+
+
+func _ensure_animation_finished_connected() -> void:
+	var ap_obj: Object = animation_player
+	if ap_obj == null or not is_instance_valid(ap_obj):
+		return
+	if not (ap_obj is AnimationPlayer):
+		return
+	var ap: AnimationPlayer = ap_obj as AnimationPlayer
+	if ap.animation_finished.is_connected(_on_animation_player_finished_death):
+		return
+	ap.animation_finished.connect(_on_animation_player_finished_death)
+
+
+func _on_animation_player_finished_death(anim_name: StringName) -> void:
+	if not is_instance_valid(self):
+		return
+	if not _death_latched:
+		return
+	if str(anim_name) != "Death":
+		return
+	_queue_enemy_root_for_deletion()
+
+
+func _queue_enemy_root_for_deletion() -> void:
+	if _death_free_requested:
+		return
+	_death_free_requested = true
+	var root: Node = get_parent()
+	if root == null or not is_instance_valid(root):
+		return
+	if root.is_queued_for_deletion():
+		return
+	root.queue_free()
+
+
+func _disable_enemy_collision_for_death_sequence() -> void:
+	if _parent_body == null or not is_instance_valid(_parent_body):
+		return
+	if _parent_body is CollisionObject3D:
+		var co: CollisionObject3D = _parent_body as CollisionObject3D
+		co.collision_layer = 0
+		co.collision_mask = 0
 
 
 func _physics_process(_delta: float) -> void:
@@ -173,8 +222,13 @@ func _physics_process(_delta: float) -> void:
 
 	# Death branch: one-shot, immediate, latches forever.
 	if clip == "Death":
+		_disable_enemy_collision_for_death_sequence()
 		animation_player.speed_scale = 1.0
-		animation_player.play("Death", 0.0)
+		var can_play_death: bool = true
+		if animation_player is AnimationPlayer:
+			can_play_death = (animation_player as AnimationPlayer).has_animation(&"Death")
+		if can_play_death:
+			animation_player.play("Death", 0.0)
 		_death_latched = true
 		_current_clip = "Death"
 		_current_speed = 1.0
@@ -239,6 +293,9 @@ func trigger_hit_animation() -> void:
 		return
 
 	if _death_latched:
+		return
+
+	if animation_player == null or not is_instance_valid(animation_player):
 		return
 
 	if not _hit_active:

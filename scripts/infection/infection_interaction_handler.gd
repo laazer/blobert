@@ -45,7 +45,7 @@ func _ready() -> void:
 	var root: Node = get_parent()
 	if root != null:
 		_infection_ui = root.get_node_or_null("InfectionUI") as CanvasLayer
-	if get_tree() != null:
+	if is_inside_tree():
 		_player_node = get_tree().get_first_node_in_group("player")
 
 
@@ -62,7 +62,7 @@ func _process(_delta: float) -> void:
 		return
 
 	if Input.is_action_just_pressed("absorb"):
-		if _resolver.can_absorb(_target_esm):
+		if _target_esm.get_state() != "dead" and _resolver.can_absorb(_target_esm):
 			var mid: String = _target_enemy.mutation_drop if _target_enemy != null else ""
 			_resolver.resolve_absorb(_target_esm, _inventory, _slot_manager, mid)
 			absorb_resolved.emit(_target_esm)
@@ -100,6 +100,8 @@ func get_mutation_slot() -> RefCounted:
 ## No enemy node reference is available here; falls back to DEFAULT_MUTATION_ID.
 func resolve_absorb_for_esm(esm: EnemyStateMachine) -> void:
 	if _resolver == null or esm == null:
+		return
+	if esm.get_state() == "dead":
 		return
 	if not _resolver.can_absorb(esm):
 		return
