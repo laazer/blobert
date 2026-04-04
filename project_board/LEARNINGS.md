@@ -4,6 +4,76 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [death_animation_playthrough] — Completion-gated despawn must handle missing clips; `_ready`/`get_tree` guards for testable handlers
+
+*Completed: 2026-04-04*
+
+### Learnings
+
+- category: architecture
+  insight: Any lifecycle that waits on `animation_finished` (or similar) after latching “death” state must still call `play()` on a real clip, or the signal never fires and the entity can remain in a half-torn-down state (e.g. collision cleared, never freed).
+  impact: GDScript review flagged a critical bug: missing `Death` clip left collision-disabled enemies stuck in the tree until review added an immediate `queue_free` path when `has_animation(&"Death")` is false.
+  prevention: For completion-driven teardown, branch explicitly: if the clip does not exist, run the same post-death cleanup and despawn synchronously; do not assume assets always contain the clip.
+  severity: high
+
+- category: testing
+  insight: In Godot 4.6.x headless tests, lambdas capturing a plain `int` may not observe increments across concurrent `animation_finished`-style emissions; mutable state for demos should live in a `RefCounted` helper, `Array`, or `Dictionary` that the closure closes over by reference.
+  impact: Test Breaker’s concurrent-signal adversarial case needed a non-primitive capture pattern to assert ordering reliably.
+  prevention: When authoring multi-emission signal tests, use reference types or documented container captures; avoid primitive-only closure state for mutation across frames.
+  severity: medium
+
+- category: architecture
+  insight: `Node._ready()` that calls `get_tree()` without checking `is_inside_tree()` produces engine errors and brittle behavior when the node is constructed for unit tests that call `_ready()` before `add_child`.
+  impact: Checkpoint noted orphan-handler noise; implementation added `is_inside_tree()` guard so headless infection/absorb suites stay clean.
+  prevention: Guard `get_tree()` / tree queries in `_ready()` with `is_inside_tree()`, or defer tree access to `NOTIFICATION_ENTER_TREE` / first frame.
+  severity: medium
+
+- category: process
+  insight: Spec left “end of Death play” as abstract completion semantics; behavior was locked by tests + implementation binding to `animation_finished`. Naming the concrete signal in the spec would reduce implementer ambiguity.
+  impact: Low rework cost here, but increases review surface until tests exist.
+  prevention: When AC is “plays to completion,” spec should cite the bound Godot API (signal or method) once the engine version is fixed.
+  severity: low
+
+### Anti-Patterns
+
+- description: Latching a disabled-collision or no-interaction “dying” state then awaiting a completion signal without guaranteeing `play()` runs for that animation.
+  detection_signal: Enemy never freed after death; `animation_finished` never logged; assets missing the expected clip name.
+  prevention: Pair latch with `has_animation` check and a synchronous fallback teardown path.
+
+- description: `_ready()` assumes the node is already in the scene tree.
+  detection_signal: Headless test logs show `get_tree()` on orphan node; handler tests use manual `_ready()` before `add_child`.
+  prevention: `is_inside_tree()` guard or defer tree coupling.
+
+### Prompt Patches
+
+- agent: Engine Integration Agent
+  change: Whenever despawn or teardown is gated on `AnimationPlayer` completion signals, require a documented branch: if the target animation name is missing from the player, perform the same collision/targeting teardown and schedule `queue_free()` immediately—never wait for a signal that cannot fire.
+  reason: Prevents stuck half-dead entities when clips or exports are incomplete.
+
+- agent: GDScript Reviewer Agent
+  change: Flag `_ready()` implementations that call `get_tree()` (or other tree APIs) without `is_inside_tree()` when the class appears in unit tests or may be instanced off-tree.
+  reason: Matches headless test patterns and avoids error-level noise masking real failures.
+
+- agent: Test Breaker Agent
+  change: For adversarial tests that simulate concurrent or repeated completion signals, prefer closure capture over `Array`, `Dictionary`, or small `RefCounted` helpers when mutating counters across emissions; document if primitives are insufficient for the engine version.
+  reason: Reduces flaky or false-green concurrent-signal tests in headless Godot.
+
+### Workflow Improvements
+
+- issue: Animation-completion ACs sometimes stay API-agnostic in spec while tests mandate a specific binding.
+  improvement: After spec freeze, add a single “Bound API” line (signal name + disconnect/cleanup rules) for animation-driven lifecycles.
+  expected_benefit: Faster implementation alignment and fewer review iterations on “which signal?”
+
+### Keep / Reinforce
+
+- practice: GDScript review escalated missing-clip teardown to CRITICAL and blocked shipping a collision-disabled zombie state.
+  reason: Lifecycle bugs that strand invisible collider-off actors are high player-visible impact; severity matches.
+
+- practice: Splitting coverage into scene/EAC tests, infection/handler tests, and a dedicated adversarial file mapped cleanly to DAP clusters and CHECKPOINTS index.
+  reason: Makes AC traceability and gatekeeper validation straightforward.
+
+---
+
 ## [wire_animations_to_generated_scenes] — Root AnimationPlayer wired from GLB; Godot lifecycle and `run_tests.sh` import hang
 
 *INTEGRATION (manual AC pending): 2026-04-03*
