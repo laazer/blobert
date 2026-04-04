@@ -850,6 +850,34 @@ func test_eac_22_null_guard_physics_process_calls_nothing() -> void:
 
 
 # ---------------------------------------------------------------------------
+# EAC-23: After death latch, live ESM flip to "active" — no further play() (DAP-2.1)
+# ---------------------------------------------------------------------------
+
+func test_eac_23_death_latch_blocks_play_after_state_flips_to_active() -> void:
+	var arr := _make_controller("EAC-23", "dead", Vector3.ZERO)
+	if arr.is_empty():
+		return
+	var controller = arr[0]
+	var anim_stub: StubAnimationPlayer = arr[1]
+	var sm_stub: StubStateMachine = arr[2]
+	var parent: StubParent = arr[3]
+
+	_tick(controller)
+	var plays_after_death: int = anim_stub.play_call_count
+
+	sm_stub._state = "active"
+	parent.velocity = Vector3(1.0, 0.0, 0.0)
+	_tick(controller)
+
+	_assert_eq_int(
+		plays_after_death,
+		anim_stub.play_call_count,
+		"EAC-23 (DAP-2.1): after _death_latched, state flip to active does not call play()"
+	)
+	parent.free()
+
+
+# ---------------------------------------------------------------------------
 # EAC-NF1: 60-tick steady state — play() called exactly once (tick 1 only)
 # ACS-NF1 AC-NF1.1
 # ---------------------------------------------------------------------------
@@ -904,6 +932,7 @@ func run_all() -> int:
 	test_eac_20_custom_blend_time_zero_passed_to_play()
 	test_eac_21_unknown_state_fallback_plays_idle()
 	test_eac_22_null_guard_physics_process_calls_nothing()
+	test_eac_23_death_latch_blocks_play_after_state_flips_to_active()
 	test_eac_nf1_sixty_tick_steady_state_play_called_once()
 
 	print("")

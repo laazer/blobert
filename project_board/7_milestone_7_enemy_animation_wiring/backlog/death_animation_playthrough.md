@@ -52,16 +52,16 @@ Numbered tasks for downstream agents. Owners follow `agent_context/agents/` role
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Failed (expected failing-first: DAP-1.1 queue_free after Death ×4 families; DAP-1.2 collision zero; remainder pass)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -76,14 +76,14 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "string",
+  "ticket_path": "project_board/7_milestone_7_enemy_animation_wiring/backlog/death_animation_playthrough.md",
   "spec_path": "project_board/specs/death_animation_playthrough_spec.md",
-  "checkpoint_log": "project_board/checkpoints/death_animation_playthrough/run-2026-04-04-spec.md"
+  "checkpoint_log": "project_board/checkpoints/death_animation_playthrough/run-2026-04-04-test-design.md"
 }
 ```
 
@@ -91,4 +91,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete: DAP requirements and checkpoint assumptions recorded. Test Designer shall author failing-first tests per execution plan task 2 and spec traceability (DAP-NF2).
+Test design complete: DAP-traceable suites added under `tests/`; `timeout 300 godot -s tests/run_tests.gd` reports 6 failing assertions (DAP-1.1/1.2 only) until engine-integration implements post-Death `queue_free` and collision clearing. Test Breaker shall stress adversarial cases per execution plan task 3.
