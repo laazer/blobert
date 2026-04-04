@@ -4,12 +4,23 @@
 set -e
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$ROOT/asset_generation/python"
+PY_ROOT="$ROOT/asset_generation/python"
+cd "$PY_ROOT"
 
-if ! python3 -c "import pytest" 2>/dev/null; then
-  echo "pre-push: pytest not found. Run: pip install -e '.[dev]' in asset_generation/python/" >&2
+_run_pytest() {
+  local py="$1"
+  echo "pre-push: running asset_generation Python tests..."
+  "$py" -m pytest tests/ -q
+}
+
+if command -v uv >/dev/null 2>&1; then
+  echo "pre-push: running asset_generation Python tests (uv, --extra dev)..."
+  uv run --extra dev pytest tests/ -q
+elif [ -x "$PY_ROOT/.venv/bin/python" ]; then
+  _run_pytest "$PY_ROOT/.venv/bin/python"
+elif python3 -c "import pytest" 2>/dev/null; then
+  _run_pytest python3
+else
+  echo "pre-push: pytest not found. From asset_generation/python run: uv sync --extra dev" >&2
   exit 1
 fi
-
-echo "pre-push: running asset_generation Python tests..."
-python3 -m pytest tests/ -q

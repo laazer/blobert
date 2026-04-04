@@ -34,6 +34,28 @@ blog/
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+asset_generation/python/dist/
+asset_generation/python/build/
+
+# Large optional Godot reference clones (local only; see CLAUDE.md)
+reference_projects/godot-demo-projects/
+reference_projects/godot-open-rts/
+
+# Editor / OS junk
+*~
+.#*
+*.swp
+*.swo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Blender working/backup files
 *.blend1
