@@ -355,6 +355,16 @@ Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-ac-gatekeeper.md`
 - Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-test-break.md`
 - Outcome: Adversarial pytest extensions (hollow-guard, cwd independence, process boundary, Python mirrors TSGR-1/2/4/5/6); 6 failed / 8 passed until implementation; Next Implementation Generalist Agent.
 
+### MAINT-TSGR / run-2026-04-05-ac-gatekeeper
+- Ticket: `project_board/maintenance/done/test_suite_green_and_runner_exit_codes.md`
+- Stage: STATIC_QA → COMPLETE
+- Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-ac-gatekeeper.md`
+- Outcome: `verify_tsgr_runner_contract.sh` + `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, Python 419 passed); CLAUDE.md/lefthook/`run_tests.sh` alignment; ticket `git mv` to `maintenance/done/`.
+
+### [MAINT-TSGR] — OUTCOME: COMPLETE
+Unified test runner (Godot + Python), fail-fast import, exit-code contract; verifier + adversarial pytest + full suite green.
+Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-ac-gatekeeper.md`
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

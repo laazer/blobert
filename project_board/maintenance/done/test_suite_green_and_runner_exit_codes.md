@@ -39,18 +39,18 @@ Formal spec (requirements **TSGR-1**–**TSGR-8**, traceable to acceptance crite
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: `bash ci/scripts/verify_tsgr_runner_contract.sh` → OK (TSGR-1..6 static contract). `cd asset_generation/python && uv run pytest tests/ci/test_tsgr_runner_contract.py -q` → **14 passed** (2026-04-05). `timeout 300 ci/scripts/run_tests.sh` → **exit 0**; Godot `=== ALL TESTS PASSED ===`; Python phase **419 passed** (TSGR-7). **TSGR-2.4 bypass:** none.
-- Static QA: Handoff to **AC Gatekeeper** — confirm ticket AC matrix / TSGR-8 closure evidence against spec.
-- Integration: Full combined runner green (same commands as Tests).
+- Tests: **AC Gatekeeper 2026-04-05:** `bash ci/scripts/verify_tsgr_runner_contract.sh` → exit 0 (TSGR-1..6 static contract). `timeout 300 ci/scripts/run_tests.sh` → exit 0; Godot ends with `=== ALL TESTS PASSED ===`; Python phase **419 passed** via `.lefthook/scripts/py-tests.sh` (tail: `419 passed, 240 subtests passed`). Prior handoff: `uv run pytest tests/ci/test_tsgr_runner_contract.py -q` → **14 passed**. **TSGR-2.4 bypass:** none. **Environment:** full runner expects `godot` on PATH (CLAUDE.md / direnv `bin/godot`) and a working `asset_generation/python` pytest environment; stripped sandboxes without those tools are not equivalent to CI/local—run outside restricted automation or match PATH/venv.
+- Static QA: `ci/scripts/run_tests.sh`: `set -e`; `timeout 120 godot --headless --import` then `timeout 300 godot --headless -s tests/run_tests.gd`; no `|| true` / stderr discard on import; Python calls `bash "$ROOT/.lefthook/scripts/py-tests.sh"` (TSGR-3 DRY). `lefthook.yml` pre-push `godot-tests` / `py-tests` invoke `.lefthook/scripts/godot-tests.sh` and `py-tests.sh` with matching bounded import + test timeouts. `CLAUDE.md` Common Commands names `timeout 300 ci/scripts/run_tests.sh` as canonical full suite.
+- Integration: Same evidence as Tests; no additional manual AC.
 
 ## Blocking Issues
 - None
@@ -63,19 +63,20 @@ Implementation Generalist Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-AC Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "action": "static_qa",
-  "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md",
-  "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md"
+  "action": "ticket_complete",
+  "ticket_path": "project_board/maintenance/done/test_suite_green_and_runner_exit_codes.md",
+  "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md",
+  "notes": "Implementation changed files listed in MAINT-TSGR implementation checkpoint; optional push/merge per team process."
 }
 ```
 
 ## Status
-Proceed
+Complete
 
 ## Reason
-Runner, lefthook Godot hook, and `CLAUDE.md` aligned to TSGR-1..7; contract verifier + adversarial pytest + full `ci/scripts/run_tests.sh` green — gatekeeper to validate AC / TSGR-8.
+All acceptance criteria have objective coverage: combined runner + non-zero contract (`verify_tsgr_runner_contract.sh` + `run_tests.sh` source), full suite green (re-run exit 0), CLAUDE.md/lefthook/CI alignment verified, closure evidence and fixed-artifact trail in checkpoints/spec (TSGR-8). Stage COMPLETE; ticket moved to `maintenance/done/`.
