@@ -119,19 +119,21 @@ This ticket is a **deferral and policy record** for enemy animation architecture
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Generalist
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: PASS — MAINT-EAPD policy invariants + adversarial suite (`test_maint_eapd_shared_enemy_animation_policy.gd` EAPD-P1..P22); `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05, re-run by Implementation Generalist)
-- Static QA: Not Run
-- Integration: Not Run
+- AC-1 (placeholder / defer): SATISFIED — `## Specification` (S1–S3, NF-3) records defer-only scope, shared `EnemyAnimationController`, and material-divergence triggers for a future ticket; no preemptive split required now.
+- AC-2 (“When implemented…”): OUT OF SCOPE for MAINT-EAPD closure per ticket NF-3 and top-level AC wording; satisfied only on a future implementation ticket (Execution Plan task 4).
+- Tests: PASS — `tests/scripts/maintenance/test_maint_eapd_shared_enemy_animation_policy.gd` (EAPD-P1..P22); full headless suite `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05; Acceptance Criteria Gatekeeper Agent re-verified same run).
+- Static QA: N/A — defer/policy placeholder; NF-2 does not require additional static passes for AC-1; project avoids `godot --check-only` for hang reasons (see CLAUDE.md).
+- Integration: N/A — no in-editor or runtime feature rollout for this ticket; AC-1 closure is documentation + policy tests only.
 
 ## Blocking Issues
 
@@ -146,11 +148,11 @@ Implementation Generalist
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Status
 Proceed
 
 ## Reason
 
-Implementation Generalist confirmed AC-1: no preemptive `EnemyAnimationController` split or policy injection; no production code changes required. Full suite `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05). Handoff to Acceptance Criteria Gatekeeper for AC-1 verification and closure per spec; AC-2 remains future-only.
+All acceptance criteria applicable to this placeholder ticket are evidenced: AC-1 via spec traceability and MAINT-EAPD automated policy tests plus full suite green; AC-2 explicitly deferred and not a closure gate. Ticket moved to `project_board/maintenance/done/`; no further agent action required unless a follow-up ticket is filed under AC-2.
