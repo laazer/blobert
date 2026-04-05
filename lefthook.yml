@@ -2,10 +2,11 @@
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
 # Skip blog post only: SKIP_BLOG_POST=1 git push
+# Manual blog hook run: BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
 # Blog provider: auto from environment (Claude Code → claude, Cursor → cursor-agent,
 #   else claude). Override: BLOG_POST_PROVIDER=claude|cursor. Binary: CURSOR_AGENT_BIN=...
 #
-# post-commit — session tracking:
+# post-commit — session tracking only (no claude/cursor-agent, no blog_post_v1):
 #   - log-commit: appends commit hash + subject to .blog-session.log
 #
 # pre-commit — fast checks on staged files only:
@@ -27,7 +28,7 @@
 post-commit:
   commands:
     log-commit:
-      name: Log commit to session blog queue
+      name: Queue commit for pre-push blog (no LLM)
       run: .lefthook/scripts/log-commit.sh
 
 pre-commit:
@@ -51,4 +52,4 @@ pre-push:
       run: .lefthook/scripts/py-tests.sh
     blog-post:
       name: Generate blog post for session
-      run: .lefthook/scripts/blog-post-on-push.sh
+      run: env BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh

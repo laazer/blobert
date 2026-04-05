@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Pre-push: generate a blog post for the session's commits, then clear the log.
+# Requires BLOG_HOOK_PHASE=pre-push (set by lefthook.yml) so post-commit cannot accidentally run the LLM.
 # Picks the blog CLI from who invoked git: Claude Code → claude; Cursor → cursor-agent;
 # unknown → claude. Override with BLOG_POST_PROVIDER=claude|cursor.
-# Skipped if SKIP_BLOG_POST=1, no session log, HEAD already blogged.
+# Skipped if SKIP_BLOG_POST=1, no session log, HEAD already blogged, wrong BLOG_HOOK_PHASE.
 # Never blocks push (always exits 0).
 set -euo pipefail
 
@@ -33,6 +34,17 @@ if [[ ! -f "$LOG" || ! -s "$LOG" ]]; then
 fi
 
 SESSION_COMMITS="$(cat "$LOG")"
+
+# Only pre-push may run the blog LLM. post-commit uses log-commit.sh (queue only). lefthook sets
+# BLOG_HOOK_PHASE=pre-push for this command; manual runs must set the same (see lefthook.yml).
+if [[ "${BLOG_HOOK_PHASE:-}" != "pre-push" ]]; then
+  if [[ "${BLOG_HOOK_PHASE:-}" == "post-commit" ]]; then
+    echo "blog-post: skipped — post-commit must not run this script (use log-commit.sh only)."
+  else
+    echo "blog-post: skipped — BLOG_HOOK_PHASE must be pre-push (got '${BLOG_HOOK_PHASE:-unset}'). Manual: BLOG_HOOK_PHASE=pre-push $0"
+  fi
+  exit 0
+fi
 
 # --- Provider detection (see lefthook.yml header) ---
 _lower() {
@@ -187,7 +199,7 @@ elif [[ "$SAW_CURSOR_AUTH" -eq 1 ]]; then
   echo "blog-post: session log preserved at $LOG"
 else
   echo "blog-post: generator exited $LAST_RC — session log preserved at $LOG"
-  echo "           Re-run: claude --print \"…\"  or  stdin → ${CURSOR_AGENT_BIN} --print --output-format text -f"
+  echo "           Re-run: BLOG_HOOK_PHASE=pre-push $0  or  claude --print \"…\"  or  stdin → ${CURSOR_AGENT_BIN} --print --output-format text -f"
   echo "           Force provider: BLOG_POST_PROVIDER=claude|cursor  SKIP_BLOG_POST=1 to skip"
 fi
 
