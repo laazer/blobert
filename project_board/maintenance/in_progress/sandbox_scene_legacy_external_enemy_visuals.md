@@ -40,16 +40,16 @@ Formal spec (requirements **SLEEV-1**–**SLEEV-5**, traceable to acceptance cri
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Run — 1 expected failure (SLEEV-1.1) until duplicate scene exists; see checkpoint log
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -64,14 +64,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_design",
+  "action": "test_break",
   "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md",
-  "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md"
+  "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md",
+  "test_path": "tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd"
 }
 ```
 
@@ -79,4 +80,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Spec complete: `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` authored; Test Designer shall author tests per spec (optional SLEEV-1.3 smoke only if chosen).
+Test Designer added MAINT-SLEEV scene contract suite; Test Breaker shall adversarially review spec + tests before Implementation adds `test_movement_3d_legacy_enemy_visual.tscn`.
