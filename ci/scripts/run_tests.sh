@@ -1,14 +1,17 @@
-#!/bin/bash
-
-# Run Godot tests headless and exit with timeout to prevent hanging.
-# Requires direnv (or bin/ on PATH) so that `godot` resolves to the headless wrapper.
+#!/usr/bin/env bash
+# Canonical combined test entry (MAINT-TSGR / TSGR-1): Godot headless suite then
+# asset_generation/python/tests/ via shared lefthook Python hook (TSGR-3 DRY).
 #
-# Note: --check-only is intentionally omitted. In Godot 4.6.1 headless mode,
-# --check-only initializes the main scene which runs physics-enabled scripts
-# (no collision resolution), causing the process to hang indefinitely.
-# The test runner below catches parse errors directly — any syntax error causes
-# script load to fail with an explicit error before run_all() is called.
-# Import is bounded: unbounded `godot --import` can hang indefinitely in CI.
-timeout 120 godot --headless --import 2>/dev/null || true
+# Import: timeout 120s, fail-fast, stderr visible (TSGR-2). Godot tests: timeout 300s (TSGR-4).
+# Requires `godot` on PATH (headless wrapper; direnv adds bin/ per CLAUDE.md).
+
+set -e
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
+
+timeout 120 godot --headless --import
 timeout 300 godot --headless -s tests/run_tests.gd
-exit $?
+
+# Python suite: asset_generation/python/tests/ (TSGR-3: same resolver as lefthook).
+bash "$ROOT/.lefthook/scripts/py-tests.sh"

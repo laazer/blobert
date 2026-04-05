@@ -39,18 +39,18 @@ Formal spec (requirements **TSGR-1**–**TSGR-8**, traceable to acceptance crite
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Validation Status
-- Tests: `verify_tsgr_runner_contract.sh` + adversarial pytest module (`test_tsgr_runner_contract.py`: hollow-guard, cwd independence, process boundary, Python mirrors for TSGR-1/2/4/5/6); **6 failed, 8 passed** on 2026-04-05 (RED until runner/doc/hook implementation)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: `bash ci/scripts/verify_tsgr_runner_contract.sh` → OK (TSGR-1..6 static contract). `cd asset_generation/python && uv run pytest tests/ci/test_tsgr_runner_contract.py -q` → **14 passed** (2026-04-05). `timeout 300 ci/scripts/run_tests.sh` → **exit 0**; Godot `=== ALL TESTS PASSED ===`; Python phase **419 passed** (TSGR-7). **TSGR-2.4 bypass:** none.
+- Static QA: Handoff to **AC Gatekeeper** — confirm ticket AC matrix / TSGR-8 closure evidence against spec.
+- Integration: Full combined runner green (same commands as Tests).
 
 ## Blocking Issues
 - None
@@ -63,12 +63,12 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist Agent
+AC Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "implementation",
+  "action": "static_qa",
   "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md",
   "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md"
 }
@@ -78,4 +78,4 @@ Implementation Generalist Agent
 Proceed
 
 ## Reason
-Adversarial TSGR contract tests landed; implement `run_tests.sh` / hooks / `CLAUDE.md` per spec until static verifier + pytest module go green, then TSGR-7 suite fixes.
+Runner, lefthook Godot hook, and `CLAUDE.md` aligned to TSGR-1..7; contract verifier + adversarial pytest + full `ci/scripts/run_tests.sh` green — gatekeeper to validate AC / TSGR-8.

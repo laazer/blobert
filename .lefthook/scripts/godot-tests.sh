@@ -16,7 +16,8 @@ fi
 echo "pre-push: running Godot test suite..."
 
 # Reimport to rebuild class cache — catches missing preload() paths.
-"$GODOT" --import 2>/dev/null || true
+# Bounded + fail-fast; matches ci/scripts/run_tests.sh (TSGR-2/TSGR-6).
+timeout 120 "$GODOT" --import
 
-# Run the test suite. 5-minute timeout matches CI.
+# Run the test suite. 5-minute timeout matches CI (TSGR-4).
 timeout 300 "$GODOT" -s tests/run_tests.gd

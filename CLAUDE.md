@@ -29,19 +29,21 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 `direnv` puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH automatically.
 
 ```bash
-# Run all tests (also catches parse errors — preferred over --check-only)
-run_tests.sh
-# Or directly:
+# Canonical full suite: Godot (bounded fail-fast import + tests) then asset_generation/python pytest
+timeout 300 ci/scripts/run_tests.sh
+
+# Godot-only (same 300s test timeout; import is not bundled here)
 timeout 300 godot -s tests/run_tests.gd
 
-# Force reimport (rebuilds class cache — run if tests fail to load scripts)
-godot --import
+# Force reimport (rebuilds class cache — run if tests fail to load scripts). Prefer bounded import via run_tests.sh in CI.
+timeout 120 godot --headless --import
 ```
 
 ## ⏱ Always Use Timeout
 
-When invoking Godot outside of `run_tests.sh`, use a timeout to prevent hanging:
-- `timeout 300 godot -s tests/run_tests.gd` — full test suite
+When invoking Godot outside of `ci/scripts/run_tests.sh`, use a timeout to prevent hanging:
+- `timeout 300 godot -s tests/run_tests.gd` — Godot suite only
+- `timeout 120 godot --headless --import` — import/reimport only (fail-fast; stderr not discarded)
 
 ## ⚠️ Do Not Use `--check-only`
 
