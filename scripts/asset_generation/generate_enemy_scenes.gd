@@ -90,8 +90,12 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 	)
 	if ResourceLoader.exists(resolved_script_path):
 		var script_res := load(resolved_script_path)
-		if script_res:
+		if script_res == null:
+			push_error("Failed to load enemy root script: %s" % resolved_script_path)
+		else:
 			root.set_script(script_res)
+	else:
+		push_error("Enemy root script missing: %s" % resolved_script_path)
 
 	root.set_meta("enemy_id", file_name)
 	root.set_meta("enemy_family", family_name)
