@@ -298,6 +298,17 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 Exported `hud_scale` on `InfectionUI`; uniform HUD scaling + `tests/ui` HCSI coverage; `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
 
+### MAINT-SLEEV / run-2026-04-05-planning
+- Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
+- Stage: PLANNING
+- Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-planning.md`
+
+### MAINT-SLEEV / run-2026-04-05-spec
+- Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-spec.md`
+- Outcome: Spec `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` (SLEEV-1..5); ticket Specification section + handoff to Test Designer.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

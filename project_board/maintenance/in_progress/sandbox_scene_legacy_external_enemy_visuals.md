@@ -30,18 +30,23 @@ Keep `project.godot` `run/main_scene` on `test_movement_3d.tscn`; this duplicate
 
 - None required
 
+## Specification
+
+Formal spec (requirements **SLEEV-1**–**SLEEV-5**, traceable to acceptance criteria):  
+`project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md`
+
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -59,13 +64,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "spec",
-  "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md"
+  "action": "test_design",
+  "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md",
+  "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md"
 }
 ```
 
@@ -73,4 +79,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete: execution plan table added; Spec Agent shall produce `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` from acceptance criteria and scene contracts.
+Spec complete: `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` authored; Test Designer shall author tests per spec (optional SLEEV-1.3 smoke only if chosen).
