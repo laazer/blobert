@@ -56,9 +56,12 @@ def list_enemies():
     static_enemies = EnemyTypes.get_all()
     animated_enemies = EnemyTypes.get_animated()
     animated_enemy_details = {
-        'adhesion_bug': 'Multi-segment bug (6-legged quadruped movement)',
-        'tar_slug': 'Elongated slug (dramatic squash/stretch movement)',
-        'ember_imp': 'Humanoid fire creature (bipedal walk, punch attack)',
+        "adhesion_bug": "Multi-segment bug (6-legged quadruped movement)",
+        "tar_slug": "Elongated slug (dramatic squash/stretch movement)",
+        "ember_imp": "Humanoid fire creature (bipedal walk, punch attack)",
+        "acid_spitter": "Spitting creature (ranged acid attack animations)",
+        "claw_crawler": "Low-profile crawler (clawed locomotion)",
+        "carapace_husk": "Armored husk (heavy shell, deliberate movement)",
     }
 
     print_colored(f"📦 STATIC ENEMIES ({len(static_enemies)} types):", Colors.YELLOW)
@@ -68,7 +71,8 @@ def list_enemies():
     print()
     print_colored(f"🎬 ANIMATED ENEMIES ({len(animated_enemies)} types) - WORKING VISIBLE ANIMATIONS:", Colors.GREEN)
     for i, enemy in enumerate(animated_enemies, 1):
-        print(f"{i:2d}. {enemy} - {animated_enemy_details[enemy]}")
+        detail = animated_enemy_details.get(enemy, "Animated enemy")
+        print(f"{i:2d}. {enemy} - {detail}")
     
     print()
     print_colored("🎯 ANIMATION SETS (13 per animated enemy):", Colors.BLUE)
