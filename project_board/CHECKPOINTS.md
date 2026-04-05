@@ -214,7 +214,19 @@ Log: `project_board/checkpoints/MAINT-EAPD/run-2026-04-05-autopilot.md`
 Log: `project_board/checkpoints/MAINT-EMMU/run-2026-04-05-autopilot.md`
 
 ### MAINT-ESEG / run-2026-04-05-autopilot
-- Ticket: `project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md`
-- Stage: STATIC_QA → AC Gatekeeper
+- Ticket: `project_board/maintenance/done/enemy_script_extension_and_scene_generator.md`
+- Stage: COMPLETE
 - Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
-- Outcome: `enemy_root_script_resolver.gd` + `generate_enemy_scenes.gd` / `load_assets.gd` wired; ESEG tests + `ci/scripts/run_tests.sh` green.
+
+### [MAINT-ESEG] — OUTCOME: COMPLETE
+Shared `enemy_root_script_resolver.gd`; dual generator parity; ESEG tests; `push_error` on missing/failed root script load after review.
+Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
+
+### MAINT-ETRP / run-2026-04-05-autopilot
+- Ticket: `project_board/maintenance/done/enemy_types_registry_python.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
+
+### [MAINT-ETRP] — OUTCOME: COMPLETE
+`enemy_slug_registry.py` holds animated/static tuples; `EnemyTypes` delegates; pytest contract + `main.py list` fixed for six animated slugs.
+Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`

@@ -1631,3 +1631,255 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 *Completed: 2026-04-05*
 
 ---
+
+## [MAINT-EAPD] — Headless tests must not use `ClassDB` for GDScript `class_name`; defer tickets need explicit pipeline waiver alignment
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: testing
+  insight: In headless Godot runs (`run_tests.gd`), GDScript global classes registered via `class_name` are not reliably visible on `ClassDB` the same way as engine types.
+  impact: A naive `ClassDB.class_exists("EnemyAnimationController")`-style assertion would be flaky or false relative to editor expectations.
+  prevention: Assert canonical script identity by loading the `GDScript` resource, checking `get_global_name()`, and matching `resource_path` to the expected `res://` path.
+  severity: medium
+
+- category: process
+  insight: Default autopilot stage progression (e.g. advancing to `TEST_DESIGN` after Spec) can contradict an execution plan that explicitly waives implementation and test stages for “defer-only” closure.
+  impact: Agents operated under medium-confidence assumptions about which instruction wins until reconciled via `NEXT ACTION` / Reason text.
+  prevention: For defer placeholders, the handoff Reason must state AC-1-only scope (policy + tests, no prod edits) and that waived stages are not closure gates.
+  severity: medium
+
+- category: testing
+  insight: Maintenance suites that guard shared state→clip semantics may intentionally couple tests to private resolvers via `call()` / `has_method()` so silent mapping drift fails loudly.
+  impact: Accepts brittleness to internal refactors in exchange for catching the intended regression class; future policy-injection work stays explicitly out of scope for that suite.
+  prevention: When adding such tests, document in-suite (`# CHECKPOINT` or file header) which future ticket owns the alternative (e.g. AC-2) coverage.
+  severity: low
+
+### Anti-Patterns
+
+- description: Using `ClassDB.class_exists()` as the sole proof that a project `class_name` exists in headless CI.
+  detection_signal: Tests or specs mandate ClassDB checks for GDScript globals; green locally in editor but ambiguous or wrong under headless runner.
+  prevention: Prefer loaded-script identity checks (`GDScript` + path + global name) for project scripts.
+
+### Prompt Patches
+
+- agent: Test Designer Agent
+  change: "For headless test suites, do not use `ClassDB.class_exists()` alone to assert a GDScript `class_name` global exists; load the script resource, assert `GDScript.get_global_name()` and `resource_path` match the canonical `res://` file."
+  reason: Avoids false negatives and editor/headless divergence for global class registration.
+
+- agent: Autopilot / Orchestrator (or Planner Agent)
+  change: "When the execution plan marks TEST_DESIGN, TEST_BREAK, and IMPLEMENTATION as waived for closing a defer-only ticket, set `NEXT ACTION` Reason to state explicitly that downstream agents run AC-1-only (documentation and allowed policy tests) and must not treat waived stages as mandatory code-change gates."
+  reason: Resolves conflict between default stage FSM and ticket-specific closure rules without ad hoc per-run interpretation.
+
+### Workflow Improvements
+
+- issue: Spec-complete tickets that defer implementation still enter the full stage names in order, which reads like a full pipeline despite waiver.
+  improvement: Add a maintenance/defer template flag (or standard Reason boilerplate) that names the first in-scope agent after Spec and labels others N/A for closure in one place.
+  expected_benefit: Reduces medium-confidence checkpoint churn on “which pipeline wins.”
+
+### Keep / Reinforce
+
+- practice: Satisfying AC-1 on architecture deferrals with a focused maintenance test file that encodes policy invariants (path, exports, shared behavior contracts) without editing production scripts.
+  reason: Gives traceable, CI-enforced evidence for “no preemptive refactor” decisions.
+
+---
+
+## [MAINT-EMMU] — SSOT maps need subtree scans and consumer parity; gatekeeper-before-review needs a GDScript safety pass
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: testing
+  insight: Enforcing “exactly one literal under `scripts/asset_generation/`” is stronger with a **recursive directory scan** (e.g. walk the tree and flag `const MUTATION_BY_FAMILY := {` patterns) than relying on a single known file or repo-wide `rg` without a scoped subtree rule—duplicates can land in sibling files under the same folder.
+  impact: Catches second definitions if the map or copy-paste spreads within the generation subtree; aligns with EMU-QA-1 intent beyond the canonical module path.
+  prevention: For SSOT-by-path ACs, encode tests that enumerate `DirAccess` (or equivalent) under the declared root and assert count/location of forbidden patterns.
+  severity: medium
+
+- category: architecture
+  insight: **`load_assets.gd` and `generate_enemy_scenes.gd` must stay in strict-mode parity** for shared helpers (e.g. AABB aggregation, capsule-related mesh typing): typed `Array[MeshInstance3D]`, explicit `AABB` / `Transform3D` / `Vector3`, and the same collision-shape assumptions. Touching one consumer for a shared preload can surface parse or type errors in the other when headless loads the `@tool` script.
+  impact: Implementation aligned AABB helpers so `load()` of the editor script parsed under strict mode; without parity, green mutation-map tests could mask a broken editor pipeline.
+  prevention: When editing either consumer, diff helper signatures and typing against the twin script before handoff; add or extend a minimal parse/load test if the project already loads these scripts headless.
+  severity: medium
+
+- category: process
+  insight: If **Acceptance Criteria Gatekeeper runs before GDScript Reviewer** in a given run, treat that as mis-ordered closure: schedule **GDScript review immediately after gatekeeper** (or reorder the pipeline) so strict-mode, typing, and lifecycle issues on touched scripts are not skipped after “suite green.”
+  impact: Reduces risk of marking COMPLETE while review-only findings remain.
+  prevention: Document the corrective order in autopilot resume notes when stage FSM does not match agent charter order.
+  severity: low
+
+### Anti-Patterns
+
+- description: Asserting SSOT only by checking the new module file exists, without scanning the **whole** subtree named in the AC for duplicate map literals.
+  detection_signal: AC says “under `scripts/asset_generation/`” but tests only open one path; a second file could reintroduce `const MUTATION_BY_FAMILY := {`.
+  prevention: Recursive scan + assert single literal location; keep `is_same()` / preload identity checks for runtime reference sharing.
+
+- description: Changing imports or constants in `load_assets.gd` without reconciling **typed helper parity** with `generate_enemy_scenes.gd`.
+  detection_signal: Headless parse errors or Variant warnings only when the editor script is loaded; asymmetric `Array` typing or missing explicit geometry types.
+  prevention: Pair-edit both consumers when they share generation geometry helpers.
+
+### Prompt Patches
+
+- agent: Test Designer Agent
+  change: "For tickets that require a single const map literal under a directory subtree (e.g. `scripts/asset_generation/`), add a test that **recursively walks that directory** (via `DirAccess` or project equivalent) and fails if more than one forbidden pattern (e.g. `const MUTATION_BY_FAMILY := {`) appears outside the canonical file; combine with preload/`is_same()` assertions so behavior and filesystem SSOT both hold."
+  reason: Prevents duplicate literals in sibling files that a one-file test would miss.
+
+- agent: Implementation Generalist Agent
+  change: "When modifying `load_assets.gd` or `generate_enemy_scenes.gd` for shared asset-generation data, **diff AABB/capsule/mesh helper blocks** between the two scripts and align typed arrays and explicit `AABB`/`Transform3D`/`Vector3` usage so both parse under project strict mode and headless `load()` of the `@tool` script matches the SceneTree generator."
+  reason: Avoids editor-only parse failures after consumer-only edits.
+
+- agent: Autopilot / Orchestrator (or Planner Agent)
+  change: "If the pipeline orders **Acceptance Criteria Gatekeeper before GDScript Reviewer**, insert a **mandatory GDScript Reviewer pass after gatekeeper** (or reschedule gatekeeper after review) so COMPLETE is not issued without script review on all touched `.gd` files."
+  reason: Corrects weak closure when automated stage order inverts the intended review-then-signoff sequence.
+
+### Workflow Improvements
+
+- issue: Stage FSM may advance to gatekeeper while GDScript review is still pending or ordered later, weakening “review before ship” intent.
+  improvement: Define a single canonical order (Spec → tests → implementation → **GDScript review** → **gatekeeper**) or an explicit post-gatekeeper review exception with a logged reason.
+  expected_benefit: Fewer COMPLETE states with unreviewed script diffs.
+
+### Keep / Reinforce
+
+- practice: SSOT tests that preload the canonical module and use **`is_same()`** to prove consumers share **dictionary identity**, not just equal contents.
+  reason: Catches duplicate literals that happen to match byte-for-byte.
+
+- practice: Test Breaker hardening for **alternate dict declaration forms** and acyclic preload graph checks on the map module.
+  reason: Reduces bypass via syntax variants or accidental consumer preload from the SSOT file.
+
+---
+
+## [MAINT-ESEG] — Shared enemy root script resolver, dual-consumer wiring, and unsafe stem hardening
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: architecture
+  insight: Choosing which gameplay script attaches to generated enemy roots is **shared policy**: a single resolver module must be the only place that encodes override directory + fallback base path; consumer scripts should not embed override-path literals so drift is caught by tests.
+  impact: Ticket AC named `generate_enemy_scenes.gd` explicitly; correct behavior still required the same resolution in `load_assets.gd` and a shared API both call before `set_script`.
+  prevention: Centralize path rules in one preloadable module; add tests that fail if either consumer hard-codes `res://scripts/enemies/generated/` (or equivalent) instead of calling the resolver.
+  severity: medium
+
+- category: testing
+  insight: **`ResourceLoader.exists` on a formatted path is not sufficient** for adversarial `family_name` values: stems with path separators or `..` can escape the intended single-file layout unless the resolver rejects or normalizes them.
+  impact: Test Breaker stage extended the suite with unsafe-stem cases; implementation added sanitization and empty-stem → base behavior.
+  prevention: For any resolver that builds `res://.../<user-derived-segment>.gd`, encode tests for empty stem, `/`, `\`, and `..`; require the resolver to fall back to the safe default path when input is unsafe.
+  severity: medium
+
+- category: architecture
+  insight: When some call sites already pass `EnemyNameUtils.extract_family_name` output and others might pass a raw GLB basename, the **resolver boundary** should normalize using the same utility when input matches basename-shaped patterns, instead of assuming a single caller convention.
+  impact: Avoids subtle “works in CLI, wrong override in editor” or vice versa if one pipeline passes a different string shape.
+  prevention: Document accepted input shapes on the resolver; implement normalization once inside the resolver before `exists` + `load`.
+  severity: medium
+
+- category: process
+  insight: Spec that allows **implementer-chosen module filename** but leaves the **public method name** implicit can create medium-confidence mismatch risk between Test Designer fixtures and Implementation unless names are aligned in the same revision.
+  impact: Checkpoint noted method naming as implementer-facing; unnecessary churn if tests and code disagree on `resolve_*` spelling.
+  prevention: Either fix the resolver’s public method name in the spec handoff or have Test Designer quote the exact callable expected by tests in WORKFLOW STATE / ticket so Implementation matches in one pass.
+  severity: low
+
+### Anti-Patterns
+
+- description: Duplicating “if override exists use X else base” conditionals in `generate_enemy_scenes.gd` and `load_assets.gd` instead of a shared resolver.
+  detection_signal: Two files both mention override directory logic or both format the same `res://` pattern; tests cannot assert a single implementation.
+  prevention: One module, two call sites, tests assert both consumers invoke it.
+
+- description: Treating **`exists(formatted_path)`** as the only guard when the formatted path incorporates caller-controlled segments.
+  detection_signal: Resolver concatenates `family_name` into a path without validating characters; security or layout bugs on malicious or mistaken stems.
+  prevention: Reject or normalize unsafe stems; test adversarial inputs explicitly.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: "When ticket AC names only `generate_enemy_scenes.gd` for enemy asset output but `project_board/LEARNINGS.md` documents **editor vs headless parity** with `load_assets.gd`, add **`load_assets.gd` to blast radius and success criteria** in the execution plan and require the Spec Agent to state both consumers must call the same resolver."
+  reason: Prevents shipping resolver logic in only one pipeline because the AC line was incomplete.
+
+- agent: Test Breaker Agent
+  change: "For resolvers that build `res://scripts/.../<stem>.gd` from a string parameter, add cases for **empty stem**, path separators, and `..`; assert the resolver returns the **safe base script path** and never a path that escapes the single-file layout under the override directory."
+  reason: `ResourceLoader.exists` alone does not substitute for input validation on formatted paths.
+
+- agent: Implementation Generalist Agent
+  change: "When wiring `enemy_root_script_resolver` (or equivalent), if callers may pass either a **raw GLB basename** or **`EnemyNameUtils.extract_family_name` output**, normalize inside the resolver using `EnemyNameUtils.extract_family_name` when the input matches basename-shaped patterns before override lookup."
+  reason: Keeps CLI and `@tool` pipelines aligned without requiring every call site to pre-normalize identically.
+
+- agent: Spec Agent
+  change: "When introducing a new shared module with a single required entrypoint, either **name the public method** in REQ text (e.g. `resolve_enemy_root_script_path`) or explicitly state ‘Test suite defines the callable name; implementation must match tests’ to avoid spec vs test-design drift."
+  reason: Reduces revision churn when filename is flexible but API surface is not.
+
+### Workflow Improvements
+
+- issue: Acceptance criteria can list one generator file while repo precedent mandates two consumers stay in lockstep for the same behavior.
+  improvement: Maintenance ticket template or planner checklist: for `scripts/asset_generation/*` behavior, grep for **`load_assets.gd` + `generate_enemy_scenes.gd`** and require dual-consumer language in spec AC when both attach scripts or metadata to generated enemies.
+  expected_benefit: Fewer “AC satisfied in one file only” handoffs.
+
+### Keep / Reinforce
+
+- practice: Tests that **forbid embedding** the override directory literal in consumer sources while asserting both call the shared resolver.
+  reason: Makes duplicate path logic mechanically detectable in CI.
+
+- practice: A minimal **`extends EnemyBase`** fixture under `scripts/enemies/generated/` used only to prove “override exists” path selection, without mass-regenerating committed `.tscn` files.
+  reason: Verifies AC for present-override behavior without churning all generated scenes when defaults stay on `enemy_base.gd`.
+
+---
+
+## [MAINT-ETRP] — Leaf slug registry + shared accessors prevent CLI vs `get_*()` drift
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: process
+  insight: If `main.py` list/help paths and library helpers like `EnemyTypes.get_animated()` are allowed to carry **independent copies** of the same slug enumeration, the copies will eventually diverge when one path is updated and the other is not; the fix is a **single authoritative sequence** (registry tuples consumed by `EnemyTypes` and by any CLI or generation entrypoint).
+  impact: Ticket acceptance criteria explicitly required list commands and smart generation to stay aligned; parallel literals would violate that silently.
+  prevention: Wire listing and smart pipelines through the same module or `get_*()` accessors; lock equality with frozen pytest expectations and, when AC demands it, a CLI smoke that compares visible output to those accessors.
+  severity: medium
+
+- category: architecture
+  insight: Extracting immutable slug lists into a **leaf** `enemy_slug_registry`-style module with a documented import DAG—registry **never** imports `constants`, while `constants.EnemyTypes` may import the registry—turns “avoid circular imports” from a hope into a structural constraint enforceable by review and tests.
+  impact: REQ-ETRP-002 and adversarial AST checks made violations machine-detectable rather than latent load-order bugs.
+  prevention: For any growing aggregator module, peel stable string tuples to a leaf file; document one-way imports; add static or AST guards against upward imports from the leaf.
+  severity: medium
+
+- category: testing
+  insight: In-package pytest often uses a `sys.path` layout that differs from running `main.py`; a **fresh subprocess** import-order smoke that mirrors the real entrypoint can surface import graphs that pass under pytest but fail at CLI launch.
+  impact: Checkpoint called out isolating `utils.*` loading from pytest’s `src.utils` behavior; REQ-ETRP-004 encoded subprocess import order.
+  prevention: For import-DAG tickets, include a minimal subprocess test sequence specified in the spec (e.g. import `utils.constants` then `utils.enemy_slug_registry` without `ImportError`).
+  severity: medium
+
+### Anti-Patterns
+
+- description: Maintaining slug enumerations as duplicate literals in `main.py` (choices, help, or manual loops) while `EnemyTypes.get_animated()` / `get_static()` remains the “real” list elsewhere.
+  detection_signal: Grep shows string slugs or tuples in CLI-only code but not routed through `EnemyTypes` or `enemy_slug_registry`; new enemy added in one place only.
+  prevention: Single source: registry tuples or `get_*()`; CLI and smart generation both consume that surface.
+
+- description: Creating a “registry” module that still imports `constants` (or anything that transitively loads `constants`) for convenience.
+  detection_signal: New file appears to centralize data but pulls in the fat constants package; intermittent circular import errors depending on entrypoint.
+  prevention: Keep registry as data-only leaf; compose in `constants` or other aggregators; AST or lint rule forbidding registry → `constants` imports.
+
+### Prompt Patches
+
+- agent: Spec Agent
+  change: "When acceptance criteria require CLI list commands and generation code to **agree on type lists**, add an REQ that names the **single source of truth** (e.g. `enemy_slug_registry` tuples and `EnemyTypes.get_animated()` / `get_static()`) and explicitly forbids maintaining a **second parallel enumeration** in `main.py` or argparse-only code."
+  reason: Prevents main.py list drift vs `get_*()` at specification time.
+
+- agent: Implementation Generalist Agent
+  change: "When extracting registries from `constants.py`, implement **one-way imports only**: the registry module must not import `constants` or modules that transitively import it; add tests that **AST-scan the registry** for forbidden imports and a **subprocess import-order smoke** aligned with how `main.py` resolves `utils`."
+  reason: Makes the registry extraction pattern repeatable and catches pytest-only green states.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If the ticket AC requires CLI list behavior to match `EnemyTypes` / registry, treat **`main.py list` (or equivalent) exit 0 and output consistency** as blocking evidence before COMPLETE—not optional follow-up—unless an automated pytest harness is specified that exercises the same argparse path without Blender."
+  reason: Autopilot deferred CLI smoke to gatekeeper; explicit blocking criteria avoids assuming someone will run the command later.
+
+### Workflow Improvements
+
+- issue: Multi-stage plans can mark “CLI list integration” as task 6 while an autopilot run stops at green pytest and assumes gatekeeper will run `main.py list`.
+  improvement: Either fold a no-Blender CLI assertion into pytest (same wiring as `main.py list`) or require gatekeeper checklist item with logged output before marking COMPLETE.
+  expected_benefit: AC “list commands still agree” is provably satisfied every time, not only when a human remembers the smoke.
+
+### Keep / Reinforce
+
+- practice: Immutable `ANIMATED_SLUGS` / `STATIC_SLUGS` tuples, `EnemyTypes` delegation, frozen snapshot contract tests, disjoint-set adversarial check, subprocess import-order smoke, and AST ban on registry importing `constants`.
+  reason: Combines string freeze, DAG safety, and entrypoint-realistic imports in one maintainable bundle.
+
+---
