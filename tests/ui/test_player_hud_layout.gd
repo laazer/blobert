@@ -7,6 +7,10 @@
 # Spec:    agent_context/agents/2_spec/player_hud_spec.md
 #          Parts 1–6; test cases T-6.1 through T-6.12
 #
+# MAINT-HCSI (hud_components_scale_input): overlap / viewport / offset assertions use
+# _control_design_rect() — scene-local offset_* (design space). See
+# tests/ui/test_hud_components_scale_input.gd for global rect + hud_scale (HCSI-5/6).
+#
 # Scope:
 #   T-6.1  — HPBar is ProgressBar, not TextureProgressBar
 #   T-6.2  — HPBar is Range (cast compatibility; regression guard)
@@ -72,20 +76,22 @@ func _rect(left: float, top: float, right: float, bottom: float) -> Rect2:
 	return Rect2(Vector2(left, top), Vector2(right - left, bottom - top))
 
 
-# _node_rect: extract the bounding rect from a named direct child of the
-# GameUI CanvasLayer, using its offset_* properties.
-func _node_rect(ui: CanvasLayer, node_name: String) -> Rect2:
-	var n: Control = ui.get_node(node_name) as Control
+# _control_design_rect: scene-local layout rect from offset_* (HCSI-2 / HCSI-6 design space).
+func _control_design_rect(n: Control) -> Rect2:
 	return _rect(n.offset_left, n.offset_top, n.offset_right, n.offset_bottom)
 
 
-# _hints_child_rect: extract the bounding rect from a named child of the
-# Hints Control node (children carry viewport-absolute offsets since Hints
-# is positioned at origin).
+# _node_rect: design-space rect for a named direct child of the GameUI CanvasLayer.
+func _node_rect(ui: CanvasLayer, node_name: String) -> Rect2:
+	var n: Control = ui.get_node(node_name) as Control
+	return _control_design_rect(n)
+
+
+# _hints_child_rect: design-space rect for a named child under Hints.
 func _hints_child_rect(ui: CanvasLayer, child_name: String) -> Rect2:
 	var hints: Control = ui.get_node("Hints") as Control
 	var n: Control = hints.get_node(child_name) as Control
-	return _rect(n.offset_left, n.offset_top, n.offset_right, n.offset_bottom)
+	return _control_design_rect(n)
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +380,7 @@ func test_t67_always_visible_no_overlap() -> void:
 			)
 			_free_ui(ui)
 			return
-		rects.append(_rect(n.offset_left, n.offset_top, n.offset_right, n.offset_bottom))
+		rects.append(_control_design_rect(n))
 
 	# Generate all C(8,2) = 28 unique pairs and assert disjointness
 	var pair_count: int = 0
@@ -416,7 +422,6 @@ func test_t68_nodes_within_viewport() -> void:
 		_fail("t-6.8_nodes_within_viewport", "game_ui.tscn failed to load")
 		return
 
-	var viewport_rect: Rect2 = Rect2(0.0, 0.0, 3200.0, 1880.0)
 	var node_names: Array[String] = [
 		"HPBar", "HPLabel", "ChunkStatusLabel", "ClingStatusLabel",
 		"MutationIcon1", "MutationSlot1Label", "MutationIcon2", "MutationSlot2Label"
@@ -431,7 +436,7 @@ func test_t68_nodes_within_viewport() -> void:
 			)
 			_free_ui(ui)
 			return
-		var r: Rect2 = _rect(n.offset_left, n.offset_top, n.offset_right, n.offset_bottom)
+		var r: Rect2 = _control_design_rect(n)
 		# position >= (0,0)
 		_assert_true(
 			r.position.x >= 0.0,
@@ -494,14 +499,14 @@ func test_t69_legacy_nodes_no_overlap_with_always_visible() -> void:
 			_fail("t-6.9_legacy_no_overlap", "legacy node '" + legacy_name + "' not found")
 			_free_ui(ui)
 			return
-		var legacy_rect: Rect2 = _rect(ln.offset_left, ln.offset_top, ln.offset_right, ln.offset_bottom)
+		var legacy_rect: Rect2 = _control_design_rect(ln)
 		for av_name in always_visible_names:
 			var avn: Control = ui.get_node_or_null(av_name) as Control
 			if avn == null:
 				_fail("t-6.9_legacy_no_overlap", "always-visible node '" + av_name + "' not found")
 				_free_ui(ui)
 				return
-			var av_rect: Rect2 = _rect(avn.offset_left, avn.offset_top, avn.offset_right, avn.offset_bottom)
+			var av_rect: Rect2 = _control_design_rect(avn)
 			_assert_false(
 				legacy_rect.intersects(av_rect),
 				"t-6.9_" + legacy_name + "_vs_" + av_name
@@ -542,14 +547,14 @@ func test_t610_contextual_no_overlap_with_status() -> void:
 			_fail("t-6.10_contextual_no_overlap", "contextual node '" + ctx_name + "' not found")
 			_free_ui(ui)
 			return
-		var ctx_rect: Rect2 = _rect(cn.offset_left, cn.offset_top, cn.offset_right, cn.offset_bottom)
+		var ctx_rect: Rect2 = _control_design_rect(cn)
 		for av_name in always_visible_names:
 			var avn: Control = ui.get_node_or_null(av_name) as Control
 			if avn == null:
 				_fail("t-6.10_contextual_no_overlap", "always-visible node '" + av_name + "' not found")
 				_free_ui(ui)
 				return
-			var av_rect: Rect2 = _rect(avn.offset_left, avn.offset_top, avn.offset_right, avn.offset_bottom)
+			var av_rect: Rect2 = _control_design_rect(avn)
 			_assert_false(
 				ctx_rect.intersects(av_rect),
 				"t-6.10_" + ctx_name + "_vs_" + av_name
@@ -657,6 +662,7 @@ func _assert_node_offsets(
 	expected_bottom: float,
 	test_prefix: String
 ) -> void:
+	# HCSI-2: at hud_scale 1.0, scene offset_* remain the authoring source of truth.
 	var n: Control = ui.get_node_or_null(node_name) as Control
 	if n == null:
 		_fail(test_prefix + "_not_found", "node '" + node_name + "' not found in game_ui.tscn")

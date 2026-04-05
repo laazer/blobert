@@ -22,6 +22,7 @@
 #   T-40  → FUSE-WIRE-2 (AC-FUSE-WIRE-2.5 through 2.7) — resolve_fusion side effects (pure unit)
 #   T-41  → FUSE-HUD-1 (AC-FUSE-HUD-1.1 through 1.7) — HUD nodes present in game_ui.tscn
 #   T-42  → FUSE-HUD-1 (AC-FUSE-HUD-1.8 through 1.11) — HUD node sizes, viewport bounds, visibility
+#          Viewport bounds use get_global_rect() (MAINT-HCSI HCSI-6) so reparenting under a scaled HUD root stays meaningful.
 #
 # NOTE: collision_mask assertions for FusionFloor/PlatformA/PlatformB are already covered by T-25
 # in test_containment_hall_01.gd. Enemy position assertions (±0.1 m) are already covered by T-24.
@@ -744,7 +745,7 @@ func test_t41_game_ui_hud_nodes_exist() -> void:
 # T-42: GameUI HUD nodes have non-zero size, are within 3200×1880 viewport,
 #        and FusePromptLabel/FusionActiveLabel have visible == false by default
 # Spec: FUSE-HUD-1 (AC-FUSE-HUD-1.8 through 1.11)
-# Requires scene tree insertion so that offset_* properties are readable on Control nodes.
+# Requires scene tree insertion so that offset_* and get_global_rect() are valid on Control nodes.
 # NFR-4: ui is removed from tree and freed before method returns.
 # ---------------------------------------------------------------------------
 func test_t42_game_ui_hud_node_sizes_viewport_and_visibility() -> void:
@@ -771,6 +772,8 @@ func test_t42_game_ui_hud_node_sizes_viewport_and_visibility() -> void:
 		"MutationIcon2",
 	]
 
+	const GLOBAL_VP_TOL: float = 1.0
+
 	for node_name in hud_nodes:
 		var node: Control = ui.get_node_or_null(node_name) as Control
 		if node == null:
@@ -780,7 +783,7 @@ func test_t42_game_ui_hud_node_sizes_viewport_and_visibility() -> void:
 			)
 			continue
 
-		# AC-FUSE-HUD-1.8: non-zero size (offset_right > offset_left AND offset_bottom > offset_top).
+		# AC-FUSE-HUD-1.8: non-zero design-space size (scene offset_* — HCSI-2 authoring space).
 		var width: float = node.offset_right - node.offset_left
 		var height: float = node.offset_bottom - node.offset_top
 		_assert_true(
@@ -794,26 +797,27 @@ func test_t42_game_ui_hud_node_sizes_viewport_and_visibility() -> void:
 			node_name + " height (offset_bottom - offset_top) = " + str(height) + ", must be > 0 — FUSE-HUD-1 AC-FUSE-HUD-1.8"
 		)
 
-		# AC-FUSE-HUD-1.9: all four offsets within 3200×1880 viewport bounds.
+		# AC-FUSE-HUD-1.9 (+ HCSI-6): default-layout visibility in transformed global space (not raw offset caps).
+		var gr: Rect2 = node.get_global_rect()
 		_assert_true(
-			node.offset_left >= 0.0,
-			"T-42_" + node_name.to_lower() + "_offset_left_ge_0",
-			node_name + ".offset_left = " + str(node.offset_left) + ", must be >= 0 — FUSE-HUD-1 AC-FUSE-HUD-1.9"
+			gr.position.x >= -GLOBAL_VP_TOL,
+			"T-42_" + node_name.to_lower() + "_global_left_ge_0",
+			node_name + " global rect min x = " + str(gr.position.x) + " — FUSE-HUD-1 AC-FUSE-HUD-1.9 / HCSI-6"
 		)
 		_assert_true(
-			node.offset_right <= 3200.0,
-			"T-42_" + node_name.to_lower() + "_offset_right_le_3200",
-			node_name + ".offset_right = " + str(node.offset_right) + ", must be <= 3200 — FUSE-HUD-1 AC-FUSE-HUD-1.9"
+			gr.position.y >= -GLOBAL_VP_TOL,
+			"T-42_" + node_name.to_lower() + "_global_top_ge_0",
+			node_name + " global rect min y = " + str(gr.position.y) + " — FUSE-HUD-1 AC-FUSE-HUD-1.9 / HCSI-6"
 		)
 		_assert_true(
-			node.offset_top >= 0.0,
-			"T-42_" + node_name.to_lower() + "_offset_top_ge_0",
-			node_name + ".offset_top = " + str(node.offset_top) + ", must be >= 0 — FUSE-HUD-1 AC-FUSE-HUD-1.9"
+			gr.end.x <= 3200.0 + GLOBAL_VP_TOL,
+			"T-42_" + node_name.to_lower() + "_global_right_le_3200",
+			node_name + " global rect max x = " + str(gr.end.x) + " — FUSE-HUD-1 AC-FUSE-HUD-1.9 / HCSI-6"
 		)
 		_assert_true(
-			node.offset_bottom <= 1880.0,
-			"T-42_" + node_name.to_lower() + "_offset_bottom_le_1880",
-			node_name + ".offset_bottom = " + str(node.offset_bottom) + ", must be <= 1880 — FUSE-HUD-1 AC-FUSE-HUD-1.9"
+			gr.end.y <= 1880.0 + GLOBAL_VP_TOL,
+			"T-42_" + node_name.to_lower() + "_global_bottom_le_1880",
+			node_name + " global rect max y = " + str(gr.end.y) + " — FUSE-HUD-1 AC-FUSE-HUD-1.9 / HCSI-6"
 		)
 
 	# AC-FUSE-HUD-1.10: FusePromptLabel.visible == false by scene default.

@@ -276,6 +276,12 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-spec.md`
 - Outcome: `project_board/specs/hud_components_scale_input_spec.md` (HCSI-1..7); ticket Specification section + path contract for `GameUI` / fusion tests; test obligations in HCSI-6.
 
+### MAINT-HCSI / run-2026-04-05-test-design
+- Ticket: `project_board/maintenance/in_progress/hud_components_scale_input.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-design.md`
+- Outcome: `tests/ui/test_hud_components_scale_input.gd` (HCSI-1/4/5/6); `test_player_hud_layout.gd` design-space helper; T-42 global-rect viewport checks; suite red until `hud_scale` implementation.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

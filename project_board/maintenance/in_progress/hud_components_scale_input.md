@@ -28,13 +28,13 @@ Implementation is flexible: e.g. a full-screen `Control` root under the layer wi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Pending pipeline
@@ -50,12 +50,12 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_design",
+  "action": "test_break",
   "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md",
   "spec_path": "project_board/specs/hud_components_scale_input_spec.md"
 }
@@ -65,4 +65,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Formal spec delivered (`project_board/specs/hud_components_scale_input_spec.md`); checkpoint `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-spec.md`. Test Designer shall author failing behavioral tests per HCSI-* before implementation.
+HCSI behavioral tests authored; checkpoint `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-design.md`. Test Breaker shall extend adversarial coverage; expect failures until implementation lands.
