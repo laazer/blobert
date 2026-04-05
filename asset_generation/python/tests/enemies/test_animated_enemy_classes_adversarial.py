@@ -16,7 +16,7 @@ Spec traceability prefix:
 import inspect
 import unittest
 
-from src.enemies.animated_enemies import (
+from src.enemies.animated import (
     AnimatedEnemyBuilder,
     AnimatedAcidSpitter,
     AnimatedClawCrawler,
@@ -131,7 +131,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
     def test_BPG_ADV_SPLIT_01_registry_acid_spitter_is_canonical_module_class(self):
         # CHECKPOINT: After module split, ENEMY_CLASSES must reference the class
         # object defined in animated_acid_spitter (not a duplicate subclass in
-        # animated_enemies).
+        # animated package).
         from src.enemies import animated_acid_spitter as acid_mod
 
         self.assertIs(
@@ -141,7 +141,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_SPLIT_02_registry_adhesion_bug_is_canonical_module_class(self):
         # CHECKPOINT: ENEMY_CLASSES must reference AnimatedAdhesionBug from
-        # animated_adhesion_bug, not a duplicate subclass in animated_enemies.
+        # animated_adhesion_bug, not a duplicate subclass in the registry barrel.
         from src.enemies import animated_adhesion_bug as adhesion_mod
 
         self.assertIs(
@@ -151,7 +151,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_SPLIT_03_registry_carapace_husk_is_canonical_module_class(self):
         # CHECKPOINT: ENEMY_CLASSES must reference AnimatedCarapaceHusk from
-        # animated_carapace_husk, not a duplicate subclass in animated_enemies.
+        # animated_carapace_husk, not a duplicate subclass in the registry barrel.
         from src.enemies import animated_carapace_husk as carapace_mod
 
         self.assertIs(
@@ -161,7 +161,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_SPLIT_04_registry_claw_crawler_is_canonical_module_class(self):
         # CHECKPOINT: ENEMY_CLASSES must reference AnimatedClawCrawler from
-        # animated_claw_crawler, not a duplicate subclass in animated_enemies.
+        # animated_claw_crawler, not a duplicate subclass in the registry barrel.
         from src.enemies import animated_claw_crawler as claw_mod
 
         self.assertIs(
@@ -171,7 +171,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_SPLIT_05_registry_ember_imp_is_canonical_module_class(self):
         # CHECKPOINT: ENEMY_CLASSES must reference AnimatedEmberImp from
-        # animated_ember_imp, not a duplicate subclass in animated_enemies.
+        # animated_ember_imp, not a duplicate subclass in the registry barrel.
         from src.enemies import animated_ember_imp as ember_mod
 
         self.assertIs(
@@ -181,7 +181,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_SPLIT_06_registry_tar_slug_is_canonical_module_class(self):
         # CHECKPOINT: ENEMY_CLASSES must reference AnimatedTarSlug from
-        # animated_tar_slug, not a duplicate subclass in animated_enemies.
+        # animated_tar_slug, not a duplicate subclass in the registry barrel.
         from src.enemies import animated_tar_slug as tar_mod
 
         self.assertIs(

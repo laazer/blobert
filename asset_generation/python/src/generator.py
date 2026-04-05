@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.materials.material_system import setup_materials
-from src.enemies.animated_enemies import AnimatedEnemyBuilder
+from src.enemies.animated import AnimatedEnemyBuilder
 from src.enemies.base_enemy import export_enemy
 from src.utils.constants import ExportConfig
 

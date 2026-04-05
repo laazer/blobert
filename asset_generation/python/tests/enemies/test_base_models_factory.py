@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib
 import random
 import unittest
+from contextlib import ExitStack, contextmanager
 from unittest.mock import MagicMock, patch
 
 import src.enemies.base_models as bm
@@ -26,6 +27,39 @@ def _mesh_object_mock() -> MagicMock:
 
 
 _MATERIAL_MAP = {"body": object(), "head": object(), "limbs": object(), "extra": object()}
+
+
+@contextmanager
+def _patched_geometry_and_materials():
+    """Patch names bound in each base_models submodule (import-time bindings)."""
+    apply_mock = MagicMock()
+    sphere = MagicMock(side_effect=lambda **kwargs: _mesh_object_mock())
+    cylinder = MagicMock(side_effect=lambda **kwargs: _mesh_object_mock())
+    get_mats = MagicMock(return_value=_MATERIAL_MAP)
+    archetype_modules = (
+        "src.enemies.base_models.insectoid_model",
+        "src.enemies.base_models.blob_model",
+        "src.enemies.base_models.humanoid_model",
+    )
+    with ExitStack() as stack:
+        for mod in archetype_modules:
+            stack.enter_context(
+                patch.multiple(
+                    mod,
+                    create_sphere=sphere,
+                    create_cylinder=cylinder,
+                    get_enemy_materials=get_mats,
+                    apply_material_to_object=apply_mock,
+                )
+            )
+        stack.enter_context(
+            patch.multiple(
+                "src.enemies.base_models.base_model_type",
+                get_enemy_materials=get_mats,
+                apply_material_to_object=apply_mock,
+            )
+        )
+        yield apply_mock
 
 _FIXED_SEED = 42
 # Snapshot from current base_models geometry + rng.Random(42) (BMSBA-3.2).
@@ -78,19 +112,9 @@ class TestModelTypeFactoryRegistry(unittest.TestCase):
 class TestModelTypeFactoryCreateModel(unittest.TestCase):
     """BMSBA-2.3, BMSBA-3."""
 
-    def _patches(self):
-        return patch.multiple(
-            bm,
-            create_sphere=MagicMock(side_effect=lambda **kwargs: _mesh_object_mock()),
-            create_cylinder=MagicMock(side_effect=lambda **kwargs: _mesh_object_mock()),
-            get_enemy_materials=MagicMock(return_value=_MATERIAL_MAP),
-            apply_material_to_object=MagicMock(),
-        )
-
     def test_BMSBA_CM_01_known_types_instance_and_part_counts(self):
         materials = {"a": object(), "b": object()}
-        with self._patches():
-            apply_mock = bm.apply_material_to_object
+        with _patched_geometry_and_materials() as apply_mock:
             for model_type, expected_n in _EXPECTED_PART_COUNTS.items():
                 rng = random.Random(_FIXED_SEED)
                 model = bm.ModelTypeFactory.create_model(
@@ -115,7 +139,7 @@ class TestModelTypeFactoryCreateModel(unittest.TestCase):
     def test_BMSBA_CM_02_unknown_model_type_defaults_to_insectoid(self):
         materials = {"a": object()}
         unknown_keys = ("", "unknown", "BLOB")
-        with self._patches():
+        with _patched_geometry_and_materials():
             for key in unknown_keys:
                 rng = random.Random(_FIXED_SEED)
                 model = bm.ModelTypeFactory.create_model(
@@ -127,7 +151,7 @@ class TestModelTypeFactoryCreateModel(unittest.TestCase):
 
     def test_BMSBA_CM_03_unknown_matches_explicit_insectoid_same_rng(self):
         materials = {"x": object()}
-        with self._patches():
+        with _patched_geometry_and_materials():
             rng_a = random.Random(_FIXED_SEED)
             m_insect = bm.ModelTypeFactory.create_model(
                 "insectoid", "same", materials, rng_a
@@ -148,7 +172,7 @@ class TestModelTypeFactoryCreateModel(unittest.TestCase):
             "humanoid\t",
             "insectoid\u200b",  # zero-width space suffix
         )
-        with self._patches():
+        with _patched_geometry_and_materials():
             for key in misleading:
                 rng = random.Random(_FIXED_SEED)
                 model = bm.ModelTypeFactory.create_model(
@@ -163,7 +187,7 @@ class TestModelTypeFactoryCreateModel(unittest.TestCase):
     def test_BMSBA_CM_05_very_long_unknown_key_still_fallback(self):
         materials = {"a": object()}
         long_key = "x" * 8000
-        with self._patches():
+        with _patched_geometry_and_materials():
             rng = random.Random(_FIXED_SEED)
             model = bm.ModelTypeFactory.create_model(
                 long_key, "long_key", materials, rng
@@ -175,18 +199,9 @@ class TestModelTypeFactoryCreateModel(unittest.TestCase):
 class TestModelTypeFactoryCaseSensitivity(unittest.TestCase):
     """BMSBA-2.3: registry keys are case-sensitive; aliases must not silently match."""
 
-    def _patches(self):
-        return patch.multiple(
-            bm,
-            create_sphere=MagicMock(side_effect=lambda **kwargs: _mesh_object_mock()),
-            create_cylinder=MagicMock(side_effect=lambda **kwargs: _mesh_object_mock()),
-            get_enemy_materials=MagicMock(return_value=_MATERIAL_MAP),
-            apply_material_to_object=MagicMock(),
-        )
-
     def test_BMSBA_CASE_01_capitalized_names_are_unknown_not_blob_or_humanoid(self):
         materials = {"a": object()}
-        with self._patches():
+        with _patched_geometry_and_materials():
             for wrong_key, canonical_key in (
                 ("Blob", "blob"),
                 ("HUMANOID", "humanoid"),
@@ -257,9 +272,9 @@ class TestBaseModelsImportGraph(unittest.TestCase):
         self.assertIs(mod, again)
         self.assertIs(mod.ModelTypeFactory, bm.ModelTypeFactory)
 
-    def test_BMSBA_IMP_02_import_animated_enemies_then_base_models_succeeds(self):
+    def test_BMSBA_IMP_02_import_animated_then_base_models_succeeds(self):
         # CHECKPOINT: consumer chain must not introduce circular import (BMSBA-1.3).
-        importlib.import_module("src.enemies.animated_enemies")
+        importlib.import_module("src.enemies.animated")
         mod = importlib.import_module("src.enemies.base_models")
         self.assertTrue(hasattr(mod, "ModelTypeFactory"))
         self.assertTrue(callable(mod.ModelTypeFactory.create_model))

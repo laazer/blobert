@@ -109,14 +109,12 @@ Log: `project_board/checkpoints/death_animation_playthrough/` (planning, spec, t
 - Stage: PLANNING (dequeued)
 - Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-dequeue.md`
 
-### [MAINT-AERC] — OUTCOME: BLOCKED
-Registry cleanup cannot start until six `split_animated_*` dependency tickets leave backlog; planner recorded gate in ticket Execution Plan.
-Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-planning.md`
+### [MAINT-AERC] — OUTCOME: COMPLETE
+Central registry in `src/enemies/animated/registry.py`; package `animated/__init__.py` re-exports builder + six classes; `animated_enemies.py` removed; imports and docs updated; `uv run pytest tests/ -q` → 380 passed. Ticket: `project_board/maintenance/done/animated_enemy_registry_cleanup.md`.
+Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-ap-continue.md` (unblock + implementation); `project_board/specs/animated_enemy_registry_cleanup_spec.md`.
 
-## Resume: 2026-04-05 (ap-continue)
-- Ticket: `project_board/maintenance/in_progress/animated_enemy_registry_cleanup.md`
-- Resuming at Stage: **BLOCKED** — no pipeline stages to run (per ap-continue Step 0).
-- Next Agent: Human (unblock after dependency tickets complete).
+## Resume: 2026-04-05 (ap-continue) — superseded
+- Prior resume pointed at BLOCKED state; dependencies completed; pipeline finished same day.
 
 ### MAINT-BMSBA / run-2026-04-05-dequeue
 - Ticket: `project_board/maintenance/in_progress/base_models_split_by_archetype.md`

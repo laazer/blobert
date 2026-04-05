@@ -1,13 +1,13 @@
 """
-Animated enemy builders with enhanced materials and animations
+Central registry for animated enemy types: builder and ENEMY_CLASSES map.
 """
 
-from .animated_acid_spitter import AnimatedAcidSpitter
-from .animated_adhesion_bug import AnimatedAdhesionBug
-from .animated_carapace_husk import AnimatedCarapaceHusk
-from .animated_claw_crawler import AnimatedClawCrawler
-from .animated_ember_imp import AnimatedEmberImp
-from .animated_tar_slug import AnimatedTarSlug
+from ..animated_acid_spitter import AnimatedAcidSpitter
+from ..animated_adhesion_bug import AnimatedAdhesionBug
+from ..animated_carapace_husk import AnimatedCarapaceHusk
+from ..animated_claw_crawler import AnimatedClawCrawler
+from ..animated_ember_imp import AnimatedEmberImp
+from ..animated_tar_slug import AnimatedTarSlug
 
 
 class AnimatedEnemyBuilder:

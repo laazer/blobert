@@ -14,7 +14,7 @@ Spec traceability:
 import inspect
 import unittest
 
-from src.enemies.animated_enemies import (
+from src.enemies.animated import (
     AnimatedEnemyBuilder,
     AnimatedAdhesionBug,
     AnimatedAcidSpitter,
@@ -110,7 +110,7 @@ class TestAdhesionBugClass(unittest.TestCase):
     """Verify AnimatedAdhesionBug class contract via introspection."""
 
     def test_BPG_CLASS_24_adhesion_bug_importable(self):
-        """BPG-CLASS-24: AnimatedAdhesionBug is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-24: AnimatedAdhesionBug is importable from src.enemies.animated."""
         self.assertTrue(True)
 
     def test_BPG_CLASS_25_adhesion_bug_defined_in_dedicated_module(self):
@@ -154,7 +154,7 @@ class TestAcidSpitterClass(unittest.TestCase):
     """Verify AnimatedAcidSpitter class contract via introspection."""
 
     def test_BPG_CLASS_01_acid_spitter_importable(self):
-        """BPG-CLASS-01: AnimatedAcidSpitter is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-01: AnimatedAcidSpitter is importable from src.enemies.animated."""
         # Import at module level above; reaching this line proves the import succeeded.
         self.assertTrue(True)
 
@@ -220,7 +220,7 @@ class TestClawCrawlerClass(unittest.TestCase):
     """Verify AnimatedClawCrawler class contract via introspection."""
 
     def test_BPG_CLASS_12_claw_crawler_importable(self):
-        """BPG-CLASS-12: AnimatedClawCrawler is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-12: AnimatedClawCrawler is importable from src.enemies.animated."""
         self.assertTrue(True)
 
     def test_BPG_CLASS_17b_claw_crawler_defined_in_dedicated_module(self):
@@ -264,7 +264,7 @@ class TestEmberImpClass(unittest.TestCase):
     """Verify AnimatedEmberImp class contract via introspection."""
 
     def test_BPG_CLASS_31_ember_imp_importable(self):
-        """BPG-CLASS-31: AnimatedEmberImp is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-31: AnimatedEmberImp is importable from src.enemies.animated."""
         self.assertTrue(True)
 
     def test_BPG_CLASS_32_ember_imp_defined_in_dedicated_module(self):
@@ -308,7 +308,7 @@ class TestTarSlugClass(unittest.TestCase):
     """Verify AnimatedTarSlug class contract via introspection."""
 
     def test_BPG_CLASS_38_tar_slug_importable(self):
-        """BPG-CLASS-38: AnimatedTarSlug is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-38: AnimatedTarSlug is importable from src.enemies.animated."""
         self.assertTrue(True)
 
     def test_BPG_CLASS_39_tar_slug_defined_in_dedicated_module(self):
@@ -352,7 +352,7 @@ class TestCarapaceHuskClass(unittest.TestCase):
     """Verify AnimatedCarapaceHusk class contract via introspection."""
 
     def test_BPG_CLASS_18_carapace_husk_importable(self):
-        """BPG-CLASS-18: AnimatedCarapaceHusk is importable from src.enemies.animated_enemies."""
+        """BPG-CLASS-18: AnimatedCarapaceHusk is importable from src.enemies.animated."""
         self.assertTrue(True)
 
     def test_BPG_CLASS_18b_carapace_husk_defined_in_dedicated_module(self):

@@ -367,7 +367,7 @@ sys.path.insert(0, os.path.join("{project_root}", "src"))
 import bpy
 from src.core.blender_utils import clear_scene
 from src.materials.material_system import setup_materials
-from src.enemies.animated_enemies import AnimatedEnemyBuilder
+from src.enemies.animated import AnimatedEnemyBuilder
 from src.enemies.base_enemy import export_enemy
 
 # Clear and setup

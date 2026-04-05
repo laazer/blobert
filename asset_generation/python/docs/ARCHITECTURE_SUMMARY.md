@@ -38,7 +38,7 @@ src/
 │   ├── animated_claw_crawler.py  # AnimatedClawCrawler
 │   ├── animated_ember_imp.py   # AnimatedEmberImp
 │   ├── animated_tar_slug.py   # AnimatedTarSlug
-│   ├── animated_enemies.py   # AnimatedEnemyBuilder factory + re-exports
+│   ├── animated/             # Package: registry (AnimatedEnemyBuilder) + re-exports
 │   ├── base_models/          # Package: archetype models + ModelTypeFactory
 │   └── example_new_enemy.py  # Annotated reference for new enemy authors
 │
@@ -101,7 +101,7 @@ AttackData(
 ## Adding a New Enemy (10 lines)
 
 ```python
-# src/enemies/animated_enemies.py
+# src/enemies/animated_frost_jelly.py  (new module per enemy)
 class AnimatedFrostJelly(BaseEnemy):
     def create_body(self):
         self.body_scale = random_variance(1.0, 0.2, self.rng)
@@ -122,8 +122,8 @@ class AnimatedFrostJelly(BaseEnemy):
         return EnemyBodyTypes.BLOB   # gets all blob animations for free
 
 
-# Register it:
-AnimatedEnemyBuilder.ENEMY_CLASSES['frost_jelly'] = AnimatedFrostJelly
+# Register it in src/enemies/animated/registry.py:
+#   ENEMY_CLASSES['frost_jelly'] = AnimatedFrostJelly
 ```
 
 Then add attacks to `src/combat/enemy_attack_profiles.py` and the type to `EnemyTypes` in `constants.py`.

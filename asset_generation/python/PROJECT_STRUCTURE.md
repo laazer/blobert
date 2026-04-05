@@ -33,7 +33,7 @@ blender-experiments/
 │   │   ├── animated_claw_crawler.py  # AnimatedClawCrawler
 │   │   ├── animated_ember_imp.py  # AnimatedEmberImp
 │   │   ├── animated_tar_slug.py  # AnimatedTarSlug
-│   │   ├── animated_enemies.py  # AnimatedEnemyBuilder factory + re-exports
+│   │   ├── animated/            # Package: registry.py (AnimatedEnemyBuilder) + __init__ re-exports
 │   │   ├── base_models/         # Body archetypes: BaseModelType, *Model, ModelTypeFactory
 │   │   └── example_new_enemy.py # Reference implementation for adding new enemies
 │   │
@@ -98,7 +98,7 @@ main.py
 
 ### Add a new animated enemy type
 
-1. Add a module under `src/enemies/` (e.g. `animated_<slug>.py`) with a `BaseEnemy` subclass implementing `create_body()`, `create_head()`, `create_limbs()`, `apply_materials()`, `create_armature()`, `get_body_type()`; import the class from `animated_enemies.py` and register it in `AnimatedEnemyBuilder.ENEMY_CLASSES`
+1. Add a module under `src/enemies/` (e.g. `animated_<slug>.py`) with a `BaseEnemy` subclass implementing `create_body()`, `create_head()`, `create_limbs()`, `apply_materials()`, `create_armature()`, `get_body_type()`; register the class in `src/enemies/animated/registry.py` (`ENEMY_CLASSES`) and re-export from `animated/__init__.py` if it should be a public import
 2. Ensure `AnimatedEnemyBuilder.ENEMY_CLASSES` maps the slug string to that class
 3. Add attack data to `src/combat/enemy_attack_profiles.py`
 4. Add the string constant to `EnemyTypes` in `src/utils/constants.py`

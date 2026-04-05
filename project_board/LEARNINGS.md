@@ -1583,3 +1583,27 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 *Completed: 2026-04-05* (same pattern: `TestTarSlugClass` + `BPG_ADV_SPLIT_06`; `animated_enemies.py` reduced to factory + imports after removing unused `BaseEnemy` and geometry/material imports that only served the inlined class.)
 
 ---
+
+# Learning Output — [animated_enemy_registry_cleanup]
+
+## Learnings
+- category: process
+  insight: A ticket marked BLOCKED on stale dependency state blocks progress even when CHECKPOINTS.md and `maintenance/done/` already prove all deps complete; resuming autopilot should verify the filesystem gate before returning to Human.
+  impact: Would have stopped at BLOCKED without advancing the pipeline.
+  prevention: On `/ap-continue`, list `maintenance/done/` for named dependency slugs and reconcile with the ticket Blocking Issues field.
+  severity: medium
+
+- category: architecture
+  insight: Placing `AnimatedEnemyBuilder` in `animated/registry.py` while leaf modules stay as `animated_<slug>.py` siblings preserves a one-way import graph (registry → leaves only).
+  impact: Avoids circular imports if per-enemy modules ever need shared registry constants.
+  prevention: Keep `animated/__init__.py` as re-exports only; do not import registry from leaf enemy modules.
+  severity: low
+
+## Anti-Patterns
+- description: Leaving a long-lived shim module after migration duplicates the “source of truth” for imports and confuses docs/tests.
+  detection_signal: Two public paths (`animated_enemies` vs `animated`) both documented as canonical.
+  prevention: After grep-clean migration, delete the old module in the same change set as test/doc updates.
+
+*Completed: 2026-04-05*
+
+---
