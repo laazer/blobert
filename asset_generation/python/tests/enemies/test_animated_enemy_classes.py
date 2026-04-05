@@ -97,6 +97,10 @@ class TestAcidSpitterClass(unittest.TestCase):
         # Import at module level above; reaching this line proves the import succeeded.
         self.assertTrue(True)
 
+    def test_BPG_CLASS_01b_acid_spitter_defined_in_dedicated_module(self):
+        """BPG-CLASS-01b: AnimatedAcidSpitter class object lives in animated_acid_spitter module."""
+        self.assertEqual(AnimatedAcidSpitter.__module__, 'src.enemies.animated_acid_spitter')
+
     def test_BPG_CLASS_02_acid_spitter_subclass_of_base_enemy(self):
         """BPG-CLASS-02: AnimatedAcidSpitter is a subclass of BaseEnemy."""
         self.assertTrue(issubclass(AnimatedAcidSpitter, BaseEnemy))

@@ -27,9 +27,9 @@ blender-experiments/
 │   │
 │   ├── enemies/
 │   │   ├── base_enemy.py        # BaseEnemy ABC, export_enemy(), get_attack_profile()
-│   │   ├── animated_enemies.py  # AnimatedAdhesionBug, AnimatedTarSlug, AnimatedEmberImp
-│   │   │                        #   + AnimatedEnemyBuilder factory
-│   │   ├── base_models.py       # ModelTypeFactory (geometry patterns)
+│   │   ├── animated_acid_spitter.py  # AnimatedAcidSpitter
+│   │   ├── animated_enemies.py  # Remaining animated classes + AnimatedEnemyBuilder factory
+│   │   ├── base_models/         # Body archetypes: BaseModelType, *Model, ModelTypeFactory
 │   │   └── example_new_enemy.py # Reference implementation for adding new enemies
 │   │
 │   ├── combat/
@@ -93,8 +93,8 @@ main.py
 
 ### Add a new animated enemy type
 
-1. Add a class to `src/enemies/animated_enemies.py` extending `BaseEnemy`; implement `create_body()`, `create_head()`, `create_limbs()`, `apply_materials()`, `create_armature()`, `get_body_type()`
-2. Register it in `AnimatedEnemyBuilder.ENEMY_CLASSES`
+1. Add a module under `src/enemies/` (e.g. `animated_<slug>.py`) with a `BaseEnemy` subclass implementing `create_body()`, `create_head()`, `create_limbs()`, `apply_materials()`, `create_armature()`, `get_body_type()`; import the class from `animated_enemies.py` and register it in `AnimatedEnemyBuilder.ENEMY_CLASSES`
+2. Ensure `AnimatedEnemyBuilder.ENEMY_CLASSES` maps the slug string to that class
 3. Add attack data to `src/combat/enemy_attack_profiles.py`
 4. Add the string constant to `EnemyTypes` in `src/utils/constants.py`
 

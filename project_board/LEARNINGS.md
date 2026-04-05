@@ -1550,4 +1550,16 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: The Test Designer added `play_call_count: int` to the stub class as a pure test-infrastructure additive that does not appear in the production ACS-8 spec. This allowed idempotency and latch tests to assert "no play() call was made" without modifying the production contract.
   reason: Augmenting test stubs with call-counting fields beyond the minimum required interface is the correct pattern for negative-assertion tests ("not called"). It is additive, does not contaminate production code, and makes test intent explicit.
 
+## [split_animated_acid_spitter] — Module split: assert `__module__` and registry identity, not only re-export import path
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: testing
+  insight: After moving a class to a dedicated module while keeping a barrel import (`from animated_enemies import X`), existing tests that only check "import works" stay green even if the class body was accidentally duplicated or shadowed in the barrel file.
+  impact: Added `AnimatedAcidSpitter.__module__ == 'src.enemies.animated_acid_spitter'` and `assertIs(ENEMY_CLASSES['acid_spitter'], animated_acid_spitter.AnimatedAcidSpitter)` to lock the split contract.
+  prevention: For any "extract to module" refactor, add one test for defining `__module__` and one for object identity against the canonical module.
+  severity: medium
+
 ---

@@ -128,6 +128,17 @@ class TestRegistrationAdversarial(unittest.TestCase):
             f"get_available_types() returned {type(result).__name__}, expected list.",
         )
 
+    def test_BPG_ADV_SPLIT_01_registry_acid_spitter_is_canonical_module_class(self):
+        # CHECKPOINT: After module split, ENEMY_CLASSES must reference the class
+        # object defined in animated_acid_spitter (not a duplicate subclass in
+        # animated_enemies).
+        from src.enemies import animated_acid_spitter as acid_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['acid_spitter'],
+            acid_mod.AnimatedAcidSpitter,
+        )
+
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
         """
         BPG-ADV-REG-06: get_available_types() returns identical lists on consecutive calls.

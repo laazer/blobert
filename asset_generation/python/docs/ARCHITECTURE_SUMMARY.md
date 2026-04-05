@@ -32,8 +32,9 @@ src/
 │
 ├── enemies/
 │   ├── base_enemy.py         # BaseEnemy ABC + export_enemy() + get_attack_profile()
-│   ├── animated_enemies.py   # Concrete enemy classes + AnimatedEnemyBuilder factory
-│   ├── base_models.py        # ModelTypeFactory (geometry patterns)
+│   ├── animated_acid_spitter.py  # AnimatedAcidSpitter
+│   ├── animated_enemies.py   # Other concrete animated classes + AnimatedEnemyBuilder factory
+│   ├── base_models/          # Package: archetype models + ModelTypeFactory
 │   └── example_new_enemy.py  # Annotated reference for new enemy authors
 │
 ├── combat/

@@ -113,6 +113,11 @@ Log: `project_board/checkpoints/death_animation_playthrough/` (planning, spec, t
 Registry cleanup cannot start until six `split_animated_*` dependency tickets leave backlog; planner recorded gate in ticket Execution Plan.
 Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-planning.md`
 
+## Resume: 2026-04-05 (ap-continue)
+- Ticket: `project_board/maintenance/in_progress/animated_enemy_registry_cleanup.md`
+- Resuming at Stage: **BLOCKED** — no pipeline stages to run (per ap-continue Step 0).
+- Next Agent: Human (unblock after dependency tickets complete).
+
 ### MAINT-BMSBA / run-2026-04-05-dequeue
 - Ticket: `project_board/maintenance/in_progress/base_models_split_by_archetype.md`
 - Stage: PLANNING (dequeued)
@@ -123,3 +128,12 @@ Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-planning.md`
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/MAINT-BMSBA/run-2026-04-05-test-design.md`
 - Outcome: `test_base_models_factory.py` added; `uv run pytest tests/ -q` → 335 passed.
+
+## Run: 2026-04-05T12-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/maintenance/backlog/split_animated_acid_spitter.md`
+- Log root: project_board/checkpoints/
+
+### [split_animated_acid_spitter] — OUTCOME: COMPLETE
+`AnimatedAcidSpitter` moved to `src/enemies/animated_acid_spitter.py`; registry and re-export unchanged; 345 pytest passed; ticket `project_board/maintenance/done/split_animated_acid_spitter.md`.
+Log: `project_board/checkpoints/split_animated_acid_spitter/run-2026-04-05-autopilot.md`
