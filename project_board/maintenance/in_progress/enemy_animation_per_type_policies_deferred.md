@@ -119,17 +119,17 @@ This ticket is a **deferral and policy record** for enemy animation architecture
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 
-- Tests: PASS — MAINT-EAPD policy invariants (`test_maint_eapd_shared_enemy_animation_policy.gd`); `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05)
+- Tests: PASS — MAINT-EAPD policy invariants + adversarial suite (`test_maint_eapd_shared_enemy_animation_policy.gd` EAPD-P1..P22); `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -146,11 +146,11 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist
 
 ## Status
 Proceed
 
 ## Reason
 
-AC-1 policy invariant suite authored under `tests/scripts/maintenance/test_maint_eapd_shared_enemy_animation_policy.gd` (no AC-2). Test Breaker SHALL adversarial-review this defer-only suite only; SHALL NOT require future policy-injection behavior for MAINT-EAPD closure.
+Test Breaker extended the defer-only suite (EAPD-P8..P22: wiring/null/orphan, export independence, stress instantiate, pre-ready_ok safety, shared mapping contracts via `call()`, bogus-path contrast, boundary exports). Implementation Generalist SHALL confirm no production code changes are required for MAINT-EAPD closure under AC-1 and SHALL advance workflow (e.g. STATIC_QA / gatekeeper / COMPLETE) per execution plan; AC-2 remains future-only.

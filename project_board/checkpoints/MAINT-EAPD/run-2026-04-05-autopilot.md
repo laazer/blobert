@@ -38,3 +38,18 @@ Run: 2026-04-05 autopilot (maintenance backlog queue)
 **Would have asked:** None (orchestrator: strictest defensible AC-1-only suite).
 **Assumption made:** Added `tests/scripts/maintenance/test_maint_eapd_shared_enemy_animation_policy.gd` (EAPD-P1..P7): load, `class_name`, canonical path, `Node` + script identity, `setup` / `notify_root_animation_wired`, default `move_threshold` / `blend_time`. No AC-2 policy injection. `timeout 300 godot -s tests/run_tests.gd` exit 0.
 **Confidence:** High
+
+### [MAINT-EAPD] Test Breaker — Adversarial extension scope
+**Would have asked:** Should adversarial tests lock in private `_resolve_clip_name` / `_resolve_speed` behavior (brittle to internal refactors)?
+**Assumption made:** Yes for MAINT-EAPD defer suite: mutations that silently change shared state→clip semantics are exactly the regression class this ticket guards; use `call()` + `has_method()` so renames/removals fail loudly. AC-2 policy injection remains untested here.
+**Confidence:** Medium
+
+### [MAINT-EAPD] Test Breaker — Negative `move_threshold` combinator
+**Would have asked:** Is negative `move_threshold` supported or undefined?
+**Assumption made:** Exports accept any float; document combinator behavior (`vel_len >= move_threshold`) via EAPD-P21/P22 so future clamps or validation do not ship without updating tests.
+**Confidence:** High
+
+### [MAINT-EAPD] Test Breaker — Deliverable
+**Would have asked:** None; proceed after logging.
+**Assumption made:** Extended `test_maint_eapd_shared_enemy_animation_policy.gd` with EAPD-P8..P22: `setup(null)` / reorder, orphan `notify_root_animation_wired`, per-instance export independence, 64× instantiate+free stress, pre-`ready_ok` `trigger_hit`/`_physics_process`, internal clip/speed mapping contracts, bogus path contrast, boundary export persistence + negative-threshold combinator. `# CHECKPOINT` on `setup(null)` encodes deferred-wiring assumption. Handoff Stage `IMPLEMENTATION_GENERALIST`.
+**Confidence:** High
