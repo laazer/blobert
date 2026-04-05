@@ -246,3 +246,9 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Stage: SPECIFICATION → TEST_DESIGN
 - Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-spec.md`
 - Outcome: Formal spec `project_board/specs/enemy_model_scale_input_spec.md` (EMSI-1..5); invalid scale → ValueError; uniform scaling contract + rotation exclusion documented.
+
+### MAINT-EMSI / run-2026-04-05-test-design
+- Ticket: `project_board/maintenance/in_progress/enemy_model_scale_input.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-test-design.md`
+- Outcome: EMSI behavioral tests in `asset_generation/python/tests/enemies/test_enemy_model_scale_input.py`; pytest on that file fails pre-implementation (expected) until factory/base/archetypes implement `scale`.

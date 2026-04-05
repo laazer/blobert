@@ -42,13 +42,13 @@ Plumb the value from the factory into `BaseModelType` (default `1.0` for backwar
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Pending pipeline
@@ -64,12 +64,12 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_design",
+  "action": "test_break",
   "ticket_path": "project_board/maintenance/in_progress/enemy_model_scale_input.md",
   "spec_path": "project_board/specs/enemy_model_scale_input_spec.md",
   "execution_plan_ref": "## Execution Plan"
@@ -80,4 +80,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete; Test Designer authors failing tests per EMSI requirements and ticket task 2.
+Primary EMSI behavioral tests authored; Test Breaker extends adversarial / edge coverage before implementation.
