@@ -2088,3 +2088,73 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: One clear missing-file failure while canonical scene and `project.godot` stay guarded.
 
 ---
+
+## [MAINT-TSGR] — Combined runner fail-fast; DRY lefthook/CI; static bash contract + pytest mirrors
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: infra
+  insight: Shell steps that use `|| true` or discard stderr on prerequisites (e.g. headless `--import`) can report success while the tree or cache is broken, so later tests run on a false premise.
+  impact: The pre-ticket runner could mask import/reimport failures and still proceed to Godot tests.
+  prevention: Treat bounded `timeout` + visible stderr + `set -e` on import and test invocations as default; any bypass must be narrow, commented, logged, and spec-approved.
+  severity: high
+
+- category: process
+  insight: “Full CI” and “pre-push” hooks must invoke the same resolver and phase order or teams get two different definitions of green.
+  impact: Python pytest lived under lefthook only while `run_tests.sh` was Godot-only, so a canonical full run could miss Python failures.
+  prevention: Extend the documented canonical script to call the shared Python entry (e.g. `.lefthook/scripts/py-tests.sh`) rather than duplicating resolver logic inline.
+  severity: medium
+
+- category: testing
+  insight: Orchestration requirements (order, `set -e`, no masking, doc pointers) are expensive to prove with live engine-crash tests; a small executable bash verifier plus pytest that shells out from repo root encodes most of the contract cheaply.
+  impact: TSGR-1..6 gained automated regression signal before and after implementation; adversarial tests added cwd independence and hollow-verifier guards.
+  prevention: For runner/CI shell ACs, plan a static verifier + thin pytest wrapper as the default verification path when integration stubs are out of scope.
+  severity: medium
+
+- category: infra
+  insight: Line-order and substring-based static checks on shell sources are brittle if comments or headers contain trigger tokens (e.g. `pytest`) above an earlier required line.
+  impact: Implementers must keep comment placement compatible with naive ordering probes unless the verifier is upgraded in the same change.
+  prevention: Document forbidden comment patterns next to the verifier, or replace line-order checks with structured markers or a single parsed block.
+  severity: low
+
+### Anti-Patterns
+
+- description: Using `|| true` or redirecting stderr away from import/reimport or other prerequisite commands in the combined test runner.
+  detection_signal: Script continues after import errors; CI logs lack stderr for the failed phase; exit code 0 with broken `.godot` cache.
+  prevention: Fail-fast defaults; logged, spec-scoped bypasses only.
+
+- description: Running Python tests only in git hooks and Godot tests only in CI (or duplicated resolver logic in two places).
+  detection_signal: `run_tests.sh` and `.lefthook/scripts/py-tests.sh` disagree on `uv`/`.venv`/fallback behavior or one path omits a suite entirely.
+  prevention: One callable script for the Python phase; CI and lefthook both delegate to it.
+
+### Prompt Patches
+
+- agent: Implementation Generalist Agent
+  change: "When editing `ci/scripts/run_tests.sh` or `.lefthook/scripts/godot-tests.sh` guarded by MAINT-TSGR-style static contract tests, do not place comment lines containing `pytest` or `py-tests` above the Godot `run_tests.gd` invocation unless you update `verify_tsgr_runner_contract.sh` and the pytest mirrors in the same change; keep ordering probes green."
+  reason: Naive line-order checks treat documentation comments as structure.
+
+- agent: Test Designer Agent
+  change: "For combined-runner specs, list which clauses are covered by static shell verification vs full integration (e.g. `timeout` SIGTERM exit aggregation). If static proof is impossible, name the gap in the spec and reserve gatekeeper or optional stub-based tests so it is not mistaken for proven."
+  reason: Prevents false confidence on TSGR-4.3-style behaviors.
+
+- agent: Planner Agent
+  change: "For maintenance tickets whose AC requires non-zero exits on failure, grep the current canonical runner and hook scripts for `|| true`, `2>/dev/null`, or stderr discard on import/test lines and treat hits as explicit rework scope in the execution plan."
+  reason: Surfaces the dominant false-green pattern before implementation starts.
+
+### Workflow Improvements
+
+- issue: Static contract cannot prove shell exit behavior when `timeout` kills a child (noted as TSGR-4.3 gap in test-design checkpoints).
+  improvement: Either add a documented gatekeeper manual check, a stubbed `timeout`/fake `godot` integration test, or accept the gap explicitly in the spec with a follow-up ID.
+  expected_benefit: Clear boundary between proven runner shape and unproven signal semantics.
+
+### Keep / Reinforce
+
+- practice: Python phase in `ci/scripts/run_tests.sh` delegates to `.lefthook/scripts/py-tests.sh` (TSGR-3 DRY) so pre-push and full suite stay aligned.
+  reason: One resolver path for `.venv` / `uv run` / `python3` fallback.
+
+- practice: Authoritative `verify_tsgr_runner_contract.sh` plus Test Breaker pytest mirrors (cwd independence, hollow verifier, key grep mirrors).
+  reason: Defense-in-depth without requiring fragile full-Godot crash harnesses for every orchestration rule.
+
+---
