@@ -265,6 +265,17 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
 - Outcome: AC1–AC4 mapped to `test_enemy_model_scale_input.py` + full `pytest tests/` + `run_tests.sh`; gatekeeper re-ran commands (19 + 405 tests, Godot exit 0); ticket `git mv` to `maintenance/done/`.
 
+### MAINT-HCSI / run-2026-04-05-planning
+- Ticket: `project_board/maintenance/in_progress/hud_components_scale_input.md`
+- Stage: PLANNING
+- Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-planning.md`
+
+### MAINT-HCSI / run-2026-04-05-spec
+- Ticket: `project_board/maintenance/in_progress/hud_components_scale_input.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-spec.md`
+- Outcome: `project_board/specs/hud_components_scale_input_spec.md` (HCSI-1..7); ticket Specification section + path contract for `GameUI` / fusion tests; test obligations in HCSI-6.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

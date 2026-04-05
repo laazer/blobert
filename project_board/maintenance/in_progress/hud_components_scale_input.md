@@ -18,18 +18,23 @@ Implementation is flexible: e.g. a full-screen `Control` root under the layer wi
 
 - None required
 
+## Specification
+
+- **Formal spec:** `project_board/specs/hud_components_scale_input_spec.md`
+- **Requirement IDs:** `HCSI-1` (single HUD scale parameter + documentation), `HCSI-2` (default `1.0` preserves legacy layout numbers and on-screen parity), `HCSI-3` (all shipped `Control` nodes in `game_ui.tscn` including `Hints` subtree scale together), `HCSI-4` (`GameUI` `CanvasLayer` root + `get_node` path contract for `infection_ui.gd`, layout tests, fusion T-41/T-42), `HCSI-5` (uniform scale mechanism, pivot/anchors, hit-testing), `HCSI-6` (`run_tests.sh` green; update layout tests for design vs transformed space), `HCSI-7` (out-of-scope: non–`game_ui.tscn` HUD instances)
+
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Pending pipeline
@@ -45,13 +50,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "spec",
-  "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md"
+  "action": "test_design",
+  "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md",
+  "spec_path": "project_board/specs/hud_components_scale_input_spec.md"
 }
 ```
 
@@ -59,4 +65,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete; execution plan and checkpoint recorded under `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-planning.md`. Spec Agent shall produce the formal specification for unified HUD scale and test/layout contracts.
+Formal spec delivered (`project_board/specs/hud_components_scale_input_spec.md`); checkpoint `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-spec.md`. Test Designer shall author failing behavioral tests per HCSI-* before implementation.
