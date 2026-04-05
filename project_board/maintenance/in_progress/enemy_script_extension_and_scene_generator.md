@@ -107,17 +107,17 @@ Generated enemy roots currently attach `enemy_base.gd` for all GLBs. As M8/M9/M1
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 
-- Tests: Not Run
+- Tests: Run (`timeout 300 godot -s tests/run_tests.gd`) — red phase: resolver + generator wiring tests fail until implementation
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -134,19 +134,17 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md",
   "spec_requirements": ["REQ-ESEG-1", "REQ-ESEG-2", "REQ-ESEG-3"],
-  "resolver_contract": "Single module under scripts/asset_generation/; family_name -> res://scripts/enemies/generated/{family_name}.gd if ResourceLoader.exists else res://scripts/enemies/enemy_base.gd",
-  "parity_consumers": [
-    "scripts/asset_generation/generate_enemy_scenes.gd",
-    "scripts/asset_generation/load_assets.gd"
-  ],
-  "family_name_source": "EnemyNameUtils.extract_family_name(glb_path.get_file().get_basename()) in scripts/asset_generation/enemy_name_utils.gd"
+  "test_suite": "tests/asset_generation/test_enemy_root_script_resolver.gd",
+  "resolver_path_contract": "res://scripts/asset_generation/enemy_root_script_resolver.gd",
+  "resolver_method_contract": "instance from .new(); resolve_enemy_root_script_path(family_name: String) -> String",
+  "fixture_override": "res://scripts/enemies/generated/eseg_test_override_probe.gd"
 }
 ```
 
@@ -155,4 +153,4 @@ Proceed
 
 ## Reason
 
-Specification complete: REQ-ESEG-1 (shared resolver, single resolution path), REQ-ESEG-2 (override path `res://scripts/enemies/generated/{family_stem}.gd`, `extends EnemyBase`, exists/load/set_script pattern with base fallback), REQ-ESEG-3 (ESEG-DOC human pattern and parity rule). Test Designer should author failing tests for resolver + dual-consumer wiring per AC-ESEG-* before implementation.
+Test suite added for REQ-ESEG-1–3: resolver module presence and behavior (base vs override), `EnemyNameUtils.extract_family_name` stem examples, dual-consumer source checks (preload resolver, call `resolve_enemy_root_script_path`, no `res://scripts/enemies/generated/` in generators). Suite is red until Implementation adds `enemy_root_script_resolver.gd` and wires both generators. Test Breaker should stress edges and drift.

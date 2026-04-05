@@ -41,3 +41,13 @@ Run: 2026-04-05 autopilot (maintenance backlog)
 **Confidence:** High
 
 **Deliverable (spec handoff):** Ticket **Specification** filled with REQ-ESEG-1–3 and ESEG-DOC; WORKFLOW STATE Stage `TEST_DESIGN`, Revision 3, Last Updated By `Spec Agent`, Next `Test Designer Agent`, Status `Proceed`.
+
+### [MAINT-ESEG] TEST_DESIGN — Resolver + dual-consumer tests
+
+**Would have asked:** None; spec fixed resolver semantics but not the public method name.
+
+**Assumption made:** Resolver ships at `res://scripts/asset_generation/enemy_root_script_resolver.gd`, instantiable with `.new()`, with instance method `resolve_enemy_root_script_path(family_name: String) -> String`. Fixture `scripts/enemies/generated/eseg_test_override_probe.gd` (`extends EnemyBase`) covers AC-ESEG-1e. REQ-ESEG-3 (ESEG-DOC) is satisfied by ticket text; tests enforce generator parity via shared preload path and ban on embedding `res://scripts/enemies/generated/` in consumer sources.
+
+**Confidence:** Medium (method naming is implementer-facing; mismatch requires aligning implementation or tests.)
+
+**Deliverable:** `tests/asset_generation/test_enemy_root_script_resolver.gd`; fixture `scripts/enemies/generated/eseg_test_override_probe.gd`; WORKFLOW STATE Stage `TEST_BREAK`, Revision 4, Last Updated By `Test Designer Agent`, Next `Test Breaker Agent`, Status `Proceed`.
