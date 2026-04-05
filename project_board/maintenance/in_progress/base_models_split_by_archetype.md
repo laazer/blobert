@@ -15,6 +15,12 @@ Title: Optional — split `base_models.py` by body archetype (Python)
 
 - None
 
+## Specification
+
+Split `base_models` into a package with one module per archetype plus `base_model_type` and `model_type_factory`; preserve stable imports from `src.enemies.base_models` and exact `ModelTypeFactory` semantics (unknown key → insectoid, `get_available_types` order). Verification: pytest under `asset_generation/python/tests/` per `.lefthook/scripts/py-tests.sh`, ruff on touched files, docs updates per spec.
+
+**Full spec:** [`project_board/specs/base_models_split_by_archetype_spec.md`](../../specs/base_models_split_by_archetype_spec.md)
+
 ## Execution Plan
 
 | # | Task Objective | Assigned Agent | Input | Expected Output | Dependencies | Success Criteria | Risks / Assumptions |
@@ -31,13 +37,13 @@ Title: Optional — split `base_models.py` by body archetype (Python)
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -55,12 +61,13 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "string"
+  "ticket_path": "string",
+  "spec_path": "project_board/specs/base_models_split_by_archetype_spec.md"
 }
 ```
 
@@ -68,4 +75,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete; execution plan recorded. Specification must define module layout, public API stability, and verification before test design.
+Specification complete; Test Designer adds factory tests with fixed RNG and mocked bpy per BMSBA-5.
