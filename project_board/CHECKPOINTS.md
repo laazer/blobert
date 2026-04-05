@@ -252,3 +252,9 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-test-design.md`
 - Outcome: EMSI behavioral tests in `asset_generation/python/tests/enemies/test_enemy_model_scale_input.py`; pytest on that file fails pre-implementation (expected) until factory/base/archetypes implement `scale`.
+
+### MAINT-EMSI / run-2026-04-05-test-break
+- Ticket: `project_board/maintenance/in_progress/enemy_model_scale_input.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-test-break.md`
+- Outcome: Adversarial extensions (fail-fast empty log, subnormal/huge finite, fractional multiply, primitive-sequence determinism, positional/int scale, unknown-type fallback, direct `HumanoidModel` validation); `# CHECKPOINT` on structural assumptions; pytest file still red until implementation.

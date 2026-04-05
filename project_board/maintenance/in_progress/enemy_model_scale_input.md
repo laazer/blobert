@@ -42,13 +42,13 @@ Plumb the value from the factory into `BaseModelType` (default `1.0` for backwar
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 - Pending pipeline
@@ -64,14 +64,15 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_break",
+  "action": "implement",
   "ticket_path": "project_board/maintenance/in_progress/enemy_model_scale_input.md",
   "spec_path": "project_board/specs/enemy_model_scale_input_spec.md",
+  "tests_glob": "asset_generation/python/tests/enemies/test_enemy_model_scale_input.py",
   "execution_plan_ref": "## Execution Plan"
 }
 ```
@@ -80,4 +81,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary EMSI behavioral tests authored; Test Breaker extends adversarial / edge coverage before implementation.
+Adversarial EMSI tests extended (fail-fast, boundaries, call styles, fallback, direct-init validation, determinism sequence); Implementation Generalist implements factory/base/archetypes per spec until pytest file is green.

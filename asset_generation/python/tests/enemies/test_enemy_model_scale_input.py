@@ -10,6 +10,7 @@ create_model runs headless without Blender.
 from __future__ import annotations
 
 import inspect
+import math
 import random
 import unittest
 from contextlib import ExitStack, contextmanager
@@ -162,6 +163,39 @@ class TestEMSI2ScaleValidation(unittest.TestCase):
                     )
                     self.assertEqual(m.scale, s)
 
+    def test_EMSI_2_3_invalid_scale_fail_fast_no_primitive_calls(self):
+        """EMSI-2: reject before geometry; mutants that validate late still leave log empty."""
+        materials = {"a": object()}
+        for bad in (-0.0, -1e-300):
+            with self.subTest(scale=bad):
+                with _capture_primitive_calls() as (_, log):
+                    rng = random.Random(_FIXED_SEED)
+                    with self.assertRaises(ValueError):
+                        bm.ModelTypeFactory.create_model(
+                            "blob", "x", materials, rng, scale=bad
+                        )
+                self.assertEqual(
+                    log,
+                    [],
+                    msg="invalid scale must not invoke create_sphere/create_cylinder",
+                )
+
+    def test_EMSI_2_4_subnormal_and_large_finite_accepted(self):
+        """EMSI-2 edge notes: subnormal >0 and huge finite scales are valid."""
+        materials = {"a": object()}
+        tiny = math.nextafter(0.0, 1.0)  # smallest positive float (often subnormal)
+        huge = 1e12
+        self.assertTrue(math.isfinite(tiny) and tiny > 0)
+        self.assertTrue(math.isfinite(huge) and huge > 0)
+        with _capture_primitive_calls():
+            for s in (tiny, huge):
+                with self.subTest(scale=s):
+                    rng = random.Random(_FIXED_SEED)
+                    m = bm.ModelTypeFactory.create_model(
+                        "blob", "edge", materials, rng, scale=s
+                    )
+                    self.assertEqual(m.scale, s)
+
 
 class TestEMSI3UniformGeometryScaling(unittest.TestCase):
     """EMSI-3: primitive location/scale kwargs; rotation_euler unchanged for humanoid arms."""
@@ -209,7 +243,24 @@ class TestEMSI3UniformGeometryScaling(unittest.TestCase):
                         {k: v for k, v in kw2.items() if k not in ("location", "scale")},
                     )
 
+    def test_EMSI_3_2b_fractional_scale_matches_tuple_multiply_contract(self):
+        """Non-power-of-two fractional s; catches implementations that round or skip axes."""
+        materials = {"x": object()}
+        factor = 0.25
+        with _capture_primitive_calls() as (_, log_one):
+            rng_a = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                "blob", "p", materials, rng_a, scale=1.0
+            )
+        with _capture_primitive_calls() as (_, log_frac):
+            rng_b = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                "blob", "p", materials, rng_b, scale=factor
+            )
+        self.assertEqual(log_frac, _scale_loc_scale_kwargs(log_one, factor))
+
     def test_EMSI_3_3_humanoid_arm_rotation_euler_unchanged_when_scale_doubles(self):
+        # CHECKPOINT: assumes arms are parts[2] and parts[4] and are the only rotation_euler sets in humanoid_model.
         """Arms are parts[2] and parts[4]; only those set rotation_euler in humanoid_model."""
         materials = {"a": object()}
 
@@ -244,11 +295,28 @@ class TestEMSI4Determinism(unittest.TestCase):
 
         self.assertEqual(_once(), _once())
 
+    def test_EMSI_4_2_different_valid_scales_same_primitive_kind_sequence(self):
+        """Scale must not insert/remove/reorder primitives vs baseline for same seed."""
+        materials = {"q": object()}
+
+        def kinds(scale: float) -> list[str]:
+            with _capture_primitive_calls() as (_, log):
+                rng = random.Random(_FIXED_SEED)
+                bm.ModelTypeFactory.create_model(
+                    "humanoid", "d", materials, rng, scale=scale
+                )
+                return [k for k, _ in log]
+
+        base = kinds(1.0)
+        self.assertEqual(kinds(0.5), base)
+        self.assertEqual(kinds(3.0), base)
+
 
 class TestEMSI5RegistryUnchanged(unittest.TestCase):
     """EMSI-5.2: MODEL_TYPES and get_available_types unchanged by scale feature."""
 
     def test_EMSI_5_2_registry_keys_and_order_unchanged(self):
+        # CHECKPOINT: encodes BMSBA-era registry snapshot; if MODEL_TYPES grows, update intentionally.
         self.assertEqual(
             set(bm.ModelTypeFactory.MODEL_TYPES.keys()),
             {"insectoid", "blob", "humanoid"},
@@ -257,6 +325,72 @@ class TestEMSI5RegistryUnchanged(unittest.TestCase):
             bm.ModelTypeFactory.get_available_types(),
             ["insectoid", "blob", "humanoid"],
         )
+
+
+class TestEMSIAdversarialCallStyleAndFallback(unittest.TestCase):
+    """Positional API, int coercion, unknown model_type path, direct constructor validation."""
+
+    def test_EMSI_ADV_01_positional_scale_after_rng(self):
+        """EMSI-1: fifth positional arg is scale (call sites may omit keyword)."""
+        materials = {"a": object()}
+        with _capture_primitive_calls():
+            rng = random.Random(_FIXED_SEED)
+            m = bm.ModelTypeFactory.create_model(
+                "blob", "pos", materials, rng, 1.75
+            )
+        self.assertEqual(m.scale, 1.75)
+
+    def test_EMSI_ADV_02_int_scale_matches_float_geometry(self):
+        """Spec allows int where coerced; geometry must match float multiplier."""
+        materials = {"a": object()}
+        with _capture_primitive_calls() as (_, log_int):
+            rng_i = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                "insectoid", "i", materials, rng_i, scale=3
+            )
+        with _capture_primitive_calls() as (_, log_float):
+            rng_f = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                "insectoid", "i", materials, rng_f, scale=3.0
+            )
+        self.assertEqual(log_int, log_float)
+
+    def test_EMSI_ADV_03_unknown_model_type_scales_like_insectoid_fallback(self):
+        # CHECKPOINT: relies on current factory fallback to InsectoidModel for unknown keys.
+        """EMSI-5 compatibility: unknown type still applies same scale contract as insectoid."""
+        materials = {"x": object()}
+        unknown_key = "__maint_emsi_unknown__"
+        self.assertNotIn(unknown_key, bm.ModelTypeFactory.MODEL_TYPES)
+        with _capture_primitive_calls() as (_, log_insect):
+            rng_a = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                "insectoid", "p", materials, rng_a, scale=2.0
+            )
+        with _capture_primitive_calls() as (_, log_unknown):
+            rng_b = random.Random(_FIXED_SEED)
+            bm.ModelTypeFactory.create_model(
+                unknown_key, "p", materials, rng_b, scale=2.0
+            )
+        self.assertEqual(log_unknown, log_insect)
+
+    def test_EMSI_ADV_04_unknown_type_invalid_scale_fail_fast(self):
+        materials = {"x": object()}
+        unknown_key = "__maint_emsi_unknown__"
+        with _capture_primitive_calls() as (_, log):
+            rng = random.Random(_FIXED_SEED)
+            with self.assertRaises(ValueError):
+                bm.ModelTypeFactory.create_model(
+                    unknown_key, "p", materials, rng, scale=0.0
+                )
+        self.assertEqual(log, [])
+
+    def test_EMSI_ADV_05_direct_archetype_init_rejects_invalid_scale(self):
+        """EMSI-2 single validation point must cover direct construction, not only factory."""
+        materials = {"a": object()}
+        rng = random.Random(_FIXED_SEED)
+        with _capture_primitive_calls():
+            with self.assertRaises(ValueError):
+                bm.HumanoidModel("h", materials, rng, scale=-0.5)
 
 
 if __name__ == "__main__":
