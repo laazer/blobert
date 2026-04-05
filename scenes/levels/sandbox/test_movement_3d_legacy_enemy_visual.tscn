@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://b8sleevlegacy3d01"]
+[gd_scene format=3 uid="uid://bp6g2h4nwlpyu"]
 
 [ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
