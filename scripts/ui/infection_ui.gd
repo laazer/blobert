@@ -1,6 +1,29 @@
 class_name InfectionUI
 extends CanvasLayer
 
+# HUD scale (MAINT-HCSI / HCSI-1 … HCSI-5)
+# Uniform scale factor for all packaged HUD controls in game_ui.tscn (direct Control
+# children of this CanvasLayer, including the Hints subtree). Applied via Control.scale
+# with pivot_offset (0,0) so top-left–anchored layout matches legacy positions at 1.0.
+# Default 1.0 preserves scene offset_* and theme_override_font_sizes as authoring truth (HCSI-2).
+# Set in the inspector on GameUI, via code, or scene instance overrides.
+#
+# Hints subtree: nested labels use Control.scale; the Hints container uses runtime
+# offset_* (from design base below) so its layout size tracks hud_scale — required
+# for global-rect / hit-test parity with sibling HUD controls under CanvasLayer.
+@export var hud_scale: float = 1.0:
+	get:
+		return _hud_scale_value
+	set(value):
+		_hud_scale_value = _sanitize_hud_scale(value)
+		_apply_hud_scale_to_direct_controls()
+
+var _hud_scale_value: float = 1.0
+
+# Must match game_ui.tscn Hints offset_right / offset_bottom at hud_scale == 1.0 (HCSI-2).
+const _HINTS_PACK_BASE_W: float = 2000.0
+const _HINTS_PACK_BASE_H: float = 102.0
+
 # --- Named color constants (spec NF-1) ---
 
 const COLOR_SLOT_EMPTY         = Color(0.2, 0.2, 0.2, 0.6)
@@ -27,7 +50,41 @@ var _post_fusion_flash_until_ms: int = 0
 var _prev_both_filled: bool = false
 
 
+func _sanitize_hud_scale(s: float) -> float:
+	if is_nan(s) or is_inf(s):
+		return 1.0
+	if s <= 0.0:
+		return 0.0
+	return s
+
+
+func _apply_hud_scale_to_direct_controls() -> void:
+	var s: float = _hud_scale_value
+	var sv: Vector2 = Vector2(s, s)
+	for child in get_children():
+		var c := child as Control
+		if c == null:
+			continue
+		if c.name == "Hints":
+			c.pivot_offset = Vector2.ZERO
+			c.scale = Vector2.ONE
+			c.offset_left = 0.0
+			c.offset_top = 0.0
+			c.offset_right = _HINTS_PACK_BASE_W * s
+			c.offset_bottom = _HINTS_PACK_BASE_H * s
+			for h in c.get_children():
+				var hc := h as Control
+				if hc == null:
+					continue
+				hc.pivot_offset = Vector2.ZERO
+				hc.scale = sv
+		else:
+			c.pivot_offset = Vector2.ZERO
+			c.scale = sv
+
+
 func _ready() -> void:
+	_apply_hud_scale_to_direct_controls()
 	_player = get_tree().get_first_node_in_group("player") as PlayerController3D
 	var root: Node = get_parent()
 	if root != null:

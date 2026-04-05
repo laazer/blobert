@@ -28,16 +28,17 @@ Implementation is flexible: e.g. a full-screen `Control` root under the layer wi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_FRONTEND
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Pending pipeline
+- `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, 2026-04-05) after `hud_scale` + HUD scaling in `infection_ui.gd` / `game_ui.tscn`.
+- Checkpoint: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-implementation.md`
 
 ## Blocking Issues
 - None
@@ -50,12 +51,12 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Frontend Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "implement",
+  "action": "verify_ac",
   "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md",
   "spec_path": "project_board/specs/hud_components_scale_input_spec.md"
 }
@@ -65,4 +66,4 @@ Implementation Frontend Agent
 Proceed
 
 ## Reason
-Adversarial HCSI tests added (`project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-break.md`); suite still red until `hud_scale` and uniform HUD scaling land per spec. Implementation Frontend owns `game_ui.tscn` / `infection_ui.gd` (and related UI wiring).
+Implementation complete per HCSI (exported `hud_scale`, uniform scaling, path contract preserved). Awaiting AC Gatekeeper verification before COMPLETE / folder move.

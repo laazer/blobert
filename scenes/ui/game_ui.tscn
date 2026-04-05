@@ -146,8 +146,11 @@ theme_override_font_sizes/font_size = 20
 text = "Mutation: 0 active"
 
 [node name="Hints" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 2000.0
+offset_bottom = 102.0
 
 [node name="MoveHint" type="Label" parent="Hints"]
 layout_mode = 0
