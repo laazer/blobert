@@ -3,20 +3,20 @@ extends EditorScript
 
 const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")
 const EnemyMutationMap = preload("res://scripts/asset_generation/enemy_mutation_map.gd")
+const EnemyRootScriptResolver = preload("res://scripts/asset_generation/enemy_root_script_resolver.gd")
 
 const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
-
-# Shared gameplay script to attach to every generated enemy scene.
-# Create this later if you want; the generator will skip attaching it if missing.
-const DEFAULT_ENEMY_SCRIPT := "res://scripts/enemies/enemy_base.gd"
 
 # Root node type for generated enemies.
 # CharacterBody3D is useful if most enemies move with gameplay logic.
 # Change to Node3D if you want a lighter root.
 const USE_CHARACTER_BODY := true
 
+var _enemy_root_script_resolver: Object
+
 func _run() -> void:
+	_enemy_root_script_resolver = EnemyRootScriptResolver.new()
 	print("Enemy scene generation started.")
 	_ensure_dir(OUTPUT_DIR)
 
@@ -57,9 +57,11 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 
 	root.name = file_name
 
-	# Attach common script if present
-	if ResourceLoader.exists(DEFAULT_ENEMY_SCRIPT):
-		var script_res := load(DEFAULT_ENEMY_SCRIPT)
+	var resolved_script_path: String = _enemy_root_script_resolver.resolve_enemy_root_script_path(
+		family_name
+	)
+	if ResourceLoader.exists(resolved_script_path):
+		var script_res := load(resolved_script_path)
 		if script_res:
 			root.set_script(script_res)
 

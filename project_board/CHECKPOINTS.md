@@ -215,6 +215,6 @@ Log: `project_board/checkpoints/MAINT-EMMU/run-2026-04-05-autopilot.md`
 
 ### MAINT-ESEG / run-2026-04-05-autopilot
 - Ticket: `project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md`
-- Stage: IMPLEMENTATION_GENERALIST
+- Stage: STATIC_QA → AC Gatekeeper
 - Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
-- Notes: Adversarial ESEG resolver tests added; Implementation Generalist wires resolver + generators next.
+- Outcome: `enemy_root_script_resolver.gd` + `generate_enemy_scenes.gd` / `load_assets.gd` wired; ESEG tests + `ci/scripts/run_tests.sh` green.

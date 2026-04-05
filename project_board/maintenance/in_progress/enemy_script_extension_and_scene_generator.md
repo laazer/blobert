@@ -107,18 +107,18 @@ Generated enemy roots currently attach `enemy_base.gd` for all GLBs. As M8/M9/M1
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Validation Status
 
-- Tests: Run (`timeout 300 godot -s tests/run_tests.gd`) — red phase: resolver + generator wiring tests fail until implementation
-- Static QA: Not Run
+- Tests: Run (`timeout 300 godot -s tests/run_tests.gd`) — green; `tests/asset_generation/test_enemy_root_script_resolver.gd` passes
+- Static QA: Run (`ci/scripts/run_tests.sh`) — exit 0
 - Integration: Not Run
 
 ## Blocking Issues
@@ -134,17 +134,19 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist
+AC Gatekeeper
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md",
   "spec_requirements": ["REQ-ESEG-1", "REQ-ESEG-2", "REQ-ESEG-3"],
-  "test_suite": "tests/asset_generation/test_enemy_root_script_resolver.gd",
-  "resolver_path_contract": "res://scripts/asset_generation/enemy_root_script_resolver.gd",
-  "resolver_method_contract": "instance from .new(); resolve_enemy_root_script_path(family_name: String) -> String",
-  "fixture_override": "res://scripts/enemies/generated/eseg_test_override_probe.gd"
+  "evidence": [
+    "scripts/asset_generation/enemy_root_script_resolver.gd",
+    "scripts/asset_generation/generate_enemy_scenes.gd",
+    "scripts/asset_generation/load_assets.gd",
+    "ci/scripts/run_tests.sh exit 0"
+  ]
 }
 ```
 
@@ -153,4 +155,4 @@ Proceed
 
 ## Reason
 
-Test Breaker extended `test_enemy_root_script_resolver.gd` with adversarial cases (empty stem, path-injection stems, output path safety invariant, idempotence, long stem, fixture `extends` check, at-most-one resolver path literal per generator). Suite remains red until Implementation adds `enemy_root_script_resolver.gd` and wires `generate_enemy_scenes.gd` + `load_assets.gd`.
+Resolver module and dual-generator wiring landed; full Godot suite and `ci/scripts/run_tests.sh` green. AC Gatekeeper should confirm ticket AC (documented pattern, generator script selection, existing scenes) against spec and test evidence.

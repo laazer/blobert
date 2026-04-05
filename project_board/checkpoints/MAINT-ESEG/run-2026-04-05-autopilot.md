@@ -61,3 +61,15 @@ Run: 2026-04-05 autopilot (maintenance backlog)
 **Confidence:** Medium (defense-in-depth beyond minimal AC-ESEG-1d wording; Implementation may choose sanitize-then-exists vs. exists-only if all tests pass.)
 
 **Deliverable:** Ticket WORKFLOW STATE Stage `IMPLEMENTATION_GENERALIST`, Revision 5, Last Updated By `Test Breaker Agent`, Next `Implementation Generalist`, Status `Proceed`; checkpoint log updated; `tests/asset_generation/test_enemy_root_script_resolver.gd` extended with `# CHECKPOINT` markers on encoded assumptions.
+
+### [MAINT-ESEG] IMPLEMENTATION — Resolver + generator wiring
+
+**Would have asked:** None; contract fixed by tests and ticket NEXT ACTION schema.
+
+**Assumption made:** `RefCounted` resolver at `enemy_root_script_resolver.gd` with `BASE_ENEMY_SCRIPT_PATH` / `GENERATED_ENEMY_SCRIPT_DIR` literals; `resolve_enemy_root_script_path` sanitizes empty and path-injection stems (`..`, `/`, `\`); when input matches GLB basename style (trailing `_<int>` segment or an `animated` segment), normalize via `EnemyNameUtils.extract_family_name` before lookup so callers may pass either raw basename or pre-extracted stem; `ResourceLoader.exists` on `generated/<stem>.gd` else base. Both generators preload resolver once, call `resolve_enemy_root_script_path(family_name)` before `set_script`, and embed no `res://scripts/enemies/generated/` literal.
+
+**Confidence:** High
+
+**Evidence:** `timeout 300 godot -s tests/run_tests.gd` exit 0; `ci/scripts/run_tests.sh` exit 0.
+
+**Deliverable:** Ticket WORKFLOW STATE Stage `STATIC_QA`, Revision 6, Next `AC Gatekeeper`; `scripts/asset_generation/enemy_root_script_resolver.gd`; `generate_enemy_scenes.gd` / `load_assets.gd` updated; fixture `scripts/enemies/generated/eseg_test_override_probe.gd` unchanged (`extends EnemyBase`).

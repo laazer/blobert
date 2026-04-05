@@ -7,15 +7,18 @@ extends SceneTree
 
 const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")
 const EnemyMutationMap = preload("res://scripts/asset_generation/enemy_mutation_map.gd")
+const EnemyRootScriptResolver = preload("res://scripts/asset_generation/enemy_root_script_resolver.gd")
 
 const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
-const DEFAULT_ENEMY_SCRIPT := "res://scripts/enemies/enemy_base.gd"
 const ANIMATION_CONTROLLER_SCRIPT := "res://scripts/enemies/enemy_animation_controller.gd"
 const GENERATED_ESM_STUB_SCRIPT := "res://scripts/enemies/enemy_generated_esm_stub.gd"
 
+var _enemy_root_script_resolver: Object
+
 
 func _init() -> void:
+	_enemy_root_script_resolver = EnemyRootScriptResolver.new()
 	print("Enemy scene generation started.")
 
 	var dir := DirAccess.open(SOURCE_DIR)
@@ -82,8 +85,11 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 	var root := CharacterBody3D.new()
 	root.name = file_name
 
-	if ResourceLoader.exists(DEFAULT_ENEMY_SCRIPT):
-		var script_res := load(DEFAULT_ENEMY_SCRIPT)
+	var resolved_script_path: String = _enemy_root_script_resolver.resolve_enemy_root_script_path(
+		family_name
+	)
+	if ResourceLoader.exists(resolved_script_path):
+		var script_res := load(resolved_script_path)
 		if script_res:
 			root.set_script(script_res)
 
