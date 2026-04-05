@@ -53,3 +53,8 @@ Run: 2026-04-05 autopilot (maintenance backlog queue)
 **Would have asked:** None; proceed after logging.
 **Assumption made:** Extended `test_maint_eapd_shared_enemy_animation_policy.gd` with EAPD-P8..P22: `setup(null)` / reorder, orphan `notify_root_animation_wired`, per-instance export independence, 64× instantiate+free stress, pre-`ready_ok` `trigger_hit`/`_physics_process`, internal clip/speed mapping contracts, bogus path contrast, boundary export persistence + negative-threshold combinator. `# CHECKPOINT` on `setup(null)` encodes deferred-wiring assumption. Handoff Stage `IMPLEMENTATION_GENERALIST`.
 **Confidence:** High
+
+### [MAINT-EAPD] Implementation Generalist — Defer-only closure path
+**Would have asked:** None; ticket and spec already waive implementation for AC-1.
+**Assumption made:** No edits to `scripts/enemies/enemy_animation_controller.gd` or related production wiring; AC-1 satisfied by explicit deferral. Re-ran `timeout 300 godot -s tests/run_tests.gd` — exit 0. Stage → `STATIC_QA`; Next → Acceptance Criteria Gatekeeper Agent; Revision 6.
+**Confidence:** High

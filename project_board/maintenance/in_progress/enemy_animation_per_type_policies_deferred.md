@@ -119,17 +119,17 @@ This ticket is a **deferral and policy record** for enemy animation architecture
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist
 
 ## Validation Status
 
-- Tests: PASS — MAINT-EAPD policy invariants + adversarial suite (`test_maint_eapd_shared_enemy_animation_policy.gd` EAPD-P1..P22); `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05)
+- Tests: PASS — MAINT-EAPD policy invariants + adversarial suite (`test_maint_eapd_shared_enemy_animation_policy.gd` EAPD-P1..P22); `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05, re-run by Implementation Generalist)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -146,11 +146,11 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist
+Acceptance Criteria Gatekeeper Agent
 
 ## Status
 Proceed
 
 ## Reason
 
-Test Breaker extended the defer-only suite (EAPD-P8..P22: wiring/null/orphan, export independence, stress instantiate, pre-ready_ok safety, shared mapping contracts via `call()`, bogus-path contrast, boundary exports). Implementation Generalist SHALL confirm no production code changes are required for MAINT-EAPD closure under AC-1 and SHALL advance workflow (e.g. STATIC_QA / gatekeeper / COMPLETE) per execution plan; AC-2 remains future-only.
+Implementation Generalist confirmed AC-1: no preemptive `EnemyAnimationController` split or policy injection; no production code changes required. Full suite `timeout 300 godot -s tests/run_tests.gd` exit 0 (2026-04-05). Handoff to Acceptance Criteria Gatekeeper for AC-1 verification and closure per spec; AC-2 remains future-only.
