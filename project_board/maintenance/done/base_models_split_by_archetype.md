@@ -32,23 +32,25 @@ Split `base_models` into a package with one module per archetype plus `base_mode
 | 5 | Run static checks if present (e.g. ruff) on touched files; fix any new violations. | Static QA Agent | Repo lint config; changed files | Clean lint on touched paths | 4 | No new static violations in scope | |
 | 6 | Confirm integration: full `asset_generation/python` pytest suite; note CI alignment with `.lefthook/scripts/py-tests.sh`. | Integration Agent | Green tests from task 4 | Validation status update recommendation or ticket note | 5 | Integration validation documented; regressions none | Blender-headless export not assumed unless spec demands it |
 
+**Completed (2026-04-05):** Tasks 1–6 satisfied — package under `src/enemies/base_models/`; tests in `test_base_models_factory.py`; full pytest green; docs updated; ruff not configured in `pyproject.toml` (Static QA skipped per checkpoint).
+
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+COMPLETE
 
 ## Revision
-5
+9
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 343 passed, 2026-04-05)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: `cd asset_generation/python && uv run pytest tests/ -q` — 380 passed, 221 subtests passed (2026-04-05)
+- Static QA: Skipped — `ruff` not in project dev dependencies (`uv run ruff` unavailable); no new linter configured for this path
+- Integration: Full `asset_generation/python` test suite green (same run)
 
 ## Blocking Issues
 - None
@@ -61,19 +63,17 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "project_board/maintenance/in_progress/base_models_split_by_archetype.md",
-  "spec_path": "project_board/specs/base_models_split_by_archetype_spec.md",
-  "tests_glob": "asset_generation/python/tests/enemies/test_base_models_factory.py"
+  "action": "merge | archive"
 }
 ```
 
 ## Status
-Proceed
+Complete
 
 ## Reason
-Adversarial tests extended (unknown keys, case sensitivity, get_available_types immutability, import graph). Implementation Generalist executes package split per spec BMSBA-1–4; checkpoint `project_board/checkpoints/MAINT-BMSBA/run-2026-04-05-test-break.md`.
+All spec requirements BMSBA-1–5 evidenced: `base_models/` package with explicit re-exports; monolithic `base_models.py` removed; `ModelTypeFactory` behavior and import graph covered by tests; documentation lists package; animated enemy entrypoint no longer carries dead `ModelTypeFactory` import (module removed in AERC).

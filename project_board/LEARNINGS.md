@@ -1607,3 +1607,27 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 *Completed: 2026-04-05*
 
 ---
+
+# Learning Output — [base_models_split_by_archetype]
+
+## Learnings
+- category: process
+  insight: A ticket can sit at IMPLEMENTATION_GENERALIST while the refactor already exists only on disk; `/ap-continue` should diff against `git status` before redoing work.
+  impact: Avoids duplicate edits and speeds closure to AC Gatekeeper + commit.
+  prevention: On resume, run `git status` on spec paths and pytest before invoking implementation agents.
+  severity: low
+
+- category: infra
+  insight: Spec BMSBA-5.3 mandates ruff on touched files, but the package may not ship ruff — document Static QA as skipped with evidence rather than blocking COMPLETE.
+  impact: Unblocks closure when lint tool is absent.
+  prevention: Align spec templates with `pyproject.toml` optional dev deps or add ruff to dev extras.
+  severity: low
+
+## Anti-Patterns
+- description: Leaving a deleted monolith (`base_models.py`) and new package untracked while the ticket advances through test stages.
+  detection_signal: `git status` shows `D base_models.py` and `?? base_models/` with green pytest.
+  prevention: Commit implementation in the same session as IMPLEMENTATION_GENERALIST handoff or immediately on resume.
+
+*Completed: 2026-04-05*
+
+---
