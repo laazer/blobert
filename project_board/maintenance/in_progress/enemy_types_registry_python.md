@@ -32,25 +32,48 @@ Title: Optional — tidy `EnemyTypes` / slug registry in asset generation (Pytho
 
 ## Specification
 
-*(Spec Agent populates or links.)*
+### REQ-ETRP-001 — Registry module
+- **Path:** `asset_generation/python/src/utils/enemy_slug_registry.py`
+- **Public symbols:** `ANIMATED_SLUGS: tuple[str, ...]`, `STATIC_SLUGS: tuple[str, ...]`
+- **Values:** Byte-identical strings, same order as pre-change `EnemyTypes.get_animated()` then `EnemyTypes.get_static()` respectively (animated: adhesion_bug → … → carapace_husk; static: glue_drone → … → ferro_drone).
+
+### REQ-ETRP-002 — Import DAG (no cycles)
+- `enemy_slug_registry` **must not** import `constants` or any module that transitively imports `constants` at import time.
+- `constants.EnemyTypes` **may** import `enemy_slug_registry` and use its tuples for `get_animated` / `get_static` / `get_all`.
+
+### REQ-ETRP-003 — `EnemyTypes` compatibility
+- Class attributes (`EnemyTypes.ADHESION_BUG`, …) remain the same string literals as before refactor.
+- `get_animated()` returns `list(enemy_slug_registry.ANIMATED_SLUGS)` (or equivalent copy).
+- `get_static()` returns `list(enemy_slug_registry.STATIC_SLUGS)`.
+- `get_all()` returns `get_animated() + get_static()` (animated first, then static), matching prior behavior.
+
+### REQ-ETRP-004 — Pytest contract
+- Under `asset_generation/python/tests/`: frozen expected lists match registry tuples; class attributes asserted; `get_all() == get_animated() + get_static()`; **import-order** smoke in a **fresh subprocess** with `sys.path` like `main.py` (`import utils.constants` then `import utils.enemy_slug_registry`) succeeds.
+
+### REQ-ETRP-005 — Adversarial (test-breaker)
+- AST (or equivalent) assertion that `enemy_slug_registry.py` contains no import of `utils.constants`, `constants`, or `from utils import constants`.
+- Assert `ANIMATED_SLUGS` and `STATIC_SLUGS` are disjoint sets.
+
+### REQ-ETRP-006 — Package surface
+- `src/utils/__init__.py` unchanged unless a future ticket explicitly exports the registry from `utils`.
 
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+STATIC_QA
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Implementation Generalist
 
 ## Validation Status
 
-- Tests: Not Run
-- Static QA: Not Run
+- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 386 passed)
+- Static QA: Passed (no circular import: subprocess import-order test + AST guard on registry source)
 - Integration: Not Run
 
 ## Blocking Issues
@@ -66,14 +89,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/maintenance/in_progress/enemy_types_registry_python.md",
   "checkpoint_log": "project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md",
-  "scope": "enemy_slug_registry module + EnemyTypes re-export; no slug renames"
+  "scope": "Verify AC: slug strings unchanged; no circular imports; CLI/list alignment (task 6 optional if gatekeeper defers integration)"
 }
 ```
 
@@ -82,4 +105,4 @@ Proceed
 
 ## Reason
 
-Planning complete. Spec Agent must author Revision 2 specification: single registry module for slug sequences, `EnemyTypes` compatibility surface, import DAG, and pytest snapshot contract alignment.
+Spec through implementation and automated static checks complete; ticket remains open for gatekeeper AC validation and optional integration smoke (task 6).

@@ -5,6 +5,8 @@ Core constants for the enemy generation system
 from enum import Enum
 from typing import Dict, List
 
+from . import enemy_slug_registry
+
 
 class EnemyTypes:
     """Enemy type constants"""
@@ -28,15 +30,12 @@ class EnemyTypes:
     @classmethod
     def get_animated(cls) -> List[str]:
         """Get list of animated enemy types"""
-        return [cls.ADHESION_BUG, cls.TAR_SLUG, cls.EMBER_IMP, cls.ACID_SPITTER, cls.CLAW_CRAWLER, cls.CARAPACE_HUSK]
+        return list(enemy_slug_registry.ANIMATED_SLUGS)
 
     @classmethod
     def get_static(cls) -> List[str]:
         """Get list of static-only enemy types (no animation support)"""
-        return [
-            cls.GLUE_DRONE, cls.MELT_WORM,
-            cls.FROST_JELLY, cls.STONE_BURROWER, cls.FERRO_DRONE
-        ]
+        return list(enemy_slug_registry.STATIC_SLUGS)
 
     @classmethod
     def get_all(cls) -> List[str]:
