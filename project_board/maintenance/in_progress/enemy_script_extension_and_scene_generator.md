@@ -107,13 +107,13 @@ Generated enemy roots currently attach `enemy_base.gd` for all GLBs. As M8/M9/M1
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 
@@ -134,7 +134,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist
 
 ## Required Input Schema
 ```json
@@ -153,4 +153,4 @@ Proceed
 
 ## Reason
 
-Test suite added for REQ-ESEG-1–3: resolver module presence and behavior (base vs override), `EnemyNameUtils.extract_family_name` stem examples, dual-consumer source checks (preload resolver, call `resolve_enemy_root_script_path`, no `res://scripts/enemies/generated/` in generators). Suite is red until Implementation adds `enemy_root_script_resolver.gd` and wires both generators. Test Breaker should stress edges and drift.
+Test Breaker extended `test_enemy_root_script_resolver.gd` with adversarial cases (empty stem, path-injection stems, output path safety invariant, idempotence, long stem, fixture `extends` check, at-most-one resolver path literal per generator). Suite remains red until Implementation adds `enemy_root_script_resolver.gd` and wires `generate_enemy_scenes.gd` + `load_assets.gd`.

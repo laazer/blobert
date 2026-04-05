@@ -215,9 +215,6 @@ Log: `project_board/checkpoints/MAINT-EMMU/run-2026-04-05-autopilot.md`
 
 ### MAINT-ESEG / run-2026-04-05-autopilot
 - Ticket: `project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md`
-- Stage: TEST_DESIGN
+- Stage: IMPLEMENTATION_GENERALIST
 - Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
-
-### [MAINT-ESEG] — OUTCOME: Spec handoff
-REQ-ESEG-1–3 + ESEG-DOC in ticket; shared resolver contract; `res://scripts/enemies/generated/{family_stem}.gd` with base fallback; parity for `generate_enemy_scenes.gd` and `load_assets.gd`. Next: Test Designer Agent.
-Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
+- Notes: Adversarial ESEG resolver tests added; Implementation Generalist wires resolver + generators next.

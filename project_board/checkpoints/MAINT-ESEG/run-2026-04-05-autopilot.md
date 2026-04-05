@@ -51,3 +51,13 @@ Run: 2026-04-05 autopilot (maintenance backlog)
 **Confidence:** Medium (method naming is implementer-facing; mismatch requires aligning implementation or tests.)
 
 **Deliverable:** `tests/asset_generation/test_enemy_root_script_resolver.gd`; fixture `scripts/enemies/generated/eseg_test_override_probe.gd`; WORKFLOW STATE Stage `TEST_BREAK`, Revision 4, Last Updated By `Test Designer Agent`, Next `Test Breaker Agent`, Status `Proceed`.
+
+### [MAINT-ESEG] TEST_BREAK — Adversarial hardening
+
+**Would have asked:** Should malicious `family_name` values (path separators, `..`) be rejected explicitly vs. delegated to `ResourceLoader.exists` on a formatted path?
+
+**Assumption made:** Resolver returns `enemy_base.gd` for unsafe stems and never returns a `res://` string that escapes single-file override layout under `generated/` (no `/` or `\` in the filename segment after `generated/`). Empty stem → base per REQ-ESEG-2 edge-case note.
+
+**Confidence:** Medium (defense-in-depth beyond minimal AC-ESEG-1d wording; Implementation may choose sanitize-then-exists vs. exists-only if all tests pass.)
+
+**Deliverable:** Ticket WORKFLOW STATE Stage `IMPLEMENTATION_GENERALIST`, Revision 5, Last Updated By `Test Breaker Agent`, Next `Implementation Generalist`, Status `Proceed`; checkpoint log updated; `tests/asset_generation/test_enemy_root_script_resolver.gd` extended with `# CHECKPOINT` markers on encoded assumptions.
