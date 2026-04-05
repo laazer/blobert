@@ -258,3 +258,13 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
 - Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-test-break.md`
 - Outcome: Adversarial extensions (fail-fast empty log, subnormal/huge finite, fractional multiply, primitive-sequence determinism, positional/int scale, unknown-type fallback, direct `HumanoidModel` validation); `# CHECKPOINT` on structural assumptions; pytest file still red until implementation.
+
+### MAINT-EMSI / run-2026-04-05-ac-gatekeeper
+- Ticket: `project_board/maintenance/done/enemy_model_scale_input.md`
+- Stage: STATIC_QA → COMPLETE
+- Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
+- Outcome: AC1–AC4 mapped to `test_enemy_model_scale_input.py` + full `pytest tests/` + `run_tests.sh`; gatekeeper re-ran commands (19 + 405 tests, Godot exit 0); ticket `git mv` to `maintenance/done/`.
+
+### [MAINT-EMSI] — OUTCOME: COMPLETE
+`scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
+Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

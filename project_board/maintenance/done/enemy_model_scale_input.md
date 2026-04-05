@@ -42,18 +42,19 @@ Plumb the value from the factory into `BaseModelType` (default `1.0` for backwar
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- `cd asset_generation/python && uv run pytest tests/enemies/test_enemy_model_scale_input.py -q` — 19 passed, 19 subtests passed (2026-04-05)
-- `cd asset_generation/python && uv run pytest tests/ -q` — 405 passed, 240 subtests passed (2026-04-05)
-- `timeout 300 ci/scripts/run_tests.sh` — exit 0, `=== ALL TESTS PASSED ===` (2026-04-05; Godot headless RID leak warnings unchanged)
+- **AC coverage (objective):** AC1 — `ModelTypeFactory.create_model` + default backward compatibility: `test_enemy_model_scale_input.py` (signatures/defaults, EMSI-3.1 omit vs explicit `scale=1.0` parity). AC2 — uniform contract all archetypes under `base_models/`: EMSI-3.1/3.2 loop `insectoid`/`blob`/`humanoid` (registry-only set). AC3 — default + non-`1.0` without Blender render: mocked `create_sphere`/`create_cylinder` call logs (EMSI-3.2 `scale=2.0`, EMSI-3.2b fractional). AC4 — regressions: full `asset_generation/python/tests` + Godot `run_tests.sh`.
+- `cd asset_generation/python && uv run pytest tests/enemies/test_enemy_model_scale_input.py -q` — 19 passed, 19 subtests passed (AC gatekeeper re-verify 2026-04-05)
+- `cd asset_generation/python && uv run pytest tests/ -q` — 405 passed, 240 subtests passed (AC gatekeeper re-verify 2026-04-05)
+- `timeout 300 ci/scripts/run_tests.sh` — exit 0, `=== ALL TESTS PASSED ===` (AC gatekeeper re-verify 2026-04-05; Godot headless RID leak warnings unchanged)
 
 ## Blocking Issues
 - None
@@ -66,15 +67,14 @@ Implementation Generalist Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "action": "verify_ac_and_advance",
-  "ticket_path": "project_board/maintenance/in_progress/enemy_model_scale_input.md",
-  "spec_path": "project_board/specs/enemy_model_scale_input_spec.md",
-  "validation_status_ref": "## Validation Status"
+  "action": "archive_or_merge",
+  "ticket_path": "project_board/maintenance/done/enemy_model_scale_input.md",
+  "spec_path": "project_board/specs/enemy_model_scale_input_spec.md"
 }
 ```
 
@@ -82,4 +82,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-EMSI implementation complete: `scale` on `ModelTypeFactory.create_model` and `BaseModelType`; validation in `BaseModelType.__init__`; uniform `location`/`scale` kwargs scaling across humanoid/blob/insectoid; ready for AC gatekeeper sign-off per workflow.
+All acceptance criteria have explicit automated test and suite evidence; no manual AC items pending. Stage COMPLETE; ticket moved to `project_board/maintenance/done/`. Human owns commit/push/merge per workflow if needed.
