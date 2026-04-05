@@ -173,3 +173,12 @@ Log: `project_board/checkpoints/split_animated_claw_crawler/run-2026-04-05-autop
 ### [split_animated_ember_imp] — OUTCOME: COMPLETE
 `AnimatedEmberImp` moved to `src/enemies/animated_ember_imp.py`; registry maps `ember_imp` to that module’s class; 372 pytest passed; ticket `project_board/maintenance/done/split_animated_ember_imp.md`.
 Log: `project_board/checkpoints/split_animated_ember_imp/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05T22-30-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/maintenance/backlog/split_animated_tar_slug.md`
+- Log root: project_board/checkpoints/
+
+### [split_animated_tar_slug] — OUTCOME: COMPLETE
+`AnimatedTarSlug` moved to `src/enemies/animated_tar_slug.py`; registry unchanged; 380 pytest passed; ticket `project_board/maintenance/done/split_animated_tar_slug.md`.
+Log: `project_board/checkpoints/split_animated_tar_slug/run-2026-04-05-autopilot.md`

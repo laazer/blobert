@@ -32,7 +32,8 @@ blender-experiments/
 │   │   ├── animated_carapace_husk.py  # AnimatedCarapaceHusk
 │   │   ├── animated_claw_crawler.py  # AnimatedClawCrawler
 │   │   ├── animated_ember_imp.py  # AnimatedEmberImp
-│   │   ├── animated_enemies.py  # Remaining animated classes + AnimatedEnemyBuilder factory
+│   │   ├── animated_tar_slug.py  # AnimatedTarSlug
+│   │   ├── animated_enemies.py  # AnimatedEnemyBuilder factory + re-exports
 │   │   ├── base_models/         # Body archetypes: BaseModelType, *Model, ModelTypeFactory
 │   │   └── example_new_enemy.py # Reference implementation for adding new enemies
 │   │

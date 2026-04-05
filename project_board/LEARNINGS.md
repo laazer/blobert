@@ -1578,4 +1578,8 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 *Completed: 2026-04-05* (same extract-and-register pattern; added `TestEmberImpClass` + `BPG_ADV_SPLIT_05`; removed unused `math` / `Euler` / `create_humanoid_armature` / `create_all_animations` from `animated_enemies.py` after extraction.)
 
+## [split_animated_tar_slug] — No significant learnings identified.
+
+*Completed: 2026-04-05* (same pattern: `TestTarSlugClass` + `BPG_ADV_SPLIT_06`; `animated_enemies.py` reduced to factory + imports after removing unused `BaseEnemy` and geometry/material imports that only served the inlined class.)
+
 ---

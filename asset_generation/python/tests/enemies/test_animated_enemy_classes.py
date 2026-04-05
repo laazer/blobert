@@ -1,10 +1,12 @@
 """
-Tests for AnimatedAdhesionBug, AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedEmberImp, AnimatedCarapaceHusk.
+Tests for AnimatedAdhesionBug, AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedEmberImp,
+AnimatedTarSlug, AnimatedCarapaceHusk.
 Pure Python — no bpy import. Runs via: uv run pytest tests/
 
 Spec traceability:
   BPG-REG-*   : TestEnemyRegistration
-  BPG-CLASS-* : TestAdhesionBugClass, TestAcidSpitterClass, TestClawCrawlerClass, TestEmberImpClass, TestCarapaceHuskClass
+  BPG-CLASS-* : TestAdhesionBugClass, TestAcidSpitterClass, TestClawCrawlerClass, TestEmberImpClass,
+                TestTarSlugClass, TestCarapaceHuskClass
   BPG-CONST-* : TestEnemyTypesConstants
   BPG-MAT-*   : TestCarapaceHuskMaterialTheme
 """
@@ -18,6 +20,7 @@ from src.enemies.animated_enemies import (
     AnimatedAcidSpitter,
     AnimatedClawCrawler,
     AnimatedEmberImp,
+    AnimatedTarSlug,
     AnimatedCarapaceHusk,
 )
 from src.enemies.base_enemy import BaseEnemy
@@ -295,6 +298,50 @@ class TestEmberImpClass(unittest.TestCase):
         """BPG-CLASS-37: apply_materials source contains 'ember_imp' string literal."""
         source = inspect.getsource(AnimatedEmberImp.apply_materials)
         self.assertIn("'ember_imp'", source)
+
+
+# ---------------------------------------------------------------------------
+# BPG-CLASS-38 through BPG-CLASS-44 : AnimatedTarSlug class structure
+# ---------------------------------------------------------------------------
+
+class TestTarSlugClass(unittest.TestCase):
+    """Verify AnimatedTarSlug class contract via introspection."""
+
+    def test_BPG_CLASS_38_tar_slug_importable(self):
+        """BPG-CLASS-38: AnimatedTarSlug is importable from src.enemies.animated_enemies."""
+        self.assertTrue(True)
+
+    def test_BPG_CLASS_39_tar_slug_defined_in_dedicated_module(self):
+        """BPG-CLASS-39: AnimatedTarSlug class object lives in animated_tar_slug module."""
+        self.assertEqual(AnimatedTarSlug.__module__, 'src.enemies.animated_tar_slug')
+
+    def test_BPG_CLASS_40_tar_slug_subclass_of_base_enemy(self):
+        """BPG-CLASS-40: AnimatedTarSlug is a subclass of BaseEnemy."""
+        self.assertTrue(issubclass(AnimatedTarSlug, BaseEnemy))
+
+    def test_BPG_CLASS_41_has_all_required_methods(self):
+        """BPG-CLASS-41: AnimatedTarSlug defines all 6 required methods."""
+        required = ['create_body', 'create_head', 'create_limbs',
+                    'apply_materials', 'create_armature', 'get_body_type']
+        for method_name in required:
+            with self.subTest(method=method_name):
+                self.assertTrue(hasattr(AnimatedTarSlug, method_name))
+                self.assertTrue(callable(getattr(AnimatedTarSlug, method_name)))
+
+    def test_BPG_CLASS_42_get_body_type_source_references_blob(self):
+        """BPG-CLASS-42: get_body_type source contains EnemyBodyTypes.BLOB."""
+        source = inspect.getsource(AnimatedTarSlug.get_body_type)
+        self.assertIn('EnemyBodyTypes.BLOB', source)
+
+    def test_BPG_CLASS_43_create_armature_source_references_create_blob_armature(self):
+        """BPG-CLASS-43: create_armature source contains create_blob_armature."""
+        source = inspect.getsource(AnimatedTarSlug.create_armature)
+        self.assertIn('create_blob_armature', source)
+
+    def test_BPG_CLASS_44_apply_materials_source_references_tar_slug_key(self):
+        """BPG-CLASS-44: apply_materials source contains 'tar_slug' string literal."""
+        source = inspect.getsource(AnimatedTarSlug.apply_materials)
+        self.assertIn("'tar_slug'", source)
 
 
 # ---------------------------------------------------------------------------

@@ -179,6 +179,16 @@ class TestRegistrationAdversarial(unittest.TestCase):
             ember_mod.AnimatedEmberImp,
         )
 
+    def test_BPG_ADV_SPLIT_06_registry_tar_slug_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedTarSlug from
+        # animated_tar_slug, not a duplicate subclass in animated_enemies.
+        from src.enemies import animated_tar_slug as tar_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['tar_slug'],
+            tar_mod.AnimatedTarSlug,
+        )
+
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
         """
         BPG-ADV-REG-06: get_available_types() returns identical lists on consecutive calls.

@@ -37,7 +37,8 @@ src/
 │   ├── animated_carapace_husk.py  # AnimatedCarapaceHusk
 │   ├── animated_claw_crawler.py  # AnimatedClawCrawler
 │   ├── animated_ember_imp.py   # AnimatedEmberImp
-│   ├── animated_enemies.py   # Other concrete animated classes + AnimatedEnemyBuilder factory
+│   ├── animated_tar_slug.py   # AnimatedTarSlug
+│   ├── animated_enemies.py   # AnimatedEnemyBuilder factory + re-exports
 │   ├── base_models/          # Package: archetype models + ModelTypeFactory
 │   └── example_new_enemy.py  # Annotated reference for new enemy authors
 │
