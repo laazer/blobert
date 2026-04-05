@@ -230,3 +230,19 @@ Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
 ### [MAINT-ETRP] — OUTCOME: COMPLETE
 `enemy_slug_registry.py` holds animated/static tuples; `EnemyTypes` delegates; pytest contract + `main.py list` fixed for six animated slugs.
 Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05
+- Queue mode: maintenance backlog directory
+- Queue scope: `project_board/maintenance/backlog/`
+- Log root: project_board/checkpoints/
+
+### MAINT-EMSI / run-2026-04-05-planning
+- Ticket: `project_board/maintenance/in_progress/enemy_model_scale_input.md`
+- Stage: PLANNING
+- Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-planning.md`
+
+### MAINT-EMSI / run-2026-04-05-spec
+- Ticket: `project_board/maintenance/in_progress/enemy_model_scale_input.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-spec.md`
+- Outcome: Formal spec `project_board/specs/enemy_model_scale_input_spec.md` (EMSI-1..5); invalid scale → ValueError; uniform scaling contract + rotation exclusion documented.
