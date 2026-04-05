@@ -30,3 +30,12 @@ Run: 2026-04-05 autopilot (maintenance backlog queue, ticket 2)
 **Deliverable:** `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` — fails until implementation lands; traceability: EMU-MOD-1 (file + constant + spot checks), EMU-SEM-1 (`.get` unknown), EMU-QA-1 (scan `scripts/asset_generation` for `const MUTATION_BY_FAMILY := {`), EMU-CON-1 (preload line, no local dict, `is_same` with canonical).
 
 **Evidence:** `timeout 300 godot -s tests/run_tests.gd` — full suite exit 1; EMU suite 10 failures (missing module, 2 literals, missing preload, local dicts still present). Matches TDD expectation pre-implementation.
+
+### [MAINT-EMMU] TEST_BREAK — Adversarial hardening (EMU-ADV-*)
+**Would have asked:** Should tests assert runtime immutability of `const` dictionary values from `get_script_constant_map()`, or only reference identity via `is_same()`?
+**Assumption made:** Reference identity + duplicate/mutation isolation on `.duplicate()` is sufficient; live mutation of the canonical map is not performed (would poison other suites). Marked with `# CHECKPOINT` in test source.
+**Confidence:** Medium
+
+**Deliverable:** Extended `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` — alternate dict declaration forms (`=`, typed `Dictionary`), empty/whitespace keys, typo key `acid_spiter`, fixed entry count (49, CHECKPOINT-aligned to spec-time dict), duplicate/`is_same` sanity, no `const MUTATION_BY_FAMILY` in consumers, single preload snippet occurrence, acyclic map module (non-comment `preload` must not target consumers). Updated comments in `tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd` (ADV-FESG-5 / ADV-FESG-18) to point at `enemy_mutation_map.gd` instead of implying two authoritative code definitions.
+
+**Evidence:** `timeout 300 godot -s tests/run_tests.gd` — exit 1; `=== FAILURES: 20 test(s) failed ===`; EMU suite `test_enemy_mutation_map_unify.gd` reports `Results: 0 passed, 20 failed` (expected pre-implementation).

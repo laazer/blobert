@@ -163,17 +163,17 @@ Extract the map to one module (e.g. `scripts/asset_generation/enemy_mutation_map
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 
-- Tests: `timeout 300 godot -s tests/run_tests.gd` — **fails** (expected): `test_enemy_mutation_map_unify.gd` reports 10 failures until `enemy_mutation_map.gd` + consumer preload refactor land.
+- Tests: `timeout 300 godot -s tests/run_tests.gd` — **fails** (expected): full runner `=== FAILURES: 20 test(s) failed ===`; `test_enemy_mutation_map_unify.gd` reports 20 failures until `enemy_mutation_map.gd` + consumer preload refactor land.
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -190,11 +190,11 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist
 
 ## Status
 Proceed
 
 ## Reason
 
-Primary behavioral suite added under `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` (EMU-MOD-1, EMU-CON-1, EMU-SEM-1, EMU-QA-1, shared `is_same` dict reference). Suite fails until `enemy_mutation_map.gd` exists and both consumers use `EnemyMutationMap` preload only. Ready for test-breaker pass.
+Test-breaker pass added EMU-ADV-* adversarial coverage (alternate dict literal forms, typo/whitespace keys, entry-count guard, duplicate/`is_same` sanity, consumer `const MUTATION_BY_FAMILY` ban, single preload line, acyclic map module) and aligned adversarial scene-test comments with single-module EMU narrative. Suite still red until shared module + consumer preload land; hand off to implementation.

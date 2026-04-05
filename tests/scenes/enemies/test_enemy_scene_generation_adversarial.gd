@@ -193,7 +193,8 @@ func test_adv_fesg_4_enemy_id_matches_filename() -> void:
 
 # ---------------------------------------------------------------------------
 # ADV-FESG-5: No generated scene has mutation_drop == "unknown"
-# Spec: AC-GEN-3.4 (inverse); MUTATION_BY_FAMILY must cover all 4 families
+# Spec: AC-GEN-3.4 (inverse); family→mutation resolution must cover all 4 families.
+# Maintenance: map is single-sourced in scripts/asset_generation/enemy_mutation_map.gd (EMU-*); avoid duplicate dicts in generators.
 # ---------------------------------------------------------------------------
 func test_adv_fesg_5_no_unknown_mutation_drop() -> void:
 	if not _generated_dir_exists():
@@ -520,8 +521,8 @@ func test_adv_fesg_17_fallback_box_shape_exact_size() -> void:
 # ---------------------------------------------------------------------------
 # ADV-FESG-18: mutation_drop values are mutually distinct across the 4 families
 # Spec: FESG-GEN-3 mapping table; guards against two families receiving the same string.
-# Vulnerability: if MUTATION_BY_FAMILY has a copy-paste bug making "acid_spitter" → "adhesion"
-# (duplicate), FESG-5 through FESG-8 each check their own scene in isolation and would miss it.
+# Vulnerability: a typo or copy-paste bug in enemy_mutation_map.gd (e.g. "acid_spitter" → "adhesion")
+# makes two families share one mutation_drop; FESG-5 through FESG-8 each check one scene and would miss it.
 # This test collects all unique mutation strings and asserts exactly 4 distinct values.
 # ---------------------------------------------------------------------------
 func test_adv_fesg_18_mutation_drop_values_are_distinct_across_families() -> void:
