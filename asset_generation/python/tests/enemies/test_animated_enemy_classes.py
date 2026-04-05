@@ -259,6 +259,10 @@ class TestCarapaceHuskClass(unittest.TestCase):
         """BPG-CLASS-18: AnimatedCarapaceHusk is importable from src.enemies.animated_enemies."""
         self.assertTrue(True)
 
+    def test_BPG_CLASS_18b_carapace_husk_defined_in_dedicated_module(self):
+        """BPG-CLASS-18b: AnimatedCarapaceHusk class object lives in animated_carapace_husk module."""
+        self.assertEqual(AnimatedCarapaceHusk.__module__, 'src.enemies.animated_carapace_husk')
+
     def test_BPG_CLASS_19_carapace_husk_subclass_of_base_enemy(self):
         """BPG-CLASS-19: AnimatedCarapaceHusk is a subclass of BaseEnemy."""
         self.assertTrue(issubclass(AnimatedCarapaceHusk, BaseEnemy))

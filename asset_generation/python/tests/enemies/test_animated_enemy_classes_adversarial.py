@@ -149,6 +149,16 @@ class TestRegistrationAdversarial(unittest.TestCase):
             adhesion_mod.AnimatedAdhesionBug,
         )
 
+    def test_BPG_ADV_SPLIT_03_registry_carapace_husk_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedCarapaceHusk from
+        # animated_carapace_husk, not a duplicate subclass in animated_enemies.
+        from src.enemies import animated_carapace_husk as carapace_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['carapace_husk'],
+            carapace_mod.AnimatedCarapaceHusk,
+        )
+
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
         """
         BPG-ADV-REG-06: get_available_types() returns identical lists on consecutive calls.

@@ -29,6 +29,7 @@ blender-experiments/
 │   │   ├── base_enemy.py        # BaseEnemy ABC, export_enemy(), get_attack_profile()
 │   │   ├── animated_acid_spitter.py  # AnimatedAcidSpitter
 │   │   ├── animated_adhesion_bug.py  # AnimatedAdhesionBug
+│   │   ├── animated_carapace_husk.py  # AnimatedCarapaceHusk
 │   │   ├── animated_enemies.py  # Remaining animated classes + AnimatedEnemyBuilder factory
 │   │   ├── base_models/         # Body archetypes: BaseModelType, *Model, ModelTypeFactory
 │   │   └── example_new_enemy.py # Reference implementation for adding new enemies

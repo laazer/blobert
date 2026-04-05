@@ -1566,4 +1566,8 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 *Completed: 2026-04-05* (same extract-and-register pattern as `split_animated_acid_spitter`; tests and spec followed the established template.)
 
+## [split_animated_carapace_husk] — No significant learnings identified.
+
+*Completed: 2026-04-05* (same pattern: `__module__` + `BPG_ADV_SPLIT_03` registry identity; docs and spec mirrored prior split tickets.)
+
 ---
