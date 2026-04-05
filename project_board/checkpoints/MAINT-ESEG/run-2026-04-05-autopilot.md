@@ -23,3 +23,21 @@ Run: 2026-04-05 autopilot (maintenance backlog)
 **Confidence:** High
 
 **Deliverable:** `project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md` — **Execution Plan** table (5 tasks); WORKFLOW STATE Stage `SPECIFICATION`, Revision 2, Next `Spec Agent`, Status `Proceed`.
+
+### [MAINT-ESEG] SPECIFICATION — Resolver module and override contract
+
+**Would have asked:** Exact filename for the new resolver under `scripts/asset_generation/`.
+
+**Assumption made:** Spec allows implementer-chosen filename (example `enemy_root_script_resolver.gd`) but mandates a single module and no duplicated logic in the two generators.
+
+**Confidence:** High
+
+### [MAINT-ESEG] SPECIFICATION — Lookup key
+
+**Would have asked:** Per full GLB basename vs `extract_family_name` stem.
+
+**Assumption made:** Stem-only (`EnemyNameUtils.extract_family_name` output) as `family_stem`; multiple GLBs can share one override file.
+
+**Confidence:** High
+
+**Deliverable (spec handoff):** Ticket **Specification** filled with REQ-ESEG-1–3 and ESEG-DOC; WORKFLOW STATE Stage `TEST_DESIGN`, Revision 3, Last Updated By `Spec Agent`, Next `Test Designer Agent`, Status `Proceed`.

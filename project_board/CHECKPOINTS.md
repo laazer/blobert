@@ -189,3 +189,35 @@ Log: `project_board/checkpoints/split_animated_ember_imp/run-2026-04-05-autopilo
 ### [split_animated_tar_slug] — OUTCOME: COMPLETE
 `AnimatedTarSlug` moved to `src/enemies/animated_tar_slug.py`; registry unchanged; 380 pytest passed; ticket `project_board/maintenance/done/split_animated_tar_slug.md`.
 Log: `project_board/checkpoints/split_animated_tar_slug/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05T23-59-00Z-autopilot-maintenance-backlog
+- Queue mode: maintenance backlog directory
+- Queue scope: `project_board/maintenance/backlog/`
+- Log root: project_board/checkpoints/
+
+### MAINT-EAPD / run-2026-04-05-autopilot
+- Ticket: `project_board/maintenance/done/enemy_animation_per_type_policies_deferred.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/MAINT-EAPD/run-2026-04-05-autopilot.md`
+
+### [MAINT-EAPD] — OUTCOME: COMPLETE
+Defer-only placeholder closed with policy spec + EAPD-P1..P22 tests; shared `EnemyAnimationController` unchanged; AC-2 explicitly future-only.
+Log: `project_board/checkpoints/MAINT-EAPD/run-2026-04-05-autopilot.md`
+
+### MAINT-EMMU / run-2026-04-05-autopilot
+- Ticket: `project_board/maintenance/done/enemy_mutation_map_unify.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/MAINT-EMMU/run-2026-04-05-autopilot.md`
+
+### [MAINT-EMMU] — OUTCOME: COMPLETE
+`enemy_mutation_map.gd` is the sole `MUTATION_BY_FAMILY` literal; consumers preload it; EMU tests + `run_tests.sh` green; post-review `load_assets` capsule/zero-AABB aligned with `generate_enemy_scenes.gd`.
+Log: `project_board/checkpoints/MAINT-EMMU/run-2026-04-05-autopilot.md`
+
+### MAINT-ESEG / run-2026-04-05-autopilot
+- Ticket: `project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
+
+### [MAINT-ESEG] — OUTCOME: Spec handoff
+REQ-ESEG-1–3 + ESEG-DOC in ticket; shared resolver contract; `res://scripts/enemies/generated/{family_stem}.gd` with base fallback; parity for `generate_enemy_scenes.gd` and `load_assets.gd`. Next: Test Designer Agent.
+Log: `project_board/checkpoints/MAINT-ESEG/run-2026-04-05-autopilot.md`
