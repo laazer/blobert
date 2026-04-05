@@ -331,6 +331,18 @@ Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
 Legacy-enemy-visual sandbox duplicate + contract tests; `run/main_scene` drift documented per SLEEV-4.2; full suite green.
 Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-ac-gatekeeper.md`
 
+### MAINT-TSGR / run-2026-04-05-planning
+- Ticket: `project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md`
+- Stage: PLANNING → SPECIFICATION
+- Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-planning.md`
+- Outcome: Execution plan table; assumptions on import fail-fast and single Python resolver.
+
+### MAINT-TSGR / run-2026-04-05-spec
+- Ticket: `project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-spec.md`
+- Outcome: `project_board/specs/test_suite_green_and_runner_exit_codes_spec.md` (TSGR-1..8); ticket Specification section; Next Test Designer Agent.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

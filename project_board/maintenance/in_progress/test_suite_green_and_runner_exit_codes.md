@@ -29,18 +29,23 @@ Then **fix or quarantine** every failing Godot and Python test so that entry poi
 
 - None required
 
+## Specification
+
+Formal spec (requirements **TSGR-1**–**TSGR-8**, traceable to acceptance criteria):  
+`project_board/specs/test_suite_green_and_runner_exit_codes_spec.md`
+
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -58,13 +63,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "spec",
-  "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md"
+  "action": "test_design",
+  "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md",
+  "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md"
 }
 ```
 
@@ -72,4 +78,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planner produced MAINT-TSGR execution plan (`project_board/checkpoints/MAINT-TSGR/run-2026-04-05-planning.md`); formal specification required before test design.
+Spec **TSGR-1**–**TSGR-8** authored; map each observable requirement to verification (command matrix, shell tests, or in-repo tests) before implementation.
