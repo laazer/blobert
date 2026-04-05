@@ -37,16 +37,16 @@ Split `base_models` into a package with one module per archetype plus `base_mode
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 335 passed, 2026-04-05)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -61,13 +61,14 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "string",
-  "spec_path": "project_board/specs/base_models_split_by_archetype_spec.md"
+  "spec_path": "project_board/specs/base_models_split_by_archetype_spec.md",
+  "tests_glob": "asset_generation/python/tests/enemies/test_base_models_factory.py"
 }
 ```
 
@@ -75,4 +76,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete; Test Designer adds factory tests with fixed RNG and mocked bpy per BMSBA-5.
+BMSBA-5 factory tests authored; adversarial review of coverage (unknown type, key order, edge cases) is next.

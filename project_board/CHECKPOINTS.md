@@ -98,3 +98,28 @@ Log: project_board/checkpoints/M7-ACS/
 ### [death_animation_playthrough] — OUTCOME: COMPLETE
 Death plays to completion then `queue_free` on enemy root; collision cleared on death; infection/absorb guards; missing-Death clip queues free immediately (GDScript review follow-up). Ticket: `project_board/7_milestone_7_enemy_animation_wiring/done/death_animation_playthrough.md`.
 Log: `project_board/checkpoints/death_animation_playthrough/` (planning, spec, test-design, test-break, implementation scoped logs).
+
+## Run: 2026-04-05T00-00-00Z-autopilot-maintenance
+- Queue mode: directory scan
+- Queue scope: `project_board/maintenance/backlog/`
+- Log root: project_board/checkpoints/
+
+### MAINT-AERC / run-2026-04-05-dequeue
+- Ticket: `project_board/maintenance/in_progress/animated_enemy_registry_cleanup.md`
+- Stage: PLANNING (dequeued)
+- Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-dequeue.md`
+
+### [MAINT-AERC] — OUTCOME: BLOCKED
+Registry cleanup cannot start until six `split_animated_*` dependency tickets leave backlog; planner recorded gate in ticket Execution Plan.
+Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-planning.md`
+
+### MAINT-BMSBA / run-2026-04-05-dequeue
+- Ticket: `project_board/maintenance/in_progress/base_models_split_by_archetype.md`
+- Stage: PLANNING (dequeued)
+- Log: `project_board/checkpoints/MAINT-BMSBA/run-2026-04-05-dequeue.md`
+
+### MAINT-BMSBA / run-2026-04-05-test-design
+- Ticket: `project_board/maintenance/in_progress/base_models_split_by_archetype.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/MAINT-BMSBA/run-2026-04-05-test-design.md`
+- Outcome: `test_base_models_factory.py` added; `uv run pytest tests/ -q` → 335 passed.
