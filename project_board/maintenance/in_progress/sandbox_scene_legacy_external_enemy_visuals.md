@@ -40,17 +40,17 @@ Formal spec (requirements **SLEEV-1**–**SLEEV-5**, traceable to acceptance cri
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Tests: Run — 1 expected failure (SLEEV-1.1) until duplicate scene exists; ADV-SLEEV pre-gate + post-gate hardening in `test_legacy_enemy_visual_sandbox_scene.gd`; see checkpoint log
-- Static QA: Not Run
+- Tests: Pass — `ci/scripts/run_tests.sh` exit 0 after adding `test_movement_3d_legacy_enemy_visual.tscn`
+- Static QA: Not Run (gatekeeper)
 - Integration: Not Run
 
 ## Blocking Issues
@@ -64,16 +64,17 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "implementation_generalist",
+  "action": "static_qa",
   "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md",
   "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md",
-  "test_path": "tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd",
-  "target_scene": "res://scenes/levels/sandbox/test_movement_3d_legacy_enemy_visual.tscn"
+  "implementation_paths": [
+    "scenes/levels/sandbox/test_movement_3d_legacy_enemy_visual.tscn"
+  ]
 }
 ```
 
@@ -81,4 +82,4 @@ Implementation Generalist Agent
 Proceed
 
 ## Reason
-Test Breaker hardened MAINT-SLEEV suite (ADV-SLEEV); Implementation shall add duplicate sandbox `.tscn` per SLEEV-1..3 until `run_tests` is green.
+Duplicate legacy-visual sandbox scene added per SLEEV-1..3; full suite green. Gatekeeper shall validate AC (including `run/main_scene` not legacy) and update validation bullets.

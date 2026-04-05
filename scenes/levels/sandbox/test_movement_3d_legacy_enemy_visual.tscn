@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://b8sleevlegacy3d01"]
+
+[ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="Script" uid="uid://67hlquotuweb" path="res://scripts/system/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.2, 0.25, 0.3, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.7, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.35, 0.4, 0.45, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(60, 8, 15)
+
+[node name="TestMovement3DLegacyEnemyVisual" type="Node3D" unique_id=1128403258]
+
+[node name="SceneVariantController" type="Node" parent="." unique_id=730242799]
+script = ExtResource("6_scene_variant_controller")
+
+[node name="InfectionInteractionHandler" type="Node" parent="." unique_id=1167822700]
+script = ExtResource("3_infection_handler")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=374174471]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=353556029]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 5, 10, 5)
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="." unique_id=895965501]
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor" unique_id=1765911744]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor" unique_id=1170566268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("StandardMaterial3D_floor")
+mesh = SubResource("BoxMesh_floor")
+
+[node name="SpawnPosition" type="Marker3D" parent="." unique_id=1577243293]
+
+[node name="AdhesionBugEnemy" parent="." unique_id=186488895 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1, 0)
+mutation_drop = "adhesion"
+
+[node name="AcidSpitterEnemy" parent="." unique_id=186488896 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1, 0)
+mutation_drop = "acid"
+
+[node name="ClawCrawlerEnemy" parent="." unique_id=186488897 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+mutation_drop = "claw"
+
+[node name="CarapaceHuskEnemy" parent="." unique_id=186488898 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
+mutation_drop = "carapace"
+
+[node name="InfectionUI" parent="." unique_id=1139678762 instance=ExtResource("5_game_ui")]
+
+[node name="RespawnZone" type="Area3D" parent="." unique_id=31933753]
+script = ExtResource("2_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone" unique_id=456841114]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[node name="Player3D" parent="." unique_id=905176981 instance=ExtResource("1_player")]
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]
