@@ -163,17 +163,17 @@ Extract the map to one module (e.g. `scripts/asset_generation/enemy_mutation_map
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 
-- Tests: Not Run
+- Tests: `timeout 300 godot -s tests/run_tests.gd` — **fails** (expected): `test_enemy_mutation_map_unify.gd` reports 10 failures until `enemy_mutation_map.gd` + consumer preload refactor land.
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -190,11 +190,11 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Status
 Proceed
 
 ## Reason
 
-Specification complete: canonical `enemy_mutation_map.gd`, `MUTATION_BY_FAMILY`, preload contract, unknown-family semantics, `rg` hygiene with documented non-`scripts/asset_generation` exceptions, and `first_4_families_in_level_spec.md` alignment. Ready for behavioral tests.
+Primary behavioral suite added under `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` (EMU-MOD-1, EMU-CON-1, EMU-SEM-1, EMU-QA-1, shared `is_same` dict reference). Suite fails until `enemy_mutation_map.gd` exists and both consumers use `EnemyMutationMap` preload only. Ready for test-breaker pass.

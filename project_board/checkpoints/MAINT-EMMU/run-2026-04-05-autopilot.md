@@ -21,3 +21,12 @@ Run: 2026-04-05 autopilot (maintenance backlog queue, ticket 2)
 **Would have asked:** None; both in-repo dict literals were compared and are identical (including `mutation_clown` → `random`).
 **Assumption made:** Preload alias `EnemyMutationMap` + `EnemyMutationMap.MUTATION_BY_FAMILY`; `rg MUTATION_BY_FAMILY` may still hit tests/project_board/checkpoints — hard gate is single dict literal under `scripts/asset_generation/` in `enemy_mutation_map.gd` only.
 **Confidence:** High
+
+### [MAINT-EMMU] TEST_DESIGN — Behavioral SSOT suite
+**Would have asked:** None; spec EMU-* defines module path, preload snippet, single literal rule, and unknown-family `.get` semantics.
+**Assumption made:** `get_script_constant_map()` exposes `EnemyMutationMap` preload and nested `MUTATION_BY_FAMILY`; `is_same()` proves shared Dictionary identity vs duplicate literals.
+**Confidence:** High
+
+**Deliverable:** `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` — fails until implementation lands; traceability: EMU-MOD-1 (file + constant + spot checks), EMU-SEM-1 (`.get` unknown), EMU-QA-1 (scan `scripts/asset_generation` for `const MUTATION_BY_FAMILY := {`), EMU-CON-1 (preload line, no local dict, `is_same` with canonical).
+
+**Evidence:** `timeout 300 godot -s tests/run_tests.gd` — full suite exit 1; EMU suite 10 failures (missing module, 2 literals, missing preload, local dicts still present). Matches TDD expectation pre-implementation.
