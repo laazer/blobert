@@ -1883,3 +1883,140 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Combines string freeze, DAG safety, and entrypoint-realistic imports in one maintainable bundle.
 
 ---
+
+## [MAINT-EMSI] — Uniform model scale: preserve literal kwargs at multiplier 1.0; align mocks and fail-fast validation tests
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: testing
+  insight: A “no-op” uniform scale of `1.0` must not always flow through generic multiply helpers: multiplying tuple components by `1.0` can widen integer literals to floats and break strict backward-compatibility assertions on mocked primitive kwargs versus legacy code.
+  impact: Implementation explicitly short-circuited scaling when `self.scale == 1.0` so call logs stay identical to pre-change behavior for mixed int/float geometry inputs.
+  prevention: For default-multiplier APIs, add a fast path that returns inputs unchanged at `1.0` when tests or exporters assert byte- or tuple-level parity with legacy.
+  severity: medium
+
+- category: process
+  insight: Early planning assumed a distinct instance field name (`geometry_scale` / `uniform_scale`) to avoid colliding with Blender object `scale`; the frozen spec chose `instance.scale` to match the ticket and EMSI-1, which is the right tradeoff but makes planning-only docs potentially misleading if read in isolation.
+  impact: Low rework here (spec won), but it is an avoidable moment of ambiguity for implementers skimming checkpoints out of order.
+  prevention: At spec freeze, add a one-line “resolution” when planning checkpoints assumed a different public name or shape than the REQ IDs.
+  severity: low
+
+- category: testing
+  insight: Asserting an **empty** primitive call log for invalid scale catches validation that runs too late (after geometry calls), which a mere `ValueError` assertion might miss if order is wrong.
+  impact: Test Breaker added fail-fast / mutation cases tied to EMSI-2.
+  prevention: For validated builder/factory APIs backed by mocked side effects, pair domain errors with “no work performed” signals (empty logs, call counts) where the spec allows.
+  severity: medium
+
+- category: architecture
+  insight: Observable contract for uniform scaling should pin whether parity is defined on **kwargs to primitives** vs a parent transform; an implementation that only applies a root empty still must satisfy the chosen observable or update tests with spec-backed equivalence.
+  impact: Checkpoints flagged medium risk if implementation diverged from tuple-multiply reference without test updates.
+  prevention: Spec should name the primary mock-observable (e.g. scaled `location` / primitive `scale` tuples) and treat alternate strategies as explicitly equivalent with adjusted tests.
+  severity: low
+
+### Anti-Patterns
+
+- description: Implementing scale helpers as unconditional `component * scale` including when `scale == 1.0`, breaking int/float identity in asserted Blender primitive kwargs.
+  detection_signal: Parity tests fail only on default scale with “expected (0, 0, z) got (0.0, 0.0, z)” or similar tuple drift.
+  prevention: Short-circuit at `1.0` or preserve original tuple objects when the multiplier is exactly one and parity is required.
+
+- description: Patching `create_sphere` / `create_cylinder` on a different import path than the archetype module under test, so mocks never fire and tests false-green or miss regressions.
+  detection_signal: New test file passes but does not intercept calls; differs from sibling factory tests’ patch targets.
+  prevention: Copy patch targets from the established factory test module for the same archetype package layout.
+
+### Prompt Patches
+
+- agent: Implementation Generalist Agent
+  change: "When adding a default `scale` (or similar uniform multiplier) to geometry builders, if acceptance tests assert **kwargs parity with legacy at the default multiplier**, implement a **`scale == 1.0` short-circuit** that returns locations/extents unchanged so integer literals are not widened to floats by multiply-by-1.0."
+  reason: Prevents spurious default-scale failures while keeping non-1.0 paths mathematically uniform.
+
+- agent: Test Designer Agent
+  change: "For Blender procedural tests that mock `create_sphere` / `create_cylinder`, state in the test module (or ticket notes) that patches must target the **same module attribute paths** as existing factory tests in `tests/enemies/` so mocks bind where archetypes invoke primitives."
+  reason: Avoids silent non-intercepted mocks across package import boundaries.
+
+- agent: Test Breaker Agent
+  change: "For validated factory/builder APIs with mocked side effects, add at least one case where **invalid input yields both the specified exception and zero recorded primitive (or IO) calls**, to catch validation ordered after work."
+  reason: Strengthens fail-fast guarantees beyond exception type alone.
+
+### Workflow Improvements
+
+- issue: Planning checkpoints can recommend API or field names that the spec later overrides without an explicit bridge note.
+  improvement: Spec Agent adds a short “Planning resolution” bullet when REQ text contradicts the latest planning checkpoint assumption.
+  expected_benefit: Implementers and reviewers do not treat stale planning confidence as authoritative.
+
+### Keep / Reinforce
+
+- practice: Adversarial additions—`math.nextafter` boundaries, large finite scale, fractional non-power-of-two scale, identical primitive **sequence** across scales for determinism, positional vs keyword `scale`, `int` vs `float` equivalence, unknown-type fallback with scale, and direct `HumanoidModel(..., invalid scale)` validation.
+  reason: Small surface-area API changes still benefit from breadth without a full Blender render.
+
+---
+
+## [MAINT-HCSI] — Design-space vs global HUD tests; hybrid scaling when a single parent `scale` fails subtree uniformity
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: testing
+  insight: When a packaged HUD gains a scale transform or reparenting under `CanvasLayer`, tests that asserted raw scene `offset_*` on former direct children must distinguish **authoring/design space** from **`get_global_rect()` (transformed space)** so default-scale parity (HCSI-style ACs) stays meaningful without fighting the new root.
+  impact: `test_player_hud_layout.gd` gained a design-space helper; `test_fusion_opportunity_room.gd` viewport bounds moved to global rects where the contract is on-screen geometry.
+  prevention: For UI tickets that add scale or intermediate roots, plan coordinated updates: design-space helpers for scene-authored numbers, global rects for player-visible bounds and cross-widget ratios.
+  severity: medium
+
+- category: architecture
+  insight: A single `Control.scale` on a container is not always enough for **uniform global-rect scale factors** across all descendants under `CanvasLayer` (e.g. a wide `Hints` strip with nested labels); a hybrid may be required—resize the container via scaled `offset_*` and apply `scale` to selected children so ratios match sibling HUD bars in tests.
+  impact: Implementation checkpoint documents why parent-only scaling failed ratio checks for hints vs HPBar and how base pack dimensions must stay aligned with the scene at `hud_scale == 1.0`.
+  prevention: Validate scale invariants using **multiple node roles** (top-level bar, nested label, container vs leaf) before locking a one-container approach; document any script constants that duplicate scene layout numbers.
+  severity: medium
+
+- category: testing
+  insight: Adversarial cases for a float export—fractional scale, `1.0 → 2.0 → 1.0` idempotency, int-like `set()`, non-finite values, non-positive values, and a high stress ratio—surface clamp/validation gaps and “only tested at one multiplier” mutations quickly.
+  impact: Test Breaker run reported expected pre-implementation failures; post-implementation suite green with explicit sanitization behavior.
+  prevention: For designer-facing numeric exports on UI roots, mirror this breadth so setter semantics are pinned before reviewers assume a single happy-path multiplier is sufficient.
+  severity: medium
+
+- category: process
+  insight: Early planning correctly flagged that `CanvasLayer` roots are not `Control`-scalable as-is, that reparenting risks `get_node` contracts in scripts, and that **non-`tests/ui/`** suites load the same packaged scene—those assumptions prevented silent breakage in fusion/start-flow tests.
+  impact: Spec and test design explicitly extended level tests where viewport geometry mattered.
+  prevention: For shared packaged scenes, keep a standing checklist: script path contracts, root type/name tests, and grep for `game_ui` (or equivalent) outside the primary UI test directory.
+  severity: low
+
+### Anti-Patterns
+
+- description: Proving uniform HUD scale using only one widget class (e.g. a single progress bar) while `Hints`/labels live in a differently structured subtree.
+  detection_signal: Global-rect width/height ratios diverge between bars and hint leaves at the same `hud_scale`.
+  prevention: Add cross-role triangulation tests (implemented: `MutationIcon1` vs `HPBar`, `Hints` container vs `MoveHint`) before signing off on mechanism.
+
+- description: Script constants for “base” layout sizes that can drift from the `.tscn` without a documented sync obligation.
+  detection_signal: Scale `1.0` looks wrong only for one subtree after scene edits; tests pass on CI until someone opens the game.
+  prevention: Comment or REQ that base width/height constants must match authoring offsets at default scale, or drive them from a single exported source.
+
+### Prompt Patches
+
+- agent: Implementation Frontend Agent
+  change: "When implementing uniform HUD scale under `CanvasLayer`, verify **`get_global_rect()` scale ratios on representative leaves** (not only top-level bars). If parent-only `Control.scale` fails uniformity for a subtree (e.g. wide hint strips with nested labels), use a **documented hybrid** (e.g. scaled container `offset_*` plus per-child `scale`) and keep any script **base pack constants** aligned with the scene at default scale."
+  reason: Avoids false confidence from a mechanism that looks uniform on one node type only.
+
+- agent: Test Designer Agent
+  change: "Before implementation lands, if layout tests assert scene `offset_*` on nodes that may be **reparented or scaled**, introduce or preserve helpers that read **design/authoring space** separately from **`get_global_rect()`**, and update **non-`tests/ui/`** consumers that assert viewport or HUD geometry to use the contract the spec defines for transformed space."
+  reason: Preserves meaningful default-scale parity and prevents fusion/level tests from asserting the wrong coordinate space.
+
+- agent: Planner Agent
+  change: "When a ticket changes a **packaged UI scene** root or child structure, require an explicit inventory of **all test files** (not only `tests/ui/`) that instantiate or assert that scene, including **script `get_node` / path contracts**."
+  reason: Catches level/integration tests that would otherwise break only after merge.
+
+### Workflow Improvements
+
+- issue: Adversarial tests for non-finite and non-positive float exports presuppose setter semantics (clamp vs reject) that the spec may only hint at.
+  improvement: For UI scale REQ IDs, add one line in the spec: **expected behavior for non-finite and `≤ 0` writes** (even if defensive) so implementation and tests agree in one pass.
+  expected_benefit: Fewer round-trips between Test Breaker expectations and implementer interpretation.
+
+### Keep / Reinforce
+
+- practice: Test Breaker’s fractional scale, order/idempotency, stress ratio, type coercion, and non-finite/non-positive cases on the same export.
+  reason: Efficiently guards float UI knobs against narrow happy-path implementations.
+
+- practice: Gatekeeper re-run of full `run_tests.sh` with AC matrix tied to named tests and script/scene evidence.
+  reason: Clear closure traceability for maintenance HUD tickets.
+
+---
