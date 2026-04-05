@@ -288,6 +288,16 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-break.md`
 - Outcome: Adversarial extensions in `tests/ui/test_hud_components_scale_input.gd` (fractional scale, idempotent 1→2→1, MutationIcon1 vs HPBar, Hints container vs MoveHint, int→float coercion, NAN/INF and zero/negative sanity, stress `s=4`); `# CHECKPOINT` on structural assumptions; 12 failures in HUD suite file until implementation.
 
+### MAINT-HCSI / run-2026-04-05-ac-gatekeeper
+- Ticket: `project_board/maintenance/done/hud_components_scale_input.md`
+- Stage: STATIC_QA → COMPLETE
+- Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
+- Outcome: AC1–AC3 mapped to `tests/ui/test_hud_components_scale_input.gd`, `test_player_hud_layout.gd`, and `infection_ui.gd` docs; gatekeeper re-ran `timeout 300 ci/scripts/run_tests.sh` (exit 0, `=== ALL TESTS PASSED ===`); ticket `git mv` to `maintenance/done/`.
+
+### [MAINT-HCSI] — OUTCOME: COMPLETE
+Exported `hud_scale` on `InfectionUI`; uniform HUD scaling + `tests/ui` HCSI coverage; `run_tests.sh` green.
+Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

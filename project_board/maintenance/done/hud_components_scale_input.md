@@ -28,17 +28,18 @@ Implementation is flexible: e.g. a full-screen `Control` root under the layer wi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, 2026-04-05) after `hud_scale` + HUD scaling in `infection_ui.gd` / `game_ui.tscn`.
-- Checkpoint: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-implementation.md`
+- **AC — single documented scale (default 1.0):** `tests/ui/test_hud_components_scale_input.gd` (`test_hcsi1_hud_scale_exists_and_defaults_to_one`); implementation + designer notes in `scripts/ui/infection_ui.gd` (`@export var hud_scale`, `_HINTS_PACK_BASE_*` contract).
+- **AC — all shipped `game_ui.tscn` HUD controls scale together (incl. Hints):** same suite HCSI-5/HCSI-6 global-rect checks + adversarial cases (MutationIcon1 vs HPBar, Hints container vs MoveHint, fractional/idempotent/stress); `test_player_hud_layout.gd` HCSI-2 authoring parity at `hud_scale` 1.0.
+- **AC — `run_tests.sh` / `tests/ui`:** Gatekeeper re-run `timeout 300 ci/scripts/run_tests.sh` → exit 0, `=== ALL TESTS PASSED ===` (2026-04-05); RID leak warnings unchanged from baseline.
 
 ## Blocking Issues
 - None
@@ -51,14 +52,13 @@ Engine Integration Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "action": "verify_ac",
-  "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md",
-  "spec_path": "project_board/specs/hud_components_scale_input_spec.md"
+  "action": "archive_or_merge",
+  "ticket_path": "project_board/maintenance/done/hud_components_scale_input.md"
 }
 ```
 
@@ -66,4 +66,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Implementation complete per HCSI (exported `hud_scale`, uniform scaling, path contract preserved). Awaiting AC Gatekeeper verification before COMPLETE / folder move.
+All acceptance criteria have explicit automated coverage (`tests/ui` + full suite); Stage COMPLETE and ticket moved to `maintenance/done/` per gatekeeper closure.
