@@ -107,19 +107,19 @@ Generated enemy roots currently attach `enemy_base.gd` for all GLBs. As M8/M9/M1
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: Run (`timeout 300 godot -s tests/run_tests.gd`) — green; `tests/asset_generation/test_enemy_root_script_resolver.gd` passes
-- Static QA: Run (`ci/scripts/run_tests.sh`) — exit 0
-- Integration: Not Run
+- Tests: `ci/scripts/run_tests.sh` (timeout 300) exit 0 on 2026-04-05; runner reported `=== ALL TESTS PASSED ===`. `tests/asset_generation/test_enemy_root_script_resolver.gd` covers shared resolver, missing override → `res://scripts/enemies/enemy_base.gd`, present override path, both `generate_enemy_scenes.gd` and `load_assets.gd` calling `resolve_enemy_root_script_path` before root script attach. Generated-enemy scene suites (e.g. FESG-19) pack/instantiate committed `res://scenes/enemies/generated/*.tscn` and assert root script ends with `enemy_base.gd` for current families (default until per-family overrides exist).
+- Static QA: Covered by the same `run_tests.sh` run (headless Godot test runner; parse/load failures surface as suite failures).
+- Integration: No ticket-mandated manual play session; automated pack/instantiate and level smoke in FESG tests satisfy “existing generated scenes still load” for this maintenance ticket.
 
 ## Blocking Issues
 
@@ -134,25 +134,16 @@ Implementation Generalist Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-AC Gatekeeper
+Human
 
 ## Required Input Schema
 ```json
-{
-  "ticket_path": "project_board/maintenance/in_progress/enemy_script_extension_and_scene_generator.md",
-  "spec_requirements": ["REQ-ESEG-1", "REQ-ESEG-2", "REQ-ESEG-3"],
-  "evidence": [
-    "scripts/asset_generation/enemy_root_script_resolver.gd",
-    "scripts/asset_generation/generate_enemy_scenes.gd",
-    "scripts/asset_generation/load_assets.gd",
-    "ci/scripts/run_tests.sh exit 0"
-  ]
-}
+{}
 ```
 
 ## Status
-Proceed
+Complete
 
 ## Reason
 
-Resolver module and dual-generator wiring landed; full Godot suite and `ci/scripts/run_tests.sh` green. AC Gatekeeper should confirm ticket AC (documented pattern, generator script selection, existing scenes) against spec and test evidence.
+All acceptance criteria mapped to Specification REQ-ESEG-1–REQ-ESEG-3 (documented override path + `EnemyBase` contract + ESEG-DOC) and verified by `ci/scripts/run_tests.sh` exit 0 with full suite green (2026-04-05). Ticket closed and moved to `project_board/maintenance/done/`.
