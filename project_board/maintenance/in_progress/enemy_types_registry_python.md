@@ -62,41 +62,40 @@ Title: Optional — tidy `EnemyTypes` / slug registry in asset generation (Pytho
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+INTEGRATION
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Implementation Generalist
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 386 passed)
-- Static QA: Passed (no circular import: subprocess import-order test + AST guard on registry source)
-- Integration: Not Run
+- Tests: Passed (gatekeeper re-run: `cd asset_generation/python && uv run pytest tests/ -q` — 386 passed, 221 subtests passed)
+- Static QA: Passed (contract tests ETRP_*: frozen slugs match `enemy_slug_registry` and `EnemyTypes` class attributes; subprocess import-order smoke; AST guard — no registry import of `constants`)
+- Integration: Partial — `smart_generation` imports `EnemyTypes` from `constants` (same slug source as CLI). `uv run python main.py list` (no Blender) fails mid-run: `KeyError: 'acid_spitter'` in `list_enemies()` because `animated_enemy_details` only keys three slugs while `EnemyTypes.get_animated()` has six; AC “main.py list commands … agree” is not operationally satisfied until list completes.
 
 ## Blocking Issues
 
-- None
+- `main.py` `list` subcommand: extend `animated_enemy_details` (or safe fallback) for every slug in `EnemyTypes.get_animated()` so `python main.py list` finishes; then re-smoke with `uv run python main.py list`.
 
 ## Escalation Notes
 
-- None
+- System `python` may be unavailable; use `uv run python` from `asset_generation/python`. There is no `python -m src.main`; entry point is `main.py` in package root.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Implementation Generalist
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/maintenance/in_progress/enemy_types_registry_python.md",
-  "checkpoint_log": "project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md",
-  "scope": "Verify AC: slug strings unchanged; no circular imports; CLI/list alignment (task 6 optional if gatekeeper defers integration)"
+  "scope": "Fix list_enemies() KeyError for animated slugs missing from animated_enemy_details; verify uv run python main.py list exits 0; hand back to Acceptance Criteria Gatekeeper Agent for COMPLETE + move to maintenance/done/"
 }
 ```
 
@@ -105,4 +104,4 @@ Proceed
 
 ## Reason
 
-Spec through implementation and automated static checks complete; ticket remains open for gatekeeper AC validation and optional integration smoke (task 6).
+Slug identity and no-cycle requirements are evidenced by pytest; CLI list smoke fails before completion, so Stage cannot be COMPLETE until list output matches extended animated roster without crashing.
