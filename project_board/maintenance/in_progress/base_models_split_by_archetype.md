@@ -37,16 +37,16 @@ Split `base_models` into a package with one module per archetype plus `base_mode
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 335 passed, 2026-04-05)
+- Tests: Passed (`cd asset_generation/python && uv run pytest tests/ -q` — 343 passed, 2026-04-05)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -61,12 +61,12 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "string",
+  "ticket_path": "project_board/maintenance/in_progress/base_models_split_by_archetype.md",
   "spec_path": "project_board/specs/base_models_split_by_archetype_spec.md",
   "tests_glob": "asset_generation/python/tests/enemies/test_base_models_factory.py"
 }
@@ -76,4 +76,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-BMSBA-5 factory tests authored; adversarial review of coverage (unknown type, key order, edge cases) is next.
+Adversarial tests extended (unknown keys, case sensitivity, get_available_types immutability, import graph). Implementation Generalist executes package split per spec BMSBA-1–4; checkpoint `project_board/checkpoints/MAINT-BMSBA/run-2026-04-05-test-break.md`.
