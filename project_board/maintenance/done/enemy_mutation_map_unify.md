@@ -163,19 +163,19 @@ Extract the map to one module (e.g. `scripts/asset_generation/enemy_mutation_map
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Generalist
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: `timeout 300 godot -s tests/run_tests.gd` — **pass** (exit 0); full suite green after `enemy_mutation_map.gd` + consumer preload + `load_assets.gd` strict typing for `_compute_combined_aabb` / `_gather_mesh_instances`.
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: `ci/scripts/run_tests.sh` — **pass** (exit 0, gatekeeper run 2026-04-05). Same script runs `timeout 300 godot --headless -s tests/run_tests.gd`; output included `=== ALL TESTS PASSED ===`. Targeted coverage: `tests/scenes/enemies/test_enemy_mutation_map_unify.gd` (EMU-QA-1 single literal + literal location, EMU-CON-1 preload/no local dict, EMU-SSOT shared reference, EMU-SEM-1 unknown family, adversarial cases).
+- Static QA: Not required by ticket AC; script parse/load failures surface via headless test runner (project avoids `godot --check-only` per CLAUDE.md).
+- Integration: Not required by ticket AC (no manual in-editor or play session criterion).
 
 ## Blocking Issues
 
@@ -190,11 +190,11 @@ Implementation Generalist
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Status
 Proceed
 
 ## Reason
 
-Shared `scripts/asset_generation/enemy_mutation_map.gd` holds the sole `MUTATION_BY_FAMILY` literal; `generate_enemy_scenes.gd` and `load_assets.gd` preload `EnemyMutationMap` and reference `EnemyMutationMap.MUTATION_BY_FAMILY`. EMU-DOC-1: `first_4_families_in_level_spec.md` updated for single-module narrative. Full test runner exit 0. Hand off to Acceptance Criteria Gatekeeper for STATIC_QA / AC verification.
+All ticket acceptance criteria have objective evidence: under `scripts/asset_generation/` exactly one `const MUTATION_BY_FAMILY` dict literal exists in `enemy_mutation_map.gd` (confirmed by repo search and EMU-QA-1 tests); `generate_enemy_scenes.gd` and `load_assets.gd` use `EnemyMutationMap.MUTATION_BY_FAMILY` with no duplicate const dicts; `ci/scripts/run_tests.sh` exited 0. Ticket moved to `project_board/maintenance/done/`. Human may merge, push, or archive as usual.
