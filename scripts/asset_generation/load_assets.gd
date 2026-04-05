@@ -186,7 +186,10 @@ func _duplicate_shape(shape: Shape3D) -> Shape3D:
 func _build_collision_shape_from_node(node: Node) -> Shape3D:
 	var aabb := _compute_combined_aabb(node)
 	if aabb.size == Vector3.ZERO:
-		return null
+		push_warning("Zero AABB for node '%s' — using fallback BoxShape3D(1,1,1)" % node.name)
+		var fallback := BoxShape3D.new()
+		fallback.size = Vector3(1.0, 1.0, 1.0)
+		return fallback
 
 	# Heuristic:
 	# - flat/flying enemies get a BoxShape3D
@@ -265,7 +268,9 @@ func _aabb_from_shape(shape: Shape3D) -> AABB:
 
 	if shape is CapsuleShape3D:
 		var capsule := shape as CapsuleShape3D
-		var size := Vector3(capsule.radius * 2.0, capsule.height + capsule.radius * 2.0, capsule.radius * 2.0)
+		# In Godot 4, CapsuleShape3D.height is the TOTAL height including both
+		# hemispherical caps — do not add radius * 2.0 again.
+		var size := Vector3(capsule.radius * 2.0, capsule.height, capsule.radius * 2.0)
 		return AABB(-size * 0.5, size)
 
 	return AABB(Vector3(-0.5, -0.5, -0.5), Vector3.ONE)
