@@ -28,13 +28,13 @@ Implementation is flexible: e.g. a full-screen `Control` root under the layer wi
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_FRONTEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 - Pending pipeline
@@ -50,12 +50,12 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Frontend Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_break",
+  "action": "implement",
   "ticket_path": "project_board/maintenance/in_progress/hud_components_scale_input.md",
   "spec_path": "project_board/specs/hud_components_scale_input_spec.md"
 }
@@ -65,4 +65,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-HCSI behavioral tests authored; checkpoint `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-design.md`. Test Breaker shall extend adversarial coverage; expect failures until implementation lands.
+Adversarial HCSI tests added (`project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-break.md`); suite still red until `hud_scale` and uniform HUD scaling land per spec. Implementation Frontend owns `game_ui.tscn` / `infection_ui.gd` (and related UI wiring).

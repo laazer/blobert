@@ -21,6 +21,23 @@ const _HUD_VP_H: float = 1880.0
 const _FLOAT_TOL: float = 0.001
 const _RATIO_TOL: float = 0.05
 const _SCALE_HIGH: float = 2.0
+const _SCALE_LOW: float = 0.5
+const _SCALE_MID: float = 1.25
+
+
+func _global_rect_is_finite_sane(gr: Rect2) -> bool:
+	# CHECKPOINT: Assumes scaled HUD never produces NaN/Inf or negative sizes in global space (HCSI-5 sane output).
+	var sz: Vector2 = gr.size
+	return (
+		is_finite(gr.position.x)
+		and is_finite(gr.position.y)
+		and is_finite(gr.end.x)
+		and is_finite(gr.end.y)
+		and is_finite(sz.x)
+		and is_finite(sz.y)
+		and sz.x >= -_FLOAT_TOL
+		and sz.y >= -_FLOAT_TOL
+	)
 
 
 func _assert_eq_float(expected: float, actual: float, test_name: String) -> void:
@@ -282,6 +299,290 @@ func test_hcsi6_global_rects_within_design_viewport_at_default_scale() -> void:
 
 
 # ---------------------------------------------------------------------------
+# Adversarial / edge — MAINT-HCSI Test Breaker (HCSI-3, HCSI-5, spec finite-s)
+# ---------------------------------------------------------------------------
+
+func test_hcsi_adv_fractional_scale_uniform() -> void:
+	# Downward scale must stay linear if upward does (mutation: only handle s >= 1).
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-frac_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-frac_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var hp: Control = ui.get_node_or_null("HPBar") as Control
+	if hp == null:
+		_fail("hcsi-adv-frac_hp", "HPBar missing")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 1.0)
+	var b: Vector2 = hp.get_global_rect().size
+	if b.x <= _FLOAT_TOL:
+		_fail("hcsi-adv-frac_baseline", "HPBar width degenerate at hud_scale=1.0")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", _SCALE_LOW)
+	var a: Vector2 = hp.get_global_rect().size
+	_assert_ratio_near(_SCALE_LOW, a.x, b.x, "hcsi-adv-frac_hp_width -- fractional uniform scale (HCSI-5.1)")
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_baseline_restored_after_scale_bump() -> void:
+	# Order / double-application: 1 -> 2 -> 1 must reproduce baseline sizes (not accumulate).
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-idem_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-idem_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var hp: Control = ui.get_node_or_null("HPBar") as Control
+	var hints: Control = ui.get_node_or_null("Hints") as Control
+	if hp == null or hints == null:
+		_fail("hcsi-adv-idem_nodes", "HPBar and Hints required")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 1.0)
+	var b_hp: Vector2 = hp.get_global_rect().size
+	var b_hints: Vector2 = hints.get_global_rect().size
+
+	ui.set("hud_scale", _SCALE_HIGH)
+	ui.set("hud_scale", 1.0)
+
+	var a_hp: Vector2 = hp.get_global_rect().size
+	var a_hints: Vector2 = hints.get_global_rect().size
+
+	_assert_eq_float(b_hp.x, a_hp.x, "hcsi-adv-idem_hp_w_after_2_1 -- no cumulative scale on HPBar")
+	_assert_eq_float(b_hp.y, a_hp.y, "hcsi-adv-idem_hp_h_after_2_1")
+	_assert_eq_float(b_hints.x, a_hints.x, "hcsi-adv-idem_hints_w_after_2_1 -- Hints container restores (HCSI-3)")
+	_assert_eq_float(b_hints.y, a_hints.y, "hcsi-adv-idem_hints_h_after_2_1")
+
+	_free_ui(ui)
+
+
+func test_hcsi_adv_triangulate_mutation_icon1_vs_hp_bar() -> void:
+	# CHECKPOINT: Assumes MutationIcon1 and HPBar both live under the same uniform scale subtree (HCSI-3.1).
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-tri_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-tri_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var hp: Control = ui.get_node_or_null("HPBar") as Control
+	var m1: Control = ui.get_node_or_null("MutationIcon1") as Control
+	if hp == null or m1 == null:
+		_fail("hcsi-adv-tri_nodes", "HPBar and MutationIcon1 required")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 1.0)
+	var b_hp: Vector2 = hp.get_global_rect().size
+	var b_m1: Vector2 = m1.get_global_rect().size
+	if b_hp.x <= _FLOAT_TOL or b_m1.x <= _FLOAT_TOL:
+		_fail("hcsi-adv-tri_baseline", "non-degenerate widths required at hud_scale=1.0")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", _SCALE_MID)
+	var a_hp: Vector2 = hp.get_global_rect().size
+	var a_m1: Vector2 = m1.get_global_rect().size
+
+	var r_hp: float = a_hp.x / b_hp.x
+	var r_m1: float = a_m1.x / b_m1.x
+	if absf(r_hp - r_m1) <= _RATIO_TOL:
+		_pass("hcsi-adv-tri_same_factor_icon1_vs_hp -- HCSI-3 cross-widget uniform")
+	else:
+		_fail(
+			"hcsi-adv-tri_same_factor_icon1_vs_hp",
+			"MutationIcon1 vs HPBar X scale factors differ: " + str(r_m1) + " vs " + str(r_hp)
+		)
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_hints_container_matches_child_factor() -> void:
+	# CHECKPOINT: Assumes scaling applies to Hints Control and descendants together (HCSI-3.2), not only leaves.
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-hintc_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-hintc_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var hints: Control = ui.get_node_or_null("Hints") as Control
+	var move: Control = ui.get_node_or_null("Hints/MoveHint") as Control
+	if hints == null or move == null:
+		_fail("hcsi-adv-hintc_nodes", "Hints and MoveHint required")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 1.0)
+	var b_h: Vector2 = hints.get_global_rect().size
+	var b_m: Vector2 = move.get_global_rect().size
+	if b_h.x <= _FLOAT_TOL or b_m.x <= _FLOAT_TOL:
+		_fail("hcsi-adv-hintc_baseline", "non-degenerate widths at hud_scale=1.0")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", _SCALE_HIGH)
+	var a_h: Vector2 = hints.get_global_rect().size
+	var a_m: Vector2 = move.get_global_rect().size
+
+	var r_h: float = a_h.x / b_h.x
+	var r_m: float = a_m.x / b_m.x
+	if absf(r_h - r_m) <= _RATIO_TOL:
+		_pass("hcsi-adv-hintc_container_vs_movehint -- subtree uniform (HCSI-3.2)")
+	else:
+		_fail(
+			"hcsi-adv-hintc_container_vs_movehint",
+			"Hints vs MoveHint X factors differ: " + str(r_h) + " vs " + str(r_m)
+		)
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_integer_assignment_stored_as_float() -> void:
+	# CHECKPOINT: Godot/implementation may coerce int literal; exported knob must read back as float (HCSI-1).
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-int_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-int_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 2)
+	var v: Variant = ui.get("hud_scale")
+	if typeof(v) != TYPE_FLOAT:
+		_fail("hcsi-adv-int_type", "hud_scale must remain TYPE_FLOAT after int-like set, got " + str(typeof(v)))
+		_free_ui(ui)
+		return
+	_assert_eq_float(2.0, v as float, "hcsi-adv-int_value -- int 2 coerces to 2.0")
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_nonfinite_hud_scale_global_rects_remain_finite() -> void:
+	# CHECKPOINT: Spec allows clamping extreme s; minimum bar — no NaN/Inf global rects on sampled controls after bad writes.
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-nf_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-nf_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var samples: Array[Control] = []
+	for p: String in ["HPBar", "MutationIcon2", "Hints"]:
+		var c: Control = ui.get_node_or_null(p) as Control
+		if c != null:
+			samples.append(c)
+	if samples.is_empty():
+		_fail("hcsi-adv-nf_samples", "no sample controls")
+		_free_ui(ui)
+		return
+
+	for bad: float in [NAN, INF]:
+		ui.set("hud_scale", bad)
+		for c: Control in samples:
+			var gr: Rect2 = c.get_global_rect()
+			if _global_rect_is_finite_sane(gr):
+				_pass("hcsi-adv-nf_finite_after_" + str(bad) + "_" + str(c.name))
+			else:
+				_fail(
+					"hcsi-adv-nf_finite_after_" + str(bad) + "_" + str(c.name),
+					"global rect must stay finite with non-finite hud_scale input (clamp/reject)"
+				)
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_zero_or_negative_hud_scale_rects_non_negative_finite() -> void:
+	# CHECKPOINT: Spec recommends s > 0; if author sets 0 or negative, UI must not invert sizes or propagate NaN.
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-zn_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-zn_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	var hp: Control = ui.get_node_or_null("HPBar") as Control
+	if hp == null:
+		_fail("hcsi-adv-zn_hp", "HPBar missing")
+		_free_ui(ui)
+		return
+
+	for bad: float in [0.0, -1.0]:
+		ui.set("hud_scale", bad)
+		var gr: Rect2 = hp.get_global_rect()
+		if not _global_rect_is_finite_sane(gr):
+			_fail("hcsi-adv-zn_sane_" + str(bad), "HPBar global rect must stay finite/non-negative after bad scale")
+			ui.set("hud_scale", 1.0)
+			_free_ui(ui)
+			return
+		_pass("hcsi-adv-zn_sane_" + str(bad) + "_hp")
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+func test_hcsi_adv_high_scale_stress_ratio_linear() -> void:
+	# Stress: large finite s still yields ~linear width ratio (catches accidental clamps below max gameplay s).
+	var ui: CanvasLayer = _load_game_ui()
+	if ui == null:
+		_fail("hcsi-adv-stress_load", "game_ui.tscn failed to load")
+		return
+	if not ("hud_scale" in ui):
+		_fail("hcsi-adv-stress_hud_scale_missing", "hud_scale required")
+		_free_ui(ui)
+		return
+
+	const STRESS_S: float = 4.0
+	var hp: Control = ui.get_node_or_null("HPBar") as Control
+	if hp == null:
+		_fail("hcsi-adv-stress_hp", "HPBar missing")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", 1.0)
+	var b: Vector2 = hp.get_global_rect().size
+	if b.x <= _FLOAT_TOL:
+		_fail("hcsi-adv-stress_baseline", "HPBar width degenerate")
+		_free_ui(ui)
+		return
+
+	ui.set("hud_scale", STRESS_S)
+	var a: Vector2 = hp.get_global_rect().size
+	_assert_ratio_near(STRESS_S, a.x, b.x, "hcsi-adv-stress_hp_w -- large s still uniform (HCSI-5.1)")
+
+	ui.set("hud_scale", 1.0)
+	_free_ui(ui)
+
+
+# ---------------------------------------------------------------------------
 # run_all
 # ---------------------------------------------------------------------------
 
@@ -297,6 +598,14 @@ func run_all() -> int:
 	test_hcsi5_global_sizes_scale_uniformly_with_hud_scale()
 	test_hcsi5_hud_scale_property_tracks_set_value()
 	test_hcsi6_global_rects_within_design_viewport_at_default_scale()
+	test_hcsi_adv_fractional_scale_uniform()
+	test_hcsi_adv_baseline_restored_after_scale_bump()
+	test_hcsi_adv_triangulate_mutation_icon1_vs_hp_bar()
+	test_hcsi_adv_hints_container_matches_child_factor()
+	test_hcsi_adv_integer_assignment_stored_as_float()
+	test_hcsi_adv_nonfinite_hud_scale_global_rects_remain_finite()
+	test_hcsi_adv_zero_or_negative_hud_scale_rects_non_negative_finite()
+	test_hcsi_adv_high_scale_stress_ratio_linear()
 
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
 	return _fail_count

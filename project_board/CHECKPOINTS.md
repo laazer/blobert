@@ -282,6 +282,12 @@ Log: `project_board/checkpoints/MAINT-ETRP/run-2026-04-05-autopilot.md`
 - Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-design.md`
 - Outcome: `tests/ui/test_hud_components_scale_input.gd` (HCSI-1/4/5/6); `test_player_hud_layout.gd` design-space helper; T-42 global-rect viewport checks; suite red until `hud_scale` implementation.
 
+### MAINT-HCSI / run-2026-04-05-test-break
+- Ticket: `project_board/maintenance/in_progress/hud_components_scale_input.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_FRONTEND
+- Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-test-break.md`
+- Outcome: Adversarial extensions in `tests/ui/test_hud_components_scale_input.gd` (fractional scale, idempotent 1→2→1, MutationIcon1 vs HPBar, Hints container vs MoveHint, int→float coercion, NAN/INF and zero/negative sanity, stress `s=4`); `# CHECKPOINT` on structural assumptions; 12 failures in HUD suite file until implementation.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
