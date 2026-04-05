@@ -15,29 +15,33 @@ class BlobModel(BaseModelType):
         self.height = random_variance(0.6, 0.1, self.rng)
 
         body = create_sphere(
-            location=(0, 0, self.height * 0.5),
-            scale=(self.length, self.width, self.height),
+            location=self._scaled_location((0, 0, self.height * 0.5)),
+            scale=self._scaled_primitive_extent((self.length, self.width, self.height)),
         )
         self.parts.append(body)
 
         head_scale = self.width * 0.4
         head = create_sphere(
-            location=(self.length * 0.7, 0, self.height * 0.8),
-            scale=(head_scale, head_scale, head_scale),
+            location=self._scaled_location((self.length * 0.7, 0, self.height * 0.8)),
+            scale=self._scaled_primitive_extent((head_scale, head_scale, head_scale)),
         )
         self.parts.append(head)
 
         for side in [-1, 1]:
             stalk = create_cylinder(
-                location=(self.length * 0.6, side * self.width * 0.3, self.height + 0.3),
-                scale=(0.05, 0.05, 0.3),
+                location=self._scaled_location(
+                    (self.length * 0.6, side * self.width * 0.3, self.height + 0.3)
+                ),
+                scale=self._scaled_primitive_extent((0.05, 0.05, 0.3)),
                 vertices=6,
             )
             self.parts.append(stalk)
 
             eye = create_sphere(
-                location=(self.length * 0.6, side * self.width * 0.3, self.height + 0.6),
-                scale=(0.1, 0.1, 0.1),
+                location=self._scaled_location(
+                    (self.length * 0.6, side * self.width * 0.3, self.height + 0.6)
+                ),
+                scale=self._scaled_primitive_extent((0.1, 0.1, 0.1)),
             )
             self.parts.append(eye)
 

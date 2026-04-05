@@ -12,16 +12,18 @@ class InsectoidModel(BaseModelType):
         """Create segmented insect body with legs"""
         self.body_scale = random_variance(1.0, 0.2, self.rng)
         body = create_sphere(
-            location=(0, 0, 0.3),
-            scale=(self.body_scale, self.body_scale * 0.8, self.body_scale * 0.9),
+            location=self._scaled_location((0, 0, 0.3)),
+            scale=self._scaled_primitive_extent(
+                (self.body_scale, self.body_scale * 0.8, self.body_scale * 0.9)
+            ),
         )
         self.parts.append(body)
 
         head_scale = self.body_scale * random_variance(0.6, 0.1, self.rng)
         head_offset = self.body_scale + head_scale * 0.5
         head = create_sphere(
-            location=(head_offset, 0, 0.3),
-            scale=(head_scale, head_scale, head_scale),
+            location=self._scaled_location((head_offset, 0, 0.3)),
+            scale=self._scaled_primitive_extent((head_scale, head_scale, head_scale)),
         )
         self.parts.append(head)
 
@@ -33,8 +35,8 @@ class InsectoidModel(BaseModelType):
             eye_y = side * head_scale * 0.4
             eye_z = 0.4
             eye = create_sphere(
-                location=(eye_x, eye_y, eye_z),
-                scale=(eye_scale, eye_scale, eye_scale),
+                location=self._scaled_location((eye_x, eye_y, eye_z)),
+                scale=self._scaled_primitive_extent((eye_scale, eye_scale, eye_scale)),
             )
             self.parts.append(eye)
 
@@ -50,8 +52,8 @@ class InsectoidModel(BaseModelType):
         for leg_x, leg_y, leg_z in leg_positions:
             leg_length = random_variance(0.3, 0.1, self.rng)
             leg = create_cylinder(
-                location=(leg_x, leg_y, leg_z),
-                scale=(0.08, 0.08, leg_length),
+                location=self._scaled_location((leg_x, leg_y, leg_z)),
+                scale=self._scaled_primitive_extent((0.08, 0.08, leg_length)),
                 vertices=6,
             )
             self.parts.append(leg)

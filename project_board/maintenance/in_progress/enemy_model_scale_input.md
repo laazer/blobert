@@ -42,16 +42,18 @@ Plumb the value from the factory into `BaseModelType` (default `1.0` for backwar
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Validation Status
-- Pending pipeline
+- `cd asset_generation/python && uv run pytest tests/enemies/test_enemy_model_scale_input.py -q` — 19 passed, 19 subtests passed (2026-04-05)
+- `cd asset_generation/python && uv run pytest tests/ -q` — 405 passed, 240 subtests passed (2026-04-05)
+- `timeout 300 ci/scripts/run_tests.sh` — exit 0, `=== ALL TESTS PASSED ===` (2026-04-05; Godot headless RID leak warnings unchanged)
 
 ## Blocking Issues
 - None
@@ -64,16 +66,15 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "implement",
+  "action": "verify_ac_and_advance",
   "ticket_path": "project_board/maintenance/in_progress/enemy_model_scale_input.md",
   "spec_path": "project_board/specs/enemy_model_scale_input_spec.md",
-  "tests_glob": "asset_generation/python/tests/enemies/test_enemy_model_scale_input.py",
-  "execution_plan_ref": "## Execution Plan"
+  "validation_status_ref": "## Validation Status"
 }
 ```
 
@@ -81,4 +82,4 @@ Implementation Generalist Agent
 Proceed
 
 ## Reason
-Adversarial EMSI tests extended (fail-fast, boundaries, call styles, fallback, direct-init validation, determinism sequence); Implementation Generalist implements factory/base/archetypes per spec until pytest file is green.
+EMSI implementation complete: `scale` on `ModelTypeFactory.create_model` and `BaseModelType`; validation in `BaseModelType.__init__`; uniform `location`/`scale` kwargs scaling across humanoid/blob/insectoid; ready for AC gatekeeper sign-off per workflow.

@@ -16,10 +16,21 @@ class ModelTypeFactory:
     }
 
     @classmethod
-    def create_model(cls, model_type: str, name: str, materials, rng) -> BaseModelType:
-        """Create appropriate model type"""
+    def create_model(
+        cls,
+        model_type: str,
+        name: str,
+        materials,
+        rng,
+        scale: float = 1.0,
+    ) -> BaseModelType:
+        """Create appropriate model type.
+
+        ``scale`` uniformly scales procedural enemy body geometry for export/preview
+        without editing per-archetype dimensions. Invalid values raise ``ValueError``.
+        """
         model_class = cls.MODEL_TYPES.get(model_type, InsectoidModel)
-        model = model_class(name, materials, rng)
+        model = model_class(name, materials, rng, scale)
         model.create_geometry()
         model.apply_themed_materials()
         return model
