@@ -16,3 +16,8 @@ Run: 2026-04-05 autopilot (maintenance backlog queue, ticket 2)
 **Would have asked:** None; acceptance criteria and file paths are explicit in the ticket.
 **Assumption made:** TDD order holds: Spec → Test Designer → Test Breaker → Implementation Generalist → `run_tests.sh` verification.
 **Confidence:** High
+
+### [MAINT-EMMU] SPECIFICATION — Unified map contract locked
+**Would have asked:** None; both in-repo dict literals were compared and are identical (including `mutation_clown` → `random`).
+**Assumption made:** Preload alias `EnemyMutationMap` + `EnemyMutationMap.MUTATION_BY_FAMILY`; `rg MUTATION_BY_FAMILY` may still hit tests/project_board/checkpoints — hard gate is single dict literal under `scripts/asset_generation/` in `enemy_mutation_map.gd` only.
+**Confidence:** High
