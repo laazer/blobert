@@ -1574,4 +1574,8 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 *Completed: 2026-04-05* (same pattern as prior animated splits: `test_BPG_CLASS_17b` for `__module__`, `BPG_ADV_SPLIT_04` for registry `is` identity; removed unused `create_quadruped_armature` and top-level `EnemyBodyTypes` import from `animated_enemies.py` after extraction.)
 
+## [split_animated_ember_imp] — No significant learnings identified.
+
+*Completed: 2026-04-05* (same extract-and-register pattern; added `TestEmberImpClass` + `BPG_ADV_SPLIT_05`; removed unused `math` / `Euler` / `create_humanoid_armature` / `create_all_animations` from `animated_enemies.py` after extraction.)
+
 ---

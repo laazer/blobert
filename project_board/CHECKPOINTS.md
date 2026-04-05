@@ -164,3 +164,12 @@ Log: `project_board/checkpoints/split_animated_carapace_husk/run-2026-04-05-auto
 ### [split_animated_claw_crawler] — OUTCOME: COMPLETE
 `AnimatedClawCrawler` moved to `src/enemies/animated_claw_crawler.py`; registry unchanged; 364 pytest passed; ticket `project_board/maintenance/done/split_animated_claw_crawler.md`.
 Log: `project_board/checkpoints/split_animated_claw_crawler/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05T21-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/maintenance/backlog/split_animated_ember_imp.md`
+- Log root: project_board/checkpoints/
+
+### [split_animated_ember_imp] — OUTCOME: COMPLETE
+`AnimatedEmberImp` moved to `src/enemies/animated_ember_imp.py`; registry maps `ember_imp` to that module’s class; 372 pytest passed; ticket `project_board/maintenance/done/split_animated_ember_imp.md`.
+Log: `project_board/checkpoints/split_animated_ember_imp/run-2026-04-05-autopilot.md`

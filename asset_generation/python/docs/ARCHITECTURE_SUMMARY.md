@@ -36,6 +36,7 @@ src/
 │   ├── animated_adhesion_bug.py  # AnimatedAdhesionBug
 │   ├── animated_carapace_husk.py  # AnimatedCarapaceHusk
 │   ├── animated_claw_crawler.py  # AnimatedClawCrawler
+│   ├── animated_ember_imp.py   # AnimatedEmberImp
 │   ├── animated_enemies.py   # Other concrete animated classes + AnimatedEnemyBuilder factory
 │   ├── base_models/          # Package: archetype models + ModelTypeFactory
 │   └── example_new_enemy.py  # Annotated reference for new enemy authors

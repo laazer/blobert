@@ -1,5 +1,5 @@
 """
-Adversarial tests for AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk.
+Adversarial tests for AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk, AnimatedEmberImp.
 Pure Python — no bpy import. Runs via: uv run pytest tests/
 
 These tests target structural invariants and mutation surfaces NOT covered by
@@ -167,6 +167,16 @@ class TestRegistrationAdversarial(unittest.TestCase):
         self.assertIs(
             AnimatedEnemyBuilder.ENEMY_CLASSES['claw_crawler'],
             claw_mod.AnimatedClawCrawler,
+        )
+
+    def test_BPG_ADV_SPLIT_05_registry_ember_imp_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedEmberImp from
+        # animated_ember_imp, not a duplicate subclass in animated_enemies.
+        from src.enemies import animated_ember_imp as ember_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['ember_imp'],
+            ember_mod.AnimatedEmberImp,
         )
 
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):

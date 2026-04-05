@@ -1,10 +1,10 @@
 """
-Tests for AnimatedAdhesionBug, AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk.
+Tests for AnimatedAdhesionBug, AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedEmberImp, AnimatedCarapaceHusk.
 Pure Python — no bpy import. Runs via: uv run pytest tests/
 
 Spec traceability:
   BPG-REG-*   : TestEnemyRegistration
-  BPG-CLASS-* : TestAdhesionBugClass, TestAcidSpitterClass, TestClawCrawlerClass, TestCarapaceHuskClass
+  BPG-CLASS-* : TestAdhesionBugClass, TestAcidSpitterClass, TestClawCrawlerClass, TestEmberImpClass, TestCarapaceHuskClass
   BPG-CONST-* : TestEnemyTypesConstants
   BPG-MAT-*   : TestCarapaceHuskMaterialTheme
 """
@@ -17,6 +17,7 @@ from src.enemies.animated_enemies import (
     AnimatedAdhesionBug,
     AnimatedAcidSpitter,
     AnimatedClawCrawler,
+    AnimatedEmberImp,
     AnimatedCarapaceHusk,
 )
 from src.enemies.base_enemy import BaseEnemy
@@ -250,6 +251,50 @@ class TestClawCrawlerClass(unittest.TestCase):
         """BPG-CLASS-17: apply_materials source contains 'claw_crawler' string literal."""
         source = inspect.getsource(AnimatedClawCrawler.apply_materials)
         self.assertIn("'claw_crawler'", source)
+
+
+# ---------------------------------------------------------------------------
+# BPG-CLASS-31 through BPG-CLASS-37 : AnimatedEmberImp class structure
+# ---------------------------------------------------------------------------
+
+class TestEmberImpClass(unittest.TestCase):
+    """Verify AnimatedEmberImp class contract via introspection."""
+
+    def test_BPG_CLASS_31_ember_imp_importable(self):
+        """BPG-CLASS-31: AnimatedEmberImp is importable from src.enemies.animated_enemies."""
+        self.assertTrue(True)
+
+    def test_BPG_CLASS_32_ember_imp_defined_in_dedicated_module(self):
+        """BPG-CLASS-32: AnimatedEmberImp class object lives in animated_ember_imp module."""
+        self.assertEqual(AnimatedEmberImp.__module__, 'src.enemies.animated_ember_imp')
+
+    def test_BPG_CLASS_33_ember_imp_subclass_of_base_enemy(self):
+        """BPG-CLASS-33: AnimatedEmberImp is a subclass of BaseEnemy."""
+        self.assertTrue(issubclass(AnimatedEmberImp, BaseEnemy))
+
+    def test_BPG_CLASS_34_has_all_required_methods(self):
+        """BPG-CLASS-34: AnimatedEmberImp defines all 6 required methods."""
+        required = ['create_body', 'create_head', 'create_limbs',
+                    'apply_materials', 'create_armature', 'get_body_type']
+        for method_name in required:
+            with self.subTest(method=method_name):
+                self.assertTrue(hasattr(AnimatedEmberImp, method_name))
+                self.assertTrue(callable(getattr(AnimatedEmberImp, method_name)))
+
+    def test_BPG_CLASS_35_get_body_type_source_references_humanoid(self):
+        """BPG-CLASS-35: get_body_type source contains EnemyBodyTypes.HUMANOID."""
+        source = inspect.getsource(AnimatedEmberImp.get_body_type)
+        self.assertIn('EnemyBodyTypes.HUMANOID', source)
+
+    def test_BPG_CLASS_36_create_armature_source_references_create_humanoid_armature(self):
+        """BPG-CLASS-36: create_armature source contains create_humanoid_armature."""
+        source = inspect.getsource(AnimatedEmberImp.create_armature)
+        self.assertIn('create_humanoid_armature', source)
+
+    def test_BPG_CLASS_37_apply_materials_source_references_ember_imp_key(self):
+        """BPG-CLASS-37: apply_materials source contains 'ember_imp' string literal."""
+        source = inspect.getsource(AnimatedEmberImp.apply_materials)
+        self.assertIn("'ember_imp'", source)
 
 
 # ---------------------------------------------------------------------------
