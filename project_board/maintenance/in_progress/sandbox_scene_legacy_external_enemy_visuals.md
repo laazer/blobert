@@ -40,16 +40,16 @@ Formal spec (requirements **SLEEV-1**–**SLEEV-5**, traceable to acceptance cri
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Run — 1 expected failure (SLEEV-1.1) until duplicate scene exists; see checkpoint log
+- Tests: Run — 1 expected failure (SLEEV-1.1) until duplicate scene exists; ADV-SLEEV pre-gate + post-gate hardening in `test_legacy_enemy_visual_sandbox_scene.gd`; see checkpoint log
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -64,15 +64,16 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_break",
+  "action": "implementation_generalist",
   "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md",
   "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md",
-  "test_path": "tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd"
+  "test_path": "tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd",
+  "target_scene": "res://scenes/levels/sandbox/test_movement_3d_legacy_enemy_visual.tscn"
 }
 ```
 
@@ -80,4 +81,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test Designer added MAINT-SLEEV scene contract suite; Test Breaker shall adversarially review spec + tests before Implementation adds `test_movement_3d_legacy_enemy_visual.tscn`.
+Test Breaker hardened MAINT-SLEEV suite (ADV-SLEEV); Implementation shall add duplicate sandbox `.tscn` per SLEEV-1..3 until `run_tests` is green.

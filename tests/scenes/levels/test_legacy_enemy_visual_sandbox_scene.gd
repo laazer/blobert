@@ -13,7 +13,20 @@ extends "res://tests/utils/test_utils.gd"
 
 const LEGACY_SCENE_PATH: String = "res://scenes/levels/sandbox/test_movement_3d_legacy_enemy_visual.tscn"
 
+const MAIN_SANDBOX_PATH: String = "res://scenes/levels/sandbox/test_movement_3d.tscn"
+
 const LEGACY_MAIN_SUBSTR: String = "test_movement_3d_legacy_enemy_visual"
+
+# SLEEV-2 / signal parity with test_movement_3d.tscn (line must survive duplicate edits).
+const EXPECTED_RESPAWN_SIGNAL_CONNECTION_LINE: String = "[connection signal=\"body_entered\" from=\"RespawnZone\" to=\"RespawnZone\" method=\"_on_body_entered\"]"
+
+# ADV-SLEEV: per-enemy .tscn instance body must retain SLEEV-3.3 lines and omit model_scene (mutation + transform suffix).
+const ADV_ENEMY_TSCN_BLOCKS: Array[Dictionary] = [
+	{"name": "AdhesionBugEnemy", "mutation_snip": "mutation_drop = \"adhesion\"", "pos_snip": ", 4, 1, 0)"},
+	{"name": "AcidSpitterEnemy", "mutation_snip": "mutation_drop = \"acid\"", "pos_snip": ", -4, 1, 0)"},
+	{"name": "ClawCrawlerEnemy", "mutation_snip": "mutation_drop = \"claw\"", "pos_snip": ", 8, 1, 0)"},
+	{"name": "CarapaceHuskEnemy", "mutation_snip": "mutation_drop = \"carapace\"", "pos_snip": ", -8, 1, 0)"},
+]
 
 # SLEEV-3.1 — must not appear as ext_resource targets in the legacy level file.
 const FORBIDDEN_GLB_PATHS: PackedStringArray = [
@@ -84,6 +97,30 @@ func _load_legacy_root() -> Node:
 		_fail_test("SLEEV-1.2_instantiate", "instantiate() returned null: " + LEGACY_SCENE_PATH)
 		return null
 	return inst
+
+
+func _load_main_sandbox_root() -> Node:
+	var packed: PackedScene = ResourceLoader.load(MAIN_SANDBOX_PATH) as PackedScene
+	if packed == null:
+		_fail_test("ADV-SLEEV-main_pack_load", "ResourceLoader.load returned null: " + MAIN_SANDBOX_PATH)
+		return null
+	var inst: Node = packed.instantiate()
+	if inst == null:
+		_fail_test("ADV-SLEEV-main_instantiate", "instantiate() returned null: " + MAIN_SANDBOX_PATH)
+		return null
+	return inst
+
+
+func _tscn_first_node_block(src: String, node_name: String) -> String:
+	var marker: String = "[node name=\"" + node_name + "\""
+	var idx: int = src.find(marker)
+	if idx < 0:
+		return ""
+	var rest: String = src.substr(idx)
+	var next_nl_bracket: int = rest.find("\n[", 1)
+	if next_nl_bracket < 0:
+		return rest.strip_edges()
+	return rest.substr(0, next_nl_bracket).strip_edges()
 
 
 func test_sleev_1_load_instantiate_root_node3d() -> void:
@@ -210,10 +247,139 @@ func test_sleev_4_main_scene_not_legacy_duplicate() -> void:
 	)
 
 
+func test_adv_sleev_source_main_tscn_preserves_glb_and_model_overrides() -> void:
+	# CHECKPOINT: Catches accidental removal of GLB overrides from the live sandbox (would make legacy duplicate meaningless).
+	var fs_path: String = _res_to_fs(MAIN_SANDBOX_PATH)
+	var src: String = _read_text_fs(fs_path)
+	if src == "":
+		_fail_test("ADV-SLEEV-source_read", "empty or unreadable: " + fs_path)
+		return
+	for p in FORBIDDEN_GLB_PATHS:
+		var hit: bool = src.find(p) >= 0
+		_assert_true(hit, "ADV-SLEEV-source_has_glb_path_" + p.get_file(), "main sandbox must still reference " + p)
+	var count: int = 0
+	var pos: int = 0
+	var needle: String = "model_scene = ExtResource"
+	while true:
+		var i: int = src.find(needle, pos)
+		if i < 0:
+			break
+		count += 1
+		pos = i + needle.length()
+	_assert_eq_int(4, count, "ADV-SLEEV-source_four_model_scene_lines")
+
+
+func test_adv_sleev_project_main_scene_nonempty_and_loadable() -> void:
+	# CHECKPOINT: Malformed or stale run/main_scene breaks headless CI even when SLEEV only cares about “not legacy”.
+	var fs_path: String = _res_to_fs("res://project.godot")
+	var src: String = _read_text_fs(fs_path)
+	if src == "":
+		_fail_test("ADV-SLEEV-proj_read", "could not read project.godot")
+		return
+	var main_val: String = _parse_run_main_scene_value(src)
+	if main_val == "":
+		_fail_test("ADV-SLEEV-proj_parse", "run/main_scene missing")
+		return
+	_assert_true(ResourceLoader.exists(main_val), "ADV-SLEEV-proj_main_exists", "main scene path not found: " + main_val)
+	var packed: Resource = ResourceLoader.load(main_val)
+	_assert_true(packed is PackedScene, "ADV-SLEEV-proj_main_is_packed", "main scene is not a PackedScene: " + main_val)
+
+
+func test_adv_sleev_legacy_respawn_spawn_point_parity_with_main() -> void:
+	# CHECKPOINT: Empty or retargeted spawn_point breaks respawn without failing enemy/name tests (SLEEV-2.3 subtree).
+	var main_root: Node = _load_main_sandbox_root()
+	var leg_root: Node = _load_legacy_root()
+	if main_root == null or leg_root == null:
+		if main_root != null:
+			main_root.free()
+		if leg_root != null:
+			leg_root.free()
+		return
+	var m_rz: Node = main_root.get_node_or_null("RespawnZone")
+	var l_rz: Node = leg_root.get_node_or_null("RespawnZone")
+	if m_rz == null or l_rz == null:
+		_fail_test("ADV-SLEEV-spawn_nodes", "RespawnZone missing on main or legacy")
+		main_root.free()
+		leg_root.free()
+		return
+	var m_sp: Variant = m_rz.get("spawn_point")
+	var l_sp: Variant = l_rz.get("spawn_point")
+	_assert_eq_string(str(m_sp), str(l_sp), "ADV-SLEEV-spawn_point_parity")
+	main_root.free()
+	leg_root.free()
+
+
+func test_adv_sleev_legacy_tscn_respawn_signal_connection() -> void:
+	# CHECKPOINT: Dropped [connection] lines are invisible to instantiate() smoke tests.
+	var fs_path: String = _res_to_fs(LEGACY_SCENE_PATH)
+	var src: String = _read_text_fs(fs_path)
+	if src == "":
+		_fail_test("ADV-SLEEV-conn_read", "empty or unreadable: " + fs_path)
+		return
+	var has_line: bool = src.find(EXPECTED_RESPAWN_SIGNAL_CONNECTION_LINE) >= 0
+	_assert_true(has_line, "ADV-SLEEV-respawn_signal_connection", "missing RespawnZone body_entered connection line")
+
+
+func test_adv_sleev_legacy_tscn_enemy_instance_bodies() -> void:
+	# CHECKPOINT: model_scene stripped via empty assignment or renamed keys; mutation/transform typos slip past runtime null checks alone.
+	var fs_path: String = _res_to_fs(LEGACY_SCENE_PATH)
+	var src: String = _read_text_fs(fs_path)
+	if src == "":
+		_fail_test("ADV-SLEEV-enemy_body_read", "empty or unreadable: " + fs_path)
+		return
+	for row in ADV_ENEMY_TSCN_BLOCKS:
+		var n: String = String(row["name"])
+		var block: String = _tscn_first_node_block(src, n)
+		if block == "":
+			_fail_test("ADV-SLEEV-enemy_block_" + n, "no [node] block for " + n)
+			continue
+		_assert_true(block.find("model_scene") < 0, "ADV-SLEEV-enemy_no_model_scene_key_" + n, "model_scene must be absent from instance body")
+		_assert_true(block.find("physics_interpolation_mode = 1") >= 0, "ADV-SLEEV-enemy_interp_" + n, "missing physics_interpolation_mode = 1")
+		var msnip: String = String(row["mutation_snip"])
+		_assert_true(block.find(msnip) >= 0, "ADV-SLEEV-enemy_mut_" + n, "missing " + msnip)
+		_assert_true(block.find("transform = Transform3D") >= 0, "ADV-SLEEV-enemy_xform_" + n, "missing transform line")
+		var psnip: String = String(row["pos_snip"])
+		_assert_true(block.find(psnip) >= 0, "ADV-SLEEV-enemy_pos_" + n, "transform translation tail must include " + psnip)
+
+
+func test_adv_sleev_legacy_tscn_still_instances_enemy_base_scene() -> void:
+	# CHECKPOINT: GLB ext_resource removal must not delete the enemy PackedScene reference.
+	var fs_path: String = _res_to_fs(LEGACY_SCENE_PATH)
+	var src: String = _read_text_fs(fs_path)
+	if src == "":
+		_fail_test("ADV-SLEEV-enemy_base_read", "empty or unreadable: " + fs_path)
+		return
+	var path_needle: String = "res://scenes/enemy/enemy_infection_3d.tscn"
+	_assert_true(src.find(path_needle) >= 0, "ADV-SLEEV-enemy_base_ext", "legacy .tscn must still reference " + path_needle)
+
+
+func test_adv_sleev_single_legacy_enemy_visual_scene_under_sandbox() -> void:
+	# CHECKPOINT: Multiple “legacy” copies create editor confusion and ambiguous devlog instructions.
+	var dir_path: String = "res://scenes/levels/sandbox"
+	var dir: DirAccess = DirAccess.open(dir_path)
+	if dir == null:
+		_fail_test("ADV-SLEEV-sandbox_dir", "could not open " + dir_path)
+		return
+	var hits: PackedStringArray = []
+	dir.list_dir_begin()
+	var entry: String = dir.get_next()
+	while entry != "":
+		if not dir.current_is_dir() and entry.ends_with(".tscn") and entry.find("legacy_enemy_visual") >= 0:
+			hits.append(entry)
+		entry = dir.get_next()
+	dir.list_dir_end()
+	_assert_eq_int(1, hits.size(), "ADV-SLEEV-one_legacy_filename")
+	if hits.size() == 1:
+		_assert_eq_string("test_movement_3d_legacy_enemy_visual.tscn", String(hits[0]), "ADV-SLEEV-legacy_basename")
+
+
 func run_all() -> int:
 	print("--- test_legacy_enemy_visual_sandbox_scene.gd ---")
 	_pass_count = 0
 	_fail_count = 0
+
+	test_adv_sleev_source_main_tscn_preserves_glb_and_model_overrides()
+	test_adv_sleev_project_main_scene_nonempty_and_loadable()
 
 	if not FileAccess.file_exists(_res_to_fs(LEGACY_SCENE_PATH)):
 		_fail_test("SLEEV-1.1_file_exists", "expected file at " + LEGACY_SCENE_PATH)
@@ -229,6 +395,11 @@ func run_all() -> int:
 	test_sleev_3_tscn_no_model_scene_override()
 	test_sleev_3_tscn_no_glb_ext_resource_lines()
 	test_sleev_4_main_scene_not_legacy_duplicate()
+	test_adv_sleev_legacy_respawn_spawn_point_parity_with_main()
+	test_adv_sleev_legacy_tscn_respawn_signal_connection()
+	test_adv_sleev_legacy_tscn_enemy_instance_bodies()
+	test_adv_sleev_legacy_tscn_still_instances_enemy_base_scene()
+	test_adv_sleev_single_legacy_enemy_visual_scene_under_sandbox()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

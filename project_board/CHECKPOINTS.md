@@ -315,6 +315,12 @@ Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
 - Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-test-design.md`
 - Outcome: `tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd` (SLEEV-1..4.1); suite fails once on SLEEV-1.1 until duplicate `.tscn` exists; SLEEV-4.2 main_scene equality deferred vs ADV-PRS-19 (see checkpoint).
 
+### MAINT-SLEEV / run-2026-04-05-test-break
+- Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-test-break.md`
+- Outcome: ADV-SLEEV adversarial tests (source GLB/model_scene regression, loadable main_scene, respawn spawn_point + signal line + enemy instance-body scans, single normative legacy filename); still one expected failure until duplicate scene exists.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
