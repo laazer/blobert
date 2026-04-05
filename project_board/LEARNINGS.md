@@ -2020,3 +2020,71 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Clear closure traceability for maintenance HUD tickets.
 
 ---
+
+## [MAINT-SLEEV] — Ticket `run/main_scene` prose vs repo; SLEEV-4.2 honest deferral; ADV ordering and source-scene guards
+
+*Completed: 2026-04-05*
+
+### Learnings
+
+- category: process
+  insight: Maintenance tickets can embed stale `project.godot` assumptions (e.g. `run/main_scene` target) that no longer match the repo; closure must not pretend the ticket prose is true.
+  impact: Ticket Description/AC3 named `test_movement_3d.tscn` as main scene; repo had `procedural_run.tscn`. Spec **SLEEV-4.2** and Validation Status documented drift; tests enforced **SLEEV-4.1** only (main scene must not reference the new legacy duplicate).
+  prevention: For any AC that pins `project.godot`, add a spec branch up front: exact equality, or documented actual value + narrowed automated contract + optional follow-up policy ticket.
+  severity: medium
+
+- category: testing
+  insight: When a new scene is added by duplication, ordering ADV/source invariants before the “new file exists” gate keeps CI failing exactly once on the missing asset while still protecting the canonical scene and `run/main_scene` loadability.
+  impact: Test Breaker ran source-sandbox GLB/`model_scene` guards and `project.godot` PackedScene checks before **SLEEV-1.1** so regressions surface alongside the single expected pre-implementation failure.
+  prevention: For duplicate-scene maintenance, structure tests so source and global config assertions are not skipped behind a missing-file early return.
+  severity: medium
+
+- category: testing
+  insight: Stricter file-text assertions than the normative spec bullets need an explicit trail so implementers do not treat failures as “spec bug.”
+  impact: Tests forbade any `.glb` in `[ext_resource]` on the legacy level (stricter than four named paths); Test Designer documented this as intentional for devlog intent.
+  prevention: When tests strengthen beyond REQ text, add a one-line comment or amend the spec so the contract is single-sourced.
+  severity: low
+
+### Anti-Patterns
+
+- description: Validating a ticket by silently treating ticket `run/main_scene` prose as satisfied without reading `project.godot` or updating AC with traceability.
+  detection_signal: Validation Status or docs claim parity with ticket Description while `grep`/`project.godot` shows a different path.
+  prevention: Quote actual config in Validation Status and cite the spec clause that narrows or defers the assertion.
+
+- description: Only asserting the new duplicate scene while dropping invariants on the original sandbox, allowing accidental removal of `model_scene` overrides on the live level.
+  detection_signal: Legacy scene passes but `test_movement_3d.tscn` loses GLB `ext_resource` or `model_scene` lines.
+  prevention: Keep **ADV-SLEEV-source_*** (or equivalent) checks on the canonical scene in the same test module.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: "Before finalizing a maintenance ticket plan, if Description or AC references `run/main_scene` or other `project.godot` keys as fixed, read `project.godot` (or require the Spec Agent to add an explicit sub-req: assert exact string **or** document actual value + deferred follow-up). Do not assume ticket prose matches repo."
+  reason: Avoids planning and gatekeeping against a fictional baseline.
+
+- agent: Spec Agent
+  change: "Whenever requirements depend on `project.godot`, include a numbered escape hatch when ticket prose may disagree with repo (e.g. **X.Y**: closure allowed if actual value is documented, automated tests assert the minimal safe invariant such as ‘must not reference the new scene,’ and product intent is routed to a policy ticket)."
+  reason: Preserves honest traceability without blocking shipping the scene work.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If tests defer a full AC clause (e.g. exact `run/main_scene` match), Validation Status must state the real `project.godot` value, cite the spec deferral ID, and forbid silently editing Description/AC to match repo unless that edit is an explicit human/product decision."
+  reason: Prevents false closure and preserves audit trail.
+
+- agent: Test Designer Agent
+  change: "If file-text or scene assertions are stricter than the spec’s enumerated paths (e.g. ‘no `.glb` in any `[ext_resource]`’ vs four named GLBs), document that tightening in the test file header or update the spec so failure messages map to an agreed REQ."
+  reason: Reduces implementer confusion and spec-vs-test arguments.
+
+### Workflow Improvements
+
+- issue: Tickets copied from older workflow docs can assert `run/main_scene` targets that M6 or later policy has moved.
+  improvement: For sandbox-only maintenance, add a one-line planner checklist: confirm `run/main_scene` in `project.godot` vs ticket; if mismatch, spec owns SLEEV-4.2-style resolution before TEST_DESIGN.
+  expected_benefit: Fewer mid-pipeline spec/test/gatekeeper reconciliations.
+
+### Keep / Reinforce
+
+- practice: **SLEEV-4.2** pattern—document drift, assert minimal safe invariant, escalate product intent separately.
+  reason: Honest validation without blocking useful duplicate scenes.
+
+- practice: Test Breaker’s ordering so ADV and source-scene checks run even when **SLEEV-1.1** fails first.
+  reason: One clear missing-file failure while canonical scene and `project.godot` stay guarded.
+
+---
