@@ -40,46 +40,44 @@ Formal spec (requirements **SLEEV-1**–**SLEEV-5**, traceable to acceptance cri
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-STATIC_QA
+COMPLETE
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Pass — `ci/scripts/run_tests.sh` exit 0 after adding `test_movement_3d_legacy_enemy_visual.tscn`
-- Static QA: Not Run (gatekeeper)
-- Integration: Not Run
+- Tests: Pass — `timeout 300 ci/scripts/run_tests.sh` exit 0 (2026-04-05); output ends with `=== ALL TESTS PASSED ===`. AC1–AC2 and the testable parts of AC3 are covered by `tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd` (SLEEV-1 packed load + `Node3D` root, SLEEV-2 tree/order/respawn line parity vs `test_movement_3d.tscn`, SLEEV-3 no forbidden `generated_glb/*_animated_00.glb` ext_resources + no `model_scene =` on four enemies + `mutation_drop`/transform/`physics_interpolation_mode` + runtime `model_scene == null`, ADV single legacy basename, loadable non-empty `run/main_scene`).
+- Static QA: Gatekeeper cross-check — ticket AC vs `project.godot` vs spec SLEEV-4.2; no edits to Description/AC text.
+- Integration: N/A — AC satisfied by automated scene load/instantiate and property assertions; no separate in-editor manual step required beyond what tests exercise.
+- **`run/main_scene` vs ticket prose (SLEEV-4.2 resolution, explicit evidence):** `project.godot` has `run/main_scene="res://scenes/levels/procedural_run.tscn"` (not `res://scenes/levels/sandbox/test_movement_3d.tscn`). Ticket Description § “Keep `project.godot` `run/main_scene` on `test_movement_3d.tscn`” and AC3’s “`run/main_scene` still target `test_movement_3d.tscn`” therefore **do not match the repo baseline** as of this closure. Per spec **SLEEV-4.2** (`sandbox_scene_legacy_external_enemy_visuals_spec.md`), closure is allowed when equality to `test_movement_3d.tscn` is **not** asserted and drift is documented. **Test contract:** `test_sleev_4_main_scene_not_legacy_duplicate()` documents deferral to ADV-PRS-19 / repo entry policy and asserts **SLEEV-4.1** only (`run/main_scene` must not reference `test_movement_3d_legacy_enemy_visual.tscn`). This ticket’s change set did **not** repoint `run/main_scene` to the new legacy sandbox.
 
 ## Blocking Issues
-- None
+- None (SLEEV-4.2 documented; not silently claiming `test_movement_3d.tscn` as `run/main_scene`).
 
 ## Escalation Notes
-- None
+- If product intent is strictly `run/main_scene` == `test_movement_3d.tscn`, that is a separate repo-policy / Planner follow-up (out of scope for falsifying this ticket’s Validation Status).
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "action": "static_qa",
-  "ticket_path": "project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md",
-  "spec_path": "project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md",
-  "implementation_paths": [
-    "scenes/levels/sandbox/test_movement_3d_legacy_enemy_visual.tscn"
-  ]
+  "action": "ticket_complete",
+  "ticket_path": "project_board/maintenance/done/sandbox_scene_legacy_external_enemy_visuals.md",
+  "notes": "Archive or link devlog recording workflow; optional follow-up if main_scene should match ticket prose."
 }
 ```
 
 ## Status
-Proceed
+Complete
 
 ## Reason
-Duplicate legacy-visual sandbox scene added per SLEEV-1..3; full suite green. Gatekeeper shall validate AC (including `run/main_scene` not legacy) and update validation bullets.
+All acceptance criteria are mapped to automated tests or explicitly documented per SLEEV-4.2; `run/main_scene` evidence recorded honestly (`procedural_run.tscn`). Gatekeeper re-ran full suite (exit 0). Stage COMPLETE; ticket moved to `maintenance/done/`.
