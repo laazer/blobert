@@ -155,3 +155,12 @@ Log: `project_board/checkpoints/split_animated_adhesion_bug/run-2026-04-05-autop
 ### [split_animated_carapace_husk] — OUTCOME: COMPLETE
 `AnimatedCarapaceHusk` moved to `src/enemies/animated_carapace_husk.py`; registry unchanged; 362 pytest passed; ticket `project_board/maintenance/done/split_animated_carapace_husk.md`.
 Log: `project_board/checkpoints/split_animated_carapace_husk/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05T18-30-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/maintenance/backlog/split_animated_claw_crawler.md`
+- Log root: project_board/checkpoints/
+
+### [split_animated_claw_crawler] — OUTCOME: COMPLETE
+`AnimatedClawCrawler` moved to `src/enemies/animated_claw_crawler.py`; registry unchanged; 364 pytest passed; ticket `project_board/maintenance/done/split_animated_claw_crawler.md`.
+Log: `project_board/checkpoints/split_animated_claw_crawler/run-2026-04-05-autopilot.md`

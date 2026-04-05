@@ -1570,4 +1570,8 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 *Completed: 2026-04-05* (same pattern: `__module__` + `BPG_ADV_SPLIT_03` registry identity; docs and spec mirrored prior split tickets.)
 
+## [split_animated_claw_crawler] — No significant learnings identified.
+
+*Completed: 2026-04-05* (same pattern as prior animated splits: `test_BPG_CLASS_17b` for `__module__`, `BPG_ADV_SPLIT_04` for registry `is` identity; removed unused `create_quadruped_armature` and top-level `EnemyBodyTypes` import from `animated_enemies.py` after extraction.)
+
 ---

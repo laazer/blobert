@@ -219,6 +219,10 @@ class TestClawCrawlerClass(unittest.TestCase):
         """BPG-CLASS-12: AnimatedClawCrawler is importable from src.enemies.animated_enemies."""
         self.assertTrue(True)
 
+    def test_BPG_CLASS_17b_claw_crawler_defined_in_dedicated_module(self):
+        """BPG-CLASS-17b: AnimatedClawCrawler class object lives in animated_claw_crawler module."""
+        self.assertEqual(AnimatedClawCrawler.__module__, 'src.enemies.animated_claw_crawler')
+
     def test_BPG_CLASS_13_claw_crawler_subclass_of_base_enemy(self):
         """BPG-CLASS-13: AnimatedClawCrawler is a subclass of BaseEnemy."""
         self.assertTrue(issubclass(AnimatedClawCrawler, BaseEnemy))

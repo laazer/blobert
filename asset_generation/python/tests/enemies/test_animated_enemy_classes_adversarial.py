@@ -159,6 +159,16 @@ class TestRegistrationAdversarial(unittest.TestCase):
             carapace_mod.AnimatedCarapaceHusk,
         )
 
+    def test_BPG_ADV_SPLIT_04_registry_claw_crawler_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedClawCrawler from
+        # animated_claw_crawler, not a duplicate subclass in animated_enemies.
+        from src.enemies import animated_claw_crawler as claw_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['claw_crawler'],
+            claw_mod.AnimatedClawCrawler,
+        )
+
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
         """
         BPG-ADV-REG-06: get_available_types() returns identical lists on consecutive calls.
