@@ -1,10 +1,10 @@
 """
-Tests for AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk.
+Tests for AnimatedAdhesionBug, AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk.
 Pure Python — no bpy import. Runs via: uv run pytest tests/
 
 Spec traceability:
   BPG-REG-*   : TestEnemyRegistration
-  BPG-CLASS-* : TestAcidSpitterClass, TestClawCrawlerClass, TestCarapaceHuskClass
+  BPG-CLASS-* : TestAdhesionBugClass, TestAcidSpitterClass, TestClawCrawlerClass, TestCarapaceHuskClass
   BPG-CONST-* : TestEnemyTypesConstants
   BPG-MAT-*   : TestCarapaceHuskMaterialTheme
 """
@@ -14,6 +14,7 @@ import unittest
 
 from src.enemies.animated_enemies import (
     AnimatedEnemyBuilder,
+    AnimatedAdhesionBug,
     AnimatedAcidSpitter,
     AnimatedClawCrawler,
     AnimatedCarapaceHusk,
@@ -83,6 +84,62 @@ class TestEnemyRegistration(unittest.TestCase):
         }
         available = set(AnimatedEnemyBuilder.get_available_types())
         self.assertEqual(available, expected)
+
+    def test_BPG_REG_13_adhesion_bug_key_present(self):
+        """BPG-REG-13: 'adhesion_bug' is a key in ENEMY_CLASSES."""
+        self.assertIn('adhesion_bug', AnimatedEnemyBuilder.ENEMY_CLASSES)
+
+    def test_BPG_REG_14_adhesion_bug_value_is_class(self):
+        """BPG-REG-14: ENEMY_CLASSES['adhesion_bug'] is a class."""
+        self.assertTrue(inspect.isclass(AnimatedEnemyBuilder.ENEMY_CLASSES['adhesion_bug']))
+
+    def test_BPG_REG_15_adhesion_bug_subclass_of_base_enemy(self):
+        """BPG-REG-15: ENEMY_CLASSES['adhesion_bug'] is a subclass of BaseEnemy."""
+        self.assertTrue(issubclass(AnimatedEnemyBuilder.ENEMY_CLASSES['adhesion_bug'], BaseEnemy))
+
+
+# ---------------------------------------------------------------------------
+# BPG-CLASS-24 through BPG-CLASS-30 : AnimatedAdhesionBug class structure
+# ---------------------------------------------------------------------------
+
+class TestAdhesionBugClass(unittest.TestCase):
+    """Verify AnimatedAdhesionBug class contract via introspection."""
+
+    def test_BPG_CLASS_24_adhesion_bug_importable(self):
+        """BPG-CLASS-24: AnimatedAdhesionBug is importable from src.enemies.animated_enemies."""
+        self.assertTrue(True)
+
+    def test_BPG_CLASS_25_adhesion_bug_defined_in_dedicated_module(self):
+        """BPG-CLASS-25: AnimatedAdhesionBug class object lives in animated_adhesion_bug module."""
+        self.assertEqual(AnimatedAdhesionBug.__module__, 'src.enemies.animated_adhesion_bug')
+
+    def test_BPG_CLASS_26_adhesion_bug_subclass_of_base_enemy(self):
+        """BPG-CLASS-26: AnimatedAdhesionBug is a subclass of BaseEnemy."""
+        self.assertTrue(issubclass(AnimatedAdhesionBug, BaseEnemy))
+
+    def test_BPG_CLASS_27_has_all_required_methods(self):
+        """BPG-CLASS-27: AnimatedAdhesionBug defines all 6 required methods."""
+        required = ['create_body', 'create_head', 'create_limbs',
+                    'apply_materials', 'create_armature', 'get_body_type']
+        for method_name in required:
+            with self.subTest(method=method_name):
+                self.assertTrue(hasattr(AnimatedAdhesionBug, method_name))
+                self.assertTrue(callable(getattr(AnimatedAdhesionBug, method_name)))
+
+    def test_BPG_CLASS_28_get_body_type_source_references_quadruped(self):
+        """BPG-CLASS-28: get_body_type source contains EnemyBodyTypes.QUADRUPED."""
+        source = inspect.getsource(AnimatedAdhesionBug.get_body_type)
+        self.assertIn('EnemyBodyTypes.QUADRUPED', source)
+
+    def test_BPG_CLASS_29_create_armature_source_references_create_quadruped_armature(self):
+        """BPG-CLASS-29: create_armature source contains create_quadruped_armature."""
+        source = inspect.getsource(AnimatedAdhesionBug.create_armature)
+        self.assertIn('create_quadruped_armature', source)
+
+    def test_BPG_CLASS_30_apply_materials_source_references_adhesion_bug_key(self):
+        """BPG-CLASS-30: apply_materials source contains 'adhesion_bug' string literal."""
+        source = inspect.getsource(AnimatedAdhesionBug.apply_materials)
+        self.assertIn("'adhesion_bug'", source)
 
 
 # ---------------------------------------------------------------------------

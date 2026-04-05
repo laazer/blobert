@@ -137,3 +137,12 @@ Log: `project_board/checkpoints/MAINT-AERC/run-2026-04-05-planning.md`
 ### [split_animated_acid_spitter] — OUTCOME: COMPLETE
 `AnimatedAcidSpitter` moved to `src/enemies/animated_acid_spitter.py`; registry and re-export unchanged; 345 pytest passed; ticket `project_board/maintenance/done/split_animated_acid_spitter.md`.
 Log: `project_board/checkpoints/split_animated_acid_spitter/run-2026-04-05-autopilot.md`
+
+## Run: 2026-04-05T14-30-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/maintenance/backlog/split_animated_adhesion_bug.md`
+- Log root: project_board/checkpoints/
+
+### [split_animated_adhesion_bug] — OUTCOME: COMPLETE
+`AnimatedAdhesionBug` moved to `src/enemies/animated_adhesion_bug.py`; registry unchanged; 360 pytest passed; ticket `project_board/maintenance/done/split_animated_adhesion_bug.md`.
+Log: `project_board/checkpoints/split_animated_adhesion_bug/run-2026-04-05-autopilot.md`

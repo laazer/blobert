@@ -1562,4 +1562,8 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   prevention: For any "extract to module" refactor, add one test for defining `__module__` and one for object identity against the canonical module.
   severity: medium
 
+## [split_animated_adhesion_bug] — No significant learnings identified.
+
+*Completed: 2026-04-05* (same extract-and-register pattern as `split_animated_acid_spitter`; tests and spec followed the established template.)
+
 ---

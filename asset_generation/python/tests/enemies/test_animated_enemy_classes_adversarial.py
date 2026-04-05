@@ -139,6 +139,16 @@ class TestRegistrationAdversarial(unittest.TestCase):
             acid_mod.AnimatedAcidSpitter,
         )
 
+    def test_BPG_ADV_SPLIT_02_registry_adhesion_bug_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedAdhesionBug from
+        # animated_adhesion_bug, not a duplicate subclass in animated_enemies.
+        from src.enemies import animated_adhesion_bug as adhesion_mod
+
+        self.assertIs(
+            AnimatedEnemyBuilder.ENEMY_CLASSES['adhesion_bug'],
+            adhesion_mod.AnimatedAdhesionBug,
+        )
+
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
         """
         BPG-ADV-REG-06: get_available_types() returns identical lists on consecutive calls.
@@ -752,6 +762,55 @@ class TestNewClassesAdversarial(unittest.TestCase):
                     frozenset(),
                     f"{cls.__name__} has unresolved abstract methods: {abstract_methods}",
                 )
+
+    def test_BPG_ADV_CLASS_16_adhesion_bug_create_body_is_overridden_not_inherited(self):
+        """BPG-ADV-CLASS-16: AnimatedAdhesionBug.create_body is defined on the class."""
+        self.assertIn(
+            'create_body',
+            AnimatedAdhesionBug.__dict__,
+            "AnimatedAdhesionBug.create_body is not defined on the class itself.",
+        )
+
+    def test_BPG_ADV_CLASS_17_adhesion_bug_apply_materials_does_not_reference_wrong_key(self):
+        """BPG-ADV-CLASS-17: AnimatedAdhesionBug.apply_materials has no wrong enemy keys."""
+        source = inspect.getsource(AnimatedAdhesionBug.apply_materials)
+        wrong_keys = ["'tar_slug'", "'ember_imp'", "'acid_spitter'",
+                      "'claw_crawler'", "'carapace_husk'"]
+        for wrong in wrong_keys:
+            with self.subTest(wrong_key=wrong):
+                self.assertNotIn(
+                    wrong,
+                    source,
+                    f"AnimatedAdhesionBug.apply_materials source contains wrong key {wrong}.",
+                )
+
+    def test_BPG_ADV_CLASS_18_adhesion_bug_get_body_type_does_not_reference_wrong_type(self):
+        """BPG-ADV-CLASS-18: AnimatedAdhesionBug.get_body_type is QUADRUPED only."""
+        source = inspect.getsource(AnimatedAdhesionBug.get_body_type)
+        self.assertNotIn(
+            'EnemyBodyTypes.BLOB',
+            source,
+            "AnimatedAdhesionBug.get_body_type references BLOB — should be QUADRUPED.",
+        )
+        self.assertNotIn(
+            'EnemyBodyTypes.HUMANOID',
+            source,
+            "AnimatedAdhesionBug.get_body_type references HUMANOID — should be QUADRUPED.",
+        )
+
+    def test_BPG_ADV_CLASS_19_adhesion_bug_create_armature_does_not_call_wrong_builder(self):
+        """BPG-ADV-CLASS-19: AnimatedAdhesionBug.create_armature uses quadruped builder only."""
+        source = inspect.getsource(AnimatedAdhesionBug.create_armature)
+        self.assertNotIn(
+            'create_blob_armature',
+            source,
+            "AnimatedAdhesionBug.create_armature calls create_blob_armature.",
+        )
+        self.assertNotIn(
+            'create_humanoid_armature',
+            source,
+            "AnimatedAdhesionBug.create_armature calls create_humanoid_armature.",
+        )
 
 
 if __name__ == '__main__':
