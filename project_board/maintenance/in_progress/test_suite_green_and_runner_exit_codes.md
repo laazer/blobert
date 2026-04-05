@@ -39,16 +39,16 @@ Formal spec (requirements **TSGR-1**–**TSGR-8**, traceable to acceptance crite
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: `ci/scripts/verify_tsgr_runner_contract.sh` + `asset_generation/python/tests/ci/test_tsgr_runner_contract.py` added (RED vs current tree); Godot suite baseline exit 0 (2026-04-05)
+- Tests: `verify_tsgr_runner_contract.sh` + adversarial pytest module (`test_tsgr_runner_contract.py`: hollow-guard, cwd independence, process boundary, Python mirrors for TSGR-1/2/4/5/6); **6 failed, 8 passed** on 2026-04-05 (RED until runner/doc/hook implementation)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -63,12 +63,12 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_break",
+  "action": "implementation",
   "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md",
   "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md"
 }
@@ -78,4 +78,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Static TSGR contract verifier + pytest hook landed; adversarial / mutation coverage next before implementation.
+Adversarial TSGR contract tests landed; implement `run_tests.sh` / hooks / `CLAUDE.md` per spec until static verifier + pytest module go green, then TSGR-7 suite fixes.
