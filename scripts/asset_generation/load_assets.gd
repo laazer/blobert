@@ -2,6 +2,7 @@
 extends EditorScript
 
 const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")
+const EnemyMutationMap = preload("res://scripts/asset_generation/enemy_mutation_map.gd")
 
 const SOURCE_DIR := "res://assets/enemies/generated_glb"
 const OUTPUT_DIR := "res://scenes/enemies/generated"
@@ -14,78 +15,6 @@ const DEFAULT_ENEMY_SCRIPT := "res://scripts/enemies/enemy_base.gd"
 # CharacterBody3D is useful if most enemies move with gameplay logic.
 # Change to Node3D if you want a lighter root.
 const USE_CHARACTER_BODY := true
-
-# ------------------------------------------------------------
-# Mutation mapping by enemy family
-# ------------------------------------------------------------
-
-const MUTATION_BY_FAMILY := {
-	"adhesion_bug": "adhesion",
-	"tar_slug": "adhesion",
-	"glue_drone": "adhesion",
-
-	"acid_spitter": "acid",
-	"melt_worm": "acid",
-	"corrosion_beetle": "acid",
-
-	"claw_crawler": "claw",
-	"ripper_bat": "claw",
-	"razor_lizard": "claw",
-
-	"carapace_husk": "carapace",
-	"shell_roller": "carapace",
-	"fortress_bug": "carapace",
-
-	"electric_node": "electric",
-	"shock_jelly": "electric",
-	"tesla_wasp": "electric",
-
-	"tendril_beast": "tendril",
-	"vine_creeper": "tendril",
-	"lash_parasite": "tendril",
-
-	"ember_imp": "fire",
-	"flame_hopper": "fire",
-	"cinder_snake": "fire",
-
-	"frost_jelly": "ice",
-	"glacier_crab": "ice",
-	"snow_wisp": "ice",
-
-	"stone_burrower": "earth",
-	"boulder_golem": "earth",
-	"mud_stomper": "earth",
-
-	"gale_sprite": "wind",
-	"cyclone_bird": "wind",
-	"gust_hopper": "wind",
-
-	"ferro_drone": "metal",
-	"iron_beetle": "metal",
-	"scrap_slime": "metal",
-
-	"blade_sentinel": "sword",
-	"duel_knight": "sword",
-	"cutter_wisp": "sword",
-
-	"spear_wisp": "javelin",
-	"pike_guard": "javelin",
-	"harpoon_eel": "javelin",
-
-	"knuckle_sprite": "punch",
-	"slam_golem": "punch",
-	"boxer_bot": "punch",
-
-	"ring_drone": "ring",
-	"orbit_wisp": "ring",
-	"halo_spinner": "ring",
-
-	"powder_bug": "bomb",
-	"boom_toad": "bomb",
-	"mine_sprite": "bomb",
-
-	"mutation_clown": "random"
-}
 
 func _run() -> void:
 	print("Enemy scene generation started.")
@@ -118,7 +47,7 @@ func _generate_scene_for_glb(glb_path: String) -> void:
 
 	var file_name := glb_path.get_file().get_basename() # e.g. acid_spitter_00
 	var family_name := EnemyNameUtils.extract_family_name(file_name)  # e.g. acid_spitter
-	var mutation := MUTATION_BY_FAMILY.get(family_name, "unknown")
+	var mutation: String = str(EnemyMutationMap.MUTATION_BY_FAMILY.get(family_name, "unknown"))
 
 	var root: Node3D
 	if USE_CHARACTER_BODY:
@@ -279,19 +208,19 @@ func _compute_combined_aabb(node: Node) -> AABB:
 	var found := false
 	var combined := AABB()
 
-	var meshes := []
+	var meshes: Array[MeshInstance3D] = []
 	_gather_mesh_instances(node, meshes)
 
 	for mesh_instance in meshes:
 		if mesh_instance.mesh == null:
 			continue
 
-		var local_aabb := mesh_instance.mesh.get_aabb()
-		var xform := mesh_instance.global_transform
-		var corners := _aabb_corners(local_aabb)
+		var local_aabb: AABB = mesh_instance.mesh.get_aabb()
+		var xform: Transform3D = mesh_instance.global_transform
+		var corners: Array[Vector3] = _aabb_corners(local_aabb)
 
-		for corner in corners:
-			var world_point := xform * corner
+		for corner: Vector3 in corners:
+			var world_point: Vector3 = xform * corner
 			if not found:
 				combined = AABB(world_point, Vector3.ZERO)
 				found = true
@@ -306,7 +235,7 @@ func _compute_combined_aabb(node: Node) -> AABB:
 	combined.position -= center
 	return combined
 
-func _gather_mesh_instances(node: Node, out: Array) -> void:
+func _gather_mesh_instances(node: Node, out: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D:
 		out.append(node)
 	for child in node.get_children():

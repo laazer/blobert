@@ -39,3 +39,11 @@ Run: 2026-04-05 autopilot (maintenance backlog queue, ticket 2)
 **Deliverable:** Extended `tests/scripts/asset_generation/test_enemy_mutation_map_unify.gd` — alternate dict declaration forms (`=`, typed `Dictionary`), empty/whitespace keys, typo key `acid_spiter`, fixed entry count (49, CHECKPOINT-aligned to spec-time dict), duplicate/`is_same` sanity, no `const MUTATION_BY_FAMILY` in consumers, single preload snippet occurrence, acyclic map module (non-comment `preload` must not target consumers). Updated comments in `tests/scenes/enemies/test_enemy_scene_generation_adversarial.gd` (ADV-FESG-5 / ADV-FESG-18) to point at `enemy_mutation_map.gd` instead of implying two authoritative code definitions.
 
 **Evidence:** `timeout 300 godot -s tests/run_tests.gd` — exit 1; `=== FAILURES: 20 test(s) failed ===`; EMU suite `test_enemy_mutation_map_unify.gd` reports `Results: 0 passed, 20 failed` (expected pre-implementation).
+
+### [MAINT-EMMU] IMPLEMENTATION_GENERALIST — Shared map + consumers + EMU-DOC-1
+**Assumption made:** `load_assets.gd` AABB helpers aligned with `generate_enemy_scenes.gd` typed `Array[MeshInstance3D]` / explicit `AABB`/`Transform3D`/`Vector3` so headless `load()` of the editor script parses under strict mode (parse errors surfaced by `test_enemy_name_utils.gd`).
+**Confidence:** High
+
+**Deliverable:** `scripts/asset_generation/enemy_mutation_map.gd` (single `MUTATION_BY_FAMILY`); `generate_enemy_scenes.gd` / `load_assets.gd` use `const EnemyMutationMap = preload("res://scripts/asset_generation/enemy_mutation_map.gd")` and `EnemyMutationMap.MUTATION_BY_FAMILY`; `project_board/specs/first_4_families_in_level_spec.md` updated for single-module narrative (EMU-DOC-1).
+
+**Evidence:** `timeout 300 godot -s tests/run_tests.gd` — **exit 0** (full suite green post-implementation).

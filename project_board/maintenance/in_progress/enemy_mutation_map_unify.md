@@ -163,17 +163,17 @@ Extract the map to one module (e.g. `scripts/asset_generation/enemy_mutation_map
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist
 
 ## Validation Status
 
-- Tests: `timeout 300 godot -s tests/run_tests.gd` — **fails** (expected): full runner `=== FAILURES: 20 test(s) failed ===`; `test_enemy_mutation_map_unify.gd` reports 20 failures until `enemy_mutation_map.gd` + consumer preload refactor land.
+- Tests: `timeout 300 godot -s tests/run_tests.gd` — **pass** (exit 0); full suite green after `enemy_mutation_map.gd` + consumer preload + `load_assets.gd` strict typing for `_compute_combined_aabb` / `_gather_mesh_instances`.
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -190,11 +190,11 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist
+Acceptance Criteria Gatekeeper Agent
 
 ## Status
 Proceed
 
 ## Reason
 
-Test-breaker pass added EMU-ADV-* adversarial coverage (alternate dict literal forms, typo/whitespace keys, entry-count guard, duplicate/`is_same` sanity, consumer `const MUTATION_BY_FAMILY` ban, single preload line, acyclic map module) and aligned adversarial scene-test comments with single-module EMU narrative. Suite still red until shared module + consumer preload land; hand off to implementation.
+Shared `scripts/asset_generation/enemy_mutation_map.gd` holds the sole `MUTATION_BY_FAMILY` literal; `generate_enemy_scenes.gd` and `load_assets.gd` preload `EnemyMutationMap` and reference `EnemyMutationMap.MUTATION_BY_FAMILY`. EMU-DOC-1: `first_4_families_in_level_spec.md` updated for single-module narrative. Full test runner exit 0. Hand off to Acceptance Criteria Gatekeeper for STATIC_QA / AC verification.

@@ -103,8 +103,8 @@ None.
 ### Requirement FESG-GEN-3: Family Name Extraction and Mutation Mapping
 
 #### 1. Spec Summary
-- **Description:** For each GLB file, the generator extracts the family name using `EnemyNameUtils.extract_family_name(file_basename)` and resolves the mutation drop string from the `MUTATION_BY_FAMILY` dictionary. The MUTATION_BY_FAMILY constant in the generator is identical to the one in `load_assets.gd`.
-- **Constraints:** `EnemyNameUtils` is preloaded as a const at script top: `const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")`. The full MUTATION_BY_FAMILY dict from `load_assets.gd` is copied verbatim into the generator (not imported). If a family name is not found in the map, `mutation_drop` is set to `"unknown"`.
+- **Description:** For each GLB file, the generator extracts the family name using `EnemyNameUtils.extract_family_name(file_basename)` and resolves the mutation drop string from the `MUTATION_BY_FAMILY` dictionary defined in `res://scripts/asset_generation/enemy_mutation_map.gd`. Both the headless generator (`generate_enemy_scenes.gd`) and the editor script (`load_assets.gd`) preload that module and use `EnemyMutationMap.MUTATION_BY_FAMILY`.
+- **Constraints:** `EnemyNameUtils` is preloaded as a const at script top: `const EnemyNameUtils = preload("res://scripts/asset_generation/enemy_name_utils.gd")`. `EnemyMutationMap` is preloaded the same way from `res://scripts/asset_generation/enemy_mutation_map.gd`. If a family name is not found in the map, `mutation_drop` is set to `"unknown"`.
 - **Assumptions:** `EnemyNameUtils.extract_family_name("adhesion_bug_animated_00")` returns `"adhesion_bug"`. `EnemyNameUtils.extract_family_name("acid_spitter_animated_02")` returns `"acid_spitter"`. Both are confirmed by reading `enemy_name_utils.gd`: the function strips trailing numeric tokens and all `"animated"` tokens.
 - **Scope:** Generator script; applies to all 12 GLBs.
 
@@ -131,7 +131,7 @@ None.
 - **AC-GEN-3.4:** A GLB with an unrecognized family name (not in MUTATION_BY_FAMILY) produces a scene with `mutation_drop == "unknown"`.
 
 #### 3. Risk & Ambiguity Analysis
-- The MUTATION_BY_FAMILY map is copied from load_assets.gd. If load_assets.gd is updated, the generator must be updated manually. This is acceptable given the two files are intentionally kept separate (editor vs headless).
+- The family → mutation map lives only in `enemy_mutation_map.gd`. New families or mutation strings are added there once; both pipelines pick up the same dictionary via preload (no manual sync between generator and editor script).
 
 #### 4. Clarifying Questions
 None.
