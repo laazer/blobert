@@ -343,6 +343,12 @@ Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-ac-gatekeeper.md`
 - Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-spec.md`
 - Outcome: `project_board/specs/test_suite_green_and_runner_exit_codes_spec.md` (TSGR-1..8); ticket Specification section; Next Test Designer Agent.
 
+### MAINT-TSGR / run-2026-04-05-test-design
+- Ticket: `project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-test-design.md`
+- Outcome: `ci/scripts/verify_tsgr_runner_contract.sh` + `asset_generation/python/tests/ci/test_tsgr_runner_contract.py`; baseline Godot exit 0; contract verifier 10 fails until implementation; Next Test Breaker Agent.
+
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`

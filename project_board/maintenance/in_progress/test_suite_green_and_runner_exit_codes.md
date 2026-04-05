@@ -39,16 +39,16 @@ Formal spec (requirements **TSGR-1**–**TSGR-8**, traceable to acceptance crite
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: `ci/scripts/verify_tsgr_runner_contract.sh` + `asset_generation/python/tests/ci/test_tsgr_runner_contract.py` added (RED vs current tree); Godot suite baseline exit 0 (2026-04-05)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -63,12 +63,12 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "action": "test_design",
+  "action": "test_break",
   "ticket_path": "project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md",
   "spec_path": "project_board/specs/test_suite_green_and_runner_exit_codes_spec.md"
 }
@@ -78,4 +78,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Spec **TSGR-1**–**TSGR-8** authored; map each observable requirement to verification (command matrix, shell tests, or in-repo tests) before implementation.
+Static TSGR contract verifier + pytest hook landed; adversarial / mutation coverage next before implementation.
