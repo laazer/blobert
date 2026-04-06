@@ -2198,3 +2198,67 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Defense-in-depth without requiring fragile full-Godot crash harnesses for every orchestration rule.
 
 ---
+
+## [attack_telegraph_system] — Death must preempt telegraph state; asymmetric family tests need explicit AC wording
+
+*Completed: 2026-04-06*
+
+### Learnings
+
+- category: architecture
+  insight: Controllers that combine telegraph timers, animation completion, and a terminal lifecycle (e.g. Death) need explicit precedence: entering Death must clear telegraph flags and cancel hold/wall-clock paths so Death is never deferred behind telegraph logic, and one-shot timer callbacks must tolerate cancellation after telegraph fields are cleared.
+  impact: GDScript review caught ordering where telegraph could still run alongside or after Death; fix was to reset `_ranged_telegraph_*` and related state when taking the Death branch before collision disable / play.
+  prevention: When adding interruptible phases, add a checklist item: “terminal state clears all in-progress phase timers and flags.”
+  severity: high
+
+- category: testing
+  insight: Headless adversarial tests that count live projectile spawns or rely on `get_class()` on instanced roots can be unreliable (SceneTree phase, node type vs script name); source-level guarantees (e.g. re-entry guards, `CONNECT_ONE_SHOT`, substring checks with `# CHECKPOINT`) can prove the same invariants without a flaky runtime harness.
+  impact: Test Breaker chose structure over spawn counting for duplicate `_on_telegraph_finished` / double `_begin_attack_cycle` cases.
+  prevention: Prefer source contracts when runtime identity or tree phase is ambiguous; reserve runtime stress only for paths where the harness is proven stable.
+  severity: medium
+
+- category: process
+  insight: “Works for all N enemy families” without a normative test depth per family forces gatekeepers to assume asymmetric coverage (full behavioral tests for some families, contract/export/wiring for stubs) unless the spec states it.
+  impact: AC gatekeeper logged medium confidence on whether carapace/claw required T-ATS-04-style SceneTree tests.
+  prevention: Spec or ticket should state parity expectations (full vs contract) when families are at different maturity levels.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Letting Death or other terminal transitions run while telegraph timers and flags remain active, so completion ordering or collision disable is wrong.
+  detection_signal: Death mid-attack; telegraph `emit` or hold timer fires after `queue_free`; review comments on “telegraph vs Death ordering.”
+  prevention: Clear telegraph state on the same code path that latches Death and guard timer callbacks with `if not _ranged_telegraph_active`.
+
+- description: Asserting spawn counts or class identity in headless tests without validating that the instanced node matches the expected `class_name` / script type.
+  detection_signal: `get_class()` != expected type; tests pass/fail depending on `SceneTree._initialize` ordering.
+  prevention: Use documented source checks or assert on node path + script resource path.
+
+### Prompt Patches
+
+- agent: GDScript Reviewer Agent
+  change: "For `EnemyAnimationController`/`AnimationPlayer`-driven flows: if telegraph uses timers or hold flags, verify that Death (or any irreversible despawn) clears those flags and cancels any pending telegraph semantics before collision disable and `play('Death')`, and that timer callbacks exit early if telegraph was cleared."
+  reason: Prevents death-vs-telegraph ordering bugs that static tests often miss.
+
+- agent: Test Breaker Agent
+  change: "For duplicate-emission or double-entry adversarial cases on spawned gameplay nodes: if headless spawn counting or `get_class()` is unreliable, prefer source-level guards (`# CHECKPOINT` comments) and document the constraint in the checkpoint; do not block on a flaky runtime harness."
+  reason: Matches ADV-ATS pattern and avoids false reds from tree phase quirks.
+
+- agent: Spec Agent
+  change: "When acceptance criteria say 'works for all N families' and some families are stub or minimal implementations, add a normative line: either require behavioral parity tests per family or explicitly allow contract tests (exports, script presence, wiring) for families without full combat."
+  reason: Removes AC gatekeeper ambiguity and avoids scope creep late in the pipeline.
+
+### Workflow Improvements
+
+- issue: Workflow stage enum has no `IMPLEMENTATION_GAMEPLAY`; Test Breaker advanced to `IMPLEMENTATION_GENERALIST` with handoff to Gameplay Systems.
+  improvement: Document in `agent_context/agents/readme.md` (or planner routing) a single canonical mapping: “telegraph / enemy attack implementation → gameplay systems” when the stage is generalist.
+  expected_benefit: Fewer wrong-agent handoffs and fewer medium-confidence routing assumptions.
+
+### Keep / Reinforce
+
+- practice: ATS-2 wall-clock floor (min 0.3 s) enforced when the Attack clip ends early via hold timer + `maxf`/`max` on fallback timers, with adversarial tests for clamps.
+  reason: Readable wind-up without hardcoding a single duration in all attack scripts.
+
+- practice: Primary suite stays deterministic (no `await`/wall-clock in NF1); adversarial suite carries timing and stress cases.
+  reason: Stable CI while still covering edge cases.
+
+---
