@@ -7,6 +7,7 @@
 # Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md
 #
 # Test IDs: T-ATS-01 … T-ATS-24 (traceability in test_name strings)
+# Adversarial: `test_attack_telegraph_system_adversarial.gd` (ADV-ATS-*)
 #
 # Notes:
 # - Wall-clock ≥ 0.3 s (ATS-2) is partially encoded via default export floors; full

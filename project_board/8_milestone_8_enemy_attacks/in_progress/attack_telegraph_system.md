@@ -30,13 +30,13 @@ Each enemy attack must be readable before it deals damage. Implement a telegraph
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 
@@ -55,7 +55,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Required Input Schema
 ```json
@@ -63,7 +63,8 @@ Test Breaker Agent
   "execution_plan_ref": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-planning.md",
   "spec_ref": "project_board/specs/attack_telegraph_system_spec.md",
   "ticket_path": "project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md",
-  "test_design_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md"
+  "test_design_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md",
+  "test_break_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-break.md"
 }
 ```
 
@@ -71,4 +72,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary behavioral tests landed in `tests/scripts/enemy/test_attack_telegraph_system.gd` (T-ATS-*). T-ATS-08 intentionally red until carapace/claw attack scripts exist at assumed paths. Adversarial pass next.
+Adversarial suite `tests/scripts/enemy/test_attack_telegraph_system_adversarial.gd` (ADV-ATS-*) added; 7 ADV failures plus T-ATS-08 reds encode ATS-2 floor, re-entry guards, and carapace/claw stubs. Implement telegraph holds, `maxf` fallback timers, and attack scripts; then GDScript reviewer + AC gatekeeper.

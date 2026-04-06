@@ -425,3 +425,9 @@ Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.m
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md`
 - Outcome: Primary suite `tests/scripts/enemy/test_attack_telegraph_system.gd` (T-ATS-*); T-ATS-08 red until `carapace_husk_attack.gd` / `claw_crawler_attack.gd` exist; SceneTree/get_tree limitation during `run_tests` documented in log.
+
+### attack_telegraph_system / run-2026-04-06-test-break
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-break.md`
+- Outcome: ADV-ATS adversarial suite added; 7 ADV failures + T-ATS-08 until telegraph floor/re-entry/`maxf` clamps + carapace/claw scripts; Next Gameplay Systems Agent.
