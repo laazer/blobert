@@ -4,6 +4,26 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [acid_enemy_attack] — DoT tick count vs time_left; integrate acid attack after GLB animation wiring
+
+*Completed: 2026-04-06*
+
+### Learnings
+
+- category: gameplay
+  insight: Modeling enemy acid DoT as `time_left` plus `accum` with a `while` loop risks an off-by-one on the final tick (sixth 0.5s tick in a 3s window) and, with pathological `delta`/`interval` values, an unbounded inner loop. A `ticks_remaining` budget derived from `round(duration / interval)` is deterministic and matches the AC wording.
+  impact: AEAA-02 initially failed until the tick-count model replaced time-window gating on the last tick.
+  prevention: For interval-based effects over a fixed duration, prefer explicit tick budgets or integration tests that assert total tick count, not only total damage.
+  severity: medium
+
+- category: engine_integration
+  insight: Spawning the acid attack controller in `EnemyInfection3D._ready()` runs before GLB libraries are merged onto the root `AnimationPlayer`, so `Attack` may be missing and telegraph falls back to a timer. Deferring attachment to `_wire_and_notify_animation()` ensures `begin_ranged_attack_telegraph()` can use the real clip when present.
+  impact: Reliable telegraph in generated acid spitter scenes; gobot placeholder still uses fallback if `Attack` is absent.
+  prevention: Any feature that depends on post-import animation libraries should wire after the same deferred path that copies libraries to the root player.
+  severity: medium
+
+---
+
 ## [death_animation_playthrough] — Completion-gated despawn must handle missing clips; `_ready`/`get_tree` guards for testable handlers
 
 *Completed: 2026-04-04*

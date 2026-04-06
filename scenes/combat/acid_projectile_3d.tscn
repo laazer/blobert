@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://cacidproj3d001"]
+
+[ext_resource type="Script" path="res://scripts/combat/acid_projectile_3d.gd" id="1_script"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_acid"]
+radius = 0.2
+
+[sub_resource type="SphereMesh" id="SphereMesh_acid"]
+radius = 0.18
+height = 0.36
+
+[node name="AcidProjectile3D" type="Area3D"]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_acid")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_acid")

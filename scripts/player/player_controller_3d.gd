@@ -44,6 +44,9 @@ var _fusion_timer: float = 0.0
 var _fusion_active: bool = false
 var _fusion_multiplier: float = 1.0
 
+## Stacking enemy acid DoT instances (M8 acid projectile); each hit adds one entry.
+var _enemy_acid_dots: Array = []
+
 signal detach_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_reabsorbed(player_position: Vector3, chunk_position: Vector3)
@@ -216,6 +219,8 @@ func _physics_process(delta: float) -> void:
 	]
 	for i in 2:
 		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
+
+	_tick_enemy_acid_dots(delta)
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
@@ -507,6 +512,7 @@ func get_current_hp() -> float:
 
 func reset_hp() -> void:
 	_current_state.current_hp = _simulation.max_hp
+	_enemy_acid_dots.clear()
 
 
 func reset_chunks() -> void:
@@ -559,5 +565,49 @@ func apply_fusion_effect(duration: float, multiplier: float) -> void:
 	_fusion_timer = duration
 	_fusion_multiplier = multiplier
 
+
+func apply_enemy_acid_damage(
+	impact_damage: float,
+	dot_tick_damage: float,
+	dot_duration_seconds: float = 3.0,
+	dot_tick_interval: float = 0.5
+) -> void:
+	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - impact_damage)
+	var iv: float = maxf(0.01, dot_tick_interval)
+	var n_ticks: int = int(round(dot_duration_seconds / iv))
+	if n_ticks < 1:
+		n_ticks = 1
+	_enemy_acid_dots.append(
+		{
+			"accum": 0.0,
+			"tick": dot_tick_damage,
+			"interval": iv,
+			"ticks_remaining": n_ticks,
+		}
+	)
+
+
+func get_enemy_acid_dot_instance_count() -> int:
+	return _enemy_acid_dots.size()
+
+
+func _tick_enemy_acid_dots(delta: float) -> void:
+	var idx: int = _enemy_acid_dots.size() - 1
+	while idx >= 0:
+		var d: Dictionary = _enemy_acid_dots[idx]
+		d["accum"] = float(d["accum"]) + delta
+		var interval: float = float(d["interval"])
+		if float(d["accum"]) >= interval:
+			var ticks_from_time: int = int(floor(float(d["accum"]) / interval))
+			var rem: int = int(d["ticks_remaining"])
+			var use: int = mini(ticks_from_time, rem)
+			if use > 0:
+				var dmg: float = float(d["tick"]) * float(use)
+				_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - dmg)
+				d["accum"] = float(d["accum"]) - float(use) * interval
+				d["ticks_remaining"] = rem - use
+		if int(d["ticks_remaining"]) <= 0:
+			_enemy_acid_dots.remove_at(idx)
+		idx -= 1
 
 

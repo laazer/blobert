@@ -58,6 +58,12 @@ var _death_latched: bool = false
 # fire more than once; only one queue_free on the enemy root (DAP-1.1).
 var _death_free_requested: bool = false
 
+signal ranged_attack_telegraph_finished()
+
+# Ranged attack telegraph: plays "Attack" once without idle/walk overriding (M8 acid spit).
+var _ranged_telegraph_active: bool = false
+var _ranged_telegraph_playback_confirmed: bool = false
+
 # Hit one-shot state.
 var _hit_active: bool = false
 # True once we have seen Hit actually playing (avoids treating library paths
@@ -234,6 +240,24 @@ func _physics_process(_delta: float) -> void:
 		_hit_playback_confirmed = false
 		_current_clip = ""
 
+	if _ranged_telegraph_active:
+		var cur_tele: String = _animation_base_name(animation_player.current_animation)
+		if cur_tele == "Attack":
+			_ranged_telegraph_playback_confirmed = true
+		var tele_finished: bool = false
+		if cur_tele.is_empty():
+			tele_finished = animation_player.is_playing() or _ranged_telegraph_playback_confirmed
+		elif cur_tele != "Attack":
+			tele_finished = _ranged_telegraph_playback_confirmed
+		else:
+			tele_finished = _ranged_telegraph_playback_confirmed and not animation_player.is_playing()
+		if not tele_finished:
+			return
+		_ranged_telegraph_active = false
+		_ranged_telegraph_playback_confirmed = false
+		_current_clip = ""
+		ranged_attack_telegraph_finished.emit()
+
 	# Resolve target clip name and speed from current state and velocity.
 	var state: String = state_machine.get_state()
 	var vel_len: float = _parent_body.velocity.length()
@@ -339,3 +363,23 @@ func trigger_hit_animation() -> void:
 	_hit_playback_confirmed = false
 
 	animation_player.play("Hit", 0.0)
+
+
+## Plays the "Attack" clip as a one-shot telegraph for ranged attacks (e.g. acid spit).
+## Returns false if Attack is missing or controller is not ready.
+func begin_ranged_attack_telegraph() -> bool:
+	if not _ready_ok or _death_latched or _hit_active:
+		return false
+	if animation_player == null or not is_instance_valid(animation_player):
+		return false
+	if not (animation_player is AnimationPlayer):
+		return false
+	var ap_tele: AnimationPlayer = animation_player as AnimationPlayer
+	if not ap_tele.has_animation(&"Attack"):
+		return false
+	if _ranged_telegraph_active:
+		return false
+	_ranged_telegraph_active = true
+	_ranged_telegraph_playback_confirmed = false
+	ap_tele.play("Attack", 0.0)
+	return true

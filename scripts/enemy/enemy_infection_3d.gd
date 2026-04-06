@@ -58,6 +58,20 @@ func _wire_and_notify_animation() -> void:
 	var anim_ctrl: EnemyAnimationController = get_node_or_null("EnemyAnimationController") as EnemyAnimationController
 	if anim_ctrl != null:
 		anim_ctrl.notify_root_animation_wired()
+	_ensure_acid_spitter_ranged_attack_if_needed()
+
+
+func _ensure_acid_spitter_ranged_attack_if_needed() -> void:
+	if mutation_drop != "acid":
+		return
+	if get_node_or_null("AcidSpitterRangedAttack") != null:
+		return
+	var atk_script: GDScript = load("res://scripts/enemy/acid_spitter_ranged_attack.gd") as GDScript
+	if atk_script == null:
+		return
+	var atk: Node = atk_script.new() as Node
+	atk.name = "AcidSpitterRangedAttack"
+	add_child(atk)
 
 
 func _wire_glb_libraries_to_root_animation_player() -> void:

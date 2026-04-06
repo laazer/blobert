@@ -368,3 +368,17 @@ Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-ac-gatekeeper.md`
 ### [MAINT-EMSI] — OUTCOME: COMPLETE
 `scale` on factory/`BaseModelType`; all archetypes; EMSI tests + full Python suite + `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
+
+## Run: 2026-04-06
+- Queue mode: single ticket
+- Queue scope: `project_board/8_milestone_8_enemy_attacks/backlog/acid_enemy_attack.md`
+- Log root: project_board/checkpoints/
+
+### acid_enemy_attack / run-2026-04-06-autopilot
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/acid_enemy_attack.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/acid_enemy_attack/run-2026-04-06-autopilot.md`
+
+### [acid_enemy_attack] — OUTCOME: COMPLETE
+Acid spitter ranged attack: projectile scene, player stacking DoT, Attack telegraph on `EnemyAnimationController`, tests in `tests/scripts/combat/test_acid_enemy_attack.gd`; `ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/acid_enemy_attack/run-2026-04-06-autopilot.md`
