@@ -4,6 +4,20 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [hitbox_and_damage_system] — Tests cannot reference `class_name` before global registration
+
+*Completed: 2026-04-06*
+
+### Learnings
+
+- category: testing
+  insight: Godot test scripts loaded by `run_tests.gd` may parse before global `class_name` symbols from other scripts are visible, producing "Could not find type X in the current scope" even when the implementation script exists.
+  impact: Primary hitbox tests failed to load until `EnemyAttackHitbox` references were replaced with `preload("res://scripts/enemies/enemy_attack_hitbox.gd").new()` and `Area3D`-typed locals.
+  prevention: For new `class_name` types consumed only from tests, prefer `preload` + `.new()` or defer typed hints until the type is guaranteed registered.
+  severity: medium
+
+---
+
 ## [adhesion_enemy_attack] — Enemy body must cooperate with child-driven lunge velocity
 
 *Completed: 2026-04-07*
