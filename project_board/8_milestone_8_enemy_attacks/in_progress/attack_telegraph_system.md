@@ -20,18 +20,23 @@ Each enemy attack must be readable before it deals damage. Implement a telegraph
 - `hitbox_and_damage_system`
 - `animation_controller_script` (M7)
 
+## Specification
+
+- **Normative requirements:** `project_board/specs/attack_telegraph_system_spec.md` — **ATS-1** through **ATS-9**, **ATS-NF1**, **ATS-NF2**.
+- **Summary:** Every covered attack splits a **telegraph** phase (wind-up: visible cue, ≥ 0.3 s wall-clock before the **active** phase) from damage-dealing behavior (projectiles, melee hit checks, player effects, or future attack `Area3D`). Durations are inspector-tunable via `@export` per family; `EnemyAnimationController` plays `"Attack"` when present with a completion signal, else a fallback timer plus alternate visual. Scope: **acid_spitter**, **adhesion_bug**, **carapace_husk**, **claw_crawler**. Ordering-only dependency on backlog `hitbox_and_damage_system` (hitboxes enable after telegraph).
+
 ---
 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 
@@ -50,12 +55,13 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
   "execution_plan_ref": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-planning.md",
+  "spec_ref": "project_board/specs/attack_telegraph_system_spec.md",
   "ticket_path": "project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md"
 }
 ```
@@ -64,4 +70,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete; structured task table and checkpoint assumptions logged. Produce formal spec (ATS-*), hitbox boundary, and per-family targets.
+Specification complete (ATS-1 … ATS-9, ATS-NF1, ATS-NF2). Author primary behavioral tests from the spec; encode min wind-up, no active damage during telegraph, and export/inspector contract.
