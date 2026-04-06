@@ -431,3 +431,9 @@ Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.m
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
 - Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-break.md`
 - Outcome: ADV-ATS adversarial suite added; 7 ADV failures + T-ATS-08 until telegraph floor/re-entry/`maxf` clamps + carapace/claw scripts; Next Gameplay Systems Agent.
+
+### attack_telegraph_system / run-2026-04-06-gameplay-systems
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
+- Stage: IMPLEMENTATION_GENERALIST → STATIC_QA
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-gameplay-systems.md`
+- Outcome: ATS-2 wall-clock hold in controller; acid/adhesion guards + `maxf` fallback; carapace/claw attack scripts + `EnemyInfection3D` wiring; telegraph suites 20+45 pass; full `run_tests.gd` exit 0.

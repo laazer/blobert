@@ -60,6 +60,8 @@ func _wire_and_notify_animation() -> void:
 		anim_ctrl.notify_root_animation_wired()
 	_ensure_acid_spitter_ranged_attack_if_needed()
 	_ensure_adhesion_bug_lunge_attack_if_needed()
+	_ensure_carapace_husk_attack_if_needed()
+	_ensure_claw_crawler_attack_if_needed()
 
 
 func _ensure_acid_spitter_ranged_attack_if_needed() -> void:
@@ -85,6 +87,32 @@ func _ensure_adhesion_bug_lunge_attack_if_needed() -> void:
 		return
 	var atk: Node = atk_script.new() as Node
 	atk.name = "AdhesionBugLungeAttack"
+	add_child(atk)
+
+
+func _ensure_carapace_husk_attack_if_needed() -> void:
+	if mutation_drop != "carapace":
+		return
+	if get_node_or_null("CarapaceHuskAttack") != null:
+		return
+	var atk_script: GDScript = load("res://scripts/enemy/carapace_husk_attack.gd") as GDScript
+	if atk_script == null:
+		return
+	var atk: Node = atk_script.new() as Node
+	atk.name = "CarapaceHuskAttack"
+	add_child(atk)
+
+
+func _ensure_claw_crawler_attack_if_needed() -> void:
+	if mutation_drop != "claw":
+		return
+	if get_node_or_null("ClawCrawlerAttack") != null:
+		return
+	var atk_script: GDScript = load("res://scripts/enemy/claw_crawler_attack.gd") as GDScript
+	if atk_script == null:
+		return
+	var atk: Node = atk_script.new() as Node
+	atk.name = "ClawCrawlerAttack"
 	add_child(atk)
 
 

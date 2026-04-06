@@ -30,17 +30,17 @@ Each enemy attack must be readable before it deals damage. Implement a telegraph
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Validation Status
 
-- Pending
+- Pending — `tests/scripts/enemy/test_attack_telegraph_system.gd` + adversarial: passing (`timeout 300 godot -s tests/run_tests.gd` exit 0); GDScript review pending (STATIC_QA / AC Gatekeeper)
 
 ## Blocking Issues
 
@@ -55,16 +55,14 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Gameplay Systems Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "execution_plan_ref": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-planning.md",
   "spec_ref": "project_board/specs/attack_telegraph_system_spec.md",
   "ticket_path": "project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md",
-  "test_design_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md",
-  "test_break_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-break.md"
+  "implementation_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-gameplay-systems.md"
 }
 ```
 
@@ -72,4 +70,4 @@ Gameplay Systems Agent
 Proceed
 
 ## Reason
-Adversarial suite `tests/scripts/enemy/test_attack_telegraph_system_adversarial.gd` (ADV-ATS-*) added; 7 ADV failures plus T-ATS-08 reds encode ATS-2 floor, re-entry guards, and carapace/claw stubs. Implement telegraph holds, `maxf` fallback timers, and attack scripts; then GDScript reviewer + AC gatekeeper.
+Telegraph implementation complete: controller ATS-2 wall hold, acid/adhesion `maxf` fallback + cycle guards, carapace/claw minimal attack scripts and `EnemyInfection3D` wiring; primary + adversarial telegraph tests pass; full headless suite exit 0. Hand off for AC verification and STATIC_QA sign-off.

@@ -60,9 +60,14 @@ var _death_free_requested: bool = false
 
 signal ranged_attack_telegraph_finished()
 
+# Wall-clock floor for telegraph (ATS-2); unscaled seconds from telegraph start to active phase.
+const ATS2_MIN_TELEGRAPH := 0.3
+
 # Ranged attack telegraph: plays "Attack" once without idle/walk overriding (M8 acid spit).
 var _ranged_telegraph_active: bool = false
 var _ranged_telegraph_playback_confirmed: bool = false
+var _telegraph_wall_started_at_sec: float = -1.0
+var _telegraph_hold_waiting: bool = false
 
 # Hit one-shot state.
 var _hit_active: bool = false
@@ -241,6 +246,8 @@ func _physics_process(_delta: float) -> void:
 		_current_clip = ""
 
 	if _ranged_telegraph_active:
+		if _telegraph_hold_waiting:
+			return
 		var cur_tele: String = _animation_base_name(animation_player.current_animation)
 		if cur_tele == "Attack":
 			_ranged_telegraph_playback_confirmed = true
@@ -253,10 +260,21 @@ func _physics_process(_delta: float) -> void:
 			tele_finished = _ranged_telegraph_playback_confirmed and not animation_player.is_playing()
 		if not tele_finished:
 			return
-		_ranged_telegraph_active = false
-		_ranged_telegraph_playback_confirmed = false
-		_current_clip = ""
-		ranged_attack_telegraph_finished.emit()
+		var now_sec: float = Time.get_ticks_msec() / 1000.0
+		var elapsed: float = 0.0
+		if _telegraph_wall_started_at_sec >= 0.0:
+			elapsed = now_sec - _telegraph_wall_started_at_sec
+		var need_sec: float = maxf(0.0, ATS2_MIN_TELEGRAPH - elapsed)
+		if need_sec > 0.0:
+			var tree: SceneTree = get_tree()
+			if tree != null:
+				_telegraph_hold_waiting = true
+				var hold_timer: SceneTreeTimer = tree.create_timer(need_sec)
+				hold_timer.timeout.connect(_on_telegraph_min_wall_elapsed, CONNECT_ONE_SHOT)
+			else:
+				_finish_ranged_telegraph_emit()
+			return
+		_finish_ranged_telegraph_emit()
 
 	# Resolve target clip name and speed from current state and velocity.
 	var state: String = state_machine.get_state()
@@ -381,5 +399,23 @@ func begin_ranged_attack_telegraph() -> bool:
 		return false
 	_ranged_telegraph_active = true
 	_ranged_telegraph_playback_confirmed = false
+	_telegraph_hold_waiting = false
+	_telegraph_wall_started_at_sec = Time.get_ticks_msec() / 1000.0
 	ap_tele.play("Attack", 0.0)
 	return true
+
+
+func _on_telegraph_min_wall_elapsed() -> void:
+	if not is_instance_valid(self):
+		return
+	_telegraph_hold_waiting = false
+	_finish_ranged_telegraph_emit()
+
+
+func _finish_ranged_telegraph_emit() -> void:
+	_ranged_telegraph_active = false
+	_ranged_telegraph_playback_confirmed = false
+	_telegraph_hold_waiting = false
+	_telegraph_wall_started_at_sec = -1.0
+	_current_clip = ""
+	ranged_attack_telegraph_finished.emit()

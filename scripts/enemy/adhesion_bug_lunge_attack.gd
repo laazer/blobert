@@ -57,17 +57,21 @@ func _physics_process(delta: float) -> void:
 
 
 func _begin_attack_cycle() -> void:
+	if _attack_cycle_active:
+		return
 	_attack_cycle_active = true
 	var ctrl: EnemyAnimationController = _enemy.get_node_or_null("EnemyAnimationController") as EnemyAnimationController
 	if ctrl != null and ctrl.begin_ranged_attack_telegraph():
 		if not ctrl.ranged_attack_telegraph_finished.is_connected(_on_telegraph_finished):
 			ctrl.ranged_attack_telegraph_finished.connect(_on_telegraph_finished, CONNECT_ONE_SHOT)
 		return
-	var t: SceneTreeTimer = get_tree().create_timer(telegraph_fallback_seconds)
+	var t: SceneTreeTimer = get_tree().create_timer(maxf(telegraph_fallback_seconds, 0.3))
 	t.timeout.connect(_on_telegraph_finished, CONNECT_ONE_SHOT)
 
 
 func _on_telegraph_finished() -> void:
+	if not _attack_cycle_active:
+		return
 	_attack_cycle_active = false
 	_start_lunge()
 
