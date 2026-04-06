@@ -30,13 +30,13 @@ Each enemy attack must be readable before it deals damage. Implement a telegraph
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 
@@ -55,14 +55,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "execution_plan_ref": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-planning.md",
   "spec_ref": "project_board/specs/attack_telegraph_system_spec.md",
-  "ticket_path": "project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md"
+  "ticket_path": "project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md",
+  "test_design_log": "project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md"
 }
 ```
 
@@ -70,4 +71,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete (ATS-1 … ATS-9, ATS-NF1, ATS-NF2). Author primary behavioral tests from the spec; encode min wind-up, no active damage during telegraph, and export/inspector contract.
+Primary behavioral tests landed in `tests/scripts/enemy/test_attack_telegraph_system.gd` (T-ATS-*). T-ATS-08 intentionally red until carapace/claw attack scripts exist at assumed paths. Adversarial pass next.

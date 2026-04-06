@@ -419,3 +419,9 @@ Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.m
 - Stage: SPECIFICATION → TEST_DESIGN
 - Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-spec.md`
 - Outcome: Formal spec written (ATS-1 … ATS-9, ATS-NF1, ATS-NF2); telegraph vs active phase, 0.3 s floor, visual + export + four-family map + `EnemyAnimationController` + `hitbox_and_damage_system` boundary; checkpoint assumptions logged for export naming and carapace/claw scope.
+
+### attack_telegraph_system / run-2026-04-06-test-design
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-test-design.md`
+- Outcome: Primary suite `tests/scripts/enemy/test_attack_telegraph_system.gd` (T-ATS-*); T-ATS-08 red until `carapace_husk_attack.gd` / `claw_crawler_attack.gd` exist; SceneTree/get_tree limitation during `run_tests` documented in log.
