@@ -404,9 +404,13 @@ Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.m
 - Log root: project_board/checkpoints/
 
 ### attack_telegraph_system / run-2026-04-06-dequeue
-- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
-- Stage: PLANNING (dequeued)
-- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-dequeue.md`
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/attack_telegraph_system.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-ac-gatekeeper.md`
+
+### [attack_telegraph_system] — OUTCOME: COMPLETE
+Attack telegraph: ATS-2 wall hold in `EnemyAnimationController`, acid/adhesion telegraph guards + `maxf` fallback, carapace/claw stub attacks + `EnemyInfection3D` wiring; T-ATS + ADV-ATS suites; `ci/scripts/run_tests.sh` exit 0; death preempts telegraph follow-up (`bb4488d`).
+Log: `project_board/checkpoints/attack_telegraph_system/`
 
 ### attack_telegraph_system / run-2026-04-06-planning
 - Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
