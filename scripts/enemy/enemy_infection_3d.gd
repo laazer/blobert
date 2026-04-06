@@ -59,6 +59,7 @@ func _wire_and_notify_animation() -> void:
 	if anim_ctrl != null:
 		anim_ctrl.notify_root_animation_wired()
 	_ensure_acid_spitter_ranged_attack_if_needed()
+	_ensure_adhesion_bug_lunge_attack_if_needed()
 
 
 func _ensure_acid_spitter_ranged_attack_if_needed() -> void:
@@ -71,6 +72,19 @@ func _ensure_acid_spitter_ranged_attack_if_needed() -> void:
 		return
 	var atk: Node = atk_script.new() as Node
 	atk.name = "AcidSpitterRangedAttack"
+	add_child(atk)
+
+
+func _ensure_adhesion_bug_lunge_attack_if_needed() -> void:
+	if mutation_drop != "adhesion":
+		return
+	if get_node_or_null("AdhesionBugLungeAttack") != null:
+		return
+	var atk_script: GDScript = load("res://scripts/enemy/adhesion_bug_lunge_attack.gd") as GDScript
+	if atk_script == null:
+		return
+	var atk: Node = atk_script.new() as Node
+	atk.name = "AdhesionBugLungeAttack"
 	add_child(atk)
 
 
@@ -154,7 +168,12 @@ func _on_body_exited(body: Node3D) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	velocity.x = 0.0
+	var lunge_atk: Node = get_node_or_null("AdhesionBugLungeAttack")
+	var lunge_controls_x: bool = false
+	if lunge_atk != null and lunge_atk.has_method("enemy_writes_velocity_x_this_frame"):
+		lunge_controls_x = lunge_atk.call("enemy_writes_velocity_x_this_frame") as bool
+	if not lunge_controls_x:
+		velocity.x = 0.0
 	velocity.z = 0.0
 	# move and apply collisions; after sliding, clear vertical speed if we're on the floor
 	move_and_slide()

@@ -47,6 +47,9 @@ var _fusion_multiplier: float = 1.0
 ## Stacking enemy acid DoT instances (M8 acid projectile); each hit adds one entry.
 var _enemy_acid_dots: Array = []
 
+## M8 adhesion lunge: horizontal move + jump input suppressed; velocity.x clamped after sim.
+var _enemy_movement_root_remaining: float = 0.0
+
 signal detach_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_reabsorbed(player_position: Vector3, chunk_position: Vector3)
@@ -142,6 +145,10 @@ func _physics_process(delta: float) -> void:
 	var input_axis: float = Input.get_axis("move_left", "move_right")
 	var jump_pressed: bool = Input.is_action_pressed("jump")
 	var jump_just_pressed: bool = Input.is_action_just_pressed("jump")
+	if _enemy_movement_root_remaining > 0.0:
+		input_axis = 0.0
+		jump_pressed = false
+		jump_just_pressed = false
 	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
 	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
 
@@ -195,12 +202,17 @@ func _physics_process(delta: float) -> void:
 		-next_state.velocity.y / SCALE_2D_TO_3D,
 		0.0
 	)
+	if _enemy_movement_root_remaining > 0.0:
+		velocity.x = 0.0
 
 	var pos: Vector3 = global_position
 	pos.z = 0.0
 	global_position = pos
 
 	move_and_slide()
+
+	if _enemy_movement_root_remaining > 0.0:
+		velocity.x = 0.0
 
 	if is_on_floor() and not _current_state.is_on_floor:
 		_juice_land_squash()
@@ -221,6 +233,9 @@ func _physics_process(delta: float) -> void:
 		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
 
 	_tick_enemy_acid_dots(delta)
+
+	if _enemy_movement_root_remaining > 0.0:
+		_enemy_movement_root_remaining = maxf(0.0, _enemy_movement_root_remaining - delta)
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
@@ -513,6 +528,7 @@ func get_current_hp() -> float:
 func reset_hp() -> void:
 	_current_state.current_hp = _simulation.max_hp
 	_enemy_acid_dots.clear()
+	_enemy_movement_root_remaining = 0.0
 
 
 func reset_chunks() -> void:
@@ -564,6 +580,14 @@ func apply_fusion_effect(duration: float, multiplier: float) -> void:
 	_fusion_active = true
 	_fusion_timer = duration
 	_fusion_multiplier = multiplier
+
+
+func apply_enemy_movement_root(duration_seconds: float) -> void:
+	_enemy_movement_root_remaining = maxf(_enemy_movement_root_remaining, duration_seconds)
+
+
+func get_enemy_movement_root_remaining() -> float:
+	return _enemy_movement_root_remaining
 
 
 func apply_enemy_acid_damage(

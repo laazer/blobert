@@ -382,3 +382,17 @@ Log: `project_board/checkpoints/MAINT-EMSI/run-2026-04-05-ac-gatekeeper.md`
 ### [acid_enemy_attack] — OUTCOME: COMPLETE
 Acid spitter ranged attack: projectile scene, player stacking DoT, Attack telegraph on `EnemyAnimationController`, tests in `tests/scripts/combat/test_acid_enemy_attack.gd`; `ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/acid_enemy_attack/run-2026-04-06-autopilot.md`
+
+## Run: 2026-04-07
+- Queue mode: single ticket
+- Queue scope: `project_board/8_milestone_8_enemy_attacks/backlog/adhesion_enemy_attack.md`
+- Log root: project_board/checkpoints/
+
+### adhesion_enemy_attack / run-2026-04-07-autopilot
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/adhesion_enemy_attack.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.md`
+
+### [adhesion_enemy_attack] — OUTCOME: COMPLETE
+Adhesion lunge: `AdhesionBugLungeAttack` + player `apply_enemy_movement_root`, enemy velocity X gate in `EnemyInfection3D`, tests `tests/scripts/combat/test_adhesion_enemy_attack.gd`; `ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.md`

@@ -4,6 +4,26 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [adhesion_enemy_attack] — Enemy body must cooperate with child-driven lunge velocity
+
+*Completed: 2026-04-07*
+
+### Learnings
+
+- category: engine_integration
+  insight: `EnemyInfection3D._physics_process` unconditionally zeroed `velocity.x` every frame, so any child attack script could not move the enemy horizontally without changing the base class. A narrow gate (`enemy_writes_velocity_x_this_frame` on `AdhesionBugLungeAttack` + lower `process_physics_priority`) lets the child set `velocity.x` before `move_and_slide()` without forking the enemy scene per attack type.
+  impact: Lunge works with existing generated enemy scenes; acid spitter unchanged.
+  prevention: Future melee dashes should reuse the same pattern or extract a small “locomotion override” API on the enemy body.
+  severity: medium
+
+- category: gameplay
+  insight: Player “root” is implemented as zero horizontal input, blocked jump press for the window, and `velocity.x = 0` after `simulate` and after `move_and_slide`, with a monotonic timer decremented at end of `_physics_process` so the full frame is rooted.
+  impact: Avoids friction-only drift and avoids consuming the root timer before movement logic runs.
+  prevention: If wall-cling or knockback is added, re-validate that rooted frames cannot gain horizontal speed from non-input sources.
+  severity: low
+
+---
+
 ## [acid_enemy_attack] — DoT tick count vs time_left; integrate acid attack after GLB animation wiring
 
 *Completed: 2026-04-06*
