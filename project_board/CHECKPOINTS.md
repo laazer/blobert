@@ -396,3 +396,20 @@ Log: `project_board/checkpoints/acid_enemy_attack/run-2026-04-06-autopilot.md`
 ### [adhesion_enemy_attack] — OUTCOME: COMPLETE
 Adhesion lunge: `AdhesionBugLungeAttack` + player `apply_enemy_movement_root`, enemy velocity X gate in `EnemyInfection3D`, tests `tests/scripts/combat/test_adhesion_enemy_attack.gd`; `ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.md`
+
+## Run: 2026-04-06T12-00-00Z-autopilot-attack-telegraph
+- Queue mode: single ticket
+- Queue scope: `project_board/8_milestone_8_enemy_attacks/backlog/attack_telegraph_system.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### attack_telegraph_system / run-2026-04-06-dequeue
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
+- Stage: PLANNING (dequeued)
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-dequeue.md`
+
+### attack_telegraph_system / run-2026-04-06-planning
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/attack_telegraph_system.md`
+- Stage: PLANNING → SPECIFICATION
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-planning.md`
+- Outcome: Task table for Spec → Test Design → Test Break → Implementation → gate; hitbox backlog boundary + four-family scope + visual fallback assumptions logged.
