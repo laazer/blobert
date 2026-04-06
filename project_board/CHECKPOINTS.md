@@ -478,3 +478,24 @@ Log: `project_board/checkpoints/hitbox_and_damage_system/run-2026-04-06-autopilo
 ### [carapace_enemy_attack] — OUTCOME: COMPLETE
 Carapace charge: `begin_ranged_attack_telegraph(0.6)` + `_telegraph_min_hold_sec` in `EnemyAnimationController`; full `CarapaceHuskAttack` with HADS hitbox, wall/range stops, decel, `EnemyInfection3D` velocity gate; spec `project_board/specs/carapace_enemy_attack_spec.md`; tests `tests/scripts/combat/test_carapace_enemy_attack*.gd`; `ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/carapace_enemy_attack/`
+
+## Run: 2026-04-06T23-30-00Z-autopilot-claw-attack-lean
+- Queue mode: single ticket
+- Queue scope: `project_board/8_milestone_8_enemy_attacks/backlog/claw_enemy_attack.md`
+- Lean: yes (Stage 7 Learning skipped)
+- Log root: project_board/checkpoints/
+- Learning: skipped (lean mode)
+
+### claw_enemy_attack / run-2026-04-06-planning
+- Ticket: `project_board/8_milestone_8_enemy_attacks/in_progress/claw_enemy_attack.md` (dequeued)
+- Stage: planning assumptions
+- Log: `project_board/checkpoints/claw_enemy_attack/run-2026-04-06-planning.md`
+
+### claw_enemy_attack / run-2026-04-06-implementation
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/claw_enemy_attack.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/claw_enemy_attack/run-2026-04-06-implementation.md`
+
+### [claw_enemy_attack] — OUTCOME: COMPLETE
+Claw 2-hit combo: per-swipe `begin_ranged_attack_telegraph` + `EnemyAttackHitbox` re-arm, pause between swipes, defaults range 2 / cooldown 1.2 / damage 7 per hit; spec `project_board/specs/claw_enemy_attack_spec.md`; tests `tests/scripts/combat/test_claw_enemy_attack*.gd`; `telegraph_fallback_seconds` default 0.35 for ADV-ATS-08b; `ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/claw_enemy_attack/`
