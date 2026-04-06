@@ -437,3 +437,9 @@ Log: `project_board/checkpoints/adhesion_enemy_attack/run-2026-04-07-autopilot.m
 - Stage: IMPLEMENTATION_GENERALIST → STATIC_QA
 - Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-gameplay-systems.md`
 - Outcome: ATS-2 wall-clock hold in controller; acid/adhesion guards + `maxf` fallback; carapace/claw attack scripts + `EnemyInfection3D` wiring; telegraph suites 20+45 pass; full `run_tests.gd` exit 0.
+
+### attack_telegraph_system / run-2026-04-06-ac-gatekeeper
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/attack_telegraph_system.md`
+- Stage: STATIC_QA → COMPLETE
+- Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-ac-gatekeeper.md`
+- Outcome: AC matrix mapped to primary + adversarial telegraph tests; `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, Python 419 passed); ticket `git mv` to `8_milestone_8_enemy_attacks/done/`.
