@@ -146,7 +146,8 @@ func _ready() -> void:
 
 	if animation_player == null:
 		push_warning(
-			"EnemyAnimationController (%s): animation_player export is null" % name
+			"EnemyAnimationController (%s): animation_player is null (resolve on enter tree or assign in tests)"
+			% name
 		)
 
 	if state_machine == null:
@@ -244,6 +245,16 @@ func _physics_process(_delta: float) -> void:
 		_hit_active = false
 		_hit_playback_confirmed = false
 		_current_clip = ""
+
+	# Death preempts telegraph: do not defer Death clip or collision disable
+	# while Attack/hold timers run (GDScript review: telegraph vs Death ordering).
+	if state_machine != null and str(state_machine.get_state()) == "dead":
+		if _ranged_telegraph_active or _telegraph_hold_waiting:
+			_ranged_telegraph_active = false
+			_ranged_telegraph_playback_confirmed = false
+			_telegraph_hold_waiting = false
+			_telegraph_wall_started_at_sec = -1.0
+			_current_clip = ""
 
 	if _ranged_telegraph_active:
 		if _telegraph_hold_waiting:
@@ -409,6 +420,9 @@ func _on_telegraph_min_wall_elapsed() -> void:
 	if not is_instance_valid(self):
 		return
 	_telegraph_hold_waiting = false
+	# Death or external cancel may have cleared telegraph before this fires.
+	if not _ranged_telegraph_active:
+		return
 	_finish_ranged_telegraph_emit()
 
 
