@@ -4,6 +4,25 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [carapace_enemy_attack] — Telegraph floor extended via optional parameter
+
+*Completed: 2026-04-06*
+
+### Learnings
+
+- category: gameplay
+  insight: `ATS2_MIN_TELEGRAPH` (0.3s) is a global floor for all ranged telegraphs; families that need a longer wind-up (carapace 0.6s) should pass `min_hold_seconds` into `begin_ranged_attack_telegraph` so the controller stores `_telegraph_min_hold_sec = max(ATS2_MIN_TELEGRAPH, requested)` without duplicating timer logic in each attack script.
+  impact: Acid/adhesion default call sites unchanged; carapace meets AC without a second post-signal timer.
+  prevention: When adding a third telegraphed attack with a custom minimum hold, use the same parameter rather than stacking SceneTreeTimers on the attack node.
+  severity: low
+
+- category: engine_integration
+  insight: The adhesion `enemy_writes_velocity_x_this_frame` gate on `EnemyInfection3D` composes additively: a second attack family (carapace) needs the same check so horizontal velocity from charge/decel is not cleared before `move_and_slide()`.
+  impact: Any future dash attack must register in this gate or extract a single helper that ORs child overrides.
+  severity: low
+
+---
+
 ## [hitbox_and_damage_system] — Tests cannot reference `class_name` before global registration
 
 *Completed: 2026-04-06*

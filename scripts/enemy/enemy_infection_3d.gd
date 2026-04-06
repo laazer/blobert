@@ -200,7 +200,11 @@ func _physics_process(delta: float) -> void:
 	var lunge_controls_x: bool = false
 	if lunge_atk != null and lunge_atk.has_method("enemy_writes_velocity_x_this_frame"):
 		lunge_controls_x = lunge_atk.call("enemy_writes_velocity_x_this_frame") as bool
-	if not lunge_controls_x:
+	var carapace_atk: Node = get_node_or_null("CarapaceHuskAttack")
+	var carapace_controls_x: bool = false
+	if carapace_atk != null and carapace_atk.has_method("enemy_writes_velocity_x_this_frame"):
+		carapace_controls_x = carapace_atk.call("enemy_writes_velocity_x_this_frame") as bool
+	if not lunge_controls_x and not carapace_controls_x:
 		velocity.x = 0.0
 	velocity.z = 0.0
 	# move and apply collisions; after sliding, clear vertical speed if we're on the floor

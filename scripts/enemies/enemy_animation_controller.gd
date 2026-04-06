@@ -68,6 +68,8 @@ var _ranged_telegraph_active: bool = false
 var _ranged_telegraph_playback_confirmed: bool = false
 var _telegraph_wall_started_at_sec: float = -1.0
 var _telegraph_hold_waiting: bool = false
+## Effective minimum hold for the current telegraph (>= ATS2_MIN_TELEGRAPH when caller passes min_hold_seconds).
+var _telegraph_min_hold_sec: float = ATS2_MIN_TELEGRAPH
 
 # Hit one-shot state.
 var _hit_active: bool = false
@@ -254,6 +256,7 @@ func _physics_process(_delta: float) -> void:
 			_ranged_telegraph_playback_confirmed = false
 			_telegraph_hold_waiting = false
 			_telegraph_wall_started_at_sec = -1.0
+			_telegraph_min_hold_sec = ATS2_MIN_TELEGRAPH
 			_current_clip = ""
 
 	if _ranged_telegraph_active:
@@ -275,7 +278,7 @@ func _physics_process(_delta: float) -> void:
 		var elapsed: float = 0.0
 		if _telegraph_wall_started_at_sec >= 0.0:
 			elapsed = now_sec - _telegraph_wall_started_at_sec
-		var need_sec: float = maxf(0.0, ATS2_MIN_TELEGRAPH - elapsed)
+		var need_sec: float = maxf(0.0, _telegraph_min_hold_sec - elapsed)
 		if need_sec > 0.0:
 			var tree: SceneTree = get_tree()
 			if tree != null:
@@ -395,8 +398,9 @@ func trigger_hit_animation() -> void:
 
 
 ## Plays the "Attack" clip as a one-shot telegraph for ranged attacks (e.g. acid spit).
+## Optional [param min_hold_seconds]: if >= 0, enforces at least max(ATS2_MIN_TELEGRAPH, min_hold_seconds) wall-clock before [signal ranged_attack_telegraph_finished] (carapace charge wind-up).
 ## Returns false if Attack is missing or controller is not ready.
-func begin_ranged_attack_telegraph() -> bool:
+func begin_ranged_attack_telegraph(min_hold_seconds: float = -1.0) -> bool:
 	if not _ready_ok or _death_latched or _hit_active:
 		return false
 	if animation_player == null or not is_instance_valid(animation_player):
@@ -408,6 +412,10 @@ func begin_ranged_attack_telegraph() -> bool:
 		return false
 	if _ranged_telegraph_active:
 		return false
+	var floor_sec: float = ATS2_MIN_TELEGRAPH
+	if min_hold_seconds >= 0.0:
+		floor_sec = maxf(ATS2_MIN_TELEGRAPH, min_hold_seconds)
+	_telegraph_min_hold_sec = floor_sec
 	_ranged_telegraph_active = true
 	_ranged_telegraph_playback_confirmed = false
 	_telegraph_hold_waiting = false
@@ -431,5 +439,6 @@ func _finish_ranged_telegraph_emit() -> void:
 	_ranged_telegraph_playback_confirmed = false
 	_telegraph_hold_waiting = false
 	_telegraph_wall_started_at_sec = -1.0
+	_telegraph_min_hold_sec = ATS2_MIN_TELEGRAPH
 	_current_clip = ""
 	ranged_attack_telegraph_finished.emit()

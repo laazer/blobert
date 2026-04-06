@@ -469,3 +469,12 @@ Log: `project_board/checkpoints/hitbox_and_damage_system/run-2026-04-06-autopilo
 - Stage: PLANNING → SPECIFICATION
 - Log: `project_board/checkpoints/carapace_enemy_attack/run-2026-04-06-planning.md`
 - Outcome: Task table for Spec → Test Design → Test Break → Implementation → gate; 0.6s telegraph vs `ATS2_MIN_TELEGRAPH` (0.3s), damage/knockback defaults, wall vs max-range termination assumptions logged.
+
+### carapace_enemy_attack / run-2026-04-06-implementation
+- Ticket: `project_board/8_milestone_8_enemy_attacks/done/carapace_enemy_attack.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/carapace_enemy_attack/run-2026-04-06-implementation.md`
+
+### [carapace_enemy_attack] — OUTCOME: COMPLETE
+Carapace charge: `begin_ranged_attack_telegraph(0.6)` + `_telegraph_min_hold_sec` in `EnemyAnimationController`; full `CarapaceHuskAttack` with HADS hitbox, wall/range stops, decel, `EnemyInfection3D` velocity gate; spec `project_board/specs/carapace_enemy_attack_spec.md`; tests `tests/scripts/combat/test_carapace_enemy_attack*.gd`; `ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/carapace_enemy_attack/`
