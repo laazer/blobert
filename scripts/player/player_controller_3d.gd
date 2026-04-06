@@ -525,6 +525,14 @@ func get_current_hp() -> float:
 	return _current_state.current_hp
 
 
+func take_damage(amount: float, knockback: Vector3) -> void:
+	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - amount)
+	var k := knockback
+	k.z = 0.0
+	velocity.x += k.x
+	velocity.y += k.y
+
+
 func reset_hp() -> void:
 	_current_state.current_hp = _simulation.max_hp
 	_enemy_acid_dots.clear()

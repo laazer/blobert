@@ -447,3 +447,13 @@ Log: `project_board/checkpoints/attack_telegraph_system/`
 - Stage: STATIC_QA → COMPLETE
 - Log: `project_board/checkpoints/attack_telegraph_system/run-2026-04-06-ac-gatekeeper.md`
 - Outcome: AC matrix mapped to primary + adversarial telegraph tests; `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, Python 419 passed); ticket `git mv` to `8_milestone_8_enemy_attacks/done/`.
+
+## Run: 2026-04-06-autopilot-hitbox-damage
+- Queue mode: single ticket
+- Queue scope: `project_board/8_milestone_8_enemy_attacks/backlog/hitbox_and_damage_system.md` (dequeued to `in_progress/`)
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### [hitbox_and_damage_system] — OUTCOME: COMPLETE
+Enemy `Area3D` hitbox (`EnemyAttackHitbox`) + `PlayerController3D.take_damage`; primary + adversarial combat tests; spec `project_board/specs/hitbox_and_damage_system_spec.md`; `ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/hitbox_and_damage_system/run-2026-04-06-autopilot.md`
