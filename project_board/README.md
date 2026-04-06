@@ -280,7 +280,21 @@ A non-developer can read HP, active mutations, and available actions at a glance
 
 ------------------------------------------------------------
 
-Milestone 15 – Enemy Navigation & AI
+Milestone 15 – Sandbox Enemy Spawn Stage
+Goal: A dedicated sandbox where any enemy can be spawned quickly for tuning and playtest — no run assembly or level editing required.
+
+Includes:
+- Standalone sandbox scene (or clearly separated mode) with the normal player controller
+- Spawn control: pick enemy family/type from a small UI or documented debug flow and instantiate at a fixed point or player-facing position
+- Despawn or arena reset so repeated spawns stay clean
+- Documented entry path (main scene override, menu item, or run flag) so the team uses one canonical workflow
+
+Exit Criteria:
+From one launch into the sandbox, every current enemy family can be spawned on demand and interacted with (movement, attacks, infection) without opening the editor to place instances.
+
+------------------------------------------------------------
+
+Milestone 16 – Enemy Navigation & AI
 Goal: Enemies actively pursue the player — a non-mutated player is in genuine danger.
 
 Includes:
@@ -297,7 +311,7 @@ Note: Should be completed before M8 (Enemy Attacks) — attacks are only threate
 
 ------------------------------------------------------------
 
-Milestone 16 – Camera & Screen Juice
+Milestone 17 – Camera & Screen Juice
 Goal: Hits feel impactful and abilities feel powerful — the game feels good to play, not just functional.
 
 Includes:
@@ -312,7 +326,7 @@ A 30-second combat clip looks noticeably more impactful than the same clip witho
 
 ------------------------------------------------------------
 
-Milestone 17 – Tutorial & Onboarding
+Milestone 18 – Tutorial & Onboarding
 Goal: A first-time player learns movement, chunk throw, infect, and absorb without reading a manual.
 
 Includes:
