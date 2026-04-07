@@ -4,6 +4,72 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [frontend_react_scaffold_and_editor] — Bootstrap-closure tickets need explicit metadata and evidence tiers
+
+*Completed: 2026-04-07*
+
+### Learnings
+
+- category: process
+  insight: Tickets missing a valid WORKFLOW STATE force late-stage routing assumptions and add avoidable planner/gatekeeper churn even when implementation already exists.
+  impact: This ticket required bootstrap handling from a malformed backlog stub before closure logic could proceed.
+  prevention: Add a pre-routing metadata validation gate that blocks advancement until required workflow fields are present.
+  severity: medium
+
+- category: testing
+  insight: Proxy/CORS acceptance criteria require a declared evidence tier; config plus dev-server startup proves setup, but not end-to-end browser behavior against a live backend.
+  impact: Autonomous closure used code-path and runtime startup evidence, but still needed manual follow-up for live no-CORS confirmation.
+  prevention: Encode ACs with explicit proof mode labels (config/static, runtime command, browser-live) during spec so gatekeepers do not infer sufficiency ad hoc.
+  severity: medium
+
+- category: process
+  insight: "Scaffold already implemented" tickets are best treated as verification-and-closure work items rather than implementation work, with a deterministic closure checklist.
+  impact: The run succeeded by switching to install/build/dev verification and AC mapping, not by coding.
+  prevention: Introduce a standard "existing implementation closure" path that requires dependency install, build, bounded dev startup, and AC-to-evidence mapping before `done`.
+  severity: low
+
+### Anti-Patterns
+
+- description: Advancing malformed ticket stubs through normal stage transitions without first validating required workflow metadata.
+  detection_signal: Missing WORKFLOW STATE block, absent stage/revision fields, or ambiguous "next agent" handoff at resume time.
+  prevention: Fail fast on ticket schema validation and require a metadata repair step before planner routing.
+
+- description: Treating infrastructural ACs (like CORS/proxy) as fully proven by static config alone.
+  detection_signal: AC marked complete without evidence of requests exercised in a browser against a running backend.
+  prevention: Split AC evidence into setup proof vs live-behavior proof and require both when AC wording is behavioral.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: "Before decomposing a ticket, validate that the ticket contains a WORKFLOW STATE block with stage, revision, next responsible agent, and status. If missing, emit a 'metadata repair required' checkpoint and do not continue normal stage routing."
+  reason: Prevents malformed-ticket churn and ambiguous resume behavior.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "For ACs about CORS/proxy/network behavior, explicitly classify evidence as (A) config/static, (B) runtime service startup, and (C) live browser request behavior. Mark the AC complete only when required tiers are satisfied by the AC wording; otherwise leave a precise manual follow-up."
+  reason: Removes evidence ambiguity and reduces false-complete decisions on network-facing criteria.
+
+- agent: Spec Agent
+  change: "When drafting frontend ACs with infrastructure semantics, annotate each AC with required verification mode (`static`, `runtime`, `browser-live`) so downstream test design and gatekeeping apply the same evidence bar."
+  reason: Aligns proof expectations across pipeline stages.
+
+### Workflow Improvements
+
+- issue: Workflow currently allows malformed ticket stubs to reach resume/gatekeeper paths where assumptions are made late.
+  improvement: Add an explicit preflight stage (ticket-schema validation) before PLANNING for dequeued backlog items.
+  expected_benefit: Cleaner routing, fewer assumption checkpoints, and faster closure for pre-implemented work.
+
+- issue: AC validation does not consistently distinguish "implemented correctly" from "observed working in environment."
+  improvement: Add AC evidence-tier tags to ticket/spec templates and require gatekeeper reporting by tier.
+  expected_benefit: Higher confidence in closure decisions and fewer post-close manual surprises.
+
+### Keep / Reinforce
+
+- practice: Bounded runtime commands (`npm run build`, timed `npm run dev`) were used before closure.
+  reason: Provides fast, reproducible baseline confidence without waiting for full manual UX pass.
+
+- practice: ACs were mapped to concrete code paths and explicit runtime evidence.
+  reason: Improves auditability of why a ticket was closed when implementation predated the run.
+
 ## [M19-ARGLB] — Path-jail hardening and clip-state ownership must be explicitly tested
 
 *Completed: 2026-04-07*
