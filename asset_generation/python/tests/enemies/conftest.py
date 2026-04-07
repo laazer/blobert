@@ -4,7 +4,7 @@ conftest.py — bpy/mathutils/bmesh stub for tests/enemies/.
 Registers lightweight stubs for Blender modules in sys.modules BEFORE any
 test file is imported. This allows pure-Python import of
 src.enemies.animated (and its transitive dependencies on
-blender_utils, armature_builders, material_system) without a Blender
+blender_utils, material_system) without a Blender
 installation. The stubs are scoped to this conftest; they do not affect
 any other test directory.
 

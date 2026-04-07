@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from src.core.blender_utils import clear_scene
 from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES
+from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.constants import PlayerExportConfig
 
 
@@ -29,17 +30,6 @@ def setup_scene():
 
     bpy.ops.object.light_add(type='SUN', location=(4, 4, 8))
     bpy.context.active_object.data.energy = 3.0
-
-
-def _load_prefab_mesh_if_requested(prefab_name: str):
-    """Load a prefab mesh from the prefabs/ directory, or return None."""
-    if not prefab_name:
-        return None
-    from src.prefabs.prefab_loader import load_prefab_mesh
-    print(f"📦 Loading prefab: {prefab_name}")
-    mesh, entry = load_prefab_mesh(prefab_name)
-    print(f"✅ Prefab loaded: {entry.description}")
-    return mesh
 
 
 def generate_player_slime(
@@ -74,7 +64,7 @@ def generate_player_slime(
 
         try:
             # Reload prefab each iteration — clear_scene() removes imported objects
-            prefab_mesh = _load_prefab_mesh_if_requested(prefab_name)
+            prefab_mesh = load_prefab_mesh_if_requested(prefab_name)
 
             armature, mesh = PlayerSlimeBuilder.build(
                 color=color,

@@ -3,15 +3,24 @@ External Model Integration System
 Import external models and animations into the enemy generation pipeline
 """
 
-import bpy
-import os
-import bmesh
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-from ..core.blender_utils import clear_scene, apply_smooth_shading, ensure_mesh_integrity
-from ..materials.material_system import get_enemy_materials, apply_material_to_object
+from typing import Dict, List
+
+import bpy
+
 from ..animations.animation_system import create_all_animations
-from ..utils.constants import AnimationTypes, ExportConfig
+from ..core.blender_utils import (
+    apply_smooth_shading,
+    clear_scene,
+    ensure_mesh_integrity,
+)
+from ..core.rig_presets import (
+    imported_blob_rig,
+    imported_humanoid_rig,
+    imported_quadruped_rig,
+)
+from ..materials.material_system import apply_material_to_object, get_enemy_materials
+from ..utils.constants import ExportConfig
 
 
 class ExternalModelImporter:
@@ -112,7 +121,7 @@ class ExternalModelImporter:
             'enemy_name': enemy_name
         }
         
-        print(f"📊 Analysis complete:")
+        print("📊 Analysis complete:")
         print(f"   Armature: {'✅' if analysis['has_armature'] else '❌'} ({analysis['bone_count']} bones)")
         print(f"   Mesh: {'✅' if analysis['has_mesh'] else '❌'} ({analysis['vertex_count']} vertices)")
         print(f"   Existing animations: {len(analysis['existing_animations'])}")
@@ -181,18 +190,17 @@ class ExternalModelImporter:
         return True
     
     def _create_basic_armature(self, body_type: str) -> bpy.types.Object:
-        """Create a basic armature for models without one"""
+        """Create a basic armature for models without one (import path — not an enemy class)."""
+        from ..animations.keyframe_system import create_simple_armature
+
         print(f"🦴 Creating {body_type} armature...")
-        
-        if body_type == 'blob':
-            from ..animations.armature_builders import create_blob_armature
-            return create_blob_armature("imported_model", 1.0)
-        elif body_type == 'humanoid':
-            from ..animations.armature_builders import create_humanoid_armature  
-            return create_humanoid_armature("imported_model", 1.0)
-        else:  # quadruped
-            from ..animations.armature_builders import create_quadruped_armature
-            return create_quadruped_armature("imported_model", 1.0)
+        if body_type == "blob":
+            rig = imported_blob_rig(1.0)
+        elif body_type == "humanoid":
+            rig = imported_humanoid_rig(1.0)
+        else:
+            rig = imported_quadruped_rig(1.0)
+        return create_simple_armature("imported_model", rig)
     
     def _apply_pipeline_materials(self):
         """Apply our enhanced material system to imported model"""

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getAnimationCodeExtras,
   getAnimationCodeTarget,
   getMeshPartTree,
   getModelCodeTarget,
@@ -51,6 +52,23 @@ describe("quickSourceNav", () => {
 
     it("returns null for smart", () => {
       expect(getAnimationCodeTarget("smart", "")).toBeNull();
+    });
+  });
+
+  describe("getAnimationCodeExtras", () => {
+    it("lists shared modules for animated enemies", () => {
+      const paths = getAnimationCodeExtras("animated").map((x) => x.path);
+      expect(paths).toContain("animations/keyframe_system.py");
+      expect(paths).toContain("enemies/animated_tar_slug.py");
+    });
+
+    it("lists player extras for player cmd", () => {
+      const paths = getAnimationCodeExtras("player").map((x) => x.path);
+      expect(paths).toContain("player/player_armature.py");
+    });
+
+    it("returns empty for smart", () => {
+      expect(getAnimationCodeExtras("smart")).toEqual([]);
     });
   });
 

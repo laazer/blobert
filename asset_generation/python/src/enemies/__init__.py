@@ -1,6 +1,13 @@
 """Enemy generation system"""
 
-from .base_enemy import BaseEnemy
 from .animated import AnimatedEnemyBuilder
+from .animated_enemy import AnimatedEnemy
+from .base_animated_model import BaseAnimatedModel
+from .base_enemy import BaseEnemy
 
-__all__ = ['BaseEnemy', 'AnimatedEnemyBuilder']
+__all__ = [
+    "BaseAnimatedModel",
+    "BaseEnemy",
+    "AnimatedEnemy",
+    "AnimatedEnemyBuilder",
+]

@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import {
+  getAnimationCodeExtras,
   getAnimationCodeTarget,
   getMeshPartTree,
   getModelCodeTarget,
@@ -39,6 +40,15 @@ const s: Record<string, React.CSSProperties> = {
   btnDisabled: {
     opacity: 0.45,
     cursor: "not-allowed",
+  },
+  btnSmall: {
+    background: "#3c3c3c",
+    color: "#d4d4d4",
+    border: "1px solid #555",
+    borderRadius: 3,
+    padding: "2px 8px",
+    cursor: "pointer",
+    fontSize: 10,
   },
   hint: { color: "#8f8f8f", fontSize: 10 },
   err: { color: "#f48771", fontSize: 10 },
@@ -80,18 +90,34 @@ function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }
   );
 }
 
+function shortLabelForAnimationExtra(path: string): string {
+  if (path.includes("keyframe_system")) return "Keyframes";
+  if (path.includes("body_types")) return "Body types";
+  if (path.includes("animated_tar_slug")) return "Enemy rig";
+  if (path.includes("player_armature")) return "Armature";
+  return path.replace(/^.*\//, "").replace(/\.py$/, "");
+}
+
 export function PreviewSourceBar() {
   const commandContext = useAppStore((st) => st.commandContext);
   const selectFile = useAppStore((st) => st.selectFile);
+  const setEditorPaneVisible = useAppStore((st) => st.setEditorPaneVisible);
+  const animatedEnemySlugs = useAppStore((st) => st.animatedEnemySlugs);
+  const loadAnimatedEnemySlugs = useAppStore((st) => st.loadAnimatedEnemySlugs);
   const [navError, setNavError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [partsOpen, setPartsOpen] = useState(true);
 
   const { cmd, enemy } = commandContext;
 
-  const modelTarget = getModelCodeTarget(cmd, enemy);
+  useEffect(() => {
+    loadAnimatedEnemySlugs().catch(() => {});
+  }, [loadAnimatedEnemySlugs]);
+
+  const modelTarget = getModelCodeTarget(cmd, enemy, animatedEnemySlugs);
   const animTarget = getAnimationCodeTarget(cmd, enemy);
-  const partTree = getMeshPartTree(cmd, enemy);
+  const animExtras = getAnimationCodeExtras(cmd);
+  const partTree = getMeshPartTree(cmd, enemy, animatedEnemySlugs);
 
   const openPath = useCallback(
     async (path: string | undefined) => {
@@ -99,7 +125,19 @@ export function PreviewSourceBar() {
       setNavError(null);
       setBusy(true);
       try {
+        setEditorPaneVisible(true);
         await selectFile(path);
+        if (typeof document !== "undefined") {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              document.getElementById("blobert-editor-column")?.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest",
+                inline: "nearest",
+              });
+            });
+          });
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setNavError(msg);
@@ -107,7 +145,7 @@ export function PreviewSourceBar() {
         setBusy(false);
       }
     },
-    [selectFile],
+    [selectFile, setEditorPaneVisible],
   );
 
   return (
@@ -132,13 +170,17 @@ export function PreviewSourceBar() {
             ...(animTarget && !busy ? {} : { ...s.btnDisabled }),
           }}
           disabled={!animTarget || busy}
-          title={animTarget?.description ?? "Not available for this command"}
+          title={
+            animTarget
+              ? `${animTarget.description} — opens Blender Python in the center editor (Monaco). Click the vertical “Code” strip if the editor is hidden.`
+              : "Not available for this command"
+          }
           onClick={() => openPath(animTarget?.path)}
         >
           Animation code
         </button>
         <span style={s.hint}>
-          Opens in editor — cmd: <code style={{ color: "#bbb" }}>{cmd}</code>
+          Opens Python in the center editor — cmd: <code style={{ color: "#bbb" }}>{cmd}</code>
           {enemy ? (
             <>
               {" "}
@@ -147,6 +189,23 @@ export function PreviewSourceBar() {
           ) : null}
         </span>
       </div>
+      {animTarget && animExtras.length > 0 ? (
+        <div style={s.row}>
+          <span style={s.hint}>More animation:</span>
+          {animExtras.map((t) => (
+            <button
+              key={t.path}
+              type="button"
+              style={{ ...s.btnSmall, ...(busy ? s.btnDisabled : {}) }}
+              disabled={busy}
+              title={t.description}
+              onClick={() => openPath(t.path)}
+            >
+              {shortLabelForAnimationExtra(t.path)}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div style={s.row}>
         <button type="button" style={s.treeToggle} onClick={() => setPartsOpen((o) => !o)}>
           {partsOpen ? "▼" : "▶"} Mesh parts (source)

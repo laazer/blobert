@@ -1,7 +1,9 @@
 import { useState, type CSSProperties } from "react";
+import { useAppStore } from "../../store/useAppStore";
 import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
 import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
+import { VariantPicker } from "../Preview/VariantPicker";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
 import { CommandPanel } from "../CommandPanel/CommandPanel";
@@ -22,6 +24,8 @@ const showFilesBtn: CSSProperties = {
 
 export function ThreePanelLayout() {
   const [fileTreeVisible, setFileTreeVisible] = useState(false);
+  const editorPaneVisible = useAppStore((s) => s.editorPaneVisible);
+  const setEditorPaneVisible = useAppStore((s) => s.setEditorPaneVisible);
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
@@ -41,22 +45,43 @@ export function ThreePanelLayout() {
         </button>
       )}
 
-      {/* Center: Editor */}
+      {/* Center: Editor (collapsible) */}
+      {editorPaneVisible ? (
+        <div
+          id="blobert-editor-column"
+          style={{
+            flex: fileTreeVisible ? "0 0 45%" : "1 1 0%",
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            borderRight: "1px solid #3c3c3c",
+          }}
+        >
+          <EditorPane onRequestHide={() => setEditorPaneVisible(false)} />
+        </div>
+      ) : (
+        <button
+          type="button"
+          style={showFilesBtn}
+          onClick={() => setEditorPaneVisible(true)}
+          title="Show code editor"
+        >
+          Code
+        </button>
+      )}
+
+      {/* Right: 3D + terminal stack (grows when editor hidden) */}
       <div
         style={{
-          flex: fileTreeVisible ? "0 0 45%" : "1 1 0%",
+          flex: editorPaneVisible ? 1 : "1 1 0%",
           minWidth: 0,
           display: "flex",
           flexDirection: "column",
-          borderRight: "1px solid #3c3c3c",
+          overflow: "hidden",
         }}
       >
-        <EditorPane />
-      </div>
-
-      {/* Right: 3D + terminal stack */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <PreviewSourceBar />
+        <VariantPicker />
         <GlbViewer />
         <AnimationControls />
         <CommandPanel />

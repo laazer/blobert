@@ -1,7 +1,7 @@
 import { RunCmd } from "../../types";
 
-/** Known animated enemy slugs (matches `AnimatedEnemyBuilder.ENEMY_CLASSES`). */
-export const ANIMATED_ENEMY_SLUGS = [
+/** Default slugs when /api/meta/enemies has not loaded yet. */
+export const DEFAULT_ANIMATED_ENEMY_SLUGS = [
   "adhesion_bug",
   "tar_slug",
   "ember_imp",
@@ -9,6 +9,9 @@ export const ANIMATED_ENEMY_SLUGS = [
   "claw_crawler",
   "carapace_husk",
 ] as const;
+
+/** @deprecated use DEFAULT_ANIMATED_ENEMY_SLUGS or store `animatedEnemySlugs` */
+export const ANIMATED_ENEMY_SLUGS = DEFAULT_ANIMATED_ENEMY_SLUGS;
 
 export type PartTreeNode = {
   id: string;
@@ -22,7 +25,11 @@ function animatedEnemyModulePath(slug: string): string {
   return `enemies/animated_${slug}.py`;
 }
 
-export function getModelCodeTarget(cmd: RunCmd, enemy: string): SourceNavTarget | null {
+export function getModelCodeTarget(
+  cmd: RunCmd,
+  enemy: string,
+  animatedSlugs: readonly string[] = DEFAULT_ANIMATED_ENEMY_SLUGS,
+): SourceNavTarget | null {
   const e = (enemy || "").trim();
 
   switch (cmd) {
@@ -30,7 +37,7 @@ export function getModelCodeTarget(cmd: RunCmd, enemy: string): SourceNavTarget 
       if (e === "all") {
         return { path: "enemies/animated/registry.py", description: "Animated enemy registry" };
       }
-      if (ANIMATED_ENEMY_SLUGS.includes(e as (typeof ANIMATED_ENEMY_SLUGS)[number])) {
+      if (animatedSlugs.includes(e)) {
         return { path: animatedEnemyModulePath(e), description: `Mesh builder: ${e}` };
       }
       return { path: "enemies/base_enemy.py", description: "Base enemy mesh API" };
@@ -45,7 +52,7 @@ export function getModelCodeTarget(cmd: RunCmd, enemy: string): SourceNavTarget 
       return { path: "enemies/animated_adhesion_bug.py", description: "Test command uses adhesion bug" };
 
     case "stats":
-      if (e && ANIMATED_ENEMY_SLUGS.includes(e as (typeof ANIMATED_ENEMY_SLUGS)[number])) {
+      if (e && animatedSlugs.includes(e)) {
         return { path: animatedEnemyModulePath(e), description: `Mesh builder: ${e}` };
       }
       return { path: "enemies/base_enemy.py", description: "Base enemy mesh API" };
@@ -64,6 +71,25 @@ export function getAnimationCodeTarget(cmd: RunCmd, _enemy: string): SourceNavTa
       return null;
     default:
       return { path: "animations/animation_system.py", description: "Enemy animation system" };
+  }
+}
+
+/** Short labels for the rest of the Blender animation pipeline (same dir as animation_system). */
+export function getAnimationCodeExtras(cmd: RunCmd): SourceNavTarget[] {
+  switch (cmd) {
+    case "player":
+      return [
+        { path: "animations/keyframe_system.py", description: "Shared keyframe helpers" },
+        { path: "player/player_armature.py", description: "Player armature" },
+      ];
+    case "smart":
+      return [];
+    default:
+      return [
+        { path: "animations/keyframe_system.py", description: "Bone keyframes" },
+        { path: "animations/body_types.py", description: "Per-body-type poses & clips" },
+        { path: "enemies/animated_tar_slug.py", description: "Enemy-specific rig (get_rig_definition)" },
+      ];
   }
 }
 
@@ -110,7 +136,7 @@ function playerSlimePartTree(): PartTreeNode[] {
 }
 
 /** Full `self.parts` order per `animated_{slug}.py`. */
-function animatedEnemyPartTree(slug: (typeof ANIMATED_ENEMY_SLUGS)[number]): PartTreeNode {
+function animatedEnemyPartTree(slug: string): PartTreeNode {
   switch (slug) {
     case "adhesion_bug":
       return {
@@ -225,6 +251,12 @@ function animatedEnemyPartTree(slug: (typeof ANIMATED_ENEMY_SLUGS)[number]): Par
           { id: "ch5", label: "parts[5] — leg — right" },
         ],
       };
+    default:
+      return {
+        id: `generic-${slug}`,
+        label: `Enemy ${slug} — parts[] (animated_${slug}.py)`,
+        children: baseEnemyFallbackTree()[0].children,
+      };
   }
 }
 
@@ -273,17 +305,19 @@ function baseEnemyFallbackTree(): PartTreeNode[] {
   return [
     {
       id: "fallback",
-      label: "Enemy mesh (BaseEnemy pipeline)",
+      label: "Enemy mesh (BaseAnimatedModel pipeline)",
       children: [
-        { id: "fb0", label: "parts[0] — create_body()" },
-        { id: "fb1", label: "parts[1] — create_head()" },
-        { id: "fb2", label: "parts[2…] — create_limbs() (see concrete animated_*.py)" },
+        { id: "fb0", label: "parts[0…] — build_mesh_parts() (see concrete animated_*.py)" },
       ],
     },
   ];
 }
 
-export function getMeshPartTree(cmd: RunCmd, enemy: string): PartTreeNode[] {
+export function getMeshPartTree(
+  cmd: RunCmd,
+  enemy: string,
+  animatedSlugs: readonly string[] = DEFAULT_ANIMATED_ENEMY_SLUGS,
+): PartTreeNode[] {
   const e = (enemy || "").trim();
 
   if (cmd === "player") {
@@ -299,7 +333,7 @@ export function getMeshPartTree(cmd: RunCmd, enemy: string): PartTreeNode[] {
       {
         id: "all-root",
         label: "All animated enemies",
-        children: ANIMATED_ENEMY_SLUGS.map((slug) => ({
+        children: animatedSlugs.map((slug) => ({
           id: `reg-${slug}`,
           label: slug,
           children: [animatedEnemyPartTree(slug)],
@@ -308,9 +342,7 @@ export function getMeshPartTree(cmd: RunCmd, enemy: string): PartTreeNode[] {
     ];
   }
 
-  const knownAnimated =
-    ANIMATED_ENEMY_SLUGS.includes(e as (typeof ANIMATED_ENEMY_SLUGS)[number]) &&
-    (e as (typeof ANIMATED_ENEMY_SLUGS)[number]);
+  const knownAnimated = animatedSlugs.includes(e) ? e : "";
 
   if (cmd === "test" || ((cmd === "animated" || cmd === "stats") && e === "adhesion_bug")) {
     return [animatedEnemyPartTree("adhesion_bug")];

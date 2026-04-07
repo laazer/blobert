@@ -6,6 +6,7 @@ import {
   fetchFileContent,
   saveFileContent,
   fetchAssets,
+  fetchEnemies,
 } from "../api/client";
 
 export type CommandPanelContext = {
@@ -27,7 +28,14 @@ interface AppState {
   commandContext: CommandPanelContext;
   setCommandContext: (ctx: CommandPanelContext) => void;
 
+  /** Animated enemy slugs from GET /api/meta/enemies (fallback defaults in quickSourceNav). */
+  animatedEnemySlugs: string[];
+  loadAnimatedEnemySlugs: () => Promise<void>;
+
   // Editor
+  /** When false, the center editor column is collapsed (file may still be selected). */
+  editorPaneVisible: boolean;
+  setEditorPaneVisible: (visible: boolean) => void;
   editorContent: string;
   isDirty: boolean;
   isSaving: boolean;
@@ -48,6 +56,8 @@ interface AppState {
   activeAnimation: string | null;
   isAnimationPaused: boolean;
   loadAssets: () => Promise<void>;
+  /** Load a GLB by server path (e.g. animated_exports/tar_slug_animated_01.glb). */
+  selectAssetByPath: (path: string) => void;
   setActiveGlbUrl: (url: string | null) => void;
   setAvailableClips: (names: string[]) => void;
   setActiveAnimation: (name: string | null) => void;
@@ -66,6 +76,26 @@ export const useAppStore = create<AppState>()(
         s.commandContext = ctx;
       });
     },
+    animatedEnemySlugs: [
+      "adhesion_bug",
+      "tar_slug",
+      "ember_imp",
+      "acid_spitter",
+      "claw_crawler",
+      "carapace_husk",
+    ],
+    async loadAnimatedEnemySlugs() {
+      try {
+        const list = await fetchEnemies();
+        if (list.length > 0) {
+          set((s) => {
+            s.animatedEnemySlugs = list;
+          });
+        }
+      } catch {
+        /* keep defaults */
+      }
+    },
     async loadFileTree() {
       const tree = await fetchFileTree();
       set((s) => { s.fileTree = tree; });
@@ -76,10 +106,17 @@ export const useAppStore = create<AppState>()(
         s.selectedFile = path;
         s.editorContent = content;
         s.isDirty = false;
+        s.editorPaneVisible = true;
       });
     },
 
     // Editor
+    editorPaneVisible: true,
+    setEditorPaneVisible(visible) {
+      set((s) => {
+        s.editorPaneVisible = visible;
+      });
+    },
     editorContent: "",
     isDirty: false,
     isSaving: false,
@@ -130,6 +167,15 @@ export const useAppStore = create<AppState>()(
       const assets = await fetchAssets();
       set((s) => { s.assets = assets; });
     },
+    selectAssetByPath(path) {
+      const url = `/api/assets/${path}?t=${Date.now()}`;
+      set((s) => {
+        s.activeGlbUrl = url;
+        s.availableClips = [];
+        s.activeAnimation = "Idle";
+        s.isAnimationPaused = false;
+      });
+    },
     setActiveGlbUrl(url) {
       set((s) => { s.activeGlbUrl = url; });
     },
@@ -148,13 +194,7 @@ export const useAppStore = create<AppState>()(
       if (!outputFile) return;
       const match = assets.find((a) => a.path === outputFile || a.name === outputFile);
       if (match) {
-        const url = `/api/assets/${match.path}?t=${Date.now()}`;
-        set((s) => {
-          s.activeGlbUrl = url;
-          s.availableClips = [];
-          s.activeAnimation = "Idle";
-          s.isAnimationPaused = false;
-        });
+        get().selectAssetByPath(match.path);
       }
     },
   }))

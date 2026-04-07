@@ -5,7 +5,12 @@ Blender scene and returns it ready for use as a mesh base.
 
 from typing import Tuple
 
-from .prefab_library import PrefabEntry, get_prefab, get_prefab_path, is_prefab_downloaded
+from .prefab_library import (
+    PrefabEntry,
+    get_prefab,
+    get_prefab_path,
+    is_prefab_downloaded,
+)
 
 
 def load_prefab_mesh(name: str, prefabs_dir: str = 'prefabs') -> Tuple:
@@ -49,3 +54,13 @@ def load_prefab_mesh(name: str, prefabs_dir: str = 'prefabs') -> Tuple:
         )
 
     return importer.mesh, entry
+
+
+def load_prefab_mesh_if_requested(prefab_name: str | None):
+    """Load a prefab mesh when ``prefab_name`` is set; otherwise return None."""
+    if not prefab_name:
+        return None
+    print(f"📦 Loading prefab: {prefab_name}")
+    mesh, entry = load_prefab_mesh(prefab_name)
+    print(f"✅ Prefab loaded: {entry.description}")
+    return mesh

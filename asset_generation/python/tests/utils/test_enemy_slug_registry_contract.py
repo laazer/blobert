@@ -11,8 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.utils.constants import EnemyTypes
 from src.utils import enemy_slug_registry
+from src.utils.constants import EnemyTypes
 
 # Frozen snapshots — must match pre-refactor get_animated / get_static order.
 _EXPECTED_ANIMATED = [
@@ -56,6 +56,14 @@ def test_ETRP_03_get_methods_match_registry_and_get_all_concat() -> None:
     assert EnemyTypes.get_static() == _EXPECTED_STATIC
     assert EnemyTypes.get_all() == _EXPECTED_ANIMATED + _EXPECTED_STATIC
     assert EnemyTypes.get_all() == EnemyTypes.get_animated() + EnemyTypes.get_static()
+
+
+def test_ETRP_05_animated_enemy_builder_matches_registry() -> None:
+    """AnimatedEnemyBuilder.ENEMY_CLASSES keys/order match ANIMATED_SLUGS."""
+    from src.enemies.animated import AnimatedEnemyBuilder
+
+    assert list(AnimatedEnemyBuilder.ENEMY_CLASSES.keys()) == list(enemy_slug_registry.ANIMATED_SLUGS)
+    assert set(AnimatedEnemyBuilder.ENEMY_CLASSES.keys()) == set(enemy_slug_registry.ANIMATED_SLUGS)
 
 
 def test_ETRP_04_import_order_main_style_no_cycle() -> None:

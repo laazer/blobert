@@ -2,31 +2,34 @@
 Keyframe system for animation creation
 """
 
+from __future__ import annotations
+
 import bpy
-from mathutils import Vector, Euler
+
+from ..core.rig_types import RigDefinition
 
 
-def create_simple_armature(name, bone_positions):
-    """Create basic armature with given bone layout"""
+def create_simple_armature(armature_name: str, rig: RigDefinition):
+    """Create basic armature from a typed :class:`RigDefinition`."""
     bpy.ops.object.armature_add()
     armature = bpy.context.active_object
-    armature.name = name
-    
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.armature.select_all(action='SELECT')
+    armature.name = armature_name
+
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.armature.select_all(action="SELECT")
     bpy.ops.armature.delete()
-    
-    bones_created = {}
-    for bone_name, (head_pos, tail_pos, parent) in bone_positions.items():
-        bone = armature.data.edit_bones.new(bone_name)
-        bone.head = head_pos
-        bone.tail = tail_pos
-        bones_created[bone_name] = bone
-        
-        if parent and parent in bones_created:
-            bone.parent = bones_created[parent]
-    
-    bpy.ops.object.mode_set(mode='OBJECT')
+
+    bones_created: dict[str, object] = {}
+    for spec in rig.bones:
+        edit_bone = armature.data.edit_bones.new(spec.name)
+        edit_bone.head = spec.head
+        edit_bone.tail = spec.tail
+        bones_created[spec.name] = edit_bone
+
+        if spec.parent_name and spec.parent_name in bones_created:
+            edit_bone.parent = bones_created[spec.parent_name]
+
+    bpy.ops.object.mode_set(mode="OBJECT")
     return armature
 
 

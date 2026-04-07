@@ -8,42 +8,22 @@ import random
 import sys
 
 # Blender imports
-import bpy
 
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.enemies.animated import AnimatedEnemyBuilder
+from src.enemies.animated_pipeline import setup_blender_scene
 from src.enemies.base_enemy import export_enemy
 from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
+from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.constants import ExportConfig
 
 
 def setup_scene():
-    """Set up Blender scene for enemy generation"""
-    clear_scene()
-    
-    # Basic camera setup
-    bpy.ops.object.camera_add(location=(7, -7, 5))
-    camera = bpy.context.active_object
-    camera.rotation_euler = (1.1, 0, 0.785398)  # Look down at center
-    
-    # Basic lighting
-    bpy.ops.object.light_add(type='SUN', location=(4, 4, 8))
-    light = bpy.context.active_object
-    light.data.energy = 3.0
-
-
-def _load_prefab_mesh_if_requested(prefab_name: str):
-    """Load a prefab mesh from the prefabs/ directory, or return None."""
-    if not prefab_name:
-        return None
-    from src.prefabs.prefab_loader import load_prefab_mesh
-    print(f"📦 Loading prefab: {prefab_name}")
-    mesh, entry = load_prefab_mesh(prefab_name)
-    print(f"✅ Prefab loaded: {entry.description}")
-    return mesh
+    """Set up Blender scene for enemy generation."""
+    setup_blender_scene()
 
 
 def generate_animated_enemy(
@@ -87,11 +67,12 @@ def generate_animated_enemy(
         # Generate enemy
         try:
             # Load prefab per-iteration (each clear_scene removes imported objects)
-            prefab_mesh = _load_prefab_mesh_if_requested(prefab_name)
+            prefab_mesh = load_prefab_mesh_if_requested(prefab_name)
 
-            armature, mesh, attack_profile = AnimatedEnemyBuilder.create_enemy(
+            built = AnimatedEnemyBuilder.create_enemy(
                 enemy_type, materials, rng, prefab_mesh=prefab_mesh
             )
+            armature, mesh, attack_profile = built.armature, built.mesh, built.attack_profile
 
             if armature and mesh:
                 suffix = f"_prefab_{prefab_name}" if prefab_name else ""

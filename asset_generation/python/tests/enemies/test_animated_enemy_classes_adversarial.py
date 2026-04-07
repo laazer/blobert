@@ -1,5 +1,6 @@
 """
-Adversarial tests for AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk, AnimatedEmberImp.
+Adversarial tests for animated enemy classes (including registration splits and
+slug/armature copy-paste guards).
 Pure Python — no bpy import. Runs via: uv run pytest tests/
 
 These tests target structural invariants and mutation surfaces NOT covered by
@@ -17,17 +18,23 @@ import inspect
 import unittest
 
 from src.enemies.animated import (
-    AnimatedEnemyBuilder,
     AnimatedAcidSpitter,
-    AnimatedClawCrawler,
-    AnimatedCarapaceHusk,
     AnimatedAdhesionBug,
-    AnimatedTarSlug,
+    AnimatedCarapaceHusk,
+    AnimatedClawCrawler,
     AnimatedEmberImp,
+    AnimatedEnemyBuilder,
+    AnimatedTarSlug,
 )
-from src.enemies.base_enemy import BaseEnemy
 from src.utils.constants import EnemyTypes
 from src.utils.materials import MaterialThemes
+
+
+def _assert_typed_rig_on_class(testcase: unittest.TestCase, cls: type) -> None:
+    """Concrete enemy defines get_rig_definition with rig_from_bone_map."""
+    testcase.assertIn("get_rig_definition", cls.__dict__)
+    gsrc = inspect.getsource(cls.get_rig_definition)
+    testcase.assertIn("rig_from_bone_map", gsrc)
 
 
 # ---------------------------------------------------------------------------
@@ -549,6 +556,8 @@ class TestNewClassesAdversarial(unittest.TestCase):
         (i.e., the new classes provide their own concrete implementations)
       - apply_materials source on new classes does NOT reference the wrong key
         (e.g. acid_spitter's apply_materials must not contain 'tar_slug')
+      - create_armature passes only this enemy's slug to create_simple_armature
+        (per-class rigs — no other animated enemy's slug string)
     """
 
     def test_BPG_ADV_CLASS_01_three_new_classes_are_distinct_objects(self):
@@ -586,54 +595,33 @@ class TestNewClassesAdversarial(unittest.TestCase):
             f"New class(es) are the same object as an existing class: {overlap}",
         )
 
-    def test_BPG_ADV_CLASS_03_acid_spitter_create_body_is_overridden_not_inherited(self):
-        """
-        BPG-ADV-CLASS-03: AnimatedAcidSpitter.create_body is defined on the class
-        itself, not inherited from BaseEnemy.
-
-        Mutation surface: Forgetting to implement create_body in the subclass
-        would leave the abstract method in place and fail at runtime, but
-        introspection (hasattr) would still return True because BaseEnemy
-        defines the abstract method. This test checks ownership.
-        """
+    def test_BPG_ADV_CLASS_03_acid_spitter_build_mesh_parts_is_overridden(self):
         self.assertIn(
-            'create_body',
+            "build_mesh_parts",
             AnimatedAcidSpitter.__dict__,
-            "AnimatedAcidSpitter.create_body is not defined on the class itself — "
-            "it may be inherited from BaseEnemy rather than overridden.",
+            "AnimatedAcidSpitter.build_mesh_parts must be defined on the class.",
         )
 
-    def test_BPG_ADV_CLASS_04_claw_crawler_create_body_is_overridden_not_inherited(self):
-        """
-        BPG-ADV-CLASS-04: Same as CLASS-03 for AnimatedClawCrawler.
-        """
+    def test_BPG_ADV_CLASS_04_claw_crawler_build_mesh_parts_is_overridden(self):
         self.assertIn(
-            'create_body',
+            "build_mesh_parts",
             AnimatedClawCrawler.__dict__,
-            "AnimatedClawCrawler.create_body is not defined on the class itself.",
+            "AnimatedClawCrawler.build_mesh_parts must be defined on the class.",
         )
 
-    def test_BPG_ADV_CLASS_05_carapace_husk_create_body_is_overridden_not_inherited(self):
-        """
-        BPG-ADV-CLASS-05: Same as CLASS-03 for AnimatedCarapaceHusk.
-        """
+    def test_BPG_ADV_CLASS_05_carapace_husk_build_mesh_parts_is_overridden(self):
         self.assertIn(
-            'create_body',
+            "build_mesh_parts",
             AnimatedCarapaceHusk.__dict__,
-            "AnimatedCarapaceHusk.create_body is not defined on the class itself.",
+            "AnimatedCarapaceHusk.build_mesh_parts must be defined on the class.",
         )
 
     def test_BPG_ADV_CLASS_06_acid_spitter_apply_materials_does_not_reference_wrong_key(self):
         """
-        BPG-ADV-CLASS-06: AnimatedAcidSpitter.apply_materials source does NOT
-        contain 'tar_slug', 'ember_imp', 'adhesion_bug', 'claw_crawler', or
-        'carapace_husk' as the get_enemy_materials key.
-
-        Mutation surface: Copy-paste from an existing class would carry the
-        wrong string literal. The primary suite only verifies the presence of
-        the correct key — not the absence of wrong keys.
+        BPG-ADV-CLASS-06: AnimatedAcidSpitter.apply_themed_materials source does NOT
+        contain wrong get_enemy_materials keys.
         """
-        source = inspect.getsource(AnimatedAcidSpitter.apply_materials)
+        source = inspect.getsource(AnimatedAcidSpitter.apply_themed_materials)
         wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
                       "'claw_crawler'", "'carapace_husk'"]
         for wrong in wrong_keys:
@@ -641,15 +629,15 @@ class TestNewClassesAdversarial(unittest.TestCase):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedAcidSpitter.apply_materials source contains wrong key {wrong}.",
+                    f"AnimatedAcidSpitter.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
     def test_BPG_ADV_CLASS_07_claw_crawler_apply_materials_does_not_reference_wrong_key(self):
         """
-        BPG-ADV-CLASS-07: AnimatedClawCrawler.apply_materials source does NOT
+        BPG-ADV-CLASS-07: AnimatedClawCrawler.apply_themed_materials source does NOT
         contain wrong enemy keys.
         """
-        source = inspect.getsource(AnimatedClawCrawler.apply_materials)
+        source = inspect.getsource(AnimatedClawCrawler.apply_themed_materials)
         wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
                       "'acid_spitter'", "'carapace_husk'"]
         for wrong in wrong_keys:
@@ -657,15 +645,15 @@ class TestNewClassesAdversarial(unittest.TestCase):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedClawCrawler.apply_materials source contains wrong key {wrong}.",
+                    f"AnimatedClawCrawler.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
     def test_BPG_ADV_CLASS_08_carapace_husk_apply_materials_does_not_reference_wrong_key(self):
         """
-        BPG-ADV-CLASS-08: AnimatedCarapaceHusk.apply_materials source does NOT
+        BPG-ADV-CLASS-08: AnimatedCarapaceHusk.apply_themed_materials source does NOT
         contain wrong enemy keys.
         """
-        source = inspect.getsource(AnimatedCarapaceHusk.apply_materials)
+        source = inspect.getsource(AnimatedCarapaceHusk.apply_themed_materials)
         wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
                       "'acid_spitter'", "'claw_crawler'"]
         for wrong in wrong_keys:
@@ -673,7 +661,7 @@ class TestNewClassesAdversarial(unittest.TestCase):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedCarapaceHusk.apply_materials source contains wrong key {wrong}.",
+                    f"AnimatedCarapaceHusk.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
     def test_BPG_ADV_CLASS_09_acid_spitter_get_body_type_does_not_reference_wrong_type(self):
@@ -731,58 +719,14 @@ class TestNewClassesAdversarial(unittest.TestCase):
             "AnimatedCarapaceHusk.get_body_type references QUADRUPED — should be HUMANOID.",
         )
 
-    def test_BPG_ADV_CLASS_12_acid_spitter_create_armature_does_not_call_wrong_builder(self):
-        """
-        BPG-ADV-CLASS-12: AnimatedAcidSpitter.create_armature source does NOT
-        reference create_quadruped_armature or create_humanoid_armature.
+    def test_BPG_ADV_CLASS_12_acid_spitter_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedAcidSpitter)
 
-        Mutation surface: Copy-paste from ClawCrawler or EmberImp.
-        """
-        source = inspect.getsource(AnimatedAcidSpitter.create_armature)
-        self.assertNotIn(
-            'create_quadruped_armature',
-            source,
-            "AnimatedAcidSpitter.create_armature calls create_quadruped_armature.",
-        )
-        self.assertNotIn(
-            'create_humanoid_armature',
-            source,
-            "AnimatedAcidSpitter.create_armature calls create_humanoid_armature.",
-        )
+    def test_BPG_ADV_CLASS_13_claw_crawler_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedClawCrawler)
 
-    def test_BPG_ADV_CLASS_13_claw_crawler_create_armature_does_not_call_wrong_builder(self):
-        """
-        BPG-ADV-CLASS-13: AnimatedClawCrawler.create_armature source does NOT
-        reference create_blob_armature or create_humanoid_armature.
-        """
-        source = inspect.getsource(AnimatedClawCrawler.create_armature)
-        self.assertNotIn(
-            'create_blob_armature',
-            source,
-            "AnimatedClawCrawler.create_armature calls create_blob_armature.",
-        )
-        self.assertNotIn(
-            'create_humanoid_armature',
-            source,
-            "AnimatedClawCrawler.create_armature calls create_humanoid_armature.",
-        )
-
-    def test_BPG_ADV_CLASS_14_carapace_husk_create_armature_does_not_call_wrong_builder(self):
-        """
-        BPG-ADV-CLASS-14: AnimatedCarapaceHusk.create_armature source does NOT
-        reference create_blob_armature or create_quadruped_armature.
-        """
-        source = inspect.getsource(AnimatedCarapaceHusk.create_armature)
-        self.assertNotIn(
-            'create_blob_armature',
-            source,
-            "AnimatedCarapaceHusk.create_armature calls create_blob_armature.",
-        )
-        self.assertNotIn(
-            'create_quadruped_armature',
-            source,
-            "AnimatedCarapaceHusk.create_armature calls create_quadruped_armature.",
-        )
+    def test_BPG_ADV_CLASS_14_carapace_husk_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedCarapaceHusk)
 
     def test_BPG_ADV_CLASS_15_all_new_classes_are_concrete_subclasses_not_abstract(self):
         """
@@ -793,7 +737,6 @@ class TestNewClassesAdversarial(unittest.TestCase):
         via hasattr — this verifies the ABC machinery agrees the class is concrete
         by checking __abstractmethods__ is empty or absent.
         """
-        import abc
         for cls in [AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk]:
             with self.subTest(cls=cls.__name__):
                 abstract_methods = getattr(cls, '__abstractmethods__', frozenset())
@@ -803,17 +746,17 @@ class TestNewClassesAdversarial(unittest.TestCase):
                     f"{cls.__name__} has unresolved abstract methods: {abstract_methods}",
                 )
 
-    def test_BPG_ADV_CLASS_16_adhesion_bug_create_body_is_overridden_not_inherited(self):
-        """BPG-ADV-CLASS-16: AnimatedAdhesionBug.create_body is defined on the class."""
+    def test_BPG_ADV_CLASS_16_adhesion_bug_build_mesh_parts_is_overridden(self):
+        """BPG-ADV-CLASS-16: AnimatedAdhesionBug.build_mesh_parts is defined on the class."""
         self.assertIn(
-            'create_body',
+            "build_mesh_parts",
             AnimatedAdhesionBug.__dict__,
-            "AnimatedAdhesionBug.create_body is not defined on the class itself.",
+            "AnimatedAdhesionBug.build_mesh_parts is not defined on the class itself.",
         )
 
     def test_BPG_ADV_CLASS_17_adhesion_bug_apply_materials_does_not_reference_wrong_key(self):
-        """BPG-ADV-CLASS-17: AnimatedAdhesionBug.apply_materials has no wrong enemy keys."""
-        source = inspect.getsource(AnimatedAdhesionBug.apply_materials)
+        """BPG-ADV-CLASS-17: AnimatedAdhesionBug.apply_themed_materials has no wrong enemy keys."""
+        source = inspect.getsource(AnimatedAdhesionBug.apply_themed_materials)
         wrong_keys = ["'tar_slug'", "'ember_imp'", "'acid_spitter'",
                       "'claw_crawler'", "'carapace_husk'"]
         for wrong in wrong_keys:
@@ -821,7 +764,7 @@ class TestNewClassesAdversarial(unittest.TestCase):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedAdhesionBug.apply_materials source contains wrong key {wrong}.",
+                    f"AnimatedAdhesionBug.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
     def test_BPG_ADV_CLASS_18_adhesion_bug_get_body_type_does_not_reference_wrong_type(self):
@@ -838,19 +781,14 @@ class TestNewClassesAdversarial(unittest.TestCase):
             "AnimatedAdhesionBug.get_body_type references HUMANOID — should be QUADRUPED.",
         )
 
-    def test_BPG_ADV_CLASS_19_adhesion_bug_create_armature_does_not_call_wrong_builder(self):
-        """BPG-ADV-CLASS-19: AnimatedAdhesionBug.create_armature uses quadruped builder only."""
-        source = inspect.getsource(AnimatedAdhesionBug.create_armature)
-        self.assertNotIn(
-            'create_blob_armature',
-            source,
-            "AnimatedAdhesionBug.create_armature calls create_blob_armature.",
-        )
-        self.assertNotIn(
-            'create_humanoid_armature',
-            source,
-            "AnimatedAdhesionBug.create_armature calls create_humanoid_armature.",
-        )
+    def test_BPG_ADV_CLASS_19_adhesion_bug_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedAdhesionBug)
+
+    def test_BPG_ADV_CLASS_20_tar_slug_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedTarSlug)
+
+    def test_BPG_ADV_CLASS_21_ember_imp_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedEmberImp)
 
 
 if __name__ == '__main__':

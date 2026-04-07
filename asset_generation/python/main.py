@@ -367,31 +367,16 @@ def generate_animated_enemy_from_blueprint(blueprint):
     project_root = os.path.dirname(__file__)
     script_content = f"""
 import sys, os
-import random
-
-# Add project paths
-sys.path.insert(0, "{project_root}")
-sys.path.insert(0, os.path.join("{project_root}", "src"))
-
-import bpy
-from src.core.blender_utils import clear_scene
-from src.materials.material_system import setup_materials
-from src.enemies.animated import AnimatedEnemyBuilder
-from src.enemies.base_enemy import export_enemy
-
-# Clear and setup
-clear_scene()
-materials = setup_materials()
-
-# Generate with blueprint settings
-rng = random.Random({blueprint.generation_seed})
-armature, mesh, attack_profile = AnimatedEnemyBuilder.create_enemy("{blueprint.enemy_type}", materials, rng)
-
-if armature and mesh:
-    export_enemy(armature, mesh, "{blueprint.name}", "{ExportConfig.ANIMATED_DIR}", attack_profile)
-    print("✅ Generated {blueprint.name}")
-else:
-    print("❌ Generation failed")
+sys.path.insert(0, {repr(project_root)})
+sys.path.insert(0, {repr(os.path.join(project_root, "src"))})
+import bpy  # noqa: F401
+from src.enemies.animated_pipeline import run_blueprint_export_in_blender
+run_blueprint_export_in_blender(
+    blueprint_name={repr(blueprint.name)},
+    enemy_type={repr(blueprint.enemy_type)},
+    generation_seed={blueprint.generation_seed},
+    export_dir={repr(ExportConfig.ANIMATED_DIR)},
+)
 """
     
     return run_blender_script(script_content)
