@@ -173,6 +173,14 @@ case "$PROVIDER" in
     echo "blog-post: using Cursor Agent (${CURSOR_AGENT_BIN})…"
     run_cursor_agent
     LAST_RC=$?
+    if [[ "$LAST_RC" -ne 0 ]] && command -v claude >/dev/null 2>&1; then
+      echo "blog-post: cursor provider failed (rc=$LAST_RC); retrying with Claude…"
+      run_claude
+      LAST_RC=$?
+      if [[ "$LAST_RC" -eq 0 ]]; then
+        PROVIDER="claude"
+      fi
+    fi
     ;;
   *)
     echo "blog-post: internal error — unknown provider '$PROVIDER'"
