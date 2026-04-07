@@ -6,10 +6,6 @@ import { RunCmd } from "../../types";
 import {
   ALL_CMDS,
   CMD_CONFIG,
-  clampCount,
-  COUNT_MAX,
-  COUNT_MIN,
-  COUNT_PRESETS,
   formatCommandPreview,
   ENEMY_FINISHES,
   getEnemyOptions,
@@ -84,10 +80,10 @@ export function CommandPanel() {
   const clearTerminal = useAppStore((state) => state.clearTerminal);
   const saveFile = useAppStore((state) => state.saveFile);
   const isDirty = useAppStore((state) => state.isDirty);
+  const setCommandContext = useAppStore((state) => state.setCommandContext);
 
   const [cmd, setCmd] = useState<RunCmd>("animated");
   const [enemy, setEnemy] = useState("adhesion_bug");
-  const [count, setCount] = useState(1);
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("normal");
   const [finish, setFinish] = useState("glossy");
@@ -99,7 +95,7 @@ export function CommandPanel() {
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
   const [cmdTransitionHint, setCmdTransitionHint] = useState<string | null>(null);
 
-  const { start, startTests } = useStreamingOutput();
+  const { start } = useStreamingOutput();
 
   useEffect(() => {
     fetchEnemies()
@@ -115,10 +111,13 @@ export function CommandPanel() {
 
   const cfg = CMD_CONFIG[cmd];
   const showEnemy = cfg.showEnemy;
-  const showCount = cfg.showCount;
   const showDescription = cfg.showDescription;
   const showDifficulty = cfg.showDifficulty;
   const enemyOptions = getEnemyOptions(cmd, enemies);
+
+  useEffect(() => {
+    setCommandContext({ cmd, enemy: showEnemy ? enemy : "" });
+  }, [cmd, enemy, showEnemy, setCommandContext]);
 
   useEffect(() => {
     const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemies);
@@ -127,8 +126,8 @@ export function CommandPanel() {
 
   useEffect(() => {
     if (commandPreviewDirty) return;
-    setCommandPreview(formatCommandPreview({ cmd, enemy, count, description, difficulty, finish, hexColor }));
-  }, [cmd, enemy, count, description, difficulty, finish, hexColor, commandPreviewDirty]);
+    setCommandPreview(formatCommandPreview({ cmd, enemy, description, difficulty, finish, hexColor }));
+  }, [cmd, enemy, description, difficulty, finish, hexColor, commandPreviewDirty]);
 
   function handleCmdChange(nextCmd: RunCmd) {
     const nextCfg = CMD_CONFIG[nextCmd];
@@ -138,11 +137,9 @@ export function CommandPanel() {
     setCommandPreviewError(null);
     const dropped: string[] = [];
     if (prevCfg.showEnemy && !nextCfg.showEnemy && enemy.trim()) dropped.push("enemy");
-    if (prevCfg.showCount && !nextCfg.showCount) dropped.push("count");
     if (prevCfg.showDescription && !nextCfg.showDescription && description.trim()) dropped.push("description");
     if (prevCfg.showDifficulty && !nextCfg.showDifficulty) dropped.push("difficulty");
     if (!nextCfg.showEnemy) setEnemy("");
-    if (!nextCfg.showCount) setCount(COUNT_MIN);
     if (!nextCfg.showDescription) setDescription("");
     if (!nextCfg.showDifficulty) setDifficulty("normal");
     setCmdTransitionHint(dropped.length > 0 ? `Switched to '${nextCmd}': ${dropped.join(", ")} hidden/reset.` : null);
@@ -157,7 +154,6 @@ export function CommandPanel() {
     const next = parsed.next;
     setCmd(next.cmd);
     setEnemy(next.enemy ?? "");
-    setCount(clampCount(next.count ?? COUNT_MIN));
     setDescription(next.description ?? "");
     setDifficulty(next.difficulty ?? "normal");
     setFinish(next.finish ?? "glossy");
@@ -185,14 +181,14 @@ export function CommandPanel() {
     if (cmd === "animated" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
       return "Custom color must be in #RRGGBB format.";
     }
-    if (showCount && (!Number.isFinite(count) || count < COUNT_MIN || count > COUNT_MAX)) return `Count must be ${COUNT_MIN}-${COUNT_MAX}.`;
     return null;
   })();
 
   async function handleRun() {
     if (isDirty) await saveFile();
     if (runValidationError) return;
-    start({ cmd, enemy: showEnemy ? enemy : undefined, count: showCount ? count : undefined,
+    const singleOutputCmd = cmd === "animated" || cmd === "player" || cmd === "level";
+    start({ cmd, enemy: showEnemy ? enemy : undefined, count: singleOutputCmd ? 1 : undefined,
             description: showDescription ? description : undefined,
             difficulty: showDifficulty ? difficulty : undefined,
             finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
@@ -224,31 +220,6 @@ export function CommandPanel() {
           </>
         )}
 
-        {showCount && (
-          <>
-            <span style={s.label}>count</span>
-            <button style={s.select} onClick={() => setCount((v) => clampCount(v - 1))} type="button">-</button>
-            <input
-              style={s.input}
-              type="number"
-              min={COUNT_MIN}
-              max={COUNT_MAX}
-              value={count}
-              onChange={(e) => setCount(clampCount(parseInt(e.target.value, 10)))}
-            />
-            <button style={s.select} onClick={() => setCount((v) => clampCount(v + 1))} type="button">+</button>
-            {COUNT_PRESETS.map((value) => (
-              <button
-                key={value}
-                style={{ ...s.select, background: count === value ? "#0e639c" : "#3c3c3c", color: "#d4d4d4" }}
-                onClick={() => setCount(value)}
-                type="button"
-              >
-                {value}
-              </button>
-            ))}
-          </>
-        )}
       </div>
 
       <div style={s.row}>
@@ -261,12 +232,12 @@ export function CommandPanel() {
             setCommandPreviewDirty(true);
             setCommandPreviewError(null);
           }}
-          placeholder='animated adhesion_bug 1 --difficulty normal'
+          placeholder='animated adhesion_bug --finish matte --hex-color #4b627c'
         />
         <button style={s.btn} onClick={applyParsedPreview} disabled={!commandPreviewDirty}>Apply</button>
       </div>
       <div style={s.row}>
-        <span style={s.helperText}>Format: &lt;cmd&gt; [enemy|color] [count] [--description \"...\"] [--difficulty ...] [--finish ...] [--hex-color #RRGGBB]</span>
+        <span style={s.helperText}>Format: &lt;cmd&gt; [enemy|color] [--description \"...\"] [--difficulty ...] [--finish ...] [--hex-color #RRGGBB]</span>
       </div>
       {commandPreviewError && <div style={s.errorText}>{commandPreviewError}</div>}
       {cmdTransitionHint && <div style={s.warningText}>{cmdTransitionHint}</div>}
@@ -327,9 +298,6 @@ export function CommandPanel() {
         )}
         <button style={{ ...s.btn, background: "#444" }} onClick={clearTerminal} disabled={isRunning}>
           Clear
-        </button>
-        <button style={{ ...s.btn, background: "#555" }} onClick={startTests} disabled={isRunning}>
-          Run pytest
         </button>
       </div>
     </div>

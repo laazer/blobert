@@ -237,7 +237,8 @@ class TestEMSI3UniformGeometryScaling(unittest.TestCase):
                     expected_two,
                     msg=f"scale=2.0 must match scaled location/scale kwargs vs scale=1.0 for {model_type}",
                 )
-                for (_, kw1), (_, kw2) in zip(log_one, log_two, strict=True):
+                self.assertEqual(len(log_one), len(log_two))
+                for (_, kw1), (_, kw2) in zip(log_one, log_two):
                     self.assertEqual(
                         {k: v for k, v in kw1.items() if k not in ("location", "scale")},
                         {k: v for k, v in kw2.items() if k not in ("location", "scale")},

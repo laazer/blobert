@@ -20,6 +20,23 @@ const s: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     borderBottom: "1px solid #3c3c3c",
     marginBottom: 4,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  hideBtn: {
+    background: "#3c3c3c",
+    color: "#d4d4d4",
+    border: "1px solid #555",
+    borderRadius: 3,
+    padding: "2px 8px",
+    cursor: "pointer",
+    fontSize: 11,
+    fontWeight: 500,
+    textTransform: "none",
+    letterSpacing: "normal",
+    flexShrink: 0,
   },
 };
 
@@ -65,7 +82,7 @@ function FileItem({ node, depth, selectedFile, onSelect }: {
   );
 }
 
-export function FileTree() {
+export function FileTree({ onRequestHide }: { onRequestHide?: () => void }) {
   const fileTree = useAppStore((s) => s.fileTree);
   const selectedFile = useAppStore((s) => s.selectedFile);
   const loadFileTree = useAppStore((s) => s.loadFileTree);
@@ -77,7 +94,14 @@ export function FileTree() {
 
   return (
     <div style={s.container}>
-      <div style={s.header}>src/</div>
+      <div style={s.header}>
+        <span>src/</span>
+        {onRequestHide ? (
+          <button type="button" style={s.hideBtn} onClick={onRequestHide} title="Hide file tree">
+            Hide
+          </button>
+        ) : null}
+      </div>
       {fileTree.map((node) => (
         <FileItem key={node.path} node={node} depth={0} selectedFile={selectedFile} onSelect={selectFile} />
       ))}

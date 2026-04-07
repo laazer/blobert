@@ -28,7 +28,7 @@ export function EditorPane() {
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
         background: "#1e1e1e", color: "#555", fontSize: 13,
       }}>
-        Select a file from the tree
+        Select a file — click Files on the left to open the tree
       </div>
     );
   }

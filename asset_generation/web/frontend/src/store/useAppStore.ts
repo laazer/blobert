@@ -8,6 +8,12 @@ import {
   fetchAssets,
 } from "../api/client";
 
+export type CommandPanelContext = {
+  cmd: RunCmd;
+  /** Enemy slug, player color, or level object id — empty when the cmd has no enemy field. */
+  enemy: string;
+};
+
 let _lineId = 0;
 
 interface AppState {
@@ -16,6 +22,10 @@ interface AppState {
   selectedFile: string | null;
   loadFileTree: () => Promise<void>;
   selectFile: (path: string) => Promise<void>;
+
+  /** Mirrors CommandPanel selections for preview-side shortcuts (model/animation nav). */
+  commandContext: CommandPanelContext;
+  setCommandContext: (ctx: CommandPanelContext) => void;
 
   // Editor
   editorContent: string;
@@ -50,6 +60,12 @@ export const useAppStore = create<AppState>()(
     // File tree
     fileTree: [],
     selectedFile: null,
+    commandContext: { cmd: "animated", enemy: "adhesion_bug" },
+    setCommandContext(ctx) {
+      set((s) => {
+        s.commandContext = ctx;
+      });
+    },
     async loadFileTree() {
       const tree = await fetchFileTree();
       set((s) => { s.fileTree = tree; });

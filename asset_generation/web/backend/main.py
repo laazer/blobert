@@ -1,11 +1,10 @@
 """
 FastAPI backend for the Live Asset Editor.
 """
+from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from core.config import settings
-from routers import files, run, assets, meta, tests
+from routers import assets, files, meta, run
 
 app = FastAPI(title="Blobert Asset Editor API")
 
@@ -21,7 +20,6 @@ app.include_router(files.router)
 app.include_router(run.router)
 app.include_router(assets.router)
 app.include_router(meta.router)
-app.include_router(tests.router)
 
 
 @app.get("/api/health")

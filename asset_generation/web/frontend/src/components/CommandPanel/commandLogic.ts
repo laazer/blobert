@@ -1,34 +1,25 @@
 import { RunCmd } from "../../types";
 
 export const ALL_CMDS: RunCmd[] = ["animated", "player", "level", "smart", "stats", "test"];
-export const COUNT_MIN = 1;
-export const COUNT_MAX = 10;
-export const COUNT_PRESETS = [1, 3, 5];
 export const PLAYER_COLORS = ["blue", "green", "pink", "purple", "yellow", "orange", "red", "white"];
 export const PLAYER_FINISHES = ["glossy", "matte", "metallic", "gel"];
 export const ENEMY_FINISHES = ["default", "glossy", "matte", "metallic", "gel"];
 
 export type CommandConfig = {
   showEnemy: boolean;
-  showCount: boolean;
   showDescription: boolean;
   showDifficulty: boolean;
   requiresEnemy: boolean;
 };
 
 export const CMD_CONFIG: Record<RunCmd, CommandConfig> = {
-  animated: { showEnemy: true, showCount: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
-  player: { showEnemy: true, showCount: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
-  level: { showEnemy: true, showCount: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
-  smart: { showEnemy: false, showCount: false, showDescription: true, showDifficulty: true, requiresEnemy: false },
-  stats: { showEnemy: true, showCount: false, showDescription: false, showDifficulty: true, requiresEnemy: true },
-  test: { showEnemy: false, showCount: false, showDescription: false, showDifficulty: false, requiresEnemy: false },
+  animated: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
+  player: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
+  level: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
+  smart: { showEnemy: false, showDescription: true, showDifficulty: true, requiresEnemy: false },
+  stats: { showEnemy: true, showDescription: false, showDifficulty: true, requiresEnemy: true },
+  test: { showEnemy: false, showDescription: false, showDifficulty: false, requiresEnemy: false },
 };
-
-export function clampCount(raw: number): number {
-  if (Number.isNaN(raw)) return COUNT_MIN;
-  return Math.min(COUNT_MAX, Math.max(COUNT_MIN, raw));
-}
 
 export function getEnemyOptions(cmd: RunCmd, enemies: string[]): string[] {
   return cmd === "player" ? PLAYER_COLORS : enemies;
@@ -56,7 +47,6 @@ function tokenizeCommand(value: string): string[] {
 export function formatCommandPreview(options: {
   cmd: RunCmd;
   enemy: string;
-  count: number;
   description: string;
   difficulty: string;
   finish: string;
@@ -65,7 +55,6 @@ export function formatCommandPreview(options: {
   const cfg = CMD_CONFIG[options.cmd];
   const parts: string[] = [options.cmd];
   if (cfg.showEnemy && options.enemy.trim()) parts.push(options.enemy.trim());
-  if (cfg.showCount) parts.push(String(clampCount(options.count)));
   if (cfg.showDescription && options.description.trim()) {
     const clean = options.description.trim().replace(/"/g, '\\"');
     parts.push(`--description "${clean}"`);
@@ -84,7 +73,6 @@ export function parseCommandPreview(preview: string): {
   next: {
     cmd: RunCmd;
     enemy?: string;
-    count?: number;
     description?: string;
     difficulty?: string;
     finish?: string;
@@ -104,7 +92,6 @@ export function parseCommandPreview(preview: string): {
   const next: {
     cmd: RunCmd;
     enemy?: string;
-    count?: number;
     description?: string;
     difficulty?: string;
     finish?: string;
@@ -116,13 +103,7 @@ export function parseCommandPreview(preview: string): {
     cursor += 1;
   }
   if (cfg.showEnemy && positional.length > 0) next.enemy = positional[0];
-  if (cfg.showCount && positional.length > 1) {
-    const parsedCount = Number.parseInt(positional[1], 10);
-    if (Number.isNaN(parsedCount)) return { next: null, error: "Count must be a number." };
-    next.count = clampCount(parsedCount);
-  }
-  if (cfg.showCount && positional.length > 2) return { next: null, error: "Too many positional values." };
-  if (!cfg.showCount && cfg.showEnemy && positional.length > 1) return { next: null, error: "Too many positional values." };
+  if (cfg.showEnemy && positional.length > 1) return { next: null, error: "Too many positional values." };
   if (!cfg.showEnemy && positional.length > 0) return { next: null, error: `'${cmd}' does not take positional enemy/count values.` };
   while (cursor < tokens.length) {
     const flag = tokens[cursor];

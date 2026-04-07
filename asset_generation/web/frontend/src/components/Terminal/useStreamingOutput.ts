@@ -82,35 +82,5 @@ export function useStreamingOutput() {
     };
   }
 
-  function startTests() {
-    // Reuse same hook with a fixed "cmd" that routes to tests endpoint
-    if (esRef.current) esRef.current.close();
-    const es = new EventSource("/api/tests/stream");
-    esRef.current = es;
-    setIsRunning(true);
-
-    es.addEventListener("log", (e: MessageEvent) => {
-      try { appendLine(JSON.parse(e.data).line); } catch { appendLine(e.data); }
-    });
-    es.addEventListener("done", () => {
-      appendLine("--- pytest done ---");
-      setIsRunning(false);
-      es.close();
-      esRef.current = null;
-    });
-    es.addEventListener("error", (e: MessageEvent) => {
-      try { appendLine(`--- pytest error: ${JSON.parse(e.data).message} ---`); } catch { appendLine("--- error ---"); }
-      setIsRunning(false);
-      es.close();
-      esRef.current = null;
-    });
-    es.onerror = () => {
-      appendLine("--- Connection lost ---");
-      setIsRunning(false);
-      es.close();
-      esRef.current = null;
-    };
-  }
-
-  return { start, startTests };
+  return { start };
 }
