@@ -2,24 +2,23 @@
 
 from __future__ import annotations
 
+from ...utils.procedural_constants import IMPORT_DEFAULT_BODY_HEIGHT
 from ..rig_types import RigDefinition
 from .blob_simple import BlobSimpleRig
 from .humanoid_simple import HumanoidSimpleRig
 from .quadruped_simple import QuadrupedSimpleRig
 
-_IMPORT_DEFAULT_SCALE = 1.0
-
 
 class _ImportBlobRig(BlobSimpleRig):
-    body_height = _IMPORT_DEFAULT_SCALE
+    body_height = IMPORT_DEFAULT_BODY_HEIGHT
 
 
 class _ImportHumanoidRig(HumanoidSimpleRig):
-    body_height = _IMPORT_DEFAULT_SCALE
+    body_height = IMPORT_DEFAULT_BODY_HEIGHT
 
 
 class _ImportQuadrupedRig(QuadrupedSimpleRig):
-    body_height = _IMPORT_DEFAULT_SCALE
+    body_height = IMPORT_DEFAULT_BODY_HEIGHT
 
 
 def imported_blob_rig() -> RigDefinition:

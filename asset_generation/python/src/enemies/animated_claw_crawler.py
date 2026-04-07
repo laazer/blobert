@@ -6,6 +6,7 @@ from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models import QuadrupedSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
+from ..utils.procedural_constants import CYLINDER_VERTICES_HEX, QUADRUPED_LEG_THICKNESS
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
@@ -55,7 +56,7 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             claw = create_cylinder(
                 location=(self.body_scale * 0.6, side * self.body_scale * 0.5, 0.1),
                 scale=(0.15, 0.15, claw_length),
-                vertices=6,
+                vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(claw)
 
@@ -69,8 +70,8 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             leg_length = random_variance(0.3, 0.08, self.rng)
             leg = create_cylinder(
                 location=(leg_x, leg_y, leg_z),
-                scale=(0.08, 0.08, leg_length),
-                vertices=6,
+                scale=(QUADRUPED_LEG_THICKNESS, QUADRUPED_LEG_THICKNESS, leg_length),
+                vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(leg)
 

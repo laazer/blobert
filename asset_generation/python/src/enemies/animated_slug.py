@@ -4,6 +4,7 @@ from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models import BlobSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
+from ..utils.procedural_constants import CYLINDER_VERTICES_HEX
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
@@ -35,7 +36,7 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             stalk = create_cylinder(
                 location=(self.length * 0.6, side * self.width * 0.3, self.height + 0.3),
                 scale=(0.05, 0.05, 0.3),
-                vertices=6,
+                vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(stalk)
 
