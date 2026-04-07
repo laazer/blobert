@@ -38,6 +38,22 @@ pre-commit:
       name: Python parse check (asset_generation)
       glob: "asset_generation/python/**/*.py"
       run: python3 -m py_compile {staged_files}
+    py-review:
+      name: Python reviewer (ruff lint/imports)
+      glob: "asset_generation/**/*.py"
+      run: .lefthook/scripts/py-review.sh {staged_files}
+    py-organization:
+      name: Python organization guardrails
+      glob: "asset_generation/**/*.py"
+      run: python3 .lefthook/scripts/py_organization_check.py {staged_files}
+    gd-review:
+      name: Godot script reviewer hygiene
+      glob: "**/*.gd"
+      run: python3 .lefthook/scripts/gd_review_check.py {staged_files}
+    gd-organization:
+      name: Godot script organization guardrails
+      glob: "**/*.gd"
+      run: python3 .lefthook/scripts/gd_organization_check.py {staged_files}
 
 pre-push:
   parallel: false
