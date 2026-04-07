@@ -1,16 +1,16 @@
 """Animated tar slug enemy builder."""
 
-from mathutils import Vector
-
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, rig_from_bone_map
+from ..core.rig_models import BlobSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy
+from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
-class AnimatedSlug(AnimatedEnemy):
+class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     """Elongated slug with blob movement"""
+
+    body_height = 1.0
 
     def build_mesh_parts(self):
         length = random_variance(2.0, 0.3, self.rng)
@@ -56,16 +56,6 @@ class AnimatedSlug(AnimatedEnemy):
                 apply_material_to_object(part, stalk_material)
             else:
                 apply_material_to_object(part, eye_material)
-
-    def get_rig_definition(self) -> RigDefinition:
-        s = self.height
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, s * 0.3)), None),
-                "body": (Vector((0, 0, s * 0.3)), Vector((0, 0, s * 0.8)), "root"),
-                "head": (Vector((0, 0, s * 0.8)), Vector((0, 0, s * 1.2)), "body"),
-            }
-        )
 
     def get_body_type(self):
         return EnemyBodyTypes.BLOB

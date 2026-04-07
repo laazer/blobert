@@ -26,19 +26,29 @@ from src.enemies.animated import (
     AnimatedSpider,
     AnimatedSpitter,
 )
+from src.enemies.animated_enemy import UsesSimpleRigMixin
 from src.utils.constants import EnemyTypes
 from src.utils.materials import MaterialThemes
 
 
 def _assert_typed_rig_on_class(testcase: unittest.TestCase, cls: type) -> None:
-    """Concrete enemy defines get_rig_definition delegating to rig_types helpers."""
-    testcase.assertIn("get_rig_definition", cls.__dict__)
-    gsrc = inspect.getsource(cls.get_rig_definition)
+    """Concrete enemy uses SimpleRigModel + mixin or defines get_rig_definition with rig helpers."""
     rig_helpers = (
         "rig_from_bone_map",
-        "humanoid_simple_rig_definition",
-        "quadruped_simple_rig_definition",
+        "HumanoidSimpleRig",
+        "QuadrupedSimpleRig",
+        "BlobSimpleRig",
     )
+    if UsesSimpleRigMixin in cls.__mro__:
+        testcase.assertIs(
+            cls.get_rig_definition,
+            UsesSimpleRigMixin.get_rig_definition,
+        )
+        gsrc = inspect.getsource(UsesSimpleRigMixin.get_rig_definition)
+        testcase.assertIn("self.rig_definition()", gsrc)
+        return
+    testcase.assertIn("get_rig_definition", cls.__dict__)
+    gsrc = inspect.getsource(cls.get_rig_definition)
     testcase.assertTrue(
         any(h in gsrc for h in rig_helpers),
         f"{cls.__name__}.get_rig_definition must use one of {rig_helpers}",

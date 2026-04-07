@@ -9,6 +9,13 @@ from ..core.rig_types import RigDefinition
 from .base_enemy import BaseEnemy
 
 
+class UsesSimpleRigMixin:
+    """Combine with a ``SimpleRigModel`` subclass and ``AnimatedEnemy``; rig scale is ``self.body_height``."""
+
+    def get_rig_definition(self) -> RigDefinition:
+        return self.rig_definition()
+
+
 class AnimatedEnemy(BaseEnemy):
     """Enemy with a RigDefinition-driven simple armature."""
 

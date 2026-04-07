@@ -15,7 +15,7 @@ from src.enemies.animated import (
     AnimatedSpider,
     AnimatedSpitter,
 )
-from src.enemies.animated_enemy import AnimatedEnemy
+from src.enemies.animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from src.enemies.base_enemy import BaseEnemy
 from src.utils.constants import EnemyTypes
 from src.utils.materials import MaterialThemes
@@ -46,12 +46,24 @@ class TestAnimatedEnemyClassContract(unittest.TestCase):
     """Each concrete enemy implements mesh + rig + body type."""
 
     def test_each_defines_build_mesh_parts_and_get_rig(self):
-        required_own = ("build_mesh_parts", "get_rig_definition", "apply_themed_materials", "get_body_type")
+        required_own = ("build_mesh_parts", "apply_themed_materials", "get_body_type")
         for cls in _ALL_ANIMATED:
             with self.subTest(cls=cls.__name__):
                 for name in required_own:
                     self.assertIn(name, cls.__dict__, f"{cls.__name__} must define {name}")
                 self.assertTrue(issubclass(cls, AnimatedEnemy))
+                self.assertIn(
+                    "body_height",
+                    cls.__dict__,
+                    f"{cls.__name__} must set body_height on the concrete class (rig scale)",
+                )
+                if UsesSimpleRigMixin in cls.__mro__:
+                    self.assertIs(
+                        cls.get_rig_definition,
+                        UsesSimpleRigMixin.get_rig_definition,
+                    )
+                else:
+                    self.assertIn("get_rig_definition", cls.__dict__)
 
     def test_armature_slug_via_self_name(self):
         src = inspect.getsource(AnimatedEnemy.create_armature)
@@ -61,16 +73,25 @@ class TestAnimatedEnemyClassContract(unittest.TestCase):
     def test_get_rig_uses_typed_helper(self):
         rig_helpers = (
             "rig_from_bone_map",
-            "humanoid_simple_rig_definition",
-            "quadruped_simple_rig_definition",
+            "HumanoidSimpleRig",
+            "QuadrupedSimpleRig",
+            "BlobSimpleRig",
         )
+        mixin_src = inspect.getsource(UsesSimpleRigMixin.get_rig_definition)
+        self.assertIn("self.rig_definition()", mixin_src)
         for cls in _ALL_ANIMATED:
             with self.subTest(cls=cls.__name__):
-                gsrc = inspect.getsource(cls.get_rig_definition)
-                self.assertTrue(
-                    any(h in gsrc for h in rig_helpers),
-                    f"{cls.__name__}.get_rig_definition must delegate via {rig_helpers}",
-                )
+                if UsesSimpleRigMixin in cls.__mro__:
+                    self.assertIs(
+                        cls.get_rig_definition,
+                        UsesSimpleRigMixin.get_rig_definition,
+                    )
+                else:
+                    gsrc = inspect.getsource(cls.get_rig_definition)
+                    self.assertTrue(
+                        any(h in gsrc for h in rig_helpers),
+                        f"{cls.__name__}.get_rig_definition must delegate via {rig_helpers}",
+                    )
 
 
 class TestEnemyTypesConstants(unittest.TestCase):

@@ -1,14 +1,16 @@
 """Animated adhesion bug enemy builder."""
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, quadruped_simple_rig_definition
+from ..core.rig_models import QuadrupedSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy
+from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
-class AnimatedSpider(AnimatedEnemy):
+class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     """Multi-segment bug with quadruped movement"""
+
+    body_height = 1.0
 
     def build_mesh_parts(self):
         """Create body, head, eyes, and legs."""
@@ -65,9 +67,6 @@ class AnimatedSpider(AnimatedEnemy):
             apply_material_to_object(self.parts[2 + i], eye_material)
         for i in range(6):
             apply_material_to_object(self.parts[2 + ec + i], leg_material)
-
-    def get_rig_definition(self) -> RigDefinition:
-        return quadruped_simple_rig_definition(self.body_scale)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

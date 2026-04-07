@@ -23,7 +23,6 @@ from utils.constants import (
     LevelObjectTypes,
     PlayerExportConfig,
 )
-from utils.enemy_slug_registry import normalize_animated_slug
 
 
 def _get_blender_path() -> str:
@@ -577,7 +576,7 @@ def _handle_prefabs_command(args) -> bool:
     print("  python main.py prefabs <prefab_name>")
     print()
     print("To use a prefab in generation:")
-    print("  python main.py animated adhesion_bug --prefab mantis")
+    print("  python main.py animated spider --prefab mantis")
     print("  python main.py player blue --prefab simple_slime")
     return True
 
@@ -600,18 +599,18 @@ Examples:
   python main.py smart --description "fire elemental" --magical-effects fire
   
   📊 STATS EXPORT:
-  python main.py stats adhesion_bug --export-stats unity --difficulty nightmare
-  python main.py stats tar_slug --export-stats json --difficulty easy
+  python main.py stats spider --export-stats unity --difficulty nightmare
+  python main.py stats slug --export-stats json --difficulty easy
   
   🎬 TRADITIONAL GENERATION:
-  python main.py animated adhesion_bug 1  # Generate 1 animated variant
-  python main.py animated tar_slug 3      # Generate 3 variants
-  python main.py animated all             # Generate all 3 animated enemies
+  python main.py animated spider 1  # Generate 1 animated variant
+  python main.py animated slug 3      # Generate 3 variants
+  python main.py animated all             # Generate all animated enemies
   
   🔍 DISCOVERY:
   python main.py list                     # List all enemies + 13 animation types
-  python main.py test                     # Quick test (1 animated adhesion_bug)
-  python main.py view adhesion_bug_animated_00 --anim move  # View in Blender
+  python main.py test                     # Quick test (1 animated spider)
+  python main.py view spider_animated_00 --anim move  # View in Blender
   
   🫧 PLAYER SLIME GENERATION:
   python main.py player                    # default blue slime, 3 variants
@@ -629,7 +628,7 @@ Examples:
   📦 PREFAB MODELS (downloaded Sketchfab models as mesh bases):
   python main.py prefabs                              # list all prefabs + download status
   python main.py prefabs simple_slime                 # show download instructions
-  python main.py animated adhesion_bug --prefab mantis           # enemy with prefab mesh
+  python main.py animated spider --prefab mantis           # enemy with prefab mesh
   python main.py player blue --prefab simple_slime               # player with prefab mesh
 
   📥 EXTERNAL MODEL INTEGRATION:
@@ -711,10 +710,6 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
     )
 
     args = parser.parse_args()
-
-    # Legacy CLI slugs (tar_slug, adhesion_bug, …) → current registry names
-    if args.enemy and args.command in ("animated", "stats"):
-        args.enemy = normalize_animated_slug(args.enemy)
 
     # Handle prefab listing
     if args.command == 'prefabs':

@@ -5,14 +5,16 @@ import math
 from mathutils import Euler
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, humanoid_simple_rig_definition
+from ..core.rig_models import HumanoidSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy
+from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
-class AnimatedImp(AnimatedEnemy):
+class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     """Humanoid fire creature"""
+
+    body_height = 1.0
 
     def build_mesh_parts(self):
         body_height = random_variance(1.2, 0.2, self.rng)
@@ -72,9 +74,6 @@ class AnimatedImp(AnimatedEnemy):
         for _i in range(2):
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
-
-    def get_rig_definition(self) -> RigDefinition:
-        return humanoid_simple_rig_definition(self.body_height)
 
     def get_body_type(self):
         return EnemyBodyTypes.HUMANOID

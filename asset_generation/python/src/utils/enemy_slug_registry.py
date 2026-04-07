@@ -32,22 +32,6 @@ def animated_enemies_for_api() -> list[dict[str, str]]:
     return [{"slug": s, "label": ANIMATED_ENEMY_LABELS[s]} for s in ANIMATED_SLUGS]
 
 
-# Pre-rename CLI slugs → current ANIMATED_SLUGS entries (docs, bookmarks, old GLB families).
-LEGACY_ANIMATED_SLUG_ALIASES: dict[str, str] = {
-    "adhesion_bug": "spider",
-    "tar_slug": "slug",
-    "ember_imp": "imp",
-    "acid_spitter": "spitter",
-}
-
-
-def normalize_animated_slug(slug: str) -> str:
-    """Map legacy animated enemy slugs to current registry names; pass through unknowns."""
-    if slug == "all":
-        return slug
-    return LEGACY_ANIMATED_SLUG_ALIASES.get(slug, slug)
-
-
 STATIC_SLUGS: tuple[str, ...] = (
     "glue_drone",
     "melt_worm",

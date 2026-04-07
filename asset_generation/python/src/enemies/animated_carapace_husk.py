@@ -5,14 +5,16 @@ import math
 from mathutils import Euler
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, humanoid_simple_rig_definition
+from ..core.rig_models import HumanoidSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy
+from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
-class AnimatedCarapaceHusk(AnimatedEnemy):
+class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     """Heavy wide humanoid with thick arms and short legs"""
+
+    body_height = 1.0
 
     def build_mesh_parts(self):
         body_height = random_variance(1.0, 0.15, self.rng)
@@ -59,9 +61,6 @@ class AnimatedCarapaceHusk(AnimatedEnemy):
         limb_material = enemy_mats["limbs"]
         for part in self.parts[2:]:
             apply_material_to_object(part, limb_material)
-
-    def get_rig_definition(self) -> RigDefinition:
-        return humanoid_simple_rig_definition(self.body_height)
 
     def get_body_type(self):
         return EnemyBodyTypes.HUMANOID

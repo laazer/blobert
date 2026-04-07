@@ -105,14 +105,14 @@ class TestListEndpointSchema:
         animated = python_root / "animated_exports"
         animated.mkdir(parents=True, exist_ok=True)
         glb_content = b"\x00" * 24
-        (animated / "adhesion_bug_animated_00.glb").write_bytes(glb_content)
+        (animated / "spider_animated_00.glb").write_bytes(glb_content)
 
         response = await client.get("/api/assets")
         assets = response.json()["assets"]
         assert len(assets) == 1
         entry = assets[0]
-        assert entry["path"] == "animated_exports/adhesion_bug_animated_00.glb"
-        assert entry["name"] == "adhesion_bug_animated_00.glb"
+        assert entry["path"] == "animated_exports/spider_animated_00.glb"
+        assert entry["name"] == "spider_animated_00.glb"
         assert entry["dir"] == "animated_exports"
         assert entry["size"] == len(glb_content)
 
@@ -226,7 +226,7 @@ class TestMimeTypes:
         """Create animated_exports with fixture files for every MIME test."""
         animated = python_root / "animated_exports"
         animated.mkdir(parents=True, exist_ok=True)
-        (animated / "adhesion_bug_animated_00.glb").write_bytes(b"\x00" * 16)
+        (animated / "spider_animated_00.glb").write_bytes(b"\x00" * 16)
         (animated / "some_config.json").write_text('{"a": 1}')
         (animated / "data.bin").write_bytes(b"\xde\xad\xbe\xef")
 
@@ -234,7 +234,7 @@ class TestMimeTypes:
     async def test_glb_served_with_gltf_binary_mime(self, client: AsyncClient):
         """ARGLB-2.1 / ARGLB-2.4 — .glb → Content-Type: model/gltf-binary (exact)."""
         response = await client.get(
-            "/api/assets/animated_exports/adhesion_bug_animated_00.glb"
+            "/api/assets/animated_exports/spider_animated_00.glb"
         )
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("model/gltf-binary")
@@ -243,7 +243,7 @@ class TestMimeTypes:
     async def test_glb_mime_is_exactly_gltf_binary_not_variant(self, client: AsyncClient):
         """ARGLB-2.4 — Must be model/gltf-binary, not model/gltf+binary or application/gltf-binary."""
         response = await client.get(
-            "/api/assets/animated_exports/adhesion_bug_animated_00.glb"
+            "/api/assets/animated_exports/spider_animated_00.glb"
         )
         content_type = response.headers["content-type"]
         # Strip charset/parameters and compare base type

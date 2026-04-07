@@ -20,7 +20,6 @@ from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
 from src.utils.constants import ExportConfig
-from src.utils.enemy_slug_registry import normalize_animated_slug
 from src.utils.export_naming import animated_export_stem
 
 
@@ -128,7 +127,7 @@ def main():
         print("Available types:", AnimatedEnemyBuilder.get_available_types())
         return
 
-    enemy_type = normalize_animated_slug(positional_args[0])
+    enemy_type = positional_args[0]
     count = int(positional_args[1]) if len(positional_args) > 1 and not positional_args[1].startswith('--') else 1
     seed_str = positional_args[2] if len(positional_args) > 2 and not positional_args[2].startswith('--') else None
     seed = int(seed_str) if seed_str else None

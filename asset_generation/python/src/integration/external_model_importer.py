@@ -14,7 +14,7 @@ from ..core.blender_utils import (
     clear_scene,
     ensure_mesh_integrity,
 )
-from ..core.rig_presets import (
+from ..core.rig_models import (
     imported_blob_rig,
     imported_humanoid_rig,
     imported_quadruped_rig,
@@ -195,11 +195,11 @@ class ExternalModelImporter:
 
         print(f"🦴 Creating {body_type} armature...")
         if body_type == "blob":
-            rig = imported_blob_rig(1.0)
+            rig = imported_blob_rig()
         elif body_type == "humanoid":
-            rig = imported_humanoid_rig(1.0)
+            rig = imported_humanoid_rig()
         else:
-            rig = imported_quadruped_rig(1.0)
+            rig = imported_quadruped_rig()
         return create_simple_armature("imported_model", rig)
     
     def _apply_pipeline_materials(self):

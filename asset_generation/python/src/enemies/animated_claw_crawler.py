@@ -3,14 +3,16 @@
 import math
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, quadruped_simple_rig_definition
+from ..core.rig_models import QuadrupedSimpleRig
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy
+from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
-class AnimatedClawCrawler(AnimatedEnemy):
+class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     """Flat disc body with large front claws and quadruped movement"""
+
+    body_height = 1.0
 
     def build_mesh_parts(self):
         body_scale = random_variance(1.0, 0.2, self.rng)
@@ -89,9 +91,6 @@ class AnimatedClawCrawler(AnimatedEnemy):
         for _ in range(4):
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
-
-    def get_rig_definition(self) -> RigDefinition:
-        return quadruped_simple_rig_definition(self.body_scale)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

@@ -27,7 +27,7 @@ def test_build_command_includes_player_finish_and_hex_color():
 def test_build_command_includes_enemy_finish_and_hex_for_animated():
     command = _build_command(
         cmd="animated",
-        enemy="tar_slug",
+        enemy="slug",
         count=1,
         description=None,
         difficulty=None,
