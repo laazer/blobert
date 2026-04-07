@@ -528,3 +528,9 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T02-00-00Z-test-design.md`
 - Outcome: `asset_generation/web/backend/tests/test_assets_router.py` (23 tests, httpx+ASGITransport); `conftest.py` sys.path fixture; `requirements.txt` + httpx + pytest-asyncio; 20 pass / 3 red (literal-dot traversal httpx normalization + directory FileResponse crash); checkpoint logs httpx URL normalization discovery and directory-path 500 vs 404 gap.
+
+### M19-ARGLB / run-2026-04-07T03-00-00Z-test-break
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_ENGINE_INTEGRATION
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T03-00-00Z-test-break.md`
+- Outcome: 15 adversarial tests added (38 total, 33 pass / 5 red); exposed 3 distinct implementation gaps: (1) null-byte in path causes unhandled ValueError from resolve() — not caught by try/except which only wraps relative_to(); (2) directory path causes unhandled RuntimeError from FileResponse — needs is_file() guard; (3) spec claims dotfile `.glb` has suffix `.glb` — Python 3.9 returns empty suffix so dotfiles are excluded. Double-encoded traversal (%252e%252e→403), uppercase extension MIME (octet-stream), stress 50 files, sort invariant, and within-jail traversal tests all pass.

@@ -52,18 +52,18 @@ AC items 4–7 (auto-load after generation, OrbitControls interaction, animation
 
 ## WORKFLOW STATE
 
-- **Stage:** TEST_BREAK
-- **Revision:** 4
-- **Last Updated By:** Test Designer Agent
-- **Next Responsible Agent:** Test Breaker Agent
+- **Stage:** IMPLEMENTATION_ENGINE_INTEGRATION
+- **Revision:** 5
+- **Last Updated By:** Test Breaker Agent
+- **Next Responsible Agent:** Engine Integration Agent
 - **Status:** Proceed
-- **Validation Status:** Not started
+- **Validation Status:** 33/38 tests pass; 5 red tests document implementation gaps
 - **Blocking Issues:** None
 
 ## NEXT ACTION
 
 ### Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ### Required Input Schema
 ```json
@@ -79,4 +79,24 @@ Test Breaker Agent
 Proceed
 
 ### Reason
-Primary behavioral tests written (`test_assets_router.py`, 23 tests). 20 pass / 3 red against current scaffold. Red tests: (1) literal `..` traversal tests (httpx URL normalization means traversal path never reaches the path guard — documented); (2) directory-path test (scaffold raises RuntimeError/500 from FileResponse, not 404). `httpx` and `pytest-asyncio` added to `requirements.txt`. Test Breaker Agent must append adversarial extensions: null-byte in path, double-encoded traversal (`%252e%252e`), empty path, deeply nested traversal, file with unexpected extension served with octet-stream fallback, list when no export dirs returns empty list. See ARGLB-3 Risk section in spec for double-encoding and null-byte behavior notes.
+Adversarial test suite extended to 38 tests (15 new). 33 pass / 5 red. Red tests document 3 confirmed implementation gaps requiring fixes in `assets.py`:
+
+1. **Null-byte unhandled exception** (`test_null_byte_in_path_should_return_400_not_raise`): `pathlib.Path.resolve()` raises `ValueError` for embedded null bytes, but the `try/except ValueError` in `serve_asset` only wraps `relative_to()` — not `resolve()`. Fix: extend the try block to cover `resolved = (python_root / asset_path).resolve()`.
+
+2. **Directory path returns 500 not 404** (`test_directory_path_returns_non_200`, `test_directory_as_path_returns_404_strict`): `FileResponse` raises `RuntimeError` when called on a directory. Fix: add `if not resolved.is_file(): raise HTTPException(status_code=404, detail="Asset not found")` before constructing `FileResponse`.
+
+3. **Literal `..` traversal tests** (`test_double_dot_traversal_literal_returns_non_200`, `test_single_dot_dot_traversal_literal_returns_non_200`): httpx normalizes literal `..` in URLs before sending; path guard never fires. These tests are pre-existing documentation tests that require either (a) server-side raw URL inspection or (b) accepting that percent-encoded `%2e%2e` tests cover the security requirement. See `test_url_encoded_traversal_returns_400` which passes and is the canonical security test.
+
+Adversarial coverage added:
+- Null-byte injection (security gap confirmed)
+- Double-encoded traversal `%252e%252e` → 403 (passes — correctly blocked at layer 2)
+- Directory-as-path strict 404 assertion (confirms implementation gap)
+- Within-jail traversal via encoded dots (passes — documents resolve() semantics)
+- Dotfile `.glb` excluded by Python 3.9 suffix behavior (passes — documents spec inaccuracy)
+- Export dirs with no .glb/.json files → empty list (passes)
+- 50-file stress test (passes — no truncation)
+- Sort invariant test (passes)
+- Multi-dir sort vs canonical order conflict test (passes)
+- Uppercase extension `.GLB`/`.JSON` → octet-stream (passes)
+- Double extension `.tar.gz` → octet-stream (passes)
+- GLB content-type has no charset (passes)
