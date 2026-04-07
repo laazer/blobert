@@ -21,8 +21,7 @@ src/
 │   └── blender_utils.py  # Scene ops, mesh creation, armature binding
 │
 ├── materials/
-│   ├── material_system.py    # Procedural Principled BSDF materials
-│   └── advanced_materials.py # Environmental/battle/magical material variants
+│   └── material_system.py    # Procedural Principled BSDF materials
 │
 ├── animations/
 │   ├── keyframe_system.py    # set_bone_keyframe, create_simple_armature

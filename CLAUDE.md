@@ -52,3 +52,9 @@ When invoking Godot outside of `ci/scripts/run_tests.sh`, use a timeout to preve
 ## File Editing & Moves
 
 Prefer `git mv` for renames/moves so history is preserved.
+
+## Colocate configuration with what it configures
+
+- **Keep tuning, defaults, and feature-specific constants next to the code they belong to** — typically as attributes on the class or private module-level names in the **same file** as that type. Do not introduce a sibling module whose only job is to hold values for a single class under another name (e.g. `*_params.py`, `*_settings.py`, `*_tuning.py`, `mesh_*`, `enemy_*_config`) unless those values are **shared by multiple types** or are a deliberate public API surface.
+- **Shared cross-cutting constants** (used by many call sites or defining a reusable primitive) belong in a clearly scoped place: e.g. `asset_generation/python/src/core/rig_models/` for rig layouts and mesh helpers shared across enemy families (`QuadrupedRigLayout`, `MESH_BODY_CENTER_Z_FACTOR`). Prefer extending an existing shared module over adding a new grab-bag file.
+- **Example (`asset_generation/python`):** procedural enemy mesh numbers live on each enemy model class (`AnimatedSpider`, …) as `ClassVar` fields; methods read them via `self`.

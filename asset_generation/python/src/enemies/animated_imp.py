@@ -1,5 +1,7 @@
 """Animated ember imp enemy builder."""
 
+from typing import ClassVar
+
 from mathutils import Euler
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
@@ -20,9 +22,27 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
 
     body_height = 1.0
 
+    BODY_HEIGHT_BASE: ClassVar[float] = 1.2
+    BODY_HEIGHT_VARIANCE: ClassVar[float] = 0.2
+    BODY_WIDTH_BASE: ClassVar[float] = 0.4
+    BODY_WIDTH_VARIANCE: ClassVar[float] = 0.1
+    HEAD_SCALE_WIDTH_RATIO: ClassVar[float] = 1.1
+    HEAD_ABOVE_BODY_SCALE: ClassVar[float] = 0.7
+    ARM_LENGTH_BASE: ClassVar[float] = 0.8
+    ARM_LENGTH_VARIANCE: ClassVar[float] = 0.2
+    ARM_OUTWARD_HALF_LENGTH: ClassVar[float] = 0.5
+    ARM_RADIUS: ClassVar[float] = 0.12
+    ARM_HEIGHT_RATIO: ClassVar[float] = 0.7
+    HAND_RADIUS: ClassVar[float] = 0.15
+    LEG_LENGTH_BASE: ClassVar[float] = 0.7
+    LEG_LENGTH_VARIANCE: ClassVar[float] = 0.1
+    LEG_X_SPREAD_RATIO: ClassVar[float] = 0.3
+    LEG_Z_HALF_LENGTH: ClassVar[float] = 0.5
+    LIMB_PAIRS: ClassVar[int] = 2
+
     def build_mesh_parts(self):
-        body_height = random_variance(1.2, 0.2, self.rng)
-        body_width = random_variance(0.4, 0.1, self.rng)
+        body_height = random_variance(self.BODY_HEIGHT_BASE, self.BODY_HEIGHT_VARIANCE, self.rng)
+        body_width = random_variance(self.BODY_WIDTH_BASE, self.BODY_WIDTH_VARIANCE, self.rng)
         body = create_cylinder(
             location=(0, 0, body_height * MESH_BODY_CENTER_Z_FACTOR),
             scale=(body_width, body_width, body_height),
@@ -32,34 +52,42 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         self.body_height = body_height
         self.body_width = body_width
 
-        head_scale = self.body_width * 1.1
+        head_scale = self.body_width * self.HEAD_SCALE_WIDTH_RATIO
         head = create_sphere(
-            location=(0, 0, self.body_height + head_scale * 0.7),
+            location=(0, 0, self.body_height + head_scale * self.HEAD_ABOVE_BODY_SCALE),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
 
-        arm_length = random_variance(0.8, 0.2, self.rng)
+        arm_length = random_variance(self.ARM_LENGTH_BASE, self.ARM_LENGTH_VARIANCE, self.rng)
         for side in [-1, 1]:
             arm = create_cylinder(
-                location=(side * (self.body_width + arm_length * 0.5), 0, self.body_height * 0.7),
-                scale=(0.12, 0.12, arm_length),
+                location=(
+                    side * (self.body_width + arm_length * self.ARM_OUTWARD_HALF_LENGTH),
+                    0,
+                    self.body_height * self.ARM_HEIGHT_RATIO,
+                ),
+                scale=(self.ARM_RADIUS, self.ARM_RADIUS, arm_length),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             arm.rotation_euler = Euler((0, 0, EULER_Z_90))
             self.parts.append(arm)
 
             hand = create_sphere(
-                location=(side * (self.body_width + arm_length), 0, self.body_height * 0.7),
-                scale=(0.15, 0.15, 0.15),
+                location=(
+                    side * (self.body_width + arm_length),
+                    0,
+                    self.body_height * self.ARM_HEIGHT_RATIO,
+                ),
+                scale=(self.HAND_RADIUS, self.HAND_RADIUS, self.HAND_RADIUS),
             )
             self.parts.append(hand)
 
-        leg_length = random_variance(0.7, 0.1, self.rng)
+        leg_length = random_variance(self.LEG_LENGTH_BASE, self.LEG_LENGTH_VARIANCE, self.rng)
         for side in [-1, 1]:
             leg = create_cylinder(
-                location=(side * self.body_width * 0.3, 0, leg_length * 0.5),
-                scale=(0.12, 0.12, leg_length),
+                location=(side * self.body_width * self.LEG_X_SPREAD_RATIO, 0, leg_length * self.LEG_Z_HALF_LENGTH),
+                scale=(self.ARM_RADIUS, self.ARM_RADIUS, leg_length),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(leg)
@@ -71,11 +99,11 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         limb_material = enemy_mats["limbs"]
         hand_material = enemy_mats["extra"]
         part_index = 2
-        for _i in range(2):
+        for _i in range(self.LIMB_PAIRS):
             apply_material_to_object(self.parts[part_index], limb_material)
             apply_material_to_object(self.parts[part_index + 1], hand_material)
             part_index += 2
-        for _i in range(2):
+        for _i in range(self.LIMB_PAIRS):
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
 

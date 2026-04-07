@@ -51,7 +51,7 @@ class ExampleSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         return EnemyBodyTypes.QUADRUPED
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("claw_crawler", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("spider", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         for part in self.parts[1:]:
             apply_material_to_object(part, enemy_mats["limbs"])

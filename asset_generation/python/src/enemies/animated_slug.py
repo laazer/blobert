@@ -1,7 +1,13 @@
 """Animated tar slug enemy builder."""
 
+from typing import ClassVar
+
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_models.blob_simple import CYLINDER_VERTICES_HEX, BlobSimpleRig
+from ..core.rig_models.blob_simple import (
+    CYLINDER_VERTICES_HEX,
+    MESH_BODY_CENTER_Z_FACTOR,
+    BlobSimpleRig,
+)
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
@@ -12,36 +18,64 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
 
     body_height = 1.0
 
-    def build_mesh_parts(self):
-        length = random_variance(2.0, 0.3, self.rng)
-        width = random_variance(0.8, 0.2, self.rng)
-        height = random_variance(0.6, 0.1, self.rng)
+    LENGTH_BASE: ClassVar[float] = 2.0
+    LENGTH_VARIANCE: ClassVar[float] = 0.3
+    WIDTH_BASE: ClassVar[float] = 0.8
+    WIDTH_VARIANCE: ClassVar[float] = 0.2
+    HEIGHT_BASE: ClassVar[float] = 0.6
+    HEIGHT_VARIANCE: ClassVar[float] = 0.1
+    HEAD_WIDTH_RATIO: ClassVar[float] = 0.4
+    HEAD_X_RATIO: ClassVar[float] = 0.7
+    HEAD_Z_RATIO: ClassVar[float] = 0.8
+    STALK_X_RATIO: ClassVar[float] = 0.6
+    STALK_Y_SPREAD: ClassVar[float] = 0.3
+    STALK_Z_BASE: ClassVar[float] = 0.3
+    STALK_RADIUS: ClassVar[float] = 0.05
+    STALK_LENGTH: ClassVar[float] = 0.3
+    EYE_Z_OFFSET: ClassVar[float] = 0.6
+    EYE_RADIUS: ClassVar[float] = 0.1
 
-        body = create_sphere(location=(0, 0, height * 0.5), scale=(length, width, height))
+    def build_mesh_parts(self):
+        length = random_variance(self.LENGTH_BASE, self.LENGTH_VARIANCE, self.rng)
+        width = random_variance(self.WIDTH_BASE, self.WIDTH_VARIANCE, self.rng)
+        height = random_variance(self.HEIGHT_BASE, self.HEIGHT_VARIANCE, self.rng)
+
+        body = create_sphere(
+            location=(0, 0, height * MESH_BODY_CENTER_Z_FACTOR),
+            scale=(length, width, height),
+        )
         self.parts.append(body)
 
         self.length = length
         self.width = width
         self.height = height
 
-        head_scale = self.width * 0.4
+        head_scale = self.width * self.HEAD_WIDTH_RATIO
         head = create_sphere(
-            location=(self.length * 0.7, 0, self.height * 0.8),
+            location=(self.length * self.HEAD_X_RATIO, 0, self.height * self.HEAD_Z_RATIO),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
 
         for side in [-1, 1]:
             stalk = create_cylinder(
-                location=(self.length * 0.6, side * self.width * 0.3, self.height + 0.3),
-                scale=(0.05, 0.05, 0.3),
+                location=(
+                    self.length * self.STALK_X_RATIO,
+                    side * self.width * self.STALK_Y_SPREAD,
+                    self.height + self.STALK_Z_BASE,
+                ),
+                scale=(self.STALK_RADIUS, self.STALK_RADIUS, self.STALK_LENGTH),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(stalk)
 
             eye = create_sphere(
-                location=(self.length * 0.6, side * self.width * 0.3, self.height + 0.6),
-                scale=(0.1, 0.1, 0.1),
+                location=(
+                    self.length * self.STALK_X_RATIO,
+                    side * self.width * self.STALK_Y_SPREAD,
+                    self.height + self.EYE_Z_OFFSET,
+                ),
+                scale=(self.EYE_RADIUS, self.EYE_RADIUS, self.EYE_RADIUS),
             )
             self.parts.append(eye)
 

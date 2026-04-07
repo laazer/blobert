@@ -4,9 +4,11 @@ Simple Animation Viewer
 Loads GLB and plays animation in a user-friendly way
 """
 
-import bpy
-import sys
 import os
+import sys
+
+import bpy
+
 
 def main():
     # Get arguments
@@ -17,6 +19,10 @@ def main():
         animation_name = argv[index + 1] if len(argv) > index + 1 else 'idle'
     except (ValueError, IndexError):
         print("Usage: blender --python simple_viewer.py -- <glb_path> <animation_name>")
+        return
+
+    if not os.path.exists(glb_path):
+        print(f"❌ GLB file not found: {glb_path}")
         return
 
     print(f"🎬 Loading: {os.path.basename(glb_path)}")

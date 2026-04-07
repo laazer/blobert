@@ -15,8 +15,7 @@ blender-experiments/
 │   │   └── blender_utils.py     # Scene setup, mesh ops, armature binding, random helpers
 │   │
 │   ├── materials/
-│   │   ├── material_system.py   # Procedural material creation (Principled BSDF + textures)
-│   │   └── advanced_materials.py # Environmental adaptation, battle damage, magical effects
+│   │   └── material_system.py   # Procedural material creation (Principled BSDF + textures)
 │   │
 │   ├── animations/
 │   │   ├── keyframe_system.py   # set_bone_keyframe, create_simple_armature
@@ -50,7 +49,6 @@ blender-experiments/
 │   │   ├── constants.py         # EnemyTypes, AnimationTypes, AnimationConfig, BoneNames, ExportConfig
 │   │   ├── materials.py         # MaterialNames, MaterialColors, MaterialThemes, MaterialCategories
 │   │   ├── simple_viewer.py     # Blender viewer script (used by `view` command)
-│   │   ├── animation_viewer.py
 │   │   └── demo.py
 │   │
 │   └── generator.py             # Blender-side script, invoked as subprocess for `animated` command

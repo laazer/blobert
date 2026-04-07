@@ -1,5 +1,7 @@
 """Animated acid spitter enemy builder."""
 
+from typing import ClassVar
+
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models.blob_simple import (
     CYLINDER_VERTICES_HEX,
@@ -16,30 +18,48 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
 
     body_height = 1.0
 
+    BODY_BASE: ClassVar[float] = 1.0
+    BODY_VARIANCE: ClassVar[float] = 0.15
+    HEIGHT_BASE: ClassVar[float] = 0.9
+    HEIGHT_VARIANCE: ClassVar[float] = 0.1
+    WIDTH_JITTER_VARIANCE: ClassVar[float] = 0.15
+    HEAD_SCALE_REL: ClassVar[float] = 0.35
+    HEAD_SCALE_VARIANCE: ClassVar[float] = 0.08
+    HEAD_X_ALONG: ClassVar[float] = 0.8
+    HEAD_Z_HEIGHT_RATIO: ClassVar[float] = 0.9
+    TENDRIL_LENGTH_BASE: ClassVar[float] = 0.4
+    TENDRIL_LENGTH_VARIANCE: ClassVar[float] = 0.1
+    TENDRIL_X_SPREAD: ClassVar[float] = 0.3
+    TENDRIL_RADIUS: ClassVar[float] = 0.07
+
     def build_mesh_parts(self):
-        body_scale = random_variance(1.0, 0.15, self.rng)
-        height = random_variance(0.9, 0.1, self.rng)
+        body_scale = random_variance(self.BODY_BASE, self.BODY_VARIANCE, self.rng)
+        height = random_variance(self.HEIGHT_BASE, self.HEIGHT_VARIANCE, self.rng)
         body = create_sphere(
             location=(0, 0, height * MESH_BODY_CENTER_Z_FACTOR),
-            scale=(body_scale, body_scale * random_variance(1.0, 0.15, self.rng), height),
+            scale=(
+                body_scale,
+                body_scale * random_variance(1.0, self.WIDTH_JITTER_VARIANCE, self.rng),
+                height,
+            ),
         )
         self.parts.append(body)
         self.body_scale = body_scale
         self.height = height
 
-        head_scale = self.body_scale * random_variance(0.35, 0.08, self.rng)
+        head_scale = self.body_scale * random_variance(self.HEAD_SCALE_REL, self.HEAD_SCALE_VARIANCE, self.rng)
         head = create_sphere(
-            location=(self.body_scale * 0.8, 0, self.height * 0.9),
+            location=(self.body_scale * self.HEAD_X_ALONG, 0, self.height * self.HEAD_Z_HEIGHT_RATIO),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
         self.head_scale = head_scale
 
         for side in [-1, 1]:
-            tendril_length = random_variance(0.4, 0.1, self.rng)
+            tendril_length = random_variance(self.TENDRIL_LENGTH_BASE, self.TENDRIL_LENGTH_VARIANCE, self.rng)
             tendril = create_cylinder(
-                location=(side * self.body_scale * 0.3, 0, 0),
-                scale=(0.07, 0.07, tendril_length),
+                location=(side * self.body_scale * self.TENDRIL_X_SPREAD, 0, 0),
+                scale=(self.TENDRIL_RADIUS, self.TENDRIL_RADIUS, tendril_length),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(tendril)
