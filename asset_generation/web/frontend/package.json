@@ -1,0 +1,30 @@
+{
+  "name": "blobert-asset-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@monaco-editor/react": "^4.6.0",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/drei": "^9.115.0",
+    "three": "^0.169.0",
+    "zustand": "^5.0.1",
+    "immer": "^10.1.1",
+    "ansi-to-html": "^0.7.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
+  }
+}
