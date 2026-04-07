@@ -3,8 +3,21 @@ import { fetchEnemies, killProcess } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
-
-const ALL_CMDS: RunCmd[] = ["animated", "player", "level", "smart", "stats", "test"];
+import {
+  ALL_CMDS,
+  CMD_CONFIG,
+  clampCount,
+  COUNT_MAX,
+  COUNT_MIN,
+  COUNT_PRESETS,
+  formatCommandPreview,
+  ENEMY_FINISHES,
+  getEnemyOptions,
+  normalizeEnemyForCmd,
+  parseCommandPreview,
+  PLAYER_COLORS,
+  PLAYER_FINISHES,
+} from "./commandLogic";
 
 const s: Record<string, React.CSSProperties> = {
   panel: {
@@ -61,6 +74,9 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 12,
   },
   label: { color: "#9d9d9d", fontSize: 11 },
+  helperText: { color: "#8f8f8f", fontSize: 11 },
+  warningText: { color: "#e2b714", fontSize: 11 },
+  errorText: { color: "#f48771", fontSize: 11 },
 };
 
 export function CommandPanel() {
@@ -74,25 +90,113 @@ export function CommandPanel() {
   const [count, setCount] = useState(1);
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("normal");
+  const [finish, setFinish] = useState("glossy");
+  const [hexColor, setHexColor] = useState("");
   const [enemies, setEnemies] = useState<string[]>([]);
+  const [enemyLoadError, setEnemyLoadError] = useState<string | null>(null);
+  const [commandPreview, setCommandPreview] = useState("");
+  const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
+  const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
+  const [cmdTransitionHint, setCmdTransitionHint] = useState<string | null>(null);
 
   const { start, startTests } = useStreamingOutput();
 
   useEffect(() => {
-    fetchEnemies().then(setEnemies).catch(() => {});
+    fetchEnemies()
+      .then((list) => {
+        setEnemies(list);
+        setEnemyLoadError(null);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "Failed to load enemy list.";
+        setEnemyLoadError(message);
+      });
   }, []);
 
-  const showEnemy = ["animated", "player", "level", "stats"].includes(cmd);
-  const showCount = ["animated", "player", "level"].includes(cmd);
-  const showDescription = cmd === "smart";
-  const showDifficulty = ["smart", "stats"].includes(cmd);
+  const cfg = CMD_CONFIG[cmd];
+  const showEnemy = cfg.showEnemy;
+  const showCount = cfg.showCount;
+  const showDescription = cfg.showDescription;
+  const showDifficulty = cfg.showDifficulty;
+  const enemyOptions = getEnemyOptions(cmd, enemies);
+
+  useEffect(() => {
+    const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemies);
+    if (nextEnemy !== enemy) setEnemy(nextEnemy);
+  }, [cmd, enemy, enemies]);
+
+  useEffect(() => {
+    if (commandPreviewDirty) return;
+    setCommandPreview(formatCommandPreview({ cmd, enemy, count, description, difficulty, finish, hexColor }));
+  }, [cmd, enemy, count, description, difficulty, finish, hexColor, commandPreviewDirty]);
+
+  function handleCmdChange(nextCmd: RunCmd) {
+    const nextCfg = CMD_CONFIG[nextCmd];
+    const prevCfg = CMD_CONFIG[cmd];
+    setCmd(nextCmd);
+    setCommandPreviewDirty(false);
+    setCommandPreviewError(null);
+    const dropped: string[] = [];
+    if (prevCfg.showEnemy && !nextCfg.showEnemy && enemy.trim()) dropped.push("enemy");
+    if (prevCfg.showCount && !nextCfg.showCount) dropped.push("count");
+    if (prevCfg.showDescription && !nextCfg.showDescription && description.trim()) dropped.push("description");
+    if (prevCfg.showDifficulty && !nextCfg.showDifficulty) dropped.push("difficulty");
+    if (!nextCfg.showEnemy) setEnemy("");
+    if (!nextCfg.showCount) setCount(COUNT_MIN);
+    if (!nextCfg.showDescription) setDescription("");
+    if (!nextCfg.showDifficulty) setDifficulty("normal");
+    setCmdTransitionHint(dropped.length > 0 ? `Switched to '${nextCmd}': ${dropped.join(", ")} hidden/reset.` : null);
+  }
+
+  function applyParsedPreview() {
+    const parsed = parseCommandPreview(commandPreview);
+    if (!parsed.next || parsed.error) {
+      setCommandPreviewError(parsed.error ?? "Unable to parse command preview.");
+      return;
+    }
+    const next = parsed.next;
+    setCmd(next.cmd);
+    setEnemy(next.enemy ?? "");
+    setCount(clampCount(next.count ?? COUNT_MIN));
+    setDescription(next.description ?? "");
+    setDifficulty(next.difficulty ?? "normal");
+    setFinish(next.finish ?? "glossy");
+    setHexColor(next.hexColor ?? "");
+    setCommandPreviewDirty(false);
+    setCommandPreviewError(null);
+    setCmdTransitionHint(null);
+  }
+
+  const runValidationError = (() => {
+    if (commandPreviewDirty) return "Apply command preview changes before running.";
+    if (showEnemy && cfg.requiresEnemy && !enemy.trim()) return "Enemy is required for this cmd.";
+    if (cmd === "player" && !PLAYER_COLORS.includes(enemy)) {
+      return `Player cmd requires a slime color (${PLAYER_COLORS.join(", ")}).`;
+    }
+    if (cmd === "player" && !PLAYER_FINISHES.includes(finish)) {
+      return `Player finish must be one of: ${PLAYER_FINISHES.join(", ")}.`;
+    }
+    if (cmd === "animated" && !ENEMY_FINISHES.includes(finish)) {
+      return `Enemy finish must be one of: ${ENEMY_FINISHES.join(", ")}.`;
+    }
+    if (cmd === "player" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
+      return "Custom color must be in #RRGGBB format.";
+    }
+    if (cmd === "animated" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
+      return "Custom color must be in #RRGGBB format.";
+    }
+    if (showCount && (!Number.isFinite(count) || count < COUNT_MIN || count > COUNT_MAX)) return `Count must be ${COUNT_MIN}-${COUNT_MAX}.`;
+    return null;
+  })();
 
   async function handleRun() {
-    clearTerminal();
     if (isDirty) await saveFile();
+    if (runValidationError) return;
     start({ cmd, enemy: showEnemy ? enemy : undefined, count: showCount ? count : undefined,
             description: showDescription ? description : undefined,
-            difficulty: showDifficulty ? difficulty : undefined });
+            difficulty: showDifficulty ? difficulty : undefined,
+            finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
+            hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined });
   }
 
   async function handleKill() {
@@ -103,16 +207,16 @@ export function CommandPanel() {
     <div style={s.panel}>
       <div style={s.row}>
         <span style={s.label}>cmd</span>
-        <select style={s.select} value={cmd} onChange={(e) => setCmd(e.target.value as RunCmd)}>
+        <select style={s.select} value={cmd} onChange={(e) => handleCmdChange(e.target.value as RunCmd)}>
           {ALL_CMDS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
 
         {showEnemy && (
           <>
-            <span style={s.label}>enemy</span>
-            {enemies.length > 0 ? (
+            <span style={s.label}>{cmd === "player" ? "color" : "enemy"}</span>
+            {enemyOptions.length > 0 ? (
               <select style={s.select} value={enemy} onChange={(e) => setEnemy(e.target.value)}>
-                {enemies.map((en) => <option key={en} value={en}>{en}</option>)}
+                {enemyOptions.map((en) => <option key={en} value={en}>{en}</option>)}
               </select>
             ) : (
               <input style={s.textInput} value={enemy} onChange={(e) => setEnemy(e.target.value)} placeholder="enemy_name" />
@@ -123,11 +227,50 @@ export function CommandPanel() {
         {showCount && (
           <>
             <span style={s.label}>count</span>
-            <input style={s.input} type="number" min={1} max={10} value={count}
-              onChange={(e) => setCount(parseInt(e.target.value, 10) || 1)} />
+            <button style={s.select} onClick={() => setCount((v) => clampCount(v - 1))} type="button">-</button>
+            <input
+              style={s.input}
+              type="number"
+              min={COUNT_MIN}
+              max={COUNT_MAX}
+              value={count}
+              onChange={(e) => setCount(clampCount(parseInt(e.target.value, 10)))}
+            />
+            <button style={s.select} onClick={() => setCount((v) => clampCount(v + 1))} type="button">+</button>
+            {COUNT_PRESETS.map((value) => (
+              <button
+                key={value}
+                style={{ ...s.select, background: count === value ? "#0e639c" : "#3c3c3c", color: "#d4d4d4" }}
+                onClick={() => setCount(value)}
+                type="button"
+              >
+                {value}
+              </button>
+            ))}
           </>
         )}
       </div>
+
+      <div style={s.row}>
+        <span style={s.label}>preview</span>
+        <input
+          style={s.textInput}
+          value={commandPreview}
+          onChange={(e) => {
+            setCommandPreview(e.target.value);
+            setCommandPreviewDirty(true);
+            setCommandPreviewError(null);
+          }}
+          placeholder='animated adhesion_bug 1 --difficulty normal'
+        />
+        <button style={s.btn} onClick={applyParsedPreview} disabled={!commandPreviewDirty}>Apply</button>
+      </div>
+      <div style={s.row}>
+        <span style={s.helperText}>Format: &lt;cmd&gt; [enemy|color] [count] [--description \"...\"] [--difficulty ...] [--finish ...] [--hex-color #RRGGBB]</span>
+      </div>
+      {commandPreviewError && <div style={s.errorText}>{commandPreviewError}</div>}
+      {cmdTransitionHint && <div style={s.warningText}>{cmdTransitionHint}</div>}
+      {enemyLoadError && <div style={s.warningText}>Enemy list unavailable: {enemyLoadError}</div>}
 
       {showDescription && (
         <div style={s.row}>
@@ -135,6 +278,31 @@ export function CommandPanel() {
           <input style={s.textInput} value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="a large fire spider with powerful attacks" />
+        </div>
+      )}
+
+      {(cmd === "player" || cmd === "animated") && (
+        <div style={s.row}>
+          <span style={s.label}>finish</span>
+          <select style={s.select} value={finish} onChange={(e) => setFinish(e.target.value)}>
+            {(cmd === "player" ? PLAYER_FINISHES : ENEMY_FINISHES).map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <span style={s.label}>hex</span>
+          <input
+            style={{ ...s.select, width: 34, padding: 0, height: 24 }}
+            type="color"
+            value={/^#[0-9a-fA-F]{6}$/.test(hexColor) ? hexColor : "#7ab8ff"}
+            onChange={(e) => setHexColor(e.target.value)}
+          />
+          <input
+            style={{ ...s.textInput, maxWidth: 120 }}
+            value={hexColor}
+            onChange={(e) => setHexColor(e.target.value)}
+            placeholder="#66ccff"
+          />
+          <button style={{ ...s.btn, background: "#555" }} type="button" onClick={() => setHexColor("")}>
+            Use palette color
+          </button>
         </div>
       )}
 
@@ -149,6 +317,7 @@ export function CommandPanel() {
 
       <div style={s.row}>
         {isDirty && <span style={{ color: "#e2b714", fontSize: 11 }}>unsaved changes</span>}
+        {runValidationError && <span style={s.errorText}>{runValidationError}</span>}
         <button style={s.btn} onClick={saveFile} disabled={!isDirty}>Save</button>
         <button style={{ ...s.btn, opacity: isRunning ? 0.5 : 1 }} onClick={handleRun} disabled={isRunning}>
           Run
@@ -156,6 +325,9 @@ export function CommandPanel() {
         {isRunning && (
           <button style={s.killBtn} onClick={handleKill}>Kill</button>
         )}
+        <button style={{ ...s.btn, background: "#444" }} onClick={clearTerminal} disabled={isRunning}>
+          Clear
+        </button>
         <button style={{ ...s.btn, background: "#555" }} onClick={startTests} disabled={isRunning}>
           Run pytest
         </button>

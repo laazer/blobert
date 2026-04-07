@@ -32,6 +32,7 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   // Expose clip names upward so AnimationControls can show real clips
   const setAvailableClips = useAppStore((s) => s.setAvailableClips);
   const setActiveAnimation = useAppStore((s) => s.setActiveAnimation);
+  const isAnimationPaused = useAppStore((s) => s.isAnimationPaused);
   const prevUrl = useRef<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +44,13 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
       actions[names[0]]?.reset().fadeIn(0.3).play();
     }
   }, [animation, url, actions, names]);
+
+  useEffect(() => {
+    Object.values(actions).forEach((a) => {
+      if (!a) return;
+      a.paused = isAnimationPaused;
+    });
+  }, [actions, isAnimationPaused]);
 
   useEffect(() => {
     if (prevUrl.current !== url) {
@@ -61,6 +69,12 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
 export function GlbViewer() {
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
   const activeAnimation = useAppStore((s) => s.activeAnimation);
+  const setIsAnimationPaused = useAppStore((s) => s.setIsAnimationPaused);
+
+  useEffect(() => {
+    // Reset pause on model swap for predictable playback
+    setIsAnimationPaused(false);
+  }, [activeGlbUrl, setIsAnimationPaused]);
 
   return (
     <div style={{ flex: 1, background: "#1a1a2e", position: "relative", overflow: "hidden" }}>

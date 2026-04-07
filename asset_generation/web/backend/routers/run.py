@@ -3,12 +3,11 @@ import os
 import sys
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import JSONResponse
-from sse_starlette.sse import EventSourceResponse
-
 from core.config import settings
 from core.process_manager import process_manager
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
+from sse_starlette.sse import EventSourceResponse
 
 router = APIRouter(prefix="/api/run", tags=["run"])
 
@@ -21,6 +20,8 @@ def _build_command(
     count: Optional[int],
     description: Optional[str],
     difficulty: Optional[str],
+    finish: Optional[str],
+    hex_color: Optional[str],
 ) -> list[str]:
     parts = [sys.executable, "main.py", cmd]
     if enemy:
@@ -31,6 +32,10 @@ def _build_command(
         parts.extend(["--description", description])
     if difficulty:
         parts.extend(["--difficulty", difficulty])
+    if cmd in ("player", "animated") and finish:
+        parts.extend(["--finish", finish])
+    if cmd in ("player", "animated") and hex_color:
+        parts.extend(["--hex-color", hex_color])
     return parts
 
 
@@ -47,7 +52,8 @@ def _guess_output_file(cmd: str, enemy: Optional[str], count: Optional[int]) -> 
 
 
 async def _run_stream(cmd: str, enemy: Optional[str], count: Optional[int],
-                      description: Optional[str], difficulty: Optional[str]):
+                      description: Optional[str], difficulty: Optional[str],
+                      finish: Optional[str], hex_color: Optional[str]):
     if cmd not in _ALLOWED_CMDS:
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": f"Unknown command: {cmd}"})}
         return
@@ -56,7 +62,7 @@ async def _run_stream(cmd: str, enemy: Optional[str], count: Optional[int],
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": "A process is already running"})}
         return
 
-    command = _build_command(cmd, enemy, count, description, difficulty)
+    command = _build_command(cmd, enemy, count, description, difficulty, finish, hex_color)
 
     # Forward BLENDER_PATH and current env into subprocess
     env = os.environ.copy()
@@ -92,8 +98,10 @@ async def run_stream(
     count: Optional[int] = Query(None),
     description: Optional[str] = Query(None),
     difficulty: Optional[str] = Query(None),
+    finish: Optional[str] = Query(None),
+    hex_color: Optional[str] = Query(None),
 ):
-    return EventSourceResponse(_run_stream(cmd, enemy, count, description, difficulty))
+    return EventSourceResponse(_run_stream(cmd, enemy, count, description, difficulty, finish, hex_color))
 
 
 @router.post("/kill")

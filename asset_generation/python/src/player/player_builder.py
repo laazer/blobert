@@ -6,18 +6,29 @@ import json
 import os
 
 from ..core.blender_utils import bind_mesh_to_armature, ensure_mesh_integrity
-from ..utils.constants import PlayerAnimationTypes, PlayerAnimationConfig, PlayerExportConfig, PlayerBoneNames
-from .player_slime_body import PlayerSlimeBody
-from .player_armature import create_player_slime_armature
+from ..utils.constants import (
+    PlayerAnimationConfig,
+    PlayerAnimationTypes,
+    PlayerBoneNames,
+)
 from .player_animations import PlayerSlimeAnimations
+from .player_armature import create_player_slime_armature
 from .player_materials import SLIME_COLORS
+from .player_slime_body import PlayerSlimeBody
 
 
 class PlayerSlimeBuilder:
     """Builds, animates, and exports the player slime in one call."""
 
     @classmethod
-    def build(cls, color: str = "blue", rng=None, prefab_mesh=None):
+    def build(
+        cls,
+        color: str = "blue",
+        rng=None,
+        prefab_mesh=None,
+        finish: str = "glossy",
+        custom_color_hex: str = "",
+    ):
         """Construct the complete player slime and return (armature, mesh).
 
         Steps:
@@ -43,7 +54,12 @@ class PlayerSlimeBuilder:
             print("📦 Using prefab mesh — skipping procedural player geometry")
             mesh = prefab_mesh
         else:
-            body_builder = PlayerSlimeBody(color=color, rng=rng)
+            body_builder = PlayerSlimeBody(
+                color=color,
+                rng=rng,
+                finish=finish,
+                custom_color_hex=custom_color_hex,
+            )
             mesh = body_builder.build()
 
         armature = create_player_slime_armature("player_slime")

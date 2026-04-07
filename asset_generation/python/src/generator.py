@@ -3,9 +3,9 @@
 Organized enemy generator using the modular system
 """
 
-import sys
 import os
 import random
+import sys
 
 # Blender imports
 import bpy
@@ -14,9 +14,9 @@ import bpy
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
-from src.materials.material_system import setup_materials
 from src.enemies.animated import AnimatedEnemyBuilder
 from src.enemies.base_enemy import export_enemy
+from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.utils.constants import ExportConfig
 
 
@@ -52,6 +52,8 @@ def generate_animated_enemy(
     seed: int = None,
     export_dir: str = ExportConfig.ANIMATED_DIR,
     prefab_name: str = None,
+    finish: str = "default",
+    hex_color: str = "",
 ):
     """Generate animated enemies using the organised system.
 
@@ -69,7 +71,7 @@ def generate_animated_enemy(
     setup_scene()
 
     # Initialize material system
-    materials = setup_materials()
+    materials = setup_materials(enemy_finish=finish, enemy_hex_color=hex_color)
 
     # Generate enemies
     for i in range(count):
@@ -114,6 +116,14 @@ def _parse_prefab_arg(args) -> str:
     return None
 
 
+def _parse_flag_arg(args, flag_name: str) -> str:
+    if flag_name in args:
+        flag_idx = args.index(flag_name)
+        if flag_idx + 1 < len(args):
+            return args[flag_idx + 1]
+    return None
+
+
 def main():
     """Main entry point for the organised generator."""
     positional_args = []
@@ -131,15 +141,22 @@ def main():
     seed_str = positional_args[2] if len(positional_args) > 2 and not positional_args[2].startswith('--') else None
     seed = int(seed_str) if seed_str else None
     prefab_name = _parse_prefab_arg(positional_args)
+    finish = _parse_flag_arg(positional_args, "--finish") or "default"
+    hex_color = _parse_flag_arg(positional_args, "--hex-color") or ""
 
     if enemy_type not in AnimatedEnemyBuilder.get_available_types():
         print(f"❌ Unknown enemy type: {enemy_type}")
         print("Available types:", AnimatedEnemyBuilder.get_available_types())
         return
+    if finish not in ENEMY_FINISH_PRESETS:
+        print(f"❌ Unknown finish: {finish}")
+        print(f"Available finishes: {list(ENEMY_FINISH_PRESETS)}")
+        return
 
     prefab_note = f" (prefab: {prefab_name})" if prefab_name else ""
-    print(f"🎮 Generating {count} {enemy_type}(s){prefab_note}...")
-    generate_animated_enemy(enemy_type, count, seed, prefab_name=prefab_name)
+    hex_note = f", hex={hex_color}" if hex_color else ""
+    print(f"🎮 Generating {count} {enemy_type}(s), finish={finish}{hex_note}{prefab_note}...")
+    generate_animated_enemy(enemy_type, count, seed, prefab_name=prefab_name, finish=finish, hex_color=hex_color)
     print("✅ Generation complete!")
 
 

@@ -6,9 +6,9 @@ Usage (via main.py):
     blender --background --python src/player_generator.py -- [color] [count] [seed]
 """
 
-import sys
 import os
 import random
+import sys
 
 import bpy
 
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
-from src.player.player_materials import SLIME_COLORS
+from src.player.player_materials import SLIME_FINISHES
 from src.utils.constants import PlayerExportConfig
 
 
@@ -48,6 +48,8 @@ def generate_player_slime(
     seed: int = None,
     export_dir: str = PlayerExportConfig.PLAYER_DIR,
     prefab_name: str = None,
+    finish: str = "glossy",
+    custom_color_hex: str = "",
 ):
     """Generate player slime variants.
 
@@ -74,7 +76,13 @@ def generate_player_slime(
             # Reload prefab each iteration — clear_scene() removes imported objects
             prefab_mesh = _load_prefab_mesh_if_requested(prefab_name)
 
-            armature, mesh = PlayerSlimeBuilder.build(color=color, rng=rng, prefab_mesh=prefab_mesh)
+            armature, mesh = PlayerSlimeBuilder.build(
+                color=color,
+                rng=rng,
+                prefab_mesh=prefab_mesh,
+                finish=finish,
+                custom_color_hex=custom_color_hex,
+            )
 
             filename = PlayerExportConfig.FILENAME_PATTERN.format(
                 color=color, variant=variant_index
@@ -97,6 +105,14 @@ def _parse_prefab_arg(args) -> str:
     return None
 
 
+def _parse_flag_arg(args, flag_name: str) -> str:
+    if flag_name in args:
+        flag_idx = args.index(flag_name)
+        if flag_idx + 1 < len(args):
+            return args[flag_idx + 1]
+    return None
+
+
 def main():
     separator = "--"
     args = sys.argv[sys.argv.index(separator) + 1:] if separator in sys.argv else []
@@ -106,15 +122,28 @@ def main():
     seed_str = args[2] if len(args) > 2 and not args[2].startswith('--') else None
     seed = int(seed_str) if seed_str else None
     prefab_name = _parse_prefab_arg(args)
+    finish = _parse_flag_arg(args, "--finish") or "glossy"
+    custom_color_hex = _parse_flag_arg(args, "--hex-color") or ""
 
     available_colors = PlayerSlimeBuilder.get_available_colors()
     if color not in available_colors:
         print(f"❌ Unknown color: {color!r}. Available: {available_colors}")
         return
+    if finish not in SLIME_FINISHES:
+        print(f"❌ Unknown finish: {finish!r}. Available: {list(SLIME_FINISHES)}")
+        return
 
     prefab_note = f" (prefab: {prefab_name})" if prefab_name else ""
-    print(f"🫧 Generating {count} × player_slime ({color}){prefab_note}...")
-    generate_player_slime(color, count, seed, prefab_name=prefab_name)
+    hex_note = f", hex={custom_color_hex}" if custom_color_hex else ""
+    print(f"🫧 Generating {count} × player_slime ({color}, finish={finish}{hex_note}){prefab_note}...")
+    generate_player_slime(
+        color,
+        count,
+        seed,
+        prefab_name=prefab_name,
+        finish=finish,
+        custom_color_hex=custom_color_hex,
+    )
     print("✅ Done!")
 
 

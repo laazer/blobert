@@ -3,14 +3,60 @@ Material creation system with procedural textures
 """
 
 import bpy
-from ..utils.materials import MaterialColors, MaterialNames, MaterialThemes, MaterialCategories
 
+from ..utils.materials import (
+    MaterialCategories,
+    MaterialColors,
+    MaterialNames,
+    MaterialThemes,
+)
 
 # Map texture type → handler function (populated after handler definitions below)
 _TEXTURE_HANDLERS: dict = {}
 
+ENEMY_FINISH_PRESETS = {
+    "default": (None, None, None),
+    "glossy": (0.12, 0.05, 0.0),
+    "matte": (0.8, 0.0, 0.0),
+    "metallic": (0.25, 0.75, 0.0),
+    "gel": (0.08, 0.0, 0.35),
+}
 
-def create_material(name, color, metallic=0.0, roughness=0.5, alpha=1.0, add_texture=True):
+
+def _parse_hex_color(hex_value: str):
+    raw = (hex_value or "").strip().lstrip("#")
+    if len(raw) != 6:
+        raise ValueError("hex color must be 6 characters (RRGGBB)")
+    try:
+        r = int(raw[0:2], 16) / 255.0
+        g = int(raw[2:4], 16) / 255.0
+        b = int(raw[4:6], 16) / 255.0
+    except ValueError as error:
+        raise ValueError("hex color must be valid hexadecimal") from error
+    return (r, g, b, 1.0)
+
+
+def _force_principled_value(bsdf, input_name, value):
+    """Force a Principled input to a value by removing inbound links."""
+    socket = bsdf.inputs.get(input_name)
+    if socket is None:
+        return
+    for link in list(socket.links):
+        bsdf.id_data.links.remove(link)
+    socket.default_value = value
+
+
+def create_material(
+    name,
+    color,
+    metallic=0.0,
+    roughness=0.5,
+    alpha=1.0,
+    transmission=0.0,
+    add_texture=True,
+    force_surface=False,
+    force_base_color=False,
+):
     """Create an enhanced material with optional procedural textures"""
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
@@ -31,6 +77,10 @@ def create_material(name, color, metallic=0.0, roughness=0.5, alpha=1.0, add_tex
         bsdf.inputs["Metallic"].default_value = metallic
     if "Roughness" in bsdf.inputs:
         bsdf.inputs["Roughness"].default_value = roughness
+    if "Transmission Weight" in bsdf.inputs:
+        bsdf.inputs["Transmission Weight"].default_value = transmission
+    if "Transmission" in bsdf.inputs:
+        bsdf.inputs["Transmission"].default_value = transmission
 
     if alpha < 1.0:
         mat.blend_method = 'BLEND'
@@ -42,6 +92,15 @@ def create_material(name, color, metallic=0.0, roughness=0.5, alpha=1.0, add_tex
         handler = _TEXTURE_HANDLERS.get(texture_type)
         if handler:
             handler(mat, nodes, links, bsdf, color)
+
+    # Explicit overrides should win over texture graph defaults/links.
+    if force_base_color:
+        _force_principled_value(bsdf, "Base Color", color)
+    if force_surface:
+        _force_principled_value(bsdf, "Roughness", roughness)
+        _force_principled_value(bsdf, "Metallic", metallic)
+        _force_principled_value(bsdf, "Transmission Weight", transmission)
+        _force_principled_value(bsdf, "Transmission", transmission)
 
     return mat
 
@@ -186,15 +245,38 @@ _TEXTURE_HANDLERS = {
 }
 
 
-def setup_materials() -> dict:
+def setup_materials(enemy_finish: str = "default", enemy_hex_color: str = "") -> dict:
     """Create all materials from the shared color palette"""
     materials = {}
+    override_color = _parse_hex_color(enemy_hex_color) if enemy_hex_color else None
+    finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        enemy_finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = enemy_finish != "default"
+    force_base_color = override_color is not None
     for name, color in MaterialColors.get_all().items():
         is_metallic = name in MaterialCategories.METALLIC_SHADER
         metallic = 0.8 if is_metallic else 0.0
         roughness = 0.3 if is_metallic else 0.7
+        if finish_roughness is not None:
+            roughness = finish_roughness
+        if finish_metallic is not None:
+            metallic = finish_metallic
+        transmission = finish_transmission if finish_transmission is not None else 0.0
         alpha = color[3] if len(color) > 3 else 1.0
-        materials[name] = create_material(name, color, metallic, roughness, alpha, add_texture=True)
+        material_color = override_color if override_color else color
+        materials[name] = create_material(
+            name,
+            material_color,
+            metallic,
+            roughness,
+            alpha,
+            transmission,
+            add_texture=True,
+            force_surface=force_surface,
+            force_base_color=force_base_color,
+        )
     return materials
 
 

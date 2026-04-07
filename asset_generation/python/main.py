@@ -4,11 +4,10 @@ Blender Enemy Generator - Main Entry Point
 Unified command-line interface for generating game-ready enemies
 """
 
-import sys
-import os
 import argparse
+import os
 import subprocess
-from pathlib import Path
+import sys
 
 # Add src and bin directories to Python path
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +15,13 @@ sys.path.insert(0, os.path.join(_PROJECT_ROOT, 'src'))
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, 'bin'))
 
 from find_blender import resolve_blender_path
-from utils.constants import EnemyTypes, ExportConfig, LevelObjectTypes, LevelExportConfig, PlayerExportConfig
+from utils.constants import (
+    EnemyTypes,
+    ExportConfig,
+    LevelExportConfig,
+    LevelObjectTypes,
+    PlayerExportConfig,
+)
 
 
 def _get_blender_path() -> str:
@@ -99,7 +104,7 @@ def list_enemies():
 def handle_smart_commands(args):
     """Handle smart generation, description, and stats commands"""
     try:
-        from src.smart.smart_generation import SmartGenerator, TextToEnemyGenerator
+        from src.smart.smart_generation import SmartGenerator
     except ImportError:
         print_colored("❌ Smart generation system not available", Colors.RED)
         return False
@@ -282,7 +287,7 @@ def handle_view_command(args):
     
     try:
         # Run Blender in foreground with animation viewer script
-        result = subprocess.run([
+        subprocess.run([
             _get_blender_path(),
             "--python", viewer_script,
             "--", glb_full_path, animation
@@ -346,7 +351,7 @@ except Exception as e:
         success = run_blender_script(script_content)
         if success:
             print_colored("✅ Model integration completed!", Colors.GREEN)
-            print(f"Check animated_exports/ for your integrated model")
+            print("Check animated_exports/ for your integrated model")
         else:
             print_colored("❌ Model integration failed", Colors.RED)
         return success
@@ -393,8 +398,23 @@ else:
 
 def handle_player_command(args):
     """Handle player slime generation command."""
-    # Import here to avoid loading the full player package at CLI startup
-    from player.player_materials import SLIME_COLORS
+    # player.player_materials imports bpy; keep CLI usable outside Blender.
+    try:
+        from player.player_materials import SLIME_COLORS
+    except ModuleNotFoundError as error:
+        if error.name != "bpy":
+            raise
+        SLIME_COLORS = {
+            "blue": None,
+            "green": None,
+            "pink": None,
+            "purple": None,
+            "yellow": None,
+            "orange": None,
+            "red": None,
+            "white": None,
+        }
+    slime_finishes = ("default", "glossy", "matte", "metallic", "gel")
 
     color = args.enemy or "blue"
 
@@ -409,13 +429,29 @@ def handle_player_command(args):
         print_colored(f"❌ Unknown slime color: {color!r}", Colors.RED)
         _print_player_colors(SLIME_COLORS)
         return False
+    if args.finish not in slime_finishes:
+        print_colored(f"❌ Unknown finish: {args.finish!r}", Colors.RED)
+        print(f"Available finishes: {', '.join(slime_finishes)}")
+        return False
+    if args.hex_color:
+        normalized_hex = args.hex_color.lstrip("#")
+        if len(normalized_hex) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in normalized_hex):
+            print_colored(f"❌ Invalid --hex-color: {args.hex_color!r}. Expected #RRGGBB", Colors.RED)
+            return False
 
     print_header(f"Generating Player Slime: {color}")
     print_colored(f"🫧 Color: {color}  ×{args.count} variants", Colors.BLUE)
+    effective_finish = "glossy" if args.finish == "default" else args.finish
+    print_colored(f"✨ Finish: {effective_finish}", Colors.BLUE)
+    if args.hex_color:
+        print_colored(f"🎨 Custom HEX: {args.hex_color}", Colors.BLUE)
     if args.prefab:
         print_colored(f"📦 Prefab mesh: {args.prefab}", Colors.YELLOW)
 
     blender_args = [color, str(args.count)]
+    blender_args += ['--finish', effective_finish]
+    if args.hex_color:
+        blender_args += ['--hex-color', args.hex_color]
     if args.prefab:
         blender_args += ['--prefab', args.prefab]
 
@@ -438,6 +474,10 @@ def _print_player_colors(slime_colors: dict):
     print_colored("🫧 AVAILABLE SLIME COLORS:", Colors.BLUE)
     for color_name in slime_colors:
         print(f"  {color_name}")
+    print()
+    print_colored("✨ AVAILABLE FINISHES:", Colors.BLUE)
+    for finish_name in ("glossy", "matte", "metallic", "gel"):
+        print(f"  {finish_name}")
     print()
 
 
@@ -509,7 +549,11 @@ def _print_level_object_types():
 
 def _handle_prefabs_command(args) -> bool:
     """List registered prefabs with download status and instructions."""
-    from src.prefabs.prefab_library import get_all_names, get_prefab, is_prefab_downloaded
+    from src.prefabs.prefab_library import (
+        get_all_names,
+        get_prefab,
+        is_prefab_downloaded,
+    )
 
     prefab_name = args.enemy  # reuse the 'enemy' positional for the prefab name
 
@@ -667,6 +711,10 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
                             'procedural geometry (animated and player commands). '
                             'The file must exist in the prefabs/ directory. '
                             'Run: python main.py prefabs  to list available prefabs.')
+    parser.add_argument('--finish', choices=['default', 'glossy', 'matte', 'metallic', 'gel'],
+                       default='glossy', help='Material finish override (player and animated commands)')
+    parser.add_argument('--hex-color', type=str,
+                       help='Custom player body color in #RRGGBB format (player command)')
     
     args = parser.parse_args()
     
@@ -738,7 +786,21 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
             print("Available animated enemies:", EnemyTypes.get_animated())
             sys.exit(1)
 
+        enemy_finishes = ('default', 'glossy', 'matte', 'metallic', 'gel')
+        if args.finish not in enemy_finishes:
+            print_colored(f"❌ Unknown finish: {args.finish!r}", Colors.RED)
+            print(f"Available finishes: {', '.join(enemy_finishes)}")
+            sys.exit(1)
+        if args.hex_color:
+            normalized_hex = args.hex_color.lstrip("#")
+            if len(normalized_hex) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in normalized_hex):
+                print_colored(f"❌ Invalid --hex-color: {args.hex_color!r}. Expected #RRGGBB", Colors.RED)
+                sys.exit(1)
+
         print_header(f"Generating Animated Enemy: {args.enemy}")
+        print_colored(f"✨ Finish: {args.finish}", Colors.BLUE)
+        if args.hex_color:
+            print_colored(f"🎨 Custom HEX: {args.hex_color}", Colors.BLUE)
 
         if args.prefab:
             print_colored(f"📦 Prefab mesh: {args.prefab}", Colors.YELLOW)
@@ -747,6 +809,9 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
         for enemy_type in enemies_to_generate:
             print(f"\n🎬 Generating {enemy_type}...")
             blender_args = [enemy_type, str(args.count)]
+            blender_args += ['--finish', args.finish]
+            if args.hex_color:
+                blender_args += ['--hex-color', args.hex_color]
             if args.prefab:
                 blender_args += ['--prefab', args.prefab]
             result = subprocess.run([

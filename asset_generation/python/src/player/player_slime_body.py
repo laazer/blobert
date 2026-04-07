@@ -11,15 +11,15 @@ Anatomy:
   arm    ×2 — small sphere nubs sticking out from the body sides
 """
 
-from ..core.blender_utils import create_sphere, join_objects, apply_smooth_shading
+from ..core.blender_utils import apply_smooth_shading, create_sphere, join_objects
 from ..materials.material_system import apply_material_to_object
 from .player_materials import (
-    create_slime_body_material,
-    create_sclera_material,
-    create_pupil_material,
-    create_highlight_material,
-    create_cheek_material,
     SLIME_COLORS,
+    create_cheek_material,
+    create_highlight_material,
+    create_pupil_material,
+    create_sclera_material,
+    create_slime_body_material,
 )
 
 
@@ -51,9 +51,11 @@ class PlayerSlimeBody:
     ARM_OFFSET_Z = 0.85
     ARM_SCALE = (0.22, 0.18, 0.18)
 
-    def __init__(self, color: str = "blue", rng=None):
+    def __init__(self, color: str = "blue", rng=None, finish: str = "glossy", custom_color_hex: str = ""):
         self.color = color if color in SLIME_COLORS else "blue"
         self.rng = rng
+        self.finish = finish
+        self.custom_color_hex = custom_color_hex
 
         self._body_parts: list = []
         self._sclera_parts: list = []
@@ -102,7 +104,7 @@ class PlayerSlimeBody:
 
     def apply_materials(self):
         """Apply themed materials to all parts."""
-        body_mat      = create_slime_body_material(self.color)
+        body_mat      = create_slime_body_material(self.color, finish=self.finish, custom_color_hex=self.custom_color_hex)
         sclera_mat    = create_sclera_material()
         pupil_mat     = create_pupil_material()
         highlight_mat = create_highlight_material()

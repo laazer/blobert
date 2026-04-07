@@ -6,10 +6,12 @@ the characteristic shiny, wet-candy look. Eye highlights use near-zero
 roughness for a mirror-like reflection.
 """
 
-import bpy
 from typing import Tuple
 
+import bpy
+
 Color = Tuple[float, float, float, float]  # RGBA 0.0–1.0
+FinishSettings = Tuple[float, float, float]  # roughness, metallic, transmission
 
 # ------------------------------------------------------------------
 # Slime body palette — eight color variants
@@ -24,6 +26,13 @@ SLIME_COLORS = {
     "orange": (0.98, 0.55, 0.12, 1.0),
     "red":    (0.95, 0.20, 0.22, 1.0),
     "white":  (0.92, 0.95, 0.98, 1.0),
+}
+
+SLIME_FINISHES: dict[str, FinishSettings] = {
+    "glossy": (0.05, 0.0, 0.0),
+    "matte": (0.55, 0.0, 0.0),
+    "metallic": (0.25, 0.65, 0.0),
+    "gel": (0.08, 0.0, 0.35),
 }
 
 # Eye and accessory colors — consistent regardless of body color
@@ -43,11 +52,33 @@ def _apply_principled_inputs(principled, **kwargs):
             principled.inputs[name].default_value = value
 
 
-def create_slime_body_material(color_name: str = "blue") -> bpy.types.Material:
-    """Create the main slime body material — glossy, candy-like."""
-    base_color = SLIME_COLORS.get(color_name, SLIME_COLORS["blue"])
+def _parse_hex_color(hex_value: str) -> Color:
+    """Convert '#RRGGBB' (or 'RRGGBB') to RGBA in [0,1]."""
+    raw = (hex_value or "").strip().lstrip("#")
+    if len(raw) != 6:
+        raise ValueError("hex color must be 6 characters (RRGGBB)")
+    try:
+        r = int(raw[0:2], 16) / 255.0
+        g = int(raw[2:4], 16) / 255.0
+        b = int(raw[4:6], 16) / 255.0
+    except ValueError as error:
+        raise ValueError("hex color must be valid hexadecimal") from error
+    return (r, g, b, 1.0)
 
-    material = bpy.data.materials.new(name=f"slime_body_{color_name}")
+
+def create_slime_body_material(
+    color_name: str = "blue",
+    finish: str = "glossy",
+    custom_color_hex: str = "",
+) -> bpy.types.Material:
+    """Create the main slime body material — glossy, candy-like."""
+    base_color = _parse_hex_color(custom_color_hex) if custom_color_hex else SLIME_COLORS.get(color_name, SLIME_COLORS["blue"])
+    roughness, metallic, transmission = SLIME_FINISHES.get(finish, SLIME_FINISHES["glossy"])
+
+    material_name = f"slime_body_{color_name}_{finish}"
+    if custom_color_hex:
+        material_name = f"slime_body_custom_{custom_color_hex.strip().lstrip('#')}_{finish}"
+    material = bpy.data.materials.new(name=material_name)
     material.use_nodes = True
 
     nodes = material.node_tree.nodes
@@ -56,7 +87,13 @@ def create_slime_body_material(color_name: str = "blue") -> bpy.types.Material:
     principled = nodes.new(type='ShaderNodeBsdfPrincipled')
     _apply_principled_inputs(
         principled,
-        **{"Base Color": base_color, "Roughness": 0.05, "Metallic": 0.0},
+        **{
+            "Base Color": base_color,
+            "Roughness": roughness,
+            "Metallic": metallic,
+            "Transmission Weight": transmission,
+            "Transmission": transmission,
+        },
     )
 
     output = nodes.new(type='ShaderNodeOutputMaterial')
