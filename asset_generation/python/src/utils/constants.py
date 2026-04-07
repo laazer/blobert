@@ -2,7 +2,6 @@
 Core constants for the enemy generation system
 """
 
-from enum import Enum
 from typing import Dict, List
 
 from . import enemy_slug_registry
@@ -11,12 +10,12 @@ from . import enemy_slug_registry
 class EnemyTypes:
     """Enemy type constants"""
     # Animated enemies
-    ADHESION_BUG = "adhesion_bug"
-    TAR_SLUG = "tar_slug"  
-    EMBER_IMP = "ember_imp"
+    SPIDER = "spider"
+    SLUG = "slug"  
+    IMP = "imp"
     
     # Animated enemies (extended)
-    ACID_SPITTER = "acid_spitter"
+    SPITTER = "spitter"
     CLAW_CRAWLER = "claw_crawler"
     CARAPACE_HUSK = "carapace_husk"
 
@@ -349,6 +348,6 @@ class ExportConfig:
     ANIMATED_DIR = "animated_exports"
     FORMAT = "GLB"
     
-    # File naming patterns
+    # File naming patterns (animated stems are built in utils.export_naming.animated_export_stem)
     STATIC_PATTERN = "{enemy_type}_{variant:02d}.{format}"
     ANIMATED_PATTERN = "{enemy_type}_animated_{variant:02d}.{format}"

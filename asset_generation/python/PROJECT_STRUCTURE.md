@@ -20,7 +20,6 @@ blender-experiments/
 │   │
 │   ├── animations/
 │   │   ├── keyframe_system.py   # set_bone_keyframe, create_simple_armature
-│   │   ├── armature_builders.py # create_quadruped/blob/humanoid_armature
 │   │   ├── body_types.py        # BlobBodyType, QuadrupedBodyType, HumanoidBodyType
 │   │   │                        #   — each implements all 13 animation methods
 │   │   └── animation_system.py  # create_all_animations orchestrator
@@ -84,7 +83,7 @@ main.py
             ├─ AnimatedAdhesionBug.build()
             │    ├─ create_body() / create_head() / create_limbs()
             │    ├─ apply_materials()        →  material_system.py
-            │    ├─ create_armature()        →  armature_builders.py
+            │    ├─ create_armature()        →  same enemy class (_armature_bones + create_simple_armature)
             │    └─ create_all_animations()  →  body_types.QuadrupedBodyType (all 13)
             └─ get_attack_profile()          →  combat/enemy_attack_profiles.py
        └─ export_enemy(armature, mesh, filename, dir, attack_profile)

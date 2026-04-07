@@ -16,10 +16,10 @@ from src.utils.constants import EnemyTypes
 
 # Frozen snapshots — must match pre-refactor get_animated / get_static order.
 _EXPECTED_ANIMATED = [
-    "adhesion_bug",
-    "tar_slug",
-    "ember_imp",
-    "acid_spitter",
+    "spider",
+    "slug",
+    "imp",
+    "spitter",
     "claw_crawler",
     "carapace_husk",
 ]
@@ -37,11 +37,18 @@ def test_ETRP_01_registry_tuples_match_frozen_lists() -> None:
     assert list(enemy_slug_registry.STATIC_SLUGS) == _EXPECTED_STATIC
 
 
+def test_ETRP_06_animated_enemies_for_api_matches_registry_order() -> None:
+    meta = enemy_slug_registry.animated_enemies_for_api()
+    assert [e["slug"] for e in meta] == _EXPECTED_ANIMATED
+    assert all(e.get("label") for e in meta)
+    assert {e["slug"] for e in meta} == set(enemy_slug_registry.ANIMATED_ENEMY_LABELS.keys())
+
+
 def test_ETRP_02_enemy_types_class_attributes_unchanged() -> None:
-    assert EnemyTypes.ADHESION_BUG == "adhesion_bug"
-    assert EnemyTypes.TAR_SLUG == "tar_slug"
-    assert EnemyTypes.EMBER_IMP == "ember_imp"
-    assert EnemyTypes.ACID_SPITTER == "acid_spitter"
+    assert EnemyTypes.SPIDER == "spider"
+    assert EnemyTypes.SLUG == "slug"
+    assert EnemyTypes.IMP == "imp"
+    assert EnemyTypes.SPITTER == "spitter"
     assert EnemyTypes.CLAW_CRAWLER == "claw_crawler"
     assert EnemyTypes.CARAPACE_HUSK == "carapace_husk"
     assert EnemyTypes.GLUE_DRONE == "glue_drone"

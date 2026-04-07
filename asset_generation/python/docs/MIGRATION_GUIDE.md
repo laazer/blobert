@@ -104,7 +104,7 @@ python main.py test
 
 - **src/core/** - Blender utilities (`create_sphere`, `join_objects`, etc.)
 - **src/materials/** - Complete material system with 22+ materials
-- **src/animations/** - Animation system (`create_all_animations`, armature builders)  
+- **src/animations/** - Animation system (`create_all_animations`, `create_simple_armature`, body types)  
 - **src/enemies/** - Enemy classes (`AnimatedAdhesionBug`, `AnimatedTarSlug`, `AnimatedEmberImp`)
 - **src/generator.py** - Integrated generator using organized modules
 

@@ -2,10 +2,10 @@
 
 import math
 
-from mathutils import Euler, Vector
+from mathutils import Euler
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, rig_from_bone_map
+from ..core.rig_types import RigDefinition, humanoid_simple_rig_definition
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
@@ -61,18 +61,7 @@ class AnimatedCarapaceHusk(AnimatedEnemy):
             apply_material_to_object(part, limb_material)
 
     def get_rig_definition(self) -> RigDefinition:
-        h = self.body_height
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, h * 0.2)), None),
-                "spine": (Vector((0, 0, h * 0.2)), Vector((0, 0, h * 0.7)), "root"),
-                "head": (Vector((0, 0, h * 0.7)), Vector((0, 0, h * 1.0)), "spine"),
-                "arm_l": (Vector((0, h * 0.2, h * 0.6)), Vector((0, h * 0.5, h * 0.3)), "spine"),
-                "arm_r": (Vector((0, -h * 0.2, h * 0.6)), Vector((0, -h * 0.5, h * 0.3)), "spine"),
-                "leg_l": (Vector((0, h * 0.1, h * 0.2)), Vector((0, h * 0.1, 0)), "root"),
-                "leg_r": (Vector((0, -h * 0.1, h * 0.2)), Vector((0, -h * 0.1, 0)), "root"),
-            }
-        )
+        return humanoid_simple_rig_definition(self.body_height)
 
     def get_body_type(self):
         return EnemyBodyTypes.HUMANOID

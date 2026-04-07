@@ -26,12 +26,11 @@ src/
 │
 ├── animations/
 │   ├── keyframe_system.py    # set_bone_keyframe, create_simple_armature
-│   ├── armature_builders.py  # Bone hierarchy for each body type
 │   ├── body_types.py         # Animation logic per body type (13 animations each)
 │   └── animation_system.py   # create_all_animations orchestrator
 │
 ├── enemies/
-│   ├── base_enemy.py         # BaseEnemy ABC + export_enemy() + get_attack_profile()
+│   ├── base_enemy.py         # BaseEnemy ABC + export_enemy() + get_attack_profile(); subclasses implement create_armature
 │   ├── animated_acid_spitter.py  # AnimatedAcidSpitter
 │   ├── animated_adhesion_bug.py  # AnimatedAdhesionBug
 │   ├── animated_carapace_husk.py  # AnimatedCarapaceHusk
@@ -115,8 +114,12 @@ class AnimatedFrostJelly(BaseEnemy):
         mats = get_enemy_materials('frost_jelly', self.materials, self.rng)
         apply_material_to_object(self.parts[0], mats['body'])
 
+    def _armature_bones(self):
+        # Per-enemy bone dict: name -> (head, tail, parent_name_or_None) — see animated_tar_slug.py
+        ...
+
     def create_armature(self):
-        return create_blob_armature("frost_jelly", self.body_scale)
+        return create_simple_armature("frost_jelly", self._armature_bones())
 
     def get_body_type(self):
         return EnemyBodyTypes.BLOB   # gets all blob animations for free

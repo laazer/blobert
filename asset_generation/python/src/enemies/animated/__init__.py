@@ -1,19 +1,19 @@
 """Animated enemy package: registry builder and concrete enemy classes."""
 
-from ..animated_acid_spitter import AnimatedAcidSpitter
-from ..animated_adhesion_bug import AnimatedAdhesionBug
 from ..animated_carapace_husk import AnimatedCarapaceHusk
 from ..animated_claw_crawler import AnimatedClawCrawler
-from ..animated_ember_imp import AnimatedEmberImp
-from ..animated_tar_slug import AnimatedTarSlug
+from ..animated_imp import AnimatedImp
+from ..animated_slug import AnimatedSlug
+from ..animated_spider import AnimatedSpider
+from ..animated_spitter import AnimatedSpitter
 from .registry import AnimatedEnemyBuilder
 
 __all__ = [
     'AnimatedEnemyBuilder',
-    'AnimatedAcidSpitter',
-    'AnimatedAdhesionBug',
+    'AnimatedSpitter',
+    'AnimatedSpider',
     'AnimatedCarapaceHusk',
     'AnimatedClawCrawler',
-    'AnimatedEmberImp',
-    'AnimatedTarSlug',
+    'AnimatedImp',
+    'AnimatedSlug',
 ]

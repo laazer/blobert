@@ -25,11 +25,12 @@ def _validate_scale(scale: float) -> float:
 class BaseAnimatedModel(ABC):
     """Procedural mesh: parts list, optional uniform scale, themed materials, finalize."""
 
-    def __init__(self, name, materials, rng, scale: float = 1.0):
+    def __init__(self, name, materials, rng, scale: float = 1.0, build_options: dict | None = None):
         self.name = name
         self.materials = materials
         self.rng = rng
         self.scale = _validate_scale(scale)
+        self.build_options: dict = dict(build_options or {})
         self.parts: list = []
 
     def _scaled_location(self, xyz: tuple) -> tuple:

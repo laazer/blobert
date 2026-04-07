@@ -6,11 +6,10 @@ import json
 import unittest
 
 from src.combat.attack_data import AttackData, AttackType
-from src.combat.enemy_attack_profiles import get_attack_profile, _hit_frame
+from src.combat.enemy_attack_profiles import _hit_frame, get_attack_profile
 from src.utils.constants import AnimationConfig, AnimationTypes
 
-
-ANIMATED_ENEMY_TYPES = ['adhesion_bug', 'tar_slug', 'ember_imp']
+ANIMATED_ENEMY_TYPES = ['spider', 'slug', 'imp']
 
 
 class TestHitFrameHelper(unittest.TestCase):

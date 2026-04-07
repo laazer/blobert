@@ -1,8 +1,8 @@
 import sys
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from core.config import settings
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/api/meta", tags=["meta"])
 
@@ -23,16 +23,33 @@ async def get_enemies() -> JSONResponse:
             sys.path.insert(0, p)
 
     try:
-        from utils.enemy_slug_registry import ANIMATED_SLUGS
-        slugs = list(ANIMATED_SLUGS)
-    except ImportError:
-        # Fallback hardcoded list
-        slugs = [
-            "adhesion_bug", "tar_slug", "ember_imp",
-            "acid_spitter", "claw_crawler", "carapace_husk",
-        ]
+        from utils.animated_build_options import animated_build_controls_for_api
+        from utils.enemy_slug_registry import animated_enemies_for_api
 
-    return JSONResponse({"enemies": slugs})
+        enemies = animated_enemies_for_api()
+        build_controls = animated_build_controls_for_api()
+    except ImportError:
+        # Fallback: slug list + mechanical labels (no registry import)
+        _fallback_slugs = [
+            "spider",
+            "slug",
+            "imp",
+            "spitter",
+            "claw_crawler",
+            "carapace_husk",
+        ]
+        enemies = [
+            {"slug": s, "label": " ".join(part.capitalize() for part in s.split("_"))}
+            for s in _fallback_slugs
+        ]
+        build_controls = {}
+
+    return JSONResponse(
+        {
+            "enemies": enemies,
+            "animated_build_controls": build_controls,
+        }
+    )
 
 
 @router.get("/animations")

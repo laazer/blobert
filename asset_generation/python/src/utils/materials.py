@@ -98,11 +98,11 @@ class MaterialThemes:
     """Material theme assignments for enemies"""
     
     ENEMY_THEMES = {
-        'adhesion_bug': [MaterialNames.TOXIC_GREEN, MaterialNames.ORGANIC_BROWN, MaterialNames.BONE_WHITE],
-        'tar_slug': [MaterialNames.TAR_BLACK, MaterialNames.SLIME_GREEN, MaterialNames.DIRT_BROWN],
-        'ember_imp': [MaterialNames.FIRE_ORANGE, MaterialNames.EMBER_RED, MaterialNames.BONE_WHITE],
+        'spider': [MaterialNames.TOXIC_GREEN, MaterialNames.ORGANIC_BROWN, MaterialNames.BONE_WHITE],
+        'slug': [MaterialNames.TAR_BLACK, MaterialNames.SLIME_GREEN, MaterialNames.DIRT_BROWN],
+        'imp': [MaterialNames.FIRE_ORANGE, MaterialNames.EMBER_RED, MaterialNames.BONE_WHITE],
         'glue_drone': [MaterialNames.METAL_GRAY, MaterialNames.CHROME_SILVER, MaterialNames.RUST_ORANGE],
-        'acid_spitter': [MaterialNames.ACID_YELLOW, MaterialNames.TOXIC_GREEN, MaterialNames.SLIME_GREEN],
+        'spitter': [MaterialNames.ACID_YELLOW, MaterialNames.TOXIC_GREEN, MaterialNames.SLIME_GREEN],
         'melt_worm': [MaterialNames.FLESH_PINK, MaterialNames.BLOOD_RED, MaterialNames.ORGANIC_BROWN],
         'claw_crawler': [MaterialNames.STONE_GRAY, MaterialNames.DIRT_BROWN, MaterialNames.BONE_WHITE],
         'frost_jelly': [MaterialNames.ICE_WHITE, MaterialNames.FROST_BLUE, MaterialNames.CRYSTAL_PURPLE],

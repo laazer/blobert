@@ -1,15 +1,13 @@
 """Animated adhesion bug enemy builder."""
 
-from mathutils import Vector
-
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, rig_from_bone_map
+from ..core.rig_types import RigDefinition, quadruped_simple_rig_definition
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
 
 
-class AnimatedAdhesionBug(AnimatedEnemy):
+class AnimatedSpider(AnimatedEnemy):
     """Multi-segment bug with quadruped movement"""
 
     def build_mesh_parts(self):
@@ -25,7 +23,10 @@ class AnimatedAdhesionBug(AnimatedEnemy):
         self.parts.append(head)
         self.head_scale = head_scale
 
-        eye_count = self.rng.choice([2, 4])
+        eye_count = int(self.build_options.get("eye_count", 2))
+        if eye_count not in (2, 4):
+            eye_count = 2
+        self._eye_count = eye_count
         eye_scale = self.head_scale * 0.15
         for i in range(eye_count):
             side = 1 if i % 2 == 0 else -1
@@ -54,32 +55,19 @@ class AnimatedAdhesionBug(AnimatedEnemy):
             self.parts.append(leg)
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("adhesion_bug", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("spider", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         leg_material = enemy_mats["limbs"]
         eye_material = enemy_mats["extra"]
-        for i, part in enumerate(self.parts[2:]):
-            if i < 6:
-                apply_material_to_object(part, leg_material)
-            else:
-                apply_material_to_object(part, eye_material)
+        ec = getattr(self, "_eye_count", 2)
+        for i in range(ec):
+            apply_material_to_object(self.parts[2 + i], eye_material)
+        for i in range(6):
+            apply_material_to_object(self.parts[2 + ec + i], leg_material)
 
     def get_rig_definition(self) -> RigDefinition:
-        s = self.body_scale
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, s * 0.2)), None),
-                "spine": (Vector((0, 0, s * 0.2)), Vector((s * 0.5, 0, s * 0.4)), "root"),
-                "head": (Vector((s * 0.5, 0, s * 0.4)), Vector((s * 0.8, 0, s * 0.6)), "spine"),
-                "leg_fl": (Vector((s * 0.3, s * 0.3, s * 0.3)), Vector((s * 0.3, s * 0.3, 0)), "spine"),
-                "leg_fr": (Vector((s * 0.3, -s * 0.3, s * 0.3)), Vector((s * 0.3, -s * 0.3, 0)), "spine"),
-                "leg_ml": (Vector((0, s * 0.4, s * 0.3)), Vector((0, s * 0.4, 0)), "spine"),
-                "leg_mr": (Vector((0, -s * 0.4, s * 0.3)), Vector((0, -s * 0.4, 0)), "spine"),
-                "leg_bl": (Vector((-s * 0.2, s * 0.3, s * 0.3)), Vector((-s * 0.2, s * 0.3, 0)), "root"),
-                "leg_br": (Vector((-s * 0.2, -s * 0.3, s * 0.3)), Vector((-s * 0.2, -s * 0.3, 0)), "root"),
-            }
-        )
+        return quadruped_simple_rig_definition(self.body_scale)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

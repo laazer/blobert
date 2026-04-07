@@ -65,3 +65,15 @@ asset_generation/python/exports/*.blend
 .blog-session.log
 # Pre-push blog hook: last commit SHA we successfully generated a post for (local only)
 .lefthook/.blog-last-blogged-commit
+
+# Node.js
+node_modules/
+package-lock.json
+package.json
+yarn.lock
+bun.lockb
+bun.lock
+bun.lockb.lock
+bun.lockb.lock.lock
+bun.lockb.lock.lock.lock
+bun.lockb.lock.lock.lock.lock

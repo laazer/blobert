@@ -1,16 +1,11 @@
-import { RunCmd } from "../../types";
+import { type AnimatedEnemyMeta, RunCmd } from "../../types";
+import {
+  DEFAULT_ANIMATED_ENEMY_META,
+  DEFAULT_ANIMATED_ENEMY_SLUGS,
+  slugDisplayLabel,
+} from "../../utils/enemyDisplay";
 
-/** Default slugs when /api/meta/enemies has not loaded yet. */
-export const DEFAULT_ANIMATED_ENEMY_SLUGS = [
-  "adhesion_bug",
-  "tar_slug",
-  "ember_imp",
-  "acid_spitter",
-  "claw_crawler",
-  "carapace_husk",
-] as const;
-
-/** @deprecated use DEFAULT_ANIMATED_ENEMY_SLUGS or store `animatedEnemySlugs` */
+/** @deprecated use DEFAULT_ANIMATED_ENEMY_SLUGS from utils/enemyDisplay */
 export const ANIMATED_ENEMY_SLUGS = DEFAULT_ANIMATED_ENEMY_SLUGS;
 
 export type PartTreeNode = {
@@ -28,9 +23,10 @@ function animatedEnemyModulePath(slug: string): string {
 export function getModelCodeTarget(
   cmd: RunCmd,
   enemy: string,
-  animatedSlugs: readonly string[] = DEFAULT_ANIMATED_ENEMY_SLUGS,
+  animatedMeta: readonly AnimatedEnemyMeta[] = DEFAULT_ANIMATED_ENEMY_META,
 ): SourceNavTarget | null {
   const e = (enemy || "").trim();
+  const animatedSlugs = animatedMeta.map((m) => m.slug);
 
   switch (cmd) {
     case "animated":
@@ -38,7 +34,10 @@ export function getModelCodeTarget(
         return { path: "enemies/animated/registry.py", description: "Animated enemy registry" };
       }
       if (animatedSlugs.includes(e)) {
-        return { path: animatedEnemyModulePath(e), description: `Mesh builder: ${e}` };
+        return {
+          path: animatedEnemyModulePath(e),
+          description: `Mesh builder: ${slugDisplayLabel(e, animatedMeta)} (${e})`,
+        };
       }
       return { path: "enemies/base_enemy.py", description: "Base enemy mesh API" };
 
@@ -49,11 +48,17 @@ export function getModelCodeTarget(
       return { path: "level/level_object_builder.py", description: "Level object mesh builder" };
 
     case "test":
-      return { path: "enemies/animated_adhesion_bug.py", description: "Test command uses adhesion bug" };
+      return {
+        path: "enemies/animated_spider.py",
+        description: "Test command uses spider mesh (animated_spider.py)",
+      };
 
     case "stats":
       if (e && animatedSlugs.includes(e)) {
-        return { path: animatedEnemyModulePath(e), description: `Mesh builder: ${e}` };
+        return {
+          path: animatedEnemyModulePath(e),
+          description: `Mesh builder: ${slugDisplayLabel(e, animatedMeta)} (${e})`,
+        };
       }
       return { path: "enemies/base_enemy.py", description: "Base enemy mesh API" };
 
@@ -88,7 +93,10 @@ export function getAnimationCodeExtras(cmd: RunCmd): SourceNavTarget[] {
       return [
         { path: "animations/keyframe_system.py", description: "Bone keyframes" },
         { path: "animations/body_types.py", description: "Per-body-type poses & clips" },
-        { path: "enemies/animated_tar_slug.py", description: "Enemy-specific rig (get_rig_definition)" },
+        {
+          path: "enemies/animated_slug.py",
+          description: "Example rig (get_rig_definition) — animated_slug.py",
+        },
       ];
   }
 }
@@ -135,55 +143,88 @@ function playerSlimePartTree(): PartTreeNode[] {
   ];
 }
 
-/** Full `self.parts` order per `animated_{slug}.py`. */
-function animatedEnemyPartTree(slug: string): PartTreeNode {
-  switch (slug) {
-    case "adhesion_bug":
-      return {
-        id: "adhesion-root",
-        label: "Adhesion bug — parts[] (animated_adhesion_bug.py)",
-        children: [
-          {
-            id: "adhesion-2eye",
-            label: "Variant: 2 eyes (10 parts)",
-            children: [
-              { id: "ab2-0", label: "parts[0] — body" },
-              { id: "ab2-1", label: "parts[1] — head" },
-              { id: "ab2-2", label: "parts[2] — eye" },
-              { id: "ab2-3", label: "parts[3] — eye" },
-              { id: "ab2-4", label: "parts[4] — leg — front left" },
-              { id: "ab2-5", label: "parts[5] — leg — front right" },
-              { id: "ab2-6", label: "parts[6] — leg — middle left" },
-              { id: "ab2-7", label: "parts[7] — leg — middle right" },
-              { id: "ab2-8", label: "parts[8] — leg — back left" },
-              { id: "ab2-9", label: "parts[9] — leg — back right" },
-            ],
-          },
-          {
-            id: "adhesion-4eye",
-            label: "Variant: 4 eyes (12 parts)",
-            children: [
-              { id: "ab4-0", label: "parts[0] — body" },
-              { id: "ab4-1", label: "parts[1] — head" },
-              { id: "ab4-2", label: "parts[2] — eye" },
-              { id: "ab4-3", label: "parts[3] — eye" },
-              { id: "ab4-4", label: "parts[4] — eye" },
-              { id: "ab4-5", label: "parts[5] — eye" },
-              { id: "ab4-6", label: "parts[6] — leg — front left" },
-              { id: "ab4-7", label: "parts[7] — leg — front right" },
-              { id: "ab4-8", label: "parts[8] — leg — middle left" },
-              { id: "ab4-9", label: "parts[9] — leg — middle right" },
-              { id: "ab4-10", label: "parts[10] — leg — back left" },
-              { id: "ab4-11", label: "parts[11] — leg — back right" },
-            ],
-          },
-        ],
-      };
+function _coerceSpiderEyeCount(raw: unknown): 2 | 4 {
+  return Number(raw) === 4 ? 4 : 2;
+}
 
-    case "tar_slug":
+function _coerceClawPeripheralEyes(raw: unknown): number {
+  const n = Math.floor(Number(raw));
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(3, n));
+}
+
+const _SPIDER_LEG_NAMES = [
+  "front left",
+  "front right",
+  "middle left",
+  "middle right",
+  "back left",
+  "back right",
+] as const;
+
+/** `self.parts` for spider — order matches `animated_spider.py` for the given `eye_count`. */
+function spiderPartTreeForBuild(eyeCount: 2 | 4): PartTreeNode {
+  const children: PartTreeNode[] = [
+    { id: "sp-0", label: "parts[0] — body" },
+    { id: "sp-1", label: "parts[1] — head" },
+  ];
+  for (let i = 0; i < eyeCount; i += 1) {
+    children.push({ id: `sp-e-${i}`, label: `parts[${2 + i}] — eye` });
+  }
+  for (let i = 0; i < 6; i += 1) {
+    const idx = 2 + eyeCount + i;
+    children.push({
+      id: `sp-leg-${i}`,
+      label: `parts[${idx}] — leg — ${_SPIDER_LEG_NAMES[i]}`,
+    });
+  }
+  const total = 2 + eyeCount + 6;
+  return {
+    id: "spider-root",
+    label: `Spider — parts[] (${total} parts, animated_spider.py)`,
+    children,
+  };
+}
+
+/** `self.parts` for claw crawler — matches `animated_claw_crawler.py` for `peripheral_eyes`. */
+function clawCrawlerPartTreeForBuild(peripheralEyes: number): PartTreeNode {
+  const pe = _coerceClawPeripheralEyes(peripheralEyes);
+  const children: PartTreeNode[] = [
+    { id: "cc-0", label: "parts[0] — body" },
+    { id: "cc-1", label: "parts[1] — head" },
+  ];
+  let idx = 2;
+  for (let i = 0; i < pe; i += 1) {
+    children.push({ id: `cc-pe-${i}`, label: `parts[${idx}] — peripheral eye` });
+    idx += 1;
+  }
+  children.push(
+    { id: "cc-cl-l", label: `parts[${idx}] — front claw — left` },
+    { id: "cc-cl-r", label: `parts[${idx + 1}] — front claw — right` },
+  );
+  idx += 2;
+  const legNames = ["middle left", "middle right", "back left", "back right"] as const;
+  for (let i = 0; i < 4; i += 1) {
+    children.push({ id: `cc-leg-${i}`, label: `parts[${idx + i}] — leg — ${legNames[i]}` });
+  }
+  const total = 2 + pe + 2 + 4;
+  return {
+    id: "claw-root",
+    label: `Claw crawler — parts[] (${total} parts, animated_claw_crawler.py)`,
+    children,
+  };
+}
+
+/** Full `self.parts` order per `animated_{slug}.py` (variant-specific when `buildOptions` is set). */
+function animatedEnemyPartTree(slug: string, buildOptions: Record<string, unknown> = {}): PartTreeNode {
+  switch (slug) {
+    case "spider":
+      return spiderPartTreeForBuild(_coerceSpiderEyeCount(buildOptions.eye_count));
+
+    case "slug":
       return {
-        id: "tar-slug-root",
-        label: "Tar slug — parts[] (animated_tar_slug.py)",
+        id: "slug-root",
+        label: "Slug — parts[] (animated_slug.py)",
         children: [
           { id: "ts0", label: "parts[0] — body" },
           { id: "ts1", label: "parts[1] — head bump" },
@@ -194,10 +235,10 @@ function animatedEnemyPartTree(slug: string): PartTreeNode {
         ],
       };
 
-    case "ember_imp":
+    case "imp":
       return {
-        id: "ember-imp-root",
-        label: "Ember imp — parts[] (animated_ember_imp.py)",
+        id: "imp-root",
+        label: "Imp — parts[] (animated_imp.py)",
         children: [
           { id: "ei0", label: "parts[0] — body" },
           { id: "ei1", label: "parts[1] — head" },
@@ -210,10 +251,10 @@ function animatedEnemyPartTree(slug: string): PartTreeNode {
         ],
       };
 
-    case "acid_spitter":
+    case "spitter":
       return {
-        id: "acid-root",
-        label: "Acid spitter — parts[] (animated_acid_spitter.py)",
+        id: "spitter-root",
+        label: "Spitter — parts[] (animated_spitter.py)",
         children: [
           { id: "as0", label: "parts[0] — body" },
           { id: "as1", label: "parts[1] — head" },
@@ -223,20 +264,7 @@ function animatedEnemyPartTree(slug: string): PartTreeNode {
       };
 
     case "claw_crawler":
-      return {
-        id: "claw-root",
-        label: "Claw crawler — parts[] (animated_claw_crawler.py)",
-        children: [
-          { id: "cc0", label: "parts[0] — body" },
-          { id: "cc1", label: "parts[1] — head" },
-          { id: "cc2", label: "parts[2] — front claw — left" },
-          { id: "cc3", label: "parts[3] — front claw — right" },
-          { id: "cc4", label: "parts[4] — leg — middle left" },
-          { id: "cc5", label: "parts[5] — leg — middle right" },
-          { id: "cc6", label: "parts[6] — leg — back left" },
-          { id: "cc7", label: "parts[7] — leg — back right" },
-        ],
-      };
+      return clawCrawlerPartTreeForBuild(buildOptions.peripheral_eyes);
 
     case "carapace_husk":
       return {
@@ -254,7 +282,7 @@ function animatedEnemyPartTree(slug: string): PartTreeNode {
     default:
       return {
         id: `generic-${slug}`,
-        label: `Enemy ${slug} — parts[] (animated_${slug}.py)`,
+        label: `${slugDisplayLabel(slug)} — parts[] (animated_${slug}.py)`,
         children: baseEnemyFallbackTree()[0].children,
       };
   }
@@ -316,9 +344,12 @@ function baseEnemyFallbackTree(): PartTreeNode[] {
 export function getMeshPartTree(
   cmd: RunCmd,
   enemy: string,
-  animatedSlugs: readonly string[] = DEFAULT_ANIMATED_ENEMY_SLUGS,
+  animatedMeta: readonly AnimatedEnemyMeta[] = DEFAULT_ANIMATED_ENEMY_META,
+  /** Current procedural build values for the selected animated enemy (spider eye_count, claw peripheral_eyes, …). */
+  buildOptions: Record<string, unknown> = {},
 ): PartTreeNode[] {
   const e = (enemy || "").trim();
+  const animatedSlugs = animatedMeta.map((m) => m.slug);
 
   if (cmd === "player") {
     return playerSlimePartTree();
@@ -333,10 +364,10 @@ export function getMeshPartTree(
       {
         id: "all-root",
         label: "All animated enemies",
-        children: animatedSlugs.map((slug) => ({
-          id: `reg-${slug}`,
-          label: slug,
-          children: [animatedEnemyPartTree(slug)],
+        children: animatedMeta.map((m) => ({
+          id: `reg-${m.slug}`,
+          label: m.label,
+          children: [animatedEnemyPartTree(m.slug, {})],
         })),
       },
     ];
@@ -344,12 +375,12 @@ export function getMeshPartTree(
 
   const knownAnimated = animatedSlugs.includes(e) ? e : "";
 
-  if (cmd === "test" || ((cmd === "animated" || cmd === "stats") && e === "adhesion_bug")) {
-    return [animatedEnemyPartTree("adhesion_bug")];
+  if (cmd === "test" || ((cmd === "animated" || cmd === "stats") && e === "spider")) {
+    return [animatedEnemyPartTree("spider", buildOptions)];
   }
 
   if ((cmd === "animated" || cmd === "stats") && knownAnimated) {
-    return [animatedEnemyPartTree(knownAnimated)];
+    return [animatedEnemyPartTree(knownAnimated, buildOptions)];
   }
 
   if (cmd === "animated" && e && !knownAnimated) {

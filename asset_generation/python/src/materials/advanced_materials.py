@@ -2,9 +2,10 @@
 Advanced Material System - Enhanced procedural textures and effects
 """
 
+from typing import Dict, List
+
 import bpy
-import random
-from typing import Dict, List, Tuple, Optional
+
 from .material_system import MATERIAL_COLORS
 
 
@@ -39,8 +40,7 @@ def create_layered_material(name: str, layers: List[Dict]) -> bpy.types.Material
     
     for i, layer in enumerate(layers):
         layer_type = layer.get('type', 'base')
-        strength = layer.get('strength', 1.0)
-        
+
         if layer_type == 'base':
             _add_base_layer(nodes, links, bsdf, layer, y_offset)
         elif layer_type == 'wear':
@@ -284,7 +284,7 @@ def create_advanced_material_set(enemy_type: str, environment: str = None, damag
     """Create complete advanced material set for an enemy
     
     Args:
-        enemy_type: Type of enemy (adhesion_bug, ember_imp, etc.)
+        enemy_type: Type of enemy (spider, imp, etc.)
         environment: Optional environment adaptation
         damage: Damage level 0.0-1.0
         magic_type: Optional magical effects

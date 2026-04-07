@@ -43,7 +43,7 @@ def _guess_output_file(cmd: str, enemy: Optional[str], count: Optional[int]) -> 
     if cmd == "animated" and enemy:
         return f"animated_exports/{enemy}_animated_00.glb"
     if cmd == "test":
-        return "animated_exports/adhesion_bug_animated_00.glb"
+        return "animated_exports/spider_animated_00.glb"
     if cmd == "player" and enemy:
         return f"player_exports/player_slime_{enemy}_00.glb"
     if cmd == "level" and enemy:
@@ -51,9 +51,16 @@ def _guess_output_file(cmd: str, enemy: Optional[str], count: Optional[int]) -> 
     return None
 
 
-async def _run_stream(cmd: str, enemy: Optional[str], count: Optional[int],
-                      description: Optional[str], difficulty: Optional[str],
-                      finish: Optional[str], hex_color: Optional[str]):
+async def _run_stream(
+    cmd: str,
+    enemy: Optional[str],
+    count: Optional[int],
+    description: Optional[str],
+    difficulty: Optional[str],
+    finish: Optional[str],
+    hex_color: Optional[str],
+    build_options: Optional[str],
+):
     if cmd not in _ALLOWED_CMDS:
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": f"Unknown command: {cmd}"})}
         return
@@ -72,6 +79,8 @@ async def _run_stream(cmd: str, enemy: Optional[str], count: Optional[int],
     src_path = str(settings.python_root / "src")
     env["PYTHONPATH"] = os.pathsep.join([python_root, bin_path, src_path] +
                                          env.get("PYTHONPATH", "").split(os.pathsep))
+    if build_options and str(build_options).strip():
+        env["BLOBERT_BUILD_OPTIONS_JSON"] = str(build_options).strip()
 
     try:
         run_id = await process_manager.start(command, cwd=settings.python_root, env=env)
@@ -100,8 +109,11 @@ async def run_stream(
     difficulty: Optional[str] = Query(None),
     finish: Optional[str] = Query(None),
     hex_color: Optional[str] = Query(None),
+    build_options: Optional[str] = Query(None),
 ):
-    return EventSourceResponse(_run_stream(cmd, enemy, count, description, difficulty, finish, hex_color))
+    return EventSourceResponse(
+        _run_stream(cmd, enemy, count, description, difficulty, finish, hex_color, build_options)
+    )
 
 
 @router.post("/kill")

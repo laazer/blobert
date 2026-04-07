@@ -34,7 +34,7 @@ def test_animated_rejects_invalid_hex_color_before_blender():
     repo_root = Path(__file__).resolve().parents[4]
     main_py = repo_root / "asset_generation" / "python" / "main.py"
     result = subprocess.run(
-        [sys.executable, str(main_py), "animated", "adhesion_bug", "1", "--hex-color", "#1234"],
+        [sys.executable, str(main_py), "animated", "spider", "1", "--hex-color", "#1234"],
         cwd=str(repo_root),
         capture_output=True,
         text=True,

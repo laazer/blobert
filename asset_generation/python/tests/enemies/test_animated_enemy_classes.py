@@ -7,13 +7,13 @@ import inspect
 import unittest
 
 from src.enemies.animated import (
-    AnimatedAcidSpitter,
-    AnimatedAdhesionBug,
     AnimatedCarapaceHusk,
     AnimatedClawCrawler,
-    AnimatedEmberImp,
     AnimatedEnemyBuilder,
-    AnimatedTarSlug,
+    AnimatedImp,
+    AnimatedSlug,
+    AnimatedSpider,
+    AnimatedSpitter,
 )
 from src.enemies.animated_enemy import AnimatedEnemy
 from src.enemies.base_enemy import BaseEnemy
@@ -21,11 +21,11 @@ from src.utils.constants import EnemyTypes
 from src.utils.materials import MaterialThemes
 
 _ALL_ANIMATED = (
-    AnimatedAdhesionBug,
-    AnimatedAcidSpitter,
+    AnimatedSpider,
+    AnimatedSpitter,
     AnimatedClawCrawler,
-    AnimatedEmberImp,
-    AnimatedTarSlug,
+    AnimatedImp,
+    AnimatedSlug,
     AnimatedCarapaceHusk,
 )
 
@@ -35,8 +35,8 @@ class TestEnemyRegistration(unittest.TestCase):
         self.assertEqual(len(AnimatedEnemyBuilder.ENEMY_CLASSES), 6)
 
     def test_BPG_REG_08_acid_subclass_of_base_and_animated(self):
-        self.assertTrue(issubclass(AnimatedEnemyBuilder.ENEMY_CLASSES["acid_spitter"], BaseEnemy))
-        self.assertTrue(issubclass(AnimatedEnemyBuilder.ENEMY_CLASSES["acid_spitter"], AnimatedEnemy))
+        self.assertTrue(issubclass(AnimatedEnemyBuilder.ENEMY_CLASSES["spitter"], BaseEnemy))
+        self.assertTrue(issubclass(AnimatedEnemyBuilder.ENEMY_CLASSES["spitter"], AnimatedEnemy))
 
     def test_BPG_REG_11_get_available_types_returns_six(self):
         self.assertEqual(len(AnimatedEnemyBuilder.get_available_types()), 6)
@@ -59,10 +59,18 @@ class TestAnimatedEnemyClassContract(unittest.TestCase):
         self.assertIn("get_rig_definition", src)
 
     def test_get_rig_uses_typed_helper(self):
+        rig_helpers = (
+            "rig_from_bone_map",
+            "humanoid_simple_rig_definition",
+            "quadruped_simple_rig_definition",
+        )
         for cls in _ALL_ANIMATED:
             with self.subTest(cls=cls.__name__):
                 gsrc = inspect.getsource(cls.get_rig_definition)
-                self.assertIn("rig_from_bone_map", gsrc)
+                self.assertTrue(
+                    any(h in gsrc for h in rig_helpers),
+                    f"{cls.__name__}.get_rig_definition must delegate via {rig_helpers}",
+                )
 
 
 class TestEnemyTypesConstants(unittest.TestCase):

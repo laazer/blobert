@@ -66,7 +66,7 @@ _REGISTRY: Dict[str, PrefabEntry] = {
         filename='mantis',
         category='creature',
         body_type='quadruped',
-        description='Insectoid creature — relevant to adhesion_bug style',
+        description='Insectoid creature — relevant to spider style',
         source_url='https://sketchfab.com/3d-models/mantis-downloadable',
         creator='andrey.',
     ),

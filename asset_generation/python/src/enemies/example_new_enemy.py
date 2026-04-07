@@ -7,7 +7,11 @@ import math
 from mathutils import Vector
 
 from ..core.blender_utils import create_cylinder, create_sphere
-from ..core.rig_types import rig_from_bone_map
+from ..core.rig_types import (
+    humanoid_simple_rig_definition,
+    quadruped_simple_rig_definition,
+    rig_from_bone_map,
+)
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
@@ -36,20 +40,7 @@ class ExampleSpider(AnimatedEnemy):
             self.parts.append(leg)
 
     def get_rig_definition(self):
-        s = self.body_scale
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, s * 0.2)), None),
-                "spine": (Vector((0, 0, s * 0.2)), Vector((s * 0.5, 0, s * 0.4)), "root"),
-                "head": (Vector((s * 0.5, 0, s * 0.4)), Vector((s * 0.8, 0, s * 0.6)), "spine"),
-                "leg_fl": (Vector((s * 0.3, s * 0.3, s * 0.3)), Vector((s * 0.3, s * 0.3, 0)), "spine"),
-                "leg_fr": (Vector((s * 0.3, -s * 0.3, s * 0.3)), Vector((s * 0.3, -s * 0.3, 0)), "spine"),
-                "leg_ml": (Vector((0, s * 0.4, s * 0.3)), Vector((0, s * 0.4, 0)), "spine"),
-                "leg_mr": (Vector((0, -s * 0.4, s * 0.3)), Vector((0, -s * 0.4, 0)), "spine"),
-                "leg_bl": (Vector((-s * 0.2, s * 0.3, s * 0.3)), Vector((-s * 0.2, s * 0.3, 0)), "root"),
-                "leg_br": (Vector((-s * 0.2, -s * 0.3, s * 0.3)), Vector((-s * 0.2, -s * 0.3, 0)), "root"),
-            }
-        )
+        return quadruped_simple_rig_definition(self.body_scale)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED
@@ -91,7 +82,7 @@ class ExampleGhost(AnimatedEnemy):
         return EnemyBodyTypes.BLOB
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("tar_slug", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("slug", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         for part in self.parts[1:]:
             apply_material_to_object(part, enemy_mats["limbs"])
@@ -131,24 +122,13 @@ class ExampleMech(AnimatedEnemy):
             self.parts.append(leg)
 
     def get_rig_definition(self):
-        h = self.body_height
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, h * 0.2)), None),
-                "spine": (Vector((0, 0, h * 0.2)), Vector((0, 0, h * 0.7)), "root"),
-                "head": (Vector((0, 0, h * 0.7)), Vector((0, 0, h * 1.0)), "spine"),
-                "arm_l": (Vector((0, h * 0.2, h * 0.6)), Vector((0, h * 0.5, h * 0.3)), "spine"),
-                "arm_r": (Vector((0, -h * 0.2, h * 0.6)), Vector((0, -h * 0.5, h * 0.3)), "spine"),
-                "leg_l": (Vector((0, h * 0.1, h * 0.2)), Vector((0, h * 0.1, 0)), "root"),
-                "leg_r": (Vector((0, -h * 0.1, h * 0.2)), Vector((0, -h * 0.1, 0)), "root"),
-            }
-        )
+        return humanoid_simple_rig_definition(self.body_height)
 
     def get_body_type(self):
         return EnemyBodyTypes.HUMANOID
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("ember_imp", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("imp", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         for part in self.parts[2:]:

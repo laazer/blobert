@@ -3,13 +3,14 @@ Smart Enemy Generation System
 AI-assisted enemy design, evolution, and procedural stats
 """
 
-import re
 import json
-import random
 import math
-from typing import Dict, List, Tuple, Optional
+import random
+import re
 from dataclasses import dataclass
-from ..utils.constants import EnemyTypes, EnemyBodyTypes, AnimationTypes
+from typing import Dict, List, Optional
+
+from ..utils.constants import EnemyBodyTypes, EnemyTypes
 
 
 @dataclass
@@ -169,13 +170,13 @@ class TextToEnemyGenerator:
         """Choose existing enemy type that best matches description and body type"""
         # Map body types to compatible enemy types
         compatible_types = {
-            EnemyBodyTypes.BLOB: [EnemyTypes.TAR_SLUG],
-            EnemyBodyTypes.QUADRUPED: [EnemyTypes.ADHESION_BUG], 
-            EnemyBodyTypes.HUMANOID: [EnemyTypes.EMBER_IMP]
+            EnemyBodyTypes.BLOB: [EnemyTypes.SLUG],
+            EnemyBodyTypes.QUADRUPED: [EnemyTypes.SPIDER], 
+            EnemyBodyTypes.HUMANOID: [EnemyTypes.IMP]
         }
         
         # Get compatible types for this body type
-        options = compatible_types.get(body_type, [EnemyTypes.ADHESION_BUG])
+        options = compatible_types.get(body_type, [EnemyTypes.SPIDER])
         
         # For now, return the first option (could be made smarter)
         return options[0]

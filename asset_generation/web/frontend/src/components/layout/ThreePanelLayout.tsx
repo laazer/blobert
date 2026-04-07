@@ -3,7 +3,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
 import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
-import { VariantPicker } from "../Preview/VariantPicker";
+import { BuildControls } from "../Preview/BuildControls";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
 import { CommandPanel } from "../CommandPanel/CommandPanel";
@@ -81,7 +81,7 @@ export function ThreePanelLayout() {
         }}
       >
         <PreviewSourceBar />
-        <VariantPicker />
+        <BuildControls />
         <GlbViewer />
         <AnimationControls />
         <CommandPanel />

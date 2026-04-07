@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchEnemies, killProcess } from "../../api/client";
+import { killProcess } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
+import { enemySelectOptionLabel } from "../../utils/enemyDisplay";
 import {
   ALL_CMDS,
   CMD_CONFIG,
@@ -81,14 +82,16 @@ export function CommandPanel() {
   const saveFile = useAppStore((state) => state.saveFile);
   const isDirty = useAppStore((state) => state.isDirty);
   const setCommandContext = useAppStore((state) => state.setCommandContext);
+  const animatedEnemyMeta = useAppStore((state) => state.animatedEnemyMeta);
+  const animatedBuildOptionValues = useAppStore((state) => state.animatedBuildOptionValues);
+  const loadAnimatedEnemyMeta = useAppStore((state) => state.loadAnimatedEnemyMeta);
 
   const [cmd, setCmd] = useState<RunCmd>("animated");
-  const [enemy, setEnemy] = useState("adhesion_bug");
+  const [enemy, setEnemy] = useState("spider");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("normal");
   const [finish, setFinish] = useState("glossy");
   const [hexColor, setHexColor] = useState("");
-  const [enemies, setEnemies] = useState<string[]>([]);
   const [enemyLoadError, setEnemyLoadError] = useState<string | null>(null);
   const [commandPreview, setCommandPreview] = useState("");
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
@@ -98,31 +101,30 @@ export function CommandPanel() {
   const { start } = useStreamingOutput();
 
   useEffect(() => {
-    fetchEnemies()
-      .then((list) => {
-        setEnemies(list);
-        setEnemyLoadError(null);
-      })
+    loadAnimatedEnemyMeta()
+      .then(() => setEnemyLoadError(null))
       .catch((err: unknown) => {
         const message = err instanceof Error ? err.message : "Failed to load enemy list.";
         setEnemyLoadError(message);
       });
-  }, []);
+  }, [loadAnimatedEnemyMeta]);
 
   const cfg = CMD_CONFIG[cmd];
   const showEnemy = cfg.showEnemy;
   const showDescription = cfg.showDescription;
   const showDifficulty = cfg.showDifficulty;
-  const enemyOptions = getEnemyOptions(cmd, enemies);
+  const enemySlugsForCmd =
+    cmd === "player" ? [] : animatedEnemyMeta.map((m) => m.slug);
+  const enemyOptions = getEnemyOptions(cmd, enemySlugsForCmd);
 
   useEffect(() => {
     setCommandContext({ cmd, enemy: showEnemy ? enemy : "" });
   }, [cmd, enemy, showEnemy, setCommandContext]);
 
   useEffect(() => {
-    const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemies);
+    const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemySlugsForCmd);
     if (nextEnemy !== enemy) setEnemy(nextEnemy);
-  }, [cmd, enemy, enemies]);
+  }, [cmd, enemy, enemySlugsForCmd]);
 
   useEffect(() => {
     if (commandPreviewDirty) return;
@@ -188,11 +190,23 @@ export function CommandPanel() {
     if (isDirty) await saveFile();
     if (runValidationError) return;
     const singleOutputCmd = cmd === "animated" || cmd === "player" || cmd === "level";
-    start({ cmd, enemy: showEnemy ? enemy : undefined, count: singleOutputCmd ? 1 : undefined,
-            description: showDescription ? description : undefined,
-            difficulty: showDifficulty ? difficulty : undefined,
-            finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
-            hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined });
+    let buildOptionsJson: string | undefined;
+    if (cmd === "animated" && enemy && enemy !== "all") {
+      const opts = animatedBuildOptionValues[enemy];
+      if (opts && Object.keys(opts).length > 0) {
+        buildOptionsJson = JSON.stringify({ [enemy]: opts });
+      }
+    }
+    start({
+      cmd,
+      enemy: showEnemy ? enemy : undefined,
+      count: singleOutputCmd ? 1 : undefined,
+      description: showDescription ? description : undefined,
+      difficulty: showDifficulty ? difficulty : undefined,
+      finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
+      hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined,
+      buildOptionsJson,
+    });
   }
 
   async function handleKill() {
@@ -212,10 +226,19 @@ export function CommandPanel() {
             <span style={s.label}>{cmd === "player" ? "color" : "enemy"}</span>
             {enemyOptions.length > 0 ? (
               <select style={s.select} value={enemy} onChange={(e) => setEnemy(e.target.value)}>
-                {enemyOptions.map((en) => <option key={en} value={en}>{en}</option>)}
+                {enemyOptions.map((en) => (
+                  <option key={en} value={en}>
+                    {enemySelectOptionLabel(cmd, en, animatedEnemyMeta)}
+                  </option>
+                ))}
               </select>
             ) : (
-              <input style={s.textInput} value={enemy} onChange={(e) => setEnemy(e.target.value)} placeholder="enemy_name" />
+              <input
+                style={s.textInput}
+                value={enemy}
+                onChange={(e) => setEnemy(e.target.value)}
+                placeholder="slug (e.g. spider)"
+              />
             )}
           </>
         )}
@@ -232,7 +255,7 @@ export function CommandPanel() {
             setCommandPreviewDirty(true);
             setCommandPreviewError(null);
           }}
-          placeholder='animated adhesion_bug --finish matte --hex-color #4b627c'
+          placeholder='animated spider --finish matte --hex-color #4b627c'
         />
         <button style={s.btn} onClick={applyParsedPreview} disabled={!commandPreviewDirty}>Apply</button>
       </div>

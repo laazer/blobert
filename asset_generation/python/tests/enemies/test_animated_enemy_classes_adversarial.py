@@ -18,23 +18,31 @@ import inspect
 import unittest
 
 from src.enemies.animated import (
-    AnimatedAcidSpitter,
-    AnimatedAdhesionBug,
     AnimatedCarapaceHusk,
     AnimatedClawCrawler,
-    AnimatedEmberImp,
     AnimatedEnemyBuilder,
-    AnimatedTarSlug,
+    AnimatedImp,
+    AnimatedSlug,
+    AnimatedSpider,
+    AnimatedSpitter,
 )
 from src.utils.constants import EnemyTypes
 from src.utils.materials import MaterialThemes
 
 
 def _assert_typed_rig_on_class(testcase: unittest.TestCase, cls: type) -> None:
-    """Concrete enemy defines get_rig_definition with rig_from_bone_map."""
+    """Concrete enemy defines get_rig_definition delegating to rig_types helpers."""
     testcase.assertIn("get_rig_definition", cls.__dict__)
     gsrc = inspect.getsource(cls.get_rig_definition)
-    testcase.assertIn("rig_from_bone_map", gsrc)
+    rig_helpers = (
+        "rig_from_bone_map",
+        "humanoid_simple_rig_definition",
+        "quadruped_simple_rig_definition",
+    )
+    testcase.assertTrue(
+        any(h in gsrc for h in rig_helpers),
+        f"{cls.__name__}.get_rig_definition must use one of {rig_helpers}",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -56,8 +64,8 @@ class TestRegistrationAdversarial(unittest.TestCase):
         BPG-ADV-REG-01: No two keys in ENEMY_CLASSES map to the same class object.
 
         Mutation surface: A developer could accidentally write
-            'acid_spitter': AnimatedAcidSpitter,
-            'claw_crawler': AnimatedAcidSpitter,   # copy-paste error
+            'spitter': AnimatedSpitter,
+            'claw_crawler': AnimatedSpitter,   # copy-paste error
         The primary suite only checks each key individually — it never checks
         that the VALUES are all distinct objects.
         """
@@ -104,11 +112,11 @@ class TestRegistrationAdversarial(unittest.TestCase):
         BPG-ADV-REG-04: The 3 new key strings are all different from each other.
 
         Mutation surface: If an implementor re-used the same string literal for
-        two registrations (e.g. both 'acid_spitter' entries), Python dicts deduplicate
+        two registrations (e.g. both 'spitter' entries), Python dicts deduplicate
         silently — the count test in the primary suite catches the final count but
         would only fail if count != 6. This test directly asserts distinctness.
         """
-        new_keys = ['acid_spitter', 'claw_crawler', 'carapace_husk']
+        new_keys = ['spitter', 'claw_crawler', 'carapace_husk']
         self.assertEqual(
             len(set(new_keys)),
             3,
@@ -135,25 +143,25 @@ class TestRegistrationAdversarial(unittest.TestCase):
             f"get_available_types() returned {type(result).__name__}, expected list.",
         )
 
-    def test_BPG_ADV_SPLIT_01_registry_acid_spitter_is_canonical_module_class(self):
+    def test_BPG_ADV_SPLIT_01_registry_spitter_is_canonical_module_class(self):
         # CHECKPOINT: After module split, ENEMY_CLASSES must reference the class
-        # object defined in animated_acid_spitter (not a duplicate subclass in
+        # object defined in animated_spitter (not a duplicate subclass in
         # animated package).
-        from src.enemies import animated_acid_spitter as acid_mod
+        from src.enemies import animated_spitter as acid_mod
 
         self.assertIs(
-            AnimatedEnemyBuilder.ENEMY_CLASSES['acid_spitter'],
-            acid_mod.AnimatedAcidSpitter,
+            AnimatedEnemyBuilder.ENEMY_CLASSES['spitter'],
+            acid_mod.AnimatedSpitter,
         )
 
-    def test_BPG_ADV_SPLIT_02_registry_adhesion_bug_is_canonical_module_class(self):
-        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedAdhesionBug from
-        # animated_adhesion_bug, not a duplicate subclass in the registry barrel.
-        from src.enemies import animated_adhesion_bug as adhesion_mod
+    def test_BPG_ADV_SPLIT_02_registry_spider_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedSpider from
+        # animated_spider, not a duplicate subclass in the registry barrel.
+        from src.enemies import animated_spider as adhesion_mod
 
         self.assertIs(
-            AnimatedEnemyBuilder.ENEMY_CLASSES['adhesion_bug'],
-            adhesion_mod.AnimatedAdhesionBug,
+            AnimatedEnemyBuilder.ENEMY_CLASSES['spider'],
+            adhesion_mod.AnimatedSpider,
         )
 
     def test_BPG_ADV_SPLIT_03_registry_carapace_husk_is_canonical_module_class(self):
@@ -176,24 +184,24 @@ class TestRegistrationAdversarial(unittest.TestCase):
             claw_mod.AnimatedClawCrawler,
         )
 
-    def test_BPG_ADV_SPLIT_05_registry_ember_imp_is_canonical_module_class(self):
-        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedEmberImp from
-        # animated_ember_imp, not a duplicate subclass in the registry barrel.
-        from src.enemies import animated_ember_imp as ember_mod
+    def test_BPG_ADV_SPLIT_05_registry_imp_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedImp from
+        # animated_imp, not a duplicate subclass in the registry barrel.
+        from src.enemies import animated_imp as ember_mod
 
         self.assertIs(
-            AnimatedEnemyBuilder.ENEMY_CLASSES['ember_imp'],
-            ember_mod.AnimatedEmberImp,
+            AnimatedEnemyBuilder.ENEMY_CLASSES['imp'],
+            ember_mod.AnimatedImp,
         )
 
-    def test_BPG_ADV_SPLIT_06_registry_tar_slug_is_canonical_module_class(self):
-        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedTarSlug from
-        # animated_tar_slug, not a duplicate subclass in the registry barrel.
-        from src.enemies import animated_tar_slug as tar_mod
+    def test_BPG_ADV_SPLIT_06_registry_slug_is_canonical_module_class(self):
+        # CHECKPOINT: ENEMY_CLASSES must reference AnimatedSlug from
+        # animated_slug, not a duplicate subclass in the registry barrel.
+        from src.enemies import animated_slug as tar_mod
 
         self.assertIs(
-            AnimatedEnemyBuilder.ENEMY_CLASSES['tar_slug'],
-            tar_mod.AnimatedTarSlug,
+            AnimatedEnemyBuilder.ENEMY_CLASSES['slug'],
+            tar_mod.AnimatedSlug,
         )
 
     def test_BPG_ADV_REG_06_get_available_types_is_stable_across_two_calls(self):
@@ -217,7 +225,7 @@ class TestRegistrationAdversarial(unittest.TestCase):
         BPG-ADV-REG-07: No value in ENEMY_CLASSES is an instance; all are class objects.
 
         Mutation surface: An implementor might accidentally write
-            'acid_spitter': AnimatedAcidSpitter(...),   # instantiated, not the class
+            'spitter': AnimatedSpitter(...),   # instantiated, not the class
         inspect.isclass() handles this, but the primary suite only checks the
         three new keys — it does not guard the existing three keys.
         This test covers all 6.
@@ -340,8 +348,8 @@ class TestConstantsAdversarial(unittest.TestCase):
         BPG-ADV-CONST-06: get_animated() contains no duplicate string values.
 
         Mutation surface: A careless implementation could append the same
-        constant twice (e.g. 'adhesion_bug' listed twice). The primary suite
-        checks len() == 6 — if there are two 'acid_spitter' entries replacing
+        constant twice (e.g. 'spider' listed twice). The primary suite
+        checks len() == 6 — if there are two 'spitter' entries replacing
         one expected entry, the count is still 6 but the type is missing.
         """
         animated = EnemyTypes.get_animated()
@@ -407,17 +415,17 @@ class TestConstantsAdversarial(unittest.TestCase):
             "EnemyTypes.CARAPACE_HUSK — the constant and the method may be out of sync.",
         )
 
-    def test_BPG_ADV_CONST_10_acid_spitter_constant_attribute_value_in_animated(self):
+    def test_BPG_ADV_CONST_10_spitter_constant_attribute_value_in_animated(self):
         """
-        BPG-ADV-CONST-10: EnemyTypes.ACID_SPITTER attribute value appears in get_animated().
+        BPG-ADV-CONST-10: EnemyTypes.SPITTER attribute value appears in get_animated().
 
         Mutation surface: The constant value could be updated without updating
         get_animated(), so the attribute and method would be out of sync.
         """
         self.assertIn(
-            EnemyTypes.ACID_SPITTER,
+            EnemyTypes.SPITTER,
             EnemyTypes.get_animated(),
-            "EnemyTypes.get_animated() does not contain EnemyTypes.ACID_SPITTER value.",
+            "EnemyTypes.get_animated() does not contain EnemyTypes.SPITTER value.",
         )
 
     def test_BPG_ADV_CONST_11_claw_crawler_constant_attribute_value_in_animated(self):
@@ -500,7 +508,7 @@ class TestCarapaceHuskMaterialThemeAdversarial(unittest.TestCase):
 
     def test_BPG_ADV_MAT_04_existing_themes_not_overwritten_by_carapace_husk_addition(self):
         """
-        BPG-ADV-MAT-04: The pre-existing themes for acid_spitter and claw_crawler
+        BPG-ADV-MAT-04: The pre-existing themes for spitter and claw_crawler
         are still present and unmodified after carapace_husk is added.
 
         Mutation surface: A materials.py edit that adds carapace_husk could
@@ -508,10 +516,10 @@ class TestCarapaceHuskMaterialThemeAdversarial(unittest.TestCase):
         than a literal entry. No primary suite test verifies the pre-existing
         entries are intact.
         """
-        # acid_spitter pre-existing theme
-        acid_theme = MaterialThemes.ENEMY_THEMES.get('acid_spitter')
-        self.assertIsNotNone(acid_theme, "acid_spitter theme has been removed from ENEMY_THEMES.")
-        self.assertEqual(len(acid_theme), 3, "acid_spitter theme should have 3 entries.")
+        # spitter pre-existing theme
+        acid_theme = MaterialThemes.ENEMY_THEMES.get('spitter')
+        self.assertIsNotNone(acid_theme, "spitter theme has been removed from ENEMY_THEMES.")
+        self.assertEqual(len(acid_theme), 3, "spitter theme should have 3 entries.")
 
         # claw_crawler pre-existing theme
         claw_theme = MaterialThemes.ENEMY_THEMES.get('claw_crawler')
@@ -555,39 +563,39 @@ class TestNewClassesAdversarial(unittest.TestCase):
       - Methods defined on the new classes are NOT simply inherited from BaseEnemy
         (i.e., the new classes provide their own concrete implementations)
       - apply_materials source on new classes does NOT reference the wrong key
-        (e.g. acid_spitter's apply_materials must not contain 'tar_slug')
+        (e.g. spitter's apply_materials must not contain 'slug')
       - create_armature passes only this enemy's slug to create_simple_armature
         (per-class rigs — no other animated enemy's slug string)
     """
 
     def test_BPG_ADV_CLASS_01_three_new_classes_are_distinct_objects(self):
         """
-        BPG-ADV-CLASS-01: AnimatedAcidSpitter, AnimatedClawCrawler, and
+        BPG-ADV-CLASS-01: AnimatedSpitter, AnimatedClawCrawler, and
         AnimatedCarapaceHusk are three distinct class objects.
 
         Mutation surface: An alias assignment like
-            AnimatedClawCrawler = AnimatedAcidSpitter
+            AnimatedClawCrawler = AnimatedSpitter
         would pass all individual class structure tests while silently
         producing only one real implementation.
         """
-        new_classes = [AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk]
+        new_classes = [AnimatedSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk]
         unique_ids = {id(cls) for cls in new_classes}
         self.assertEqual(
             len(unique_ids),
             3,
-            "At least two of AnimatedAcidSpitter, AnimatedClawCrawler, "
+            "At least two of AnimatedSpitter, AnimatedClawCrawler, "
             "AnimatedCarapaceHusk are aliases of the same class object.",
         )
 
     def test_BPG_ADV_CLASS_02_new_classes_distinct_from_existing_classes(self):
         """
         BPG-ADV-CLASS-02: None of the 3 new classes are the same object as
-        AnimatedAdhesionBug, AnimatedTarSlug, or AnimatedEmberImp.
+        AnimatedSpider, AnimatedSlug, or AnimatedImp.
 
         Mutation surface: Re-using an existing class under a new name.
         """
-        existing = {AnimatedAdhesionBug, AnimatedTarSlug, AnimatedEmberImp}
-        new_classes = {AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk}
+        existing = {AnimatedSpider, AnimatedSlug, AnimatedImp}
+        new_classes = {AnimatedSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk}
         overlap = existing & new_classes
         self.assertEqual(
             overlap,
@@ -595,11 +603,11 @@ class TestNewClassesAdversarial(unittest.TestCase):
             f"New class(es) are the same object as an existing class: {overlap}",
         )
 
-    def test_BPG_ADV_CLASS_03_acid_spitter_build_mesh_parts_is_overridden(self):
+    def test_BPG_ADV_CLASS_03_spitter_build_mesh_parts_is_overridden(self):
         self.assertIn(
             "build_mesh_parts",
-            AnimatedAcidSpitter.__dict__,
-            "AnimatedAcidSpitter.build_mesh_parts must be defined on the class.",
+            AnimatedSpitter.__dict__,
+            "AnimatedSpitter.build_mesh_parts must be defined on the class.",
         )
 
     def test_BPG_ADV_CLASS_04_claw_crawler_build_mesh_parts_is_overridden(self):
@@ -616,20 +624,20 @@ class TestNewClassesAdversarial(unittest.TestCase):
             "AnimatedCarapaceHusk.build_mesh_parts must be defined on the class.",
         )
 
-    def test_BPG_ADV_CLASS_06_acid_spitter_apply_materials_does_not_reference_wrong_key(self):
+    def test_BPG_ADV_CLASS_06_spitter_apply_materials_does_not_reference_wrong_key(self):
         """
-        BPG-ADV-CLASS-06: AnimatedAcidSpitter.apply_themed_materials source does NOT
+        BPG-ADV-CLASS-06: AnimatedSpitter.apply_themed_materials source does NOT
         contain wrong get_enemy_materials keys.
         """
-        source = inspect.getsource(AnimatedAcidSpitter.apply_themed_materials)
-        wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
+        source = inspect.getsource(AnimatedSpitter.apply_themed_materials)
+        wrong_keys = ["'slug'", "'imp'", "'spider'",
                       "'claw_crawler'", "'carapace_husk'"]
         for wrong in wrong_keys:
             with self.subTest(wrong_key=wrong):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedAcidSpitter.apply_themed_materials source contains wrong key {wrong}.",
+                    f"AnimatedSpitter.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
     def test_BPG_ADV_CLASS_07_claw_crawler_apply_materials_does_not_reference_wrong_key(self):
@@ -638,8 +646,8 @@ class TestNewClassesAdversarial(unittest.TestCase):
         contain wrong enemy keys.
         """
         source = inspect.getsource(AnimatedClawCrawler.apply_themed_materials)
-        wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
-                      "'acid_spitter'", "'carapace_husk'"]
+        wrong_keys = ["'slug'", "'imp'", "'spider'",
+                      "'spitter'", "'carapace_husk'"]
         for wrong in wrong_keys:
             with self.subTest(wrong_key=wrong):
                 self.assertNotIn(
@@ -654,8 +662,8 @@ class TestNewClassesAdversarial(unittest.TestCase):
         contain wrong enemy keys.
         """
         source = inspect.getsource(AnimatedCarapaceHusk.apply_themed_materials)
-        wrong_keys = ["'tar_slug'", "'ember_imp'", "'adhesion_bug'",
-                      "'acid_spitter'", "'claw_crawler'"]
+        wrong_keys = ["'slug'", "'imp'", "'spider'",
+                      "'spitter'", "'claw_crawler'"]
         for wrong in wrong_keys:
             with self.subTest(wrong_key=wrong):
                 self.assertNotIn(
@@ -664,25 +672,25 @@ class TestNewClassesAdversarial(unittest.TestCase):
                     f"AnimatedCarapaceHusk.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
-    def test_BPG_ADV_CLASS_09_acid_spitter_get_body_type_does_not_reference_wrong_type(self):
+    def test_BPG_ADV_CLASS_09_spitter_get_body_type_does_not_reference_wrong_type(self):
         """
-        BPG-ADV-CLASS-09: AnimatedAcidSpitter.get_body_type source does NOT
+        BPG-ADV-CLASS-09: AnimatedSpitter.get_body_type source does NOT
         contain QUADRUPED or HUMANOID.
 
         Mutation surface: Copy-paste from EmberImp or AdhesionBug would carry
         the wrong body type constant. The primary suite only checks presence of
         BLOB, not absence of the other two.
         """
-        source = inspect.getsource(AnimatedAcidSpitter.get_body_type)
+        source = inspect.getsource(AnimatedSpitter.get_body_type)
         self.assertNotIn(
             'EnemyBodyTypes.QUADRUPED',
             source,
-            "AnimatedAcidSpitter.get_body_type references QUADRUPED — should be BLOB.",
+            "AnimatedSpitter.get_body_type references QUADRUPED — should be BLOB.",
         )
         self.assertNotIn(
             'EnemyBodyTypes.HUMANOID',
             source,
-            "AnimatedAcidSpitter.get_body_type references HUMANOID — should be BLOB.",
+            "AnimatedSpitter.get_body_type references HUMANOID — should be BLOB.",
         )
 
     def test_BPG_ADV_CLASS_10_claw_crawler_get_body_type_does_not_reference_wrong_type(self):
@@ -719,8 +727,8 @@ class TestNewClassesAdversarial(unittest.TestCase):
             "AnimatedCarapaceHusk.get_body_type references QUADRUPED — should be HUMANOID.",
         )
 
-    def test_BPG_ADV_CLASS_12_acid_spitter_typed_rig(self):
-        _assert_typed_rig_on_class(self, AnimatedAcidSpitter)
+    def test_BPG_ADV_CLASS_12_spitter_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedSpitter)
 
     def test_BPG_ADV_CLASS_13_claw_crawler_typed_rig(self):
         _assert_typed_rig_on_class(self, AnimatedClawCrawler)
@@ -737,7 +745,7 @@ class TestNewClassesAdversarial(unittest.TestCase):
         via hasattr — this verifies the ABC machinery agrees the class is concrete
         by checking __abstractmethods__ is empty or absent.
         """
-        for cls in [AnimatedAcidSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk]:
+        for cls in [AnimatedSpitter, AnimatedClawCrawler, AnimatedCarapaceHusk]:
             with self.subTest(cls=cls.__name__):
                 abstract_methods = getattr(cls, '__abstractmethods__', frozenset())
                 self.assertEqual(
@@ -746,49 +754,49 @@ class TestNewClassesAdversarial(unittest.TestCase):
                     f"{cls.__name__} has unresolved abstract methods: {abstract_methods}",
                 )
 
-    def test_BPG_ADV_CLASS_16_adhesion_bug_build_mesh_parts_is_overridden(self):
-        """BPG-ADV-CLASS-16: AnimatedAdhesionBug.build_mesh_parts is defined on the class."""
+    def test_BPG_ADV_CLASS_16_spider_build_mesh_parts_is_overridden(self):
+        """BPG-ADV-CLASS-16: AnimatedSpider.build_mesh_parts is defined on the class."""
         self.assertIn(
             "build_mesh_parts",
-            AnimatedAdhesionBug.__dict__,
-            "AnimatedAdhesionBug.build_mesh_parts is not defined on the class itself.",
+            AnimatedSpider.__dict__,
+            "AnimatedSpider.build_mesh_parts is not defined on the class itself.",
         )
 
-    def test_BPG_ADV_CLASS_17_adhesion_bug_apply_materials_does_not_reference_wrong_key(self):
-        """BPG-ADV-CLASS-17: AnimatedAdhesionBug.apply_themed_materials has no wrong enemy keys."""
-        source = inspect.getsource(AnimatedAdhesionBug.apply_themed_materials)
-        wrong_keys = ["'tar_slug'", "'ember_imp'", "'acid_spitter'",
+    def test_BPG_ADV_CLASS_17_spider_apply_materials_does_not_reference_wrong_key(self):
+        """BPG-ADV-CLASS-17: AnimatedSpider.apply_themed_materials has no wrong enemy keys."""
+        source = inspect.getsource(AnimatedSpider.apply_themed_materials)
+        wrong_keys = ["'slug'", "'imp'", "'spitter'",
                       "'claw_crawler'", "'carapace_husk'"]
         for wrong in wrong_keys:
             with self.subTest(wrong_key=wrong):
                 self.assertNotIn(
                     wrong,
                     source,
-                    f"AnimatedAdhesionBug.apply_themed_materials source contains wrong key {wrong}.",
+                    f"AnimatedSpider.apply_themed_materials source contains wrong key {wrong}.",
                 )
 
-    def test_BPG_ADV_CLASS_18_adhesion_bug_get_body_type_does_not_reference_wrong_type(self):
-        """BPG-ADV-CLASS-18: AnimatedAdhesionBug.get_body_type is QUADRUPED only."""
-        source = inspect.getsource(AnimatedAdhesionBug.get_body_type)
+    def test_BPG_ADV_CLASS_18_spider_get_body_type_does_not_reference_wrong_type(self):
+        """BPG-ADV-CLASS-18: AnimatedSpider.get_body_type is QUADRUPED only."""
+        source = inspect.getsource(AnimatedSpider.get_body_type)
         self.assertNotIn(
             'EnemyBodyTypes.BLOB',
             source,
-            "AnimatedAdhesionBug.get_body_type references BLOB — should be QUADRUPED.",
+            "AnimatedSpider.get_body_type references BLOB — should be QUADRUPED.",
         )
         self.assertNotIn(
             'EnemyBodyTypes.HUMANOID',
             source,
-            "AnimatedAdhesionBug.get_body_type references HUMANOID — should be QUADRUPED.",
+            "AnimatedSpider.get_body_type references HUMANOID — should be QUADRUPED.",
         )
 
-    def test_BPG_ADV_CLASS_19_adhesion_bug_typed_rig(self):
-        _assert_typed_rig_on_class(self, AnimatedAdhesionBug)
+    def test_BPG_ADV_CLASS_19_spider_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedSpider)
 
-    def test_BPG_ADV_CLASS_20_tar_slug_typed_rig(self):
-        _assert_typed_rig_on_class(self, AnimatedTarSlug)
+    def test_BPG_ADV_CLASS_20_slug_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedSlug)
 
-    def test_BPG_ADV_CLASS_21_ember_imp_typed_rig(self):
-        _assert_typed_rig_on_class(self, AnimatedEmberImp)
+    def test_BPG_ADV_CLASS_21_imp_typed_rig(self):
+        _assert_typed_rig_on_class(self, AnimatedImp)
 
 
 if __name__ == '__main__':

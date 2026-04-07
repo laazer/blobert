@@ -9,7 +9,7 @@ from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
 
 
-class AnimatedAcidSpitter(AnimatedEnemy):
+class AnimatedSpitter(AnimatedEnemy):
     """Squat acid sac with blob movement"""
 
     def build_mesh_parts(self):
@@ -41,7 +41,7 @@ class AnimatedAcidSpitter(AnimatedEnemy):
             self.parts.append(tendril)
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("acid_spitter", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("spitter", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         for part in self.parts[2:]:

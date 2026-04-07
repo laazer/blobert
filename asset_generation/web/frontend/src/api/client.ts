@@ -1,4 +1,11 @@
-import { Asset, FileNode } from "../types";
+import {
+  AnimatedBuildControlDef,
+  AnimatedEnemyMeta,
+  Asset,
+  EnemyPreviewMeta,
+  FileNode,
+} from "../types";
+import { titleCaseSnake } from "../utils/enemyDisplay";
 
 const BASE = "/api";
 
@@ -32,11 +39,55 @@ export async function fetchAssets(): Promise<Asset[]> {
   return data.assets;
 }
 
-export async function fetchEnemies(): Promise<string[]> {
+function parseBuildControls(raw: unknown): Record<string, AnimatedBuildControlDef[]> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as Record<string, AnimatedBuildControlDef[]>;
+}
+
+function defaultValuesForDefs(defs: AnimatedBuildControlDef[]): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (const d of defs) {
+    row[d.key] = d.default;
+  }
+  return row;
+}
+
+/** GET /api/meta/enemies — enemies list + procedural build controls per slug. */
+export async function fetchEnemyPreviewMeta(): Promise<EnemyPreviewMeta> {
   const res = await fetch(`${BASE}/meta/enemies`);
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
-  return data.enemies;
+  const raw = data.enemies as unknown;
+  let enemies: AnimatedEnemyMeta[] = [];
+  if (Array.isArray(raw) && raw.length > 0) {
+    if (typeof raw[0] === "string") {
+      enemies = (raw as string[]).map((slug) => ({ slug, label: titleCaseSnake(slug) }));
+    } else {
+      enemies = raw as AnimatedEnemyMeta[];
+    }
+  }
+  const animatedBuildControls = parseBuildControls(data.animated_build_controls);
+  return { enemies, animatedBuildControls };
+}
+
+/** Merge server defaults with existing per-slug option maps (preserves user edits). */
+export function mergeBuildOptionValues(
+  controls: Record<string, AnimatedBuildControlDef[]>,
+  previous: Record<string, Record<string, unknown>>,
+): Record<string, Record<string, unknown>> {
+  const next: Record<string, Record<string, unknown>> = { ...previous };
+  for (const slug of Object.keys(controls)) {
+    const defs = controls[slug];
+    const defaults = defaultValuesForDefs(defs);
+    const existing = next[slug] ?? {};
+    next[slug] = { ...defaults, ...existing };
+    for (const d of defs) {
+      if (next[slug][d.key] === undefined) {
+        next[slug][d.key] = d.default;
+      }
+    }
+  }
+  return next;
 }
 
 export async function fetchAnimations(): Promise<string[]> {

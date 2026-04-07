@@ -9,7 +9,7 @@ from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
 
 
-class AnimatedTarSlug(AnimatedEnemy):
+class AnimatedSlug(AnimatedEnemy):
     """Elongated slug with blob movement"""
 
     def build_mesh_parts(self):
@@ -46,7 +46,7 @@ class AnimatedTarSlug(AnimatedEnemy):
             self.parts.append(eye)
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("tar_slug", self.materials, self.rng)
+        enemy_mats = get_enemy_materials("slug", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         stalk_material = enemy_mats["limbs"]

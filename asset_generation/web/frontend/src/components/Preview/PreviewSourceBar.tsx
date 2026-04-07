@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { enemySelectOptionLabel } from "../../utils/enemyDisplay";
 import {
   getAnimationCodeExtras,
   getAnimationCodeTarget,
@@ -93,7 +94,7 @@ function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }
 function shortLabelForAnimationExtra(path: string): string {
   if (path.includes("keyframe_system")) return "Keyframes";
   if (path.includes("body_types")) return "Body types";
-  if (path.includes("animated_tar_slug")) return "Enemy rig";
+  if (path.includes("animated_slug")) return "Example rig";
   if (path.includes("player_armature")) return "Armature";
   return path.replace(/^.*\//, "").replace(/\.py$/, "");
 }
@@ -102,8 +103,9 @@ export function PreviewSourceBar() {
   const commandContext = useAppStore((st) => st.commandContext);
   const selectFile = useAppStore((st) => st.selectFile);
   const setEditorPaneVisible = useAppStore((st) => st.setEditorPaneVisible);
-  const animatedEnemySlugs = useAppStore((st) => st.animatedEnemySlugs);
-  const loadAnimatedEnemySlugs = useAppStore((st) => st.loadAnimatedEnemySlugs);
+  const animatedEnemyMeta = useAppStore((st) => st.animatedEnemyMeta);
+  const animatedBuildOptionValues = useAppStore((st) => st.animatedBuildOptionValues);
+  const loadAnimatedEnemyMeta = useAppStore((st) => st.loadAnimatedEnemyMeta);
   const [navError, setNavError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [partsOpen, setPartsOpen] = useState(true);
@@ -111,13 +113,14 @@ export function PreviewSourceBar() {
   const { cmd, enemy } = commandContext;
 
   useEffect(() => {
-    loadAnimatedEnemySlugs().catch(() => {});
-  }, [loadAnimatedEnemySlugs]);
+    loadAnimatedEnemyMeta().catch(() => {});
+  }, [loadAnimatedEnemyMeta]);
 
-  const modelTarget = getModelCodeTarget(cmd, enemy, animatedEnemySlugs);
+  const modelTarget = getModelCodeTarget(cmd, enemy, animatedEnemyMeta);
   const animTarget = getAnimationCodeTarget(cmd, enemy);
   const animExtras = getAnimationCodeExtras(cmd);
-  const partTree = getMeshPartTree(cmd, enemy, animatedEnemySlugs);
+  const buildOpts = animatedBuildOptionValues[enemy] ?? {};
+  const partTree = getMeshPartTree(cmd, enemy, animatedEnemyMeta, buildOpts);
 
   const openPath = useCallback(
     async (path: string | undefined) => {
@@ -184,7 +187,10 @@ export function PreviewSourceBar() {
           {enemy ? (
             <>
               {" "}
-              · target: <code style={{ color: "#bbb" }}>{enemy || "—"}</code>
+              · target:{" "}
+              <code style={{ color: "#bbb" }} title={enemy}>
+                {enemySelectOptionLabel(cmd, enemy, animatedEnemyMeta)}
+              </code>
             </>
           ) : null}
         </span>

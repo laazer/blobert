@@ -9,15 +9,15 @@ import {
 
 describe("command logic", () => {
   it("uses player color options for player cmd", () => {
-    expect(getEnemyOptions("player", ["tar_slug"])).toEqual(PLAYER_COLORS);
+    expect(getEnemyOptions("player", ["slug"])).toEqual(PLAYER_COLORS);
   });
 
   it("normalizes invalid player enemy to first color", () => {
-    expect(normalizeEnemyForCmd("player", "tar_slug", ["adhesion_bug"])).toBe("blue");
+    expect(normalizeEnemyForCmd("player", "slug", ["spider"])).toBe("blue");
   });
 
   it("keeps valid player color", () => {
-    expect(normalizeEnemyForCmd("player", "pink", ["adhesion_bug"])).toBe("pink");
+    expect(normalizeEnemyForCmd("player", "pink", ["spider"])).toBe("pink");
   });
 
   it("parses command preview with flags", () => {
@@ -54,11 +54,11 @@ describe("command logic", () => {
   });
 
   it("parses animated finish and hex color flags", () => {
-    const parsed = parseCommandPreview("animated tar_slug --finish metallic --hex-color #aa8844");
+    const parsed = parseCommandPreview("animated slug --finish metallic --hex-color #aa8844");
     expect(parsed.error).toBeNull();
     expect(parsed.next).toEqual({
       cmd: "animated",
-      enemy: "tar_slug",
+      enemy: "slug",
       finish: "metallic",
       hexColor: "#aa8844",
     });

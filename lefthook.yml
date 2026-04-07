@@ -2,6 +2,8 @@
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
 # Skip blog post only: SKIP_BLOG_POST=1 git push
+# Cursor → Claude retry on failure: off by default (one LLM call per push). Opt in:
+#   BLOG_POST_CURSOR_FALLBACK=1 git push
 # Manual blog hook run: BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
 # Blog provider: auto from environment (Claude Code → claude, Cursor → cursor-agent,
 #   else claude). Override: BLOG_POST_PROVIDER=claude|cursor. Binary: CURSOR_AGENT_BIN=...

@@ -10,6 +10,8 @@ interface RunOptions {
   difficulty?: string;
   finish?: string;
   hexColor?: string;
+  /** JSON string for `BLOBERT_BUILD_OPTIONS_JSON` (animated only). */
+  buildOptionsJson?: string;
 }
 
 export function useStreamingOutput() {
@@ -33,6 +35,7 @@ export function useStreamingOutput() {
     if (options.difficulty) params.set("difficulty", options.difficulty);
     if (options.finish) params.set("finish", options.finish);
     if (options.hexColor) params.set("hex_color", options.hexColor);
+    if (options.buildOptionsJson) params.set("build_options", options.buildOptionsJson);
 
     const url = `${endpoint}?${params.toString()}`;
     const es = new EventSource(url);

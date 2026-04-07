@@ -5,6 +5,7 @@ Unified command-line interface for generating game-ready enemies
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -22,6 +23,7 @@ from utils.constants import (
     LevelObjectTypes,
     PlayerExportConfig,
 )
+from utils.enemy_slug_registry import normalize_animated_slug
 
 
 def _get_blender_path() -> str:
@@ -61,10 +63,10 @@ def list_enemies():
     static_enemies = EnemyTypes.get_all()
     animated_enemies = EnemyTypes.get_animated()
     animated_enemy_details = {
-        "adhesion_bug": "Multi-segment bug (6-legged quadruped movement)",
-        "tar_slug": "Elongated slug (dramatic squash/stretch movement)",
-        "ember_imp": "Humanoid fire creature (bipedal walk, punch attack)",
-        "acid_spitter": "Spitting creature (ranged acid attack animations)",
+        "spider": "Multi-segment spider (6-legged quadruped movement)",
+        "slug": "Elongated slug (dramatic squash/stretch movement)",
+        "imp": "Humanoid imp (bipedal walk, punch attack)",
+        "spitter": "Spitting creature (ranged attack animations)",
         "claw_crawler": "Low-profile crawler (clawed locomotion)",
         "carapace_husk": "Armored husk (heavy shell, deliberate movement)",
     }
@@ -700,9 +702,20 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
                        default='glossy', help='Material finish override (player and animated commands)')
     parser.add_argument('--hex-color', type=str,
                        help='Custom player body color in #RRGGBB format (player command)')
-    
+
+    parser.add_argument(
+        '--build-json',
+        type=str,
+        metavar='JSON',
+        help='Procedural build options for animated enemies, e.g. {"eye_count":4} or {"spider":{"eye_count":4}}',
+    )
+
     args = parser.parse_args()
-    
+
+    # Legacy CLI slugs (tar_slug, adhesion_bug, …) → current registry names
+    if args.enemy and args.command in ("animated", "stats"):
+        args.enemy = normalize_animated_slug(args.enemy)
+
     # Handle prefab listing
     if args.command == 'prefabs':
         return _handle_prefabs_command(args)
@@ -734,19 +747,19 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
     
     # Handle test command  
     if args.command == 'test':
-        print_header("Quick Test - Animated Adhesion Bug")
+        print_header("Quick Test - Animated Spider")
         if not check_blender():
             sys.exit(1)
         
         try:
             result = subprocess.run([
                 _get_blender_path(), "--background", "--python", "src/generator.py",
-                "--", "adhesion_bug", "1"
+                "--", "spider", "1"
             ], capture_output=True, text=True)
             
             if result.returncode == 0:
                 print_colored("✅ Test completed successfully!", Colors.GREEN)
-                print("Generated adhesion_bug_animated_00.glb in animated_exports/")
+                print("Generated spider_animated_00.glb in animated_exports/")
             else:
                 print_colored("❌ Test failed", Colors.RED)
                 print(result.stderr)
@@ -782,6 +795,16 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
                 print_colored(f"❌ Invalid --hex-color: {args.hex_color!r}. Expected #RRGGBB", Colors.RED)
                 sys.exit(1)
 
+        if args.build_json:
+            try:
+                parsed = json.loads(args.build_json)
+            except json.JSONDecodeError as e:
+                print_colored(f"❌ Invalid --build-json: {e}", Colors.RED)
+                sys.exit(1)
+            if not isinstance(parsed, dict):
+                print_colored("❌ --build-json must be a JSON object", Colors.RED)
+                sys.exit(1)
+
         print_header(f"Generating Animated Enemy: {args.enemy}")
         print_colored(f"✨ Finish: {args.finish}", Colors.BLUE)
         if args.hex_color:
@@ -791,6 +814,9 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
             print_colored(f"📦 Prefab mesh: {args.prefab}", Colors.YELLOW)
 
         enemies_to_generate = EnemyTypes.get_animated() if args.enemy == 'all' else [args.enemy]
+        run_env = os.environ.copy()
+        if args.build_json:
+            run_env["BLOBERT_BUILD_OPTIONS_JSON"] = args.build_json
         for enemy_type in enemies_to_generate:
             print(f"\n🎬 Generating {enemy_type}...")
             blender_args = [enemy_type, str(args.count)]
@@ -799,10 +825,12 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
                 blender_args += ['--hex-color', args.hex_color]
             if args.prefab:
                 blender_args += ['--prefab', args.prefab]
+            if args.build_json:
+                blender_args += ['--build-json', args.build_json]
             result = subprocess.run([
                 _get_blender_path(), "--background", "--python", "src/generator.py",
                 "--", *blender_args
-            ])
+            ], env=run_env)
             if result.returncode == 0:
                 print_colored(f"✅ Generated {enemy_type}!", Colors.GREEN)
             else:

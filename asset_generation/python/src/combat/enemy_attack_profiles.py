@@ -8,8 +8,8 @@ with any future timing changes.
 
 from typing import Dict, List
 
-from .attack_data import AttackData, AttackType
 from ..utils.constants import AnimationConfig, AnimationTypes
+from .attack_data import AttackData, AttackType
 
 
 def _hit_frame(animation_name: str, fraction: float) -> int:
@@ -17,7 +17,7 @@ def _hit_frame(animation_name: str, fraction: float) -> int:
     return int(AnimationConfig.get_length(animation_name) * fraction)
 
 
-ADHESION_BUG_ATTACKS: List[AttackData] = [
+SPIDER_ATTACKS: List[AttackData] = [
     AttackData(
         name="pounce",
         animation_name=AnimationTypes.ATTACK,
@@ -42,7 +42,7 @@ ADHESION_BUG_ATTACKS: List[AttackData] = [
     ),
 ]
 
-TAR_SLUG_ATTACKS: List[AttackData] = [
+SLUG_ATTACKS: List[AttackData] = [
     AttackData(
         name="tar_expansion",
         animation_name=AnimationTypes.ATTACK,
@@ -71,7 +71,7 @@ TAR_SLUG_ATTACKS: List[AttackData] = [
     ),
 ]
 
-EMBER_IMP_ATTACKS: List[AttackData] = [
+IMP_ATTACKS: List[AttackData] = [
     AttackData(
         name="fire_punch",
         animation_name=AnimationTypes.ATTACK,
@@ -99,9 +99,9 @@ EMBER_IMP_ATTACKS: List[AttackData] = [
 ]
 
 _ATTACK_PROFILES: Dict[str, List[AttackData]] = {
-    'adhesion_bug': ADHESION_BUG_ATTACKS,
-    'tar_slug': TAR_SLUG_ATTACKS,
-    'ember_imp': EMBER_IMP_ATTACKS,
+    'spider': SPIDER_ATTACKS,
+    'slug': SLUG_ATTACKS,
+    'imp': IMP_ATTACKS,
 }
 
 

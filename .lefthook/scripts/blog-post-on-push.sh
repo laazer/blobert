@@ -173,13 +173,16 @@ case "$PROVIDER" in
     echo "blog-post: using Cursor Agent (${CURSOR_AGENT_BIN})…"
     run_cursor_agent
     LAST_RC=$?
-    if [[ "$LAST_RC" -ne 0 ]] && command -v claude >/dev/null 2>&1; then
-      echo "blog-post: cursor provider failed (rc=$LAST_RC); retrying with Claude…"
+    # Avoid a second LLM call by default (was: always retry with claude on cursor failure).
+    if [[ "$LAST_RC" -ne 0 ]] && [[ "${BLOG_POST_CURSOR_FALLBACK:-0}" == "1" ]] && command -v claude >/dev/null 2>&1; then
+      echo "blog-post: cursor provider failed (rc=$LAST_RC); retrying with Claude (BLOG_POST_CURSOR_FALLBACK=1)…"
       run_claude
       LAST_RC=$?
       if [[ "$LAST_RC" -eq 0 ]]; then
         PROVIDER="claude"
       fi
+    elif [[ "$LAST_RC" -ne 0 ]]; then
+      echo "blog-post: cursor provider failed (rc=$LAST_RC). No second attempt (set BLOG_POST_CURSOR_FALLBACK=1 to try Claude, or BLOG_POST_PROVIDER=claude)."
     fi
     ;;
   *)

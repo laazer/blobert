@@ -1,13 +1,22 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import { Asset, FileNode, TerminalLine, RunCmd } from "../types";
+import {
+  AnimatedBuildControlDef,
+  AnimatedEnemyMeta,
+  Asset,
+  FileNode,
+  RunCmd,
+  TerminalLine,
+} from "../types";
 import {
   fetchFileTree,
   fetchFileContent,
   saveFileContent,
   fetchAssets,
-  fetchEnemies,
+  fetchEnemyPreviewMeta,
+  mergeBuildOptionValues,
 } from "../api/client";
+import { DEFAULT_ANIMATED_ENEMY_META } from "../utils/enemyDisplay";
 
 export type CommandPanelContext = {
   cmd: RunCmd;
@@ -28,9 +37,14 @@ interface AppState {
   commandContext: CommandPanelContext;
   setCommandContext: (ctx: CommandPanelContext) => void;
 
-  /** Animated enemy slugs from GET /api/meta/enemies (fallback defaults in quickSourceNav). */
-  animatedEnemySlugs: string[];
-  loadAnimatedEnemySlugs: () => Promise<void>;
+  /** Animated enemy slug + label from GET /api/meta/enemies (fallback: enemyDisplay.DEFAULT_ANIMATED_ENEMY_META). */
+  animatedEnemyMeta: AnimatedEnemyMeta[];
+  /** Procedural build control definitions per slug (from meta API). */
+  animatedBuildControls: Record<string, AnimatedBuildControlDef[]>;
+  /** Current values per slug for build controls (merged with defaults). */
+  animatedBuildOptionValues: Record<string, Record<string, unknown>>;
+  setAnimatedBuildOption: (slug: string, key: string, value: unknown) => void;
+  loadAnimatedEnemyMeta: () => Promise<void>;
 
   // Editor
   /** When false, the center editor column is collapsed (file may still be selected). */
@@ -56,7 +70,7 @@ interface AppState {
   activeAnimation: string | null;
   isAnimationPaused: boolean;
   loadAssets: () => Promise<void>;
-  /** Load a GLB by server path (e.g. animated_exports/tar_slug_animated_01.glb). */
+  /** Load a GLB by server path (preview uses paths from `glbVariants.animatedExportRelativePath` for animated enemies). */
   selectAssetByPath: (path: string) => void;
   setActiveGlbUrl: (url: string | null) => void;
   setAvailableClips: (names: string[]) => void;
@@ -70,28 +84,34 @@ export const useAppStore = create<AppState>()(
     // File tree
     fileTree: [],
     selectedFile: null,
-    commandContext: { cmd: "animated", enemy: "adhesion_bug" },
+    commandContext: { cmd: "animated", enemy: "spider" },
     setCommandContext(ctx) {
       set((s) => {
         s.commandContext = ctx;
       });
     },
-    animatedEnemySlugs: [
-      "adhesion_bug",
-      "tar_slug",
-      "ember_imp",
-      "acid_spitter",
-      "claw_crawler",
-      "carapace_husk",
-    ],
-    async loadAnimatedEnemySlugs() {
+    animatedEnemyMeta: DEFAULT_ANIMATED_ENEMY_META,
+    animatedBuildControls: {},
+    animatedBuildOptionValues: {},
+    setAnimatedBuildOption(slug, key, value) {
+      set((s) => {
+        const cur = s.animatedBuildOptionValues[slug] ?? {};
+        s.animatedBuildOptionValues[slug] = { ...cur, [key]: value };
+      });
+    },
+    async loadAnimatedEnemyMeta() {
       try {
-        const list = await fetchEnemies();
-        if (list.length > 0) {
-          set((s) => {
-            s.animatedEnemySlugs = list;
-          });
-        }
+        const meta = await fetchEnemyPreviewMeta();
+        set((s) => {
+          if (meta.enemies.length > 0) {
+            s.animatedEnemyMeta = meta.enemies;
+          }
+          s.animatedBuildControls = meta.animatedBuildControls;
+          s.animatedBuildOptionValues = mergeBuildOptionValues(
+            meta.animatedBuildControls,
+            s.animatedBuildOptionValues,
+          );
+        });
       } catch {
         /* keep defaults */
       }
@@ -192,10 +212,9 @@ export const useAppStore = create<AppState>()(
       const assets = await fetchAssets();
       set((s) => { s.assets = assets; });
       if (!outputFile) return;
-      const match = assets.find((a) => a.path === outputFile || a.name === outputFile);
-      if (match) {
-        get().selectAssetByPath(match.path);
-      }
+      const normalized = outputFile.includes("/") ? outputFile : `animated_exports/${outputFile}`;
+      const basename = normalized.split("/").pop() ?? "";
+      get().selectAssetByPath(normalized);
     },
   }))
 );

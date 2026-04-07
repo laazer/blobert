@@ -1,9 +1,9 @@
 """Animated claw crawler enemy builder."""
 
-from mathutils import Vector
+import math
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_types import RigDefinition, rig_from_bone_map
+from ..core.rig_types import RigDefinition, quadruped_simple_rig_definition
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy
@@ -28,6 +28,25 @@ class AnimatedClawCrawler(AnimatedEnemy):
         )
         self.parts.append(head)
         self.head_scale = head_scale
+
+        pe = int(self.build_options.get("peripheral_eyes", 0))
+        self._peripheral_eyes = max(0, min(3, pe))
+        eye_scale = self.head_scale * 0.12
+        for i in range(self._peripheral_eyes):
+            if self._peripheral_eyes == 1:
+                dy, dz = 0.0, 0.18
+            elif self._peripheral_eyes == 2:
+                dy = self.body_scale * 0.38 * (1 if i == 0 else -1)
+                dz = 0.12
+            else:
+                ang = (i / 3.0) * math.pi - math.pi / 2
+                dy = self.body_scale * 0.42 * math.cos(ang)
+                dz = 0.08 + 0.12 * math.sin(ang + 0.4)
+            eye = create_sphere(
+                location=(-self.body_scale * 0.48, dy, 0.22 + dz),
+                scale=(eye_scale, eye_scale, eye_scale),
+            )
+            self.parts.append(eye)
 
         for side in [-1, 1]:
             claw_length = random_variance(0.35, 0.08, self.rng)
@@ -57,9 +76,13 @@ class AnimatedClawCrawler(AnimatedEnemy):
         enemy_mats = get_enemy_materials("claw_crawler", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
+        eye_mat = enemy_mats["extra"]
         claw_material = enemy_mats["extra"]
         limb_material = enemy_mats["limbs"]
         part_index = 2
+        for _ in range(self._peripheral_eyes):
+            apply_material_to_object(self.parts[part_index], eye_mat)
+            part_index += 1
         for _ in range(2):
             apply_material_to_object(self.parts[part_index], claw_material)
             part_index += 1
@@ -68,20 +91,7 @@ class AnimatedClawCrawler(AnimatedEnemy):
             part_index += 1
 
     def get_rig_definition(self) -> RigDefinition:
-        s = self.body_scale
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, s * 0.2)), None),
-                "spine": (Vector((0, 0, s * 0.2)), Vector((s * 0.5, 0, s * 0.4)), "root"),
-                "head": (Vector((s * 0.5, 0, s * 0.4)), Vector((s * 0.8, 0, s * 0.6)), "spine"),
-                "leg_fl": (Vector((s * 0.3, s * 0.3, s * 0.3)), Vector((s * 0.3, s * 0.3, 0)), "spine"),
-                "leg_fr": (Vector((s * 0.3, -s * 0.3, s * 0.3)), Vector((s * 0.3, -s * 0.3, 0)), "spine"),
-                "leg_ml": (Vector((0, s * 0.4, s * 0.3)), Vector((0, s * 0.4, 0)), "spine"),
-                "leg_mr": (Vector((0, -s * 0.4, s * 0.3)), Vector((0, -s * 0.4, 0)), "spine"),
-                "leg_bl": (Vector((-s * 0.2, s * 0.3, s * 0.3)), Vector((-s * 0.2, s * 0.3, 0)), "root"),
-                "leg_br": (Vector((-s * 0.2, -s * 0.3, s * 0.3)), Vector((-s * 0.2, -s * 0.3, 0)), "root"),
-            }
-        )
+        return quadruped_simple_rig_definition(self.body_scale)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

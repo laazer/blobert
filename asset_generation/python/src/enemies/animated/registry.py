@@ -6,18 +6,18 @@ from __future__ import annotations
 
 from ...core.rig_types import AnimatedBuildResult
 from ...utils.enemy_slug_registry import ANIMATED_SLUGS
-from ..animated_acid_spitter import AnimatedAcidSpitter
-from ..animated_adhesion_bug import AnimatedAdhesionBug
 from ..animated_carapace_husk import AnimatedCarapaceHusk
 from ..animated_claw_crawler import AnimatedClawCrawler
-from ..animated_ember_imp import AnimatedEmberImp
-from ..animated_tar_slug import AnimatedTarSlug
+from ..animated_imp import AnimatedImp
+from ..animated_slug import AnimatedSlug
+from ..animated_spider import AnimatedSpider
+from ..animated_spitter import AnimatedSpitter
 
 _ANIMATED_ENEMY_CLASSES: tuple[tuple[str, type], ...] = (
-    ("adhesion_bug", AnimatedAdhesionBug),
-    ("tar_slug", AnimatedTarSlug),
-    ("ember_imp", AnimatedEmberImp),
-    ("acid_spitter", AnimatedAcidSpitter),
+    ("spider", AnimatedSpider),
+    ("slug", AnimatedSlug),
+    ("imp", AnimatedImp),
+    ("spitter", AnimatedSpitter),
     ("claw_crawler", AnimatedClawCrawler),
     ("carapace_husk", AnimatedCarapaceHusk),
 )
@@ -45,13 +45,14 @@ class AnimatedEnemyBuilder:
         materials,
         rng,
         prefab_mesh=None,
+        build_options: dict | None = None,
     ) -> AnimatedBuildResult:
         """Build one animated enemy; returns typed result."""
         if enemy_type not in cls.ENEMY_CLASSES:
             raise ValueError(f"Unknown enemy type: {enemy_type}")
 
         enemy_class = cls.ENEMY_CLASSES[enemy_type]
-        enemy = enemy_class(enemy_type, materials, rng)
+        enemy = enemy_class(enemy_type, materials, rng, build_options=build_options)
         build_result = enemy.build(prefab_mesh=prefab_mesh)
         attack_profile = enemy.get_attack_profile()
 

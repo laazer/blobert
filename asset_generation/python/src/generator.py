@@ -18,7 +18,15 @@ from src.enemies.animated_pipeline import setup_blender_scene
 from src.enemies.base_enemy import export_enemy
 from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
+from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
 from src.utils.constants import ExportConfig
+from src.utils.enemy_slug_registry import normalize_animated_slug
+from src.utils.export_naming import animated_export_stem
+
+
+def _build_options_for_current_enemy(enemy_type: str) -> dict:
+    raw = parse_build_options_json(os.environ.get("BLOBERT_BUILD_OPTIONS_JSON"))
+    return options_for_enemy(enemy_type, raw)
 
 
 def setup_scene():
@@ -70,13 +78,16 @@ def generate_animated_enemy(
             prefab_mesh = load_prefab_mesh_if_requested(prefab_name)
 
             built = AnimatedEnemyBuilder.create_enemy(
-                enemy_type, materials, rng, prefab_mesh=prefab_mesh
+                enemy_type,
+                materials,
+                rng,
+                prefab_mesh=prefab_mesh,
+                build_options=_build_options_for_current_enemy(enemy_type),
             )
             armature, mesh, attack_profile = built.armature, built.mesh, built.attack_profile
 
             if armature and mesh:
-                suffix = f"_prefab_{prefab_name}" if prefab_name else ""
-                filename = f"{enemy_type}_animated{suffix}_{i:02d}"
+                filename = animated_export_stem(enemy_type, i, prefab_name=prefab_name)
                 filepath = export_enemy(armature, mesh, filename, export_dir, attack_profile)
                 print(f"✅ Exported: {filepath}")
             else:
@@ -117,13 +128,16 @@ def main():
         print("Available types:", AnimatedEnemyBuilder.get_available_types())
         return
 
-    enemy_type = positional_args[0]
+    enemy_type = normalize_animated_slug(positional_args[0])
     count = int(positional_args[1]) if len(positional_args) > 1 and not positional_args[1].startswith('--') else 1
     seed_str = positional_args[2] if len(positional_args) > 2 and not positional_args[2].startswith('--') else None
     seed = int(seed_str) if seed_str else None
     prefab_name = _parse_prefab_arg(positional_args)
     finish = _parse_flag_arg(positional_args, "--finish") or "default"
     hex_color = _parse_flag_arg(positional_args, "--hex-color") or ""
+    build_json = _parse_flag_arg(positional_args, "--build-json")
+    if build_json:
+        os.environ["BLOBERT_BUILD_OPTIONS_JSON"] = build_json
 
     if enemy_type not in AnimatedEnemyBuilder.get_available_types():
         print(f"❌ Unknown enemy type: {enemy_type}")

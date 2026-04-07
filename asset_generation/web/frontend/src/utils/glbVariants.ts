@@ -1,6 +1,28 @@
 import type { Asset } from "../types";
 
-/** Match `*_NN.glb` where NN is a two-digit variant index (export naming). */
+/** Matches ``ExportConfig.ANIMATED_DIR`` in Python. */
+export const ANIMATED_EXPORT_DIR = "animated_exports";
+
+/**
+ * Relative path under the asset server root for a procedural animated export
+ * (same stem as Python ``export_naming.animated_export_stem``; no prefab segment).
+ */
+export function animatedExportRelativePath(enemySlug: string, variantIndex: number): string {
+  const v = Math.max(0, Math.min(99, Math.floor(variantIndex)));
+  const stem = `${enemySlug}_animated_${String(v).padStart(2, "0")}`;
+  return `${ANIMATED_EXPORT_DIR}/${stem}.glb`;
+}
+
+/** Parse `spider_animated_03.glb` → slug + index (procedural animated exports only). */
+export function parseAnimatedEnemyExportFilename(
+  name: string,
+): { slug: string; variantIndex: number } | null {
+  const m = name.match(/^(.+)_animated_(\d{2})\.glb$/i);
+  if (!m) return null;
+  return { slug: m[1], variantIndex: parseInt(m[2], 10) };
+}
+
+/** Match `*_NN.glb` where NN is a two-digit variant index (generic exports e.g. player). */
 export function parseVariantFilename(name: string): { base: string; variantIndex: number } | null {
   const m = name.match(/^(.+)_(\d{2})\.glb$/i);
   if (!m) return null;
@@ -11,27 +33,6 @@ export function parseAssetPathFromGlbUrl(url: string | null): string | null {
   if (!url) return null;
   const m = url.match(/\/api\/assets\/(.+?)(?:\?|$)/);
   return m ? m[1] : null;
-}
-
-/** All GLB variants in the same export family as `active` (same dir + same basename before `_NN`). */
-export function variantsInSameFamily(assets: Asset[], active: Asset | null): Asset[] {
-  if (!active || !active.name.toLowerCase().endsWith(".glb")) return [];
-  const p = parseVariantFilename(active.name);
-  if (!p) return [active];
-  const key = `${active.dir}/${p.base}`;
-  const glbs = assets.filter((a) => a.name.toLowerCase().endsWith(".glb"));
-  const out = glbs.filter((a) => {
-    if (a.dir !== active.dir) return false;
-    const q = parseVariantFilename(a.name);
-    if (!q) return false;
-    return `${a.dir}/${q.base}` === key;
-  });
-  out.sort((a, b) => {
-    const va = parseVariantFilename(a.name)!;
-    const vb = parseVariantFilename(b.name)!;
-    return va.variantIndex - vb.variantIndex;
-  });
-  return out;
 }
 
 export function assetByPath(assets: Asset[], path: string | null): Asset | null {

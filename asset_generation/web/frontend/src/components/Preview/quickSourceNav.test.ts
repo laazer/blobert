@@ -13,7 +13,7 @@ describe("quickSourceNav", () => {
     });
 
     it("resolves known animated slug to module", () => {
-      expect(getModelCodeTarget("animated", "tar_slug")?.path).toBe("enemies/animated_tar_slug.py");
+      expect(getModelCodeTarget("animated", "slug")?.path).toBe("enemies/animated_slug.py");
     });
 
     it("falls back to base_enemy for unknown animated slug", () => {
@@ -28,12 +28,12 @@ describe("quickSourceNav", () => {
       expect(getModelCodeTarget("level", "crate")?.path).toBe("level/level_object_builder.py");
     });
 
-    it("resolves test to adhesion bug module", () => {
-      expect(getModelCodeTarget("test", "")?.path).toBe("enemies/animated_adhesion_bug.py");
+    it("resolves test to spider mesh module", () => {
+      expect(getModelCodeTarget("test", "")?.path).toBe("enemies/animated_spider.py");
     });
 
     it("resolves stats with known slug", () => {
-      expect(getModelCodeTarget("stats", "ember_imp")?.path).toBe("enemies/animated_ember_imp.py");
+      expect(getModelCodeTarget("stats", "imp")?.path).toBe("enemies/animated_imp.py");
     });
 
     it("returns null for smart", () => {
@@ -47,7 +47,7 @@ describe("quickSourceNav", () => {
     });
 
     it("uses shared animation_system for animated", () => {
-      expect(getAnimationCodeTarget("animated", "tar_slug")?.path).toBe("animations/animation_system.py");
+      expect(getAnimationCodeTarget("animated", "slug")?.path).toBe("animations/animation_system.py");
     });
 
     it("returns null for smart", () => {
@@ -59,7 +59,7 @@ describe("quickSourceNav", () => {
     it("lists shared modules for animated enemies", () => {
       const paths = getAnimationCodeExtras("animated").map((x) => x.path);
       expect(paths).toContain("animations/keyframe_system.py");
-      expect(paths).toContain("enemies/animated_tar_slug.py");
+      expect(paths).toContain("enemies/animated_slug.py");
     });
 
     it("lists player extras for player cmd", () => {
@@ -79,19 +79,44 @@ describe("quickSourceNav", () => {
       expect(tree[0]?.children?.some((c) => c.label.includes("Face"))).toBe(true);
     });
 
-    it("lists all slugs under animated all", () => {
+    it("lists all enemies under animated all with display labels", () => {
       const tree = getMeshPartTree("animated", "all");
       const labels = tree[0]?.children?.map((c) => c.label) ?? [];
-      expect(labels).toContain("tar_slug");
-      expect(labels).toContain("adhesion_bug");
+      expect(labels).toContain("Slug");
+      expect(labels).toContain("Spider");
     });
 
-    it("enumerates every tar_slug parts[] index", () => {
-      const tree = getMeshPartTree("animated", "tar_slug");
+    it("enumerates every slug parts[] index", () => {
+      const tree = getMeshPartTree("animated", "slug");
       const flat = JSON.stringify(tree);
       for (let i = 0; i <= 5; i += 1) {
         expect(flat).toContain(`parts[${i}]`);
       }
+    });
+
+    it("spider parts tree reflects current eye_count only (not both variants)", () => {
+      const t2 = getMeshPartTree("animated", "spider", undefined, { eye_count: 2 });
+      const flat2 = JSON.stringify(t2);
+      expect(flat2).toContain("10 parts");
+      expect(flat2).toContain("parts[9]");
+      expect(flat2).not.toContain("parts[10]");
+
+      const t4 = getMeshPartTree("animated", "spider", undefined, { eye_count: 4 });
+      const flat4 = JSON.stringify(t4);
+      expect(flat4).toContain("12 parts");
+      expect(flat4).toContain("parts[11]");
+      expect(flat4).not.toContain("Variant:");
+    });
+
+    it("claw_crawler parts tree includes peripheral eyes only when selected", () => {
+      const t0 = getMeshPartTree("animated", "claw_crawler", undefined, { peripheral_eyes: 0 });
+      expect(JSON.stringify(t0)).toContain("8 parts");
+      expect(JSON.stringify(t0)).not.toContain("peripheral");
+
+      const t2 = getMeshPartTree("animated", "claw_crawler", undefined, { peripheral_eyes: 2 });
+      const s = JSON.stringify(t2);
+      expect(s).toContain("10 parts");
+      expect(s).toContain("peripheral eye");
     });
 
     it("lists full player join order through [11]", () => {
