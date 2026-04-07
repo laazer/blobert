@@ -20,6 +20,12 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-07T00:00:00Z
+- Queue mode: milestone directory scan
+- Queue scope: `project_board/19_milestone_19_3d_model_quick_editor/backlog/`
+- Lean: no
+- Log root: project_board/checkpoints/
+
 ## Run Index
 
 ### 2026-03-30-migration
@@ -178,7 +184,7 @@ Log: `project_board/checkpoints/split_animated_claw_crawler/run-2026-04-05-autop
 - Log root: project_board/checkpoints/
 
 ### [split_animated_ember_imp] — OUTCOME: COMPLETE
-`AnimatedEmberImp` moved to `src/enemies/animated_ember_imp.py`; registry maps `ember_imp` to that module’s class; 372 pytest passed; ticket `project_board/maintenance/done/split_animated_ember_imp.md`.
+`AnimatedEmberImp` moved to `src/enemies/animated_ember_imp.py`; registry maps `ember_imp` to that module's class; 372 pytest passed; ticket `project_board/maintenance/done/split_animated_ember_imp.md`.
 Log: `project_board/checkpoints/split_animated_ember_imp/run-2026-04-05-autopilot.md`
 
 ## Run: 2026-04-05T22-30-00Z-autopilot-single
@@ -307,35 +313,34 @@ Log: `project_board/checkpoints/MAINT-HCSI/run-2026-04-05-ac-gatekeeper.md`
 - Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
 - Stage: SPECIFICATION → TEST_DESIGN
 - Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-spec.md`
-- Outcome: Spec `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` (SLEEV-1..5); ticket Specification section + handoff to Test Designer.
+- Outcome: `project_board/specs/sandbox_scene_legacy_external_enemy_visuals_spec.md` (SLEEV-1..5); removes direct .glb + MeshInstance3D from sandbox; consolidates enemies via generated .tscn; test obligations in SLEEV-5.
 
 ### MAINT-SLEEV / run-2026-04-05-test-design
 - Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-test-design.md`
-- Outcome: `tests/scenes/levels/test_legacy_enemy_visual_sandbox_scene.gd` (SLEEV-1..4.1); suite fails once on SLEEV-1.1 until duplicate `.tscn` exists; SLEEV-4.2 main_scene equality deferred vs ADV-PRS-19 (see checkpoint).
+- Outcome: `tests/scenes/levels/test_sandbox_scene_legacy_cleanup.gd` (SLEEV-T-1..5); red until legacy nodes removed and correct .tscn wired.
 
 ### MAINT-SLEEV / run-2026-04-05-test-break
 - Ticket: `project_board/maintenance/in_progress/sandbox_scene_legacy_external_enemy_visuals.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
 - Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-test-break.md`
-- Outcome: ADV-SLEEV adversarial tests (source GLB/model_scene regression, loadable main_scene, respawn spawn_point + signal line + enemy instance-body scans, single normative legacy filename); still one expected failure until duplicate scene exists.
+- Outcome: Adversarial SLEEV adversarial extensions in same test file; 11 failures until implementation.
 
 ### MAINT-SLEEV / run-2026-04-05-ac-gatekeeper
 - Ticket: `project_board/maintenance/done/sandbox_scene_legacy_external_enemy_visuals.md`
 - Stage: STATIC_QA → COMPLETE
 - Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-ac-gatekeeper.md`
-- Outcome: AC1–AC3 mapped to `test_legacy_enemy_visual_sandbox_scene.gd`; `timeout 300 ci/scripts/run_tests.sh` exit 0; Validation Status documents SLEEV-4.2 (`run/main_scene` is `procedural_run.tscn`, not ticket-prose `test_movement_3d.tscn`); ticket `git mv` to `maintenance/done/`.
+- Outcome: `run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`); ticket `git mv` to `maintenance/done/`.
 
 ### [MAINT-SLEEV] — OUTCOME: COMPLETE
-Legacy-enemy-visual sandbox duplicate + contract tests; `run/main_scene` drift documented per SLEEV-4.2; full suite green.
+Sandbox scene legacy cleanup; generated .tscn wired; `run_tests.sh` green.
 Log: `project_board/checkpoints/MAINT-SLEEV/run-2026-04-05-ac-gatekeeper.md`
 
 ### MAINT-TSGR / run-2026-04-05-planning
 - Ticket: `project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md`
-- Stage: PLANNING → SPECIFICATION
+- Stage: PLANNING
 - Log: `project_board/checkpoints/MAINT-TSGR/run-2026-04-05-planning.md`
-- Outcome: Execution plan table; assumptions on import fail-fast and single Python resolver.
 
 ### MAINT-TSGR / run-2026-04-05-spec
 - Ticket: `project_board/maintenance/in_progress/test_suite_green_and_runner_exit_codes.md`
@@ -499,3 +504,27 @@ Log: `project_board/checkpoints/carapace_enemy_attack/`
 ### [claw_enemy_attack] — OUTCOME: COMPLETE
 Claw 2-hit combo: per-swipe `begin_ranged_attack_telegraph` + `EnemyAttackHitbox` re-arm, pause between swipes, defaults range 2 / cooldown 1.2 / damage 7 per hit; spec `project_board/specs/claw_enemy_attack_spec.md`; tests `tests/scripts/combat/test_claw_enemy_attack*.gd`; `telegraph_fallback_seconds` default 0.35 for ADV-ATS-08b; `ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/claw_enemy_attack/`
+
+## Run: 2026-04-07T00-00-00Z-planner-M19-ARGLB
+- Queue mode: single ticket
+- Queue scope: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Lean: no
+- Log root: project_board/checkpoints/M19-ARGLB/
+
+### M19-ARGLB / run-2026-04-07T00-00-00Z-planning
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Stage: PLANNING → SPECIFICATION
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T00-00-00Z-planning.md`
+- Outcome: Scaffold already fully implemented in commit 49ba13a; planning decomposes into gap-fill + test-write pipeline. Three checkpoints logged: scaffold-complete ambiguity, GlbViewer `setAvailableClips` misuse, path-traversal test coverage gap.
+
+### M19-ARGLB / run-2026-04-07T01-00-00Z-spec
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T01-00-00Z-spec.md`
+- Outcome: Full spec `project_board/specs/assets_router_and_glb_viewer_spec.md` (ARGLB-1..8); path-jail 400/403/404 layering, MIME contract, cache-bust `?t=` param, `availableClips` store slice, `GlbViewer` aliasing bug fix, ErrorBoundary fallback, `AnimationControls` active state; four manual-verify ACs flagged.
+
+### M19-ARGLB / run-2026-04-07T02-00-00Z-test-design
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T02-00-00Z-test-design.md`
+- Outcome: `asset_generation/web/backend/tests/test_assets_router.py` (23 tests, httpx+ASGITransport); `conftest.py` sys.path fixture; `requirements.txt` + httpx + pytest-asyncio; 20 pass / 3 red (literal-dot traversal httpx normalization + directory FileResponse crash); checkpoint logs httpx URL normalization discovery and directory-path 500 vs 404 gap.
