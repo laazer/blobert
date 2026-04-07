@@ -2,11 +2,29 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 from mathutils import Vector
 
-from ...utils.procedural_constants import QuadrupedRigLayout
 from ..rig_types import RigDefinition, rig_from_bone_map
 from .base import SimpleRigModel
+
+# --- Mesh helpers (quadruped family) ---
+CYLINDER_VERTICES_HEX: Final[int] = 6
+QUADRUPED_LEG_THICKNESS: Final[float] = 0.08
+
+
+class QuadrupedRigLayout:
+    """Bone positions as fractions of ``body_height``."""
+
+    ROOT_TAIL_Z: Final[float] = 0.2
+    SPINE_FORWARD_X: Final[float] = 0.5
+    SPINE_UPPER_Z: Final[float] = 0.4
+    HEAD_FORWARD_X: Final[float] = 0.8
+    HEAD_UPPER_Z: Final[float] = 0.6
+    LEG_CORNER_XY: Final[float] = 0.3
+    LEG_MID_Y: Final[float] = 0.4
+    LEG_REAR_X: Final[float] = 0.2
 
 
 class QuadrupedSimpleRig(SimpleRigModel):

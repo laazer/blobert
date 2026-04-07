@@ -7,16 +7,20 @@ import math
 from mathutils import Vector
 
 from ..core.blender_utils import create_cylinder, create_sphere
-from ..core.rig_models import BlobSimpleRig, HumanoidSimpleRig, QuadrupedSimpleRig
-from ..core.rig_types import rig_from_bone_map
-from ..materials.material_system import apply_material_to_object, get_enemy_materials
-from ..utils.constants import EnemyBodyTypes
-from ..utils.procedural_constants import (
+from ..core.rig_models.blob_simple import CYLINDER_VERTICES_HEX as BLOB_CYL_HEX
+from ..core.rig_models.blob_simple import BlobSimpleRig
+from ..core.rig_models.humanoid_simple import (
     CYLINDER_VERTICES_HEX,
     CYLINDER_VERTICES_OCT,
     CYLINDER_VERTICES_SQUARE,
     MESH_BODY_CENTER_Z_FACTOR,
+    HumanoidSimpleRig,
 )
+from ..core.rig_models.quadruped_simple import CYLINDER_VERTICES_HEX as QUAD_CYL_HEX
+from ..core.rig_models.quadruped_simple import QuadrupedSimpleRig
+from ..core.rig_types import rig_from_bone_map
+from ..materials.material_system import apply_material_to_object, get_enemy_materials
+from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
@@ -39,7 +43,7 @@ class ExampleSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             leg = create_cylinder(
                 location=(x_offset, y_offset, 0.1),
                 scale=(0.05, 0.05, 0.4),
-                vertices=CYLINDER_VERTICES_HEX,
+                vertices=QUAD_CYL_HEX,
             )
             self.parts.append(leg)
 
@@ -66,7 +70,7 @@ class ExampleGhost(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             tendril = create_cylinder(
                 location=(x_offset, 0, 0.3),
                 scale=(0.1, 0.1, 0.8),
-                vertices=CYLINDER_VERTICES_HEX,
+                vertices=BLOB_CYL_HEX,
             )
             self.parts.append(tendril)
 

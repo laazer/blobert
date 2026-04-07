@@ -3,10 +3,13 @@
 import math
 
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
-from ..core.rig_models import QuadrupedSimpleRig
+from ..core.rig_models.quadruped_simple import (
+    CYLINDER_VERTICES_HEX,
+    QUADRUPED_LEG_THICKNESS,
+    QuadrupedSimpleRig,
+)
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
-from ..utils.procedural_constants import CYLINDER_VERTICES_HEX, QUADRUPED_LEG_THICKNESS
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 
