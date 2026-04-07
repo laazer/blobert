@@ -101,9 +101,15 @@ echo "blog-post: provider=$PROVIDER (Claude Code → claude, Cursor → cursor-a
 echo "$SESSION_COMMITS"
 echo ""
 
+HEAD_SHORT="$(git -C "$ROOT" rev-parse --short HEAD)"
+
 PROMPT="Read the agent role definition at agent_context/agents/10_blog_post/blog_post_v1.md and follow it exactly. This is a non-interactive run triggered by a pre-push git hook — no live session conversation is available. Use git history, project_board/checkpoints/ scoped logs, project_board/CHECKPOINTS.md index, LEARNINGS.md, and the diff of these commits as your primary sources. The session commits were: $SESSION_COMMITS
 
-Repository HEAD (full SHA) for this push: $HEAD_FULL"
+Repository HEAD for this push:
+- full SHA: $HEAD_FULL
+- short SHA: $HEAD_SHORT
+
+Filename requirement (must follow exactly): blog/YYYY-MM-DD-${HEAD_SHORT}-<slug>.md"
 
 cd "$ROOT"
 OUT="$(mktemp)"

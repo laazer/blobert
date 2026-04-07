@@ -4,6 +4,74 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [sse_run_endpoint_and_terminal] — Malformed ticket bootstrap and endpoint-evidence closure boundary
+
+*Completed: 2026-04-07*
+
+### Learnings
+
+- category: process
+  insight: Tickets missing a valid `WORKFLOW STATE` should be treated as malformed workflow artifacts and routed through a documented bootstrap/closure path rather than forcing a full re-run by default.
+  impact: This ticket resumed from a backlog stub with no state block; the run required planner escalation assumptions before closure could proceed.
+  prevention: Add a standard malformed-ticket branch: classify as bootstrap candidate, require explicit evidence checklist, then write canonical state blocks before moving to `done/`.
+  severity: medium
+
+- category: testing
+  insight: For long-running external-process features (SSE + subprocess manager), autonomous closure can rely on deterministic endpoint/runtime probes plus code-path mapping when interactive tool execution is inherently environment-dependent.
+  impact: Closure used `/status`, `/kill` idle behavior, and allowlist error-stream checks, while Blender interactive generation remained an optional manual verification step.
+  prevention: Define a two-tier validation rule in spec/tests: tier 1 deterministic API-stream probes required for closure; tier 2 interactive process run explicitly marked manual/optional unless CI harness exists.
+  severity: medium
+
+- category: architecture
+  insight: Command allowlists for process-launch endpoints are a security contract, not an implementation detail, and should be validated at stream-protocol level (SSE `error` event) instead of only status codes.
+  impact: Runtime evidence confirmed `/api/run/stream?cmd=evil` emitted protocol-correct SSE `error`, proving both input hardening and frontend-consumable failure semantics.
+  prevention: Require one negative-path streaming test per run-capable endpoint that asserts event type and error message shape, not just HTTP acceptance.
+  severity: high
+
+### Anti-Patterns
+
+- description: Treating malformed backlog tickets as normal in-progress work without explicit bootstrap semantics, causing ambiguous stage ownership and ad-hoc assumptions.
+  detection_signal: Ticket lacks `WORKFLOW STATE` but pipeline resumes directly at arbitrary stages.
+  prevention: Enforce a gatekeeper/planner bootstrap step that writes normalized state metadata before any closure decision.
+
+- description: Declaring streaming process features complete from code inspection alone when no runtime protocol evidence exists.
+  detection_signal: AC claims for SSE output, kill behavior, or error handling without captured endpoint probe results.
+  prevention: Require minimal runtime probe set (`status`, `kill`, invalid-cmd stream) in every closure log for subprocess-backed SSE endpoints.
+
+### Prompt Patches
+
+- agent: Planner Agent
+  change: "If a ticket is missing `WORKFLOW STATE`, mark it `MALFORMED_BOOTSTRAP` and produce a bootstrap mini-plan: (1) verify implementation presence, (2) collect deterministic runtime evidence, (3) write normalized WORKFLOW STATE/NEXT ACTION, then hand off to Gatekeeper for closure."
+  reason: Removes stage ambiguity and makes malformed-ticket handling consistent.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "For subprocess-backed SSE ACs, require evidence of three probes before COMPLETE: `GET /status`, `POST /kill` in idle or active-safe state, and invalid-command stream asserting SSE `error` event payload; if live external tool execution is unavailable, record it explicitly as manual optional validation."
+  reason: Ensures closure is evidence-driven without blocking on nondeterministic external tooling.
+
+- agent: Spec Agent
+  change: "When an AC depends on external interactive tools (e.g., Blender run output), split acceptance into deterministic API/protocol checks vs manual interactive checks, and label which tier is mandatory for autonomous closure."
+  reason: Prevents mid-pipeline uncertainty about what evidence is sufficient.
+
+### Workflow Improvements
+
+- issue: Current workflow does not define a first-class path for malformed ticket files with missing state metadata.
+  improvement: Add a formal `BOOTSTRAP_MALFORMED_TICKET` transition in workflow docs and checkpoint templates with required evidence fields.
+  expected_benefit: Faster, lower-ambiguity recoveries when historical ticket files are incomplete.
+
+- issue: SSE endpoint tickets can blur protocol verification and interactive external-process validation.
+  improvement: Add a reusable closure checklist template for streaming endpoints that separates protocol-contract checks from environment-dependent manual checks.
+  expected_benefit: Consistent closure quality and fewer medium-confidence assumptions.
+
+### Keep / Reinforce
+
+- practice: Combining runtime probes with AC code-path mapping for closure on already-implemented tickets.
+  reason: Balances execution speed with defensible evidence when reimplementation is unnecessary.
+
+- practice: Explicitly logging optional manual verification steps instead of silently treating them as completed.
+  reason: Preserves audit clarity and prevents overstating validation coverage.
+
+---
+
 ## [frontend_react_scaffold_and_editor] — Bootstrap-closure tickets need explicit metadata and evidence tiers
 
 *Completed: 2026-04-07*
