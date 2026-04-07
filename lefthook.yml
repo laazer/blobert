@@ -9,6 +9,9 @@
 # post-commit — session tracking only (no claude/cursor-agent, no blog_post_v1):
 #   - log-commit: appends commit hash + subject to .blog-session.log
 #
+# task integration:
+#   - Hook commands delegate to Taskfile targets so local/manual and hook flows share one entry point.
+#
 # pre-commit — fast checks on staged files only:
 #   - py-parse: syntax-check staged Python files in asset_generation/python/
 #
@@ -29,7 +32,7 @@ post-commit:
   commands:
     log-commit:
       name: Queue commit for pre-push blog (no LLM)
-      run: .lefthook/scripts/log-commit.sh
+      run: task hooks:log-commit
 
 pre-commit:
   parallel: true
@@ -37,23 +40,23 @@ pre-commit:
     py-parse:
       name: Python parse check (asset_generation)
       glob: "asset_generation/python/**/*.py"
-      run: python3 -m py_compile {staged_files}
+      run: task hooks:py-parse -- {staged_files}
     py-review:
       name: Python reviewer (ruff lint/imports)
       glob: "asset_generation/**/*.py"
-      run: .lefthook/scripts/py-review.sh {staged_files}
+      run: task hooks:py-review -- {staged_files}
     py-organization:
       name: Python organization guardrails
       glob: "asset_generation/**/*.py"
-      run: python3 .lefthook/scripts/py_organization_check.py {staged_files}
+      run: task hooks:py-organization -- {staged_files}
     gd-review:
       name: Godot script reviewer hygiene
       glob: "**/*.gd"
-      run: python3 .lefthook/scripts/gd_review_check.py {staged_files}
+      run: task hooks:gd-review -- {staged_files}
     gd-organization:
       name: Godot script organization guardrails
       glob: "**/*.gd"
-      run: python3 .lefthook/scripts/gd_organization_check.py {staged_files}
+      run: task hooks:gd-organization -- {staged_files}
 
 pre-push:
   parallel: false
@@ -61,11 +64,11 @@ pre-push:
     godot-tests:
       name: Godot test suite
       glob: "**/*.{gd,tscn,tres,gdshader}"
-      run: .lefthook/scripts/godot-tests.sh
+      run: task hooks:godot
     py-tests:
       name: Python tests (asset_generation)
       glob: "asset_generation/python/**/*.py"
-      run: .lefthook/scripts/py-tests.sh
+      run: task hooks:python
     blog-post:
       name: Generate blog post for session
-      run: env BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
+      run: task hooks:blog

@@ -1,0 +1,77 @@
+version: "3"
+
+tasks:
+  editor:
+    desc: Start asset editor (backend + frontend)
+    cmds:
+      - bash asset_generation/web/start.sh
+
+  web:start:
+    desc: Alias for editor startup
+    cmds:
+      - task editor
+
+  tests:all:
+    desc: Run canonical full test suite
+    cmds:
+      - timeout 300 ci/scripts/run_tests.sh
+
+  tests:godot:
+    desc: Run Godot headless tests only
+    cmds:
+      - timeout 300 godot --headless -s tests/run_tests.gd
+
+  tests:import:
+    desc: Rebuild Godot import/class cache
+    cmds:
+      - timeout 120 godot --headless --import
+
+  tests:python:
+    desc: Run asset_generation Python tests
+    cmds:
+      - bash .lefthook/scripts/py-tests.sh
+
+  hooks:blog:
+    desc: Run pre-push blog generation hook
+    cmds:
+      - BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
+
+  hooks:log-commit:
+    desc: Queue commit metadata for pre-push blog generation
+    cmds:
+      - bash .lefthook/scripts/log-commit.sh
+
+  hooks:godot:
+    desc: Run pre-push Godot hook script
+    cmds:
+      - bash .lefthook/scripts/godot-tests.sh
+
+  hooks:python:
+    desc: Run pre-push Python hook script
+    cmds:
+      - bash .lefthook/scripts/py-tests.sh
+
+  hooks:py-parse:
+    desc: Python parse check for staged files
+    cmds:
+      - python3 -m py_compile {{.CLI_ARGS}}
+
+  hooks:py-review:
+    desc: Python reviewer checks for staged files
+    cmds:
+      - bash .lefthook/scripts/py-review.sh {{.CLI_ARGS}}
+
+  hooks:py-organization:
+    desc: Python organization guardrails for staged files
+    cmds:
+      - python3 .lefthook/scripts/py_organization_check.py {{.CLI_ARGS}}
+
+  hooks:gd-review:
+    desc: Godot script reviewer checks for staged files
+    cmds:
+      - python3 .lefthook/scripts/gd_review_check.py {{.CLI_ARGS}}
+
+  hooks:gd-organization:
+    desc: Godot script organization checks for staged files
+    cmds:
+      - python3 .lefthook/scripts/gd_organization_check.py {{.CLI_ARGS}}

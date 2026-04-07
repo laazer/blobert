@@ -13,8 +13,11 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: "1.5",
     padding: "8px",
     overflowY: "auto",
-    flexGrow: 1,
-    minHeight: 200,
+    height: 180,
+    maxHeight: "28vh",
+    minHeight: 120,
+    flexShrink: 0,
+    borderTop: "1px solid #3c3c3c",
   },
   line: {
     whiteSpace: "pre-wrap",
