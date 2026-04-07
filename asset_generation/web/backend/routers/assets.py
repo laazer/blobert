@@ -1,9 +1,6 @@
-from pathlib import Path
-
+from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
-
-from core.config import settings
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -42,8 +39,8 @@ async def list_assets() -> JSONResponse:
 async def serve_asset(asset_path: str) -> FileResponse:
     # Validate the path stays within python_root / one of the export dirs
     python_root = settings.python_root.resolve()
-    resolved = (python_root / asset_path).resolve()
     try:
+        resolved = (python_root / asset_path).resolve()
         resolved.relative_to(python_root)
     except ValueError:
         raise HTTPException(status_code=400, detail="Path outside allowed directories")
@@ -53,7 +50,7 @@ async def serve_asset(asset_path: str) -> FileResponse:
     if not parts or parts[0] not in _EXPORT_DIRS:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    if not resolved.exists():
+    if not resolved.exists() or not resolved.is_file():
         raise HTTPException(status_code=404, detail="Asset not found")
 
     media_type = _MIME.get(resolved.suffix, "application/octet-stream")

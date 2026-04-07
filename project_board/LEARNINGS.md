@@ -4,6 +4,74 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M19-ARGLB] — Path-jail hardening and clip-state ownership must be explicitly tested
+
+*Completed: 2026-04-07*
+
+### Learnings
+
+- category: testing
+  insight: HTTP client normalization can hide traversal payloads before the app handler runs, so security assertions tied to literal `..` URLs are not reliable as primary evidence.
+  impact: Literal traversal tests produced route-level misses while encoded traversal cases exposed the real guard behavior; this created rework in test intent and interpretation.
+  prevention: Treat encoded traversal vectors as the canonical app-layer security tests, and keep literal-dot requests as transport-behavior documentation only.
+  severity: high
+
+- category: architecture
+  insight: Path-jail guards must wrap both path resolution and file-type checks, not only ancestry checks, because error modes occur before or after `relative_to` in real payloads.
+  impact: Null-byte and directory-path inputs triggered unhandled exceptions until `resolve()` guarding and explicit `is_file()` handling were added.
+  prevention: Standardize secure file-serving guard order as: resolve safely -> enforce jail ancestry -> enforce allowed top-level directory -> enforce `is_file()` -> serve.
+  severity: high
+
+- category: process
+  insight: Pre-scaffolded tickets still need full spec-and-test passes because "mostly implemented" code hides contractual drift and state-model mistakes.
+  impact: A functional UI path still had incorrect clip-state ownership (`setAvailableClips` behavior conflated with active animation), discovered only during gap analysis.
+  prevention: For scaffold-first tickets, require a mandatory gap table that validates state ownership, not just acceptance-criteria surface behavior.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Using literal `..` requests as the sole traversal proof in ASGI/httpx tests.
+  detection_signal: Traversal tests fail with route misses/non-200 while encoded-path tests exercise handler logic and produce different status semantics.
+  prevention: Pair every traversal test set with encoded equivalents and label which layer (client normalization vs app guard) each test validates.
+
+- description: Collapsing "available options" and "selected option" into one UI store field.
+  detection_signal: New model loads force a default selection regardless of actual loaded data, or controls render fallback options despite real runtime data existing.
+  prevention: Keep separate store slices/actions for inventory/exposure (`availableClips`) versus selection (`activeAnimation`) and test both transitions.
+
+### Prompt Patches
+
+- agent: Test Designer Agent
+  change: "For path traversal/security routes tested through httpx/ASGITransport, include both literal-dot and percent-encoded traversal cases, and annotate each test with the validation layer it targets (transport normalization vs app guard)."
+  reason: Prevents false confidence from client-side URL normalization.
+
+- agent: Implementation Agent
+  change: "When implementing file-serving path jails, guard `resolve()` exceptions and enforce `is_file()` before `FileResponse`; do not rely solely on `relative_to` ancestry checks."
+  reason: Captures common real-world failure paths that bypass naive jail logic.
+
+- agent: Planner Agent
+  change: "If a ticket starts from pre-existing scaffold code, add an explicit 'state ownership and data-flow gap audit' task before implementation, even when ACs appear mostly covered."
+  reason: Reduces late-cycle discovery of architectural miswiring hidden by superficially working behavior.
+
+### Workflow Improvements
+
+- issue: Security tests initially mixed transport-normalization behavior and app-guard behavior under one expectation.
+  improvement: Add a workflow convention that security-related test IDs must declare the layer under test in test comments and AC mapping notes.
+  expected_benefit: Faster debugging and fewer red/green misreads during Test Design and Test Breaker stages.
+
+- issue: "Preferred" vs "required" status-code semantics for directory-path handling created inconsistent assertions until implementation tightened behavior.
+  improvement: During spec stage, convert ambiguous status-code language into mandatory or optional clauses with explicit test strategy (strict vs permissive assertions).
+  expected_benefit: Fewer assertion rewrites and cleaner handoff from spec to test suites.
+
+### Keep / Reinforce
+
+- practice: Adversarial expansion beyond happy-path ACs (null-byte, double-encoded traversal, case-variant extensions, stress list cardinality).
+  reason: Exposed implementation gaps quickly and produced durable regression coverage.
+
+- practice: AC gatekeeping that ties each acceptance criterion to concrete test evidence or explicit manual-verification notes.
+  reason: Enables honest completion decisions without claiming unproven browser behavior.
+
+---
+
 ## [carapace_enemy_attack] — Telegraph floor extended via optional parameter
 
 *Completed: 2026-04-06*

@@ -6,7 +6,8 @@ const ANIMATION_CLIPS = [
   "DamageIce", "Stunned", "Celebrate", "Taunt",
 ];
 
-export function AnimationControls({ availableClips }: { availableClips?: string[] }) {
+export function AnimationControls() {
+  const availableClips = useAppStore((s) => s.availableClips);
   const activeAnimation = useAppStore((s) => s.activeAnimation);
   const setActiveAnimation = useAppStore((s) => s.setActiveAnimation);
 

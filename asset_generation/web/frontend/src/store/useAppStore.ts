@@ -34,9 +34,11 @@ interface AppState {
   // Assets
   assets: Asset[];
   activeGlbUrl: string | null;
+  availableClips: string[];
   activeAnimation: string | null;
   loadAssets: () => Promise<void>;
   setActiveGlbUrl: (url: string | null) => void;
+  setAvailableClips: (names: string[]) => void;
   setActiveAnimation: (name: string | null) => void;
   refreshAssetsAndAutoSelect: (outputFile: string | null) => Promise<void>;
 }
@@ -103,6 +105,7 @@ export const useAppStore = create<AppState>()(
     // Assets
     assets: [],
     activeGlbUrl: null,
+    availableClips: [],
     activeAnimation: null,
     async loadAssets() {
       const assets = await fetchAssets();
@@ -110,6 +113,9 @@ export const useAppStore = create<AppState>()(
     },
     setActiveGlbUrl(url) {
       set((s) => { s.activeGlbUrl = url; });
+    },
+    setAvailableClips(names) {
+      set((s) => { s.availableClips = names; });
     },
     setActiveAnimation(name) {
       set((s) => { s.activeAnimation = name; });
@@ -123,6 +129,7 @@ export const useAppStore = create<AppState>()(
         const url = `/api/assets/${match.path}?t=${Date.now()}`;
         set((s) => {
           s.activeGlbUrl = url;
+          s.availableClips = [];
           s.activeAnimation = "Idle";
         });
       }

@@ -52,51 +52,35 @@ AC items 4–7 (auto-load after generation, OrbitControls interaction, animation
 
 ## WORKFLOW STATE
 
-- **Stage:** IMPLEMENTATION_ENGINE_INTEGRATION
-- **Revision:** 5
-- **Last Updated By:** Test Breaker Agent
-- **Next Responsible Agent:** Engine Integration Agent
+- **Stage:** COMPLETE
+- **Revision:** 6
+- **Last Updated By:** Acceptance Criteria Gatekeeper Agent
+- **Next Responsible Agent:** Human
 - **Status:** Proceed
-- **Validation Status:** 33/38 tests pass; 5 red tests document implementation gaps
+- **Validation Status:** Backend: `timeout 300 uv run pytest tests/test_assets_router.py -v` → 38/38 passed after path-jail hardening (`resolve()` inside guard try/except and `is_file()` 404 guard). Frontend evidence: `GlbViewer` now writes real clip names to `availableClips`, `AnimationControls` reads from store, `refreshAssetsAndAutoSelect` cache-bust remains (`?t=`) and resets clip list for fresh model load, OrbitControls/ErrorBoundary wiring present in `GlbViewer.tsx`.
 - **Blocking Issues:** None
 
 ## NEXT ACTION
 
 ### Next Responsible Agent
-Engine Integration Agent
+Human
 
 ### Required Input Schema
-```json
-{
-  "ticket_path": "project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md",
-  "spec_path": "project_board/specs/assets_router_and_glb_viewer_spec.md",
-  "test_file": "asset_generation/web/backend/tests/test_assets_router.py",
-  "backend_router": "asset_generation/web/backend/routers/assets.py"
-}
-```
+Ticket complete. If desired, run frontend manual verification in the editor preview:
+1) generate a GLB and confirm auto-select in viewer,
+2) rotate/zoom/pan via OrbitControls,
+3) click animation buttons and confirm clip changes,
+4) load malformed GLB and confirm in-canvas error fallback.
 
 ### Status
 Proceed
 
 ### Reason
-Adversarial test suite extended to 38 tests (15 new). 33 pass / 5 red. Red tests document 3 confirmed implementation gaps requiring fixes in `assets.py`:
+AC Gatekeeper verification:
+- AC1/AC2/AC3 evidenced by `test_assets_router.py` (list endpoint schema, GLB MIME, traversal/path-jail behavior).
+- AC4 evidenced by store action + SSE wiring path (`refreshAssetsAndAutoSelect(output_file)` with cache-busting `?t=` URL).
+- AC5 evidenced by `OrbitControls` in `GlbViewer.tsx`.
+- AC6 evidenced by `availableClips` store slice + `AnimationControls` button dispatch via `setActiveAnimation`.
+- AC7 evidenced by `CanvasErrorBoundary` fallback rendering in `GlbViewer.tsx`.
 
-1. **Null-byte unhandled exception** (`test_null_byte_in_path_should_return_400_not_raise`): `pathlib.Path.resolve()` raises `ValueError` for embedded null bytes, but the `try/except ValueError` in `serve_asset` only wraps `relative_to()` — not `resolve()`. Fix: extend the try block to cover `resolved = (python_root / asset_path).resolve()`.
-
-2. **Directory path returns 500 not 404** (`test_directory_path_returns_non_200`, `test_directory_as_path_returns_404_strict`): `FileResponse` raises `RuntimeError` when called on a directory. Fix: add `if not resolved.is_file(): raise HTTPException(status_code=404, detail="Asset not found")` before constructing `FileResponse`.
-
-3. **Literal `..` traversal tests** (`test_double_dot_traversal_literal_returns_non_200`, `test_single_dot_dot_traversal_literal_returns_non_200`): httpx normalizes literal `..` in URLs before sending; path guard never fires. These tests are pre-existing documentation tests that require either (a) server-side raw URL inspection or (b) accepting that percent-encoded `%2e%2e` tests cover the security requirement. See `test_url_encoded_traversal_returns_400` which passes and is the canonical security test.
-
-Adversarial coverage added:
-- Null-byte injection (security gap confirmed)
-- Double-encoded traversal `%252e%252e` → 403 (passes — correctly blocked at layer 2)
-- Directory-as-path strict 404 assertion (confirms implementation gap)
-- Within-jail traversal via encoded dots (passes — documents resolve() semantics)
-- Dotfile `.glb` excluded by Python 3.9 suffix behavior (passes — documents spec inaccuracy)
-- Export dirs with no .glb/.json files → empty list (passes)
-- 50-file stress test (passes — no truncation)
-- Sort invariant test (passes)
-- Multi-dir sort vs canonical order conflict test (passes)
-- Uppercase extension `.GLB`/`.JSON` → octet-stream (passes)
-- Double extension `.tar.gz` → octet-stream (passes)
-- GLB content-type has no charset (passes)
+Ticket is complete and ready for human validation/merge.

@@ -30,7 +30,8 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   const { actions, names } = useAnimations(animations, scene);
 
   // Expose clip names upward so AnimationControls can show real clips
-  const setAvailableClips = useAppStore((s) => s.setActiveAnimation); // we reuse the store's active anim
+  const setAvailableClips = useAppStore((s) => s.setAvailableClips);
+  const setActiveAnimation = useAppStore((s) => s.setActiveAnimation);
   const prevUrl = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,12 +47,13 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   useEffect(() => {
     if (prevUrl.current !== url) {
       prevUrl.current = url;
+      setAvailableClips(names);
       // Auto-select first clip on new model
       if (names.length > 0 && !animation) {
-        setAvailableClips(names[0]);
+        setActiveAnimation(names[0]);
       }
     }
-  }, [url, names, animation, setAvailableClips]);
+  }, [url, names, animation, setAvailableClips, setActiveAnimation]);
 
   return <primitive object={scene} />;
 }

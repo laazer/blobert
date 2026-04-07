@@ -534,3 +534,15 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 - Stage: TEST_BREAK → IMPLEMENTATION_ENGINE_INTEGRATION
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T03-00-00Z-test-break.md`
 - Outcome: 15 adversarial tests added (38 total, 33 pass / 5 red); exposed 3 distinct implementation gaps: (1) null-byte in path causes unhandled ValueError from resolve() — not caught by try/except which only wraps relative_to(); (2) directory path causes unhandled RuntimeError from FileResponse — needs is_file() guard; (3) spec claims dotfile `.glb` has suffix `.glb` — Python 3.9 returns empty suffix so dotfiles are excluded. Double-encoded traversal (%252e%252e→403), uppercase extension MIME (octet-stream), stress 50 files, sort invariant, and within-jail traversal tests all pass.
+
+## Resume: 2026-04-07 (ap-continue) — M19-ARGLB
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
+- Resuming at Stage: `IMPLEMENTATION_ENGINE_INTEGRATION`
+- Next Agent: `Engine Integration Agent`
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07-ap-continue.md`
+
+### [M19-ARGLB] — OUTCOME: COMPLETE
+- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
+- Stage: IMPLEMENTATION_ENGINE_INTEGRATION → COMPLETE
+- Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07-ap-continue.md`
+- Outcome: backend path-jail hardened (`resolve()` guard + directory 404), frontend `availableClips` store wiring fixed, `uv run pytest tests/test_assets_router.py -v` → 38 passed.
