@@ -14,7 +14,12 @@ export type PartTreeNode = {
   children?: PartTreeNode[];
 };
 
-export type SourceNavTarget = { path: string; description: string };
+export type SourceNavTarget = {
+  path: string;
+  description: string;
+  /** Button label in “More animation”; defaults to derived from path in the UI if omitted */
+  shortLabel?: string;
+};
 
 function animatedEnemyModulePath(slug: string): string {
   return `enemies/animated_${slug}.py`;
@@ -84,18 +89,50 @@ export function getAnimationCodeExtras(cmd: RunCmd): SourceNavTarget[] {
   switch (cmd) {
     case "player":
       return [
-        { path: "animations/keyframe_system.py", description: "Shared keyframe helpers" },
-        { path: "player/player_armature.py", description: "Player armature" },
+        {
+          path: "animations/keyframe_system.py",
+          description: "Shared keyframe helpers",
+          shortLabel: "Keyframes",
+        },
+        {
+          path: "player/player_armature.py",
+          description: "Player armature",
+          shortLabel: "Armature",
+        },
       ];
     case "smart":
       return [];
     default:
       return [
-        { path: "animations/keyframe_system.py", description: "Bone keyframes" },
-        { path: "animations/body_types.py", description: "Per-body-type poses & clips" },
+        {
+          path: "animations/keyframe_system.py",
+          description: "Bone keyframes",
+          shortLabel: "Keyframes",
+        },
+        {
+          path: "body_families/registry.py",
+          description: "Body families: registry + import rigs",
+          shortLabel: "Registry",
+        },
+        {
+          path: "body_families/motion_base.py",
+          description: "Base body-type motion (core + extended clips)",
+          shortLabel: "Motion base",
+        },
+        {
+          path: "body_families/keywords.py",
+          description: "Smart-generation keywords per family",
+          shortLabel: "Keywords",
+        },
+        {
+          path: "animations/body_types.py",
+          description: "Thin re-export of body_families for older imports",
+          shortLabel: "Re-export",
+        },
         {
           path: "enemies/animated_slug.py",
           description: "Example rig (get_rig_definition) — animated_slug.py",
+          shortLabel: "Example rig",
         },
       ];
   }
@@ -143,14 +180,26 @@ function playerSlimePartTree(): PartTreeNode[] {
   ];
 }
 
-function _coerceSpiderEyeCount(raw: unknown): 2 | 4 {
-  return Number(raw) === 4 ? 4 : 2;
+function _coerceSpiderEyeCount(
+  raw: unknown,
+  allowed: readonly number[],
+  defaultVal: number,
+): number {
+  const n = Math.floor(Number(raw));
+  if (Number.isNaN(n)) return defaultVal;
+  if (allowed.length > 0) {
+    if (allowed.includes(n)) return n;
+    return defaultVal;
+  }
+  // Server options not loaded (e.g. tests): use build value for part-tree labels only
+  if (n >= 0 && n <= 32) return n;
+  return defaultVal;
 }
 
-function _coerceClawPeripheralEyes(raw: unknown): number {
+function _coerceClawPeripheralEyes(raw: unknown, min: number, max: number): number {
   const n = Math.floor(Number(raw));
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(3, n));
+  if (Number.isNaN(n)) return min;
+  return Math.max(min, Math.min(max, n));
 }
 
 const _SPIDER_LEG_NAMES = [
@@ -163,22 +212,23 @@ const _SPIDER_LEG_NAMES = [
 ] as const;
 
 /** `self.parts` for spider — order matches `animated_spider.py` for the given `eye_count`. */
-function spiderPartTreeForBuild(eyeCount: 2 | 4): PartTreeNode {
+function spiderPartTreeForBuild(eyeCount: number): PartTreeNode {
+  const ec = Math.max(0, eyeCount);
   const children: PartTreeNode[] = [
     { id: "sp-0", label: "parts[0] — body" },
     { id: "sp-1", label: "parts[1] — head" },
   ];
-  for (let i = 0; i < eyeCount; i += 1) {
+  for (let i = 0; i < ec; i += 1) {
     children.push({ id: `sp-e-${i}`, label: `parts[${2 + i}] — eye` });
   }
   for (let i = 0; i < 6; i += 1) {
-    const idx = 2 + eyeCount + i;
+    const idx = 2 + ec + i;
     children.push({
       id: `sp-leg-${i}`,
       label: `parts[${idx}] — leg — ${_SPIDER_LEG_NAMES[i]}`,
     });
   }
-  const total = 2 + eyeCount + 6;
+  const total = 2 + ec + 6;
   return {
     id: "spider-root",
     label: `Spider — parts[] (${total} parts, animated_spider.py)`,
@@ -187,8 +237,12 @@ function spiderPartTreeForBuild(eyeCount: 2 | 4): PartTreeNode {
 }
 
 /** `self.parts` for claw crawler — matches `animated_claw_crawler.py` for `peripheral_eyes`. */
-function clawCrawlerPartTreeForBuild(peripheralEyes: number): PartTreeNode {
-  const pe = _coerceClawPeripheralEyes(peripheralEyes);
+function clawCrawlerPartTreeForBuild(
+  raw: unknown,
+  min = 0,
+  max = 3,
+): PartTreeNode {
+  const pe = _coerceClawPeripheralEyes(raw, min, max);
   const children: PartTreeNode[] = [
     { id: "cc-0", label: "parts[0] — body" },
     { id: "cc-1", label: "parts[1] — head" },
@@ -215,11 +269,34 @@ function clawCrawlerPartTreeForBuild(peripheralEyes: number): PartTreeNode {
   };
 }
 
+/** Optional hints from GET /api/meta ``animated_build_controls`` (same source as Build panel). */
+export type MeshPartTreeControlHints = {
+  spiderEyeOptions?: readonly number[];
+  spiderEyeDefault?: number;
+  clawPeripheralMin?: number;
+  clawPeripheralMax?: number;
+};
+
 /** Full `self.parts` order per `animated_{slug}.py` (variant-specific when `buildOptions` is set). */
-function animatedEnemyPartTree(slug: string, buildOptions: Record<string, unknown> = {}): PartTreeNode {
+function animatedEnemyPartTree(
+  slug: string,
+  buildOptions: Record<string, unknown> = {},
+  hints?: MeshPartTreeControlHints,
+): PartTreeNode {
   switch (slug) {
-    case "spider":
-      return spiderPartTreeForBuild(_coerceSpiderEyeCount(buildOptions.eye_count));
+    case "spider": {
+      const opts = hints?.spiderEyeOptions;
+      const allowed = opts && opts.length > 0 ? [...opts] : [];
+      const eyeDefault = hints?.spiderEyeDefault;
+      const def =
+        allowed.length > 0
+          ? eyeDefault != null && allowed.includes(eyeDefault)
+            ? eyeDefault
+            : (allowed[0] ?? 2)
+          : (eyeDefault ?? 2);
+      const eyeCount = _coerceSpiderEyeCount(buildOptions.eye_count, allowed, def);
+      return spiderPartTreeForBuild(eyeCount);
+    }
 
     case "slug":
       return {
@@ -256,19 +333,22 @@ function animatedEnemyPartTree(slug: string, buildOptions: Record<string, unknow
         id: "spitter-root",
         label: "Spitter — parts[] (animated_spitter.py)",
         children: [
-          { id: "as0", label: "parts[0] — body" },
-          { id: "as1", label: "parts[1] — head" },
-          { id: "as2", label: "parts[2] — tendril — left" },
-          { id: "as3", label: "parts[3] — tendril — right" },
+          { id: "st0", label: "parts[0] — body" },
+          { id: "st1", label: "parts[1] — head" },
+          { id: "st2", label: "parts[2] — tendril — left" },
+          { id: "st3", label: "parts[3] — tendril — right" },
         ],
       };
 
-    case "claw_crawler":
-      return clawCrawlerPartTreeForBuild(buildOptions.peripheral_eyes);
+    case "claw_crawler": {
+      const min = hints?.clawPeripheralMin ?? 0;
+      const max = hints?.clawPeripheralMax ?? 3;
+      return clawCrawlerPartTreeForBuild(buildOptions.peripheral_eyes, min, max);
+    }
 
     case "carapace_husk":
       return {
-        id: "cara-root",
+        id: "ch-root",
         label: "Carapace husk — parts[] (animated_carapace_husk.py)",
         children: [
           { id: "ch0", label: "parts[0] — body" },
@@ -279,11 +359,12 @@ function animatedEnemyPartTree(slug: string, buildOptions: Record<string, unknow
           { id: "ch5", label: "parts[5] — leg — right" },
         ],
       };
+
     default:
       return {
-        id: `generic-${slug}`,
-        label: `${slugDisplayLabel(slug)} — parts[] (animated_${slug}.py)`,
-        children: baseEnemyFallbackTree()[0].children,
+        id: "unknown-root",
+        label: `${slug} — parts[] (animated_${slug}.py)`,
+        children: [{ id: "unk0", label: "parts[0…] — see module" }],
       };
   }
 }
@@ -292,10 +373,10 @@ function levelObjectPartTree(): PartTreeNode[] {
   return [
     {
       id: "level-root",
-      label: "Level object — type picks class in level_object_builder.py",
+      label: "Level objects (LevelObjectBuilder)",
       children: [
         {
-          id: "lo-platforms",
+          id: "lo-plat",
           label: "platforms.py",
           children: [
             { id: "flat", label: "flat_platform — FlatPlatform" },
@@ -347,6 +428,8 @@ export function getMeshPartTree(
   animatedMeta: readonly AnimatedEnemyMeta[] = DEFAULT_ANIMATED_ENEMY_META,
   /** Current procedural build values for the selected animated enemy (spider eye_count, claw peripheral_eyes, …). */
   buildOptions: Record<string, unknown> = {},
+  /** Control defs from GET /api/meta ``animated_build_controls`` (same as Build panel). */
+  hints?: MeshPartTreeControlHints,
 ): PartTreeNode[] {
   const e = (enemy || "").trim();
   const animatedSlugs = animatedMeta.map((m) => m.slug);
@@ -367,7 +450,9 @@ export function getMeshPartTree(
         children: animatedMeta.map((m) => ({
           id: `reg-${m.slug}`,
           label: m.label,
-          children: [animatedEnemyPartTree(m.slug, {})],
+          children: [
+            animatedEnemyPartTree(m.slug, {}, hints),
+          ],
         })),
       },
     ];
@@ -376,11 +461,11 @@ export function getMeshPartTree(
   const knownAnimated = animatedSlugs.includes(e) ? e : "";
 
   if (cmd === "test" || ((cmd === "animated" || cmd === "stats") && e === "spider")) {
-    return [animatedEnemyPartTree("spider", buildOptions)];
+    return [animatedEnemyPartTree("spider", buildOptions, hints)];
   }
 
   if ((cmd === "animated" || cmd === "stats") && knownAnimated) {
-    return [animatedEnemyPartTree(knownAnimated, buildOptions)];
+    return [animatedEnemyPartTree(knownAnimated, buildOptions, hints)];
   }
 
   if (cmd === "animated" && e && !knownAnimated) {

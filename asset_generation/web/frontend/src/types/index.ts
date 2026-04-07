@@ -41,10 +41,22 @@ export type AnimatedBuildControlDef =
       type: "select";
       options: number[];
       default: number;
+    }
+  | {
+      key: string;
+      label: string;
+      type: "float";
+      min: number;
+      max: number;
+      step: number;
+      default: number;
     };
 
 /** GET /api/meta/enemies payload (enemies + procedural build controls per slug). */
 export type EnemyPreviewMeta = {
   enemies: AnimatedEnemyMeta[];
   animatedBuildControls: Record<string, AnimatedBuildControlDef[]>;
+  /** Present when API could not load Python introspection (ImportError); controls are empty. */
+  metaBackend?: "ok" | "fallback";
+  metaError?: string | null;
 };

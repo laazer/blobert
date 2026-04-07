@@ -3,7 +3,7 @@ import { killProcess } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
-import { enemySelectOptionLabel } from "../../utils/enemyDisplay";
+import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import {
   ALL_CMDS,
   CMD_CONFIG,
@@ -84,7 +84,10 @@ export function CommandPanel() {
   const setCommandContext = useAppStore((state) => state.setCommandContext);
   const animatedEnemyMeta = useAppStore((state) => state.animatedEnemyMeta);
   const animatedBuildOptionValues = useAppStore((state) => state.animatedBuildOptionValues);
-  const loadAnimatedEnemyMeta = useAppStore((state) => state.loadAnimatedEnemyMeta);
+  const animatedBuildControls = useAppStore((state) => state.animatedBuildControls);
+  const enemyMetaError = useAppStore((state) => state.enemyMetaError);
+  const metaBackend = useAppStore((state) => state.metaBackend);
+  const metaBackendDetail = useAppStore((state) => state.metaBackendDetail);
 
   const [cmd, setCmd] = useState<RunCmd>("animated");
   const [enemy, setEnemy] = useState("spider");
@@ -92,22 +95,12 @@ export function CommandPanel() {
   const [difficulty, setDifficulty] = useState("normal");
   const [finish, setFinish] = useState("glossy");
   const [hexColor, setHexColor] = useState("");
-  const [enemyLoadError, setEnemyLoadError] = useState<string | null>(null);
   const [commandPreview, setCommandPreview] = useState("");
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
   const [cmdTransitionHint, setCmdTransitionHint] = useState<string | null>(null);
 
   const { start } = useStreamingOutput();
-
-  useEffect(() => {
-    loadAnimatedEnemyMeta()
-      .then(() => setEnemyLoadError(null))
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "Failed to load enemy list.";
-        setEnemyLoadError(message);
-      });
-  }, [loadAnimatedEnemyMeta]);
 
   const cfg = CMD_CONFIG[cmd];
   const showEnemy = cfg.showEnemy;
@@ -192,9 +185,21 @@ export function CommandPanel() {
     const singleOutputCmd = cmd === "animated" || cmd === "player" || cmd === "level";
     let buildOptionsJson: string | undefined;
     if (cmd === "animated" && enemy && enemy !== "all") {
-      const opts = animatedBuildOptionValues[enemy];
+      const slug = normalizeAnimatedSlug(enemy);
+      const opts = animatedBuildOptionValues[slug];
       if (opts && Object.keys(opts).length > 0) {
-        buildOptionsJson = JSON.stringify({ [enemy]: opts });
+        const defs = animatedBuildControls[slug] ?? [];
+        const meshKeys = new Set(
+          defs.filter((d) => d.type === "float").map((d) => d.key),
+        );
+        const top: Record<string, unknown> = {};
+        const mesh: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(opts)) {
+          if (meshKeys.has(k)) mesh[k] = v;
+          else top[k] = v;
+        }
+        if (Object.keys(mesh).length > 0) top.mesh = mesh;
+        buildOptionsJson = JSON.stringify({ [slug]: top });
       }
     }
     start({
@@ -264,7 +269,13 @@ export function CommandPanel() {
       </div>
       {commandPreviewError && <div style={s.errorText}>{commandPreviewError}</div>}
       {cmdTransitionHint && <div style={s.warningText}>{cmdTransitionHint}</div>}
-      {enemyLoadError && <div style={s.warningText}>Enemy list unavailable: {enemyLoadError}</div>}
+      {enemyMetaError && <div style={s.warningText}>Enemy list unavailable: {enemyMetaError}</div>}
+      {metaBackend === "fallback" && (
+        <div style={s.warningText}>
+          Build controls unavailable (server import fallback).{" "}
+          {metaBackendDetail ? `— ${metaBackendDetail}` : "Run task editor from the repo root (API on port 8000)."}
+        </div>
+      )}
 
       {showDescription && (
         <div style={s.row}>

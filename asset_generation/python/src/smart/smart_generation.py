@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from ..body_families.keywords import get_body_type_keywords
 from ..utils.constants import EnemyBodyTypes, EnemyTypes
 
 
@@ -60,13 +61,9 @@ class EnemyBlueprint:
 
 class TextToEnemyGenerator:
     """Generate enemies from text descriptions using pattern matching"""
-    
-    # Keyword mappings for intelligent parsing
-    BODY_TYPE_KEYWORDS = {
-        EnemyBodyTypes.BLOB: ['blob', 'slime', 'ooze', 'jelly', 'goo', 'puddle', 'liquid'],
-        EnemyBodyTypes.QUADRUPED: ['spider', 'bug', 'insect', 'crawler', 'legged', 'scuttling'],
-        EnemyBodyTypes.HUMANOID: ['humanoid', 'warrior', 'soldier', 'biped', 'person', 'figure']
-    }
+
+    # Keyword mappings for intelligent parsing (single source: body_families.registry)
+    BODY_TYPE_KEYWORDS = get_body_type_keywords()
     
     SIZE_KEYWORDS = {
         'tiny': 0.5, 'small': 0.7, 'normal': 1.0, 'medium': 1.0,

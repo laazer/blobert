@@ -15,9 +15,10 @@ from unittest.mock import MagicMock, patch
 sys.modules.setdefault('bpy', MagicMock())
 sys.modules.setdefault('mathutils', MagicMock())
 
-from src.animations.body_types import BlobBodyType, HumanoidBodyType, QuadrupedBodyType
+from src.body_families.motion_blob import BlobBodyType
+from src.body_families.motion_humanoid import HumanoidBodyType
+from src.body_families.motion_quadruped import QuadrupedBodyType
 from src.utils.constants import AnimationConfig, AnimationTypes, BoneNames
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -50,6 +51,11 @@ def _blob_armature() -> MagicMock:
     return _make_armature(names)
 
 
+def _keyframe_patch_target(body_type_instance) -> str:
+    """Module where set_bone_keyframe is bound (must match patch target)."""
+    return type(body_type_instance).__module__ + ".set_bone_keyframe"
+
+
 def _capture_keyframes(body_type_instance, method_name: str, length: int) -> dict:
     """
     Call body_type_instance.<method_name>(length) with set_bone_keyframe mocked,
@@ -60,7 +66,7 @@ def _capture_keyframes(body_type_instance, method_name: str, length: int) -> dic
     def _record(armature, bone_name, frame, **kwargs):
         captured.setdefault(bone_name, []).append(frame)
 
-    with patch('src.animations.body_types.set_bone_keyframe', side_effect=_record):
+    with patch(_keyframe_patch_target(body_type_instance), side_effect=_record):
         getattr(body_type_instance, method_name)(length)
 
     return captured
@@ -74,7 +80,7 @@ def _capture_rotations(body_type_instance, method_name: str, length: int) -> dic
         if rotation is not None:
             captured.setdefault(bone_name, {})[frame] = rotation
 
-    with patch('src.animations.body_types.set_bone_keyframe', side_effect=_record):
+    with patch(_keyframe_patch_target(body_type_instance), side_effect=_record):
         getattr(body_type_instance, method_name)(length)
 
     return captured
@@ -88,7 +94,7 @@ def _capture_locations(body_type_instance, method_name: str, length: int) -> dic
         if location is not None:
             captured.setdefault(bone_name, {})[frame] = location
 
-    with patch('src.animations.body_types.set_bone_keyframe', side_effect=_record):
+    with patch(_keyframe_patch_target(body_type_instance), side_effect=_record):
         getattr(body_type_instance, method_name)(length)
 
     return captured

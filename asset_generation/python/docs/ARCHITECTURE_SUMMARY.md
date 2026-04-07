@@ -4,7 +4,7 @@
 
 - **Single responsibility** — each class has one clearly defined job
 - **Body type system** — animation logic lives in the body type, not the enemy; new enemies inherit movement for free
-- **Constants over magic strings** — all names, types, and timings are centralized in `src/utils/constants.py`
+- **Constants over magic strings** — enemy animation names/timings in `src/utils/constants.py`; body-family ids and bone names canonical in `src/body_families/`
 - **Open/closed** — new enemy types and body types extend the system without modifying existing code
 
 ---
@@ -13,8 +13,15 @@
 
 ```
 src/
+├── body_families/
+│   ├── ids.py / bones.py     # EnemyBodyTypes, BoneNames
+│   ├── keywords.py           # Smart-generation keywords (no Blender deps)
+│   ├── motion_*.py           # BaseBodyType + blob / quadruped / humanoid motion
+│   ├── factory.py            # BodyTypeFactory
+│   └── registry.py           # BODY_FAMILY_REGISTRY, rig_definition_for_import
+│
 ├── utils/
-│   ├── constants.py      # EnemyTypes, AnimationTypes, AnimationConfig, BoneNames, ExportConfig
+│   ├── constants.py      # EnemyTypes, AnimationTypes, AnimationConfig; re-exports body_families ids/bones
 │   └── materials.py      # MaterialNames, MaterialColors, MaterialThemes, MaterialCategories
 │
 ├── core/
@@ -25,7 +32,7 @@ src/
 │
 ├── animations/
 │   ├── keyframe_system.py    # set_bone_keyframe, create_simple_armature
-│   ├── body_types.py         # Animation logic per body type (13 animations each)
+│   ├── body_types.py         # Re-exports body_families (backward compatibility)
 │   └── animation_system.py   # create_all_animations orchestrator
 │
 ├── enemies/
@@ -135,7 +142,7 @@ Then add attacks to `src/combat/enemy_attack_profiles.py` and the type to `Enemy
 ## Adding a New Body Type
 
 ```python
-# src/animations/body_types.py
+# src/body_families/motion_flying.py (example)
 class FlyingBodyType(BaseBodyType):
     def create_idle_animation(self, length: int):
         # Wing-tip hover oscillation

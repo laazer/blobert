@@ -10,6 +10,11 @@ export const DEFAULT_ANIMATED_ENEMY_SLUGS = [
   "carapace_husk",
 ] as const;
 
+/** Lowercase trim for matching API keys in animated_build_controls / store. */
+export function normalizeAnimatedSlug(slug: string): string {
+  return slug.trim().toLowerCase();
+}
+
 export function titleCaseSnake(slug: string): string {
   return slug
     .split("_")

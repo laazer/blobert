@@ -34,7 +34,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     LEG_LENGTH_VARIANCE: ClassVar[float] = 0.1
     LEG_COUNT: ClassVar[int] = 6
     DEFAULT_EYE_COUNT: ClassVar[int] = 2
-    ALLOWED_EYE_COUNTS: ClassVar[tuple[int, ...]] = (2, 4)
+    ALLOWED_EYE_COUNTS: ClassVar[tuple[int, ...]] = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12)
     LEG_ANCHOR_RATIOS: ClassVar[tuple[tuple[float, float, float], ...]] = (
         (0.3, 0.3, 0),
         (0.3, -0.3, 0),
@@ -46,33 +46,39 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
 
     def build_mesh_parts(self):
         """Create body, head, eyes, and legs."""
-        body_scale = random_variance(self.BODY_BASE, self.BODY_VARIANCE, self.rng)
+        body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         body = create_sphere(
-            location=(0, 0, self.BODY_CENTER_Z),
-            scale=(body_scale, body_scale * self.BODY_SCALE_Y, body_scale * self.BODY_SCALE_Z),
+            location=(0, 0, self._mesh("BODY_CENTER_Z")),
+            scale=(
+                body_scale,
+                body_scale * self._mesh("BODY_SCALE_Y"),
+                body_scale * self._mesh("BODY_SCALE_Z"),
+            ),
         )
         self.parts.append(body)
         self.body_scale = body_scale
 
-        head_scale = self.body_scale * random_variance(self.HEAD_SCALE_REL, self.HEAD_SCALE_VARIANCE, self.rng)
-        head_offset = self.body_scale + head_scale * self.HEAD_OFFSET_ALONG_X
+        head_scale = self.body_scale * random_variance(
+            self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
+        )
+        head_offset = self.body_scale + head_scale * self._mesh("HEAD_OFFSET_ALONG_X")
         head = create_sphere(
-            location=(head_offset, 0, self.BODY_CENTER_Z),
+            location=(head_offset, 0, self._mesh("BODY_CENTER_Z")),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
         self.head_scale = head_scale
 
-        eye_count = int(self.build_options.get("eye_count", self.DEFAULT_EYE_COUNT))
+        eye_count = int(self.build_options.get("eye_count", self._mesh("DEFAULT_EYE_COUNT")))
         if eye_count not in self.ALLOWED_EYE_COUNTS:
-            eye_count = self.DEFAULT_EYE_COUNT
+            eye_count = int(self._mesh("DEFAULT_EYE_COUNT"))
         self._eye_count = eye_count
-        eye_scale = self.head_scale * self.EYE_SCALE_HEAD_RATIO
+        eye_scale = self.head_scale * self._mesh("EYE_SCALE_HEAD_RATIO")
         for i in range(eye_count):
             side = 1 if i % 2 == 0 else -1
-            eye_x = self.body_scale + self.head_scale * self.EYE_X_ALONG
-            eye_y = side * self.head_scale * self.EYE_Y_SIDE
-            eye_z = self.EYE_Z
+            eye_x = self.body_scale + self.head_scale * self._mesh("EYE_X_ALONG")
+            eye_y = side * self.head_scale * self._mesh("EYE_Y_SIDE")
+            eye_z = self._mesh("EYE_Z")
             eye = create_sphere(location=(eye_x, eye_y, eye_z), scale=(eye_scale, eye_scale, eye_scale))
             self.parts.append(eye)
 
@@ -80,7 +86,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             lx = self.body_scale * leg_x
             ly = self.body_scale * leg_y
             lz = leg_z
-            leg_length = random_variance(self.LEG_LENGTH_BASE, self.LEG_LENGTH_VARIANCE, self.rng)
+            leg_length = random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng)
             leg = create_cylinder(
                 location=(lx, ly, lz),
                 scale=(QUADRUPED_LEG_THICKNESS, QUADRUPED_LEG_THICKNESS, leg_length),
@@ -94,10 +100,10 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         leg_material = enemy_mats["limbs"]
         eye_material = enemy_mats["extra"]
-        ec = getattr(self, "_eye_count", self.DEFAULT_EYE_COUNT)
+        ec = getattr(self, "_eye_count", int(self._mesh("DEFAULT_EYE_COUNT")))
         for i in range(ec):
             apply_material_to_object(self.parts[2 + i], eye_material)
-        for i in range(self.LEG_COUNT):
+        for i in range(int(self._mesh("LEG_COUNT"))):
             apply_material_to_object(self.parts[2 + ec + i], leg_material)
 
     def get_body_type(self):

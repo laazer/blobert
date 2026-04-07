@@ -22,14 +22,78 @@ const showFilesBtn: CSSProperties = {
   flexShrink: 0,
 };
 
+const tabBtn = (active: boolean): CSSProperties => ({
+  padding: "4px 10px",
+  fontSize: 11,
+  border: "1px solid #555",
+  borderRadius: 3,
+  cursor: "pointer",
+  background: active ? "#0e639c" : "#3c3c3c",
+  color: "#d4d4d4",
+});
+
+function CenterSwitchBar() {
+  const centerPanel = useAppStore((s) => s.centerPanel);
+  const setCenterPanel = useAppStore((s) => s.setCenterPanel);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        padding: "4px 8px",
+        borderBottom: "1px solid #3c3c3c",
+        background: "#252526",
+        alignItems: "center",
+        flexShrink: 0,
+      }}
+    >
+      <button
+        type="button"
+        style={tabBtn(centerPanel === "code")}
+        onClick={() => setCenterPanel("code")}
+        title="Show Python editor"
+      >
+        Code
+      </button>
+      <button
+        type="button"
+        style={tabBtn(centerPanel === "build")}
+        onClick={() => setCenterPanel("build")}
+        title="Procedural build options (eyes, mesh, rig)"
+      >
+        Build
+      </button>
+      <button
+        type="button"
+        onClick={() => setCenterPanel("none")}
+        style={{
+          marginLeft: "auto",
+          padding: "4px 10px",
+          fontSize: 11,
+          border: "1px solid #555",
+          borderRadius: 3,
+          cursor: "pointer",
+          background: "#3c3c3c",
+          color: "#d4d4d4",
+        }}
+        title="Hide center panel"
+      >
+        Hide
+      </button>
+    </div>
+  );
+}
+
 export function ThreePanelLayout() {
   const [fileTreeVisible, setFileTreeVisible] = useState(false);
-  const editorPaneVisible = useAppStore((s) => s.editorPaneVisible);
-  const setEditorPaneVisible = useAppStore((s) => s.setEditorPaneVisible);
+  const centerPanel = useAppStore((s) => s.centerPanel);
+  const setCenterPanel = useAppStore((s) => s.setCenterPanel);
+
+  const centerOpen = centerPanel !== "none";
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      {/* Left: File Tree (hidden by default) */}
       {fileTreeVisible ? (
         <div style={{ width: "18%", minWidth: 160, flexShrink: 0, display: "flex", flexDirection: "column" }}>
           <FileTree onRequestHide={() => setFileTreeVisible(false)} />
@@ -45,8 +109,7 @@ export function ThreePanelLayout() {
         </button>
       )}
 
-      {/* Center: Editor (collapsible) */}
-      {editorPaneVisible ? (
+      {centerOpen ? (
         <div
           id="blobert-editor-column"
           style={{
@@ -57,23 +120,47 @@ export function ThreePanelLayout() {
             borderRight: "1px solid #3c3c3c",
           }}
         >
-          <EditorPane onRequestHide={() => setEditorPaneVisible(false)} />
+          <CenterSwitchBar />
+          {centerPanel === "code" && <EditorPane />}
+          {centerPanel === "build" && (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+              }}
+            >
+              <BuildControls />
+            </div>
+          )}
         </div>
       ) : (
-        <button
-          type="button"
-          style={showFilesBtn}
-          onClick={() => setEditorPaneVisible(true)}
-          title="Show code editor"
-        >
-          Code
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <button
+            type="button"
+            style={showFilesBtn}
+            onClick={() => setCenterPanel("code")}
+            title="Show code editor"
+          >
+            Code
+          </button>
+          <button
+            type="button"
+            style={showFilesBtn}
+            onClick={() => setCenterPanel("build")}
+            title="Show build controls"
+          >
+            Build
+          </button>
+        </div>
       )}
 
-      {/* Right: 3D + terminal stack (grows when editor hidden) */}
       <div
         style={{
-          flex: editorPaneVisible ? 1 : "1 1 0%",
+          flex: centerOpen ? 1 : "1 1 0%",
           minWidth: 0,
           display: "flex",
           flexDirection: "column",
@@ -81,7 +168,6 @@ export function ThreePanelLayout() {
         }}
       >
         <PreviewSourceBar />
-        <BuildControls />
         <GlbViewer />
         <AnimationControls />
         <CommandPanel />

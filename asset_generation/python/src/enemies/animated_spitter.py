@@ -33,13 +33,13 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     TENDRIL_RADIUS: ClassVar[float] = 0.07
 
     def build_mesh_parts(self):
-        body_scale = random_variance(self.BODY_BASE, self.BODY_VARIANCE, self.rng)
-        height = random_variance(self.HEIGHT_BASE, self.HEIGHT_VARIANCE, self.rng)
+        body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
+        height = random_variance(self._mesh("HEIGHT_BASE"), self._mesh("HEIGHT_VARIANCE"), self.rng)
         body = create_sphere(
             location=(0, 0, height * MESH_BODY_CENTER_Z_FACTOR),
             scale=(
                 body_scale,
-                body_scale * random_variance(1.0, self.WIDTH_JITTER_VARIANCE, self.rng),
+                body_scale * random_variance(1.0, self._mesh("WIDTH_JITTER_VARIANCE"), self.rng),
                 height,
             ),
         )
@@ -47,19 +47,27 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         self.body_scale = body_scale
         self.height = height
 
-        head_scale = self.body_scale * random_variance(self.HEAD_SCALE_REL, self.HEAD_SCALE_VARIANCE, self.rng)
+        head_scale = self.body_scale * random_variance(
+            self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
+        )
         head = create_sphere(
-            location=(self.body_scale * self.HEAD_X_ALONG, 0, self.height * self.HEAD_Z_HEIGHT_RATIO),
+            location=(
+                self.body_scale * self._mesh("HEAD_X_ALONG"),
+                0,
+                self.height * self._mesh("HEAD_Z_HEIGHT_RATIO"),
+            ),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
         self.head_scale = head_scale
 
         for side in [-1, 1]:
-            tendril_length = random_variance(self.TENDRIL_LENGTH_BASE, self.TENDRIL_LENGTH_VARIANCE, self.rng)
+            tendril_length = random_variance(
+                self._mesh("TENDRIL_LENGTH_BASE"), self._mesh("TENDRIL_LENGTH_VARIANCE"), self.rng
+            )
             tendril = create_cylinder(
-                location=(side * self.body_scale * self.TENDRIL_X_SPREAD, 0, 0),
-                scale=(self.TENDRIL_RADIUS, self.TENDRIL_RADIUS, tendril_length),
+                location=(side * self.body_scale * self._mesh("TENDRIL_X_SPREAD"), 0, 0),
+                scale=(self._mesh("TENDRIL_RADIUS"), self._mesh("TENDRIL_RADIUS"), tendril_length),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(tendril)

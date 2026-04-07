@@ -33,6 +33,19 @@ class BaseAnimatedModel(ABC):
         self.build_options: dict = dict(build_options or {})
         self.parts: list = []
 
+    def _mesh(self, name: str):
+        """Resolve a numeric ClassVar, with optional UI override from ``build_options['mesh']``."""
+        cls = type(self)
+        base = getattr(cls, name)
+        raw = self.build_options.get("mesh", {}).get(name)
+        if raw is None:
+            return base
+        if isinstance(base, tuple):
+            return base
+        if isinstance(base, int) and type(base) is not bool:
+            return int(round(float(raw)))
+        return float(raw)
+
     def _scaled_location(self, xyz: tuple) -> tuple:
         if self.scale == 1.0:
             return xyz

@@ -24,6 +24,9 @@ export type CommandPanelContext = {
   enemy: string;
 };
 
+/** Center column: code editor and build controls share this space (only one visible at a time; both can be hidden). */
+export type CenterPanel = "none" | "code" | "build";
+
 let _lineId = 0;
 
 interface AppState {
@@ -44,12 +47,18 @@ interface AppState {
   /** Current values per slug for build controls (merged with defaults). */
   animatedBuildOptionValues: Record<string, Record<string, unknown>>;
   setAnimatedBuildOption: (slug: string, key: string, value: unknown) => void;
+  /** GET /api/meta/enemies — idle until first load, then ok/error. */
+  enemyMetaStatus: "idle" | "loading" | "ok" | "error";
+  enemyMetaError: string | null;
+  /** From response meta_backend: ok = full Python introspection; fallback = ImportError path. */
+  metaBackend: "ok" | "fallback" | null;
+  /** Server meta_error when meta_backend is fallback. */
+  metaBackendDetail: string | null;
   loadAnimatedEnemyMeta: () => Promise<void>;
 
-  // Editor
-  /** When false, the center editor column is collapsed (file may still be selected). */
-  editorPaneVisible: boolean;
-  setEditorPaneVisible: (visible: boolean) => void;
+  // Editor + build (shared center column)
+  centerPanel: CenterPanel;
+  setCenterPanel: (panel: CenterPanel) => void;
   editorContent: string;
   isDirty: boolean;
   isSaving: boolean;
@@ -93,6 +102,10 @@ export const useAppStore = create<AppState>()(
     animatedEnemyMeta: DEFAULT_ANIMATED_ENEMY_META,
     animatedBuildControls: {},
     animatedBuildOptionValues: {},
+    enemyMetaStatus: "idle",
+    enemyMetaError: null,
+    metaBackend: null,
+    metaBackendDetail: null,
     setAnimatedBuildOption(slug, key, value) {
       set((s) => {
         const cur = s.animatedBuildOptionValues[slug] ?? {};
@@ -100,6 +113,12 @@ export const useAppStore = create<AppState>()(
       });
     },
     async loadAnimatedEnemyMeta() {
+      set((s) => {
+        s.enemyMetaStatus = "loading";
+        s.enemyMetaError = null;
+        s.metaBackend = null;
+        s.metaBackendDetail = null;
+      });
       try {
         const meta = await fetchEnemyPreviewMeta();
         set((s) => {
@@ -111,9 +130,19 @@ export const useAppStore = create<AppState>()(
             meta.animatedBuildControls,
             s.animatedBuildOptionValues,
           );
+          s.enemyMetaStatus = "ok";
+          s.enemyMetaError = null;
+          s.metaBackend = meta.metaBackend ?? "ok";
+          s.metaBackendDetail = meta.metaError ?? null;
         });
-      } catch {
-        /* keep defaults */
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to load enemy meta.";
+        set((s) => {
+          s.enemyMetaStatus = "error";
+          s.enemyMetaError = message;
+          s.metaBackend = null;
+          s.metaBackendDetail = null;
+        });
       }
     },
     async loadFileTree() {
@@ -126,15 +155,14 @@ export const useAppStore = create<AppState>()(
         s.selectedFile = path;
         s.editorContent = content;
         s.isDirty = false;
-        s.editorPaneVisible = true;
+        s.centerPanel = "code";
       });
     },
 
-    // Editor
-    editorPaneVisible: true,
-    setEditorPaneVisible(visible) {
+    centerPanel: "code",
+    setCenterPanel(panel) {
       set((s) => {
-        s.editorPaneVisible = visible;
+        s.centerPanel = panel;
       });
     },
     editorContent: "",

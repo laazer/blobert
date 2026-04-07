@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enemySelectOptionLabel, slugDisplayLabel } from "./enemyDisplay";
+import { enemySelectOptionLabel, normalizeAnimatedSlug, slugDisplayLabel } from "./enemyDisplay";
 
 describe("slugDisplayLabel", () => {
   it("title-cases snake_case when meta is absent", () => {
@@ -11,6 +11,13 @@ describe("slugDisplayLabel", () => {
     expect(
       slugDisplayLabel("claw_crawler", [{ slug: "claw_crawler", label: "Claw crawler" }]),
     ).toBe("Claw crawler");
+  });
+});
+
+describe("normalizeAnimatedSlug", () => {
+  it("lowercases and trims for API key lookup", () => {
+    expect(normalizeAnimatedSlug("Spider")).toBe("spider");
+    expect(normalizeAnimatedSlug("  claw_crawler  ")).toBe("claw_crawler");
   });
 });
 

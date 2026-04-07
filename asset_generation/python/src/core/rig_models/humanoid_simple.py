@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Final
+from typing import ClassVar, Final
 
 from mathutils import Vector
 
@@ -35,25 +35,43 @@ class HumanoidRigLayout:
 class HumanoidSimpleRig(SimpleRigModel):
     """7-bone humanoid layout (imp, carapace husk, examples)."""
 
+    RIG_ROOT_TAIL_Z: ClassVar[float] = HumanoidRigLayout.ROOT_TAIL_Z
+    RIG_SPINE_TOP_Z: ClassVar[float] = HumanoidRigLayout.SPINE_TOP_Z
+    RIG_HEAD_TOP_Z: ClassVar[float] = HumanoidRigLayout.HEAD_TOP_Z
+    RIG_ARM_SHOULDER_Y: ClassVar[float] = HumanoidRigLayout.ARM_SHOULDER_Y
+    RIG_ARM_OUTER_Y: ClassVar[float] = HumanoidRigLayout.ARM_OUTER_Y
+    RIG_ARM_UPPER_Z: ClassVar[float] = HumanoidRigLayout.ARM_UPPER_Z
+    RIG_ARM_LOWER_Z: ClassVar[float] = HumanoidRigLayout.ARM_LOWER_Z
+    RIG_LEG_INNER_Y: ClassVar[float] = HumanoidRigLayout.LEG_INNER_Y
+    RIG_LEG_UPPER_Z: ClassVar[float] = HumanoidRigLayout.LEG_UPPER_Z
+
     def rig_definition(self) -> RigDefinition:
         h = self.body_height
-        r = HumanoidRigLayout
+        r = self._rig_ratio
         return rig_from_bone_map(
             {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, h * r.ROOT_TAIL_Z)), None),
-                "spine": (Vector((0, 0, h * r.ROOT_TAIL_Z)), Vector((0, 0, h * r.SPINE_TOP_Z)), "root"),
-                "head": (Vector((0, 0, h * r.SPINE_TOP_Z)), Vector((0, 0, h * r.HEAD_TOP_Z)), "spine"),
+                "root": (Vector((0, 0, 0)), Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))), None),
+                "spine": (Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))), Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))), "root"),
+                "head": (Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))), Vector((0, 0, h * r("RIG_HEAD_TOP_Z"))), "spine"),
                 "arm_l": (
-                    Vector((0, h * r.ARM_SHOULDER_Y, h * r.ARM_UPPER_Z)),
-                    Vector((0, h * r.ARM_OUTER_Y, h * r.ARM_LOWER_Z)),
+                    Vector((0, h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
+                    Vector((0, h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
                     "spine",
                 ),
                 "arm_r": (
-                    Vector((0, -h * r.ARM_SHOULDER_Y, h * r.ARM_UPPER_Z)),
-                    Vector((0, -h * r.ARM_OUTER_Y, h * r.ARM_LOWER_Z)),
+                    Vector((0, -h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
+                    Vector((0, -h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
                     "spine",
                 ),
-                "leg_l": (Vector((0, h * r.LEG_INNER_Y, h * r.LEG_UPPER_Z)), Vector((0, h * r.LEG_INNER_Y, 0)), "root"),
-                "leg_r": (Vector((0, -h * r.LEG_INNER_Y, h * r.LEG_UPPER_Z)), Vector((0, -h * r.LEG_INNER_Y, 0)), "root"),
+                "leg_l": (
+                    Vector((0, h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
+                    Vector((0, h * r("RIG_LEG_INNER_Y"), 0)),
+                    "root",
+                ),
+                "leg_r": (
+                    Vector((0, -h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
+                    Vector((0, -h * r("RIG_LEG_INNER_Y"), 0)),
+                    "root",
+                ),
             }
         )

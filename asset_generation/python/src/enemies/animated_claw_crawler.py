@@ -62,50 +62,58 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     )
 
     def build_mesh_parts(self):
-        body_scale = random_variance(self.BODY_BASE, self.BODY_VARIANCE, self.rng)
+        body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         body = create_sphere(
-            location=(0, 0, self.BODY_CENTER_Z),
+            location=(0, 0, self._mesh("BODY_CENTER_Z")),
             scale=(
                 body_scale,
-                body_scale * random_variance(self.BODY_FLATTEN_Y_BASE, self.BODY_FLATTEN_Y_VARIANCE, self.rng),
-                body_scale * self.BODY_FLATTEN_Z,
+                body_scale * random_variance(self._mesh("BODY_FLATTEN_Y_BASE"), self._mesh("BODY_FLATTEN_Y_VARIANCE"), self.rng),
+                body_scale * self._mesh("BODY_FLATTEN_Z"),
             ),
         )
         self.parts.append(body)
         self.body_scale = body_scale
 
-        head_scale = self.body_scale * random_variance(self.HEAD_SCALE_REL, self.HEAD_SCALE_VARIANCE, self.rng)
+        head_scale = self.body_scale * random_variance(
+            self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
+        )
         head = create_sphere(
-            location=(self.body_scale * self.HEAD_X_ALONG, 0, self.HEAD_CENTER_Z),
-            scale=(head_scale, head_scale, head_scale * self.HEAD_FLATTEN_Z),
+            location=(self.body_scale * self._mesh("HEAD_X_ALONG"), 0, self._mesh("HEAD_CENTER_Z")),
+            scale=(head_scale, head_scale, head_scale * self._mesh("HEAD_FLATTEN_Z")),
         )
         self.parts.append(head)
         self.head_scale = head_scale
 
         pe = int(self.build_options.get("peripheral_eyes", 0))
-        self._peripheral_eyes = max(0, min(self.PERIPHERAL_EYES_MAX, pe))
-        eye_scale = self.head_scale * self.EYE_SCALE_HEAD_RATIO
+        self._peripheral_eyes = max(0, min(int(self._mesh("PERIPHERAL_EYES_MAX")), pe))
+        eye_scale = self.head_scale * self._mesh("EYE_SCALE_HEAD_RATIO")
         for i in range(self._peripheral_eyes):
             if self._peripheral_eyes == 1:
-                dy, dz = self.EYE_ONE_DY, self.EYE_ONE_DZ
+                dy, dz = self._mesh("EYE_ONE_DY"), self._mesh("EYE_ONE_DZ")
             elif self._peripheral_eyes == 2:
-                dy = self.body_scale * self.EYE_TWO_DY_SCALE * (1 if i == 0 else -1)
-                dz = self.EYE_TWO_DZ
+                dy = self.body_scale * self._mesh("EYE_TWO_DY_SCALE") * (1 if i == 0 else -1)
+                dz = self._mesh("EYE_TWO_DZ")
             else:
-                ang = (i / self.PERIPHERAL_EYE_ANGLE_DIVISOR) * math.pi - self.EYE_RING_PHASE
-                dy = self.body_scale * self.EYE_RING_DY_SCALE * math.cos(ang)
-                dz = self.EYE_RING_DZ_BASE + self.EYE_RING_DZ_SIN_SCALE * math.sin(ang + self.EYE_RING_ANGLE_OFFSET)
+                ang = (i / self._mesh("PERIPHERAL_EYE_ANGLE_DIVISOR")) * math.pi - float(self._mesh("EYE_RING_PHASE"))
+                dy = self.body_scale * self._mesh("EYE_RING_DY_SCALE") * math.cos(ang)
+                dz = self._mesh("EYE_RING_DZ_BASE") + self._mesh("EYE_RING_DZ_SIN_SCALE") * math.sin(
+                    ang + self._mesh("EYE_RING_ANGLE_OFFSET")
+                )
             eye = create_sphere(
-                location=(-self.body_scale * self.EYE_BACK_X, dy, self.EYE_BASE_Z + dz),
+                location=(-self.body_scale * self._mesh("EYE_BACK_X"), dy, self._mesh("EYE_BASE_Z") + dz),
                 scale=(eye_scale, eye_scale, eye_scale),
             )
             self.parts.append(eye)
 
         for side in [-1, 1]:
-            claw_length = random_variance(self.CLAW_LENGTH_BASE, self.CLAW_LENGTH_VARIANCE, self.rng)
+            claw_length = random_variance(self._mesh("CLAW_LENGTH_BASE"), self._mesh("CLAW_LENGTH_VARIANCE"), self.rng)
             claw = create_cylinder(
-                location=(self.body_scale * self.CLAW_X, side * self.body_scale * self.CLAW_Y_SPREAD, self.CLAW_Z),
-                scale=(self.CLAW_RADIUS, self.CLAW_RADIUS, claw_length),
+                location=(
+                    self.body_scale * self._mesh("CLAW_X"),
+                    side * self.body_scale * self._mesh("CLAW_Y_SPREAD"),
+                    self._mesh("CLAW_Z"),
+                ),
+                scale=(self._mesh("CLAW_RADIUS"), self._mesh("CLAW_RADIUS"), claw_length),
                 vertices=CYLINDER_VERTICES_HEX,
             )
             self.parts.append(claw)
@@ -114,7 +122,7 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             lx = self.body_scale * leg_x
             ly = self.body_scale * leg_y
             lz = leg_z
-            leg_length = random_variance(self.LEG_LENGTH_BASE, self.LEG_LENGTH_VARIANCE, self.rng)
+            leg_length = random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng)
             leg = create_cylinder(
                 location=(lx, ly, lz),
                 scale=(QUADRUPED_LEG_THICKNESS, QUADRUPED_LEG_THICKNESS, leg_length),
@@ -133,10 +141,10 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         for _ in range(self._peripheral_eyes):
             apply_material_to_object(self.parts[part_index], eye_mat)
             part_index += 1
-        for _ in range(self.CLAW_COUNT):
+        for _ in range(int(self._mesh("CLAW_COUNT"))):
             apply_material_to_object(self.parts[part_index], claw_material)
             part_index += 1
-        for _ in range(self.LEG_COUNT):
+        for _ in range(int(self._mesh("LEG_COUNT"))):
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
 

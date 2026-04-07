@@ -17,10 +17,17 @@ blender-experiments/
 │   ├── materials/
 │   │   └── material_system.py   # Procedural material creation (Principled BSDF + textures)
 │   │
+│   ├── body_families/           # Body-family hub: ids, bones, motion_*, factory, registry, keywords
+│   │   ├── ids.py               # EnemyBodyTypes
+│   │   ├── bones.py             # BoneNames (enemy armatures)
+│   │   ├── keywords.py          # Smart-generation keywords (no Blender/rig deps)
+│   │   ├── motion_*.py          # BaseBodyType + Blob / Quadruped / Humanoid motion
+│   │   ├── factory.py           # BodyTypeFactory
+│   │   └── registry.py          # BODY_FAMILY_REGISTRY + rig_definition_for_import
+│   │
 │   ├── animations/
 │   │   ├── keyframe_system.py   # set_bone_keyframe, create_simple_armature
-│   │   ├── body_types.py        # BlobBodyType, QuadrupedBodyType, HumanoidBodyType
-│   │   │                        #   — each implements all 13 animation methods
+│   │   ├── body_types.py        # Re-exports body_families (backward compatibility)
 │   │   └── animation_system.py  # create_all_animations orchestrator
 │   │
 │   ├── enemies/
@@ -46,7 +53,7 @@ blender-experiments/
 │   │   └── external_model_importer.py # ExternalModelImporter, import_external_model()
 │   │
 │   ├── utils/
-│   │   ├── constants.py         # EnemyTypes, AnimationTypes, AnimationConfig, BoneNames, ExportConfig
+│   │   ├── constants.py         # EnemyTypes, AnimationTypes, AnimationConfig; re-exports EnemyBodyTypes, BoneNames from body_families
 │   │   ├── materials.py         # MaterialNames, MaterialColors, MaterialThemes, MaterialCategories
 │   │   ├── simple_viewer.py     # Blender viewer script (used by `view` command)
 │   │   └── demo.py
@@ -70,6 +77,21 @@ blender-experiments/
 
 ---
 
+## Refactor backlog (oversized / multi-responsibility files)
+
+These are tracked for future work; not blocking current pipelines.
+
+| Area | File | Suggested direction |
+|------|------|---------------------|
+| CLI | `main.py` | Split handlers and Blender runner under `cli/` |
+| Constants | `src/utils/constants.py` | Split by domain (enemy, animation, player, level, export) after stabilizing imports |
+| Smart | `src/smart/smart_generation.py` | Split blueprint, parsing, stats, evolution |
+| Godot | `scripts/player/player_controller_3d.gd` | Extract chunk / infection helpers |
+| Tests | `tests/enemies/test_animated_enemy_classes_adversarial.py` | Split by theme or per-enemy modules |
+| Web | `asset_generation/web/frontend/.../quickSourceNav.ts` | Split part-tree data vs path routing |
+
+---
+
 ## Key Data Flows
 
 ### Animated generation (`python main.py animated adhesion_bug 1`)
@@ -82,7 +104,7 @@ main.py
             │    ├─ create_body() / create_head() / create_limbs()
             │    ├─ apply_materials()        →  material_system.py
             │    ├─ create_armature()        →  same enemy class (_armature_bones + create_simple_armature)
-            │    └─ create_all_animations()  →  body_types.QuadrupedBodyType (all 13)
+            │    └─ create_all_animations()  →  body_families.QuadrupedBodyType (all 13)
             └─ get_attack_profile()          →  combat/enemy_attack_profiles.py
        └─ export_enemy(armature, mesh, filename, dir, attack_profile)
             ├─ {filename}.glb
@@ -102,9 +124,7 @@ main.py
 
 ### Add a new body type
 
-1. Subclass `BaseBodyType` in `src/animations/body_types.py`
-2. Implement the 5 abstract animation methods: `create_idle/move/attack/damage/death_animation()`
-3. Optionally override any extended animation methods (defaults provided by `BaseBodyType`)
-4. Register in `BodyTypeFactory.BODY_TYPES`
+1. Subclass `BaseBodyType` in `src/body_families/motion_base.py` (or add `motion_<name>.py`), implement the five core methods and optional extended overrides
+2. Register the class in `BodyTypeFactory.BODY_TYPES` in `src/body_families/factory.py`; wire keywords in `src/body_families/keywords.py` and `BODY_FAMILY_REGISTRY` in `registry.py` if needed
 
 See `src/enemies/example_new_enemy.py` for a worked example.

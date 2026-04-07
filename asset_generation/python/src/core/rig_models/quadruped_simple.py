@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import ClassVar, Final
 
 from mathutils import Vector
 
@@ -30,42 +30,59 @@ class QuadrupedRigLayout:
 class QuadrupedSimpleRig(SimpleRigModel):
     """9-bone quadruped layout (spider, claw crawler, example spider)."""
 
+    RIG_ROOT_TAIL_Z: ClassVar[float] = QuadrupedRigLayout.ROOT_TAIL_Z
+    RIG_SPINE_FORWARD_X: ClassVar[float] = QuadrupedRigLayout.SPINE_FORWARD_X
+    RIG_SPINE_UPPER_Z: ClassVar[float] = QuadrupedRigLayout.SPINE_UPPER_Z
+    RIG_HEAD_FORWARD_X: ClassVar[float] = QuadrupedRigLayout.HEAD_FORWARD_X
+    RIG_HEAD_UPPER_Z: ClassVar[float] = QuadrupedRigLayout.HEAD_UPPER_Z
+    RIG_LEG_CORNER_XY: ClassVar[float] = QuadrupedRigLayout.LEG_CORNER_XY
+    RIG_LEG_MID_Y: ClassVar[float] = QuadrupedRigLayout.LEG_MID_Y
+    RIG_LEG_REAR_X: ClassVar[float] = QuadrupedRigLayout.LEG_REAR_X
+
     def rig_definition(self) -> RigDefinition:
         s = self.body_height
-        q = QuadrupedRigLayout
+        q = self._rig_ratio
         return rig_from_bone_map(
             {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, s * q.ROOT_TAIL_Z)), None),
+                "root": (Vector((0, 0, 0)), Vector((0, 0, s * q("RIG_ROOT_TAIL_Z"))), None),
                 "spine": (
-                    Vector((0, 0, s * q.ROOT_TAIL_Z)),
-                    Vector((s * q.SPINE_FORWARD_X, 0, s * q.SPINE_UPPER_Z)),
+                    Vector((0, 0, s * q("RIG_ROOT_TAIL_Z"))),
+                    Vector((s * q("RIG_SPINE_FORWARD_X"), 0, s * q("RIG_SPINE_UPPER_Z"))),
                     "root",
                 ),
                 "head": (
-                    Vector((s * q.SPINE_FORWARD_X, 0, s * q.SPINE_UPPER_Z)),
-                    Vector((s * q.HEAD_FORWARD_X, 0, s * q.HEAD_UPPER_Z)),
+                    Vector((s * q("RIG_SPINE_FORWARD_X"), 0, s * q("RIG_SPINE_UPPER_Z"))),
+                    Vector((s * q("RIG_HEAD_FORWARD_X"), 0, s * q("RIG_HEAD_UPPER_Z"))),
                     "spine",
                 ),
                 "leg_fl": (
-                    Vector((s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY)),
-                    Vector((s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY, 0)),
+                    Vector((s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"), 0)),
                     "spine",
                 ),
                 "leg_fr": (
-                    Vector((s * q.LEG_CORNER_XY, -s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY)),
-                    Vector((s * q.LEG_CORNER_XY, -s * q.LEG_CORNER_XY, 0)),
+                    Vector((s * q("RIG_LEG_CORNER_XY"), -s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((s * q("RIG_LEG_CORNER_XY"), -s * q("RIG_LEG_CORNER_XY"), 0)),
                     "spine",
                 ),
-                "leg_ml": (Vector((0, s * q.LEG_MID_Y, s * q.LEG_CORNER_XY)), Vector((0, s * q.LEG_MID_Y, 0)), "spine"),
-                "leg_mr": (Vector((0, -s * q.LEG_MID_Y, s * q.LEG_CORNER_XY)), Vector((0, -s * q.LEG_MID_Y, 0)), "spine"),
+                "leg_ml": (
+                    Vector((0, s * q("RIG_LEG_MID_Y"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((0, s * q("RIG_LEG_MID_Y"), 0)),
+                    "spine",
+                ),
+                "leg_mr": (
+                    Vector((0, -s * q("RIG_LEG_MID_Y"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((0, -s * q("RIG_LEG_MID_Y"), 0)),
+                    "spine",
+                ),
                 "leg_bl": (
-                    Vector((-s * q.LEG_REAR_X, s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY)),
-                    Vector((-s * q.LEG_REAR_X, s * q.LEG_CORNER_XY, 0)),
+                    Vector((-s * q("RIG_LEG_REAR_X"), s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((-s * q("RIG_LEG_REAR_X"), s * q("RIG_LEG_CORNER_XY"), 0)),
                     "root",
                 ),
                 "leg_br": (
-                    Vector((-s * q.LEG_REAR_X, -s * q.LEG_CORNER_XY, s * q.LEG_CORNER_XY)),
-                    Vector((-s * q.LEG_REAR_X, -s * q.LEG_CORNER_XY, 0)),
+                    Vector((-s * q("RIG_LEG_REAR_X"), -s * q("RIG_LEG_CORNER_XY"), s * q("RIG_LEG_CORNER_XY"))),
+                    Vector((-s * q("RIG_LEG_REAR_X"), -s * q("RIG_LEG_CORNER_XY"), 0)),
                     "root",
                 ),
             }

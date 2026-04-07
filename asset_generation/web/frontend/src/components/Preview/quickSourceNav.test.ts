@@ -59,6 +59,8 @@ describe("quickSourceNav", () => {
     it("lists shared modules for animated enemies", () => {
       const paths = getAnimationCodeExtras("animated").map((x) => x.path);
       expect(paths).toContain("animations/keyframe_system.py");
+      expect(paths).toContain("body_families/registry.py");
+      expect(paths).toContain("animations/body_types.py");
       expect(paths).toContain("enemies/animated_slug.py");
     });
 
@@ -106,6 +108,16 @@ describe("quickSourceNav", () => {
       expect(flat4).toContain("12 parts");
       expect(flat4).toContain("parts[11]");
       expect(flat4).not.toContain("Variant:");
+
+      const t6 = getMeshPartTree("animated", "spider", undefined, { eye_count: 6 });
+      const flat6 = JSON.stringify(t6);
+      expect(flat6).toContain("14 parts");
+      expect(flat6).toContain("parts[13]");
+
+      const t8 = getMeshPartTree("animated", "spider", undefined, { eye_count: 8 });
+      const flat8 = JSON.stringify(t8);
+      expect(flat8).toContain("16 parts");
+      expect(flat8).toContain("parts[15]");
     });
 
     it("claw_crawler parts tree includes peripheral eyes only when selected", () => {

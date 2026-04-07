@@ -10,6 +10,9 @@ from src.utils.animated_build_options import (
 def test_defaults_spider() -> None:
     o = options_for_enemy("spider", {})
     assert o["eye_count"] == 2
+    assert "mesh" in o
+    assert o["mesh"]["BODY_BASE"] == 1.0
+    assert o["mesh"]["LEG_COUNT"] == 6
 
 
 def test_nested_slug_object() -> None:
@@ -25,6 +28,16 @@ def test_flat_keys_for_current_slug() -> None:
 def test_invalid_select_falls_back() -> None:
     o = options_for_enemy("spider", {"eye_count": 99})
     assert o["eye_count"] == 2
+
+
+def test_spider_eye_count_extended_options() -> None:
+    o = options_for_enemy("spider", {"eye_count": 10})
+    assert o["eye_count"] == 10
+    ctrl = animated_build_controls_for_api()
+    eye = next(c for c in ctrl["spider"] if c["key"] == "eye_count")
+    assert eye["options"][-1] == 12
+    rig = next(c for c in ctrl["spider"] if c["key"].startswith("RIG_"))
+    assert rig["label"].startswith("Rig ")
 
 
 def test_peripheral_eyes_clamped() -> None:
@@ -44,3 +57,17 @@ def test_api_controls_have_known_slugs() -> None:
     ctrl = animated_build_controls_for_api()
     assert "eye_count" in {c["key"] for c in ctrl["spider"]}
     assert "peripheral_eyes" in {c["key"] for c in ctrl["claw_crawler"]}
+    spider_keys = {c["key"] for c in ctrl["spider"]}
+    assert "BODY_BASE" in spider_keys
+    assert any(c["key"] == "BODY_BASE" and c["type"] == "float" for c in ctrl["spider"])
+
+
+def test_mesh_override_nested() -> None:
+    o = options_for_enemy("spider", {"spider": {"mesh": {"BODY_BASE": 1.5}}})
+    assert o["mesh"]["BODY_BASE"] == 1.5
+
+
+def test_mesh_override_flat() -> None:
+    o = options_for_enemy("spider", {"spider": {"BODY_BASE": 1.4, "eye_count": 4}})
+    assert o["eye_count"] == 4
+    assert o["mesh"]["BODY_BASE"] == 1.4

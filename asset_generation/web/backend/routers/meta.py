@@ -1,8 +1,11 @@
+import logging
 import sys
 
 from core.config import settings
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/meta", tags=["meta"])
 
@@ -12,10 +15,26 @@ _ANIMATION_EXPORT_NAMES = [
     "DamageIce", "Stunned", "Celebrate", "Taunt",
 ]
 
+_FALLBACK_SLUGS = [
+    "spider",
+    "slug",
+    "imp",
+    "spitter",
+    "claw_crawler",
+    "carapace_husk",
+]
+
+
+def _fallback_enemies() -> list[dict[str, str]]:
+    return [
+        {"slug": s, "label": " ".join(part.capitalize() for part in s.split("_"))}
+        for s in _FALLBACK_SLUGS
+    ]
+
 
 @router.get("/enemies")
 async def get_enemies() -> JSONResponse:
-    # Import ANIMATED_SLUGS from the Python asset generation package
+    """Enemy list + procedural build controls from ``asset_generation/python`` (introspects enemy ClassVars)."""
     python_root = str(settings.python_root)
     src_path = str(settings.python_root / "src")
     for p in (python_root, src_path):
@@ -23,31 +42,33 @@ async def get_enemies() -> JSONResponse:
             sys.path.insert(0, p)
 
     try:
+        # Stubs must load before any module that imports bpy/mathutils (e.g. blender_utils).
+        from utils.blender_stubs import ensure_blender_stubs
+
+        ensure_blender_stubs()
+
         from utils.animated_build_options import animated_build_controls_for_api
         from utils.enemy_slug_registry import animated_enemies_for_api
 
         enemies = animated_enemies_for_api()
         build_controls = animated_build_controls_for_api()
-    except ImportError:
-        # Fallback: slug list + mechanical labels (no registry import)
-        _fallback_slugs = [
-            "spider",
-            "slug",
-            "imp",
-            "spitter",
-            "claw_crawler",
-            "carapace_husk",
-        ]
-        enemies = [
-            {"slug": s, "label": " ".join(part.capitalize() for part in s.split("_"))}
-            for s in _fallback_slugs
-        ]
-        build_controls = {}
+    except ImportError as e:
+        logger.warning("meta/enemies: ImportError loading build controls — %s", e, exc_info=True)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "enemies": _fallback_enemies(),
+                "animated_build_controls": {},
+                "meta_backend": "fallback",
+                "meta_error": f"ImportError: {e}",
+            },
+        )
 
     return JSONResponse(
         {
             "enemies": enemies,
             "animated_build_controls": build_controls,
+            "meta_backend": "ok",
         }
     )
 

@@ -5,7 +5,7 @@ import {
   EnemyPreviewMeta,
   FileNode,
 } from "../types";
-import { titleCaseSnake } from "../utils/enemyDisplay";
+import { normalizeAnimatedSlug, titleCaseSnake } from "../utils/enemyDisplay";
 
 const BASE = "/api";
 
@@ -61,13 +61,24 @@ export async function fetchEnemyPreviewMeta(): Promise<EnemyPreviewMeta> {
   let enemies: AnimatedEnemyMeta[] = [];
   if (Array.isArray(raw) && raw.length > 0) {
     if (typeof raw[0] === "string") {
-      enemies = (raw as string[]).map((slug) => ({ slug, label: titleCaseSnake(slug) }));
+      enemies = (raw as string[]).map((slug) => ({
+        slug: normalizeAnimatedSlug(slug),
+        label: titleCaseSnake(slug),
+      }));
     } else {
-      enemies = raw as AnimatedEnemyMeta[];
+      enemies = (raw as AnimatedEnemyMeta[]).map((row) => ({
+        ...row,
+        slug: normalizeAnimatedSlug(row.slug),
+      }));
     }
   }
   const animatedBuildControls = parseBuildControls(data.animated_build_controls);
-  return { enemies, animatedBuildControls };
+  const metaBackend = data.meta_backend as "ok" | "fallback" | undefined;
+  const metaError =
+    typeof data.meta_error === "string" && data.meta_error.trim()
+      ? data.meta_error
+      : null;
+  return { enemies, animatedBuildControls, metaBackend, metaError };
 }
 
 /** Merge server defaults with existing per-slug option maps (preserves user edits). */

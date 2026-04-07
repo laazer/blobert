@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final
+from typing import ClassVar, Final
 
 from mathutils import Vector
 
@@ -25,13 +25,17 @@ class BlobRigLayout:
 class BlobSimpleRig(SimpleRigModel):
     """Minimal 3-bone blob (slug-style root / body / head)."""
 
+    RIG_ROOT_TAIL_Z: ClassVar[float] = BlobRigLayout.ROOT_TAIL_Z
+    RIG_BODY_END_Z: ClassVar[float] = BlobRigLayout.BODY_END_Z
+    RIG_HEAD_END_Z: ClassVar[float] = BlobRigLayout.HEAD_END_Z
+
     def rig_definition(self) -> RigDefinition:
         h = self.body_height
-        b = BlobRigLayout
+        b = self._rig_ratio
         return rig_from_bone_map(
             {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, h * b.ROOT_TAIL_Z)), None),
-                "body": (Vector((0, 0, h * b.ROOT_TAIL_Z)), Vector((0, 0, h * b.BODY_END_Z)), "root"),
-                "head": (Vector((0, 0, h * b.BODY_END_Z)), Vector((0, 0, h * b.HEAD_END_Z)), "body"),
+                "root": (Vector((0, 0, 0)), Vector((0, 0, h * b("RIG_ROOT_TAIL_Z"))), None),
+                "body": (Vector((0, 0, h * b("RIG_ROOT_TAIL_Z"))), Vector((0, 0, h * b("RIG_BODY_END_Z"))), "root"),
+                "head": (Vector((0, 0, h * b("RIG_BODY_END_Z"))), Vector((0, 0, h * b("RIG_HEAD_END_Z"))), "body"),
             }
         )

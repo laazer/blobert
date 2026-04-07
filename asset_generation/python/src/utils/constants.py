@@ -117,64 +117,16 @@ class AnimationTypes:
         return "".join(word.title() for word in internal_name.split("_"))
 
 
-class EnemyBodyTypes:
-    """Enemy body type classifications for animation"""
-    BLOB = "blob"
-    SLIME = "slime"  # Same as blob
-    QUADRUPED = "quadruped"
-    HUMANOID = "humanoid"
+# Enemy body-type ids and enemy armature bone names — canonical: body_families package.
+try:
+    from body_families.bones import BoneNames
+    from body_families.ids import EnemyBodyTypes
+except ImportError:
+    from src.body_families import bones as _bones_mod
+    from src.body_families import ids as _ids_mod
 
-
-class BoneNames:
-    """Bone naming constants for armatures"""
-    # Universal bones
-    ROOT = "root"
-    SPINE = "spine"
-    HEAD = "head"
-    BODY = "body"
-    
-    # Humanoid bones
-    ARM_LEFT = "arm_l"
-    ARM_RIGHT = "arm_r"
-    LEG_LEFT = "leg_l"
-    LEG_RIGHT = "leg_r"
-    
-    # Quadruped bones (6-legged)
-    LEG_FRONT_LEFT = "leg_fl"
-    LEG_FRONT_RIGHT = "leg_fr"
-    LEG_MIDDLE_LEFT = "leg_ml"
-    LEG_MIDDLE_RIGHT = "leg_mr"
-    LEG_BACK_LEFT = "leg_bl"
-    LEG_BACK_RIGHT = "leg_br"
-    
-    @classmethod
-    def get_all_legs(cls) -> List[str]:
-        """Get all leg bone names"""
-        return [
-            cls.LEG_FRONT_LEFT, cls.LEG_FRONT_RIGHT,
-            cls.LEG_MIDDLE_LEFT, cls.LEG_MIDDLE_RIGHT,
-            cls.LEG_BACK_LEFT, cls.LEG_BACK_RIGHT,
-            cls.LEG_LEFT, cls.LEG_RIGHT
-        ]
-    
-    @classmethod
-    def get_quadruped_legs(cls) -> List[str]:
-        """Get quadruped (6-legged) bone names"""
-        return [
-            cls.LEG_FRONT_LEFT, cls.LEG_FRONT_RIGHT,
-            cls.LEG_MIDDLE_LEFT, cls.LEG_MIDDLE_RIGHT,
-            cls.LEG_BACK_LEFT, cls.LEG_BACK_RIGHT
-        ]
-    
-    @classmethod
-    def get_humanoid_arms(cls) -> List[str]:
-        """Get humanoid arm bone names"""
-        return [cls.ARM_LEFT, cls.ARM_RIGHT]
-    
-    @classmethod
-    def get_humanoid_legs(cls) -> List[str]:
-        """Get humanoid leg bone names"""
-        return [cls.LEG_LEFT, cls.LEG_RIGHT]
+    BoneNames = _bones_mod.BoneNames
+    EnemyBodyTypes = _ids_mod.EnemyBodyTypes
 
 
 class AnimationConfig:
