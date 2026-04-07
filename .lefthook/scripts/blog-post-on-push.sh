@@ -103,6 +103,19 @@ echo ""
 
 HEAD_SHORT="$(git -C "$ROOT" rev-parse --short HEAD)"
 
+count_blog_files_for_head() {
+  local pattern="$ROOT/blog/*-${HEAD_SHORT}-*.md"
+  local matches
+  matches="$(compgen -G "$pattern" || true)"
+  if [[ -z "$matches" ]]; then
+    echo "0"
+    return 0
+  fi
+  printf '%s\n' "$matches" | wc -l | tr -d ' '
+}
+
+BLOG_FILES_BEFORE="$(count_blog_files_for_head)"
+
 PROMPT="Read the agent role definition at agent_context/agents/10_blog_post/blog_post_v1.md and follow it exactly. This is a non-interactive run triggered by a pre-push git hook — no live session conversation is available. Use git history, project_board/checkpoints/ scoped logs, project_board/CHECKPOINTS.md index, LEARNINGS.md, and the diff of these commits as your primary sources. The session commits were: $SESSION_COMMITS
 
 Repository HEAD for this push:
@@ -173,6 +186,16 @@ cat "$OUT"
 SUCCESS=0
 if [[ "$LAST_RC" -eq 0 ]]; then
   SUCCESS=1
+fi
+
+if [[ "$SUCCESS" -eq 1 ]]; then
+  BLOG_FILES_AFTER="$(count_blog_files_for_head)"
+  if [[ "$BLOG_FILES_AFTER" -le "$BLOG_FILES_BEFORE" ]]; then
+    SUCCESS=0
+    LAST_RC=5
+    echo "blog-post: generator exited 0 but no blog file for HEAD short SHA ${HEAD_SHORT} was created."
+    echo "blog-post: expected a file matching blog/*-${HEAD_SHORT}-*.md"
+  fi
 fi
 
 SAW_RATE_LIMIT=0

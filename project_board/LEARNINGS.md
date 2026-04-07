@@ -2497,3 +2497,65 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Stable CI while still covering edge cases.
 
 ---
+
+## [ui_polish_and_start_sh] — Verification-first closure for malformed workflow stubs and explicit interactive-validation boundaries
+*Completed: 2026-04-07*
+
+### Learnings
+- category: process
+  insight: Tickets that skip required `WORKFLOW STATE` scaffolding should be treated as workflow defects first; closure can proceed only with an explicit verification-first contract instead of silently pretending normal stage progression occurred.
+  impact: This ticket resumed from a malformed backlog stub and required assumption-based bootstrap before evidence collection, increasing ambiguity about expected sequencing.
+  prevention: Add a mandatory bootstrap rule: if `WORKFLOW STATE` is missing, record a normalized resume block and enforce validation-only closure with explicit assumptions and confidence levels.
+  severity: medium
+
+- category: testing
+  insight: UI tickets that combine process lifecycle checks and browser interactions need a split contract between automatable runtime evidence and manual interactive smoke, otherwise gatekeeping overstates confidence.
+  impact: Non-interactive checks validated `start.sh` startup/shutdown and code-path mapping, but full editor-to-preview interaction remained manual follow-up.
+  prevention: Require every mixed UI ticket to mark ACs as `automated`, `code-path`, or `manual-interactive` at planning/spec time and preserve that split in final validation.
+  severity: medium
+
+- category: infra
+  insight: Startup wrappers that orchestrate multiple services should always be validated under bounded runtime with trap-driven teardown evidence, not only “server started” logs.
+  impact: Bounded `start.sh` smoke with controlled shutdown provided stronger confidence that both services exit cleanly on interrupt.
+  prevention: Standardize launcher AC verification to include bounded run + interrupt + teardown evidence for all multi-process scripts.
+  severity: medium
+
+### Anti-Patterns
+- description: Closing malformed tickets as if they followed the normal staged pipeline without explicit bootstrap assumptions.
+  detection_signal: Ticket is in `done/` but lacks a prior `WORKFLOW STATE` block or contains no resume normalization in checkpoint logs.
+  prevention: Enforce a “malformed stub bootstrap” checkpoint template before any completion decision.
+
+- description: Treating partial non-interactive smoke as equivalent to full UX verification for editor-driven workflows.
+  detection_signal: Validation claims end-to-end success while checkpoints still list manual interactive follow-ups.
+  prevention: Keep automated and manual evidence channels separate and require explicit manual checklist carry-forward.
+
+### Prompt Patches
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If a resumed ticket lacks a valid `WORKFLOW STATE` block, do not close it under normal-stage assumptions. First require a bootstrap note that states malformed input, normalization steps taken, and confidence level; then allow only verification-first closure."
+  reason: Prevents false traceability when upstream workflow metadata is incomplete.
+
+- agent: Spec Agent
+  change: "For UI/editor tickets with both service orchestration and in-browser interaction, classify each AC as `automated runtime`, `code-path evidence`, or `manual interactive`; include the exact manual checklist in `NEXT ACTION` if any AC cannot be automated."
+  reason: Reduces closure ambiguity and keeps confidence aligned with observable evidence.
+
+- agent: Planner Agent
+  change: "When a ticket includes a launcher script (`start.sh`-style), include bounded runtime + interrupt/teardown verification as a required execution-plan step, not an optional smoke check."
+  reason: Makes process-lifecycle reliability a default acceptance dimension.
+
+### Workflow Improvements
+- issue: Malformed backlog stubs force ad-hoc assumptions during resume and weaken stage-level auditability.
+  improvement: Add a pre-stage validator that blocks progression until `WORKFLOW STATE` and `NEXT ACTION` minimum schema are present or auto-normalized with logged provenance.
+  expected_benefit: More consistent resumes and fewer medium-confidence closure decisions.
+
+- issue: Interactive UI checks are often implied but not explicitly separated from automatable checks.
+  improvement: Add an AC evidence matrix field (`automated`/`manual`) to ticket templates and require gatekeeper output to report both counts.
+  expected_benefit: Clearer confidence signaling and less accidental over-claiming of end-to-end verification.
+
+### Keep / Reinforce
+- practice: Recording `Would have asked` / `Assumption made` / `Confidence` in scoped checkpoint logs for autonomy decisions.
+  reason: Preserves decision provenance when human clarification is unavailable.
+
+- practice: Bounded smoke execution for launcher scripts with visible startup and shutdown evidence.
+  reason: Catches lifecycle regressions early without needing full interactive harness automation.
+
+---
