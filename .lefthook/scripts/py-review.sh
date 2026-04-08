@@ -41,10 +41,14 @@ for f in "$@"; do
       rel_args+=("${f#asset_generation/python/}")
       ;;
     *)
-      rel_args+=("$f")
+      # Staged Python outside asset_generation/python (e.g. web backend) uses its own tooling.
       ;;
   esac
 done
+
+if [ "${#rel_args[@]}" -eq 0 ]; then
+  exit 0
+fi
 
 echo "pre-commit: running Ruff (from pyproject.toml) on staged files..."
 cd "$PY_ROOT"

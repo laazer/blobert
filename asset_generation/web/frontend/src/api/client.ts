@@ -4,6 +4,7 @@ import {
   Asset,
   EnemyPreviewMeta,
   FileNode,
+  ModelRegistryPayload,
 } from "../types";
 import { normalizeAnimatedSlug, titleCaseSnake } from "../utils/enemyDisplay";
 
@@ -99,6 +100,28 @@ export function mergeBuildOptionValues(
     }
   }
   return next;
+}
+
+export async function fetchModelRegistry(): Promise<ModelRegistryPayload> {
+  const res = await fetch(`${BASE}/registry/model`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
+export async function patchRegistryEnemyVersion(
+  family: string,
+  versionId: string,
+  body: { draft?: boolean; in_use?: boolean },
+): Promise<ModelRegistryPayload> {
+  const encFamily = encodeURIComponent(family);
+  const encVid = encodeURIComponent(versionId);
+  const res = await fetch(`${BASE}/registry/model/enemies/${encFamily}/versions/${encVid}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
 }
 
 export async function fetchAnimations(): Promise<string[]> {

@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
+import { ModelRegistryPane } from "../Editor/ModelRegistryPane";
 import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
 import { BuildControls } from "../Preview/BuildControls";
 import { ColorsPane } from "../Preview/ColorsPane";
@@ -72,6 +73,14 @@ function CenterSwitchBar() {
         title="Per-part materials (feat_* slots) for the selected animated enemy"
       >
         Colors
+      </button>
+      <button
+        type="button"
+        style={tabBtn(centerPanel === "registry")}
+        onClick={() => setCenterPanel("registry")}
+        title="Draft / in-use flags for model exports (model_registry.json)"
+      >
+        Registry
       </button>
       <button
         type="button"
@@ -160,6 +169,20 @@ export function ThreePanelLayout() {
               <ColorsPane />
             </div>
           )}
+          {centerPanel === "registry" && (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+              }}
+            >
+              <ModelRegistryPane />
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -186,6 +209,14 @@ export function ThreePanelLayout() {
             title="Show per-part colors"
           >
             Colors
+          </button>
+          <button
+            type="button"
+            style={showFilesBtn}
+            onClick={() => setCenterPanel("registry")}
+            title="Model registry (draft / in-use)"
+          >
+            Registry
           </button>
         </div>
       )}

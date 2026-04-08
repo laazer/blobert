@@ -65,6 +65,21 @@ export type AnimatedBuildControlDef =
       default: string;
     };
 
+/** One row under ``enemies[slug].versions`` (MRVC-2). */
+export type RegistryEnemyVersion = {
+  id: string;
+  path: string;
+  draft: boolean;
+  in_use: boolean;
+};
+
+/** GET /api/registry/model payload. */
+export type ModelRegistryPayload = {
+  schema_version: number;
+  enemies: Record<string, { versions: RegistryEnemyVersion[] }>;
+  player_active_visual: null | { path: string; draft: boolean };
+};
+
 /** GET /api/meta/enemies payload (enemies + procedural build controls per slug). */
 export type EnemyPreviewMeta = {
   enemies: AnimatedEnemyMeta[];
