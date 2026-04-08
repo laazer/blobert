@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://30mckk5v6ek0"]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/procedural_run.tscn" id="1_procedural_run"]
+
+[sub_resource type="Environment" id="Environment_overexposed_a"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 2.0
+
+[sub_resource type="Environment" id="Environment_overexposed_b"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 2.0
+
+[node name="CaptureOverexposedLighting" type="Node3D" unique_id=298541507]
+
+[node name="ProceduralRun" parent="." unique_id=1829499719 instance=ExtResource("1_procedural_run")]
+
+[node name="WorldEnvironmentA" type="WorldEnvironment" parent="." unique_id=1299741709]
+environment = SubResource("Environment_overexposed_a")
+
+[node name="WorldEnvironmentB" type="WorldEnvironment" parent="." unique_id=182680557]
+environment = SubResource("Environment_overexposed_b")
+
+[node name="DirectionalLightA" type="DirectionalLight3D" parent="." unique_id=1917927443]
+transform = Transform3D(0.966, -0.183, 0.183, 0, 0.707, 0.707, -0.259, -0.683, 0.683, 0, 16, 0)
+light_energy = 4.0
+shadow_enabled = true
+
+[node name="DirectionalLightB" type="DirectionalLight3D" parent="." unique_id=170206895]
+transform = Transform3D(0.5, -0.612, 0.612, 0, 0.707, 0.707, -0.866, -0.354, 0.354, 0, 16, 0)
+light_energy = 4.0
+shadow_enabled = true
+
+[node name="DirectionalLightC" type="DirectionalLight3D" parent="." unique_id=1920178444]
+transform = Transform3D(-0.5, -0.612, 0.612, 0, 0.707, 0.707, -0.866, 0.354, -0.354, 0, 16, 0)
+light_energy = 4.0
+shadow_enabled = true
