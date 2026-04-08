@@ -280,6 +280,68 @@ def setup_materials(enemy_finish: str = "default", enemy_hex_color: str = "") ->
     return materials
 
 
+def apply_feature_slot_overrides(slot_materials: dict, features: dict | None) -> dict:
+    """Re-create body/head/limbs/extra materials when ``features`` sets finish or hex overrides."""
+    if not features:
+        return slot_materials
+
+    all_colors = MaterialColors.get_all()
+    out = dict(slot_materials)
+
+    for slot_key, mat in list(out.items()):
+        if mat is None:
+            continue
+        slot_feat = features.get(slot_key)
+        if not isinstance(slot_feat, dict):
+            continue
+        finish = slot_feat.get("finish") or "default"
+        hex_str = (slot_feat.get("hex") or "").strip()
+        if finish == "default" and not hex_str:
+            continue
+
+        base_name = getattr(mat, "name", "") or ""
+        if "." in base_name:
+            base_name = base_name.rsplit(".", 1)[0]
+
+        base_color = all_colors.get(base_name)
+        if base_color is None:
+            base_color = (0.6, 0.5, 0.5, 1.0)
+
+        override_color = _parse_hex_color(hex_str) if hex_str else None
+        material_color = override_color if override_color is not None else base_color
+
+        finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+            finish,
+            ENEMY_FINISH_PRESETS["default"],
+        )
+        force_surface = finish != "default"
+        force_base_color = override_color is not None
+
+        is_metallic = base_name in MaterialCategories.METALLIC_SHADER
+        metallic = 0.8 if is_metallic else 0.0
+        roughness = 0.3 if is_metallic else 0.7
+        if finish_roughness is not None:
+            roughness = finish_roughness
+        if finish_metallic is not None:
+            metallic = finish_metallic
+        transmission = finish_transmission if finish_transmission is not None else 0.0
+        alpha = material_color[3] if len(material_color) > 3 else 1.0
+
+        new_name = f"{base_name}__feat_{slot_key}"
+        out[slot_key] = create_material(
+            new_name,
+            material_color,
+            metallic,
+            roughness,
+            alpha,
+            transmission,
+            add_texture=True,
+            force_surface=force_surface,
+            force_base_color=force_base_color,
+        )
+    return out
+
+
 def apply_material_to_object(obj, material) -> None:
     """Apply material to a mesh object"""
     if obj and obj.type == 'MESH' and material:

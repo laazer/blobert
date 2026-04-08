@@ -17,8 +17,27 @@ _PREV_LINE_OK = re.compile(
     re.IGNORECASE,
 )
 
-_EXEMPT_INTS = frozenset({-1, 0, 1, 2})
-_EXEMPT_FLOATS = frozenset({0.0, 1.0, -1.0, 2.0})
+# Wider than GDScript hook: small ints (indices, len checks) and common 0–1 tuning floats.
+_EXEMPT_INTS_PY = frozenset(range(-1, 11))
+_EXEMPT_FLOATS_PY = frozenset(
+    {
+        -1.0,
+        0.0,
+        0.05,
+        0.08,
+        0.12,
+        0.25,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.75,
+        0.8,
+        1.0,
+        2.0,
+    }
+)
 
 _NUM_RE = re.compile(
     r"(?<![.\w])"
@@ -109,9 +128,9 @@ def scan_py_added_line(line: str) -> List[str]:
             continue
         if math.isfinite(val) and val == int(val):
             iv = int(val)
-            if iv in _EXEMPT_INTS:
+            if iv in _EXEMPT_INTS_PY:
                 continue
-        elif any(math.isclose(val, e, rel_tol=0.0, abs_tol=1e-9) for e in _EXEMPT_FLOATS):
+        elif any(math.isclose(val, e, rel_tol=0.0, abs_tol=1e-9) for e in _EXEMPT_FLOATS_PY):
             continue
         hits.append(raw)
     return hits
