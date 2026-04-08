@@ -23,6 +23,9 @@ ENEMY_FINISH_PRESETS = {
     "gel": (0.08, 0.0, 0.35),
 }
 
+# Organic handler: keep base color near palette (was 0.3 multiply — too muddy in GLTF).
+_ORGANIC_BASE_COLOR_DETAIL_FAC = 0.12
+
 
 def _sanitize_hex_input(raw: str) -> str:
     s = "".join(c for c in str(raw or "").strip().lower() if c in "0123456789abcdef")
@@ -127,23 +130,16 @@ def add_organic_texture(mat, nodes, links, bsdf, base_color):
     mix = nodes.new(type='ShaderNodeMixRGB')
     mix.location = (-200, 0)
     mix.blend_type = 'MULTIPLY'
-    mix.inputs["Fac"].default_value = 0.3
+    mix.inputs["Fac"].default_value = _ORGANIC_BASE_COLOR_DETAIL_FAC
     mix.inputs["Color1"].default_value = base_color
 
     links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], mix.inputs["Color2"])
     links.new(mix.outputs["Color"], bsdf.inputs["Base Color"])
-    links.new(noise.outputs["Fac"], bsdf.inputs["Roughness"])
 
 
-def add_metallic_texture(mat, nodes, links, bsdf, base_color):
-    """Add metallic surface details"""
-    noise = nodes.new(type='ShaderNodeTexNoise')
-    noise.location = (-400, 0)
-    noise.inputs["Scale"].default_value = 50.0
-    noise.inputs["Detail"].default_value = 15.0
-
-    links.new(noise.outputs["Fac"], bsdf.inputs["Roughness"])
+def add_metallic_texture(_mat, _nodes, _links, bsdf, _base_color):
+    """Emphasize metal response without driving roughness from noise (PMCP-1)."""
     bsdf.inputs["Metallic"].default_value = 0.9
 
 

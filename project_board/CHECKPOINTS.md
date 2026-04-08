@@ -20,6 +20,23 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-08T18-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/03_procedural_material_and_color_pipeline_fixes.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-PMCP / run-2026-04-08-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/03_procedural_material_and_color_pipeline_fixes.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/M9-PMCP/run-2026-04-08-autopilot.md`
+
+### [M9-PMCP] — OUTCOME: COMPLETE
+Organic/metallic principled roughness no longer driven by full-range noise; subtler organic base-color mix; spec PMCP-*; tests `test_material_system_principled_pipeline.py` + import test for diff-cover; `run_tests.sh` green.
+Log: `project_board/checkpoints/M9-PMCP/run-2026-04-08-autopilot.md`
+
+---
+
 ## Run: 2026-04-08T14-00-00Z-autopilot-single
 - Queue mode: single ticket
 - Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/10_body_part_color_picker_limb_joint_hierarchy.md`

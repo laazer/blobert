@@ -4,6 +4,32 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-PMCP] — Procedural material pipeline + diff-cover on template module
+
+*Completed: 2026-04-08*
+
+### Learnings
+
+- category: testing
+  insight: Procedural shader helpers that only run inside Blender are still testable with thin fake `nodes`/`links` fakes; assert **absence** of socket links (e.g. no noise → Roughness) to lock PBR export contracts.
+  impact: `test_material_system_principled_pipeline.py` guards PMCP-1/2 without a real Blender binary.
+  prevention: When adding texture handlers, extend the fake-graph tests alongside `create_material` integration checks.
+  severity: medium
+
+- category: ci
+  insight: diff-cover aggregates **all** lines in `git diff` vs compare branch; a one-line `from __future__` in a reference module can sink the 85% gate if nothing imports that module in tests.
+  impact: Added `test_example_new_enemy_module_importable` to cover the template import path.
+  prevention: For doc/template `.py` files in `src/`, either exclude from coverage diff scope or add a one-shot import test when the file appears in PR diffs.
+  severity: low
+
+### Anti-Patterns
+
+- description: Driving Principled **Roughness** from raw noise `Fac` (0–1) while also setting a numeric roughness preset — the link wins, washing out intended PBR.
+  detection_signal: Exported GLB looks uniformly rough or ignores `ENEMY_FINISH_PRESETS` / per-type defaults.
+  prevention: Remove or remix roughness links; use `_force_principled_value` after handlers when finish overrides apply.
+
+---
+
 ## [M9-BPCLJH] — Body-part color hierarchy + diff-cover on mesh apply paths
 
 *Completed: 2026-04-08*
