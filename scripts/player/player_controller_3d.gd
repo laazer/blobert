@@ -37,7 +37,7 @@ const _RECALL_TRAVEL_TIME: float = 0.25
 const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
 
 var _mutation_slot: Object = null
-var _base_max_speed: float = 0.0
+var _base_max_speed: float = 5.0
 const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 
 var _fusion_timer: float = 0.0
@@ -187,7 +187,7 @@ func _physics_process(delta: float) -> void:
 
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
 		_current_state, input_axis, jump_pressed, jump_just_pressed,
-		is_on_wall_now, wall_normal_x, detach_just_pressed, delta, detach_2_just_pressed
+		is_on_wall_now, wall_normal_x, [detach_just_pressed, detach_2_just_pressed], delta
 	)
 
 	if next_state.jump_consumed and not _current_state.jump_consumed:

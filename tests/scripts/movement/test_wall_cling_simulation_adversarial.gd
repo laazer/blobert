@@ -61,13 +61,13 @@ func _make_state_with(vx: float, vy: float, on_floor: bool) -> MovementSimulatio
 	return s
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 1 — Diagonal wall_normal_x (±0.707, not ±1.0)
 #
 # Vulnerability: The spec only shows examples with wall_normal_x = ±1.0.
 # An implementation that hardcodes ±1.0 comparisons instead of evaluating
 # the formula (safe_axis * wall_normal_x) < 0.0 will fail these tests.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-001a: wall_normal_x=+0.707 (diagonal left wall), input_axis=-1.0
 # Product = -1.0 * 0.707 = -0.707 < 0.0 → pressing_toward_wall=true → cling eligible
@@ -82,7 +82,7 @@ func test_diagonal_wall_normal_positive_cling_eligible() -> void:
 	# is_on_wall=true, wall_normal_x=0.707 (wall to the left, normal points right-ish)
 	# input_axis=-1.0 (pressing left into that wall)
 	# product = -1.0 * 0.707 = -0.707 < 0.0 → pressing toward wall
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 0.707, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 0.707, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-001a — diagonal wall_normal_x=0.707, input_axis=-1.0: product=-0.707<0 → cling")
 
@@ -97,7 +97,7 @@ func test_diagonal_wall_normal_negative_cling_eligible() -> void:
 	prior.cling_timer = 0.0
 	# wall_normal_x=-0.707 (wall to the right, normal points left-ish)
 	# input_axis=1.0 (pressing right into that wall)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -0.707, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -0.707, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-001b — diagonal wall_normal_x=-0.707, input_axis=1.0: product=-0.707<0 → cling")
 
@@ -110,7 +110,7 @@ func test_diagonal_wall_normal_pressing_away_no_cling() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 0.707, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, 0.707, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-001c — diagonal wall_normal_x=0.707, input_axis=1.0: product=0.707>0 → no cling")
 
@@ -125,13 +125,13 @@ func test_diagonal_wall_jump_horizontal_component() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 0.707, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 0.707, [false, false], 0.016)
 	var expected_vx: float = 0.707 * 180.0  # = 127.26
 	_assert_approx(result.velocity.x, expected_vx,
 		"TB-WC-001d — diagonal wall jump: vx = 0.707 * 180.0 = 127.26")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 2 — wall_normal_x = NaN and Inf
 #
 # Vulnerability: An implementation that does not sanitize wall_normal_x will
@@ -139,7 +139,7 @@ func test_diagonal_wall_jump_horizontal_component() -> void:
 # result.velocity.x on wall jump, producing NaN/Inf output.
 # The spec does not explicitly describe NaN/Inf wall normals; the conservative
 # assumption is that NaN/Inf must not corrupt simulation output.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-002a: wall_normal_x = NaN, is_on_wall=true → must not produce NaN velocity
 # CHECKPOINT: The spec sanitizes input_axis for NaN but does not explicitly state
@@ -153,7 +153,7 @@ func test_nan_wall_normal_x_no_nan_output() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, NAN, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, NAN, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.x),
 		"TB-WC-002a — wall_normal_x=NaN: velocity.x must not be NaN")
 	_assert_true(not is_nan(result.velocity.y),
@@ -175,7 +175,7 @@ func test_inf_wall_normal_x_no_inf_output() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, INF, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, INF, [false, false], 0.016)
 	_assert_true(is_finite(result.velocity.x),
 		"TB-WC-002b — wall_normal_x=+Inf wall jump: velocity.x must be finite (not Inf)")
 	_assert_true(is_finite(result.velocity.y),
@@ -189,21 +189,21 @@ func test_neg_inf_wall_normal_x_no_inf_output() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -INF, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -INF, [false, false], 0.016)
 	_assert_true(is_finite(result.velocity.x),
 		"TB-WC-002c — wall_normal_x=-Inf wall jump: velocity.x must be finite (not -Inf)")
 	_assert_true(is_finite(result.velocity.y),
 		"TB-WC-002c — wall_normal_x=-Inf wall jump: velocity.y must be finite")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 3 — cling_gravity_scale negative or >1.0
 #
 # Vulnerability: The spec lists cling_gravity_scale=0.0 and cling_gravity_scale=1.0
 # as boundary values but does not test negative (anti-gravity cling) or values
 # above 1.0 (supergravity cling). An implementation that does not range-check the
 # config will apply anti-gravity or > normal gravity while clinging.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-003a: cling_gravity_scale = -0.1 (anti-gravity cling)
 # When clinging: gravity contribution = 980 * (-0.1) * 0.016 = -1.568
@@ -219,7 +219,7 @@ func test_negative_cling_gravity_scale_no_nan_output() -> void:
 	sim.cling_gravity_scale = -0.1
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(is_finite(result.velocity.y),
 		"TB-WC-003a — cling_gravity_scale=-0.1: velocity.y must be finite (not NaN/Inf)")
 	_assert_true(not is_nan(result.velocity.y),
@@ -239,7 +239,7 @@ func test_supergravity_cling_gravity_scale() -> void:
 	sim.cling_gravity_scale = 2.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-003b setup — cling active for supergravity test")
 	# cling_gravity_scale=2.0: vy = 0.0 + 980.0 * 2.0 * 0.016 = 31.36
@@ -258,7 +258,7 @@ func test_near_zero_cling_gravity_scale_applied_precisely() -> void:
 	sim.cling_gravity_scale = 0.0001
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-003c setup — cling active for near-zero scale test")
 	var expected_vy: float = 980.0 * 0.0001 * 0.016  # = 0.001568
@@ -266,13 +266,13 @@ func test_near_zero_cling_gravity_scale_applied_precisely() -> void:
 		"TB-WC-003c — cling_gravity_scale=0.0001: vy = 980*0.0001*0.016 = 0.001568 exactly")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 4 — max_cling_time very large (never expires)
 #
 # Vulnerability: A very large max_cling_time should allow cling to accumulate
 # without ever hitting the timer cap. An implementation that uses a short fixed
 # cap or overflows the float comparison would incorrectly block cling.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-004a: max_cling_time=1e10 (effectively infinite), cling_timer=0.0
 # After many frames, cling_timer should accumulate without hitting the cap.
@@ -288,7 +288,7 @@ func test_very_large_max_cling_time_cling_never_expires() -> void:
 	prior.cling_timer = 0.0
 
 	# Frame 1
-	var state1: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state1.is_wall_clinging,
 		"TB-WC-004a frame1 — max_cling_time=1e10: cling active on frame 1 (timer=0.016)")
 	_assert_approx(state1.cling_timer, 0.016,
@@ -298,7 +298,7 @@ func test_very_large_max_cling_time_cling_never_expires() -> void:
 	var prior2: MovementSimulation.MovementState = _make_state_with(state1.velocity.x, state1.velocity.y, false)
 	prior2.jump_consumed = false
 	prior2.cling_timer = state1.cling_timer
-	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state2.is_wall_clinging,
 		"TB-WC-004a frame2 — max_cling_time=1e10: cling still active on frame 2")
 	_assert_approx(state2.cling_timer, 0.032,
@@ -315,21 +315,21 @@ func test_very_large_max_cling_time_large_prior_timer_still_eligible() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 999.0  # large but still well below 1e10
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-004b — max_cling_time=1e10, prior timer=999.0: still eligible (999<1e10)")
 	_assert_approx(result.cling_timer, 999.016,
 		"TB-WC-004b — cling_timer = 999.0 + 0.016 = 999.016")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 5 — Simultaneous is_on_floor=true AND is_on_wall=true (corner case)
 #
 # SPEC-34: when floor and wall contact are simultaneous, floor takes priority.
 # is_on_floor=true blocks cling eligibility (SPEC-29 condition 2).
 # Vulnerability: an implementation that checks is_on_wall first before is_on_floor
 # could incorrectly enable cling on a grounded frame.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-005a: is_on_floor=true, is_on_wall=true, pressing toward wall → floor wins: no cling
 # CHECKPOINT: This is documented as SPEC-34 priority. The is_on_floor condition check
@@ -343,7 +343,7 @@ func test_floor_and_wall_simultaneously_floor_takes_priority() -> void:
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
 	# is_on_wall=true, pressing toward wall, but is_on_floor=true → not eligible
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-005a — floor+wall simultaneously: floor takes priority → no cling (SPEC-34)")
 	_assert_approx(result.cling_timer, 0.0,
@@ -360,7 +360,7 @@ func test_floor_and_wall_simultaneously_regular_jump_fires() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)  # on floor
 	prior.is_wall_clinging = true  # was clinging, now touching floor
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	var regular_jump_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	var wall_jump_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, regular_jump_vy,
@@ -379,12 +379,12 @@ func test_floor_and_wall_simultaneously_coyote_timer_resets() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)  # on floor
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_approx(result.coyote_timer, sim.coyote_time,
 		"TB-WC-005c — floor+wall: coyote_timer resets to coyote_time=0.1 (floor logic unaffected)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 6 — jump_just_pressed on first contact frame (prior.is_wall_clinging=false)
 #
 # SPEC-32: wall jump reads prior_state.is_wall_clinging, not current frame eligibility.
@@ -393,7 +393,7 @@ func test_floor_and_wall_simultaneously_coyote_timer_resets() -> void:
 # Vulnerability: an implementation that checks result.is_wall_clinging (current frame)
 # instead of prior_state.is_wall_clinging would fire wall jump on the very first frame
 # of contact, bypassing the "at least one confirmed cling frame" requirement.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-006a: First contact frame — jump_just_pressed=true, prior.is_wall_clinging=false
 # Wall jump must not fire. result.is_wall_clinging should be true (cling entered).
@@ -408,7 +408,7 @@ func test_first_contact_frame_no_wall_jump_only_cling_entry() -> void:
 	# All cling conditions met this frame (axis=-1, normal=1.0, on wall, not on floor,
 	# not consumed, timer=0.0 < max), AND jump_just_pressed=true.
 	# Wall jump must NOT fire (prior.is_wall_clinging=false fails condition).
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, true, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, true, true, 1.0, [false, false], 0.016)
 	var wall_jump_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	# vy must NOT be the wall jump impulse
 	_assert_true(abs(result.velocity.y - wall_jump_vy) > EPSILON,
@@ -434,7 +434,7 @@ func test_second_contact_frame_wall_jump_fires() -> void:
 	prior.is_wall_clinging = true  # established on frame 1
 	prior.cling_timer = 0.016  # one frame accumulated
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, 1.0, [false, false], 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 100.0) + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
 		"TB-WC-006b — second frame (prior.is_wall_clinging=true): wall jump fires correctly")
@@ -444,7 +444,7 @@ func test_second_contact_frame_wall_jump_fires() -> void:
 		"TB-WC-006b — second frame: is_wall_clinging=false after wall jump")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 7 — Rapid alternating wall contact: cling_timer reset behavior
 #
 # Vulnerability: If the implementation accumulates cling_timer without resetting
@@ -452,7 +452,7 @@ func test_second_contact_frame_wall_jump_fires() -> void:
 # forward stale accumulated time and incorrectly expire cling sooner.
 # SPEC-30: timer resets to 0.0 immediately when not eligible. On re-contact,
 # it should start fresh from 0.0 + delta.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-007a: Cling, leave wall, return to wall — timer starts fresh from 0.0
 # Frame 1: clinging, timer accumulates to 0.8
@@ -467,7 +467,7 @@ func test_cling_leave_wall_return_timer_resets_fresh() -> void:
 	var prior1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior1.jump_consumed = false
 	prior1.cling_timer = 0.8
-	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state1.is_wall_clinging,
 		"TB-WC-007a frame1 — clinging with prior timer=0.8 → still eligible")
 	_assert_approx(state1.cling_timer, 0.816,
@@ -478,7 +478,7 @@ func test_cling_leave_wall_return_timer_resets_fresh() -> void:
 	prior2.is_wall_clinging = state1.is_wall_clinging
 	prior2.cling_timer = state1.cling_timer  # = 0.816
 	prior2.jump_consumed = false
-	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, false, 1.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, false, 1.0, [false, false], 0.016)
 	_assert_false(state2.is_wall_clinging,
 		"TB-WC-007a frame2 — not on wall → cling exits")
 	_assert_approx(state2.cling_timer, 0.0,
@@ -489,7 +489,7 @@ func test_cling_leave_wall_return_timer_resets_fresh() -> void:
 	prior3.is_wall_clinging = state2.is_wall_clinging  # = false
 	prior3.cling_timer = state2.cling_timer  # = 0.0 (reset)
 	prior3.jump_consumed = false
-	var state3: MovementSimulation.MovementState = sim.simulate(prior3, -1.0, false, false, true, 1.0, false, 0.016)
+	var state3: MovementSimulation.MovementState = sim.simulate(prior3, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state3.is_wall_clinging,
 		"TB-WC-007a frame3 — returned to wall: cling re-enters")
 	_assert_approx(state3.cling_timer, 0.016,
@@ -511,7 +511,7 @@ func test_cling_expires_leaves_returns_timer_resets() -> void:
 	prior_off_wall.is_wall_clinging = false  # expired and left wall
 	prior_off_wall.jump_consumed = false
 	# Frame off wall: timer resets to 0.0
-	var state_off: MovementSimulation.MovementState = sim.simulate(prior_off_wall, 0.0, false, false, false, 1.0, false, 0.016)
+	var state_off: MovementSimulation.MovementState = sim.simulate(prior_off_wall, 0.0, false, false, false, 1.0, [false, false], 0.016)
 	_assert_approx(state_off.cling_timer, 0.0,
 		"TB-WC-007b off-wall — expired timer 1.5 resets to 0.0 when not on wall")
 
@@ -520,20 +520,20 @@ func test_cling_expires_leaves_returns_timer_resets() -> void:
 	prior_return.cling_timer = state_off.cling_timer  # = 0.0
 	prior_return.is_wall_clinging = false
 	prior_return.jump_consumed = false
-	var state_return: MovementSimulation.MovementState = sim.simulate(prior_return, -1.0, false, false, true, 1.0, false, 0.016)
+	var state_return: MovementSimulation.MovementState = sim.simulate(prior_return, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state_return.is_wall_clinging,
 		"TB-WC-007b return — after expiry+leave+return: fresh timer=0.0 < 1.5 → cling re-enters")
 	_assert_approx(state_return.cling_timer, 0.016,
 		"TB-WC-007b return — timer = 0.0 + 0.016 = 0.016 (fresh, not stale 1.5)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 8 — wall_jump_horizontal_speed = 0.0 (vertical-only wall jump)
 #
 # Vulnerability: An implementation that guards against zero speed (e.g., skips
 # horizontal assignment or adds a minimum) would produce non-zero vx.
 # SPEC-33: vx = wall_normal_x * wall_jump_horizontal_speed, so 0 speed → vx=0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-008a: wall_jump_horizontal_speed=0.0 → vx=0.0 on wall jump
 # CHECKPOINT: Spec does not restrict wall_jump_horizontal_speed to nonzero values.
@@ -546,7 +546,7 @@ func test_zero_wall_jump_horizontal_speed_vx_zero() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	_assert_approx(result.velocity.x, 0.0,
 		"TB-WC-008a — wall_jump_horizontal_speed=0.0: vx = -1.0 * 0.0 = 0.0 (vertical-only jump)")
 	# Vertical component must still apply correctly
@@ -569,20 +569,20 @@ func test_zero_wall_jump_speed_prior_vx_cleared_by_wall_jump() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)  # prior vx=100
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	# Wall jump fires → step 7 skipped → vx = 0.0 (not ~80.8 from friction formula)
 	_assert_approx(result.velocity.x, 0.0,
 		"TB-WC-008b — zero speed wall jump: step 7 skipped, prior vx=100 cleared, result.vx=0.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 9 — wall_jump_height negative (sqrt guard)
 #
 # Vulnerability: -sqrt(2 * gravity * negative_height) = -sqrt(negative) = NaN in GDScript.
 # The spec guards jump_height with "if jump_height > 0.0 else 0.0" (SPEC-16 note).
 # The wall_jump_height must be guarded analogously. Without the guard, a negative
 # wall_jump_height produces NaN velocity.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-009a: wall_jump_height = -50.0 → sqrt guard must fire → vy must not be NaN
 # CHECKPOINT: SPEC-26 states negative wall_jump_height is undefined behavior.
@@ -597,7 +597,7 @@ func test_negative_wall_jump_height_no_nan() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"TB-WC-009a — wall_jump_height=-50.0: velocity.y must not be NaN (sqrt guard required)")
 	_assert_true(is_finite(result.velocity.y),
@@ -616,14 +616,14 @@ func test_negative_wall_jump_height_produces_zero_impulse() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	# With guard: safe_wall_jump_height=0.0 → vy = -sqrt(0) + 980*0.016 = 0 + 15.68 = 15.68
 	# jump_pressed=true means jump cut does not apply (vy=15.68 > jump_cut_velocity=-200)
 	_assert_approx(result.velocity.y, 15.68,
 		"TB-WC-009b — wall_jump_height=-1.0: guard fires, vy = 0 + 980*0.016 = 15.68")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 10 — Very large cling_timer prior value that already exceeds max_cling_time
 #
 # SPEC-29: cling_timer < max_cling_time is evaluated against prior_state.cling_timer.
@@ -632,7 +632,7 @@ func test_negative_wall_jump_height_produces_zero_impulse() -> void:
 # Vulnerability: an implementation that only checks the timer on the first contact
 # frame, or that resets the timer before checking eligibility, could incorrectly
 # grant cling when the prior timer is already expired.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-010a: prior.cling_timer=100.0, max_cling_time=1.5 → 100.0 < 1.5 is false → blocked
 func test_prior_cling_timer_vastly_exceeds_max_immediately_blocked() -> void:
@@ -643,7 +643,7 @@ func test_prior_cling_timer_vastly_exceeds_max_immediately_blocked() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 100.0  # vastly exceeds max_cling_time=1.5
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-010a — prior.cling_timer=100.0 > max_cling_time=1.5: immediately blocked (not eligible)")
 	_assert_approx(result.cling_timer, 0.0,
@@ -659,7 +659,7 @@ func test_prior_cling_timer_just_over_max_blocked() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 1.5 + 0.0001  # just above max_cling_time=1.5
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-010b — prior.cling_timer=1.5001 > max=1.5: blocked (strict < boundary)")
 
@@ -674,18 +674,18 @@ func test_prior_cling_timer_just_under_max_still_eligible() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 1.5 - 0.0001  # just below max_cling_time=1.5
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-010c — prior.cling_timer=1.4999 < max=1.5: still eligible (strict < passes)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 11 — State immutability for all 6 MovementState fields under wall cling
 #
 # The primary suite checks is_wall_clinging, cling_timer, and velocity partially.
 # This group completes coverage by verifying velocity.x, is_on_floor, coyote_timer,
 # and jump_consumed are also not mutated under adversarial wall cling scenarios.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-011a: prior_state.velocity.x not mutated by a clinging simulate() call
 func test_prior_state_velocity_x_not_mutated_by_wall_cling() -> void:
@@ -695,7 +695,7 @@ func test_prior_state_velocity_x_not_mutated_by_wall_cling() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(75.0, 20.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_approx(prior.velocity.x, 75.0,
 		"TB-WC-011a — prior_state.velocity.x not mutated by cling simulate() (stays 75.0)")
 
@@ -708,7 +708,7 @@ func test_prior_state_velocity_y_not_mutated_on_wall_jump_frame() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 30.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	_assert_approx(prior.velocity.y, 30.0,
 		"TB-WC-011b — prior_state.velocity.y not mutated on wall jump frame (stays 30.0)")
 
@@ -720,7 +720,7 @@ func test_prior_state_is_on_floor_not_mutated_by_wall_cling() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)  # floor=false
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(prior.is_on_floor,
 		"TB-WC-011c — prior_state.is_on_floor not mutated by wall cling (stays false)")
 
@@ -734,7 +734,7 @@ func test_prior_state_coyote_timer_not_mutated_by_wall_cling() -> void:
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_approx(prior.coyote_timer, 0.05,
 		"TB-WC-011d — prior_state.coyote_timer not mutated by wall cling (stays 0.05)")
 
@@ -747,7 +747,7 @@ func test_prior_state_jump_consumed_not_mutated_on_wall_jump() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.is_wall_clinging = true
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, true, -1.0, [false, false], 0.016)
 	_assert_false(prior.jump_consumed,
 		"TB-WC-011e — prior_state.jump_consumed not mutated on wall jump (stays false)")
 
@@ -764,7 +764,7 @@ func test_prior_state_all_fields_immutable_comprehensive() -> void:
 	prior.jump_consumed = false
 	prior.coyote_timer = 0.05
 	prior.is_on_floor = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	# All fields must be unchanged
 	_assert_approx(prior.velocity.x, 50.0,
 		"TB-WC-011f — comprehensive: prior.velocity.x not mutated (stays 50.0)")
@@ -782,13 +782,13 @@ func test_prior_state_all_fields_immutable_comprehensive() -> void:
 		"TB-WC-011f — comprehensive: prior.cling_timer not mutated (stays 0.4)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 12 — Config mutation between frames
 #
 # Vulnerability: If the simulation caches config values at construction time
 # (e.g., captures cling_gravity_scale in a local during _init), mutations
 # between frames will silently be ignored.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-012a: cling_gravity_scale changes between frame 1 and frame 2
 # Frame 1: scale=0.1 → vy contribution = 980*0.1*0.016 = 1.568
@@ -804,7 +804,7 @@ func test_cling_gravity_scale_mutation_between_frames_takes_effect() -> void:
 	var prior1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior1.jump_consumed = false
 	prior1.cling_timer = 0.0
-	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_approx(state1.velocity.y, 980.0 * 0.1 * 0.016,
 		"TB-WC-012a frame1 — scale=0.1: vy = 980*0.1*0.016 = 1.568")
 
@@ -816,7 +816,7 @@ func test_cling_gravity_scale_mutation_between_frames_takes_effect() -> void:
 	prior2.is_wall_clinging = state1.is_wall_clinging
 	prior2.cling_timer = state1.cling_timer
 	prior2.jump_consumed = false
-	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	# With scale now 0.5: vy = 0.0 + 980*0.5*0.016 = 7.84
 	_assert_approx(state2.velocity.y, 980.0 * 0.5 * 0.016,
 		"TB-WC-012a frame2 — scale mutated to 0.5: vy = 980*0.5*0.016 = 7.84 (not 1.568)")
@@ -837,7 +837,7 @@ func test_max_cling_time_mutation_between_frames_expires_cling() -> void:
 	var prior1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior1.jump_consumed = false
 	prior1.cling_timer = 1.4
-	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(prior1, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state1.is_wall_clinging,
 		"TB-WC-012b frame1 — timer=1.4 < max=1.5: cling active")
 	_assert_approx(state1.cling_timer, 1.416,
@@ -851,7 +851,7 @@ func test_max_cling_time_mutation_between_frames_expires_cling() -> void:
 	prior2.is_wall_clinging = state1.is_wall_clinging
 	prior2.cling_timer = state1.cling_timer  # = 1.416
 	prior2.jump_consumed = false
-	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(prior2, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(state2.is_wall_clinging,
 		"TB-WC-012b frame2 — max_cling_time reduced to 1.0: timer=1.416 > 1.0 → cling expired")
 	_assert_approx(state2.cling_timer, 0.0,
@@ -872,7 +872,7 @@ func test_max_cling_time_mutation_extending_cap_enables_cling() -> void:
 	var prior_off: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_off.cling_timer = 0.6  # was expired under max=0.5
 	prior_off.jump_consumed = false
-	var state_off: MovementSimulation.MovementState = sim.simulate(prior_off, 0.0, false, false, false, 1.0, false, 0.016)
+	var state_off: MovementSimulation.MovementState = sim.simulate(prior_off, 0.0, false, false, false, 1.0, [false, false], 0.016)
 	_assert_approx(state_off.cling_timer, 0.0,
 		"TB-WC-012c off-wall — timer resets to 0.0")
 
@@ -884,14 +884,14 @@ func test_max_cling_time_mutation_extending_cap_enables_cling() -> void:
 	prior_return.cling_timer = state_off.cling_timer  # = 0.0
 	prior_return.jump_consumed = false
 	prior_return.is_wall_clinging = false
-	var state_return: MovementSimulation.MovementState = sim.simulate(prior_return, -1.0, false, false, true, 1.0, false, 0.016)
+	var state_return: MovementSimulation.MovementState = sim.simulate(prior_return, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_true(state_return.is_wall_clinging,
 		"TB-WC-012c — max_cling_time extended to 2.0: timer=0.0 < 2.0 → cling eligible")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GROUP 13 — Additional boundary combinations not in primary suite
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # TB-WC-013a: cling_timer exactly equal to max_cling_time (not just 1.5 == 1.5)
 # Test with a custom max_cling_time=0.5, prior.cling_timer=0.5 → 0.5 < 0.5 is false
@@ -905,7 +905,7 @@ func test_cling_timer_equals_custom_max_cling_time_blocked() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.5  # exactly equal to custom max
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-013a — custom max_cling_time=0.5, timer=0.5: 0.5<0.5 is false → blocked")
 
@@ -919,7 +919,7 @@ func test_near_zero_positive_wall_normal_x_still_clings() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 0.0001, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 0.0001, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-013b — wall_normal_x=0.0001, axis=-1.0: product=-0.0001<0 → pressing toward wall → cling")
 
@@ -931,7 +931,7 @@ func test_near_zero_negative_wall_normal_x_still_clings() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -0.0001, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, true, -0.0001, [false, false], 0.016)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-013c — wall_normal_x=-0.0001, axis=1.0: product=-0.0001<0 → pressing toward wall → cling")
 
@@ -950,7 +950,7 @@ func test_very_large_delta_cling_timer_increments_correctly() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 10.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 10.0)
 	# This frame: prior.cling_timer=0.0 < 1.5 → eligible (cling fires this frame)
 	_assert_true(result.is_wall_clinging,
 		"TB-WC-013d — large delta=10.0: eligible this frame (prior timer=0.0 < 1.5)")
@@ -968,14 +968,14 @@ func test_very_large_delta_second_frame_immediately_expired() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.jump_consumed = false
 	prior.cling_timer = 10.0  # accumulated from a large-delta frame
-	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, true, 1.0, [false, false], 0.016)
 	_assert_false(result.is_wall_clinging,
 		"TB-WC-013e — prior.cling_timer=10.0 > max=1.5: immediately expired on next frame")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_wall_cling_simulation_adversarial.gd ---")

@@ -36,7 +36,7 @@
 #   SPEC-46 — MovementState new field: has_chunk
 #   SPEC-47 — has_chunk default value semantics
 #   SPEC-48 — Detach step (step 17, final step): detach eligibility, result, order of operations
-#   SPEC-49 — simulate() extended 8-arg signature with detach_just_pressed
+#   SPEC-49 — simulate() 8-arg signature with detach_just_pressed_by_slot: Array
 #   SPEC-54 — MovementState new field: current_hp
 #   SPEC-55 — HP config vars: max_hp, hp_cost_per_detach, min_hp
 #   SPEC-56 — HP reduction step (step 18) on detach frames
@@ -47,7 +47,7 @@
 #   SPEC-SCL-1 — MovementState new field: has_chunks (replaces has_chunk_2)
 #   SPEC-SCL-2 — has_chunks default semantics; simulate() never sets has_chunks[i]=true
 #   SPEC-SCL-3 — Detach step 2 (step 19): detach_2 eligibility, result, order of operations
-#   SPEC-SCL-4 — simulate() extended 9-arg signature with detach_2_just_pressed as last arg
+#   SPEC-SCL-4 — per-slot detach via array indices (slot 2 = index 1); still 8 args total
 #   SPEC-SCL-5 — HP reduction step 2 (step 20) on detach_2 frames; reads result.current_hp
 #   SPEC-SCL-6 — Independence invariant: has_chunks[0] and has_chunks[1] are fully independent
 
@@ -81,6 +81,21 @@ class MovementState:
 	var is_wall_clinging: bool = false
 	var cling_timer: float = 0.0
 	var has_chunks: Array = [true, true]  # index 0 = slot 1, index 1 = slot 2
+	# Backward-compatible aliases used by older tests/call sites.
+	var has_chunk: bool:
+		get:
+			return bool(has_chunks[0]) if has_chunks.size() > 0 else false
+		set(value):
+			if has_chunks.size() < 1:
+				has_chunks.resize(1)
+			has_chunks[0] = bool(value)
+	var has_chunk_2: bool:
+		get:
+			return bool(has_chunks[1]) if has_chunks.size() > 1 else false
+		set(value):
+			if has_chunks.size() < 2:
+				has_chunks.resize(2)
+			has_chunks[1] = bool(value)
 	var current_hp: float = 100.0
 
 
@@ -98,7 +113,7 @@ class MovementState:
 ## Maximum horizontal speed in pixels per second.
 ## move_toward caps at this target naturally — no explicit clamp required,
 ## though the result is bounded by the target passed to move_toward.
-var max_speed: float = 200.0
+var max_speed: float = 300.0
 
 ## Rate of horizontal velocity increase toward max_speed when directional
 ## input is held, in pixels per second squared.
@@ -233,45 +248,27 @@ var min_hp: float = 0.0
 #  16.  (formerly step 15 — renumbered for clarity; same operation)
 #         Note: step 15 is the is_on_floor pass-through above; this comment
 #         block continues the sequence for the detach step below.
-#  17.  Chunk detach (SPEC-48):
-#         detach_eligible = detach_just_pressed AND prior_state.has_chunks[0]
-#         if detach_eligible → result.has_chunks[0] = false
-#         else → result.has_chunks[0] = prior_state.has_chunks[0] (carry-forward)
-#         Reads: detach_just_pressed, prior_state.has_chunks[0]
-#         Writes: result.has_chunks[0] only — no other fields affected
-#  18.  HP reduction on detach (SPEC-56):
-#         if detach_eligible →
-#             result.current_hp = max(min_hp, prior_state.current_hp - hp_cost_per_detach)
-#         else →
-#             result.current_hp = prior_state.current_hp
-#         Reads: detach_eligible, prior_state.current_hp, hp_cost_per_detach, min_hp
-#         Writes: result.current_hp only — no other fields affected
-#  19.  Chunk 2 detach (SPEC-SCL-3):
-#         detach_2_eligible = detach_2_just_pressed AND prior_state.has_chunks[1]
-#         if detach_2_eligible → result.has_chunks[1] = false
-#         else → result.has_chunks[1] = prior_state.has_chunks[1] (carry-forward)
-#         Reads: detach_2_just_pressed, prior_state.has_chunks[1]
-#         Writes: result.has_chunks[1] only — no other fields affected
-#         Independence: has_chunks[1] is fully independent of has_chunks[0] (SPEC-SCL-6)
-#  20.  HP reduction for chunk 2 detach (SPEC-SCL-5):
-#         if detach_2_eligible →
-#             result.current_hp = max(min_hp, result.current_hp - hp_cost_per_detach)
-#         else →
-#             result.current_hp = result.current_hp (no change from step 18 output)
-#         Reads: detach_2_eligible, result.current_hp (output of step 18), hp_cost_per_detach, min_hp
-#         Writes: result.current_hp only — no other fields affected
-#         Note: reads result.current_hp (not prior_state.current_hp) so dual-detach
-#         on the same frame produces cumulative HP reductions (SPEC-SCL-5 key detail).
+#  17–20. Chunk detach + HP (SPEC-48, SPEC-56, SPEC-SCL-3/5/6, N slots):
+#         For each index i: if detach_just_pressed_by_slot[i] AND prior_state.has_chunks[i],
+#         set result.has_chunks[i]=false and reduce HP from current result.current_hp.
+#         Slots are independent; multiple detaches on one frame stack HP reductions.
 #
 # AC-27.1: Exact signature.
-# AC-49.1: detach_just_pressed is position 7 (before delta).
-# SPEC-SCL-4: detach_2_just_pressed is position 9 (last, after delta); default=false
-#             preserves all existing 8-argument call sites.
+# AC-49.1: detach_just_pressed_by_slot is position 7 (before delta); Array length may be < N (missing = false).
 # AC-4.2:  Allocates and returns a new MovementState; prior_state is read-only.
 # AC-4.3:  result.is_on_floor == prior_state.is_on_floor (pass-through).
 # AC-4.4:  delta == 0.0 → no velocity change (from gravity/timer terms).
 # ---------------------------------------------------------------------------
-func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool, jump_just_pressed: bool, is_on_wall: bool, wall_normal_x: float, detach_just_pressed: bool, delta: float, detach_2_just_pressed: bool = false) -> MovementState:
+func simulate(
+	prior_state: MovementState,
+	input_axis: float,
+	jump_pressed: bool,
+	jump_just_pressed: bool,
+	is_on_wall: bool,
+	wall_normal_x: float,
+	detach_just_pressed_by_slot: Array,
+	delta: float
+) -> MovementState:
 	# --- 1. Sanitize delta ---
 	#
 	# Clamp delta to [0.0, +inf). Negative delta is undefined behavior per the
@@ -486,86 +483,20 @@ func simulate(prior_state: MovementState, input_axis: float, jump_pressed: bool,
 	# contact result back to _current_state after each physics frame.
 	result.is_on_floor = prior_state.is_on_floor
 
-	# --- 17. Chunk detach (SPEC-48) ---
-	#
-	# Appended as the final step after all physics steps are complete.
-	# detach_eligible requires both a fresh detach press AND the chunk still
-	# being attached. When prior_state.has_chunks[0] is already false, a detach
-	# press is a deterministic no-op — it does not error or re-detach.
-	#
-	# simulate() never sets result.has_chunks[0] = true. Only M1-007 (recall),
-	# executed by the controller, performs the false → true transition
-	# (SPEC-47). The array initializer (has_chunks: Array = [true, true]) provides
-	# the only true source at construction time.
-	#
-	# This step reads only: detach_just_pressed, prior_state.has_chunks[0]
-	# This step writes only: result.has_chunks[0]
-	# No velocity, timer, floor, or cling fields are read or written here.
-	var detach_eligible: bool = detach_just_pressed and prior_state.has_chunks[0]
-	if detach_eligible:
-		result.has_chunks[0] = false
-	else:
-		result.has_chunks[0] = prior_state.has_chunks[0]
+	# --- 17-20. Chunk detach + HP reduction (generalized N-slot path) ---
+	# simulate() never restores slots to true; recall logic owns false -> true.
+	result.has_chunks = prior_state.has_chunks.duplicate()
+	result.current_hp = prior_state.current_hp
 
-	# --- 18. HP reduction on detach (SPEC-56) ---
-	#
-	# Single-source HP reduction step. Uses the same detach_eligible flag
-	# computed above so HP reduction fires on exactly the same frames as the
-	# true→false has_chunk transition. Non-detach frames (including no-op
-	# detach presses when has_chunk is already false) carry current_hp forward
-	# exactly (SPEC-57).
-	#
-	# Formula (SPEC-56 / SPEC-58):
-	#   raw_hp = prior_state.current_hp - hp_cost_per_detach
-	#   result.current_hp = max(min_hp, raw_hp)
-	#
-	# max_hp is intentionally *not* applied here (SPEC-55.5); it is reserved
-	# for upper-bound clamping by recall or other systems.
-	if detach_eligible:
-		var raw_hp: float = prior_state.current_hp - hp_cost_per_detach
-		result.current_hp = max(min_hp, raw_hp)
-	else:
-		result.current_hp = prior_state.current_hp
+	var detach_inputs: Array = detach_just_pressed_by_slot
 
-	# --- 19. Chunk 2 detach (SPEC-SCL-3) ---
-	#
-	# Independent second-chunk detach step. Mirrors step 17 exactly but
-	# operates on has_chunks[1] and detach_2_just_pressed. The two chunk slots
-	# are strictly independent: no step reads has_chunks[0] to determine
-	# has_chunks[1] behavior or vice versa (SPEC-SCL-6).
-	#
-	# simulate() never sets result.has_chunks[1] = true. Only the controller
-	# (PlayerController3D) performs the false→true transition on recall
-	# completion (SPEC-SCL-2). The array initializer (has_chunks: Array = [true, true])
-	# provides the only true source at construction time.
-	#
-	# This step reads only: detach_2_just_pressed, prior_state.has_chunks[1]
-	# This step writes only: result.has_chunks[1]
-	var detach_2_eligible: bool = detach_2_just_pressed and prior_state.has_chunks[1]
-	if detach_2_eligible:
-		result.has_chunks[1] = false
-	else:
-		result.has_chunks[1] = prior_state.has_chunks[1]
-
-	# --- 20. HP reduction for chunk 2 detach (SPEC-SCL-5) ---
-	#
-	# Second HP reduction step, conditioned on detach_2_eligible. Reads
-	# result.current_hp (the output of step 18), NOT prior_state.current_hp.
-	# This is the critical ordering detail: if both chunks are detached on the
-	# same frame (dual-detach), the HP reductions are cumulative:
-	#   - Step 18: result.current_hp = max(min_hp, prior_hp - cost)
-	#   - Step 20: result.current_hp = max(min_hp, result.current_hp - cost)
-	# So dual-detach deducts 2*cost (subject to min_hp clamp at each step).
-	#
-	# Non-detach frames and no-op detach_2 presses (has_chunk_2 already false)
-	# leave result.current_hp unchanged from step 18's output.
-	#
-	# This step reads only: detach_2_eligible, result.current_hp, hp_cost_per_detach, min_hp
-	# This step writes only: result.current_hp
-	if detach_2_eligible:
-		var raw_hp_2: float = result.current_hp - hp_cost_per_detach
-		result.current_hp = max(min_hp, raw_hp_2)
-	else:
-		pass  # result.current_hp unchanged from step 18 output
+	for i in prior_state.has_chunks.size():
+		var detach_pressed: bool = false
+		if i < detach_inputs.size():
+			detach_pressed = bool(detach_inputs[i])
+		var slot_detach_eligible: bool = detach_pressed and bool(prior_state.has_chunks[i])
+		if slot_detach_eligible:
+			result.has_chunks[i] = false
+			result.current_hp = max(min_hp, result.current_hp - hp_cost_per_detach)
 
 	return result

@@ -51,7 +51,7 @@ func _make_state_with(vx: float, vy: float, on_floor: bool) -> MovementSimulatio
 	return s
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-001 — Simultaneous jump_just_pressed=true AND jump_pressed=false
 #
 # VULNERABILITY: The spec notes (SPEC-17 constraints) that jump_just_pressed=true
@@ -66,7 +66,7 @@ func _make_state_with(vx: float, vy: float, on_floor: bool) -> MovementSimulatio
 # frame. This mutation tests whether the implementation is order-sensitive to
 # jump_pressed vs jump_just_pressed when they disagree.
 # CHECKPOINT
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # Single-frame tap with jump_just_pressed=true but jump_pressed=false.
 # Jump eligibility condition: just_pressed=true, on_floor=true, not consumed → jump fires.
@@ -82,7 +82,7 @@ func test_j001_simultaneous_just_pressed_true_pressed_false_jump_then_cut() -> v
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
 	# jump_just_pressed=true (trigger), jump_pressed=false (not held this frame)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, [false, false], 0.016)
 	# Jump fires: impulse + gravity*delta = -sqrt(235200) + 15.68 ≈ -469.29
 	# Jump cut: jump_pressed=false AND -469.29 < -200.0 → clamp to -200.0
 	_assert_approx(result.velocity.y, -200.0,
@@ -92,7 +92,7 @@ func test_j001_simultaneous_just_pressed_true_pressed_false_jump_then_cut() -> v
 		"TB-J-001 — just_pressed=true + pressed=false: jump_consumed=true (jump did fire)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-002 — Normal hold: jump_just_pressed=true AND jump_pressed=true
 #
 # VULNERABILITY: This is the canonical correct call pattern. The adversarial
@@ -100,14 +100,14 @@ func test_j001_simultaneous_just_pressed_true_pressed_false_jump_then_cut() -> v
 # jump_pressed=true (e.g., by checking jump_just_pressed instead of jump_pressed
 # for the cut condition). This test confirms no cut occurs on the jump frame
 # when the button is held, and that the full impulse is reflected in the output.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j002_normal_hold_jump_pressed_and_just_pressed_both_true_no_cut() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
 	# Canonical jump: both pressed=true and just_pressed=true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	var expected: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	# jump_pressed=true → jump cut condition (NOT jump_pressed) is false → no clamp
 	_assert_approx(result.velocity.y, expected,
@@ -116,13 +116,13 @@ func test_j002_normal_hold_jump_pressed_and_just_pressed_both_true_no_cut() -> v
 		"TB-J-002 — both pressed=true + just_pressed=true: jump_consumed=true")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-002b — jump_just_pressed=true with jump_pressed=false at
 # coyote_cut_velocity boundary: verify cut clamps to exactly cut value.
 #
 # VULNERABILITY: Extends TB-J-001 with a custom jump_cut_velocity=-100.0
 # to confirm the cut uses self.jump_cut_velocity, not a hardcoded -200.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j002b_single_frame_tap_custom_cut_velocity_clamps_correctly() -> void:
 	# CHECKPOINT
@@ -131,13 +131,13 @@ func test_j002b_single_frame_tap_custom_cut_velocity_clamps_correctly() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
 	# just_pressed=true, pressed=false → jump fires then cut clamps at -100.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, [false, false], 0.016)
 	# impulse ≈ -484.97, +gravity ≈ -469.29; -469.29 < -100.0 → clamp to -100.0
 	_assert_approx(result.velocity.y, -100.0,
 		"TB-J-002b — custom cut_vel=-100: single-frame tap clamps to -100.0 not -200.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-003 — coyote_timer exactly equal to delta
 #
 # VULNERABILITY: When prior_state.coyote_timer == delta exactly, the decrement
@@ -146,7 +146,7 @@ func test_j002b_single_frame_tap_custom_cut_velocity_clamps_correctly() -> void:
 # An off-by-one implementation that uses result.coyote_timer instead of
 # prior_state.coyote_timer for the eligibility check would see 0.0 and block
 # the jump. This is the exact boundary the spec calls out in SPEC-19.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j003_coyote_timer_exactly_equals_delta_jump_still_fires() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -156,7 +156,7 @@ func test_j003_coyote_timer_exactly_equals_delta_jump_still_fires() -> void:
 	# But prior.coyote_timer = 0.016 > 0.0 → eligibility check should allow jump.
 	prior.coyote_timer = delta
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, delta)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], delta)
 	# Jump must fire because prior.coyote_timer=0.016 > 0
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * delta
 	_assert_approx(result.velocity.y, expected_vy,
@@ -168,14 +168,14 @@ func test_j003_coyote_timer_exactly_equals_delta_jump_still_fires() -> void:
 		"TB-J-003 — jump_consumed=true after coyote-timer-boundary jump")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-003b — coyote_timer slightly above delta (barely eligible)
 #
 # VULNERABILITY: A precision issue where the implementation might use strict
 # less-than vs less-than-or-equal in the decrement clamp. If coyote_timer is
 # delta+EPSILON, after decrement it should be EPSILON (still > 0). This
 # separate scenario ensures no rounding swallows the positive residual.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j003b_coyote_timer_slightly_above_delta_timer_decrements_to_positive() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -183,19 +183,19 @@ func test_j003b_coyote_timer_slightly_above_delta_timer_decrements_to_positive()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	# coyote_timer = delta + 0.001 → after decrement = 0.001 (positive, not zero)
 	prior.coyote_timer = delta + 0.001
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, delta)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], delta)
 	_assert_approx(result.coyote_timer, 0.001,
 		"TB-J-003b — coyote_timer=delta+0.001: decrements to 0.001, not clamped to zero")
 	_assert_true(result.coyote_timer > 0.0,
 		"TB-J-003b — result.coyote_timer > 0.0 (still positive residual)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-003c — coyote_timer slightly below delta (should reach exactly 0.0)
 #
 # VULNERABILITY: When coyote_timer < delta, max(0, timer - delta) should produce
 # exactly 0.0 (not a small negative). Confirms clamping is working.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j003c_coyote_timer_slightly_below_delta_clamped_to_zero() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -203,14 +203,14 @@ func test_j003c_coyote_timer_slightly_below_delta_clamped_to_zero() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	# coyote_timer = delta - 0.001 = 0.015. After decrement: max(0, 0.015-0.016) = max(0,-0.001) = 0.0
 	prior.coyote_timer = delta - 0.001
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, delta)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], delta)
 	_assert_approx(result.coyote_timer, 0.0,
 		"TB-J-003c — coyote_timer=delta-0.001: decrements and clamps to 0.0 (no negative)")
 	_assert_false(result.coyote_timer < 0.0,
 		"TB-J-003c — result.coyote_timer is not negative (clamp enforced)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-004 — Very large delta eating the entire coyote window at once
 #
 # VULNERABILITY: A very large delta (e.g., 1.0 second, a stutter frame or
@@ -219,14 +219,14 @@ func test_j003c_coyote_timer_slightly_below_delta_clamped_to_zero() -> void:
 # subtraction without the clamp, result.coyote_timer goes negative. This also
 # validates that jump_just_pressed=true on the same large-delta frame with a
 # timer of 0.1 still fires (prior.coyote_timer=0.1 > 0 even if delta=1.0).
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j004a_very_large_delta_clamps_coyote_timer_to_zero() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.1
 	# delta=1.0: max(0, 0.1 - 1.0) = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 1.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 1.0)
 	_assert_approx(result.coyote_timer, 0.0,
 		"TB-J-004a — delta=1.0 eats coyote window: result.coyote_timer = 0.0 (clamped)")
 	_assert_false(result.coyote_timer < 0.0,
@@ -241,7 +241,7 @@ func test_j004b_very_large_delta_jump_still_fires_from_prior_positive_coyote_tim
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.1
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 1.0)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 1.0)
 	# Impulse fires (prior.coyote_timer=0.1 > 0), gravity adds 980.0 * 1.0 = 980.0
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 1.0
 	_assert_approx(result.velocity.y, expected_vy,
@@ -250,7 +250,7 @@ func test_j004b_very_large_delta_jump_still_fires_from_prior_positive_coyote_tim
 		"TB-J-004b — result.coyote_timer clamped to 0.0 after large delta decrement")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-005 — jump_height = 0.0 (sqrt of zero)
 #
 # VULNERABILITY: jump_height=0.0 produces impulse = -sqrt(0.0) = 0.0.
@@ -259,14 +259,14 @@ func test_j004b_very_large_delta_jump_still_fires_from_prior_positive_coyote_tim
 # jump frame is from gravity. An implementation that special-cases jump_height=0
 # or hardcodes a minimum impulse would fail. Tests confirm: finite, not NaN,
 # and equals exactly gravity*delta (impulse=0 means prior.vy + gravity*delta).
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j005a_jump_height_zero_produces_zero_impulse_not_nan() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.jump_height = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"TB-J-005a — jump_height=0: velocity.y is not NaN")
 	_assert_true(is_finite(result.velocity.y),
@@ -278,7 +278,7 @@ func test_j005b_jump_height_zero_velocity_equals_gravity_only() -> void:
 	sim.jump_height = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# impulse = -sqrt(2.0 * 980.0 * 0.0) = 0.0; gravity adds 15.68; result = 0.0 + 15.68 = 15.68
 	# But jump cut: result.vy = 15.68, which is NOT < -200.0 → no clamp.
 	_assert_approx(result.velocity.y, 980.0 * 0.016,
@@ -293,12 +293,12 @@ func test_j005c_jump_height_zero_jump_consumed_still_set_true() -> void:
 	sim.jump_height = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_true(result.jump_consumed == true,
 		"TB-J-005c — jump_height=0: jump_consumed=true even though impulse was zero")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-006 — jump_height negative (sqrt of negative → NaN risk)
 #
 # VULNERABILITY: Negative jump_height is undefined behavior per SPEC-16
@@ -311,7 +311,7 @@ func test_j005c_jump_height_zero_jump_consumed_still_set_true() -> void:
 # jump_height is undefined behavior. The test would FAIL on an implementation
 # that passes sqrt(-1.0) directly through as NaN.
 # CHECKPOINT
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j006_negative_jump_height_velocity_y_is_finite_not_nan() -> void:
 	# CHECKPOINT
@@ -319,21 +319,21 @@ func test_j006_negative_jump_height_velocity_y_is_finite_not_nan() -> void:
 	sim.jump_height = -10.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"TB-J-006 — jump_height=-10: velocity.y must not be NaN (undefined but must not crash)")
 	_assert_true(is_finite(result.velocity.y),
 		"TB-J-006 — jump_height=-10: velocity.y must be finite (undefined but must not crash)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-007 — gravity=0.0 AND jump_height=0.0 (dual-zero case)
 #
 # VULNERABILITY: Both inputs to sqrt() multiply to zero: sqrt(0*0*0) = sqrt(0)=0.
 # This is a valid path (no NaN). But implementations that branch on "gravity > 0"
 # before computing impulse may skip the jump entirely or return an incorrect value.
 # Tests confirm finiteness and that the result is exactly 0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j007_gravity_zero_and_jump_height_zero_both_produce_zero_velocity_y() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -341,7 +341,7 @@ func test_j007_gravity_zero_and_jump_height_zero_both_produce_zero_velocity_y() 
 	sim.jump_height = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"TB-J-007 — gravity=0 + jump_height=0: velocity.y is not NaN")
 	_assert_true(is_finite(result.velocity.y),
@@ -350,7 +350,7 @@ func test_j007_gravity_zero_and_jump_height_zero_both_produce_zero_velocity_y() 
 		"TB-J-007 — gravity=0 + jump_height=0: velocity.y == 0.0 (sqrt(0)+0=0)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-008 — coyote_time=0.0: departure frame behavior
 #
 # VULNERABILITY: With coyote_time=0.0, on the departure frame (prior.is_on_floor=true),
@@ -359,14 +359,14 @@ func test_j007_gravity_zero_and_jump_height_zero_both_produce_zero_velocity_y() 
 # so coyote jumps are impossible. SPEC-16 risk R-16.3 documents this explicitly.
 # An implementation that resets to a hardcoded 0.1 instead of self.coyote_time
 # would incorrectly grant a coyote window even with coyote_time=0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j008a_coyote_time_zero_departure_frame_timer_resets_to_zero() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	sim.coyote_time = 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.coyote_timer = 0.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	# On floor → reset to coyote_time = 0.0
 	_assert_approx(result.coyote_timer, 0.0,
 		"TB-J-008a — coyote_time=0.0, on floor: result.coyote_timer = 0.0 (not 0.1)")
@@ -380,7 +380,7 @@ func test_j008b_coyote_time_zero_first_airborne_frame_no_coyote_jump() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.0
 	prior.jump_consumed = false
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# coyote_timer=0.0, not > 0.0 → no coyote jump. is_on_floor=false → no floor jump.
 	var expected_vy: float = 0.0 + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
@@ -389,7 +389,7 @@ func test_j008b_coyote_time_zero_first_airborne_frame_no_coyote_jump() -> void:
 		"TB-J-008b — coyote_time=0.0, no jump fired: jump_consumed stays false")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-009 — jump_cut_velocity=0.0: all ascending velocity cut to exactly 0
 #
 # VULNERABILITY: With jump_cut_velocity=0.0, the jump cut condition becomes:
@@ -398,7 +398,7 @@ func test_j008b_coyote_time_zero_first_airborne_frame_no_coyote_jump() -> void:
 # adversarial angle is: what if the velocity is exactly 0.0 after gravity?
 # The strict less-than means result.vy == 0.0 is NOT clamped (not < 0.0).
 # Also: what about very small negative values like -0.001 — they must be clamped.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j009a_jump_cut_velocity_zero_small_negative_vy_clamped() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -407,7 +407,7 @@ func test_j009a_jump_cut_velocity_zero_small_negative_vy_clamped() -> void:
 	# vy = -0.1, delta=0.016: -0.1 + 15.68 = 15.58 > 0 → not clamped.
 	# Try vy = -20.0, delta=0.016: -20 + 15.68 = -4.32 < 0.0 → clamped to 0.0
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -20.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(result.velocity.y, 0.0,
 		"TB-J-009a — jump_cut_velocity=0.0, vy=-20: after gravity=-4.32 < 0.0 → clamped to 0.0")
 
@@ -417,7 +417,7 @@ func test_j009b_jump_cut_velocity_zero_positive_vy_not_clamped() -> void:
 	sim.jump_cut_velocity = 0.0
 	# vy = 50.0: after gravity = 50 + 15.68 = 65.68 > 0.0 → NOT < 0.0 → no clamp
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 50.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(result.velocity.y, 65.68,
 		"TB-J-009b — jump_cut_velocity=0.0, falling vy=50: 65.68 > 0.0, no clamp")
 
@@ -428,13 +428,13 @@ func test_j009c_jump_cut_velocity_zero_exact_zero_after_gravity_not_clamped() ->
 	# We need vy such that vy + gravity*delta == 0.0 exactly.
 	# vy + 980.0 * 0.016 = 0.0 → vy = -15.68
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -15.68, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	# -15.68 + 15.68 = 0.0. 0.0 < 0.0 is false → no clamp. result.vy == 0.0
 	_assert_approx(result.velocity.y, 0.0,
 		"TB-J-009c — jump_cut_velocity=0.0, exact boundary vy=-15.68: 0.0 is NOT < 0.0, no clamp")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-010 — jump_cut_velocity positive (nonsensical config)
 #
 # VULNERABILITY: A positive jump_cut_velocity (e.g., 50.0) means the cut
@@ -445,7 +445,7 @@ func test_j009c_jump_cut_velocity_zero_exact_zero_after_gravity_not_clamped() ->
 # clamp assignment against the sign could produce unexpected results but must
 # remain numerically finite.
 # CHECKPOINT
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j010_jump_cut_velocity_positive_result_is_finite_not_nan() -> void:
 	# CHECKPOINT
@@ -453,7 +453,7 @@ func test_j010_jump_cut_velocity_positive_result_is_finite_not_nan() -> void:
 	sim.jump_cut_velocity = 50.0  # nonsensical: positive cut velocity
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -100.0, false)
 	# After gravity: -100 + 15.68 = -84.32. -84.32 < 50.0 is TRUE → clamp to 50.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(not is_nan(result.velocity.y),
 		"TB-J-010 — positive jump_cut_velocity=50: result.vy is not NaN")
 	_assert_true(is_finite(result.velocity.y),
@@ -469,14 +469,14 @@ func test_j010b_jump_cut_velocity_positive_falling_character_also_clamped() -> v
 	sim.jump_cut_velocity = 200.0  # nonsensical large positive
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 100.0, false)
 	# After gravity: 100 + 15.68 = 115.68. 115.68 < 200.0 → TRUE → clamp to 200.0
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(is_finite(result.velocity.y),
 		"TB-J-010b — positive cut_vel=200, falling vy=100: result.vy is finite")
 	_assert_approx(result.velocity.y, 200.0,
 		"TB-J-010b — positive cut_vel=200: 115.68 < 200.0 → clamped to 200.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-011 — Multiple consecutive simulate() calls with
 # jump_just_pressed=true: only the first frame fires
 #
@@ -485,7 +485,7 @@ func test_j010b_jump_cut_velocity_positive_falling_character_also_clamped() -> v
 # jump_just_pressed=true on multiple consecutive calls, the simulation's own
 # state machine (jump_consumed) must block the second jump. This multi-frame
 # sequence test validates the temporal logic of the consumed flag.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j011_second_consecutive_just_pressed_blocked_by_consumed() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -494,7 +494,7 @@ func test_j011_second_consecutive_just_pressed_blocked_by_consumed() -> void:
 	var state0: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	state0.jump_consumed = false
 	state0.coyote_timer = 0.0
-	var state1: MovementSimulation.MovementState = sim.simulate(state0, 0.0, true, true, false, 0.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(state0, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# Jump fires: state1.jump_consumed == true, state1.is_on_floor == true (pass-through)
 
 	# Frame 2: still appears "on floor" (pass-through), jump_just_pressed=true again.
@@ -502,7 +502,7 @@ func test_j011_second_consecutive_just_pressed_blocked_by_consumed() -> void:
 	# Step 6: eligibility reads prior_state.jump_consumed (which is TRUE) → NOT eligible.
 	# Jump does NOT fire. This confirms SPEC-18 eligibility uses prior_state.jump_consumed,
 	# not result.jump_consumed — so the step 5 reset does not enable a same-frame re-jump.
-	var state2: MovementSimulation.MovementState = sim.simulate(state1, 0.0, true, true, false, 0.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(state1, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# SPEC-18 uses prior_state.jump_consumed for eligibility — not result.jump_consumed.
 	# state1.jump_consumed=true → step 6 sees NOT true = false → jump blocked.
 	# result.velocity.y = state1.velocity.y + gravity*delta (gravity only, no impulse).
@@ -520,7 +520,7 @@ func test_j011b_second_just_pressed_while_airborne_blocked_by_consumed() -> void
 	# Frame 1: floor jump fires, player is now airborne (is_on_floor was true)
 	var state0: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	state0.jump_consumed = false
-	var state1: MovementSimulation.MovementState = sim.simulate(state0, 0.0, true, true, false, 0.0, false, 0.016)
+	var state1: MovementSimulation.MovementState = sim.simulate(state0, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# state1: jump_consumed=true, is_on_floor=true (pass-through of prior), vy ≈ -469.29
 
 	# Frame 2: player is now airborne (simulate with is_on_floor=false),
@@ -528,7 +528,7 @@ func test_j011b_second_just_pressed_while_airborne_blocked_by_consumed() -> void
 	var state1_airborne: MovementSimulation.MovementState = _make_state_with(0.0, state1.velocity.y, false)
 	state1_airborne.jump_consumed = state1.jump_consumed  # true
 	state1_airborne.coyote_timer = 0.0  # expired, no coyote
-	var state2: MovementSimulation.MovementState = sim.simulate(state1_airborne, 0.0, true, true, false, 0.0, false, 0.016)
+	var state2: MovementSimulation.MovementState = sim.simulate(state1_airborne, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# consumed=true, airborne, coyote=0 → no jump. velocity.y = prior.vy + gravity*delta
 	var expected_vy: float = state1.velocity.y + 980.0 * 0.016
 	_assert_approx(state2.velocity.y, expected_vy,
@@ -537,7 +537,7 @@ func test_j011b_second_just_pressed_while_airborne_blocked_by_consumed() -> void
 		"TB-J-011b — consumed stays true while airborne with no new jump")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-012 — Landing detection: is_on_floor transition false→true
 # resets jump_consumed on the LANDING FRAME
 #
@@ -548,14 +548,14 @@ func test_j011b_second_just_pressed_while_airborne_blocked_by_consumed() -> void
 # The adversarial concern: does consumed reset on the landing frame even if
 # jump_just_pressed=false? And does it reset even when consumed=true came from
 # a coyote jump (not a floor jump)?
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j012a_landing_frame_with_just_pressed_false_resets_consumed() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 5.0, true)
 	prior.jump_consumed = true  # Was airborne and jumped
 	# Landing frame: on_floor=true, no jump input
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_false(result.jump_consumed,
 		"TB-J-012a — landing frame (no input): jump_consumed resets to false")
 
@@ -565,7 +565,7 @@ func test_j012b_landing_frame_resets_consumed_even_after_coyote_jump() -> void:
 	# Simulate: player used a coyote jump, now consumed=true, then lands
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = true  # from a prior coyote jump
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_false(result.jump_consumed,
 		"TB-J-012b — landing after coyote jump: consumed resets to false on floor frame")
 
@@ -579,7 +579,7 @@ func test_j012c_landing_frame_consumed_reset_then_immediate_jump_blocked() -> vo
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = true
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# No jump: result.vy = prior.vy + gravity*delta = 0.0 + 15.68 = 15.68
 	var expected_vy: float = prior.velocity.y + 980.0 * 0.016
 	_assert_approx(result.velocity.y, expected_vy,
@@ -588,21 +588,21 @@ func test_j012c_landing_frame_consumed_reset_then_immediate_jump_blocked() -> vo
 		"TB-J-012c — after immediate re-jump on landing frame: consumed=true again")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-013 — State immutability: prior_state fields not mutated
 # under adversarial patterns
 #
 # VULNERABILITY: The primary suite tests immutability for specific scenarios.
 # The adversarial suite tests it under edge cases that might trigger
 # in-place mutation: coyote jump frame, large delta, jump cut, zero height.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j013a_prior_state_coyote_timer_not_mutated_on_coyote_jump_frame() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_approx(prior.coyote_timer, 0.05,
 		"TB-J-013a — prior.coyote_timer not mutated on coyote jump frame")
 
@@ -611,7 +611,7 @@ func test_j013b_prior_state_jump_consumed_not_mutated_after_landing_reset() -> v
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = true
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	# Result resets consumed to false, but prior must still be true
 	_assert_true(prior.jump_consumed == true,
 		"TB-J-013b — prior.jump_consumed not mutated even when result resets it to false")
@@ -622,7 +622,7 @@ func test_j013c_prior_state_velocity_not_mutated_on_jump_frame() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
 	var original_vy: float = prior.velocity.y
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_approx(prior.velocity.y, original_vy,
 		"TB-J-013c — prior.velocity.y not mutated by jump impulse in simulate()")
 
@@ -631,7 +631,7 @@ func test_j013d_prior_state_is_on_floor_not_mutated_during_jump_processing() -> 
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior.jump_consumed = false
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_true(prior.is_on_floor == true,
 		"TB-J-013d — prior.is_on_floor not mutated by simulate() even on jump frame")
 
@@ -643,14 +643,14 @@ func test_j013e_prior_state_not_mutated_with_very_large_delta() -> void:
 	prior.jump_consumed = false
 	var original_ct: float = prior.coyote_timer
 	var original_vy: float = prior.velocity.y
-	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, true, false, false, 0.0, false, 10.0)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, true, false, false, 0.0, [false, false], 10.0)
 	_assert_approx(prior.coyote_timer, original_ct,
 		"TB-J-013e — prior.coyote_timer not mutated with large delta=10.0")
 	_assert_approx(prior.velocity.y, original_vy,
 		"TB-J-013e — prior.velocity.y not mutated with large delta=10.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-014 — coyote_timer expires over multiple frames: jump blocked
 # after window exhausted
 #
@@ -658,7 +658,7 @@ func test_j013e_prior_state_not_mutated_with_very_large_delta() -> void:
 # then pressing jump after the coyote window expires. The multi-step scenario
 # ensures the timer correctly drains across frames and the jump is blocked on
 # the frame where the window has just closed.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -666,7 +666,7 @@ func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	# Frame 0: departure — prior.is_on_floor=true → result.coyote_timer=0.1
 	var s0: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	s0.jump_consumed = false
-	var s1: MovementSimulation.MovementState = sim.simulate(s0, 0.0, false, false, false, 0.0, false, 0.016)
+	var s1: MovementSimulation.MovementState = sim.simulate(s0, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(s1.coyote_timer, 0.1,
 		"TB-J-014 — departure frame: coyote_timer reset to 0.1")
 
@@ -676,7 +676,7 @@ func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	current.coyote_timer = s1.coyote_timer
 	current.jump_consumed = s1.jump_consumed
 	for i in range(6):
-		var next: MovementSimulation.MovementState = sim.simulate(current, 0.0, false, false, false, 0.0, false, 0.016)
+		var next: MovementSimulation.MovementState = sim.simulate(current, 0.0, false, false, false, 0.0, [false, false], 0.016)
 		current = _make_state_with(0.0, next.velocity.y, false)
 		current.coyote_timer = next.coyote_timer
 		current.jump_consumed = next.jump_consumed
@@ -684,7 +684,7 @@ func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	# After 6 frames: coyote_timer ≈ 0.004 (still > 0, so jump should fire)
 	_assert_true(current.coyote_timer > 0.0,
 		"TB-J-014 — after 6 frames: coyote_timer > 0 (barely eligible)")
-	var result_eligible: MovementSimulation.MovementState = sim.simulate(current, 0.0, true, true, false, 0.0, false, 0.016)
+	var result_eligible: MovementSimulation.MovementState = sim.simulate(current, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	var expected_vy: float = -sqrt(2.0 * 980.0 * 120.0) + 980.0 * 0.016
 	_assert_approx(result_eligible.velocity.y, expected_vy,
 		"TB-J-014 — coyote jump fires when timer barely > 0 after 6 airborne frames")
@@ -694,7 +694,7 @@ func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	var s_expired: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	s_expired.coyote_timer = 0.004
 	s_expired.jump_consumed = false
-	var s_after_expiry: MovementSimulation.MovementState = sim.simulate(s_expired, 0.0, false, false, false, 0.0, false, 0.016)
+	var s_after_expiry: MovementSimulation.MovementState = sim.simulate(s_expired, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(s_after_expiry.coyote_timer, 0.0,
 		"TB-J-014 — timer expires (0.004 - 0.016 = 0.0 clamped)")
 
@@ -702,32 +702,32 @@ func test_j014_coyote_window_expires_over_frames_jump_then_blocked() -> void:
 	var s_blocked: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	s_blocked.coyote_timer = 0.0
 	s_blocked.jump_consumed = false
-	var result_blocked: MovementSimulation.MovementState = sim.simulate(s_blocked, 0.0, true, true, false, 0.0, false, 0.016)
+	var result_blocked: MovementSimulation.MovementState = sim.simulate(s_blocked, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_approx(result_blocked.velocity.y, 0.0 + 980.0 * 0.016,
 		"TB-J-014 — jump blocked when coyote_timer=0.0 (expired window)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-015 — Config mutation between calls (coyote_time and jump_height)
 #
 # VULNERABILITY: Changing sim.coyote_time or sim.jump_height between calls must
 # take effect immediately on the next call. An implementation that caches these
 # values at initialization time (e.g., stored in a local variable in _init())
 # would miss the mutation. This mirrors the existing M1-001 TB-008 pattern.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j015a_coyote_time_mutation_takes_effect_immediately() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	# First call: default coyote_time=0.1 → on floor, timer resets to 0.1
 	var prior1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result1: MovementSimulation.MovementState = sim.simulate(prior1, 0.0, false, false, false, 0.0, false, 0.016)
+	var result1: MovementSimulation.MovementState = sim.simulate(prior1, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(result1.coyote_timer, 0.1,
 		"TB-J-015a — before mutation: on-floor reset gives coyote_timer=0.1")
 
 	# Mutate coyote_time after first call
 	sim.coyote_time = 0.25
 	var prior2: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result2: MovementSimulation.MovementState = sim.simulate(prior2, 0.0, false, false, false, 0.0, false, 0.016)
+	var result2: MovementSimulation.MovementState = sim.simulate(prior2, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(result2.coyote_timer, 0.25,
 		"TB-J-015a — after mutation to 0.25: on-floor reset gives coyote_timer=0.25")
 
@@ -737,14 +737,14 @@ func test_j015b_jump_height_mutation_takes_effect_immediately() -> void:
 	# First jump with default height
 	var prior1: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior1.jump_consumed = false
-	var result1: MovementSimulation.MovementState = sim.simulate(prior1, 0.0, true, true, false, 0.0, false, 0.0)
+	var result1: MovementSimulation.MovementState = sim.simulate(prior1, 0.0, true, true, false, 0.0, [false, false], 0.0)
 	var impulse1: float = result1.velocity.y  # delta=0 isolates impulse
 
 	# Mutate jump_height
 	sim.jump_height = 30.0
 	var prior2: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior2.jump_consumed = false
-	var result2: MovementSimulation.MovementState = sim.simulate(prior2, 0.0, true, true, false, 0.0, false, 0.0)
+	var result2: MovementSimulation.MovementState = sim.simulate(prior2, 0.0, true, true, false, 0.0, [false, false], 0.0)
 	var impulse2: float = result2.velocity.y
 	var expected_impulse2: float = -sqrt(2.0 * 980.0 * 30.0)
 
@@ -754,7 +754,7 @@ func test_j015b_jump_height_mutation_takes_effect_immediately() -> void:
 		"TB-J-015b — mutated jump_height produces different impulse than original")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-016 — Coyote jump sets jump_consumed=true, preventing immediate
 # re-jump even from coyote eligibility on the next frame
 #
@@ -763,7 +763,7 @@ func test_j015b_jump_height_mutation_takes_effect_immediately() -> void:
 # residually > 0 in prior result), the consumed flag must block a second
 # coyote jump. An implementation that forgets to check jump_consumed when
 # is_on_floor=false would allow a double-coyote-jump.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j016_coyote_jump_sets_consumed_blocks_second_coyote_attempt() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -772,7 +772,7 @@ func test_j016_coyote_jump_sets_consumed_blocks_second_coyote_attempt() -> void:
 	var s0: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	s0.coyote_timer = 0.05
 	s0.jump_consumed = false
-	var s1: MovementSimulation.MovementState = sim.simulate(s0, 0.0, true, true, false, 0.0, false, 0.016)
+	var s1: MovementSimulation.MovementState = sim.simulate(s0, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# Jump fires: s1.jump_consumed=true, s1.coyote_timer = max(0, 0.05-0.016) = 0.034
 	_assert_true(s1.jump_consumed == true,
 		"TB-J-016 — coyote jump frame: jump_consumed=true")
@@ -783,7 +783,7 @@ func test_j016_coyote_jump_sets_consumed_blocks_second_coyote_attempt() -> void:
 	var s1_carry: MovementSimulation.MovementState = _make_state_with(0.0, s1.velocity.y, false)
 	s1_carry.coyote_timer = s1.coyote_timer  # 0.034 > 0
 	s1_carry.jump_consumed = s1.jump_consumed  # true
-	var s2: MovementSimulation.MovementState = sim.simulate(s1_carry, 0.0, true, true, false, 0.0, false, 0.016)
+	var s2: MovementSimulation.MovementState = sim.simulate(s1_carry, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	# consumed=true blocks jump even with coyote_timer=0.034>0
 	var expected_vy: float = s1.velocity.y + 980.0 * 0.016
 	_assert_approx(s2.velocity.y, expected_vy,
@@ -792,7 +792,7 @@ func test_j016_coyote_jump_sets_consumed_blocks_second_coyote_attempt() -> void:
 		"TB-J-016 — consumed remains true in air after blocked second coyote attempt")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-017 — Determinism: identical adversarial inputs produce
 # identical outputs across multiple calls
 #
@@ -800,7 +800,7 @@ func test_j016_coyote_jump_sets_consumed_blocks_second_coyote_attempt() -> void:
 # that would cause different results for identical inputs called sequentially.
 # Especially relevant if any implementation accidentally stores frame-specific
 # scratch variables as instance fields.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j017_determinism_coyote_jump_scenario() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -808,8 +808,8 @@ func test_j017_determinism_coyote_jump_scenario() -> void:
 	prior.coyote_timer = 0.05
 	prior.jump_consumed = false
 
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, false, 0.016)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [false, false], 0.016)
 
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,
 		"TB-J-017 — determinism: coyote jump produces identical velocity.y on repeat calls")
@@ -824,14 +824,14 @@ func test_j017b_determinism_jump_cut_scenario() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, -450.0, false)
 	prior.jump_consumed = true
 
-	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
-	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	_assert_approx(result_a.velocity.y, result_b.velocity.y,
 		"TB-J-017b — determinism: jump cut produces identical velocity.y on repeat calls")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-018 — Negative coyote_time config: timer behavior
 #
 # VULNERABILITY: negative coyote_time is undefined behavior per spec. On the
@@ -840,7 +840,7 @@ func test_j017b_determinism_jump_cut_scenario() -> void:
 # and not NaN. Also: with a negative coyote_time reset, the airborne decrement
 # max(0.0, negative - delta) = 0.0, so it clamps immediately.
 # CHECKPOINT
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j018_negative_coyote_time_produces_finite_timer_no_coyote_window() -> void:
 	# CHECKPOINT
@@ -848,7 +848,7 @@ func test_j018_negative_coyote_time_produces_finite_timer_no_coyote_window() -> 
 	sim.coyote_time = -0.1  # negative: undefined behavior but must not crash
 	var prior_floor: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	prior_floor.jump_consumed = false
-	var result_floor: MovementSimulation.MovementState = sim.simulate(prior_floor, 0.0, false, false, false, 0.0, false, 0.016)
+	var result_floor: MovementSimulation.MovementState = sim.simulate(prior_floor, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(is_finite(result_floor.coyote_timer),
 		"TB-J-018 — negative coyote_time: result.coyote_timer is finite on floor frame")
 	# result.coyote_timer = coyote_time = -0.1 (negative). Not > 0.0 → no coyote window.
@@ -859,7 +859,7 @@ func test_j018_negative_coyote_time_produces_finite_timer_no_coyote_window() -> 
 	var prior_air: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
 	prior_air.coyote_timer = -0.1
 	prior_air.jump_consumed = false
-	var result_air: MovementSimulation.MovementState = sim.simulate(prior_air, 0.0, true, true, false, 0.0, false, 0.016)
+	var result_air: MovementSimulation.MovementState = sim.simulate(prior_air, 0.0, true, true, false, 0.0, [false, false], 0.016)
 	_assert_approx(result_air.coyote_timer, 0.0,
 		"TB-J-018 — negative timer, airborne: max(0, -0.1 - 0.016) = 0.0 (clamped)")
 	# No coyote jump: prior.coyote_timer = -0.1, which is NOT > 0.0
@@ -868,14 +868,14 @@ func test_j018_negative_coyote_time_produces_finite_timer_no_coyote_window() -> 
 		"TB-J-018 — negative coyote_timer in prior: no coyote jump (not > 0.0)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-019 — Jump with horizontal movement simultaneously
 #
 # VULNERABILITY: Confirms jump impulse is applied only to velocity.y and does
 # not accidentally interact with the horizontal velocity calculation. An
 # implementation that erroneously applies some impulse component to velocity.x
 # (e.g., from a copy-paste bug) would fail this test.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j019_horizontal_velocity_independent_of_jump_impulse() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -883,7 +883,7 @@ func test_j019_horizontal_velocity_independent_of_jump_impulse() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(200.0, 0.0, true)
 	prior.jump_consumed = false
 	# Full right input, jump held
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, true, true, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, true, true, false, 0.0, [false, false], 0.016)
 	# Horizontal: on_floor + input_axis=1.0, max_speed=200.0, acceleration=800.0
 	# step = acceleration * delta = 800 * 0.016 = 12.8. move_toward(200, 200, 12.8) = 200.0
 	_assert_approx(result.velocity.x, 200.0,
@@ -894,14 +894,14 @@ func test_j019_horizontal_velocity_independent_of_jump_impulse() -> void:
 		"TB-J-019 — vertical jump impulse unaffected by horizontal movement")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # [M1-002] TB-J-020 — Jump cut does not apply to horizontal velocity
 #
 # VULNERABILITY: The jump cut condition clamps result.velocity.y only. An
 # implementation with a copy-paste error might accidentally clamp velocity.x
 # using the same condition. This test confirms velocity.x is unchanged by
 # jump cut logic.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_j020_jump_cut_does_not_affect_velocity_x() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
@@ -909,7 +909,7 @@ func test_j020_jump_cut_does_not_affect_velocity_x() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(180.0, -450.0, false)
 	prior.jump_consumed = true
 	# jump_pressed=false → cut condition: -450+15.68=-434.32 < -200 → clamp vy to -200
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.016)
 	# Horizontal: airborne + input=1.0, air_decel=0.0, accel=800: step=12.8, target=200.0
 	# move_toward(180, 200, 12.8) = 192.8
 	_assert_approx(result.velocity.x, 192.8,
@@ -918,9 +918,9 @@ func test_j020_jump_cut_does_not_affect_velocity_x() -> void:
 		"TB-J-020 — jump cut clamps velocity.y to -200.0 as expected")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_jump_simulation_adversarial.gd ---")

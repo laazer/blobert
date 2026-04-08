@@ -56,8 +56,7 @@ func _make_state_with(vx: float, vy: float, on_floor: bool) -> MovementSimulatio
 
 
 # ---------------------------------------------------------------------------
-# Helper: call simulate() with 9 args (including detach_2_just_pressed as last).
-# This is the canonical call form for tests in this file.
+# Helper: canonical simulate() call for two chunk slots (detach per slot in array).
 # ---------------------------------------------------------------------------
 
 func _simulate_9(sim: MovementSimulation,
@@ -65,21 +64,19 @@ func _simulate_9(sim: MovementSimulation,
 		detach_just_pressed: bool,
 		detach_2_just_pressed: bool) -> MovementSimulation.MovementState:
 	# Args: prior, input_axis, jump_pressed, jump_just_pressed,
-	#        is_on_wall, wall_normal_x, detach_just_pressed, delta,
-	#        detach_2_just_pressed
-	return sim.simulate(prior, 0.0, false, false, false, 0.0,
-		detach_just_pressed, 0.016, detach_2_just_pressed)
+	#        is_on_wall, wall_normal_x, detach_just_pressed_by_slot, delta
+	return sim.simulate(prior, 0.0, false, false, false, 0.0, [detach_just_pressed, detach_2_just_pressed], 0.016)
 
 
-# Helper: call simulate() with 8 args (existing call sites).
+# Helper: no detach presses on either slot.
 func _simulate_8(sim: MovementSimulation,
 		prior: MovementSimulation.MovementState) -> MovementSimulation.MovementState:
-	return sim.simulate(prior, 0.0, false, false, false, 0.0, false, 0.016)
+	return sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-1 — MovementState.has_chunk_2 field declaration and default
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-1.1: MovementState.new() produces has_chunk_2 == true (default value).
 func test_scl1_has_chunk_2_default_is_true() -> void:
@@ -124,9 +121,9 @@ func test_scl1_both_chunk_fields_default_true() -> void:
 		"spec-scl-1/AC-1.5b — has_chunk_2 defaults true independently")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-2 — simulate() never sets has_chunk_2 = true (carry-forward only)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-2.1: simulate() does not mutate prior_state.has_chunk_2 when it is true.
 func test_scl2_prior_state_has_chunk_2_not_mutated_when_true() -> void:
@@ -184,9 +181,9 @@ func test_scl2_simulate_never_sets_has_chunk_2_true_any_input() -> void:
 		"spec-scl-2/AC-2.4b — has_chunk_2=false + detach_2=true: stays false (no recall in simulate)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-3 — Detach step 2 (step 19): condition, result, and no-ops
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-3.1: detach_2 fires when detach_2_just_pressed=true AND prior.has_chunk_2=true.
 # Result: result.has_chunk_2 == false.
@@ -281,9 +278,9 @@ func test_scl3_has_chunk_2_carry_forward_false_multiple_frames() -> void:
 		"spec-scl-3/AC-3.6c — false carry-forward frame 3")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-4 — simulate() 9-argument signature
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-4.1: 9-arg simulate() call succeeds and returns a non-null result.
 # This verifies the 9th arg is accepted without parse/runtime error.
@@ -293,8 +290,7 @@ func test_scl4_nine_arg_signature_callable() -> void:
 	# Full 9-arg call: prior, input_axis, jump_pressed, jump_just_pressed,
 	#                  is_on_wall, wall_normal_x, detach_just_pressed, delta,
 	#                  detach_2_just_pressed
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, false)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(result != null,
 		"spec-scl-4/AC-4.1 — 9-arg simulate() call succeeds and returns non-null")
 
@@ -305,8 +301,7 @@ func test_scl4_eight_arg_call_still_works_with_default() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state()
 	# 8-arg call — omits detach_2_just_pressed, which defaults to false
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(result != null,
 		"spec-scl-4/AC-4.2a — 8-arg simulate() still works (backward compat)")
 	# With detach_2_just_pressed defaulting to false, has_chunk_2 must carry forward
@@ -321,8 +316,7 @@ func test_scl4_detach_2_just_pressed_is_ninth_positional_arg() -> void:
 	var prior: MovementSimulation.MovementState = _make_state()
 	prior.has_chunk_2 = true
 	# 9-arg call with detach_2_just_pressed=true in position 9 (after delta=0.016)
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, true], 0.016)
 	_assert_false(result.has_chunk_2,
 		"spec-scl-4/AC-4.3 — detach_2_just_pressed=true as 9th arg causes detach_2 to fire")
 
@@ -333,8 +327,7 @@ func test_scl4_eight_arg_call_no_detach_2_side_effect() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state()
 	prior.has_chunk_2 = false
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_false(result.has_chunk_2,
 		"spec-scl-4/AC-4.4 — 8-arg call: has_chunk_2=false carries forward (no accidental detach)")
 
@@ -346,18 +339,16 @@ func test_scl4_nine_arg_false_matches_eight_arg_default() -> void:
 	var prior: MovementSimulation.MovementState = _make_state()
 	prior.has_chunk_2 = true
 
-	var result_8: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
-	var result_9: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, false)
+	var result_8: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
+	var result_9: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	_assert_true(result_8.has_chunk_2 == result_9.has_chunk_2,
 		"spec-scl-4/AC-4.5 — 8-arg and 9-arg(false) produce identical has_chunk_2")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-5 — HP reduction on detach_2 (step 20)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-5.1: Detaching chunk 2 reduces HP by hp_cost_per_detach.
 # Default: prior_hp=100.0, cost=25.0 → result.current_hp=75.0
@@ -423,8 +414,7 @@ func test_scl5_dual_detach_same_frame_hp_cumulative() -> void:
 	prior.has_chunk_2 = true
 	prior.current_hp = 100.0
 	# Both detach_just_pressed=true AND detach_2_just_pressed=true on same frame
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result.has_chunk,
 		"spec-scl-5/AC-5.5a — dual detach: has_chunk=false")
 	_assert_false(result.has_chunk_2,
@@ -443,8 +433,7 @@ func test_scl5_dual_detach_hp_floor_clamp_on_second_reduction() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = true
 	prior.current_hp = 20.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_approx(result.current_hp, 0.0,
 		"spec-scl-5/AC-5.6 — dual detach floor clamp: 20→(20-25→0)→(0-25→0) = 0.0")
 
@@ -460,8 +449,7 @@ func test_scl5_detach_chunk_1_only_hp_reduced_once() -> void:
 	prior.has_chunk_2 = true
 	prior.current_hp = 100.0
 	# Only chunk 1 detach (detach_2_just_pressed=false, so step 20 is no-op)
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, false)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 	_assert_false(result.has_chunk,
 		"spec-scl-5/AC-5.7a — chunk 1 detached")
 	_assert_true(result.has_chunk_2 == true,
@@ -481,8 +469,7 @@ func test_scl5_detach_chunk_2_only_hp_reduced_once() -> void:
 	prior.has_chunk_2 = true
 	prior.current_hp = 100.0
 	# Only chunk 2 detach
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, true], 0.016)
 	_assert_true(result.has_chunk == true,
 		"spec-scl-5/AC-5.8a — chunk 1 still attached")
 	_assert_false(result.has_chunk_2,
@@ -491,9 +478,9 @@ func test_scl5_detach_chunk_2_only_hp_reduced_once() -> void:
 		"spec-scl-5/AC-5.8c — HP reduced once for chunk 2 only (100→75)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # SPEC-SCL-6 — Independence invariant: has_chunk and has_chunk_2 are orthogonal
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # AC-SCL-6.1: has_chunk=true, has_chunk_2=true (start state) — both carry forward.
 func test_scl6_independence_both_true_carry_forward() -> void:
@@ -601,9 +588,9 @@ func test_scl6_detach_chunk_1_when_chunk_2_already_detached() -> void:
 		"spec-scl-6/AC-6.8b — has_chunk_2 stays false when detaching chunk 1")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # has_chunk_2 carry-forward across multiple frames (cross-spec)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # Multi-frame carry-forward: has_chunk_2 persists false across several frames
 # when no detach is pressed, showing stable state tracking across ticks.
@@ -642,9 +629,9 @@ func test_carry_forward_has_chunk_2_true_across_frames_no_detach() -> void:
 		"carry-fwd — 5 frames with no detach: has_chunk_2 remains true throughout")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Non-functional: engine agnosticism (SPEC-SCL-9)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # simulate() with 9 args completes headlessly without engine API access.
 # Exercises both the detach_2=true and detach_2=false code paths.
@@ -652,10 +639,8 @@ func test_nf_simulate_9_arg_is_engine_agnostic() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state()
 
-	var result_with_detach_2: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, true)
-	var result_without_detach_2: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016, false)
+	var result_with_detach_2: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, true], 0.016)
+	var result_without_detach_2: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	_assert_true(result_with_detach_2 != null,
 		"nf — 9-arg simulate(detach_2=true) completes headlessly")
@@ -663,9 +648,9 @@ func test_nf_simulate_9_arg_is_engine_agnostic() -> void:
 		"nf — 9-arg simulate(detach_2=false) completes headlessly")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Determinism
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # Identical 9-arg inputs must produce identical has_chunk_2 output.
 func test_determinism_has_chunk_2_identical_inputs() -> void:
@@ -673,10 +658,8 @@ func test_determinism_has_chunk_2_identical_inputs() -> void:
 	var prior: MovementSimulation.MovementState = _make_state_with(50.0, -100.0, false)
 	prior.has_chunk_2 = true
 
-	var result_a: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.5, true, false, false, 0.0, false, 0.02, true)
-	var result_b: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.5, true, false, false, 0.0, false, 0.02, true)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.5, true, false, false, 0.0, [false, true], 0.02)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.5, true, false, false, 0.0, [false, true], 0.02)
 	_assert_true(result_a.has_chunk_2 == result_b.has_chunk_2,
 		"determinism — identical 9-arg inputs produce identical has_chunk_2 output")
 
@@ -689,10 +672,8 @@ func test_determinism_dual_detach_same_frame() -> void:
 	prior.has_chunk_2 = true
 	prior.current_hp = 100.0
 
-	var result_a: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
-	var result_b: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result_a: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
+	var result_b: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 
 	_assert_true(result_a.has_chunk == result_b.has_chunk,
 		"determinism — dual detach: has_chunk identical across runs")
@@ -701,10 +682,34 @@ func test_determinism_dual_detach_same_frame() -> void:
 	_assert_approx(result_a.current_hp, result_b.current_hp,
 		"determinism — dual detach: current_hp identical across runs")
 
+# N-slot coverage: simulate supports chunk arrays longer than two slots.
+func test_n_chunk_detach_sparse_inputs() -> void:
+	var sim: MovementSimulation = MovementSimulation.new()
+	sim.hp_cost_per_detach = 10.0
+	sim.min_hp = 0.0
+	var prior: MovementSimulation.MovementState = _make_state()
+	prior.has_chunks = [true, true, true, false, true]
+	prior.current_hp = 100.0
+	var result: MovementSimulation.MovementState = sim.simulate(
+		prior, 0.0, false, false, false, 0.0, [false, true, false, true, true], 0.016
+	)
+	_assert_true(result.has_chunks[0] == true,
+		"n-chunk — slot0 unchanged when input false")
+	_assert_false(result.has_chunks[1],
+		"n-chunk — slot1 detached when input true")
+	_assert_true(result.has_chunks[2] == true,
+		"n-chunk — slot2 unchanged when input false")
+	_assert_false(result.has_chunks[3],
+		"n-chunk — slot3 stays false (cannot detach twice)")
+	_assert_false(result.has_chunks[4],
+		"n-chunk — slot4 detached when input true")
+	_assert_approx(result.current_hp, 80.0,
+		"n-chunk — HP reduced once per successful detach (2 * 10)")
 
-# ===========================================================================
+
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_second_chunk_simulation.gd ---")
@@ -769,6 +774,7 @@ func run_all() -> int:
 	# Determinism
 	test_determinism_has_chunk_2_identical_inputs()
 	test_determinism_dual_detach_same_frame()
+	test_n_chunk_detach_sparse_inputs()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

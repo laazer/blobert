@@ -119,7 +119,7 @@ func _make_clinging(cling_timer_val: float) -> MovementSimulation.MovementState:
 	return s
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-01 — All 9 MovementState fields verified on a single detach frame
 #
 # Vulnerability: the primary suite verifies current_hp and has_chunk in
@@ -128,7 +128,7 @@ func _make_clinging(cling_timer_val: float) -> MovementSimulation.MovementState:
 # state (non-zero velocity, active coyote window, jump_consumed=true, custom
 # current_hp) and verifies every field of the result independently.
 # AC-56.3 (same frame), AC-56.4 (no other fields affected), AC-54.2 (9 fields)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap01_all_9_fields_on_detach_frame() -> void:
 	# AC-56.3, AC-56.4 — All 9 MovementState fields on a single detach frame.
@@ -148,8 +148,7 @@ func test_gap01_all_9_fields_on_detach_frame() -> void:
 
 	# Detach fires: has_chunk=true + detach_just_pressed=true.
 	# jump_consumed=true means no jump path fires; no wall cling active.
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 1.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# --- Field 9 (new): current_hp ---
 	# Formula: max(0.0, 80.0 - 25.0) = 55.0
@@ -198,7 +197,7 @@ func test_gap01_all_9_fields_on_detach_frame() -> void:
 		"gap01 — field7: cling_timer=0.0 (cling not eligible)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-02 — HP + regular jump same frame
 #
 # Vulnerability: The primary suite confirms HP reduction on a detach frame,
@@ -208,7 +207,7 @@ func test_gap01_all_9_fields_on_detach_frame() -> void:
 # results when the jump branch clears or modifies state fields. This test
 # verifies: jump impulse is correct AND HP is reduced on the same call.
 # AC-56.3 (same frame as detach), AC-56.4 (non-HP fields unaffected by HP step)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap02_hp_plus_regular_jump_same_frame() -> void:
 	# AC-56.3 — HP + jump fire simultaneously; both results correct.
@@ -221,8 +220,7 @@ func test_gap02_hp_plus_regular_jump_same_frame() -> void:
 	prior.current_hp = 100.0  # AC-60.4
 
 	# jump_just_pressed=true + detach_just_pressed=true simultaneously.
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, true, true, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, true, true, false, 0.0, [true, false], 0.016)
 
 	# HP reduction must have fired:
 	_assert_exact(result.current_hp, 75.0,
@@ -243,14 +241,14 @@ func test_gap02_hp_plus_regular_jump_same_frame() -> void:
 		"gap02 — jump_consumed=true after regular jump on detach frame")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-03 — HP + wall jump same frame
 #
 # Vulnerability: Wall jump skips the horizontal formula (step 12). An
 # implementation that conflates the wall jump branch exit with early return
 # could skip step 18. This test fires wall jump + detach simultaneously.
 # AC-56.3, AC-56.4
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap03_hp_plus_wall_jump_same_frame() -> void:
 	# AC-56.3 — Wall jump fires AND HP reduces on the same simulate() call.
@@ -267,8 +265,7 @@ func test_gap03_hp_plus_wall_jump_same_frame() -> void:
 	# jump_pressed=true so jump cut does not fire and clamp the impulse.
 	# detach_just_pressed=true simultaneously.
 	# is_on_wall=true (stay on wall), wall_normal_x=1.0 (wall on left → normal points right).
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, -1.0, true, true, true, 1.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, true, true, true, 1.0, [true, false], 0.016)
 
 	# HP reduction must have fired:
 	_assert_exact(result.current_hp, 75.0,
@@ -287,7 +284,7 @@ func test_gap03_hp_plus_wall_jump_same_frame() -> void:
 		"gap03 — wall jump vertical impulse correct on detach frame")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-04 — HP reduction during active wall cling: cling fields carry forward
 #
 # Vulnerability: Step 18 writes result.current_hp. An implementation that
@@ -295,7 +292,7 @@ func test_gap03_hp_plus_wall_jump_same_frame() -> void:
 # in step 18 would corrupt the carry-forward of those fields. Differential test:
 # detach + cling vs. no-detach + cling — all non-HP cling fields must be equal.
 # AC-56.4 (no other fields affected), SPEC-57 (carry-forward path)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap04_hp_reduction_during_active_wall_cling() -> void:
 	# AC-56.4 — HP reduction does not disturb cling fields.
@@ -304,14 +301,12 @@ func test_gap04_hp_reduction_during_active_wall_cling() -> void:
 	# Reference: active cling, no detach.
 	var prior_ref: MovementSimulation.MovementState = _make_clinging(0.3)
 	prior_ref.current_hp = 100.0  # AC-60.4
-	var result_ref: MovementSimulation.MovementState = sim.simulate(
-		prior_ref, -1.0, false, false, true, 1.0, false, 0.016)
+	var result_ref: MovementSimulation.MovementState = sim.simulate(prior_ref, -1.0, false, false, true, 1.0, [false, false], 0.016)
 
 	# Detach variant: identical state, only detach_just_pressed=true.
 	var prior_det: MovementSimulation.MovementState = _make_clinging(0.3)
 	prior_det.current_hp = 100.0  # AC-60.4
-	var result_det: MovementSimulation.MovementState = sim.simulate(
-		prior_det, -1.0, false, false, true, 1.0, true, 0.016)
+	var result_det: MovementSimulation.MovementState = sim.simulate(prior_det, -1.0, false, false, true, 1.0, [true, false], 0.016)
 
 	# HP must differ (detach reduces it).
 	_assert_exact(result_det.current_hp, 75.0,
@@ -328,7 +323,7 @@ func test_gap04_hp_reduction_during_active_wall_cling() -> void:
 		"gap04 — velocity.y identical (cling gravity) between detach and no-detach")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-05 — HP at hp_cost_per_detach - epsilon (just above cost boundary)
 #
 # Vulnerability: An off-by-one implementation might clamp to min_hp when the
@@ -336,7 +331,7 @@ func test_gap04_hp_reduction_during_active_wall_cling() -> void:
 # cost (cost=25.0, prior_hp=25.0 + EPSILON). The subtraction result is EPSILON
 # (> 0.0 = min_hp), so NO clamp should apply.
 # AC-58.1 (subtraction result >= min_hp → no clamp)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap05_hp_just_above_cost_boundary() -> void:
 	# AC-58.1 — Subtraction result just above 0.0; floor clamp must NOT fire.
@@ -349,8 +344,7 @@ func test_gap05_hp_just_above_cost_boundary() -> void:
 	# prior_hp = 25.0 + EPSILON: subtraction = EPSILON > 0.0 = min_hp → no clamp.
 	prior.current_hp = 25.0 + EPSILON  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# result = max(0.0, (25.0 + EPSILON) - 25.0) = max(0.0, EPSILON) = EPSILON
 	# Must be > 0.0 and approximately EPSILON (not clamped to 0.0).
@@ -360,14 +354,14 @@ func test_gap05_hp_just_above_cost_boundary() -> void:
 		"gap05 — result.current_hp ≈ EPSILON: subtraction not clamped when above floor")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-06 — HP exactly at hp_cost_per_detach (result is exactly min_hp)
 #
 # Vulnerability: When prior_hp == cost, subtraction = 0.0 = min_hp exactly.
 # An implementation using strict < instead of <= in the clamp might not apply
 # the floor when the difference is exactly zero. Result must be exactly 0.0.
 # AC-58.2 (subtraction result < min_hp → clamp); boundary case: == min_hp.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap06_hp_exactly_equal_to_cost() -> void:
 	# AC-58.2 boundary — prior_hp = cost exactly → result = 0.0 = min_hp.
@@ -377,22 +371,21 @@ func test_gap06_hp_exactly_equal_to_cost() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 25.0  # AC-60.4: exactly equal to cost
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(0.0, 25.0 - 25.0) = max(0.0, 0.0) = 0.0
 	_assert_exact(result.current_hp, 0.0,
 		"gap06 — prior_hp == cost: result = max(0.0, 0.0) = 0.0 exactly")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-07 — HP far below cost (prior_hp=1.0, cost=25.0)
 #
 # Vulnerability: The primary suite tests prior_hp=10.0 with cost=25.0 (AC-58.2).
 # This test pushes the deficit further: prior_hp=1.0 leaves a subtraction of
 # -24.0, which is much more negative. Verifies clamp handles large deficits.
 # AC-58.2 (below floor → clamp to min_hp)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap07_hp_far_below_cost() -> void:
 	# AC-58.2 — prior_hp=1.0 far below cost=25.0: clamped to min_hp=0.0.
@@ -401,15 +394,14 @@ func test_gap07_hp_far_below_cost() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 1.0  # AC-60.4: far below cost
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(0.0, 1.0 - 25.0) = max(0.0, -24.0) = 0.0
 	_assert_exact(result.current_hp, 0.0,
 		"gap07 — prior_hp=1.0, cost=25.0: clamped to 0.0 (large deficit)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-08 — Instance isolation
 #
 # Vulnerability: GDScript class variables are per-instance; however, a buggy
@@ -417,7 +409,7 @@ func test_gap07_hp_far_below_cost() -> void:
 # causing sim_a's detach to affect sim_b's state. Two instances are run
 # independently; only sim_a detaches.
 # AC-61 NFR (each instance is independent)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap08_instance_isolation_hp_reduction() -> void:
 	# AC-61 instance isolation — HP reduction in sim_a must not affect sim_b.
@@ -431,10 +423,8 @@ func test_gap08_instance_isolation_hp_reduction() -> void:
 	prior_b.current_hp = 80.0  # AC-60.4: different starting HP
 
 	# sim_a detaches; sim_b does not.
-	var result_a: MovementSimulation.MovementState = sim_a.simulate(
-		prior_a, 0.0, false, false, false, 0.0, true, 0.016)
-	var result_b: MovementSimulation.MovementState = sim_b.simulate(
-		prior_b, 0.0, false, false, false, 0.0, false, 0.016)
+	var result_a: MovementSimulation.MovementState = sim_a.simulate(prior_a, 0.0, false, false, false, 0.0, [true, false], 0.016)
+	var result_b: MovementSimulation.MovementState = sim_b.simulate(prior_b, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	# sim_a: HP reduced.
 	_assert_exact(result_a.current_hp, 75.0,
@@ -456,10 +446,8 @@ func test_gap08_instance_isolation_hp_reduction() -> void:
 	prior_a2.current_hp = 100.0
 	var prior_b2: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior_b2.current_hp = 100.0
-	var result_a2: MovementSimulation.MovementState = sim_a.simulate(
-		prior_a2, 0.0, false, false, false, 0.0, true, 0.016)
-	var result_b2: MovementSimulation.MovementState = sim_b.simulate(
-		prior_b2, 0.0, false, false, false, 0.0, true, 0.016)
+	var result_a2: MovementSimulation.MovementState = sim_a.simulate(prior_a2, 0.0, false, false, false, 0.0, [true, false], 0.016)
+	var result_b2: MovementSimulation.MovementState = sim_b.simulate(prior_b2, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# sim_a uses mutated cost=99.0: max(0.0, 100.0-99.0) = max(0.0, 1.0) = 1.0 (NOT clamped).
 	_assert_exact(result_a2.current_hp, 1.0,
@@ -470,7 +458,7 @@ func test_gap08_instance_isolation_hp_reduction() -> void:
 		"gap08 — sim_b: HP uses its own default cost=25.0, unaffected by sim_a mutation")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-09 — Config mutation: all 12 pre-existing physics vars set to extremes
 #
 # Vulnerability: HP reduction reads only hp_cost_per_detach and min_hp (both
@@ -480,7 +468,7 @@ func test_gap08_instance_isolation_hp_reduction() -> void:
 # wall_jump_horizontal_speed) must have zero effect on the HP formula. This
 # test confirms by setting them all to extreme values and verifying HP = 75.0.
 # AC-55.5 (max_hp not read), AC-56.4 (HP step reads only its own vars)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap09_all_12_preexisting_config_vars_mutated() -> void:
 	# AC-56.4 — HP formula is isolated from all 12 pre-existing config vars.
@@ -505,8 +493,7 @@ func test_gap09_all_12_preexisting_config_vars_mutated() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 100.0  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# HP must still be 75.0 regardless of physics config extremes.
 	_assert_exact(result.current_hp, 75.0,
@@ -533,15 +520,14 @@ func test_gap09_all_12_preexisting_config_vars_mutated() -> void:
 	var prior2: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior2.current_hp = 100.0  # AC-60.4
 
-	var result2: MovementSimulation.MovementState = sim.simulate(
-		prior2, 0.0, false, false, false, 0.0, true, 0.016)
+	var result2: MovementSimulation.MovementState = sim.simulate(prior2, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# HP must still be 75.0 (formula reads only hp_cost_per_detach=25.0, min_hp=0.0).
 	_assert_exact(result2.current_hp, 75.0,
 		"gap09 — HP=75.0 despite all 12 physics config vars set to 9999.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-10 — 50-frame stability: HP constant on consecutive no-detach frames
 #
 # Vulnerability: The primary suite tests 4 frames. A longer loop exposes
@@ -549,7 +535,7 @@ func test_gap09_all_12_preexisting_config_vars_mutated() -> void:
 # arithmetic (e.g., multiplying by 1.0 + epsilon each frame). 50 frames is
 # sufficient to detect drift of magnitude > EPSILON.
 # AC-57.6 (no drift over no-detach frames)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap10_50_frame_no_detach_stability() -> void:
 	# AC-57.6 — 50 consecutive no-detach frames; current_hp never changes.
@@ -559,7 +545,7 @@ func test_gap10_50_frame_no_detach_stability() -> void:
 
 	var frame: int = 0
 	while frame < 50:
-		state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+		state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 		if not _approx_eq(state.current_hp, 73.0):
 			_fail("gap10 — 50-frame stability",
 				"HP drifted at frame " + str(frame + 1) + ": got " + str(state.current_hp) + " expected 73.0")
@@ -569,7 +555,7 @@ func test_gap10_50_frame_no_detach_stability() -> void:
 	_pass("gap10 — 50 consecutive no-detach frames: current_hp=73.0 stable throughout")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-11 — prior_state immutability: all 9 fields verified before and after
 #
 # Vulnerability: The primary suite checks only prior_state.current_hp for
@@ -577,7 +563,7 @@ func test_gap10_50_frame_no_detach_stability() -> void:
 # in-place) would corrupt all fields. This test captures all 9 fields before
 # the simulate() call and re-verifies all 9 after.
 # NFR-61.C (prior_state not mutated), AC-56.5
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap11a_all_9_prior_state_fields_immutable_on_detach() -> void:
 	# NFR-61.C — All 9 prior_state fields unchanged after simulate() with detach.
@@ -605,8 +591,7 @@ func test_gap11a_all_9_prior_state_fields_immutable_on_detach() -> void:
 	var pre_hp: float = prior.current_hp
 
 	# Detach fires.
-	var _result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# All 9 fields must be unchanged on prior_state.
 	_assert_true(prior.velocity.x == pre_vx,
@@ -654,8 +639,7 @@ func test_gap11b_all_9_prior_state_fields_immutable_on_no_detach() -> void:
 	var pre_hp: float = prior.current_hp
 
 	# No detach (carry-forward path).
-	var _result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	_assert_true(prior.velocity.x == pre_vx,
 		"gap11b — prior.velocity.x not mutated by simulate() on carry-forward")
@@ -677,7 +661,7 @@ func test_gap11b_all_9_prior_state_fields_immutable_on_no_detach() -> void:
 		"gap11b — prior.current_hp not mutated by simulate() on carry-forward")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-12 — hp_cost_per_detach = 0.0 (zero cost: detach fires, HP unchanged)
 #
 # Vulnerability: A guard like `if hp_cost_per_detach > 0.0` before applying
@@ -685,7 +669,7 @@ func test_gap11b_all_9_prior_state_fields_immutable_on_no_detach() -> void:
 # result.current_hp at its default (100.0 from MovementState.new()) rather
 # than the correct carry-forward. The detach must still fire (has_chunk=false).
 # AC-55.2 constraint (zero cost is valid), AC-56.1
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap12_zero_hp_cost_per_detach() -> void:
 	# AC-55.2 / AC-56.1 — Zero cost: detach fires but HP stays unchanged.
@@ -695,8 +679,7 @@ func test_gap12_zero_hp_cost_per_detach() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 65.0  # AC-60.4: non-default to detect formula errors
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# Formula: max(0.0, 65.0 - 0.0) = 65.0 (HP unchanged).
 	_assert_exact(result.current_hp, 65.0,
@@ -707,14 +690,14 @@ func test_gap12_zero_hp_cost_per_detach() -> void:
 		"gap12 — zero cost: detach still fires (has_chunk=false)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-13a — min_hp = negative: HP can go to negative floor
 #
 # Vulnerability: An implementation that hard-codes `max(0.0, ...)` instead of
 # `max(min_hp, ...)` would fail to respect a negative floor. AC-58.5 states
 # result can reach a negative min_hp.
 # AC-58.5 (negative min_hp floor)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap13a_negative_min_hp_floor_reached() -> void:
 	# AC-58.5 — min_hp=-10.0: HP clamped to -10.0 when cost pushes it below.
@@ -725,8 +708,7 @@ func test_gap13a_negative_min_hp_floor_reached() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 5.0  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(-10.0, 5.0 - 25.0) = max(-10.0, -20.0) = -10.0
 	_assert_exact(result.current_hp, -10.0,
@@ -749,22 +731,21 @@ func test_gap13b_negative_min_hp_result_above_floor() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = -5.0  # AC-60.4: already negative (below default floor of 0.0)
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(-10.0, -5.0 - 3.0) = max(-10.0, -8.0) = -8.0 (not clamped)
 	_assert_exact(result.current_hp, -8.0,
 		"gap13b — min_hp=-10.0, prior_hp=-5.0, cost=3.0: result=-8.0 (above negative floor)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-14 — Large hp_cost_per_detach (9999.0): clamp to min_hp, no crash
 #
 # Vulnerability: IEEE 754 float subtraction with very large values is safe,
 # but some implementations might use intermediate integers or non-float types
 # that overflow. Also verifies min_hp floor (0.0) is the only bound applied.
 # AC-58.7 (large cost, no crash, clamped)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap14_large_hp_cost_clamped_to_floor() -> void:
 	# AC-58.7 — hp_cost=9999.0: clamped to min_hp=0.0, no crash or NaN.
@@ -774,8 +755,7 @@ func test_gap14_large_hp_cost_clamped_to_floor() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 100.0  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(0.0, 100.0 - 9999.0) = max(0.0, -9899.0) = 0.0
 	_assert_exact(result.current_hp, 0.0,
@@ -786,7 +766,7 @@ func test_gap14_large_hp_cost_clamped_to_floor() -> void:
 		"gap14 — cost=9999.0: result is not NaN")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-15 — INF hp_cost_per_detach
 #
 # Vulnerability: IEEE 754: 100.0 - INF = -INF. max(0.0, -INF) = 0.0.
@@ -794,7 +774,7 @@ func test_gap14_large_hp_cost_clamped_to_floor() -> void:
 # path, would produce a wrong result (NaN or crash). This test confirms the
 # formula handles INF cleanly.
 # AC-58.7 (large cost clamped safely) — INF variant
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap15_inf_hp_cost_clamped_to_floor() -> void:
 	# AC-58.7 INF variant — INF cost: 100.0 - INF = -INF; max(0.0, -INF) = 0.0.
@@ -804,8 +784,7 @@ func test_gap15_inf_hp_cost_clamped_to_floor() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 100.0  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(0.0, 100.0 - INF) = max(0.0, -INF) = 0.0
 	_assert_exact(result.current_hp, 0.0,
@@ -819,7 +798,7 @@ func test_gap15_inf_hp_cost_clamped_to_floor() -> void:
 		"gap15 — INF cost: detach still fires (has_chunk=false)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-16 — NaN current_hp: documents propagation behavior (spec gap)
 #
 # CHECKPOINT: The spec is silent on NaN current_hp. The formula
@@ -831,7 +810,7 @@ func test_gap15_inf_hp_cost_clamped_to_floor() -> void:
 # This test PASSES regardless of the outcome — it exists to detect which
 # path the implementation takes, surfacing any divergence from this record.
 # AC-60.4 (explicit hp assignment — NaN counts as explicit)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap16_nan_current_hp_documents_propagation() -> void:
 	# CHECKPOINT — NaN current_hp: documents whether the formula propagates NaN.
@@ -840,8 +819,7 @@ func test_gap16_nan_current_hp_documents_propagation() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = NAN  # AC-60.4: deliberately NaN (spec gap)
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# Document the result — this test always passes (it is a behavioral record).
 	if is_nan(result.current_hp):
@@ -850,7 +828,7 @@ func test_gap16_nan_current_hp_documents_propagation() -> void:
 		_pass("gap16 — CHECKPOINT: NaN current_hp sanitized by implementation to " + str(result.current_hp))
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-17 — Negative hp_cost_per_detach (HP gain on detach)
 #
 # CHECKPOINT: The spec labels this "undefined behavior" but does not prohibit it.
@@ -861,7 +839,7 @@ func test_gap16_nan_current_hp_documents_propagation() -> void:
 # produces a value inconsistent with the raw formula (110.0) or a guarded
 # interpretation (100.0), alerting the implementer to document their choice.
 # AC-55.2 ("Negative values produce HP gain on detach — undefined behavior")
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap17_negative_hp_cost_per_detach_hp_gain() -> void:
 	# CHECKPOINT — negative cost: formula produces HP gain (undefined behavior).
@@ -871,8 +849,7 @@ func test_gap17_negative_hp_cost_per_detach_hp_gain() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 100.0  # AC-60.4
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# Per spec formula: max(0.0, 100.0 - (-10.0)) = max(0.0, 110.0) = 110.0.
 	# An implementation that clamps cost to >= 0 before applying would produce 100.0.
@@ -893,14 +870,14 @@ func test_gap17_negative_hp_cost_per_detach_hp_gain() -> void:
 		"gap17 — detach fires even with negative hp_cost_per_detach")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-18 — current_hp above max_hp: carry-forward preserves over-healed value
 #
 # Vulnerability: SPEC-57 AC-57.4 explicitly prohibits clamping on carry-forward.
 # An implementer might add `min(max_hp, result.current_hp)` on carry-forward.
 # This test confirms the over-healed value is preserved exactly on no-detach frames.
 # AC-57.4
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap18_over_healed_hp_carry_forward_no_detach() -> void:
 	# AC-57.4 — carry-forward preserves current_hp above max_hp (no clamp).
@@ -910,22 +887,21 @@ func test_gap18_over_healed_hp_carry_forward_no_detach() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 200.0  # AC-60.4: above max_hp=100.0
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	# Carry-forward: result.current_hp = prior_state.current_hp = 200.0 (no clamp).
 	_assert_exact(result.current_hp, 200.0,
 		"gap18 — over-healed HP=200.0 carries forward unchanged (no max_hp clamp)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-19 — current_hp above max_hp with detach: reduction still applies
 #
 # Vulnerability: An implementation might clamp current_hp to max_hp before
 # applying the reduction formula. With prior_hp=200.0, cost=25.0, min_hp=0.0:
 # correct result = max(0.0, 200.0 - 25.0) = 175.0 (not clamped to max_hp=100.0).
 # AC-55.5 (max_hp not enforced in simulate()), AC-56.1
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap19_over_healed_hp_detach_reduction_applies() -> void:
 	# AC-55.5 / AC-56.1 — HP above max_hp: reduction formula runs from actual value.
@@ -935,15 +911,14 @@ func test_gap19_over_healed_hp_detach_reduction_applies() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 200.0  # AC-60.4: above max_hp
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# Formula: max(0.0, 200.0 - 25.0) = 175.0 (not clamped to max_hp=100.0).
 	_assert_exact(result.current_hp, 175.0,
 		"gap19 — over-healed HP=200.0 - cost=25.0 = 175.0 (max_hp not enforced as upper clamp)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-20 — max_hp=0.0 + current_hp=0.0 (zero HP pool)
 #
 # Vulnerability: A degenerate configuration where both max_hp and current_hp
@@ -951,7 +926,7 @@ func test_gap19_over_healed_hp_detach_reduction_applies() -> void:
 # max_hp=0.0 has no effect on the formula (informational only). Detach must
 # still fire.
 # AC-55.5, AC-58.3
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap20_max_hp_zero_current_hp_zero() -> void:
 	# AC-55.5 / AC-58.3 — max_hp=0.0, current_hp=0.0: formula produces 0.0 safely.
@@ -962,8 +937,7 @@ func test_gap20_max_hp_zero_current_hp_zero() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 0.0  # AC-60.4: zero starting HP
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(0.0, 0.0 - 25.0) = 0.0 (not NaN, not negative).
 	_assert_exact(result.current_hp, 0.0,
@@ -977,7 +951,7 @@ func test_gap20_max_hp_zero_current_hp_zero() -> void:
 		"gap20 — detach fires with max_hp=0.0 and current_hp=0.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-21 — Config mutation between frames
 #
 # Vulnerability: An implementation that caches hp_cost_per_detach at
@@ -987,7 +961,7 @@ func test_gap20_max_hp_zero_current_hp_zero() -> void:
 # Mutate cost to 10.0.
 # Frame 2: prior_hp=75.0 → result_hp=65.0 (uses new cost, not old 25.0).
 # AC-56.5 (formula reads live config), SPEC-56 Constraints 4 and 5
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap21_hp_cost_config_mutation_between_frames() -> void:
 	# SPEC-56 — formula reads live config var each call (not cached).
@@ -997,8 +971,7 @@ func test_gap21_hp_cost_config_mutation_between_frames() -> void:
 	var prior_f1: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior_f1.current_hp = 100.0  # AC-60.4
 
-	var result_f1: MovementSimulation.MovementState = sim.simulate(
-		prior_f1, 0.0, false, false, false, 0.0, true, 0.016)
+	var result_f1: MovementSimulation.MovementState = sim.simulate(prior_f1, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	_assert_exact(result_f1.current_hp, 75.0,
 		"gap21 — frame 1: cost=25.0, HP = 100.0 - 25.0 = 75.0")
@@ -1013,15 +986,14 @@ func test_gap21_hp_cost_config_mutation_between_frames() -> void:
 	prior_f2.current_hp = result_f1.current_hp  # carry HP from frame 1 result
 	prior_f2.has_chunk = true  # reset for second detach test
 
-	var result_f2: MovementSimulation.MovementState = sim.simulate(
-		prior_f2, 0.0, false, false, false, 0.0, true, 0.016)
+	var result_f2: MovementSimulation.MovementState = sim.simulate(prior_f2, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# cost is now 10.0: max(0.0, 75.0 - 10.0) = 65.0
 	_assert_exact(result_f2.current_hp, 65.0,
 		"gap21 — frame 2 after cost mutation: HP = 75.0 - 10.0 = 65.0 (uses new cost)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-22 — min_hp > current_hp on carry-forward (below-floor value preserved)
 #
 # CHECKPOINT: SPEC-57 AC-57.5 explicitly states carry-forward preserves
@@ -1029,7 +1001,7 @@ func test_gap21_hp_cost_config_mutation_between_frames() -> void:
 # carry-forward path. This test sets prior_hp=-5.0 with min_hp=0.0 and
 # no detach — result must be -5.0, not 0.0.
 # AC-57.5
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap22_carry_forward_below_floor_not_clamped() -> void:
 	# CHECKPOINT — AC-57.5: carry-forward preserves HP below min_hp (no clamp on non-detach path).
@@ -1040,22 +1012,21 @@ func test_gap22_carry_forward_below_floor_not_clamped() -> void:
 	prior.current_hp = -5.0  # AC-60.4: below min_hp=0.0 (e.g., was set externally)
 
 	# No detach — carry-forward path must not clamp.
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, false, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
 
 	# Carry-forward: result.current_hp = prior_state.current_hp = -5.0 (not clamped to 0.0).
 	_assert_exact(result.current_hp, -5.0,
 		"gap22 — CHECKPOINT: carry-forward preserves HP=-5.0 below min_hp=0.0 (no clamp on carry-forward)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-23 — HP at exact min_hp boundary with non-zero custom min_hp
 #
 # Vulnerability: The primary suite tests the floor boundary only at min_hp=0.0
 # (prior_hp=0.0, cost=25.0). This test uses a custom non-zero floor: min_hp=10.0
 # with prior_hp=10.0 and cost=25.0 → max(10.0, 10.0-25.0) = max(10.0, -15.0) = 10.0.
 # AC-58.3 (floor boundary), using custom non-zero floor.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap23_hp_at_custom_nonzero_min_hp_boundary() -> void:
 	# AC-58.3 variant — custom min_hp=10.0 boundary: prior_hp=min_hp, detach fires.
@@ -1066,8 +1037,7 @@ func test_gap23_hp_at_custom_nonzero_min_hp_boundary() -> void:
 	var prior: MovementSimulation.MovementState = _make_airborne(0.0, 0.0, true)
 	prior.current_hp = 10.0  # AC-60.4: exactly at min_hp floor
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# max(10.0, 10.0 - 25.0) = max(10.0, -15.0) = 10.0
 	_assert_exact(result.current_hp, 10.0,
@@ -1078,7 +1048,7 @@ func test_gap23_hp_at_custom_nonzero_min_hp_boundary() -> void:
 		"gap23 — detach fires even when HP is at custom non-zero min_hp floor")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-24 — Differential: active horizontal run during detach
 #
 # Vulnerability: step 18 writes current_hp only; it must not disturb velocity.x
@@ -1086,7 +1056,7 @@ func test_gap23_hp_at_custom_nonzero_min_hp_boundary() -> void:
 # frame. This differential confirms velocity.x is identical detach vs. no-detach
 # with non-zero axis and non-zero starting velocity.
 # AC-56.4
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap24_differential_active_run_during_detach() -> void:
 	# AC-56.4 — velocity.x from active horizontal run is identical detach vs. no-detach.
@@ -1095,14 +1065,12 @@ func test_gap24_differential_active_run_during_detach() -> void:
 	# Reference: running right, no detach.
 	var prior_ref: MovementSimulation.MovementState = _make_grounded(100.0, 0.0, true)
 	prior_ref.current_hp = 100.0  # AC-60.4
-	var result_ref: MovementSimulation.MovementState = sim.simulate(
-		prior_ref, 1.0, false, false, false, 0.0, false, 0.016)
+	var result_ref: MovementSimulation.MovementState = sim.simulate(prior_ref, 1.0, false, false, false, 0.0, [false, false], 0.016)
 
 	# Detach variant: identical prior and inputs except detach_just_pressed=true.
 	var prior_det: MovementSimulation.MovementState = _make_grounded(100.0, 0.0, true)
 	prior_det.current_hp = 100.0  # AC-60.4
-	var result_det: MovementSimulation.MovementState = sim.simulate(
-		prior_det, 1.0, false, false, false, 0.0, true, 0.016)
+	var result_det: MovementSimulation.MovementState = sim.simulate(prior_det, 1.0, false, false, false, 0.0, [true, false], 0.016)
 
 	# HP must differ (detach reduced it).
 	_assert_exact(result_det.current_hp, 75.0,
@@ -1117,14 +1085,14 @@ func test_gap24_differential_active_run_during_detach() -> void:
 		"gap24 — velocity.y identical between detach and no-detach during active run")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-25 — Differential: jump_consumed=true during detach
 #
 # Vulnerability: An implementation might check jump_consumed inside step 18 or
 # confuse the jump_consumed flag with detach_eligible. With jump_consumed=true,
 # no jump fires but detach should still fire and HP should still reduce.
 # AC-56.4
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap25_differential_jump_consumed_true_during_detach() -> void:
 	# AC-56.4 — jump_consumed=true: jump does not fire, but detach and HP reduction still do.
@@ -1135,8 +1103,7 @@ func test_gap25_differential_jump_consumed_true_during_detach() -> void:
 	prior.current_hp = 100.0  # AC-60.4
 
 	# Attempt jump (will be suppressed by jump_consumed=true) AND detach simultaneously.
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, true, false, 0.0, true, 0.016)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, true, false, 0.0, [true, false], 0.016)
 
 	# HP must reduce (detach fires regardless of jump_consumed).
 	_assert_exact(result.current_hp, 75.0,
@@ -1156,7 +1123,7 @@ func test_gap25_differential_jump_consumed_true_during_detach() -> void:
 		"gap25 — velocity.y=15.68 (only gravity, no jump impulse despite jump_just_pressed=true)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-26 — HP only changes on detach frames in a mixed sequence
 #
 # Vulnerability: A sequence of detach + no-detach frames should show HP
@@ -1164,7 +1131,7 @@ func test_gap25_differential_jump_consumed_true_during_detach() -> void:
 # Tests that the carry-forward path is not accidentally reducing HP on every
 # frame (e.g., if the formula is applied in both branches of an if-else).
 # AC-56.2 (non-detach: carry-forward), AC-57.6 (stability after detach)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap26_hp_changes_only_on_detach_frames_in_sequence() -> void:
 	# AC-56.2 / AC-57.6 — Mixed sequence: HP changes only on detach frames.
@@ -1175,42 +1142,42 @@ func test_gap26_hp_changes_only_on_detach_frames_in_sequence() -> void:
 	state.current_hp = 100.0  # AC-60.4
 
 	# Frame 1: no detach — HP stays at 100.0.
-	state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_exact(state.current_hp, 100.0,
 		"gap26 — frame 1 (no detach): HP=100.0 unchanged")
 
 	# Frame 2: no detach — HP stays at 100.0.
-	state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_exact(state.current_hp, 100.0,
 		"gap26 — frame 2 (no detach): HP=100.0 unchanged")
 
 	# Frame 3: detach fires — HP must drop to 75.0.
-	state = sim.simulate(state, 0.0, false, false, false, 0.0, true, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, [true, false], 0.016)
 	_assert_exact(state.current_hp, 75.0,
 		"gap26 — frame 3 (detach): HP drops from 100.0 to 75.0")
 
 	# Frame 4: no detach (has_chunk=false already) — HP stays at 75.0.
-	state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_exact(state.current_hp, 75.0,
 		"gap26 — frame 4 (no detach): HP=75.0 unchanged after detach")
 
 	# Frame 5: detach pressed but has_chunk=false — no-op, HP stays at 75.0.
-	state = sim.simulate(state, 0.0, false, false, false, 0.0, true, 0.016)
+	state = sim.simulate(state, 0.0, false, false, false, 0.0, [true, false], 0.016)
 	_assert_exact(state.current_hp, 75.0,
 		"gap26 — frame 5 (detach no-op, has_chunk=false): HP=75.0 unchanged")
 
 	# Frames 6–10: five more no-detach frames — HP stable at 75.0.
 	var frame: int = 6
 	while frame <= 10:
-		state = sim.simulate(state, 0.0, false, false, false, 0.0, false, 0.016)
+		state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 		_assert_exact(state.current_hp, 75.0,
 			"gap26 — frame " + str(frame) + " (no detach): HP=75.0 stable")
 		frame += 1
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_hp_reduction_simulation_adversarial.gd ---")

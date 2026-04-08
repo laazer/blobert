@@ -134,8 +134,7 @@ func _simulate_9(sim: MovementSimulation,
 		prior: MovementSimulation.MovementState,
 		detach_just_pressed: bool,
 		detach_2_just_pressed: bool) -> MovementSimulation.MovementState:
-	return sim.simulate(prior, 0.0, false, false, false, 0.0,
-		detach_just_pressed, 0.016, detach_2_just_pressed)
+	return sim.simulate(prior, 0.0, false, false, false, 0.0, [detach_just_pressed, detach_2_just_pressed], 0.016)
 
 
 # 9-arg call with custom delta.
@@ -144,18 +143,17 @@ func _simulate_9_delta(sim: MovementSimulation,
 		detach_just_pressed: bool,
 		detach_2_just_pressed: bool,
 		delta: float) -> MovementSimulation.MovementState:
-	return sim.simulate(prior, 0.0, false, false, false, 0.0,
-		detach_just_pressed, delta, detach_2_just_pressed)
+	return sim.simulate(prior, 0.0, false, false, false, 0.0, [detach_just_pressed, detach_2_just_pressed], delta)
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-01 — Step 20 must read result.current_hp (not prior_state.current_hp)
 #
 # Vulnerability: A buggy step 20 reads prior_state.current_hp instead of
 # result.current_hp. With prior_hp=50.0 and cost=25.0, step 18 → 25.0 and
 # step 20 correctly → 0.0. If step 20 erroneously reads prior_state.current_hp
 # (50.0) and subtracts 25.0, result would be 25.0 instead of 0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap01_step20_reads_result_hp_not_prior_hp() -> void:
 	# GAP-01 [Mutation] Both chunks detach on same frame with prior_hp == 2*cost.
@@ -168,8 +166,7 @@ func test_gap01_step20_reads_result_hp_not_prior_hp() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = true
 	prior.current_hp = 50.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_approx(result.current_hp, 0.0,
 		"gap-01a — dual detach at 2*cost: step20 must read result (25.0) not prior (50.0)")
 	_assert_false(result.has_chunk,
@@ -189,19 +186,18 @@ func test_gap01_step20_reads_result_hp_near_floor() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = true
 	prior.current_hp = 30.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_approx(result.current_hp, 0.0,
 		"gap-01d — dual detach at 30.0 (cost=25): step18→5.0, step20→0.0; buggy→5.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-02 — Cross-contamination: detach and detach_2 must not share eligibility
 #
 # Vulnerability: A buggy impl uses a single `detach_eligible` variable that
 # is set by either press. If detach_just_pressed=true fires and then step 19
 # reuses that flag, has_chunk_2 would also become false on a chunk-1-only press.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap02_detach1_press_does_not_contaminate_chunk2() -> void:
 	# GAP-02 [Independence] Only chunk 1 detach fires.
@@ -264,13 +260,13 @@ func test_gap02_hp_reduced_exactly_once_chunk1_only_press_when_both_attached() -
 		"gap-02g — chunk1-only detach: HP reduced exactly once (100→75, not 100→50)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-03 — prior_state immutability: simulate() must not mutate ANY field
 #
 # Vulnerability: GDScript passes objects by reference. A buggy impl that
 # writes directly into prior_state (instead of a fresh result) would corrupt
 # the caller's prior state. Test all key fields in one comprehensive call.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap03_prior_state_all_fields_immutable_on_dual_detach() -> void:
 	# GAP-03 [Prior-state immutability] All key MovementState fields must be
@@ -294,8 +290,7 @@ func test_gap03_prior_state_all_fields_immutable_on_dual_detach() -> void:
 	var pre_floor: bool = prior.is_on_floor
 
 	# Full dual-detach call
-	var _result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var _result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 
 	_assert_true(prior.has_chunk == pre_has_chunk,
 		"gap-03a — prior.has_chunk unchanged after simulate()")
@@ -330,11 +325,11 @@ func test_gap03_prior_state_immutable_chunk2_detach_only() -> void:
 		"gap-03i — prior.current_hp stays 80.0 (not mutated by simulate())")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-04 — HP at exactly hp_cost_per_detach for chunk 2: clamps to min_hp
 #
 # Boundary: prior_hp == cost, chunk 2 detaches. Result must be max(0, 0) = 0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap04_hp_exactly_at_cost_chunk2_clamps_to_min() -> void:
 	# GAP-04 [Boundary] prior_hp=25.0 == cost=25.0. Step 20: max(0.0, 0.0) = 0.0.
@@ -351,12 +346,12 @@ func test_gap04_hp_exactly_at_cost_chunk2_clamps_to_min() -> void:
 		"gap-04b — has_chunk_2=false after exact-cost detach")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-05 — HP at (2 * cost) on dual-detach: minimum HP for a full dual-detach
 #
 # Boundary: prior_hp=50.0, cost=25.0. Step 18 → 25.0, Step 20 → 0.0.
 # This is the minimal HP that results in exactly 0.0 (not negative) for dual detach.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap05_hp_at_double_cost_dual_detach_reaches_exactly_zero() -> void:
 	# GAP-05 [Boundary] The minimum prior_hp that produces exactly 0.0 after dual detach.
@@ -367,17 +362,16 @@ func test_gap05_hp_at_double_cost_dual_detach_reaches_exactly_zero() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = true
 	prior.current_hp = 50.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_approx(result.current_hp, 0.0,
 		"gap-05 — dual detach at 2*cost: result exactly 0.0 (no negative HP)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-06 — HP at 0.0 when detach_2 pressed: clamp holds, no negative HP
 #
 # Boundary: prior_hp=0.0, detach_2 pressed. max(0.0, 0.0-25.0) must be 0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap06_hp_at_zero_detach_2_stays_at_floor() -> void:
 	# GAP-06 [Boundary / Null] HP already at min_hp=0.0; detach_2 fires.
@@ -395,14 +389,14 @@ func test_gap06_hp_at_zero_detach_2_stays_at_floor() -> void:
 		"gap-06b — detach still fires even when HP is at floor")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-07 — Flip-boolean mutation: ensure has_chunk_2=false is NOT restored to
 #          true on a no-detach frame
 #
 # Vulnerability: An implementation that uses `has_chunk_2 = not has_chunk_2`
 # or `has_chunk_2 = detach_2_just_pressed` (boolean assignment) would flip
 # false→true on every false-input frame, breaking carry-forward.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap07_flip_boolean_not_possible_on_false_carry_forward() -> void:
 	# GAP-07 [Mutation] If implementation uses `has_chunk_2 = detach_2_just_pressed`,
@@ -428,12 +422,12 @@ func test_gap07_flip_boolean_not_possible_on_true_carry_forward() -> void:
 		"gap-07b — has_chunk_2=true + no press: must remain true (not flip to false)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-08 — Instance isolation: two MovementSimulation instances share no state
 #
 # Vulnerability: A class-level (static) has_chunk_2 variable would cause
 # state to leak between instances. This catches that.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap08_instance_isolation_has_chunk_2() -> void:
 	# GAP-08 [Instance isolation] Detach chunk 2 on instance A; instance B unaffected.
@@ -482,12 +476,12 @@ func test_gap08_instance_isolation_hp() -> void:
 		"gap-08d — instance B: HP unaffected by A's detach (still 100.0)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-09 — has_chunk_2=false + detach_2=true + HP at floor: no HP change
 #
 # Combinatorial: chunk already detached (no-op), and HP is already at 0.
 # Step 20 must be a strict no-op; result.current_hp stays 0.0.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap09_chunk2_detached_hp_at_floor_no_reduction() -> void:
 	# GAP-09 [Combinatorial] has_chunk_2=false (chunk already out) + press at HP=0.
@@ -505,11 +499,11 @@ func test_gap09_chunk2_detached_hp_at_floor_no_reduction() -> void:
 		"gap-09b — no-op: HP stays 0.0 (no reduction because chunk already detached)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-10 — Order dependency: N idle frames then detach_2 == single-frame detach_2
 #
 # Assumption check: simulate() must be stateless (no hidden internal state).
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap10_order_independent_detach_after_idle_frames() -> void:
 	# GAP-10 [Order dependency / Assumption] Simulate 5 idle frames, then detach_2.
@@ -540,9 +534,9 @@ func test_gap10_order_independent_detach_after_idle_frames() -> void:
 		"gap-10c — HP after detach is same regardless of prior idle frames")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-11 — Determinism: same inputs → identical results across 3 repeated calls
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap11_determinism_three_repeated_calls_same_inputs() -> void:
 	# GAP-11 [Determinism] Identical 9-arg inputs must produce identical outputs
@@ -556,12 +550,9 @@ func test_gap11_determinism_three_repeated_calls_same_inputs() -> void:
 	prior.current_hp = 80.0
 	prior.velocity = Vector2(3.0, -12.0)
 
-	var r1: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.3, false, false, false, 0.0, false, 0.016, true)
-	var r2: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.3, false, false, false, 0.0, false, 0.016, true)
-	var r3: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.3, false, false, false, 0.0, false, 0.016, true)
+	var r1: MovementSimulation.MovementState = sim.simulate(prior, 0.3, false, false, false, 0.0, [false, true], 0.016)
+	var r2: MovementSimulation.MovementState = sim.simulate(prior, 0.3, false, false, false, 0.0, [false, true], 0.016)
+	var r3: MovementSimulation.MovementState = sim.simulate(prior, 0.3, false, false, false, 0.0, [false, true], 0.016)
 
 	_assert_true(r1.has_chunk_2 == r2.has_chunk_2 and r2.has_chunk_2 == r3.has_chunk_2,
 		"gap-11a — has_chunk_2 deterministic across 3 calls")
@@ -571,12 +562,12 @@ func test_gap11_determinism_three_repeated_calls_same_inputs() -> void:
 		"gap-11c — current_hp deterministic: r2==r3")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-12 — Delta independence: HP arithmetic is NOT affected by delta value
 #
 # Vulnerability: If the implementation accidentally multiplies hp_cost by delta
 # (as it does for physics steps), HP reduction would scale with frame time.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap12_delta_does_not_affect_chunk2_hp_reduction() -> void:
 	# GAP-12 [Combinatorial / Boundary] HP reduction must be exactly hp_cost_per_detach
@@ -608,19 +599,18 @@ func test_gap12_delta_does_not_affect_dual_detach_hp() -> void:
 		prior.has_chunk = true
 		prior.has_chunk_2 = true
 		prior.current_hp = 100.0
-		var result: MovementSimulation.MovementState = sim.simulate(
-			prior, 0.0, false, false, false, 0.0, true, d, true)
+		var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], d)
 		_assert_approx(result.current_hp, 50.0,
 			"gap-12b — dual detach delta=" + str(d) + ": HP always 50.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-13 — Step 19 reads only detach_2_just_pressed and prior.has_chunk_2
 #           (must not read has_chunk, velocity, or any other field)
 #
 # Mutation: An implementation that gates has_chunk_2 on has_chunk being true
 # would fail the case has_chunk=false + has_chunk_2=true + detach_2=true.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap13_step19_ignores_has_chunk_value() -> void:
 	# GAP-13 [Mutation / Independence] Detach 2 must fire even when has_chunk=false.
@@ -658,11 +648,11 @@ func test_gap13_step19_ignores_velocity_value() -> void:
 		"gap-13d — extreme velocity: chunk2 detach fires identically (velocity has no effect)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-14 — Stress: 1000 frames with detach_2=false after initial detach
 #
 # Stress / Assumption: has_chunk_2 must never flip back to true spontaneously.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap14_stress_1000_frames_has_chunk_2_stays_false() -> void:
 	# GAP-14 [Stress] After detach fires, 1000 no-detach frames must all keep false.
@@ -687,9 +677,9 @@ func test_gap14_stress_1000_frames_has_chunk_2_stays_false() -> void:
 		"gap-14 — has_chunk_2 never restored to true across 1000 no-detach frames after detach")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-15 — hp_cost_per_detach = 0.0: detaching chunk 2 must leave HP unchanged
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap15_zero_cost_detach_2_no_hp_change() -> void:
 	# GAP-15 [Boundary] Zero cost means max(0, hp - 0) = hp. HP must carry forward.
@@ -706,9 +696,9 @@ func test_gap15_zero_cost_detach_2_no_hp_change() -> void:
 		"gap-15b — zero-cost: HP unchanged (80.0 - 0.0 = 80.0)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-16 — hp_cost_per_detach = INF: detach clamps result to min_hp
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap16_inf_cost_detach_2_clamps_to_min_hp() -> void:
 	# GAP-16 [Boundary] Infinite cost: max(0, hp - INF) must clamp to min_hp=0.0
@@ -727,9 +717,9 @@ func test_gap16_inf_cost_detach_2_clamps_to_min_hp() -> void:
 		"gap-16b — INF cost: HP clamped to min_hp=0.0")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-17 — detach_1 no-op (has_chunk=false) + detach_2 fires: HP once only
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap17_chunk1_already_detached_chunk2_detach_hp_once() -> void:
 	# GAP-17 [Combinatorial] Both pressed, but chunk 1 already gone.
@@ -742,8 +732,7 @@ func test_gap17_chunk1_already_detached_chunk2_detach_hp_once() -> void:
 	prior.has_chunk = false    # chunk 1 already detached
 	prior.has_chunk_2 = true
 	prior.current_hp = 100.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result.has_chunk,
 		"gap-17a — has_chunk remains false (chunk 1 was already detached)")
 	_assert_false(result.has_chunk_2,
@@ -752,9 +741,9 @@ func test_gap17_chunk1_already_detached_chunk2_detach_hp_once() -> void:
 		"gap-17c — HP reduced exactly once: only step 20 fired (100→75, not 100→50)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-18 — detach_2 no-op (has_chunk_2=false) + detach_1 fires: HP once only
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap18_chunk2_already_detached_chunk1_detach_hp_once() -> void:
 	# GAP-18 [Combinatorial] Both pressed, but chunk 2 already gone.
@@ -767,8 +756,7 @@ func test_gap18_chunk2_already_detached_chunk1_detach_hp_once() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = false  # chunk 2 already detached
 	prior.current_hp = 100.0
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result.has_chunk,
 		"gap-18a — has_chunk becomes false (chunk 1 detach fires)")
 	_assert_false(result.has_chunk_2,
@@ -777,10 +765,10 @@ func test_gap18_chunk2_already_detached_chunk1_detach_hp_once() -> void:
 		"gap-18c — HP reduced exactly once: only step 18 fired (100→75, not 100→50)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-19 — detach_2=true every frame for 5 frames starting from has_chunk_2=false
 #          HP must NEVER reduce after the initial state (no reduction at all)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap19_repeated_detach2_press_on_detached_chunk_no_hp_drain() -> void:
 	# GAP-19 [Assumption check] Mashing detach_2 with chunk already gone: pure no-op.
@@ -800,9 +788,9 @@ func test_gap19_repeated_detach2_press_on_detached_chunk_no_hp_drain() -> void:
 			"gap-19b — frame " + str(i + 1) + ": has_chunk_2 stays false")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-20 — Prior state: both has_chunk and has_chunk_2 remain true after dual-detach
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap20_prior_both_chunk_fields_unchanged_after_dual_detach() -> void:
 	# GAP-20 [Prior-state immutability] After a call that detaches both chunks in
@@ -812,8 +800,7 @@ func test_gap20_prior_both_chunk_fields_unchanged_after_dual_detach() -> void:
 	prior.has_chunk = true
 	prior.has_chunk_2 = true
 
-	var result: MovementSimulation.MovementState = sim.simulate(
-		prior, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [true, true], 0.016)
 
 	# Result: both false
 	_assert_false(result.has_chunk,
@@ -827,9 +814,9 @@ func test_gap20_prior_both_chunk_fields_unchanged_after_dual_detach() -> void:
 		"gap-20d — prior.has_chunk_2 remains true (not mutated)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-21 — non-zero min_hp floor: detach_2 clamps to custom min, not 0
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap21_non_zero_min_hp_floor_chunk2() -> void:
 	# GAP-21 [Combinatorial] min_hp=50.0. HP=60.0, cost=25.0.
@@ -860,9 +847,9 @@ func test_gap21_non_zero_min_hp_no_clamp_needed_chunk2() -> void:
 		"gap-21c — min_hp=50.0, HP=100.0-25.0=75.0 (above floor, no clamp)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-22 — Very large prior HP: no float overflow or precision loss
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap22_very_large_hp_chunk2_reduction_precise() -> void:
 	# GAP-22 [Boundary / Stress] prior_hp=1e9, cost=25.0. Result must be 1e9-25.0
@@ -878,7 +865,7 @@ func test_gap22_very_large_hp_chunk2_reduction_precise() -> void:
 		"gap-22 — very large HP (1e9): reduction is exactly 25.0 (no precision loss)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-23 — Step ordering: step 19 must run before step 20 reads detach_2_eligible
 #
 # A buggy impl running step 20 before step 19 would read prior.has_chunk_2
@@ -887,7 +874,7 @@ func test_gap22_very_large_hp_chunk2_reduction_precise() -> void:
 # This scenario is identical to other detach tests, but targets ordering
 # by verifying that HP reduction in step 20 is conditioned on the SAME
 # detach_2_eligible that step 19 just computed — not a stale copy.
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap23_step_ordering_hp_reduction_conditioned_on_fresh_detach_2_eligible() -> void:
 	# GAP-23 [Mutation / Order dependency] Verify that step 20 fires IFF step 19
@@ -910,10 +897,10 @@ func test_gap23_step_ordering_hp_reduction_conditioned_on_fresh_detach_2_eligibl
 		"gap-23b — no press: step 20 no-op, HP unchanged (100.0)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GAP-24 — Detach chunk 2 while airborne (is_on_floor=false, vy<0):
 #          movement fields carry forward; detach_2 fires independent of floor state
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_gap24_detach_2_while_airborne_fires_correctly() -> void:
 	# GAP-24 [Combinatorial] Airborne state (is_on_floor=false, vy=-200.0).
@@ -946,10 +933,10 @@ func test_gap24_detach_2_no_press_airborne_has_chunk_2_carries_forward() -> void
 		"gap-24c — airborne, no press: has_chunk_2 carries forward true")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # BONUS: Combinatorial mini-matrix — all 4 combinations of (has_chunk, has_chunk_2)
 #        with (detach=true, detach_2=true) — full result table verification
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func test_bonus_full_press_matrix_all_prior_combinations() -> void:
 	# BONUS [Combinatorial] Exhaustive: both keys pressed, all 4 prior states.
@@ -963,8 +950,7 @@ func test_bonus_full_press_matrix_all_prior_combinations() -> void:
 	prior_ff.has_chunk = false
 	prior_ff.has_chunk_2 = false
 	prior_ff.current_hp = 100.0
-	var result_ff: MovementSimulation.MovementState = sim.simulate(
-		prior_ff, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result_ff: MovementSimulation.MovementState = sim.simulate(prior_ff, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result_ff.has_chunk, "bonus-ff — has_chunk stays false")
 	_assert_false(result_ff.has_chunk_2, "bonus-ff2 — has_chunk_2 stays false")
 	_assert_approx(result_ff.current_hp, 100.0, "bonus-ff-hp — no HP reduction (both no-op)")
@@ -974,8 +960,7 @@ func test_bonus_full_press_matrix_all_prior_combinations() -> void:
 	prior_tf.has_chunk = true
 	prior_tf.has_chunk_2 = false
 	prior_tf.current_hp = 100.0
-	var result_tf: MovementSimulation.MovementState = sim.simulate(
-		prior_tf, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result_tf: MovementSimulation.MovementState = sim.simulate(prior_tf, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result_tf.has_chunk, "bonus-tf — has_chunk becomes false")
 	_assert_false(result_tf.has_chunk_2, "bonus-tf2 — has_chunk_2 stays false")
 	_assert_approx(result_tf.current_hp, 75.0, "bonus-tf-hp — HP reduced once (step18 only)")
@@ -985,8 +970,7 @@ func test_bonus_full_press_matrix_all_prior_combinations() -> void:
 	prior_ft.has_chunk = false
 	prior_ft.has_chunk_2 = true
 	prior_ft.current_hp = 100.0
-	var result_ft: MovementSimulation.MovementState = sim.simulate(
-		prior_ft, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result_ft: MovementSimulation.MovementState = sim.simulate(prior_ft, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result_ft.has_chunk, "bonus-ft — has_chunk stays false")
 	_assert_false(result_ft.has_chunk_2, "bonus-ft2 — has_chunk_2 becomes false")
 	_assert_approx(result_ft.current_hp, 75.0, "bonus-ft-hp — HP reduced once (step20 only)")
@@ -996,16 +980,15 @@ func test_bonus_full_press_matrix_all_prior_combinations() -> void:
 	prior_tt.has_chunk = true
 	prior_tt.has_chunk_2 = true
 	prior_tt.current_hp = 100.0
-	var result_tt: MovementSimulation.MovementState = sim.simulate(
-		prior_tt, 0.0, false, false, false, 0.0, true, 0.016, true)
+	var result_tt: MovementSimulation.MovementState = sim.simulate(prior_tt, 0.0, false, false, false, 0.0, [true, true], 0.016)
 	_assert_false(result_tt.has_chunk, "bonus-tt — has_chunk becomes false")
 	_assert_false(result_tt.has_chunk_2, "bonus-tt2 — has_chunk_2 becomes false")
 	_assert_approx(result_tt.current_hp, 50.0, "bonus-tt-hp — HP reduced twice (step18+step20)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_second_chunk_simulation_adversarial.gd ---")

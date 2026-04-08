@@ -39,12 +39,12 @@ func _make_state() -> MovementSimulation.MovementState:
 # Simulates one frame with both detach inputs parameterized.
 func _sim_frame(sim: MovementSimulation, prior: MovementSimulation.MovementState,
 		detach: bool, detach_2: bool) -> MovementSimulation.MovementState:
-	return sim.simulate(prior, 0.0, false, false, false, 0.0, detach, 0.016, detach_2)
+	return sim.simulate(prior, 0.0, false, false, false, 0.0, [detach, detach_2], 0.016)
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Detach both chunks (both out simultaneously)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # DC-1: Detach chunk 1 then detach chunk 2 on consecutive frames.
 # After both detaches: has_chunk=false, has_chunk_2=false.
@@ -92,9 +92,9 @@ func test_detach_both_chunks_same_frame() -> void:
 		"dc-2/c — dual detach same frame: HP=50 (100→75→50)")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Recall chunk 1 while chunk 2 is detached (controller sim)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # DC-3: Simulate recall of chunk 1 while chunk 2 stays detached.
 # Controller sets has_chunk=true on recall completion. has_chunk_2 remains false.
@@ -158,9 +158,9 @@ func test_recall_chunk2_while_chunk1_detached() -> void:
 		"dc-4/e — has_chunks[1] carries forward true after recall")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # HP balance across dual detach + recall cycle
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # DC-5: Full dual detach + dual recall HP balance.
 # Start: HP=100. Detach both: HP=50. Recall both: HP=100 (capped at max_hp).
@@ -221,9 +221,9 @@ func test_hp_floor_clamp_dual_detach_then_recall() -> void:
 		"dc-6/c — after recall chunk 2: HP=50")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # No state corruption in mixed flows
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # DC-7: Detach chunk 1, recall it, then detach chunk 2 — no state corruption.
 # After detach-recall-detach2 sequence, has_chunk=true, has_chunk_2=false.
@@ -309,9 +309,9 @@ func test_dual_detach_determinism() -> void:
 		"dc-10/c — determinism: current_hp identical across runs")
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # Public entry point
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 func run_all() -> int:
 	print("--- test_dual_chunk_controller.gd ---")
