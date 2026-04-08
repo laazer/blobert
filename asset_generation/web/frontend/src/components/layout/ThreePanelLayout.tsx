@@ -4,6 +4,7 @@ import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
 import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
 import { BuildControls } from "../Preview/BuildControls";
+import { ColorsPane } from "../Preview/ColorsPane";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
 import { CommandPanel } from "../CommandPanel/CommandPanel";
@@ -63,6 +64,14 @@ function CenterSwitchBar() {
         title="Procedural build options (eyes, mesh, rig)"
       >
         Build
+      </button>
+      <button
+        type="button"
+        style={tabBtn(centerPanel === "colors")}
+        onClick={() => setCenterPanel("colors")}
+        title="Per-part materials (feat_* slots) for the selected animated enemy"
+      >
+        Colors
       </button>
       <button
         type="button"
@@ -136,6 +145,20 @@ export function ThreePanelLayout() {
               <BuildControls />
             </div>
           )}
+          {centerPanel === "colors" && (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+              }}
+            >
+              <ColorsPane />
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -154,6 +177,14 @@ export function ThreePanelLayout() {
             title="Show build controls"
           >
             Build
+          </button>
+          <button
+            type="button"
+            style={showFilesBtn}
+            onClick={() => setCenterPanel("colors")}
+            title="Show per-part colors"
+          >
+            Colors
           </button>
         </div>
       )}

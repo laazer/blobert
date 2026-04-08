@@ -47,8 +47,9 @@ export function ColorsPane() {
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Zone list below depends on the selected enemy (e.g. body / head / limbs / joints / extra). Global tint for
-        export stays in the command bar (finish + hex).
+        Zones (body, head, limbs, joints, extra for spider) are all in the list below — <strong style={{ color: "#bbb" }}>scroll</strong>{" "}
+        this column if you only see Body. Per-leg and per-joint rows are under the collapsible sections. Global tint
+        for export stays in the command bar (finish + hex).
       </p>
       <FeatureMaterialControls slug={slug} showEmptyHint />
     </div>
