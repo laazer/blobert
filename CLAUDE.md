@@ -30,6 +30,8 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 
 **Hook / Task Python:** `ci/scripts/asset_python.sh` is the supported interpreter for Lefthook’s Python and GD reviewer steps (via `task hooks:py-parse`, `hooks:py-organization`, `hooks:gd-*`). It uses **only** `asset_generation/python/.venv/bin/python` or `uv run --extra dev python` from that project — not arbitrary `python3` on PATH. Pre-push pytest uses the same policy (`.lefthook/scripts/py-tests.sh`).
 
+**Coverage / arch:** `asset_generation/python/.python-version` pins `3.12` for `uv sync`. Coverage runs in **`timid`** mode (pure `sys.settrace`, no compiled tracer `.so`) so Rosetta vs native wheel mismatches do not produce tracer `dlopen` failures. If `pydantic_core` still fails to import, recreate the venv: `cd asset_generation/python && rm -rf .venv && uv sync --extra dev`.
+
 ```bash
 # Canonical full suite: Godot (bounded fail-fast import + tests) then asset_generation/python pytest
 timeout 300 ci/scripts/run_tests.sh

@@ -46,10 +46,16 @@ testpaths = ["tests"]
 # Ensures "from src." imports resolve from the project root without installing
 # the package or manually adjusting sys.path.
 pythonpath = ["."]
+filterwarnings = [
+    # Pure-Python coverage (timid) avoids tracer .so; keep a net if plugins warn anyway.
+    "ignore:Couldn't import C tracer:coverage.exceptions.CoverageWarning",
+]
 
 [tool.coverage.run]
 source = ["src"]
 branch = true
+# sys.settrace() only — no compiled tracer .so (Rosetta x86_64 vs arm64 .venv wheels).
+timid = true
 omit = [
     # CLI demo only; not exercised by the pipeline test suite.
     "src/utils/demo.py",
