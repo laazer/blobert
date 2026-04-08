@@ -1,5 +1,7 @@
 """animated_build_options: defaults, nesting, and coercion."""
 
+import re
+
 from src.utils import animated_build_options as abo
 from src.utils.animated_build_options import (
     animated_build_controls_for_api,
@@ -187,6 +189,9 @@ def test_spider_features_include_joints_and_extra_zones() -> None:
     assert set(o["features"].keys()) == {"body", "head", "limbs", "joints", "extra"}
 
 
+_SPIDER_ZONE_FEAT_RE = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex)$")
+
+
 def test_api_spider_includes_zone_and_part_material_keys() -> None:
     ctrl = animated_build_controls_for_api()
     keys = {c["key"] for c in ctrl["spider"]}
@@ -194,6 +199,15 @@ def test_api_spider_includes_zone_and_part_material_keys() -> None:
     assert "feat_joints_hex" in keys
     assert "feat_limb_leg_0_hex" in keys
     assert "feat_joint_leg_0_root_hex" in keys
+
+
+def test_api_spider_has_exactly_ten_coarse_zone_material_controls() -> None:
+    """Colors pane 'Zones' section lists five slots × finish + hex (no feat_limb_/feat_joint_)."""
+    ctrl = animated_build_controls_for_api()["spider"]
+    zone_rows = [c for c in ctrl if _SPIDER_ZONE_FEAT_RE.match(c["key"])]
+    assert len(zone_rows) == 10
+    kinds = {c["key"].split("_")[1] for c in zone_rows}
+    assert kinds == {"body", "extra", "head", "joints", "limbs"}
 
 
 def test_feat_limb_and_joint_part_flat_merge() -> None:

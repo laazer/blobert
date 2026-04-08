@@ -31,6 +31,12 @@ tasks:
     cmds:
       - bash .lefthook/scripts/py-tests.sh
 
+  tests:web:
+    desc: Run asset editor frontend unit tests (Vitest)
+    cmds:
+      - npm test
+    dir: asset_generation/web/frontend
+
   hooks:blog:
     desc: Run pre-push blog generation hook
     cmds:
