@@ -112,13 +112,8 @@ elif command -v uv >/dev/null 2>&1; then
   }
   echo "pre-push: diff-cover (fail-under=${DIFF_COVER_FAIL_UNDER}% vs ${compare})..."
   uv run --extra dev python -m diff_cover.diff_cover_tool "$PY_ROOT/coverage.xml" --compare-branch="$compare" --fail-under="$DIFF_COVER_FAIL_UNDER"
-elif python3 -c "import pytest" 2>/dev/null; then
-  _run_ruff
-  _ensure_pytest_cov python3
-  _ensure_diff_cover python3
-  _run_pytest python3
-  _run_diff_cover python3
 else
-  echo "pre-push: pytest not found. From asset_generation/python run: uv sync --extra dev" >&2
+  echo "pre-push: need $PY_ROOT/.venv (with pytest) or uv on PATH — same env as hooks (see ci/scripts/asset_python.sh)." >&2
+  echo "Run: cd $PY_ROOT && uv sync --extra dev" >&2
   exit 1
 fi

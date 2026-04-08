@@ -28,6 +28,8 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 
 `direnv` (see `.envrc`) puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH, sets `UV_PROJECT` to `asset_generation/python` so `uv run …` works from the repo root, and prepends that project’s `.venv/bin` to PATH when the venv exists (run `cd asset_generation/python && uv sync --extra dev` once).
 
+**Hook / Task Python:** `ci/scripts/asset_python.sh` is the supported interpreter for Lefthook’s Python and GD reviewer steps (via `task hooks:py-parse`, `hooks:py-organization`, `hooks:gd-*`). It uses **only** `asset_generation/python/.venv/bin/python` or `uv run --extra dev python` from that project — not arbitrary `python3` on PATH. Pre-push pytest uses the same policy (`.lefthook/scripts/py-tests.sh`).
+
 ```bash
 # Canonical full suite: Godot (bounded fail-fast import + tests) then asset_generation/python pytest
 timeout 300 ci/scripts/run_tests.sh

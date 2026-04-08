@@ -58,9 +58,9 @@ tasks:
       - bash .lefthook/scripts/py-tests.sh
 
   hooks:py-parse:
-    desc: Python parse check for staged files
+    desc: Python parse check for staged files (project .venv or uv run)
     cmds:
-      - python3 -m py_compile {{.CLI_ARGS}}
+      - bash ci/scripts/asset_python.sh -m py_compile {{.CLI_ARGS}}
 
   hooks:py-review:
     desc: Ruff checks for staged Python (asset_generation/python/pyproject.toml)
@@ -68,16 +68,16 @@ tasks:
       - bash .lefthook/scripts/py-review.sh {{.CLI_ARGS}}
 
   hooks:py-organization:
-    desc: Python organization guardrails for staged files
+    desc: Python organization guardrails for staged files (project .venv or uv run)
     cmds:
-      - python3 .lefthook/scripts/py_organization_check.py {{.CLI_ARGS}}
+      - bash ci/scripts/asset_python.sh .lefthook/scripts/py_organization_check.py {{.CLI_ARGS}}
 
   hooks:gd-review:
-    desc: Godot script reviewer checks for staged files
+    desc: Godot script reviewer checks for staged files (project .venv or uv run)
     cmds:
-      - python3 .lefthook/scripts/gd_review_check.py {{.CLI_ARGS}}
+      - bash ci/scripts/asset_python.sh .lefthook/scripts/gd_review_check.py {{.CLI_ARGS}}
 
   hooks:gd-organization:
-    desc: Godot script organization checks for staged files
+    desc: Godot script organization checks for staged files (project .venv or uv run)
     cmds:
-      - python3 .lefthook/scripts/gd_organization_check.py {{.CLI_ARGS}}
+      - bash ci/scripts/asset_python.sh .lefthook/scripts/gd_organization_check.py {{.CLI_ARGS}}

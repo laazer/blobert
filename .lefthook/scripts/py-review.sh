@@ -19,12 +19,16 @@ if [ ! -f "$PY_ROOT/pyproject.toml" ]; then
   exit 1
 fi
 
-if command -v ruff >/dev/null 2>&1; then
+if [ -x "$PY_ROOT/.venv/bin/ruff" ]; then
+  RUFF_CMD=("$PY_ROOT/.venv/bin/ruff")
+elif command -v uv >/dev/null 2>&1; then
+  RUFF_CMD=(uv run --extra dev ruff)
+elif command -v ruff >/dev/null 2>&1; then
   RUFF_CMD=(ruff)
 elif command -v uvx >/dev/null 2>&1; then
   RUFF_CMD=(uvx --from ruff ruff)
 else
-  echo "pre-commit: ruff is required (uv sync --extra dev in asset_generation/python, or uv tool install ruff)." >&2
+  echo "pre-commit: ruff is required (uv sync --extra dev in asset_generation/python)." >&2
   exit 1
 fi
 
@@ -52,4 +56,8 @@ fi
 
 echo "pre-commit: running Ruff (from pyproject.toml) on staged files..."
 cd "$PY_ROOT"
-"${RUFF_CMD[@]}" check --config pyproject.toml "${rel_args[@]}"
+if [ "${RUFF_CMD[0]}" = "uv" ]; then
+  uv run --extra dev ruff check --config pyproject.toml "${rel_args[@]}"
+else
+  "${RUFF_CMD[@]}" check --config pyproject.toml "${rel_args[@]}"
+fi

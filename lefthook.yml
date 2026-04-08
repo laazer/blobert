@@ -28,7 +28,7 @@
 #
 # Requires:
 #   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
-#   - python3 on PATH
+#   - asset_generation/python/.venv or uv on PATH (hooks use ci/scripts/asset_python.sh + py-tests.sh)
 #   - claude and/or cursor-agent on PATH (for blog-post; see BLOG_POST_PROVIDER)
 #   - For py-tests: uv sync --extra dev in asset_generation/python/ (uses .venv)
 
