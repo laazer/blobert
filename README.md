@@ -314,8 +314,9 @@ godot -s tests/run_tests.gd
 godot --check-only
 ```
 
-`direnv` is configured so that from anywhere in the repo:
+`direnv` is configured (`.envrc`) so that from anywhere in the repo:
 - `godot` — headless Godot wrapper (`bin/godot`), no `--headless` flag needed
 - `run_tests.sh` — full test suite runner
+- `UV_PROJECT` — points at `asset_generation/python` so `uv run pytest …` / `uv run python …` work without changing directory; after `uv sync --extra dev` there, `.venv/bin` is prepended so `python`, `pytest`, and `ruff` match that project
 
 Tests live under `tests/scripts/` (unit/logic tests mirroring `scripts/`) and `tests/scenes/` (scene integration tests). The runner exits with code 0 on success or 1 on any failure.

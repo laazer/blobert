@@ -26,7 +26,7 @@ Development is for **3D scenes**: 2.5D with one 3D world and 2D-like gameplay.
 
 ## Common Commands
 
-`direnv` puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH automatically.
+`direnv` (see `.envrc`) puts `bin/godot` (headless wrapper) and `ci/scripts/` on PATH, sets `UV_PROJECT` to `asset_generation/python` so `uv run …` works from the repo root, and prepends that project’s `.venv/bin` to PATH when the venv exists (run `cd asset_generation/python && uv sync --extra dev` once).
 
 ```bash
 # Canonical full suite: Godot (bounded fail-fast import + tests) then asset_generation/python pytest
