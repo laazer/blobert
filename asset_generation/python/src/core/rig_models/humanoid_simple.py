@@ -1,4 +1,4 @@
-"""7-bone humanoid rig (imp, carapace husk, examples)."""
+"""Humanoid rig (imp, carapace husk, examples): torso + multi-segment arms and legs."""
 
 from __future__ import annotations
 
@@ -7,8 +7,9 @@ from typing import ClassVar, Final
 
 from mathutils import Vector
 
-from ..rig_types import RigDefinition, rig_from_bone_map
+from ..rig_types import BoneSpec, RigDefinition
 from .base import SimpleRigModel
+from .limb_chain import limb_chain
 
 # --- Mesh helpers (humanoid family) ---
 CYLINDER_VERTICES_HEX: Final[int] = 6
@@ -33,7 +34,7 @@ class HumanoidRigLayout:
 
 
 class HumanoidSimpleRig(SimpleRigModel):
-    """7-bone humanoid layout (imp, carapace husk, examples)."""
+    """Humanoid layout: root, spine, head, optional multi-segment arms and legs."""
 
     RIG_ROOT_TAIL_Z: ClassVar[float] = HumanoidRigLayout.ROOT_TAIL_Z
     RIG_SPINE_TOP_Z: ClassVar[float] = HumanoidRigLayout.SPINE_TOP_Z
@@ -45,33 +46,69 @@ class HumanoidSimpleRig(SimpleRigModel):
     RIG_LEG_INNER_Y: ClassVar[float] = HumanoidRigLayout.LEG_INNER_Y
     RIG_LEG_UPPER_Z: ClassVar[float] = HumanoidRigLayout.LEG_UPPER_Z
 
+    ARM_SEGMENTS: ClassVar[int] = 1
+    LEG_SEGMENTS: ClassVar[int] = 1
+    ARM_END_SHAPE: ClassVar[str] = "none"
+    LEG_END_SHAPE: ClassVar[str] = "none"
+    LIMB_JOINT_BALL_SCALE: ClassVar[float] = 1.4
+    LIMB_JOINT_VISUAL: ClassVar[bool] = True
+
+    def _segment_count(self, key: str) -> int:
+        mesh_fn = getattr(self, "_mesh", None)
+        if callable(mesh_fn):
+            v = int(round(float(mesh_fn(key))))
+        else:
+            v = int(getattr(type(self), key, 1))
+        return max(1, min(8, v))
+
     def rig_definition(self) -> RigDefinition:
         h = self.body_height
         r = self._rig_ratio
-        return rig_from_bone_map(
-            {
-                "root": (Vector((0, 0, 0)), Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))), None),
-                "spine": (Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))), Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))), "root"),
-                "head": (Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))), Vector((0, 0, h * r("RIG_HEAD_TOP_Z"))), "spine"),
-                "arm_l": (
-                    Vector((0, h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
-                    Vector((0, h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
-                    "spine",
-                ),
-                "arm_r": (
-                    Vector((0, -h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
-                    Vector((0, -h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
-                    "spine",
-                ),
-                "leg_l": (
-                    Vector((0, h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
-                    Vector((0, h * r("RIG_LEG_INNER_Y"), 0)),
-                    "root",
-                ),
-                "leg_r": (
-                    Vector((0, -h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
-                    Vector((0, -h * r("RIG_LEG_INNER_Y"), 0)),
-                    "root",
-                ),
-            }
+        n_arm = self._segment_count("ARM_SEGMENTS")
+        n_leg = self._segment_count("LEG_SEGMENTS")
+
+        torso: list[BoneSpec] = [
+            BoneSpec("root", Vector((0, 0, 0)), Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))), None),
+            BoneSpec(
+                "spine",
+                Vector((0, 0, h * r("RIG_ROOT_TAIL_Z"))),
+                Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))),
+                "root",
+            ),
+            BoneSpec(
+                "head",
+                Vector((0, 0, h * r("RIG_SPINE_TOP_Z"))),
+                Vector((0, 0, h * r("RIG_HEAD_TOP_Z"))),
+                "spine",
+            ),
+        ]
+        arm_l = limb_chain(
+            Vector((0, h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
+            Vector((0, h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
+            n_arm,
+            "arm_l",
+            "spine",
         )
+        arm_r = limb_chain(
+            Vector((0, -h * r("RIG_ARM_SHOULDER_Y"), h * r("RIG_ARM_UPPER_Z"))),
+            Vector((0, -h * r("RIG_ARM_OUTER_Y"), h * r("RIG_ARM_LOWER_Z"))),
+            n_arm,
+            "arm_r",
+            "spine",
+        )
+        leg_l = limb_chain(
+            Vector((0, h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
+            Vector((0, h * r("RIG_LEG_INNER_Y"), 0)),
+            n_leg,
+            "leg_l",
+            "root",
+        )
+        leg_r = limb_chain(
+            Vector((0, -h * r("RIG_LEG_INNER_Y"), h * r("RIG_LEG_UPPER_Z"))),
+            Vector((0, -h * r("RIG_LEG_INNER_Y"), 0)),
+            n_leg,
+            "leg_r",
+            "root",
+        )
+        all_bones = torso + arm_l + arm_r + leg_l + leg_r
+        return RigDefinition(bones=tuple(all_bones))

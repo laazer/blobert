@@ -12,7 +12,11 @@ from ..core.blender_utils import (
     detect_body_scale_from_mesh,
     join_objects,
 )
-from ..materials.material_system import apply_material_to_object, get_enemy_materials
+from ..materials.material_system import (
+    apply_feature_slot_overrides,
+    apply_material_to_object,
+    get_enemy_materials,
+)
 
 
 def _validate_scale(scale: float) -> float:
@@ -42,9 +46,35 @@ class BaseAnimatedModel(ABC):
             return base
         if isinstance(base, tuple):
             return base
+        if isinstance(base, bool):
+            if isinstance(raw, bool):
+                return raw
+            if isinstance(raw, (int, float)):
+                return bool(int(raw))
+            if isinstance(raw, str):
+                v = raw.strip().lower()
+                if v in ("1", "true", "yes", "on"):
+                    return True
+                if v in ("0", "false", "no", "off", ""):
+                    return False
+            raise ValueError(f"invalid bool mesh override for {name!r}: {raw!r}")
         if isinstance(base, int) and type(base) is not bool:
             return int(round(float(raw)))
         return float(raw)
+
+    def _mesh_str(self, name: str, allowed: tuple[str, ...] | None = None) -> str:
+        """Resolve a string ClassVar with optional ``build_options['mesh']`` override."""
+        from ..core.rig_models.limb_chain import ALLOWED_END_SHAPES
+
+        allowed_set = allowed if allowed is not None else ALLOWED_END_SHAPES
+        base = getattr(type(self), name)
+        raw = self.build_options.get("mesh", {}).get(name)
+        token = base if raw is None else raw
+        if not isinstance(token, str):
+            token = str(token)
+        if token not in allowed_set:
+            raise ValueError(f"invalid mesh string for {name!r}: {token!r} (allowed: {allowed_set})")
+        return token
 
     def _scaled_location(self, xyz: tuple) -> tuple:
         if self.scale == 1.0:
@@ -62,8 +92,13 @@ class BaseAnimatedModel(ABC):
     def build_mesh_parts(self) -> None:
         """Populate ``self.parts`` with Blender mesh objects."""
 
+    def _themed_slot_materials_for(self, theme_name: str) -> dict:
+        """Theme palette slots with optional per-slot finish/color from ``build_options['features']``."""
+        raw = get_enemy_materials(theme_name, self.materials, self.rng)
+        return apply_feature_slot_overrides(raw, self.build_options.get("features"))
+
     def apply_themed_materials(self) -> None:
-        enemy_mats = get_enemy_materials(self.name, self.materials, self.rng)
+        enemy_mats = self._themed_slot_materials_for(self.name)
         if len(self.parts) >= 1:
             apply_material_to_object(self.parts[0], enemy_mats["body"])
         if len(self.parts) >= 2:

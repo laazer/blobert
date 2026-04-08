@@ -8,6 +8,7 @@ this is a no-op.
 
 from __future__ import annotations
 
+import math
 import sys
 import types
 from unittest.mock import MagicMock
@@ -40,6 +41,12 @@ def ensure_blender_stubs() -> None:
         def __init__(self, *args, **kwargs):
             pass
 
+    class _Quaternion:
+        __slots__ = ("w", "x", "y", "z")
+
+        def __init__(self, w: float = 1.0, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+            self.w, self.x, self.y, self.z = float(w), float(x), float(y), float(z)
+
     class _Vector:
         __slots__ = ("_t",)
 
@@ -59,6 +66,45 @@ def ensure_blender_stubs() -> None:
         def __repr__(self) -> str:
             return f"_Vector{self._t}"
 
+        def __add__(self, other):
+            if isinstance(other, _Vector):
+                return _Vector(tuple(a + b for a, b in zip(self._t, other._t)))
+            return NotImplemented
+
+        def __sub__(self, other):
+            if isinstance(other, _Vector):
+                return _Vector(tuple(a - b for a, b in zip(self._t, other._t)))
+            return NotImplemented
+
+        def __mul__(self, scalar):
+            if isinstance(scalar, (int, float)):
+                return _Vector(tuple(a * scalar for a in self._t))
+            return NotImplemented
+
+        def __rmul__(self, scalar):
+            return self.__mul__(scalar)
+
+        def __truediv__(self, scalar):
+            if isinstance(scalar, (int, float)) and scalar != 0:
+                return _Vector(tuple(a / scalar for a in self._t))
+            return NotImplemented
+
+        @property
+        def length(self) -> float:
+            return float(math.sqrt(sum(x * x for x in self._t)))
+
+        def normalized(self):
+            ln = self.length
+            if ln < 1e-12:
+                return _Vector(0.0, 0.0, 0.0)
+            return self / ln
+
+        def rotation_difference(self, other):
+            if not isinstance(other, _Vector):
+                return _Quaternion(1.0, 0.0, 0.0, 0.0)
+            return _Quaternion(1.0, 0.0, 0.0, 0.0)
+
     m.Euler = _Euler
+    m.Quaternion = _Quaternion
     m.Vector = _Vector
     sys.modules["mathutils"] = m
