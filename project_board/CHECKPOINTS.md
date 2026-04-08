@@ -20,6 +20,23 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-08T20-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/04_editor_ui_draft_status_for_exports.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-EUDS / run-2026-04-08-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/04_editor_ui_draft_status_for_exports.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/M9-EUDS/run-2026-04-08-autopilot.md`
+
+### [M9-EUDS] — OUTCOME: COMPLETE
+Model registry service + `/api/registry/*` + Registry UI tab + spawn_eligible consumer; tests `tests/model_registry/`, `tests/web/test_registry_api.py`; dev deps fastapi/httpx for ASGI tests.
+Log: `project_board/checkpoints/M9-EUDS/run-2026-04-08-autopilot.md`
+
+---
+
 ## Run: 2026-04-08T18-00-00Z-autopilot-single
 - Queue mode: single ticket
 - Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/03_procedural_material_and_color_pipeline_fixes.md`

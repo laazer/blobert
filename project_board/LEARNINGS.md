@@ -4,6 +4,31 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-EUDS] — Model registry draft / in-use UI + API
+
+*Completed: 2026-04-08*
+
+### Learnings
+
+- category: architecture
+  insight: When `settings.python_root` is monkeypatched to a tmp dir for manifest I/O tests, pipeline imports (`utils`, `model_registry`) must still resolve from the real checkout. A small `_canonical_python_roots()` helper (derived from `routers/registry.py` location) avoids coupling imports to the writable root.
+  impact: ASGI tests can isolate `model_registry.json` without stubbing `src`.
+  prevention: Any future router that imports from `asset_generation/python` should use the same split: canonical import path vs configurable data root.
+  severity: medium
+
+- category: dependencies
+  insight: HTTP contract tests for the web backend fit naturally under `asset_generation/python/tests/web/` with optional `dev` extras (FastAPI, httpx, sse-starlette) so `pytest tests/` stays the single CI gate; local `.venv` arch mismatches (x86_64 vs arm64 wheels) require a clean `uv sync` on the host arch.
+  impact: Developers hitting `ImportError` on `pydantic_core` should recreate the venv rather than dropping integration tests.
+  severity: low
+
+### Anti-Patterns
+
+- description: Using `settings.python_root` alone on `sys.path` for registry code when tests patch it to an empty tree — breaks `from utils...` imports.
+  detection_signal: `503` from `/api/registry/*` with `ModuleNotFoundError: utils` in logs.
+  prevention: Canonical import roots vs I/O root (as implemented in `registry.py`).
+
+---
+
 ## [M9-PMCP] — Procedural material pipeline + diff-cover on template module
 
 *Completed: 2026-04-08*
