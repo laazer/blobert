@@ -195,20 +195,7 @@ Each of the 4 families has a distinct, readable attack. The player can die.
 
 ------------------------------------------------------------
 
-Milestone 9 – Procedural Enemies in Level & Attack Loop
-Goal: New enemy models appear in procedurally generated runs and attack on a loop.
-
-Includes:
-- Wire exported enemy scenes into procedural room / run assembly (not only the sandbox)
-- Enemies use correct clips, family metadata, and attack timing in combat rooms
-- Attack loop validated against existing telegraph/hitbox systems (M8)
-
-Exit Criteria:
-A procedurally assembled run spawns the new enemies; they repeatedly attack when engaging the player without editor placement.
-
-------------------------------------------------------------
-
-Milestone 10 – Enemy & Player Model Review / Materials
+Milestone 9 – Enemy & Player Model Review / Materials
 Goal: Enemy and player models look correct; procedural colors and materials match intent.
 
 Includes:
@@ -218,6 +205,19 @@ Includes:
 
 Exit Criteria:
 Review complete; material/color issues fixed or tracked with owners. Spot-check passes in Godot.
+
+------------------------------------------------------------
+
+Milestone 10 – Procedural Enemies in Level & Attack Loop
+Goal: New enemy models appear in procedurally generated runs and attack on a loop.
+
+Includes:
+- Wire exported enemy scenes into procedural room / run assembly (not only the sandbox)
+- Enemies use correct clips, family metadata, and attack timing in combat rooms
+- Attack loop validated against existing telegraph/hitbox systems (M8)
+
+Exit Criteria:
+A procedurally assembled run spawns the new enemies; they repeatedly attack when engaging the player without editor placement.
 
 ------------------------------------------------------------
 

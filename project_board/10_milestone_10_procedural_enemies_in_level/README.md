@@ -1,4 +1,4 @@
-# Epic: Milestone 9 – Procedural Enemies in Level & Attack Loop
+# Epic: Milestone 10 – Procedural Enemies in Level & Attack Loop
 
 **Goal:** New animated enemy models are wired into procedurally generated rooms, and enemies run a continuous attack loop so combat in runs is representative of shipping gameplay.
 
@@ -15,6 +15,7 @@
 - M6 (Roguelike Run Structure) — room templates and procedural chaining
 - M7 (Enemy Animation Wiring) — clips available in Godot
 - M8 (Enemy Attacks) — damage, hitboxes, telegraphs
+- M9 (Enemy & Player Model Review / Materials) — mesh/material baseline for models shown in runs (coordinate timing; technical wiring may start earlier)
 
 ## Exit Criteria
 

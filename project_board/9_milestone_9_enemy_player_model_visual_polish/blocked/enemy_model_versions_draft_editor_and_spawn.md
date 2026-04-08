@@ -47,7 +47,7 @@ Acceptance Criteria:
 
 Blocking issues:
 - **Data contract** — registry format for per-type version lists, draft flag, and player active model must be agreed (likely extends existing export dir / JSON next to GLBs or a single manifest).
-- **M9** — procedural spawn path should be stable enough to hang version selection off a single choke point (soft dependency; can stub in sandbox first if ticket is split).
+- **M10** — procedural spawn path should be stable enough to hang version selection off a single choke point (soft dependency; can stub in sandbox first if ticket is split).
 - **M21** — 3D Model Quick Editor surfaces must exist or be extended for load/browse/delete; coordinate to avoid duplicate file browsers.
 
 Unblock when blocking issues are resolved or the ticket is split into smaller ready tickets with the same acceptance criteria partitioned.
