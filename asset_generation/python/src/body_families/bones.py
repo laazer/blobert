@@ -54,3 +54,20 @@ class BoneNames:
     @classmethod
     def get_humanoid_legs(cls) -> List[str]:
         return [cls.LEG_LEFT, cls.LEG_RIGHT]
+
+    @classmethod
+    def get_spider_leg_roots(cls) -> List[str]:
+        return [f"leg_{i}" for i in range(8)]
+
+    @classmethod
+    def get_spider_leg_chain(cls, idx: int) -> List[str]:
+        base = f"leg_{idx}"
+        return [base, f"{base}_1", f"{base}_2"]
+
+    @classmethod
+    def get_spider_group_a_roots(cls) -> List[str]:
+        return [f"leg_{i}" for i in (0, 2, 4, 6)]
+
+    @classmethod
+    def get_spider_group_b_roots(cls) -> List[str]:
+        return [f"leg_{i}" for i in (1, 3, 5, 7)]

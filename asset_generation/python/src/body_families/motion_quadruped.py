@@ -15,7 +15,103 @@ from .motion_base import BaseBodyType
 class QuadrupedBodyType(BaseBodyType):
     """Quadruped body type - multi-legged creatures with tripod gait"""
 
+    def _pose_bone_names(self) -> set[str]:
+        return {bone.name for bone in self.armature.pose.bones}
+
+    def _is_spider_rig(self) -> bool:
+        names = self._pose_bone_names()
+        return all(name in names for name in BoneNames.get_spider_leg_roots())
+
+    def _create_spider_move_animation(self, length: int):
+        group_a = BoneNames.get_spider_group_a_roots()
+        group_b = BoneNames.get_spider_group_b_roots()
+        for frame in range(0, length + 1, 2):
+            progress = frame / max(1, length)
+            cycle = progress * 2.0
+            phase_local = cycle % 1.0
+            active = group_a if cycle < 1.0 else group_b
+            planted = group_b if cycle < 1.0 else group_a
+
+            x_movement = 1.0 * progress
+            body_bob = 0.10 * math.sin(progress * math.pi * 4.0)
+            set_bone_keyframe(self.armature, BoneNames.ROOT, frame, location=(x_movement, 0, body_bob * 0.4))
+            set_bone_keyframe(self.armature, BoneNames.SPINE, frame, location=(0, 0, body_bob))
+
+            for idx, root in enumerate(active):
+                lift = 0.35 * math.sin(phase_local * math.pi)
+                swing = 0.55 * math.sin(phase_local * math.pi)
+                delay = idx * 0.06
+                # Coxa
+                set_bone_keyframe(self.armature, root, frame, rotation=(0.30 * swing, 0.0, 0.08 * lift))
+                # Femur (delayed spring)
+                set_bone_keyframe(
+                    self.armature,
+                    f"{root}_1",
+                    frame,
+                    rotation=(0.22 * math.sin((phase_local + delay) * math.pi), 0.0, -0.06 * lift),
+                )
+                # Tibia (more delayed spring)
+                set_bone_keyframe(
+                    self.armature,
+                    f"{root}_2",
+                    frame,
+                    rotation=(0.16 * math.sin((phase_local + delay * 1.6) * math.pi), 0.0, 0.03 * lift),
+                )
+
+            for idx, root in enumerate(planted):
+                settle = 0.08 * math.sin((phase_local + idx * 0.03) * math.pi)
+                set_bone_keyframe(self.armature, root, frame, rotation=(-0.05 + settle, 0.0, 0.0))
+                set_bone_keyframe(self.armature, f"{root}_1", frame, rotation=(0.03 + settle * 0.5, 0.0, 0.0))
+                set_bone_keyframe(self.armature, f"{root}_2", frame, rotation=(-0.03, 0.0, 0.0))
+
+    def _create_spider_idle_animation(self, length: int):
+        for frame in range(0, length + 1, 6):
+            breathe = 0.06 * math.sin(frame * 0.12)
+            sway = 0.05 * math.sin(frame * 0.10)
+            set_bone_keyframe(self.armature, BoneNames.SPINE, frame, rotation=(sway, 0, 0), location=(0, 0, breathe))
+            for i, root in enumerate(BoneNames.get_spider_leg_roots()):
+                jitter = 0.03 * math.sin(frame * 0.14 + i * 0.35)
+                set_bone_keyframe(self.armature, root, frame, rotation=(jitter, 0, 0))
+
+    def _create_spider_attack_animation(self, length: int):
+        windup = length // 3
+        strike = (length * 2) // 3
+        set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0), location=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, windup, rotation=(-0.25, 0, 0), location=(0, 0, -0.05))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, strike, rotation=(0.35, 0, 0), location=(0, 0, 0.08))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, length, rotation=(0, 0, 0), location=(0, 0, 0))
+        for root in BoneNames.get_spider_group_a_roots():
+            set_bone_keyframe(self.armature, root, windup, rotation=(-0.18, 0, 0))
+            set_bone_keyframe(self.armature, root, strike, rotation=(0.26, 0, 0))
+            set_bone_keyframe(self.armature, root, length, rotation=(0, 0, 0))
+
+    def _create_spider_special_attack_animation(self, length: int):
+        rise = length // 3
+        slam = (length * 2) // 3
+        set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0), location=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, rise, rotation=(-0.30, 0, 0), location=(0, 0, 0.10))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, slam, rotation=(0.30, 0, 0), location=(0, 0, -0.02))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, length, rotation=(0, 0, 0), location=(0, 0, 0))
+
+    def _create_spider_damage_animation(self, length: int):
+        set_bone_keyframe(self.armature, BoneNames.ROOT, 0, location=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.ROOT, max(2, length // 4), location=(-0.25, 0, 0.03))
+        set_bone_keyframe(self.armature, BoneNames.ROOT, length, location=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, max(2, length // 5), rotation=(-0.20, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, length, rotation=(0, 0, 0))
+
+    def _create_spider_death_animation(self, length: int):
+        set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, length // 2, rotation=(-0.35, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.SPINE, length, rotation=(-0.55, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.ROOT, 0, location=(0, 0, 0))
+        set_bone_keyframe(self.armature, BoneNames.ROOT, length, location=(0, 0, -0.15))
+
     def create_idle_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_idle_animation(length)
+            return
         for frame in range(0, length + 1, 8):
             body_sway = 0.3 * math.sin(frame * 0.1)
             set_bone_keyframe(self.armature, BoneNames.SPINE, frame, rotation=(body_sway, 0, 0))
@@ -27,6 +123,9 @@ class QuadrupedBodyType(BaseBodyType):
                         set_bone_keyframe(self.armature, leg_name, frame, rotation=(twitch, 0, 0))
 
     def create_move_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_move_animation(length)
+            return
         for frame in range(0, length + 1, 2):
             progress = frame / length
             x_movement = 1.5 * progress
@@ -45,6 +144,9 @@ class QuadrupedBodyType(BaseBodyType):
                 set_bone_keyframe(self.armature, BoneNames.LEG_MIDDLE_RIGHT, frame, rotation=(leg_cycle_mid, 0, 0))
 
     def create_attack_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_attack_animation(length)
+            return
         crouch_frame = length // 3
         leap_peak_frame = length // 2
         land_frame = (length * 3) // 4
@@ -70,6 +172,9 @@ class QuadrupedBodyType(BaseBodyType):
             set_bone_keyframe(self.armature, leg_name, length, rotation=(0, 0, 0))
 
     def create_special_attack_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_special_attack_animation(length)
+            return
         rise_frame = length // 3
         slash_frame = (length * 2) // 3
         set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0), location=(0, 0, 0))
@@ -100,6 +205,9 @@ class QuadrupedBodyType(BaseBodyType):
             set_bone_keyframe(self.armature, leg_name, length, rotation=(0, 0, 0))
 
     def create_damage_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_damage_animation(length)
+            return
         set_bone_keyframe(self.armature, BoneNames.ROOT, 0, location=(0, 0, 0))
         set_bone_keyframe(self.armature, BoneNames.ROOT, 5, location=(-1.0, 0, 0))
         set_bone_keyframe(self.armature, BoneNames.ROOT, length, location=(0, 0, 0))
@@ -108,6 +216,9 @@ class QuadrupedBodyType(BaseBodyType):
         set_bone_keyframe(self.armature, BoneNames.SPINE, length, rotation=(0, 0, 0))
 
     def create_death_animation(self, length: int):
+        if self._is_spider_rig():
+            self._create_spider_death_animation(length)
+            return
         set_bone_keyframe(self.armature, BoneNames.SPINE, 0, rotation=(0, 0, 0))
         set_bone_keyframe(self.armature, BoneNames.SPINE, length // 3, rotation=(-0.5, 0, 0))
         set_bone_keyframe(self.armature, BoneNames.SPINE, (length * 2) // 3, rotation=(-1.2, 0, 0))

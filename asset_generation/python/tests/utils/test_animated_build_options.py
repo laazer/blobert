@@ -12,7 +12,11 @@ def test_defaults_spider() -> None:
     assert o["eye_count"] == 2
     assert "mesh" in o
     assert o["mesh"]["BODY_BASE"] == 1.0
-    assert o["mesh"]["LEG_COUNT"] == 6
+    assert o["mesh"]["LEG_COUNT"] == 8
+    assert "features" in o
+    assert o["features"]["body"]["finish"] == "default"
+    assert o["features"]["body"]["hex"] == ""
+    assert "feat_body_finish" not in o
 
 
 def test_nested_slug_object() -> None:
@@ -71,3 +75,40 @@ def test_mesh_override_flat() -> None:
     o = options_for_enemy("spider", {"spider": {"BODY_BASE": 1.4, "eye_count": 4}})
     assert o["eye_count"] == 4
     assert o["mesh"]["BODY_BASE"] == 1.4
+
+
+def test_features_nested_and_flat() -> None:
+    o = options_for_enemy(
+        "imp",
+        {
+            "imp": {
+                "features": {
+                    "body": {"finish": "glossy", "hex": "ff00aa"},
+                    "head": {"finish": "matte", "hex": ""},
+                },
+                "feat_limbs_finish": "metallic",
+                "feat_limbs_hex": "112233",
+            }
+        },
+    )
+    assert o["features"]["body"]["finish"] == "glossy"
+    assert o["features"]["body"]["hex"] == "ff00aa"
+    assert o["features"]["head"]["finish"] == "matte"
+    assert o["features"]["limbs"]["finish"] == "metallic"
+    assert o["features"]["limbs"]["hex"] == "112233"
+
+
+def test_features_invalid_finish_hex() -> None:
+    o = options_for_enemy("slug", {"feat_body_finish": "not_a_finish", "feat_extra_hex": "gggggg"})
+    assert o["features"]["body"]["finish"] == "default"
+    assert o["features"]["extra"]["hex"] == ""
+
+
+def test_api_includes_feature_controls() -> None:
+    ctrl = animated_build_controls_for_api()
+    keys = {c["key"] for c in ctrl["spider"]}
+    assert "feat_body_finish" in keys
+    assert "feat_body_hex" in keys
+    body_finish = next(c for c in ctrl["spider"] if c["key"] == "feat_body_finish")
+    assert body_finish["type"] == "select_str"
+    assert "glossy" in body_finish["options"]
