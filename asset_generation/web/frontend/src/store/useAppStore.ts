@@ -17,7 +17,7 @@ import {
   mergeBuildOptionValues,
 } from "../api/client";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../utils/animatedZoneControlsMerge";
-import { DEFAULT_ANIMATED_ENEMY_META } from "../utils/enemyDisplay";
+import { DEFAULT_ANIMATED_ENEMY_META, DEFAULT_ANIMATED_ENEMY_SLUGS } from "../utils/enemyDisplay";
 
 export type CommandPanelContext = {
   cmd: RunCmd;
@@ -122,7 +122,14 @@ export const useAppStore = create<AppState>()(
       });
       try {
         const meta = await fetchEnemyPreviewMeta();
-        const buildControls = mergeCanonicalZoneControlsForAllSlugs(meta.animatedBuildControls);
+        const slugList =
+          meta.enemies.length > 0
+            ? meta.enemies.map((e) => e.slug)
+            : [...DEFAULT_ANIMATED_ENEMY_SLUGS];
+        const buildControls = mergeCanonicalZoneControlsForAllSlugs(
+          meta.animatedBuildControls,
+          slugList,
+        );
         set((s) => {
           if (meta.enemies.length > 0) {
             s.animatedEnemyMeta = meta.enemies;

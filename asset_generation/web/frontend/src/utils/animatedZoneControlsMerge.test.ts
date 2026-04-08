@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnimatedBuildControlDef } from "../types";
-import { mergeCanonicalZoneControls } from "./animatedZoneControlsMerge";
+import { mergeCanonicalZoneControls, mergeCanonicalZoneControlsForAllSlugs } from "./animatedZoneControlsMerge";
 
 describe("mergeCanonicalZoneControls", () => {
   it("fills missing spider zones when API only returned body", () => {
@@ -59,5 +59,22 @@ describe("mergeCanonicalZoneControls", () => {
       { key: "feat_body_finish", label: "Body finish", type: "select_str", options: ["a"], default: "a" },
     ];
     expect(mergeCanonicalZoneControls("unknown_enemy", defs)).toEqual(defs);
+  });
+});
+
+describe("mergeCanonicalZoneControlsForAllSlugs", () => {
+  it("seeds spider zone controls when API returns empty animated_build_controls", () => {
+    const merged = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
+    expect(merged.spider).toBeDefined();
+    const zoneKeys = (merged.spider ?? []).filter((d) =>
+      /^feat_(body|head|limbs|joints|extra)_(finish|hex)$/.test(d.key),
+    );
+    expect(zoneKeys).toHaveLength(10);
+  });
+
+  it("normalizes API slug keys to lowercase", () => {
+    const merged = mergeCanonicalZoneControlsForAllSlugs({ Spider: [] }, []);
+    expect(merged.spider).toBeDefined();
+    expect(merged.Spider).toBeUndefined();
   });
 });

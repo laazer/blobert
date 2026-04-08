@@ -77,12 +77,24 @@ export function mergeCanonicalZoneControls(
   return [...withoutZones, ...canonicalZoneDefs];
 }
 
+/**
+ * Merges API controls per slug and ensures listed slugs exist even when the meta response omits them
+ * (e.g. ``animated_build_controls: {}`` on ImportError fallback or proxy misconfig).
+ */
 export function mergeCanonicalZoneControlsForAllSlugs(
   controls: Record<string, AnimatedBuildControlDef[]>,
+  slugsToEnsure?: readonly string[],
 ): Record<string, AnimatedBuildControlDef[]> {
   const out: Record<string, AnimatedBuildControlDef[]> = {};
   for (const [slug, defs] of Object.entries(controls)) {
-    out[slug] = mergeCanonicalZoneControls(slug, defs ?? []);
+    const key = normalizeAnimatedSlug(slug);
+    out[key] = mergeCanonicalZoneControls(slug, defs ?? []);
+  }
+  for (const slug of slugsToEnsure ?? []) {
+    const key = normalizeAnimatedSlug(slug);
+    if (!out[key]) {
+      out[key] = mergeCanonicalZoneControls(slug, []);
+    }
   }
   return out;
 }
