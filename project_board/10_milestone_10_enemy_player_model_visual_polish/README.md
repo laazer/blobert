@@ -8,6 +8,7 @@
 - Fix or regenerate materials so base colors, infection/mutation accents, and family identity are consistent — including procedural/color-generation paths in Blender/Python (`asset_generation`) where colors are wrong or washed out.
 - Align with M13 (Blobert Visual Identity) for player-side readability; avoid one-off shaders unless shared.
 - Document any families deferred to a follow-up ticket with a clear reason (blocked only when scoped).
+- **Blocked (separate ticket):** per-type **visual versions**, **draft vs in-use** UI, editor **load/delete** rules, and **random version at spawn** — see `blocked/enemy_model_versions_draft_editor_and_spawn.md`.
 
 ## Dependencies
 
