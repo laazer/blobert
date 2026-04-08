@@ -45,9 +45,9 @@ export function ColorsPane() {
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Zones (body, head, limbs, joints, extra for spider) are listed below — <strong style={{ color: "#bbb" }}>scroll the center panel</strong>{" "}
-        if the list is clipped. Per-leg and per-joint rows are under the collapsible sections. Global tint
-        for export stays in the command bar (finish + hex).
+        Each coarse zone has <strong style={{ color: "#bbb" }}>finish</strong> + <strong style={{ color: "#bbb" }}>hex</strong>{" "}
+        (body, head, limbs, joints, extra on spider). Per-limb and per-joint overrides are in the collapsible sections below.
+        Global export tint stays in the command bar.
       </p>
       <FeatureMaterialControls slug={slug} showEmptyHint />
     </div>
