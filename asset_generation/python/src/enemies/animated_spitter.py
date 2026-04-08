@@ -1,4 +1,5 @@
 """Animated acid spitter enemy builder."""
+from __future__ import annotations
 
 from typing import ClassVar
 

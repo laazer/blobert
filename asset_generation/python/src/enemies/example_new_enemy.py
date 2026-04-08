@@ -2,6 +2,8 @@
 Examples of adding enemies with BaseAnimatedModel / AnimatedEnemy.
 """
 
+from __future__ import annotations
+
 import math
 
 from mathutils import Vector

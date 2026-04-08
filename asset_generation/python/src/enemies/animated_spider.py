@@ -1,5 +1,7 @@
 """Animated spider enemy builder (slug: spider, quadruped body)."""
 
+from __future__ import annotations
+
 import math
 from typing import ClassVar
 
