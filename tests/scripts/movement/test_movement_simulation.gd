@@ -106,11 +106,11 @@ func test_spec2_default_is_on_floor_is_false() -> void:
 # SPEC-3 — Exported configuration parameter defaults
 # ---------------------------------------------------------------------------
 
-# AC-3.1: max_speed default is 200.0.
+# AC-3.1: max_speed default matches MovementSimulation.DEFAULT_MAX_SPEED.
 func test_spec3_default_max_speed() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
-	_assert_approx(sim.max_speed, 200.0,
-		"spec3 — max_speed default is 200.0")
+	_assert_approx(sim.max_speed, MovementSimulation.DEFAULT_MAX_SPEED,
+		"spec3 — max_speed default matches DEFAULT_MAX_SPEED")
 
 
 # AC-3.2: acceleration default is 800.0.
@@ -228,19 +228,19 @@ func test_spec5_case1_grounded_input_from_rest() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	# move_toward(0.0, 200.0, 12.8) = 12.8
+	# move_toward(0.0, DEFAULT_MAX_SPEED, 12.8) = 12.8
 	_assert_approx(result.velocity.x, 12.8,
 		"spec5/case1 — grounded+input from rest: velocity.x = 12.8")
 
 
 # AC-5.1: move_toward caps at target, not at max_speed explicitly.
-# Spec example: vx=190, axis=1, delta=0.016 → step=12.8 > remaining=10 → vx=200.0
+# Spec example: vx=190, axis=1, delta=0.016 → step=12.8 > remaining=10 → vx=DEFAULT_MAX_SPEED
 func test_spec5_case1_grounded_input_caps_at_target() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(190.0, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result.velocity.x, 200.0,
-		"spec5/case1 — grounded+input near max_speed: caps at target 200.0")
+	_assert_approx(result.velocity.x, MovementSimulation.DEFAULT_MAX_SPEED,
+		"spec5/case1 — grounded+input near max_speed: caps at DEFAULT_MAX_SPEED")
 
 
 # AC-5.1: Negative input_axis accelerates in the negative direction.
@@ -248,7 +248,7 @@ func test_spec5_case1_grounded_negative_input() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 0.0, [false, false], 0.016)
-	# move_toward(0.0, -200.0, 12.8) = -12.8
+	# move_toward(0.0, -DEFAULT_MAX_SPEED, 12.8) = -12.8
 	_assert_approx(result.velocity.x, -12.8,
 		"spec5/case1 — grounded+negative input from rest: velocity.x = -12.8")
 
@@ -257,7 +257,7 @@ func test_spec5_case1_grounded_negative_input() -> void:
 func test_spec5_case1_grounded_partial_axis() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	# target = 0.5 * 200.0 = 100.0; step = 800.0 * 0.016 = 12.8
+	# target = 0.5 * DEFAULT_MAX_SPEED = 100.0; step = 800.0 * 0.016 = 12.8
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.5, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(result.velocity.x, 12.8,
 		"spec5/case1 — grounded+axis=0.5 from rest: step=12.8 toward target=100.0")
@@ -445,10 +445,10 @@ func test_spec12_single_step_acceleration() -> void:
 
 
 # AC-12.2: Two half-steps of delta=0.008 produce the same velocity.x as one full step.
-# Chosen delta range is safe: step (6.4 or 12.8) << remaining distance (200.0), no overshoot.
-# Half-step 1: move_toward(0.0, 200.0, 6.4) = 6.4
-# Half-step 2: move_toward(6.4, 200.0, 6.4) = 12.8
-# Full step:   move_toward(0.0, 200.0, 12.8) = 12.8  → both equal 12.8
+# Chosen delta range is safe: step (6.4 or 12.8) << remaining distance (DEFAULT_MAX_SPEED), no overshoot.
+# Half-step 1: move_toward(0.0, DEFAULT_MAX_SPEED, 6.4) = 6.4
+# Half-step 2: move_toward(6.4, DEFAULT_MAX_SPEED, 6.4) = 12.8
+# Full step:   move_toward(0.0, DEFAULT_MAX_SPEED, 12.8) = 12.8  → both equal 12.8
 func test_spec12_two_half_steps_match_one_full_step_acceleration() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)

@@ -57,6 +57,9 @@ signal detach_2_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_2_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_2_reabsorbed(player_position: Vector3, chunk_position: Vector3)
 
+## Horizontal cap in 2D sim units (see SCALE_2D_TO_3D). Applied to `MovementSimulation.max_speed` in `_ready`.
+const _DEFAULT_MOVEMENT_MAX_SPEED_2D: float = 300.0
+@export var movement_max_speed_2d: float = _DEFAULT_MOVEMENT_MAX_SPEED_2D
 @export var jump_height: float = 120.0
 @export var coyote_time: float = 0.1
 @export var jump_cut_velocity: float = -200.0
@@ -109,6 +112,7 @@ const _ENEMY_ACID_MIN_TICK_INTERVAL: float = 0.01
 
 func _ready() -> void:
 	_simulation = MovementSimulation.new()
+	_simulation.max_speed = movement_max_speed_2d
 	var project_gravity: float = ProjectSettings.get_setting(
 		"physics/3d/default_gravity", _DEFAULT_PROJECT_GRAVITY
 	) as float

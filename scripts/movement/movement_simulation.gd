@@ -110,10 +110,15 @@ class MovementState:
 # Undefined behavior for negative values; zero is valid.
 # ---------------------------------------------------------------------------
 
+## Library default horizontal speed cap (2D sim units). Single source of truth for
+## headless contract tests; `max_speed` initializes to this. Player / other
+## call sites may assign a different `max_speed` after `MovementSimulation.new()`.
+const DEFAULT_MAX_SPEED: float = 200.0
+
 ## Maximum horizontal speed in pixels per second.
 ## move_toward caps at this target naturally — no explicit clamp required,
 ## though the result is bounded by the target passed to move_toward.
-var max_speed: float = 300.0
+var max_speed: float = DEFAULT_MAX_SPEED
 
 ## Rate of horizontal velocity increase toward max_speed when directional
 ## input is held, in pixels per second squared.

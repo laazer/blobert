@@ -28,6 +28,7 @@
 #   [M1-001] TB-011 — Very large delta does not overshoot beyond target (move_toward cap)
 #   [M1-001] TB-012 — Exact-step boundary: acceleration step equals remaining distance
 #   [M1-001] TB-013 — Negative config values produce reversed/unexpected but non-crashing behavior
+#   TB-014–018 — test_movement_simulation_adversarial_2.gd (file size split)
 
 class_name MovementSimulationAdversarialTests
 extends "res://tests/utils/test_utils.gd"
@@ -291,20 +292,20 @@ func test_tb004_prior_state_is_on_floor_not_mutated_when_passed_false() -> void:
 # matches velocity direction, should simulate() accelerate further or decelerate
 # toward max_speed?
 # Assumption made: move_toward behavior is the only mechanism. If vx=300.0,
-# max_speed=200.0, and input_axis=1.0, target=200.0 and move_toward moves
+# max_speed=DEFAULT_MAX_SPEED, and input_axis=1.0, target=DEFAULT_MAX_SPEED and move_toward moves
 # toward target (decelerating). This is the natural and correct behavior.
 # Confidence: High
 # ---------------------------------------------------------------------------
 
 func test_tb005_velocity_x_above_max_speed_decelerates_with_positive_input() -> void:
-	# Prior vx = 300.0 (exceeds default max_speed=200.0), input_axis=1.0, grounded.
-	# Target = 1.0 * 200.0 = 200.0. Step = 800 * 0.016 = 12.8.
-	# move_toward(300.0, 200.0, 12.8) = 287.2 (moves toward target, i.e., decelerates).
+	# Prior vx = 300.0 (exceeds sim.max_speed / DEFAULT_MAX_SPEED), input_axis=1.0, grounded.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(300.0, 0.0, true)
+	var step: float = sim.acceleration * 0.016
+	var prior_vx: float = 300.0
+	var prior: MovementSimulation.MovementState = _make_state_with(prior_vx, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result.velocity.x, 287.2,
-		"tb005 — vx>max_speed with positive input: decelerates toward max_speed (287.2)")
+	_assert_approx(result.velocity.x, prior_vx - step,
+		"tb005 — vx>max_speed with positive input: decelerates toward max_speed")
 
 
 func test_tb005_velocity_x_above_max_speed_does_not_exceed_prior_when_input_matches() -> void:
@@ -318,34 +319,32 @@ func test_tb005_velocity_x_above_max_speed_does_not_exceed_prior_when_input_matc
 
 
 func test_tb005_velocity_x_far_below_neg_max_speed_decelerates_with_negative_input() -> void:
-	# Mirror of the above: vx = -300.0, input_axis = -1.0, target = -200.0.
-	# move_toward(-300.0, -200.0, 12.8) = -287.2.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(-300.0, 0.0, true)
+	var step: float = sim.acceleration * 0.016
+	var prior_vx: float = -300.0
+	var prior: MovementSimulation.MovementState = _make_state_with(prior_vx, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result.velocity.x, -287.2,
-		"tb005 — vx<-max_speed with negative input: decelerates toward -max_speed (-287.2)")
+	_assert_approx(result.velocity.x, prior_vx + step,
+		"tb005 — vx<-max_speed with negative input: decelerates toward -max_speed")
 
 
 # ---------------------------------------------------------------------------
 # [M1-001] TB-006 — Sign reversal (full-speed right, then full-input left)
 #
 # VULNERABILITY: The most common movement feel bug is incorrect behavior when
-# reversing direction. At vx=200.0 (max speed right), applying input_axis=-1.0:
-# target = -1.0 * 200.0 = -200.0. Step = 800 * 0.016 = 12.8.
-# move_toward(200.0, -200.0, 12.8) = 187.2 (moves toward -200 by 12.8).
+# reversing direction. At vx=DEFAULT_MAX_SPEED (max speed right), applying input_axis=-1.0:
+# target = -max_speed. Step = acceleration * delta.
 # This should NOT overshoot through zero or produce positive velocity.
 # ---------------------------------------------------------------------------
 
 func test_tb006_full_speed_right_then_left_input_decelerates_correctly() -> void:
-	# Starting at max speed rightward, reversing input.
-	# Expected: velocity moves toward negative target by exactly the step amount.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(200.0, 0.0, true)
+	var ms: float = sim.max_speed
+	var step: float = sim.acceleration * 0.016
+	var prior: MovementSimulation.MovementState = _make_state_with(ms, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, -1.0, false, false, false, 0.0, [false, false], 0.016)
-	# move_toward(200.0, -200.0, 12.8) = 187.2
-	_assert_approx(result.velocity.x, 187.2,
-		"tb006 — reverse input at max speed: vx = 187.2 (decelerates, does not jump to negative)")
+	_assert_approx(result.velocity.x, ms - step,
+		"tb006 — reverse input at max speed: decelerates by one accel step, does not jump to negative")
 
 
 func test_tb006_sign_reversal_does_not_overshoot_zero_in_one_frame() -> void:
@@ -368,7 +367,7 @@ func test_tb006_sign_reversal_stays_within_max_speed_after_crossing_zero() -> vo
 	# After sign reversal, velocity should remain bounded by max_speed.
 	# Run 200 frames of full left input starting from max speed right.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var state: MovementSimulation.MovementState = _make_state_with(200.0, 0.0, true)
+	var state: MovementSimulation.MovementState = _make_state_with(sim.max_speed, 0.0, true)
 	for _i: int in range(200):
 		state = sim.simulate(state, -1.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_true(state.velocity.x >= -sim.max_speed - EPSILON,
@@ -431,16 +430,16 @@ func test_tb007_negative_vy_eventually_becomes_positive_after_many_frames() -> v
 
 func test_tb008_max_speed_change_takes_effect_on_next_call() -> void:
 	var sim: MovementSimulation = MovementSimulation.new()
-	# First frame with max_speed=200 (default): vx goes from 0 to 12.8.
+	# First frame with default max_speed: vx goes from 0 to accel*delta.
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	state = sim.simulate(state, 1.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(state.velocity.x, 12.8,
 		"tb008 — pre-change frame: velocity.x = 12.8 (baseline)")
-	# Now change max_speed to 50.0. Next simulate() call should target 50.0, not 200.0.
+	# Now change max_speed to 50.0. Next simulate() call should target 50.0, not DEFAULT_MAX_SPEED.
 	sim.max_speed = 50.0
 	state = sim.simulate(state, 1.0, false, false, false, 0.0, [false, false], 0.016)
 	# move_toward(12.8, 50.0, 12.8) = 25.6 (still approaching lower target).
-	# If impl cached max_speed=200 at construction, it would produce move_toward(12.8, 200.0, 12.8) = 25.6 too — same result.
+	# If impl cached default max_speed at construction incorrectly, discriminating tests below still catch it.
 	# Use a more discriminating config: set max_speed BELOW current velocity.
 	sim.max_speed = 5.0
 	state = _make_state_with(50.0, 0.0, true)
@@ -477,14 +476,12 @@ func test_tb008_gravity_change_takes_effect_on_next_call() -> void:
 # ---------------------------------------------------------------------------
 
 func test_tb009_velocity_x_converges_to_max_speed_after_sufficient_frames() -> void:
-	# With acceleration=800.0, delta=0.016: to go from 0 to 200.0 takes
-	# ceil(200.0 / 12.8) = 16 frames. After 100 frames we should be solidly at 200.0.
 	var sim: MovementSimulation = MovementSimulation.new()
 	var state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	for _i: int in range(100):
 		state = sim.simulate(state, 1.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(state.velocity.x, sim.max_speed,
-		"tb009 — after 100 frames of positive input: velocity.x converges to max_speed=200.0")
+		"tb009 — after 100 frames of positive input: velocity.x converges to sim.max_speed")
 
 
 func test_tb009_velocity_x_converges_to_neg_max_speed_with_negative_input() -> void:
@@ -493,19 +490,16 @@ func test_tb009_velocity_x_converges_to_neg_max_speed_with_negative_input() -> v
 	for _i: int in range(100):
 		state = sim.simulate(state, -1.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(state.velocity.x, -sim.max_speed,
-		"tb009 — after 100 frames of negative input: velocity.x converges to -max_speed=-200.0")
+		"tb009 — after 100 frames of negative input: velocity.x converges to -sim.max_speed")
 
 
 func test_tb009_velocity_x_reaches_zero_from_rest_after_friction_drains_it() -> void:
-	# After enough friction frames from velocity=200.0, velocity should reach 0.0.
-	# With friction=1200.0, delta=0.016: step=19.2. Frames to drain 200.0:
-	# ceil(200.0 / 19.2) = 11 frames. After 50 frames it should be solidly 0.0.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var state: MovementSimulation.MovementState = _make_state_with(200.0, 0.0, true)
+	var state: MovementSimulation.MovementState = _make_state_with(sim.max_speed, 0.0, true)
 	for _i: int in range(50):
 		state = sim.simulate(state, 0.0, false, false, false, 0.0, [false, false], 0.016)
 	_assert_approx(state.velocity.x, 0.0,
-		"tb009 — after 50 friction frames from vx=200: velocity.x converges to 0.0")
+		"tb009 — after 50 friction frames from vx=max_speed: velocity.x converges to 0.0")
 
 
 # ---------------------------------------------------------------------------
@@ -552,8 +546,7 @@ func test_tb010_air_decel_does_not_overshoot_zero_with_negative_velocity() -> vo
 # ---------------------------------------------------------------------------
 
 func test_tb011_very_large_delta_velocity_x_does_not_exceed_max_speed() -> void:
-	# delta=10.0 seconds. Step = 800 * 10.0 = 8000.0 >> target distance (200.0).
-	# move_toward(0.0, 200.0, 8000.0) = 200.0 (capped at target).
+	# delta=10.0 seconds. Step >> target distance to sim.max_speed.
 	var sim: MovementSimulation = MovementSimulation.new()
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 10.0)
@@ -567,7 +560,7 @@ func test_tb011_very_large_delta_velocity_x_reaches_max_speed_in_one_step() -> v
 	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 10.0)
 	_assert_approx(result.velocity.x, sim.max_speed,
-		"tb011 — very large delta: velocity.x = max_speed (200.0) in one frame")
+		"tb011 — very large delta: velocity.x = sim.max_speed in one frame")
 
 
 func test_tb011_very_large_delta_velocity_y_is_gravity_times_delta() -> void:
@@ -581,10 +574,8 @@ func test_tb011_very_large_delta_velocity_y_is_gravity_times_delta() -> void:
 
 
 func test_tb011_very_large_delta_friction_stops_at_zero() -> void:
-	# vx=200.0, no input, grounded, delta=10.0. Step = 1200 * 10.0 = 12000.0 >> 200.0.
-	# move_toward(200.0, 0.0, 12000.0) = 0.0 (does not overshoot to negative).
 	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(200.0, 0.0, true)
+	var prior: MovementSimulation.MovementState = _make_state_with(sim.max_speed, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 10.0)
 	_assert_approx(result.velocity.x, 0.0,
 		"tb011 — very large delta friction: stops exactly at 0.0, does not overshoot negative")
@@ -600,15 +591,14 @@ func test_tb011_very_large_delta_friction_stops_at_zero() -> void:
 # ---------------------------------------------------------------------------
 
 func test_tb012_acceleration_step_equals_remaining_distance_reaches_target_exactly() -> void:
-	# target = 200.0, prior vx = 187.2.
-	# Remaining = 200.0 - 187.2 = 12.8.
-	# Step = 800.0 * 0.016 = 12.8. Exactly equal.
-	# move_toward(187.2, 200.0, 12.8) = 200.0 exactly.
 	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(187.2, 0.0, true)
+	var ms: float = sim.max_speed
+	var step: float = sim.acceleration * 0.016
+	var prior_vx: float = ms - step
+	var prior: MovementSimulation.MovementState = _make_state_with(prior_vx, 0.0, true)
 	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result.velocity.x, 200.0,
-		"tb012 — step == remaining distance: result reaches target exactly (200.0)")
+	_assert_approx(result.velocity.x, ms,
+		"tb012 — step == remaining distance: result reaches sim.max_speed exactly")
 
 
 func test_tb012_friction_step_equals_remaining_distance_reaches_zero_exactly() -> void:
@@ -698,205 +688,6 @@ func test_tb013_negative_friction_does_not_crash_or_produce_nan() -> void:
 
 
 # ---------------------------------------------------------------------------
-# [M1-001] TB-014 — Input axis exactly at boundary values (-1.0, 0.0, 1.0)
-#
-# VULNERABILITY: While values near boundaries are tested, the exact float
-# boundaries have been tested individually but not in a combined immutability/
-# symmetry check. Specifically: is simulate(state, -1.0, d) the exact negation
-# of simulate(state, 1.0, d) when starting from rest? This verifies symmetry.
-# ---------------------------------------------------------------------------
-
-func test_tb014_input_axis_symmetry_positive_vs_negative_from_rest() -> void:
-	# From rest: simulate with +1.0 and -1.0 should produce equal-and-opposite vx.
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior_pos: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var prior_neg: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result_pos: MovementSimulation.MovementState = sim.simulate(prior_pos, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	var result_neg: MovementSimulation.MovementState = sim.simulate(prior_neg, -1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result_pos.velocity.x, -result_neg.velocity.x,
-		"tb014 — input_axis symmetry: simulate(+1.0) produces -simulate(-1.0) from rest")
-
-
-func test_tb014_input_axis_exactly_zero_grounded_applies_friction_not_acceleration() -> void:
-	# VULNERABILITY: An impl with an off-by-one comparison (e.g., using < 0.0001
-	# instead of == 0.0 to detect "no input") might incorrectly apply acceleration
-	# toward 0.0 when input_axis is exactly 0.0. This test verifies that the
-	# friction path (not the acceleration-toward-zero path) is taken.
-	# The result should be identical to the friction test (vx=100 → 80.8).
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, true)
-	# input_axis is EXACTLY 0.0 (not a small float).
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result.velocity.x, 80.8,
-		"tb014 — input_axis exactly 0.0: friction applied (vx=100 → 80.8), not acceleration toward 0")
-
-
-# ---------------------------------------------------------------------------
-# [M1-001] TB-015 — Multi-frame state machine correctness (floor → air transition)
-#
-# VULNERABILITY: No existing test verifies a sequence where is_on_floor
-# transitions from true to false mid-sequence and the correct formula
-# (grounded vs. airborne) is applied each frame.
-# ---------------------------------------------------------------------------
-
-func test_tb015_transition_from_grounded_to_airborne_applies_correct_formulas() -> void:
-	# Frame 1: grounded + input → vx accelerates (AC-5.1), gravity applies.
-	# Frame 2: airborne + input → vx continues with same acceleration (AC-5.3), gravity adds.
-	# This verifies that the is_on_floor flag correctly switches the formula path.
-	var sim: MovementSimulation = MovementSimulation.new()
-
-	# Frame 1 — grounded
-	var state_ground: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result1: MovementSimulation.MovementState = sim.simulate(state_ground, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result1.velocity.x, 12.8,
-		"tb015 — frame 1 grounded: velocity.x = 12.8")
-	_assert_approx(result1.velocity.y, 15.68,
-		"tb015 — frame 1 grounded: gravity applied, vy = 15.68")
-
-	# Frame 2 — airborne (is_on_floor toggled to false)
-	var state_air: MovementSimulation.MovementState = MovementSimulation.MovementState.new()
-	state_air.velocity = result1.velocity
-	state_air.is_on_floor = false  # simulate the character leaving the floor
-	var result2: MovementSimulation.MovementState = sim.simulate(state_air, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	# vx: move_toward(12.8, 200.0, 12.8) = 25.6 (same acceleration formula applies airborne)
-	_assert_approx(result2.velocity.x, 25.6,
-		"tb015 — frame 2 airborne: velocity.x = 25.6 (same accel formula)")
-	# vy: 15.68 + 15.68 = 31.36
-	_assert_approx(result2.velocity.y, 31.36,
-		"tb015 — frame 2 airborne: gravity accumulates, vy = 31.36")
-
-
-func test_tb015_transition_from_airborne_to_grounded_applies_friction_not_air_decel() -> void:
-	# Moving at vx=100, is_on_floor transitions from false to true.
-	# Airborne with no input: air_decel=0.0 preserves velocity.
-	# Grounded with no input: friction applies (vx: 100 → 80.8).
-	# Test verifies friction (not air_decel=0) is used when is_on_floor=true.
-	var sim: MovementSimulation = MovementSimulation.new()
-
-	# Frame 1 — airborne, no input: vx preserved
-	var state_air: MovementSimulation.MovementState = _make_state_with(100.0, 0.0, false)
-	var result_air: MovementSimulation.MovementState = sim.simulate(state_air, 0.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result_air.velocity.x, 100.0,
-		"tb015 — airborne no input: vx preserved at 100.0")
-
-	# Frame 2 — grounded, no input: friction applies
-	var state_ground: MovementSimulation.MovementState = MovementSimulation.MovementState.new()
-	state_ground.velocity = result_air.velocity
-	state_ground.is_on_floor = true
-	var result_ground: MovementSimulation.MovementState = sim.simulate(state_ground, 0.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_approx(result_ground.velocity.x, 80.8,
-		"tb015 — grounded no input after airborne: friction applies, vx = 80.8 (not preserved)")
-
-
-# ---------------------------------------------------------------------------
-# [M1-001] TB-016 — simulate() return value identity: no stale reference
-#
-# VULNERABILITY: An implementation that returns `prior_state` itself (instead
-# of a new object) but modifies it in place would pass the existing
-# test_spec4_returns_new_object test IF it allocated a new object in any
-# branch. But consider an impl where some paths return `prior_state` directly:
-# subsequent modification of the prior state by the caller would corrupt the
-# result. This test holds onto the result and checks it is not the same object
-# AS prior_state under multiple call conditions.
-# ---------------------------------------------------------------------------
-
-func test_tb016_returned_object_is_not_prior_state_regardless_of_delta() -> void:
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(50.0, 30.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.0)
-	# Even with delta=0 (no change), the spec requires a new object.
-	_assert_true(result != prior,
-		"tb016 — delta=0.0: returned object is still distinct from prior_state")
-
-
-func test_tb016_returned_object_is_not_prior_state_with_zero_input_airborne() -> void:
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.016)
-	_assert_true(result != prior,
-		"tb016 — airborne+no input: returned object distinct from prior_state")
-
-
-# ---------------------------------------------------------------------------
-# [M1-001] TB-017 — Mutation stress: many simultaneous independent simulations
-#
-# VULNERABILITY: If MovementSimulation stores any mutable state between calls
-# (e.g., a cached velocity or a previous delta), then running two separate
-# simulation instances simultaneously and interleaving their calls would produce
-# different results than calling them in sequence. This tests that the
-# simulation is truly stateless across calls.
-# ---------------------------------------------------------------------------
-
-func test_tb017_two_independent_sim_instances_produce_identical_results() -> void:
-	var sim_a: MovementSimulation = MovementSimulation.new()
-	var sim_b: MovementSimulation = MovementSimulation.new()
-
-	var prior_a: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var prior_b: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-
-	# Interleave calls on two different instances.
-	var r_a1: MovementSimulation.MovementState = sim_a.simulate(prior_a, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	var r_b1: MovementSimulation.MovementState = sim_b.simulate(prior_b, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	var r_a2: MovementSimulation.MovementState = sim_a.simulate(r_a1, 1.0, false, false, false, 0.0, [false, false], 0.016)
-	var r_b2: MovementSimulation.MovementState = sim_b.simulate(r_b1, 1.0, false, false, false, 0.0, [false, false], 0.016)
-
-	_assert_approx(r_a2.velocity.x, r_b2.velocity.x,
-		"tb017 — two independent sim instances interleaved: produce identical velocity.x")
-	_assert_approx(r_a2.velocity.y, r_b2.velocity.y,
-		"tb017 — two independent sim instances interleaved: produce identical velocity.y")
-
-
-func test_tb017_shared_sim_instance_produces_same_result_as_fresh_instance() -> void:
-	# If sim holds hidden state, using the same instance twice with the same
-	# prior_state and inputs should produce the same result as a fresh instance.
-	var sim_shared: MovementSimulation = MovementSimulation.new()
-	var sim_fresh: MovementSimulation = MovementSimulation.new()
-
-	# Warm up the shared sim with 10 frames.
-	var warmup_state: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	for _i: int in range(10):
-		warmup_state = sim_shared.simulate(warmup_state, 1.0, false, false, false, 0.0, [false, false], 0.016)
-
-	# Now both sims should produce the same result from the same fresh prior state.
-	var test_prior: MovementSimulation.MovementState = _make_state_with(50.0, 20.0, false)
-	var result_shared: MovementSimulation.MovementState = sim_shared.simulate(test_prior, 0.5, false, false, false, 0.0, [false, false], 0.016)
-	var result_fresh: MovementSimulation.MovementState = sim_fresh.simulate(test_prior, 0.5, false, false, false, 0.0, [false, false], 0.016)
-
-	_assert_approx(result_shared.velocity.x, result_fresh.velocity.x,
-		"tb017 — warmed-up sim vs. fresh sim: identical velocity.x from same inputs")
-	_assert_approx(result_shared.velocity.y, result_fresh.velocity.y,
-		"tb017 — warmed-up sim vs. fresh sim: identical velocity.y from same inputs")
-
-
-# ---------------------------------------------------------------------------
-# [M1-001] TB-018 — Partial-frame acceleration: output is proportional to delta
-#
-# VULNERABILITY: Tests the linear delta scaling invariant with extreme sub-frame
-# deltas (very small delta), ensuring the formula doesn't break down at low
-# resolutions. Some implementations have minimum-delta guards that unintentionally
-# quantize the movement.
-# ---------------------------------------------------------------------------
-
-func test_tb018_very_small_delta_produces_proportionally_small_velocity_change() -> void:
-	# delta = 0.001 (1ms), accel = 800.0, step = 0.8.
-	# move_toward(0.0, 200.0, 0.8) = 0.8.
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, true)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 1.0, false, false, false, 0.0, [false, false], 0.001)
-	_assert_approx(result.velocity.x, 0.8,
-		"tb018 — very small delta (0.001s): velocity.x = 800 * 0.001 = 0.8")
-
-
-func test_tb018_very_small_delta_gravity_proportional() -> void:
-	# delta = 0.001, gravity = 980.0: vy = 0.0 + 980 * 0.001 = 0.98.
-	var sim: MovementSimulation = MovementSimulation.new()
-	var prior: MovementSimulation.MovementState = _make_state_with(0.0, 0.0, false)
-	var result: MovementSimulation.MovementState = sim.simulate(prior, 0.0, false, false, false, 0.0, [false, false], 0.001)
-	_assert_approx(result.velocity.y, 0.98,
-		"tb018 — very small delta (0.001s): velocity.y = 980 * 0.001 = 0.98")
-
-
-# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -970,26 +761,6 @@ func run_all() -> int:
 	test_tb013_negative_acceleration_does_not_crash_or_produce_nan()
 	test_tb013_negative_gravity_does_not_crash_or_produce_nan()
 	test_tb013_negative_friction_does_not_crash_or_produce_nan()
-
-	# TB-014: Input axis boundary symmetry
-	test_tb014_input_axis_symmetry_positive_vs_negative_from_rest()
-	test_tb014_input_axis_exactly_zero_grounded_applies_friction_not_acceleration()
-
-	# TB-015: Floor/air transition correctness
-	test_tb015_transition_from_grounded_to_airborne_applies_correct_formulas()
-	test_tb015_transition_from_airborne_to_grounded_applies_friction_not_air_decel()
-
-	# TB-016: Return value identity
-	test_tb016_returned_object_is_not_prior_state_regardless_of_delta()
-	test_tb016_returned_object_is_not_prior_state_with_zero_input_airborne()
-
-	# TB-017: Stateless simulation across instances
-	test_tb017_two_independent_sim_instances_produce_identical_results()
-	test_tb017_shared_sim_instance_produces_same_result_as_fresh_instance()
-
-	# TB-018: Partial-frame (very small delta) linearity
-	test_tb018_very_small_delta_produces_proportionally_small_velocity_change()
-	test_tb018_very_small_delta_gravity_proportional()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
