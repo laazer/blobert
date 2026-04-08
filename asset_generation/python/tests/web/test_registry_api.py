@@ -12,6 +12,16 @@ import pathlib
 import sys
 
 import pytest
+
+try:
+    import pydantic_core  # noqa: F401 — fail fast before loading FastAPI; arch-mismatch shows here
+except ImportError as exc:
+    pytest.skip(
+        f"pydantic_core failed to import ({exc!s}); often x86_64 Python with arm64 wheels "
+        "(or the reverse). Recreate: cd asset_generation/python && rm -rf .venv && uv sync --extra dev",
+        allow_module_level=True,
+    )
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
