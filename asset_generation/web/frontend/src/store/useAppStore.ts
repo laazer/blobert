@@ -19,6 +19,12 @@ import {
 import { mergeCanonicalZoneControlsForAllSlugs } from "../utils/animatedZoneControlsMerge";
 import { DEFAULT_ANIMATED_ENEMY_META, DEFAULT_ANIMATED_ENEMY_SLUGS } from "../utils/enemyDisplay";
 
+/** Zone + defaults before / after /api/meta — keeps Colors usable if the API is down or still loading. */
+const OFFLINE_SEEDED_BUILD_CONTROLS = mergeCanonicalZoneControlsForAllSlugs(
+  {},
+  [...DEFAULT_ANIMATED_ENEMY_SLUGS],
+);
+
 export type CommandPanelContext = {
   cmd: RunCmd;
   /** Enemy slug, player color, or level object id — empty when the cmd has no enemy field. */
@@ -101,8 +107,8 @@ export const useAppStore = create<AppState>()(
       });
     },
     animatedEnemyMeta: DEFAULT_ANIMATED_ENEMY_META,
-    animatedBuildControls: {},
-    animatedBuildOptionValues: {},
+    animatedBuildControls: OFFLINE_SEEDED_BUILD_CONTROLS,
+    animatedBuildOptionValues: mergeBuildOptionValues(OFFLINE_SEEDED_BUILD_CONTROLS, {}),
     enemyMetaStatus: "idle",
     enemyMetaError: null,
     metaBackend: null,
@@ -151,6 +157,13 @@ export const useAppStore = create<AppState>()(
           s.enemyMetaError = message;
           s.metaBackend = null;
           s.metaBackendDetail = null;
+          if (Object.keys(s.animatedBuildControls).length === 0) {
+            s.animatedBuildControls = OFFLINE_SEEDED_BUILD_CONTROLS;
+            s.animatedBuildOptionValues = mergeBuildOptionValues(
+              OFFLINE_SEEDED_BUILD_CONTROLS,
+              s.animatedBuildOptionValues,
+            );
+          }
         });
       }
     },
