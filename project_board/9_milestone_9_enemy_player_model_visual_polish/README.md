@@ -8,7 +8,19 @@
 - Fix or regenerate materials so base colors, infection/mutation accents, and family identity are consistent — including procedural/color-generation paths in Blender/Python (`asset_generation`) where colors are wrong or washed out.
 - Align with M13 (Blobert Visual Identity) for player-side readability; avoid one-off shaders unless shared.
 - Document any families deferred to a follow-up ticket with a clear reason (blocked only when scoped).
-- **Blocked (separate ticket):** per-type **visual versions**, **draft vs in-use** UI, editor **load/delete** rules, and **random version at spawn** — see `blocked/enemy_model_versions_draft_editor_and_spawn.md`.
+- **Versions / draft / editor / spawn:** decomposed into ordered backlog tickets `01`–`09` below. **Umbrella blocked ticket** (cross-cutting acceptance + old “single card” text): `blocked/enemy_model_versions_draft_editor_and_spawn.md`.
+
+## Backlog tickets (execution order)
+
+1. `backlog/01_spec_model_registry_draft_versions_and_editor_contract.md` — spec: registry, draft, player active path, enemy version slots, allowlist roots, deletion rules.
+2. `backlog/02_mesh_and_material_audit_enemy_families_and_player.md` — per-family + player mesh/material audit table.
+3. `backlog/03_procedural_material_and_color_pipeline_fixes.md` — fix `asset_generation` materials/colors from audit.
+4. `backlog/04_editor_ui_draft_status_for_exports.md` — UI: mark exports **draft** / promote to in-use.
+5. `backlog/05_editor_ui_game_model_selection.md` — UI: **player** active model (replacement) + **enemy** version slots for the game pool.
+6. `backlog/06_editor_load_existing_models_allowlist.md` — editor: load only **draft + in-use** from **canonical** asset roots (no misc GLBs).
+7. `backlog/07_editor_delete_draft_and_in_use_models.md` — delete draft + delete in-use with safety rules.
+8. `backlog/08_runtime_spawn_random_enemy_visual_variant.md` — random visual variant among in-use versions at spawn (coordinate M10).
+9. `backlog/09_automated_tests_registry_allowlist_delete.md` — cross-cutting tests for registry, allowlist, delete invariants.
 
 ## Dependencies
 

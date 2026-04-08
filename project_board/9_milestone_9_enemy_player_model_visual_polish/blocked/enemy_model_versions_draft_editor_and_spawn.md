@@ -10,11 +10,15 @@ Enemy model versions, draft lifecycle, editor load rules, and spawn-time randomi
 | Revision | 1 |
 | Last Updated By | Human |
 | Next Responsible Agent | Planner Agent |
-| Validation Status | Blocked — see Blocking issues |
+| Validation Status | Blocked — see Blocking issues; work split into `backlog/01`–`09` |
 
 ---
 
 Description:
+**Umbrella ticket.** Detailed work is tracked in `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/` as **`01_spec_model_registry_draft_versions_and_editor_contract.md`** through **`09_automated_tests_registry_allowlist_delete.md`**. Close this ticket when those acceptance themes are satisfied end-to-end (or explicitly waive with owner sign-off).
+
+Original scope summary:
+
 End-to-end pipeline so each **enemy type/family** can have **multiple visual versions** (same gameplay hooks, different mesh/silhouette), the **3D model quick editor** and game-facing UI can manage **draft vs in-use** assets, and **spawning** picks a random authorized version per type.
 
 Scope bundles:
@@ -46,8 +50,8 @@ Acceptance Criteria:
 ---
 
 Blocking issues:
-- **Data contract** — registry format for per-type version lists, draft flag, and player active model must be agreed (likely extends existing export dir / JSON next to GLBs or a single manifest).
+- **Data contract** — owned by backlog `01_spec_model_registry_draft_versions_and_editor_contract.md` (spec file under `project_board/specs/`).
 - **M10** — procedural spawn path should be stable enough to hang version selection off a single choke point (soft dependency; can stub in sandbox first if ticket is split).
 - **M21** — 3D Model Quick Editor surfaces must exist or be extended for load/browse/delete; coordinate to avoid duplicate file browsers.
 
-Unblock when blocking issues are resolved or the ticket is split into smaller ready tickets with the same acceptance criteria partitioned.
+Unblock when blocking issues are resolved. **Backlog tickets `01`–`09`** implement the partitioned scope; unblock this umbrella when their collective acceptance matches the criteria above (especially random variant spawn + draft + allowlisted load + deletion tests).
