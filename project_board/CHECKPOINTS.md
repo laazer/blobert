@@ -20,6 +20,23 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-08T12-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/01_spec_model_registry_draft_versions_and_editor_contract.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-MRVC / run-2026-04-08-autopilot-planning
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/01_spec_model_registry_draft_versions_and_editor_contract.md`
+- Stage: PLANNING → COMPLETE (full pipeline)
+- Log: `project_board/checkpoints/M9-MRVC/run-2026-04-08-autopilot-planning.md`
+
+### [M9-MRVC] — OUTCOME: COMPLETE
+MRVC spec at `project_board/specs/model_registry_draft_versions_spec.md`; contract pytest 22 tests; `run_tests.sh` green; ticket in `9_milestone_9_enemy_player_model_visual_polish/done/`.
+Log: `project_board/checkpoints/M9-MRVC/run-2026-04-08-autopilot-ac-gatekeeper.md`
+
+---
+
 ## Run: 2026-04-07T00:00:00Z
 - Queue mode: milestone directory scan
 - Queue scope: `project_board/21_milestone_21_3d_model_quick_editor/backlog/`

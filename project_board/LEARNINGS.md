@@ -2559,3 +2559,34 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Catches lifecycle regressions early without needing full interactive harness automation.
 
 ---
+
+## [M9-MRVC] — Model registry spec path encoding vs ARGLB
+
+*Completed: 2026-04-08*
+
+### Learnings
+
+- category: architecture
+  insight: New registry specs that reference “repo-relative” paths must be checked against existing web/backend contracts (ARGLB) that already fix paths relative to `python_root`.
+  impact: First MRVC draft used full repo prefixes; would have diverged from `animated_exports/...` strings in list/serve APIs.
+  prevention: When adding manifest specs, grep for `python_root` / existing path literals and cite the same root in ADRs before freezing MRVC-3.
+  severity: medium
+
+- category: testing
+  insight: Markdown spec contracts can be guarded with cheap pytest substring/heading tests so downstream tickets cannot silently drop ADRs or spawn/deletion sections.
+  impact: 22 contract tests lock MRVC-1..12 and downstream ticket filenames without JSON-schema tooling yet.
+  prevention: For specification-only tickets, default to `tests/specs/test_*_spec_contract.py` alongside the spec file path in `project_board/specs/`.
+  severity: low
+
+### Anti-Patterns
+
+- description: Defining manifest path rules from first principles without reconciling to the assets router and Godot `res://` mapping in the same edit pass.
+  detection_signal: Spec mentions different path prefixes than `GET /api/assets` and `config.py` `python_root`.
+  prevention: Add an explicit “Consistency with ARGLB” requirement (MRVC-12 style) and one cross-reference test.
+
+### Keep / Reinforce
+
+- practice: ADR block for manifest location (single file vs sidecars) plus explicit deletion matrix D1–D5 for editor safety.
+  reason: Unblocks umbrella blocked ticket’s “data contract” without implementation tickets reopening scope.
+
+---

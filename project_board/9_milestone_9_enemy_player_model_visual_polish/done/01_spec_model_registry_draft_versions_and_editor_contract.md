@@ -12,6 +12,22 @@ Author `project_board/specs/model_registry_draft_versions_spec.md` (name final i
 - **Deletion:** draft delete (files + registry); in-use delete (sole-version guard, confirmation, pool reassignment, or block — pick one table per case).
 - **Spawn integration hook:** how runtime reads “active versions” for random selection (interface only; implementation may land in M10 + ticket `08`).
 
+## Specification
+
+- **Path:** `project_board/specs/model_registry_draft_versions_spec.md`
+- **Prefix:** MRVC-1 … MRVC-12; ADR-001 … ADR-003
+
+## Execution Plan
+
+| # | Stage | Deliverable |
+|---|--------|-------------|
+| 1 | Planner | Task breakdown + checkpoint assumptions |
+| 2 | Spec | MRVC spec + ADRs + deletion matrix + spawn interface |
+| 3 | Test design | `asset_generation/python/tests/specs/test_model_registry_draft_versions_spec_contract.py` |
+| 4 | Test break | `# CHECKPOINT` adversarial contract tests |
+| 5 | Implementation | Contract tests passing; full `ci/scripts/run_tests.sh` green |
+| 6 | AC Gatekeeper | Evidence matrix; COMPLETE |
+
 ## Acceptance Criteria
 
 - Spec file exists under `project_board/specs/` with stable filename referenced from downstream tickets.
@@ -22,3 +38,55 @@ Author `project_board/specs/model_registry_draft_versions_spec.md` (name final i
 ## Dependencies
 
 - M5 / M21 — current export layout and editor app structure (read-only discovery)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+6
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: Passing — `uv run pytest tests/specs/test_model_registry_draft_versions_spec_contract.py` (22 passed); full `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`).
+- Static QA: N/A (documentation + contract tests only).
+- Integration: N/A
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Status
+
+Proceed
+
+## Reason
+
+Spec and contract tests landed; ticket closed. Downstream tickets `04`–`09` consume `model_registry_draft_versions_spec.md`.
