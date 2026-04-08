@@ -1,4 +1,4 @@
-# Epic: Milestone 14 – HUD Cleanup
+# Epic: Milestone 16 – HUD Cleanup
 
 **Goal:** The HUD communicates only what the player needs, when they need it — no debug labels, no legacy artifacts, no visual clutter.
 
@@ -27,15 +27,15 @@ The existing HUD (`InfectionUI` / `game_ui.tscn`) accumulated nodes across multi
 
 ## Design Notes
 
-- Chunk and cling status may be better communicated through player visual state (M11) than HUD text — coordinate with M11 scope
-- Mutation slot display should eventually show family-specific icon or color (M11 dependency), but text label is acceptable until then
+- Chunk and cling status may be better communicated through player visual state (M13) than HUD text — coordinate with M13 scope
+- Mutation slot display should eventually show family-specific icon or color (M13 dependency), but text label is acceptable until then
 - Do not remove nodes that are referenced by tests without first updating or retiring those tests
 
 ## Dependencies
 
 - M2 (Infection Loop) — HUD originated here; all current functionality must survive cleanup
 - M3 (Dual Mutation + Fusion) — dual-slot and fusion label nodes are M3 deliverables
-- M11 (Blobert Visual Identity) — some HUD elements may become redundant once Blobert's model reflects mutation state
+- M13 (Blobert Visual Identity) — some HUD elements may become redundant once Blobert's model reflects mutation state
 
 ## Exit Criteria
 

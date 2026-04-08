@@ -3,7 +3,7 @@
 **Run ID:** run-2026-04-07T02-00-00Z-test-design
 **Agent:** Test Designer Agent
 **Stage:** TEST_DESIGN
-**Ticket:** project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md
+**Ticket:** project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md
 
 ---
 

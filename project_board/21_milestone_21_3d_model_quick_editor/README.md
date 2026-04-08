@@ -1,4 +1,4 @@
-# Epic: Milestone 19 – 3D Model Quick Editor
+# Epic: Milestone 21 – 3D Model Quick Editor
 
 **Goal:** Collapse the edit → generate → preview loop for the Python asset generation pipeline into a single browser tab. Edit Python source files in Monaco, run Blender generation commands with a click, stream live output, and preview the resulting GLB in an interactive 3D viewer — all local, no auth.
 

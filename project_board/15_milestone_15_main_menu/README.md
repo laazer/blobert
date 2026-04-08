@@ -1,4 +1,4 @@
-# Epic: Milestone 13 – Main Menu
+# Epic: Milestone 15 – Main Menu
 
 **Goal:** The game has a proper entry point — a main menu that lets the player start a run, quit, and understand the context before gameplay begins.
 

@@ -1,4 +1,4 @@
-# Epic: Milestone 11 – Blobert Visual Identity
+# Epic: Milestone 13 – Blobert Visual Identity
 
 **Goal:** You can tell what mutation Blobert has at a glance — the model reflects the active mutation state.
 
@@ -17,7 +17,7 @@ New Blobert model variants or texture sets will likely require Blender work. Thi
 ## Dependencies
 
 - M3 (Dual Mutation + Fusion) — mutation and fusion state system in place
-- M9 (Base Mutation Attacks) — mutation identity fully established in gameplay
+- M11 (Base Mutation Attacks) — mutation identity fully established in gameplay
 
 ## Exit Criteria
 

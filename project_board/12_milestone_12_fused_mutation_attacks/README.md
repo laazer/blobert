@@ -1,4 +1,4 @@
-# Epic: Milestone 10 – Fused Mutation Attacks
+# Epic: Milestone 12 – Fused Mutation Attacks
 
 **Goal:** Fusing mutations produces a distinct attack beyond either base — fusing feels offensively rewarding.
 
@@ -7,13 +7,13 @@
 - One fused attack per fusion combination (initially: all combinations of the 4 base families)
 - Fused attacks are meaningfully different from either contributing base attack
 - Fusion attack replaces or supplements the base slot attacks while active
-- Cooldown and input model consistent with base mutation attacks (M9)
+- Cooldown and input model consistent with base mutation attacks (M11)
 - At minimum: the existing fusion combinations each get a functional attack
 
 ## Dependencies
 
 - M3 (Dual Mutation + Fusion) — fusion identity and slot consumption in place
-- M9 (Base Mutation Attacks) — input/cooldown framework established
+- M11 (Base Mutation Attacks) — input/cooldown framework established
 
 ## Exit Criteria
 

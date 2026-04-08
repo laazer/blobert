@@ -18,4 +18,4 @@ Implement hitstop: when a heavy hit connects, the game pauses for 1–3 frames t
 
 ## Dependencies
 
-- M8 (Enemy Attacks) or M9 (Base Mutation Attacks) — hit events must exist to trigger hitstop
+- M8 (Enemy Attacks) or M11 (Base Mutation Attacks) — hit events must exist to trigger hitstop

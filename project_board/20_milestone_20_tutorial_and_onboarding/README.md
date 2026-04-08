@@ -1,4 +1,4 @@
-# Epic: Milestone 18 – Tutorial & Onboarding
+# Epic: Milestone 20 – Tutorial & Onboarding
 
 **Goal:** A first-time player understands how to move, throw a chunk, infect an enemy, and absorb a mutation without reading a manual.
 
@@ -21,7 +21,7 @@
 
 - The existing input hints (`MoveHint`, `JumpHint`, `DetachHint`, etc.) are the building block — this milestone makes them fire at the right moment
 - The mutation tease room from M4 already introduces mutation; the tutorial room precedes it and covers movement + chunk
-- Coordinate with M14 (HUD Cleanup) — tutorial hints must survive or be updated alongside any HUD node cleanup
+- Coordinate with M16 (HUD Cleanup) — tutorial hints must survive or be updated alongside any HUD node cleanup
 - Do not over-explain: one mechanic per room, brief prompt, player executes, hint clears
 
 ## Dependencies
@@ -29,8 +29,8 @@
 - M1 (Core Movement) — movement mechanics must be stable
 - M2 (Infection Loop) — infection and absorb must be working
 - M4 (Prototype Level) — room structure and RunSceneAssembler integration required
-- M13 (Main Menu) — tutorial runs after the player hits Start; must route correctly from menu into tutorial intro room
-- M14 (HUD Cleanup) — coordinate hint node ownership
+- M15 (Main Menu) — tutorial runs after the player hits Start; must route correctly from menu into tutorial intro room
+- M16 (HUD Cleanup) — coordinate hint node ownership
 
 ## Exit Criteria
 

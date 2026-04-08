@@ -20,4 +20,4 @@ When the player's active mutation changes, Blobert's visible mesh swaps to the c
 ## Dependencies
 
 - `blender_mutation_model_variants`
-- M9 (Base Mutation Attacks) — mutation identity fully established
+- M11 (Base Mutation Attacks) — mutation identity fully established

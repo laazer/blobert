@@ -1,4 +1,4 @@
-# Epic: Milestone 9 – Base Mutation Attacks
+# Epic: Milestone 11 – Base Mutation Attacks
 
 **Goal:** Each of the 4 base mutations gives Blobert a usable offensive move.
 

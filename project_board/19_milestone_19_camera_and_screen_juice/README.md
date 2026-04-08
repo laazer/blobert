@@ -1,4 +1,4 @@
-# Epic: Milestone 17 – Camera & Screen Juice
+# Epic: Milestone 19 – Camera & Screen Juice
 
 **Goal:** Hits feel impactful, abilities feel powerful, and the camera keeps the action readable — the game feels good to play, not just functional.
 
@@ -14,7 +14,7 @@
 
 ## Out of Scope
 
-- Particle systems or full VFX passes (those belong in M11 / Blobert Visual Identity or a dedicated VFX milestone)
+- Particle systems or full VFX passes (those belong in M13 / Blobert Visual Identity or a dedicated VFX milestone)
 - Audio — handled separately
 - Cutscenes or cinematic sequences
 
@@ -29,7 +29,7 @@
 
 - M1 (Core Movement) — basic camera follow already exists; this milestone extends it
 - M8 (Enemy Attacks) — hit reactions and attack impacts are the primary juice triggers
-- M9 (Base Mutation Attacks) — ability feedback targets mutation attack moments
+- M11 (Base Mutation Attacks) — ability feedback targets mutation attack moments
 
 ## Exit Criteria
 

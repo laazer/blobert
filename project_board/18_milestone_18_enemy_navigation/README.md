@@ -1,4 +1,4 @@
-# Epic: Milestone 16 – Enemy Navigation & AI
+# Epic: Milestone 18 – Enemy Navigation & AI
 
 **Goal:** Enemies actively pursue and respond to the player — a non-mutated player is in genuine danger from an approaching enemy.
 

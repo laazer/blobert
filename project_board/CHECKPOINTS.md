@@ -22,7 +22,7 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ## Run: 2026-04-07T00:00:00Z
 - Queue mode: milestone directory scan
-- Queue scope: `project_board/19_milestone_19_3d_model_quick_editor/backlog/`
+- Queue scope: `project_board/21_milestone_21_3d_model_quick_editor/backlog/`
 - Lean: no
 - Log root: project_board/checkpoints/
 
@@ -507,90 +507,90 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 
 ## Run: 2026-04-07T00-00-00Z-planner-M19-ARGLB
 - Queue mode: single ticket
-- Queue scope: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Queue scope: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Lean: no
 - Log root: project_board/checkpoints/M19-ARGLB/
 
 ### M19-ARGLB / run-2026-04-07T00-00-00Z-planning
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Stage: PLANNING → SPECIFICATION
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T00-00-00Z-planning.md`
 - Outcome: Scaffold already fully implemented in commit 49ba13a; planning decomposes into gap-fill + test-write pipeline. Three checkpoints logged: scaffold-complete ambiguity, GlbViewer `setAvailableClips` misuse, path-traversal test coverage gap.
 
 ### M19-ARGLB / run-2026-04-07T01-00-00Z-spec
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Stage: SPECIFICATION → TEST_DESIGN
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T01-00-00Z-spec.md`
 - Outcome: Full spec `project_board/specs/assets_router_and_glb_viewer_spec.md` (ARGLB-1..8); path-jail 400/403/404 layering, MIME contract, cache-bust `?t=` param, `availableClips` store slice, `GlbViewer` aliasing bug fix, ErrorBoundary fallback, `AnimationControls` active state; four manual-verify ACs flagged.
 
 ### M19-ARGLB / run-2026-04-07T02-00-00Z-test-design
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Stage: TEST_DESIGN → TEST_BREAK
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T02-00-00Z-test-design.md`
 - Outcome: `asset_generation/web/backend/tests/test_assets_router.py` (23 tests, httpx+ASGITransport); `conftest.py` sys.path fixture; `requirements.txt` + httpx + pytest-asyncio; 20 pass / 3 red (literal-dot traversal httpx normalization + directory FileResponse crash); checkpoint logs httpx URL normalization discovery and directory-path 500 vs 404 gap.
 
 ### M19-ARGLB / run-2026-04-07T03-00-00Z-test-break
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_ENGINE_INTEGRATION
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T03-00-00Z-test-break.md`
 - Outcome: 15 adversarial tests added (38 total, 33 pass / 5 red); exposed 3 distinct implementation gaps: (1) null-byte in path causes unhandled ValueError from resolve() — not caught by try/except which only wraps relative_to(); (2) directory path causes unhandled RuntimeError from FileResponse — needs is_file() guard; (3) spec claims dotfile `.glb` has suffix `.glb` — Python 3.9 returns empty suffix so dotfiles are excluded. Double-encoded traversal (%252e%252e→403), uppercase extension MIME (octet-stream), stress 50 files, sort invariant, and within-jail traversal tests all pass.
 
 ## Resume: 2026-04-07 (ap-continue) — M19-ARGLB
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
 - Resuming at Stage: `IMPLEMENTATION_ENGINE_INTEGRATION`
 - Next Agent: `Engine Integration Agent`
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07-ap-continue.md`
 
 ### [M19-ARGLB] — OUTCOME: COMPLETE
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`
 - Stage: IMPLEMENTATION_ENGINE_INTEGRATION → COMPLETE
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07-ap-continue.md`
 - Outcome: backend path-jail hardened (`resolve()` guard + directory 404), frontend `availableClips` store wiring fixed, `uv run pytest tests/test_assets_router.py -v` → 38 passed.
 
 ## Resume: 2026-04-07 (ap-continue) — backend_fastapi_scaffold
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/backend_fastapi_scaffold.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/backend_fastapi_scaffold.md`
 - Resuming at Stage: malformed backlog stub (no WORKFLOW STATE block)
 - Next Agent: Planner Agent → Acceptance Criteria Gatekeeper Agent
 - Log: `project_board/checkpoints/backend_fastapi_scaffold/run-2026-04-07-ap-continue.md`
 
 ### [backend_fastapi_scaffold] — OUTCOME: COMPLETE
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/backend_fastapi_scaffold.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/backend_fastapi_scaffold.md`
 - Stage: PLANNING bootstrap → COMPLETE
 - Log: `project_board/checkpoints/backend_fastapi_scaffold/run-2026-04-07-ap-continue.md`
 - Outcome: Existing FastAPI scaffold validated in runtime checks; AC evidence recorded; ticket closed without additional implementation changes.
 
 ## Resume: 2026-04-07 (ap-continue) — frontend_react_scaffold_and_editor
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/frontend_react_scaffold_and_editor.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/frontend_react_scaffold_and_editor.md`
 - Resuming at Stage: malformed backlog stub (no WORKFLOW STATE block)
 - Next Agent: Planner Agent → Acceptance Criteria Gatekeeper Agent
 - Log: `project_board/checkpoints/frontend_react_scaffold_and_editor/run-2026-04-07-ap-continue.md`
 
 ### [frontend_react_scaffold_and_editor] — OUTCOME: COMPLETE
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/frontend_react_scaffold_and_editor.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/frontend_react_scaffold_and_editor.md`
 - Stage: PLANNING bootstrap → COMPLETE
 - Log: `project_board/checkpoints/frontend_react_scaffold_and_editor/run-2026-04-07-ap-continue.md`
 - Outcome: Existing React scaffold validated (install/build/dev startup + AC code-path mapping), then closed.
 
 ## Resume: 2026-04-07 (ap-continue) — sse_run_endpoint_and_terminal
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/sse_run_endpoint_and_terminal.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/sse_run_endpoint_and_terminal.md`
 - Resuming at Stage: malformed backlog stub (no WORKFLOW STATE block)
 - Next Agent: Planner Agent → Acceptance Criteria Gatekeeper Agent
 - Log: `project_board/checkpoints/sse_run_endpoint_and_terminal/run-2026-04-07-ap-continue.md`
 
 ### [sse_run_endpoint_and_terminal] — OUTCOME: COMPLETE
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/sse_run_endpoint_and_terminal.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/sse_run_endpoint_and_terminal.md`
 - Stage: PLANNING bootstrap → COMPLETE
 - Log: `project_board/checkpoints/sse_run_endpoint_and_terminal/run-2026-04-07-ap-continue.md`
 - Outcome: Existing SSE/process-manager/terminal implementation validated with endpoint runtime checks and AC code-path evidence.
 
 ## Resume: 2026-04-07 (ap-continue) — ui_polish_and_start_sh
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/ui_polish_and_start_sh.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/ui_polish_and_start_sh.md`
 - Resuming at Stage: malformed backlog stub (no WORKFLOW STATE block)
 - Next Agent: Planner Agent → Acceptance Criteria Gatekeeper Agent
 - Log: `project_board/checkpoints/ui_polish_and_start_sh/run-2026-04-07-ap-continue.md`
 
 ### [ui_polish_and_start_sh] — OUTCOME: COMPLETE
-- Ticket: `project_board/19_milestone_19_3d_model_quick_editor/done/ui_polish_and_start_sh.md`
+- Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/ui_polish_and_start_sh.md`
 - Stage: PLANNING bootstrap → COMPLETE
 - Log: `project_board/checkpoints/ui_polish_and_start_sh/run-2026-04-07-ap-continue.md`
 - Outcome: Existing UI polish/startup implementation validated via bounded `start.sh` smoke and AC code-path evidence.

@@ -1,6 +1,6 @@
 # Spec: Assets Router and Interactive 3D GLB Viewer
 
-**Ticket:** `project_board/19_milestone_19_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
+**Ticket:** `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 **Spec ID prefix:** ARGLB
 **Stage:** SPECIFICATION → TEST_DESIGN
 **Last Updated By:** Spec Agent

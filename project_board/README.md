@@ -195,7 +195,33 @@ Each of the 4 families has a distinct, readable attack. The player can die.
 
 ------------------------------------------------------------
 
-Milestone 9 – Base Mutation Attacks
+Milestone 9 – Procedural Enemies in Level & Attack Loop
+Goal: New enemy models appear in procedurally generated runs and attack on a loop.
+
+Includes:
+- Wire exported enemy scenes into procedural room / run assembly (not only the sandbox)
+- Enemies use correct clips, family metadata, and attack timing in combat rooms
+- Attack loop validated against existing telegraph/hitbox systems (M8)
+
+Exit Criteria:
+A procedurally assembled run spawns the new enemies; they repeatedly attack when engaging the player without editor placement.
+
+------------------------------------------------------------
+
+Milestone 10 – Enemy & Player Model Review / Materials
+Goal: Enemy and player models look correct; procedural colors and materials match intent.
+
+Includes:
+- Per-family and player mesh audit (silhouette, defects, materials)
+- Fix asset_generation / Blender color output where wrong or inconsistent
+- Align with M13 for readable mutation identity on Blobert
+
+Exit Criteria:
+Review complete; material/color issues fixed or tracked with owners. Spot-check passes in Godot.
+
+------------------------------------------------------------
+
+Milestone 11 – Base Mutation Attacks
 Goal: Each base mutation gives Blobert a usable offensive move.
 
 Includes:
@@ -208,20 +234,20 @@ Player has 4 distinct offensive tools that feel different from each other.
 
 ------------------------------------------------------------
 
-Milestone 10 – Fused Mutation Attacks
+Milestone 12 – Fused Mutation Attacks
 Goal: Fusing mutations produces a distinct attack — fusing feels offensively rewarding.
 
 Includes:
 - One fused attack per fusion combination
 - Attacks meaningfully different from base mutations
-- Depends on M9 input/cooldown framework
+- Depends on M11 input/cooldown framework
 
 Exit Criteria:
 At least one fusion attack couldn't be achieved with either base mutation alone.
 
 ------------------------------------------------------------
 
-Milestone 11 – Blobert Visual Identity
+Milestone 13 – Blobert Visual Identity
 Goal: Blobert's model reflects the active mutation — readable at a glance.
 
 Includes:
@@ -235,7 +261,7 @@ Active mutation identifiable from across the room without looking at UI.
 
 ------------------------------------------------------------
 
-Milestone 12 – Advanced Terrain
+Milestone 14 – Advanced Terrain
 Goal: The environment is dangerous — terrain hazards create navigation decisions tied to mutation identity.
 
 Includes:
@@ -251,7 +277,7 @@ All 5 hazards placeable in a level, deal damage/effects correctly, at least one 
 
 ------------------------------------------------------------
 
-Milestone 13 – Main Menu
+Milestone 15 – Main Menu
 Goal: The game has a proper entry point and a clear run loop from launch to game over.
 
 Includes:
@@ -265,7 +291,7 @@ Fresh launch lands on main menu. Player starts, plays, dies, sees game-over scre
 
 ------------------------------------------------------------
 
-Milestone 14 – HUD Cleanup
+Milestone 16 – HUD Cleanup
 Goal: The HUD shows only what the player needs — no debug labels, no legacy artifacts.
 
 Includes:
@@ -280,7 +306,7 @@ A non-developer can read HP, active mutations, and available actions at a glance
 
 ------------------------------------------------------------
 
-Milestone 15 – Sandbox Enemy Spawn Stage
+Milestone 17 – Sandbox Enemy Spawn Stage
 Goal: A dedicated sandbox where any enemy can be spawned quickly for tuning and playtest — no run assembly or level editing required.
 
 Includes:
@@ -294,7 +320,7 @@ From one launch into the sandbox, every current enemy family can be spawned on d
 
 ------------------------------------------------------------
 
-Milestone 16 – Enemy Navigation & AI
+Milestone 18 – Enemy Navigation & AI
 Goal: Enemies actively pursue the player — a non-mutated player is in genuine danger.
 
 Includes:
@@ -311,7 +337,7 @@ Note: Should be completed before M8 (Enemy Attacks) — attacks are only threate
 
 ------------------------------------------------------------
 
-Milestone 17 – Camera & Screen Juice
+Milestone 19 – Camera & Screen Juice
 Goal: Hits feel impactful and abilities feel powerful — the game feels good to play, not just functional.
 
 Includes:
@@ -326,7 +352,7 @@ A 30-second combat clip looks noticeably more impactful than the same clip witho
 
 ------------------------------------------------------------
 
-Milestone 18 – Tutorial & Onboarding
+Milestone 20 – Tutorial & Onboarding
 Goal: A first-time player learns movement, chunk throw, infect, and absorb without reading a manual.
 
 Includes:
@@ -338,6 +364,30 @@ Includes:
 
 Exit Criteria:
 A first-time player completes tutorial rooms and reaches the first combat room without help. All core mechanics demonstrated once before a threatening enemy appears.
+
+------------------------------------------------------------
+
+Milestone 21 – 3D Model Quick Editor
+Goal: Fast iteration on procedural enemy GLBs in a browser — build, preview, and export without leaving the asset pipeline.
+
+Includes:
+- Backend + frontend for listing exports, GLB preview, and build/run hooks
+- Aligns with `asset_generation/python` export outputs
+
+Exit Criteria:
+Documented workflow for previewing and rebuilding enemies from the editor; team can iterate without one-off manual Blender sessions for routine changes.
+
+------------------------------------------------------------
+
+Milestone 22 – Game Control MCP (Agent-Driven Playtest)
+Goal: Claude or Cursor can drive the running game (or harness) to exercise levels and combat.
+
+Includes:
+- MCP server (localhost) exposing safe commands: load level/run, inject inputs, read game state
+- Documented setup for developers and agents
+
+Exit Criteria:
+An agent can run a scripted playtest sequence via MCP tools and get structured failure output.
 
 ------------------------------------------------------------
 

@@ -18,4 +18,4 @@ Currently input hints (`MoveHint`, `JumpHint`, `DetachHint`, `DetachRecallHint`,
 ## Dependencies
 
 - `hud_audit_and_remove_debug_labels`
-- M13 (Main Menu / run restart) — hints must reset on restart
+- M15 (Main Menu / run restart) — hints must reset on restart

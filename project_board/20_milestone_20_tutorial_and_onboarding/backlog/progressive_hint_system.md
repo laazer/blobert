@@ -19,4 +19,4 @@ Extend `InputHintsConfig` and `InfectionUI` so that individual hints fire contex
 ## Dependencies
 
 - M2 (Infection Loop) — absorb/infect hints need infection system to be stable
-- M13 (Main Menu) — run restart must trigger hint reset
+- M15 (Main Menu) — run restart must trigger hint reset

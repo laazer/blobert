@@ -1,4 +1,4 @@
-# Epic: Milestone 12 – Advanced Terrain
+# Epic: Milestone 14 – Advanced Terrain
 
 **Goal:** The environment is dangerous — terrain hazards create meaningful navigation decisions and reinforce mutation identity.
 
@@ -33,7 +33,7 @@ Hazards must be first-class citizens in the roguelike room template system:
 
 - M4 (Prototype Level) — collision and physics baseline
 - M6 (Roguelike Run Structure) — room template system that hazards plug into
-- M9 (Base Mutation Attacks) — mutation identity established before immunity interactions are meaningful
+- M11 (Base Mutation Attacks) — mutation identity established before immunity interactions are meaningful
 
 ## Exit Criteria
 

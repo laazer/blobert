@@ -1,4 +1,4 @@
-# Epic: Milestone 15 – Sandbox Enemy Spawn Stage
+# Epic: Milestone 17 – Sandbox Enemy Spawn Stage
 
 **Goal:** A dedicated sandbox where designers and playtesters can spawn any supported enemy on demand — fast iteration on attacks, AI, and feel without editing levels or the procedural run.
 
@@ -8,7 +8,7 @@
 - Spawn workflow: select enemy family or concrete scene, spawn at a defined origin, in front of the player, or at a raycast hit — whichever matches existing debug patterns in the repo
 - Clear or reset spawned enemies so the arena does not accumulate broken state
 - One documented way to enter the sandbox (project setting, `main_scene` note in `CLAUDE.md`, or menu hook) so the whole team uses the same path
-- Optional: duplicate spawn, clear-all hotkey, or simple on-screen list — keep UI minimal until M14/M18 HUD work conflicts
+- Optional: duplicate spawn, clear-all hotkey, or simple on-screen list — keep UI minimal until M16/M20 HUD work conflicts
 
 ## Out of Scope
 
