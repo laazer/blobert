@@ -124,6 +124,7 @@ export function ThreePanelLayout() {
           style={{
             flex: fileTreeVisible ? "0 0 45%" : "1 1 0%",
             minWidth: 0,
+            minHeight: 0,
             display: "flex",
             flexDirection: "column",
             borderRight: "1px solid #3c3c3c",

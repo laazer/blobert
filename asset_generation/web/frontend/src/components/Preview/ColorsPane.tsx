@@ -24,7 +24,7 @@ export function ColorsPane() {
           background: "#1e1e1e",
           color: "#9d9d9d",
           fontSize: 12,
-          flex: 1,
+          flexShrink: 0,
         }}
       >
         Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> and pick an
@@ -36,19 +36,17 @@ export function ColorsPane() {
   return (
     <div
       style={{
-        flex: 1,
-        minHeight: 0,
-        overflow: "auto",
         display: "flex",
         flexDirection: "column",
         gap: 8,
         padding: "8px 10px 12px",
         background: "#1e1e1e",
+        flexShrink: 0,
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Zones (body, head, limbs, joints, extra for spider) are all in the list below — <strong style={{ color: "#bbb" }}>scroll</strong>{" "}
-        this column if you only see Body. Per-leg and per-joint rows are under the collapsible sections. Global tint
+        Zones (body, head, limbs, joints, extra for spider) are listed below — <strong style={{ color: "#bbb" }}>scroll the center panel</strong>{" "}
+        if the list is clipped. Per-leg and per-joint rows are under the collapsible sections. Global tint
         for export stays in the command bar (finish + hex).
       </p>
       <FeatureMaterialControls slug={slug} showEmptyHint />

@@ -24,8 +24,8 @@ export type CommandPanelContext = {
   enemy: string;
 };
 
-/** Center column: code editor and build controls share this space (only one visible at a time; both can be hidden). */
-export type CenterPanel = "none" | "code" | "build";
+/** Center column: code, build, and per-part colors share this space (one visible at a time; column can be hidden). */
+export type CenterPanel = "none" | "code" | "build" | "colors";
 
 let _lineId = 0;
 
