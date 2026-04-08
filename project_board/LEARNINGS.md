@@ -4,6 +4,32 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-BPCLJH] — Body-part color hierarchy + diff-cover on mesh apply paths
+
+*Completed: 2026-04-08*
+
+### Learnings
+
+- category: testing
+  insight: New Blender-facing `apply_themed_materials` branches rarely execute in pytest without bpy; diff-cover on those files requires lightweight instance `__new__` tests with `_mesh` / `_mesh_str` stubs plus `material_for_zone_part` mocked.
+  impact: Added `test_*_feature_materials_apply.py` suites to satisfy 85% diff-cover alongside pure `material_system` unit tests.
+  prevention: When extending procedural material assignment, add a mocked apply-loop test in the same PR as the mesh code.
+  severity: medium
+
+- category: frontend
+  insight: Python API uses `type: "str"` for freeform fields; TS components that check `=== "string"` silently degrade controls to numeric inputs — always align control-renderer discriminated unions with the backend schema.
+  impact: Hex/finish rows were broken until `str` handling and `AnimatedBuildControlDef` union were fixed; `BuildControls` now reuses `BuildControlRow`.
+  prevention: Add a meta-router or snapshot test that asserts at least one `str` / `select_str` control round-trips through the client type guard.
+  severity: high
+
+### Anti-Patterns
+
+- description: Duplicating `ControlRow` in `BuildControls.tsx` with a narrower type union than the shared component, causing runtime mis-rendering that TypeScript only catches after widening the union.
+  detection_signal: New API control types render as number inputs in the build panel but correctly in other panes.
+  prevention: Single `ControlRow` implementation for all panels; extend the union once when Python adds control `type` values.
+
+---
+
 ## [sse_run_endpoint_and_terminal] — Malformed ticket bootstrap and endpoint-evidence closure boundary
 
 *Completed: 2026-04-07*

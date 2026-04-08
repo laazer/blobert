@@ -12,9 +12,26 @@ from ..core.rig_models.humanoid_simple import (
     HumanoidSimpleRig,
 )
 from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
-from ..materials.material_system import apply_material_to_object
+from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+
+
+def _humanoid_limb_part_kinds(
+    n_seg: int,
+    joint_vis: bool,
+    end_shape: str,
+) -> list[tuple[str, int | None]]:
+    """Order matches ``append_segmented_limb_mesh`` + end cap (same length as ``_limb_part_count``)."""
+    out: list[tuple[str, int | None]] = []
+    n = max(1, min(8, int(n_seg)))
+    for i in range(n):
+        out.append(("cyl", i))
+        if joint_vis and i < n - 1:
+            out.append(("joint", i))
+    if end_shape != "none":
+        out.append(("end", None))
+    return out
 
 
 class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -114,6 +131,7 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         limb_material = enemy_mats["limbs"]
         hand_material = enemy_mats["extra"]
+        features = self.build_options.get("features")
 
         n_arm = max(1, min(8, int(self._mesh("ARM_SEGMENTS"))))
         n_leg = max(1, min(8, int(self._mesh("LEG_SEGMENTS"))))
@@ -129,16 +147,31 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
 
         i = 2
         lp = int(self._mesh("LIMB_PAIRS"))
-        for _ in range(lp):
+        arm_kinds = _humanoid_limb_part_kinds(n_arm, joint_vis, arm_end)
+        leg_kinds = _humanoid_limb_part_kinds(n_leg, joint_vis, leg_end)
+        for arm_idx in range(lp):
             cnt = _limb_part_count(n_arm, arm_end)
             for j in range(cnt):
-                mat = hand_material if (j == cnt - 1 and arm_end != "none") else limb_material
+                kind, seg_i = arm_kinds[j]
+                if kind == "cyl":
+                    mat = material_for_zone_part("limbs", f"arm_{arm_idx}", enemy_mats, features)
+                elif kind == "joint" and seg_i is not None:
+                    mat = material_for_zone_part("joints", f"arm_{arm_idx}_j{seg_i}", enemy_mats, features)
+                else:
+                    mat = hand_material if (j == cnt - 1 and arm_end != "none") else limb_material
                 apply_material_to_object(self.parts[i + j], mat)
             i += cnt
-        for _ in range(lp):
+        for leg_idx in range(lp):
             cnt = _limb_part_count(n_leg, leg_end)
             for j in range(cnt):
-                apply_material_to_object(self.parts[i + j], limb_material)
+                kind, seg_i = leg_kinds[j]
+                if kind == "cyl":
+                    mat = material_for_zone_part("limbs", f"leg_{leg_idx}", enemy_mats, features)
+                elif kind == "joint" and seg_i is not None:
+                    mat = material_for_zone_part("joints", f"leg_{leg_idx}_j{seg_i}", enemy_mats, features)
+                else:
+                    mat = limb_material
+                apply_material_to_object(self.parts[i + j], mat)
             i += cnt
 
     def get_body_type(self):

@@ -40,13 +40,18 @@ _MESH_INT_KEYS_EXCLUDED: frozenset[str] = frozenset({"DEFAULT_EYE_COUNT", "PERIP
 _VALID_FINISHES: frozenset[str] = frozenset({"default", "glossy", "matte", "metallic", "gel"})
 _FINISH_OPTIONS_ORDER: tuple[str, ...] = ("default", "glossy", "matte", "metallic", "gel")
 
-# Per-slug material feature slots (body/head/limbs/extra) merged into build_options["features"].
+# Per-slug material feature slots merged into build_options["features"].
+# ``joints`` is used for hinge / ball meshes when the rig exposes them (humanoid joint balls, spider leg spheres).
 _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
-    "imp": ("body", "head", "limbs"),
+    "imp": ("body", "head", "limbs", "joints", "extra"),
+    "carapace_husk": ("body", "head", "limbs", "joints", "extra"),
+    "spider": ("body", "head", "limbs", "joints", "extra"),
     "slug": ("body", "extra"),
 }
 
-_FEAT_FLAT_KEY = re.compile(r"^feat_([a-z0-9_]+)_(finish|hex)$")
+_FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex)$")
+_FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
+_FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
 
 
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
@@ -86,23 +91,66 @@ def _sanitize_hex(raw: str) -> str:
     return s[:6]
 
 
-def _validate_features_map(d: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
-    out: dict[str, dict[str, str]] = {}
+def _validate_features_map(d: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
     for zone, inner in d.items():
+        if not isinstance(inner, dict):
+            inner = {}
         fin = str(inner.get("finish", "default"))
         if fin not in _VALID_FINISHES:
             fin = "default"
-        out[zone] = {"finish": fin, "hex": _sanitize_hex(inner.get("hex", ""))}
+        hx = _sanitize_hex(inner.get("hex", ""))
+        parts_out: dict[str, dict[str, str]] = {}
+        pr = inner.get("parts")
+        if isinstance(pr, dict):
+            for pid, pinner in pr.items():
+                if not isinstance(pinner, dict):
+                    continue
+                pfin = str(pinner.get("finish", "default"))
+                if pfin not in _VALID_FINISHES:
+                    pfin = "default"
+                parts_out[str(pid)] = {
+                    "finish": pfin,
+                    "hex": _sanitize_hex(pinner.get("hex", "")),
+                }
+        zd: dict[str, Any] = {"finish": fin, "hex": hx}
+        if parts_out:
+            zd["parts"] = parts_out
+        out[str(zone)] = zd
     return out
 
 
-def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str, Any]) -> dict[str, dict[str, str]]:
+def _ensure_zone_parts(out: dict[str, Any], zone: str) -> dict[str, Any]:
+    z = out.setdefault(zone, {"finish": "default", "hex": ""})
+    if not isinstance(z, dict):
+        z = {"finish": "default", "hex": ""}
+        out[zone] = z
+    parts = z.setdefault("parts", {})
+    if not isinstance(parts, dict):
+        parts = {}
+        z["parts"] = parts
+    return parts
+
+
+def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str, Any]) -> dict[str, Any]:
     zones = _feature_zones(slug)
-    out: dict[str, dict[str, str]] = {}
+    out: dict[str, Any] = {}
     for z in zones:
         b = feat_base.get(z)
         if isinstance(b, dict):
             out[z] = {"finish": str(b.get("finish", "default")), "hex": str(b.get("hex", ""))}
+            bp = b.get("parts")
+            if isinstance(bp, dict):
+                parts: dict[str, dict[str, str]] = {}
+                for pid, pdata in bp.items():
+                    if not isinstance(pdata, dict):
+                        continue
+                    parts[str(pid)] = {
+                        "finish": str(pdata.get("finish", "default")),
+                        "hex": str(pdata.get("hex", "")),
+                    }
+                if parts:
+                    out[z]["parts"] = parts
         else:
             out[z] = {"finish": "default", "hex": ""}
     nested = src.get("features")
@@ -114,14 +162,40 @@ def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str
                 out[zone]["finish"] = str(data["finish"])
             if "hex" in data:
                 out[zone]["hex"] = str(data["hex"])
+            subp = data.get("parts")
+            if isinstance(subp, dict):
+                parts = _ensure_zone_parts(out, zone)
+                for pid, pdata in subp.items():
+                    if not isinstance(pdata, dict):
+                        continue
+                    entry = parts.setdefault(str(pid), {"finish": "default", "hex": ""})
+                    if "finish" in pdata:
+                        entry["finish"] = str(pdata["finish"])
+                    if "hex" in pdata:
+                        entry["hex"] = str(pdata["hex"])
     for k, v in src.items():
-        m = _FEAT_FLAT_KEY.match(k)
-        if not m:
+        m = _FEAT_ZONE_FLAT_KEY.match(k)
+        if m:
+            zone, field = m.group(1), m.group(2)
+            if zone in out:
+                out[zone][field] = str(v)
             continue
-        zone, field = m.group(1), m.group(2)
-        if zone not in out:
+        m = _FEAT_LIMB_PART_FLAT_KEY.match(k)
+        if m:
+            pid, field = m.group(1), m.group(2)
+            if "limbs" in out:
+                parts = _ensure_zone_parts(out, "limbs")
+                entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
+                entry[field] = str(v)
             continue
-        out[zone][field] = str(v)
+        m = _FEAT_JOINT_PART_FLAT_KEY.match(k)
+        if m:
+            pid, field = m.group(1), m.group(2)
+            if "joints" in out:
+                parts = _ensure_zone_parts(out, "joints")
+                entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
+                entry[field] = str(v)
+            continue
     return _validate_features_map(out)
 
 
@@ -146,6 +220,107 @@ def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
                 "default": "",
             }
         )
+    return defs
+
+
+def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
+    """Optional per-limb / per-joint material keys (flat API); merged into ``features[*].parts``."""
+    ensure_blender_stubs()
+    try:
+        from enemies.animated.registry import AnimatedEnemyBuilder
+    except ImportError:
+        from src.enemies.animated.registry import AnimatedEnemyBuilder
+
+    cls = AnimatedEnemyBuilder.ENEMY_CLASSES.get(slug)
+    if cls is None:
+        return []
+    defs: list[dict[str, Any]] = []
+    if slug in ("imp", "carapace_husk"):
+        n_arm = max(1, min(8, int(getattr(cls, "ARM_SEGMENTS", 1))))
+        n_leg = max(1, min(8, int(getattr(cls, "LEG_SEGMENTS", 1))))
+        jvis = bool(getattr(cls, "LIMB_JOINT_VISUAL", False))
+        for label_base, idx_prefix, n_seg in (
+            ("Arm", "arm", n_arm),
+            ("Leg", "leg", n_leg),
+        ):
+            for side in range(2):
+                pid = f"{idx_prefix}_{side}"
+                defs.append(
+                    {
+                        "key": f"feat_limb_{pid}_finish",
+                        "label": f"{label_base} {side} (limb) finish",
+                        "type": "select_str",
+                        "options": list(_FINISH_OPTIONS_ORDER),
+                        "default": "default",
+                    }
+                )
+                defs.append(
+                    {
+                        "key": f"feat_limb_{pid}_hex",
+                        "label": f"{label_base} {side} (limb) hex",
+                        "type": "str",
+                        "default": "",
+                    }
+                )
+                if jvis:
+                    for ji in range(max(0, n_seg - 1)):
+                        jpid = f"{idx_prefix}_{side}_j{ji}"
+                        defs.append(
+                            {
+                                "key": f"feat_joint_{jpid}_finish",
+                                "label": f"{label_base} {side} joint {ji} finish",
+                                "type": "select_str",
+                                "options": list(_FINISH_OPTIONS_ORDER),
+                                "default": "default",
+                            }
+                        )
+                        defs.append(
+                            {
+                                "key": f"feat_joint_{jpid}_hex",
+                                "label": f"{label_base} {side} joint {ji} hex",
+                                "type": "str",
+                                "default": "",
+                            }
+                        )
+    if slug == "spider":
+        for leg in range(8):
+            pid = f"leg_{leg}"
+            defs.append(
+                {
+                    "key": f"feat_limb_{pid}_finish",
+                    "label": f"Leg {leg} cylinders finish",
+                    "type": "select_str",
+                    "options": list(_FINISH_OPTIONS_ORDER),
+                    "default": "default",
+                }
+            )
+            defs.append(
+                {
+                    "key": f"feat_limb_{pid}_hex",
+                    "label": f"Leg {leg} cylinders hex",
+                    "type": "str",
+                    "default": "",
+                }
+            )
+            for jn in ("root", "knee", "ankle", "foot"):
+                jpid = f"leg_{leg}_{jn}"
+                defs.append(
+                    {
+                        "key": f"feat_joint_{jpid}_finish",
+                        "label": f"Leg {leg} joint ({jn}) finish",
+                        "type": "select_str",
+                        "options": list(_FINISH_OPTIONS_ORDER),
+                        "default": "default",
+                    }
+                )
+                defs.append(
+                    {
+                        "key": f"feat_joint_{jpid}_hex",
+                        "label": f"Leg {leg} joint ({jn}) hex",
+                        "type": "str",
+                        "default": "",
+                    }
+                )
     return defs
 
 
@@ -217,7 +392,12 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
         static = list(_ANIMATED_BUILD_CONTROLS.get(slug, []))
         if slug == "spider":
             static = _spider_eye_control_defs()
-        merged = static + _mesh_float_control_defs(slug) + _feature_control_defs(slug)
+        merged = (
+            static
+            + _mesh_float_control_defs(slug)
+            + _feature_control_defs(slug)
+            + _part_feature_control_defs(slug)
+        )
         out[slug] = merged
     return out
 
@@ -261,7 +441,11 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     for k, v in src.items():
         if k in ("mesh", "features"):
             continue
-        if _FEAT_FLAT_KEY.match(k):
+        if (
+            _FEAT_ZONE_FLAT_KEY.match(k)
+            or _FEAT_LIMB_PART_FLAT_KEY.match(k)
+            or _FEAT_JOINT_PART_FLAT_KEY.match(k)
+        ):
             continue
         if k in mesh_keys:
             mesh[k] = v

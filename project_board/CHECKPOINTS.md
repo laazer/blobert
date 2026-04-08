@@ -20,6 +20,23 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-08T14-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/10_body_part_color_picker_limb_joint_hierarchy.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-BPCLJH / run-2026-04-08-planning
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/10_body_part_color_picker_limb_joint_hierarchy.md`
+- Stage: PLANNING (in progress)
+- Log: `project_board/checkpoints/M9-BPCLJH/run-2026-04-08-planning.md`
+
+### [M9-BPCLJH] — OUTCOME: COMPLETE
+Limb/joint feature zones, flat `feat_limb_*` / `feat_joint_*`, `material_for_zone_part`, imp/carapace/spider apply paths, frontend `str` hex row + grouped colors UI; spec `project_board/specs/body_part_color_picker_limb_joint_hierarchy_spec.md`; `run_tests.sh` green.
+Log: `project_board/checkpoints/M9-BPCLJH/run-2026-04-08-planning.md`
+
+---
+
 ## Run: 2026-04-08T12-00-00Z-autopilot-single
 - Queue mode: single ticket
 - Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/01_spec_model_registry_draft_versions_and_editor_contract.md`

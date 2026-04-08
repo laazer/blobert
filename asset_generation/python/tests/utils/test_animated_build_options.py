@@ -182,6 +182,64 @@ def test_options_rebuilds_features_when_base_missing(monkeypatch) -> None:
     assert o["features"]["body"]["finish"] == "default"
 
 
+def test_spider_features_include_joints_and_extra_zones() -> None:
+    o = options_for_enemy("spider", {})
+    assert set(o["features"].keys()) == {"body", "head", "limbs", "joints", "extra"}
+
+
+def test_api_spider_includes_zone_and_part_material_keys() -> None:
+    ctrl = animated_build_controls_for_api()
+    keys = {c["key"] for c in ctrl["spider"]}
+    assert "feat_joints_finish" in keys
+    assert "feat_joints_hex" in keys
+    assert "feat_limb_leg_0_hex" in keys
+    assert "feat_joint_leg_0_root_hex" in keys
+
+
+def test_feat_limb_and_joint_part_flat_merge() -> None:
+    o = options_for_enemy(
+        "imp",
+        {"feat_limb_arm_0_hex": "aabbcc", "feat_joint_arm_0_j0_hex": "112233"},
+    )
+    assert o["features"]["limbs"]["parts"]["arm_0"]["hex"] == "aabbcc"
+    assert o["features"]["joints"]["parts"]["arm_0_j0"]["hex"] == "112233"
+
+
+def test_validate_features_map_coerces_non_dict_zone_payload() -> None:
+    out = abo._validate_features_map({"body": "not_a_dict"})
+    assert out["body"]["finish"] == "default"
+    assert out["body"]["hex"] == ""
+
+
+def test_merge_skips_non_dict_part_entry_under_nested_features() -> None:
+    o = options_for_enemy(
+        "imp",
+        {"imp": {"features": {"limbs": {"parts": {"arm_0": "not_a_dict", "arm_1": {"hex": "aabbcc"}}}}}},
+    )
+    parts = o["features"]["limbs"].get("parts", {})
+    assert "arm_0" not in parts
+    assert parts.get("arm_1", {}).get("hex") == "aabbcc"
+
+
+def test_feat_joint_flat_ignored_when_slug_has_no_joints_zone() -> None:
+    o = options_for_enemy("slug", {"feat_joint_any_hex": "ff00ff"})
+    assert "joints" not in o["features"]
+
+
+def test_nested_parts_round_trip() -> None:
+    nested = {
+        "imp": {
+            "features": {
+                "limbs": {"parts": {"arm_1": {"hex": "ffeedd"}}},
+                "joints": {"parts": {"leg_0_j0": {"finish": "metallic", "hex": ""}}},
+            }
+        }
+    }
+    o = options_for_enemy("imp", nested)
+    assert o["features"]["limbs"]["parts"]["arm_1"]["hex"] == "ffeedd"
+    assert o["features"]["joints"]["parts"]["leg_0_j0"]["finish"] == "metallic"
+
+
 def test_coerce_skips_static_control_when_key_absent() -> None:
     base = abo._defaults_for_slug("claw_crawler")
     del base["peripheral_eyes"]

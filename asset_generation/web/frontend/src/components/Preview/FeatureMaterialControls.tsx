@@ -16,6 +16,20 @@ type Props = {
   showEmptyHint?: boolean;
 };
 
+const ZONE_ORDER = ["body", "head", "limbs", "joints", "extra"] as const;
+
+function zoneRank(key: string): number {
+  const m = /^feat_(\w+)_(finish|hex)$/.exec(key);
+  if (!m) return 99;
+  const z = m[1];
+  const i = ZONE_ORDER.indexOf(z as (typeof ZONE_ORDER)[number]);
+  return i >= 0 ? i * 2 + (m[2] === "finish" ? 0 : 1) : 50;
+}
+
+function sortZoneDefs(defs: AnimatedBuildControlDef[]): AnimatedBuildControlDef[] {
+  return [...defs].sort((a, b) => zoneRank(a.key) - zoneRank(b.key));
+}
+
 /**
  * Per-slot material finish + hex (feat_* keys from meta). Shared by Build panel and Command panel.
  */
@@ -39,7 +53,7 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
         }}
       >
         <span style={{ ...titleStyle, fontWeight: compactTitle ? 600 : undefined }}>
-          Part materials (body / head / limbs / extra)
+          Part materials (zones + limb / joint overrides)
         </span>
         <div style={{ color: "#9d9d9d", fontSize: 11 }}>
           No per-part color controls for this enemy (check meta / build API).
@@ -47,6 +61,21 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
       </div>
     );
   }
+
+  const zoneDefs = sortZoneDefs(
+    featureDefs.filter((d) => /^feat_(body|head|limbs|joints|extra)_(finish|hex)$/.test(d.key)),
+  );
+  const limbPartDefs = featureDefs.filter((d) => d.key.startsWith("feat_limb_"));
+  const jointPartDefs = featureDefs.filter((d) => d.key.startsWith("feat_joint_"));
+
+  const row = (def: AnimatedBuildControlDef) => (
+    <ControlRow
+      key={def.key}
+      def={def}
+      value={values[def.key]}
+      onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
+    />
+  );
 
   return (
     <div
@@ -60,17 +89,31 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
       }}
     >
       <span style={{ ...titleStyle, fontWeight: compactTitle ? 600 : undefined }}>
-        Part materials (body / head / limbs / extra)
+        Part materials (zones + limb / joint overrides)
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {featureDefs.map((def) => (
-          <ControlRow
-            key={def.key}
-            def={def}
-            value={values[def.key]}
-            onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
-          />
-        ))}
+        <span style={{ ...titleStyle, fontSize: 10, color: "#858585" }}>Zones</span>
+        {zoneDefs.map(row)}
+        {limbPartDefs.length > 0 ? (
+          <details style={{ marginTop: 2 }}>
+            <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
+              Per-limb overrides ({limbPartDefs.length})
+            </summary>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+              {limbPartDefs.map(row)}
+            </div>
+          </details>
+        ) : null}
+        {jointPartDefs.length > 0 ? (
+          <details style={{ marginTop: 2 }}>
+            <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
+              Per-joint overrides ({jointPartDefs.length})
+            </summary>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+              {jointPartDefs.map(row)}
+            </div>
+          </details>
+        ) : null}
       </div>
     </div>
   );

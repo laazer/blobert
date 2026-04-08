@@ -8,6 +8,7 @@ import {
   type MeshPartTreeControlHints,
   type PartTreeNode,
 } from "./quickSourceNav";
+import { ControlRow } from "./BuildControlRow";
 
 const s = {
   bar: {
@@ -120,99 +121,6 @@ function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }
         </div>
       ))}
     </>
-  );
-}
-
-function ControlRow({
-  def,
-  value,
-  onChange,
-}: {
-  def: AnimatedBuildControlDef;
-  value: unknown;
-  onChange: (v: number) => void;
-}) {
-  if (def.type === "float") {
-    return <FloatRow def={def} value={value} onChange={onChange} />;
-  }
-  if (def.type === "select") {
-    const n = typeof value === "number" ? value : def.default;
-    return (
-      <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        <span style={s.label}>{def.label}</span>
-        <select
-          style={s.select}
-          value={n}
-          onChange={(e) => onChange(Number(e.target.value))}
-        >
-          {def.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-  const n = typeof value === "number" ? value : def.default;
-  return (
-    <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-      <span style={s.label}>{def.label}</span>
-      <input
-        style={s.input}
-        type="number"
-        min={def.min}
-        max={def.max}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
-  );
-}
-
-function FloatRow({
-  def,
-  value,
-  onChange,
-}: {
-  def: Extract<AnimatedBuildControlDef, { type: "float" }>;
-  value: unknown;
-  onChange: (v: number) => void;
-}) {
-  const n = typeof value === "number" ? value : def.default;
-  return (
-    <label
-      style={{
-        display: "flex",
-        gap: 6,
-        alignItems: "center",
-        flexWrap: "wrap",
-        maxWidth: "100%",
-      }}
-    >
-      <span style={s.label} title={def.key}>
-        {def.label}
-      </span>
-      <input
-        type="range"
-        min={def.min}
-        max={def.max}
-        step={def.step}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={def.label}
-        style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 160 }}
-      />
-      <input
-        style={s.inputFloat}
-        type="number"
-        step={def.step}
-        min={def.min}
-        max={def.max}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
   );
 }
 
@@ -419,7 +327,7 @@ export function BuildControls() {
               key={def.key}
               def={def}
               value={values[def.key]}
-              onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
+              onChange={(v: number | string) => setAnimatedBuildOption(slug, def.key, v)}
             />
           ))}
         </div>
@@ -460,7 +368,7 @@ export function BuildControls() {
           key={def.key}
           def={def}
           value={values[def.key]}
-          onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
+          onChange={(v: number | string) => setAnimatedBuildOption(slug, def.key, v)}
         />
       ))}
       {floatSection(

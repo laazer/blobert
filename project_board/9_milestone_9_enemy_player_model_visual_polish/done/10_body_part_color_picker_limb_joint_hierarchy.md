@@ -30,3 +30,62 @@ Implementation spans **`asset_generation/python/src/utils/animated_build_options
 ## Dependencies
 
 - `03_procedural_material_and_color_pipeline_fixes` (soft — coordinate to avoid conflicting material contracts)
+
+---
+
+## Execution Plan
+
+1. Spec: picker bugs + zone/part key contracts (`project_board/specs/body_part_color_picker_limb_joint_hierarchy_spec.md`).
+2. Python: `animated_build_options` zones, flat `feat_limb_*` / `feat_joint_*`, nested `parts`, API defs; `material_system` `joints` slot + `material_for_zone_part`; humanoid + spider `apply_themed_materials`.
+3. Frontend: `str` / `select_str` types, shared `ControlRow` in `BuildControls`, hex blur sanitize, grouped `FeatureMaterialControls`.
+4. Tests: pytest (merge, materials, apply-loop mocks) + `ci/scripts/run_tests.sh`.
+
+## Specification
+
+See `project_board/specs/body_part_color_picker_limb_joint_hierarchy_spec.md`.
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+COMPLETE
+
+## Revision
+8
+
+## Last Updated By
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: Passing — `uv run pytest tests/` (565 tests); `timeout 300 ci/scripts/run_tests.sh` exit 0; diff-cover ≥85% vs `origin/main`.
+- Static QA: Passing — Ruff on `asset_generation/python` src/tests/main.py.
+- Integration: N/A (asset editor UI exercised via `npm run build` in `asset_generation/web/frontend`).
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Human
+
+## Required Input Schema
+```json
+{}
+```
+
+## Status
+Proceed
+
+## Reason
+
+All acceptance criteria evidenced in spec + test commands above; push branch when ready.

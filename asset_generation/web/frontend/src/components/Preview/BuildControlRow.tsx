@@ -49,6 +49,22 @@ export function ControlRow({
   if (def.type === "float") {
     return <FloatRow def={def} value={value} onChange={onChange} />;
   }
+  if (def.type === "int") {
+    const n = typeof value === "number" ? value : def.default;
+    return (
+      <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <span style={rs.label}>{def.label}</span>
+        <input
+          style={rs.input}
+          type="number"
+          min={def.min}
+          max={def.max}
+          value={n}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+      </label>
+    );
+  }
   if (def.type === "select") {
     const n = typeof value === "number" ? value : def.default;
     return (
@@ -87,9 +103,11 @@ export function ControlRow({
       </label>
     );
   }
-  if (def.type === "string") {
-    const strVal = typeof value === "string" ? value : def.default;
+  if (def.type === "str") {
+    const strVal = typeof value === "string" ? value : String(def.default ?? "");
     const isHexSlot = def.key.endsWith("_hex");
+    const sanitizeHex = (raw: string) =>
+      raw.replace(/^#/, "").replace(/[^0-9a-fA-F]/g, "").slice(0, 6).toLowerCase();
     return (
       <label style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", maxWidth: "100%" }}>
         <span style={rs.label}>{def.label}</span>
@@ -108,25 +126,20 @@ export function ControlRow({
           placeholder={isHexSlot ? "RRGGBB" : ""}
           value={strVal}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={
+            isHexSlot
+              ? () => {
+                  const t = sanitizeHex(strVal);
+                  if (t !== strVal) onChange(t);
+                }
+              : undefined
+          }
           spellCheck={false}
         />
       </label>
     );
   }
-  const n = typeof value === "number" ? value : def.default;
-  return (
-    <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
-      <span style={rs.label}>{def.label}</span>
-      <input
-        style={rs.input}
-        type="number"
-        min={def.min}
-        max={def.max}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
-  );
+  return null;
 }
 
 function FloatRow({

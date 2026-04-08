@@ -1,6 +1,7 @@
 """
 Material creation system with procedural textures
 """
+from __future__ import annotations
 
 import bpy
 
@@ -21,6 +22,11 @@ ENEMY_FINISH_PRESETS = {
     "metallic": (0.25, 0.75, 0.0),
     "gel": (0.08, 0.0, 0.35),
 }
+
+
+def _sanitize_hex_input(raw: str) -> str:
+    s = "".join(c for c in str(raw or "").strip().lower() if c in "0123456789abcdef")
+    return s[:6]
 
 
 def _parse_hex_color(hex_value: str):
@@ -280,12 +286,64 @@ def setup_materials(enemy_finish: str = "default", enemy_hex_color: str = "") ->
     return materials
 
 
+def _palette_base_name_from_material(mat) -> str:
+    name = getattr(mat, "name", "") or ""
+    if "." in name:
+        name = name.rsplit(".", 1)[0]
+    if "__feat_" in name:
+        return name.split("__feat_", 1)[0]
+    return name
+
+
+def _material_for_finish_hex(
+    *,
+    base_palette_name: str,
+    finish: str,
+    hex_str: str,
+    instance_suffix: str,
+) -> object:
+    """Create a themed material variant (palette base + finish + optional hex)."""
+    all_colors = MaterialColors.get_all()
+    base_color = all_colors.get(base_palette_name)
+    if base_color is None:
+        base_color = (0.6, 0.5, 0.5, 1.0)
+    h = _sanitize_hex_input(hex_str)
+    override_color = _parse_hex_color(h) if h else None
+    material_color = override_color if override_color is not None else base_color
+    finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = finish != "default"
+    force_base_color = override_color is not None
+    is_metallic = base_palette_name in MaterialCategories.METALLIC_SHADER
+    metallic = 0.8 if is_metallic else 0.0
+    roughness = 0.3 if is_metallic else 0.7
+    if finish_roughness is not None:
+        roughness = finish_roughness
+    if finish_metallic is not None:
+        metallic = finish_metallic
+    transmission = finish_transmission if finish_transmission is not None else 0.0
+    alpha = material_color[3] if len(material_color) > 3 else 1.0
+    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    return create_material(
+        new_name,
+        material_color,
+        metallic,
+        roughness,
+        alpha,
+        transmission,
+        add_texture=True,
+        force_surface=force_surface,
+        force_base_color=force_base_color,
+    )
+
+
 def apply_feature_slot_overrides(slot_materials: dict, features: dict | None) -> dict:
     """Re-create body/head/limbs/extra materials when ``features`` sets finish or hex overrides."""
     if not features:
         return slot_materials
 
-    all_colors = MaterialColors.get_all()
     out = dict(slot_materials)
 
     for slot_key, mat in list(out.items()):
@@ -299,47 +357,54 @@ def apply_feature_slot_overrides(slot_materials: dict, features: dict | None) ->
         if finish == "default" and not hex_str:
             continue
 
-        base_name = getattr(mat, "name", "") or ""
-        if "." in base_name:
-            base_name = base_name.rsplit(".", 1)[0]
-
-        base_color = all_colors.get(base_name)
-        if base_color is None:
-            base_color = (0.6, 0.5, 0.5, 1.0)
-
-        override_color = _parse_hex_color(hex_str) if hex_str else None
-        material_color = override_color if override_color is not None else base_color
-
-        finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
-            finish,
-            ENEMY_FINISH_PRESETS["default"],
-        )
-        force_surface = finish != "default"
-        force_base_color = override_color is not None
-
-        is_metallic = base_name in MaterialCategories.METALLIC_SHADER
-        metallic = 0.8 if is_metallic else 0.0
-        roughness = 0.3 if is_metallic else 0.7
-        if finish_roughness is not None:
-            roughness = finish_roughness
-        if finish_metallic is not None:
-            metallic = finish_metallic
-        transmission = finish_transmission if finish_transmission is not None else 0.0
-        alpha = material_color[3] if len(material_color) > 3 else 1.0
-
-        new_name = f"{base_name}__feat_{slot_key}"
-        out[slot_key] = create_material(
-            new_name,
-            material_color,
-            metallic,
-            roughness,
-            alpha,
-            transmission,
-            add_texture=True,
-            force_surface=force_surface,
-            force_base_color=force_base_color,
+        base_palette_name = _palette_base_name_from_material(mat)
+        out[slot_key] = _material_for_finish_hex(
+            base_palette_name=base_palette_name,
+            finish=str(finish),
+            hex_str=hex_str,
+            instance_suffix=str(slot_key),
         )
     return out
+
+
+def material_for_zone_part(
+    zone: str,
+    part_id: str | None,
+    slot_materials: dict,
+    features: dict | None,
+):
+    """Resolve material for a sub-part: optional ``features[zone]['parts'][part_id]`` overrides zone slot."""
+    base = slot_materials.get(zone)
+    if base is None or not part_id or not features:
+        return base
+    zf = features.get(zone)
+    if not isinstance(zf, dict):
+        return base
+    parts = zf.get("parts")
+    if not isinstance(parts, dict):
+        return base
+    pf = parts.get(part_id)
+    if not isinstance(pf, dict):
+        return base
+    p_hex = _sanitize_hex_input(pf.get("hex", ""))
+    p_fin = str(pf.get("finish", "default"))
+    z_hex = _sanitize_hex_input(zf.get("hex", ""))
+    z_fin = str(zf.get("finish", "default"))
+    wants_override = bool(p_hex) or p_fin != "default"
+    if not wants_override:
+        return base
+    eff_fin = p_fin if p_fin != "default" else z_fin
+    eff_hex = p_hex or z_hex
+    if eff_fin == "default" and not eff_hex:
+        return base
+    base_palette_name = _palette_base_name_from_material(base)
+    safe_part = str(part_id).replace(".", "_")
+    return _material_for_finish_hex(
+        base_palette_name=base_palette_name,
+        finish=eff_fin,
+        hex_str=eff_hex,
+        instance_suffix=f"{zone}_{safe_part}",
+    )
 
 
 def apply_material_to_object(obj, material) -> None:
@@ -355,10 +420,12 @@ def _build_body_part_material_map(available_mats: list, rng) -> dict:
     """Map body part names to materials given a list of available theme materials"""
     count = len(available_mats)
     if count >= 3:
+        limb_mat = available_mats[2]
         return {
             'body': available_mats[0],
             'head': available_mats[1],
-            'limbs': available_mats[2],
+            'limbs': limb_mat,
+            'joints': limb_mat,
             'extra': rng.choice(available_mats),
         }
     if count == 2:
@@ -366,10 +433,17 @@ def _build_body_part_material_map(available_mats: list, rng) -> dict:
             'body': available_mats[0],
             'head': available_mats[1],
             'limbs': available_mats[0],
+            'joints': available_mats[0],
             'extra': available_mats[1],
         }
     fallback = available_mats[0]
-    return {'body': fallback, 'head': fallback, 'limbs': fallback, 'extra': fallback}
+    return {
+        'body': fallback,
+        'head': fallback,
+        'limbs': fallback,
+        'joints': fallback,
+        'extra': fallback,
+    }
 
 
 def get_enemy_materials(enemy_name: str, materials: dict, rng) -> dict:
@@ -378,6 +452,7 @@ def get_enemy_materials(enemy_name: str, materials: dict, rng) -> dict:
         'body': materials.get(MaterialNames.ORGANIC_BROWN),
         'head': materials.get(MaterialNames.FLESH_PINK),
         'limbs': materials.get(MaterialNames.BONE_WHITE),
+        'joints': materials.get(MaterialNames.BONE_WHITE),
         'extra': materials.get(MaterialNames.ORGANIC_BROWN),
     }
 

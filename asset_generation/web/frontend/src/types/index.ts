@@ -50,6 +50,19 @@ export type AnimatedBuildControlDef =
       max: number;
       step: number;
       default: number;
+    }
+  | {
+      key: string;
+      label: string;
+      type: "str";
+      default: string;
+    }
+  | {
+      key: string;
+      label: string;
+      type: "select_str";
+      options: string[];
+      default: string;
     };
 
 /** GET /api/meta/enemies payload (enemies + procedural build controls per slug). */

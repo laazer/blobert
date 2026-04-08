@@ -12,7 +12,7 @@ from ..core.rig_models.quadruped_simple import (
     QUADRUPED_LEG_THICKNESS,
     QuadrupedSimpleRig,
 )
-from ..materials.material_system import apply_material_to_object
+from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
@@ -279,15 +279,24 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         enemy_mats = self._themed_slot_materials_for("spider")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
-        leg_material = enemy_mats["limbs"]
         eye_material = enemy_mats["extra"]
+        features = self.build_options.get("features")
         ec = getattr(self, "_eye_count", int(self._mesh("DEFAULT_EYE_COUNT")))
         for i in range(ec):
             apply_material_to_object(self.parts[2 + i], eye_material)
         per_leg = 8  # body->root connector + root/knee/ankle/foot + 3 limb cylinders
         leg_start = 2 + ec
-        for i in range(8 * per_leg):
-            apply_material_to_object(self.parts[leg_start + i], leg_material)
+        joint_names = ("root", "knee", "ankle", "foot")
+        for leg in range(8):
+            for k in range(per_leg):
+                idx = leg_start + leg * per_leg + k
+                is_joint = k % 2 == 1
+                if is_joint:
+                    jn = joint_names[(k - 1) // 2]
+                    mat = material_for_zone_part("joints", f"leg_{leg}_{jn}", enemy_mats, features)
+                else:
+                    mat = material_for_zone_part("limbs", f"leg_{leg}", enemy_mats, features)
+                apply_material_to_object(self.parts[idx], mat)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED
