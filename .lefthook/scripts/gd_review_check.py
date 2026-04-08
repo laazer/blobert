@@ -6,6 +6,9 @@ import sys
 from pathlib import Path
 from typing import List
 
+from gd_magic_number_check import check_staged_gd_files
+from precommit_git_diff import git_diff_cached, git_repo_root, parse_staged_additions
+
 CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 TRAILING_WS_RE = re.compile(r"[ \t]+$")
 
@@ -43,6 +46,14 @@ def main(argv: List[str]) -> int:
     errors: List[str] = []
     for file_path in files:
         errors.extend(check_file(file_path))
+
+    repo = git_repo_root()
+    if repo is not None:
+        diff = git_diff_cached(repo)
+        additions = parse_staged_additions(diff)
+        errors.extend(check_staged_gd_files(repo, files, additions))
+    else:
+        print("pre-commit: gd_review_check: not a git repo; skipping magic-number policy.")
 
     if errors:
         print("pre-commit: Godot reviewer checks failed:")

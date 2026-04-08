@@ -27,7 +27,7 @@ tasks:
       - timeout 120 godot --headless --import
 
   tests:python:
-    desc: Run asset_generation Python tests
+    desc: Run asset_generation Python tests (pytest + ≥85% coverage on src/ per pyproject.toml)
     cmds:
       - bash .lefthook/scripts/py-tests.sh
 
@@ -65,6 +65,11 @@ tasks:
     desc: Python organization guardrails for staged files
     cmds:
       - python3 .lefthook/scripts/py_organization_check.py {{.CLI_ARGS}}
+
+  hooks:py-asset-policy:
+    desc: Python asset_generation policy (lazy imports + literals on staged lines)
+    cmds:
+      - python3 .lefthook/scripts/py_asset_policy_check.py {{.CLI_ARGS}}
 
   hooks:gd-review:
     desc: Godot script reviewer checks for staged files

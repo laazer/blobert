@@ -11,6 +11,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-cov>=4.0",
     # Type stubs for bpy — enables IDE completion without a full Blender install.
     # Match the stub version to your installed Blender version, e.g.:
     #   pip install fake-bpy-module-4-3   (Blender 4.3)
@@ -23,3 +24,24 @@ testpaths = ["tests"]
 # Ensures "from src." imports resolve from the project root without installing
 # the package or manually adjusting sys.path.
 pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    # CLI demo only; not exercised by the pipeline test suite.
+    "src/utils/demo.py",
+]
+
+[tool.coverage.report]
+# Pre-push / CI gate (see .lefthook/scripts/py-tests.sh). Adjust only with team agreement.
+fail_under = 85
+skip_empty = true
+show_missing = true
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "^\\.\\.\\.$",
+]

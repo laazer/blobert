@@ -74,6 +74,34 @@ const _DETACH_SPAWN_OFFSET: float = 0.4
 ## Player origin Y≈0 on floor; chunk radius=0.5 → 0.75 gives 0.25m clearance.
 const _DETACH_SPAWN_HEIGHT: float = 0.75
 
+const _CHUNK_SLOT_COUNT: int = 2
+## Kill-plane Y (m): recover detached chunk if it falls below; margin above respawn zone bottom (~-9 m).
+const _CHUNK_KILL_PLANE_Y: float = -4.0
+## Chunk DoT: three phases (weaken → infect → release), counted down in `_chunk_dot_ticks_remaining`.
+const _CHUNK_DOT_PHASE_WEAKEN: int = 3
+const _CHUNK_DOT_PHASE_INFECT: int = 2
+const _CHUNK_DOT_PHASE_RELEASE: int = 1
+
+const _DEFAULT_PROJECT_GRAVITY: float = 9.8
+## Particle trail: treat as moving if |velocity| exceeds this (m/s).
+const _TRAIL_VELOCITY_THRESHOLD: float = 0.5
+const _JUMP_SFX_PITCH_MIN: float = 1.0
+const _JUMP_SFX_PITCH_MAX: float = 1.15
+## 2.5D plane lock.
+const _PLAY_PLANE_Z: float = 0.0
+## Use horizontal velocity sign for lob only when moving faster than this (m/s).
+const _DETACH_LOB_DIRECTION_VELOCITY_EPSILON: float = 0.1
+
+const _LAND_SQUASH_SCALE: Vector3 = Vector3(1.15, 0.85, 1.15)
+const _LAND_SQUASH_OUT_DURATION_FACTOR: float = 1.2
+const _DETACH_POP_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
+const _RECALL_POP_SCALE: Vector3 = Vector3(1.05, 1.05, 1.05)
+const _JUICE_POP_IN_DURATION_FACTOR: float = 0.5
+
+const _ENEMY_ACID_DEFAULT_DOT_DURATION: float = 3.0
+const _ENEMY_ACID_DEFAULT_TICK_INTERVAL: float = 0.5
+const _ENEMY_ACID_MIN_TICK_INTERVAL: float = 0.01
+
 ## Game juice: jump stretch (kit jumpStretchSize). Scale applied to SlimeVisual.
 @export var jump_stretch_scale: Vector3 = Vector3(0.85, 1.15, 0.85)
 @export var juice_tween_duration: float = 0.1
@@ -81,7 +109,9 @@ const _DETACH_SPAWN_HEIGHT: float = 0.75
 
 func _ready() -> void:
 	_simulation = MovementSimulation.new()
-	var project_gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8) as float
+	var project_gravity: float = ProjectSettings.get_setting(
+		"physics/3d/default_gravity", _DEFAULT_PROJECT_GRAVITY
+	) as float
 	_simulation.gravity = project_gravity * SCALE_2D_TO_3D
 	_simulation.jump_height = jump_height
 	_simulation.coyote_time = coyote_time
@@ -137,7 +167,10 @@ func _process(_delta: float) -> void:
 		cam.look_at(global_position)
 	var trail: CPUParticles3D = get_node_or_null("ParticleTrail") as CPUParticles3D
 	if trail != null:
-		var moving: bool = abs(velocity.x) > 0.5 or abs(velocity.y) > 0.5
+		var moving: bool = (
+			absf(velocity.x) > _TRAIL_VELOCITY_THRESHOLD
+			or absf(velocity.y) > _TRAIL_VELOCITY_THRESHOLD
+		)
 		trail.emitting = is_on_floor() and moving
 
 
@@ -153,7 +186,7 @@ func _physics_process(delta: float) -> void:
 	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
 
 	if OS.is_debug_build() and Input.is_action_just_pressed("debug_kill"):
-		_current_state.current_hp = 0.0
+		_current_state.current_hp = _simulation.min_hp
 
 	_current_state.is_on_floor = is_on_floor()
 
@@ -193,20 +226,20 @@ func _physics_process(delta: float) -> void:
 	if next_state.jump_consumed and not _current_state.jump_consumed:
 		var am := _get_audio_manager()
 		if am != null and am.jump_sfx != null:
-			am.jump_sfx.pitch_scale = randf_range(1.0, 1.15)
+			am.jump_sfx.pitch_scale = randf_range(_JUMP_SFX_PITCH_MIN, _JUMP_SFX_PITCH_MAX)
 			am.jump_sfx.play()
 		_juice_jump_stretch()
 
 	velocity = Vector3(
 		next_state.velocity.x / SCALE_2D_TO_3D,
 		-next_state.velocity.y / SCALE_2D_TO_3D,
-		0.0
+		_PLAY_PLANE_Z
 	)
 	if _enemy_movement_root_remaining > 0.0:
 		velocity.x = 0.0
 
 	var pos: Vector3 = global_position
-	pos.z = 0.0
+	pos.z = _PLAY_PLANE_Z
 	global_position = pos
 
 	move_and_slide()
@@ -229,7 +262,7 @@ func _physics_process(delta: float) -> void:
 		detach_just_pressed and can_afford_throw,
 		detach_2_just_pressed and can_afford_throw,
 	]
-	for i in 2:
+	for i in _CHUNK_SLOT_COUNT:
 		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
 
 	_tick_enemy_acid_dots(delta)
@@ -249,11 +282,9 @@ func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulati
 			_apply_chunk_dot_step(i)
 
 	# Kill-plane: recover a live chunk that has fallen below the platform.
-	# Threshold matches the respawn zone bottom (-9 m) with some margin.
-	const CHUNK_KILL_Y: float = -4.0
 	if not prev_has and not _recall_in_progress[i] and not _chunk_stuck[i] \
 			and chunk != null and is_instance_valid(chunk) \
-			and chunk.global_position.y < CHUNK_KILL_Y:
+			and chunk.global_position.y < _CHUNK_KILL_PLANE_Y:
 		chunk.queue_free()
 		_chunks[i] = null
 		_set_has_chunk(i, true)
@@ -297,7 +328,7 @@ func _spawn_chunk(i: int) -> void:
 	var chunk: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
 	assert(chunk != null, "chunk_3d.tscn root must be RigidBody3D")
 	var lob_dir: float = 1.0
-	if abs(velocity.x) > 0.1:
+	if absf(velocity.x) > _DETACH_LOB_DIRECTION_VELOCITY_EPSILON:
 		lob_dir = 1.0 if velocity.x > 0.0 else -1.0
 	var parent: Node = get_parent()
 	if parent == null:
@@ -306,12 +337,16 @@ func _spawn_chunk(i: int) -> void:
 	parent.add_child(chunk)
 	# Set global_position AFTER add_child so the physics body initialises
 	# at the correct world position rather than the pre-tree local origin.
-	chunk.global_position = global_position + Vector3(lob_dir * _DETACH_SPAWN_OFFSET, _DETACH_SPAWN_HEIGHT, 0.0)
+	chunk.global_position = global_position + Vector3(
+		lob_dir * _DETACH_SPAWN_OFFSET, _DETACH_SPAWN_HEIGHT, _PLAY_PLANE_Z
+	)
 	_chunks[i] = chunk
 	_detach_spawned[i] = true
 	chunk.add_collision_exception_with(self)
 	chunk.freeze = false
-	chunk.linear_velocity = Vector3(lob_dir * detach_lob_horizontal, detach_lob_upward, 0.0)
+	chunk.linear_velocity = Vector3(
+		lob_dir * detach_lob_horizontal, detach_lob_upward, _PLAY_PLANE_Z
+	)
 	_juice_detach_pop()
 	if i == 0:
 		var am := _get_audio_manager()
@@ -352,7 +387,7 @@ func _tick_recall(i: int, delta: float) -> void:
 func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> void:
 	if not is_instance_valid(chunk):
 		return
-	for i in 2:
+	for i in _CHUNK_SLOT_COUNT:
 		if chunk == _chunks[i]:
 			chunk.linear_velocity = Vector3.ZERO
 			chunk.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
@@ -360,7 +395,7 @@ func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> vo
 			chunk.reparent(enemy, true)
 			_chunk_stuck[i] = true
 			_chunk_stuck_enemy[i] = enemy
-			_chunk_dot_ticks_remaining[i] = 3
+			_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_WEAKEN
 			_chunk_dot_time_accum[i] = 0.0
 			# Immediate damage feedback when the chunk sticks (before DoT ticks).
 			enemy.play_damage_hit_animation()
@@ -404,17 +439,17 @@ func _apply_chunk_dot_step(i: int) -> void:
 		_chunk_dot_time_accum[i] = 0.0
 		return
 	var remaining: int = _chunk_dot_ticks_remaining[i]
-	if remaining == 3:
+	if remaining == _CHUNK_DOT_PHASE_WEAKEN:
 		esm.apply_weaken_event()
 		enemy.play_damage_hit_animation()
-		_chunk_dot_ticks_remaining[i] = 2
+		_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_INFECT
 		return
-	if remaining == 2:
+	if remaining == _CHUNK_DOT_PHASE_INFECT:
 		esm.apply_infection_event()
 		enemy.play_damage_hit_animation()
-		_chunk_dot_ticks_remaining[i] = 1
+		_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_RELEASE
 		return
-	if remaining != 1:
+	if remaining != _CHUNK_DOT_PHASE_RELEASE:
 		return
 	# Mini-boss and regular enemies: third step only releases the blob (recall).
 	# Absorb the enemy with R after chunk returns; infected boss stays in place until then.
@@ -422,7 +457,7 @@ func _apply_chunk_dot_step(i: int) -> void:
 
 
 func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
-	for i in 2:
+	for i in _CHUNK_SLOT_COUNT:
 		var stuck_enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
 		if _chunk_stuck[i] and stuck_enemy != null and is_instance_valid(stuck_enemy):
 			if stuck_enemy.get_esm() == esm:
@@ -488,19 +523,21 @@ func _juice_land_squash() -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
 		return
-	var squash := Vector3(1.15, 0.85, 1.15)
 	var tween := create_tween()
-	tween.tween_property(vis, "scale", squash, juice_tween_duration)
-	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration * 1.2)
+	tween.tween_property(vis, "scale", _LAND_SQUASH_SCALE, juice_tween_duration)
+	tween.tween_property(
+		vis, "scale", Vector3.ONE, juice_tween_duration * _LAND_SQUASH_OUT_DURATION_FACTOR
+	)
 
 
 func _juice_detach_pop() -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
 		return
-	var pop := Vector3(1.08, 1.08, 1.08)
 	var tween := create_tween()
-	tween.tween_property(vis, "scale", pop, juice_tween_duration * 0.5)
+	tween.tween_property(
+		vis, "scale", _DETACH_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR
+	)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
 
 
@@ -508,9 +545,10 @@ func _juice_recall_pop() -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
 		return
-	var pop := Vector3(1.05, 1.05, 1.05)
 	var tween := create_tween()
-	tween.tween_property(vis, "scale", pop, juice_tween_duration * 0.5)
+	tween.tween_property(
+		vis, "scale", _RECALL_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR
+	)
 	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
 
 
@@ -528,7 +566,7 @@ func get_current_hp() -> float:
 func take_damage(amount: float, knockback: Vector3) -> void:
 	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - amount)
 	var k := knockback
-	k.z = 0.0
+	k.z = _PLAY_PLANE_Z
 	velocity.x += k.x
 	velocity.y += k.y
 
@@ -540,7 +578,7 @@ func reset_hp() -> void:
 
 
 func reset_chunks() -> void:
-	for i in [0, 1]:
+	for i in _CHUNK_SLOT_COUNT:
 		if _chunks[i] != null and is_instance_valid(_chunks[i]):
 			_chunks[i].queue_free()
 		_chunks[i] = null
@@ -601,11 +639,11 @@ func get_enemy_movement_root_remaining() -> float:
 func apply_enemy_acid_damage(
 	impact_damage: float,
 	dot_tick_damage: float,
-	dot_duration_seconds: float = 3.0,
-	dot_tick_interval: float = 0.5
+	dot_duration_seconds: float = _ENEMY_ACID_DEFAULT_DOT_DURATION,
+	dot_tick_interval: float = _ENEMY_ACID_DEFAULT_TICK_INTERVAL
 ) -> void:
 	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - impact_damage)
-	var iv: float = maxf(0.01, dot_tick_interval)
+	var iv: float = maxf(_ENEMY_ACID_MIN_TICK_INTERVAL, dot_tick_interval)
 	var n_ticks: int = int(round(dot_duration_seconds / iv))
 	if n_ticks < 1:
 		n_ticks = 1

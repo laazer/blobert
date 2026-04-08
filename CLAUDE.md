@@ -37,6 +37,9 @@ timeout 300 godot -s tests/run_tests.gd
 
 # Force reimport (rebuilds class cache — run if tests fail to load scripts). Prefer bounded import via run_tests.sh in CI.
 timeout 120 godot --headless --import
+
+# asset_generation Python tests + coverage (same gate as pre-push: ≥85% line coverage on src/, see pyproject.toml)
+cd asset_generation/python && uv run --extra dev pytest tests/ -q --cov=src --cov-config=pyproject.toml --cov-report=term-missing:skip-covered
 ```
 
 ## ⏱ Always Use Timeout
@@ -58,3 +61,27 @@ Prefer `git mv` for renames/moves so history is preserved.
 - **Keep tuning, defaults, and feature-specific constants next to the code they belong to** — typically as attributes on the class or private module-level names in the **same file** as that type. Do not introduce a sibling module whose only job is to hold values for a single class under another name (e.g. `*_params.py`, `*_settings.py`, `*_tuning.py`, `mesh_*`, `enemy_*_config`) unless those values are **shared by multiple types** or are a deliberate public API surface.
 - **Shared cross-cutting constants** (used by many call sites or defining a reusable primitive) belong in a clearly scoped place: e.g. `asset_generation/python/src/core/rig_models/` for rig layouts and mesh helpers shared across enemy families (`QuadrupedRigLayout`, `MESH_BODY_CENTER_Z_FACTOR`). Prefer extending an existing shared module over adding a new grab-bag file.
 - **Example (`asset_generation/python`):** procedural enemy mesh numbers live on each enemy model class (`AnimatedSpider`, …) as `ClassVar` fields; at build time `BaseAnimatedModel._mesh("NAME")` applies optional overrides from `build_options["mesh"]` (populated by the asset editor preview / CLI JSON). The editor exposes those knobs as float controls from introspection — no duplicate tuning list in a sidecar module.
+
+## Code review agents (orchestrated subagents)
+
+Orchestrators (`/feature`, `/autopilot`, `/bugfix`, `/ap-continue`, `/c-continue`, and any hand-off to `gdscript-reviewer` or **Python Reviewer Agent**) must instruct reviewers to read the relevant subsection below and enforce it on **new or changed lines** in the diff. Review order stays **organization first**, then **best practices** (as in each skill’s Stage 5b / 3b block).
+
+### GDScript (`gdscript-reviewer`)
+
+Treat **unexplained numeric literals** in gameplay, physics, timing, or presentation logic as findings unless clearly exempt:
+
+- **Exempt:** `0`, `1`, `-1` (and similar) as neutral/identity, trivial loop bounds, or obvious array/slot indices; values already named via `const`, `enum`, or `@export`; standard built-ins (`Vector3.ZERO`, `Vector3.ONE`, `PI`, etc.); comparisons to zero where zero is the natural floor/reset (e.g. clearing a timer).
+- **Not exempt:** “Tuning” floats/ints embedded in expressions (thresholds, durations, scales, damage, speeds) — use **class-scoped `const`** or `@export` on the same type, consistent with *Colocate configuration* above.
+- **Severity:** New magic numbers in the change set are at least **non-blocking warnings**; repeated or high-impact literals (combat, HP, movement) should be **blocking** until named.
+
+### Python (Python Reviewer Agent)
+
+- **Lazy / deferred imports:** Prefer **normal module-level imports**. Do **not** move imports into functions or methods unless required to break a **documented import cycle** (or another hard constraint such as optional heavy dependencies used only behind a feature flag). If a lazy import is necessary, it must include a **short comment** naming the cycle or constraint. Flag new lazy imports without justification as **at least MEDIUM**; prefer fixing dependency direction or splitting modules over adding deferred imports.
+- **Magic numbers:** Same spirit as GDScript — unexplained numeric literals for tuning, limits, timeouts, and domain thresholds should be **named** (`CONSTANT`, settings object, or dataclass field) at module or class scope near the code they configure, consistent with *Colocate configuration* above.
+
+### Pre-commit automation (enforced locally)
+
+These run via Lefthook / `task hooks:*` on **staged** changes (not a substitute for full review on whole files):
+
+- **GDScript:** `task hooks:gd-review` → `.lefthook/scripts/gd_review_check.py` — existing hygiene plus **numeric literals on newly added lines** (aligned with the GDScript subsection above). Skips paths under `tests/` and `reference_projects/`. Requires a git index (skipped outside a repo).
+- **Python (`asset_generation/`):** `task hooks:py-asset-policy` → `.lefthook/scripts/py_asset_policy_check.py` — **function-local imports** on newly added lines (requires an approved `# import cycle` / `# lazy import` / … comment on the previous line) and **numeric literals** on newly added lines (same exempt small integers/floats as the GDScript hook; skips `def`/`class`/`import`/`from`/`@` header lines). Paths under `**/tests/**` are skipped (fixtures and diff strings). Requires a git index (skipped outside a repo).

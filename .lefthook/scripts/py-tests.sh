@@ -7,20 +7,37 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY_ROOT="$ROOT/asset_generation/python"
 cd "$PY_ROOT"
 
+PYTEST_COV_ARGS=(
+  tests/ -q
+  --cov=src
+  --cov-config=pyproject.toml
+  --cov-report=term-missing:skip-covered
+)
+
+_ensure_pytest_cov() {
+  local py="$1"
+  if ! "$py" -c "import pytest_cov" 2>/dev/null; then
+    echo "pre-push: pytest-cov is required for the 85% coverage gate. From asset_generation/python run: uv sync --extra dev" >&2
+    exit 1
+  fi
+}
+
 _run_pytest() {
   local py="$1"
-  echo "pre-push: running asset_generation Python tests..."
-  "$py" -m pytest tests/ -q
+  echo "pre-push: running asset_generation Python tests (coverage ≥85% on src/)..."
+  "$py" -m pytest "${PYTEST_COV_ARGS[@]}"
 }
 
 # Prefer project .venv when it already has pytest (no index fetch; works behind broken mirrors).
 if [ -x "$PY_ROOT/.venv/bin/python" ] && "$PY_ROOT/.venv/bin/python" -c "import pytest" 2>/dev/null; then
   echo "pre-push: running asset_generation Python tests (.venv)..."
+  _ensure_pytest_cov "$PY_ROOT/.venv/bin/python"
   _run_pytest "$PY_ROOT/.venv/bin/python"
 elif command -v uv >/dev/null 2>&1; then
   echo "pre-push: running asset_generation Python tests (uv run --extra dev)..."
-  uv run --extra dev pytest tests/ -q
+  uv run --extra dev pytest "${PYTEST_COV_ARGS[@]}"
 elif python3 -c "import pytest" 2>/dev/null; then
+  _ensure_pytest_cov python3
   _run_pytest python3
 else
   echo "pre-push: pytest not found. From asset_generation/python run: uv sync --extra dev" >&2

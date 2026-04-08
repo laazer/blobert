@@ -16,10 +16,12 @@
 #
 # pre-commit — fast checks on staged files only:
 #   - py-parse: syntax-check staged Python files in asset_generation/python/
+#   - py-asset-policy: lazy imports + unexplained literals on added lines (asset_generation/**/*.py)
+#   - gd-review: hygiene + unexplained literals on added .gd lines (excludes tests/, reference_projects/)
 #
 # pre-push — full test suites + blog post:
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
-#   - py-tests:    pytest in asset_generation/python/ (any .py change there)
+#   - py-tests:    pytest in asset_generation/python/ (any .py change there), with ≥85% coverage on src/
 #   - blog-post:   generate blog post (Claude Code vs Cursor Agent — auto-detected)
 #                  (skips if .lefthook/.blog-last-blogged-commit matches HEAD;
 #                   rate-limit / auth messages do not fail the hook; always exit 0)
@@ -51,6 +53,10 @@ pre-commit:
       name: Python organization guardrails
       glob: "asset_generation/**/*.py"
       run: task hooks:py-organization -- {staged_files}
+    py-asset-policy:
+      name: Python asset_generation policy (lazy import + literals)
+      glob: "asset_generation/**/*.py"
+      run: task hooks:py-asset-policy -- {staged_files}
     gd-review:
       name: Godot script reviewer hygiene
       glob: "**/*.gd"
