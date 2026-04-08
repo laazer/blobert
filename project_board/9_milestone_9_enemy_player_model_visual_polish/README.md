@@ -21,6 +21,7 @@
 7. `backlog/07_editor_delete_draft_and_in_use_models.md` — delete draft + delete in-use with safety rules.
 8. `backlog/08_runtime_spawn_random_enemy_visual_variant.md` — random visual variant among in-use versions at spawn (coordinate M10).
 9. `backlog/09_automated_tests_registry_allowlist_delete.md` — cross-cutting tests for registry, allowlist, delete invariants.
+10. `backlog/10_body_part_color_picker_limb_joint_hierarchy.md` — fix editor color picker; **limb** + **joint** category colors + per-limb/joint overrides (`animated_build_options`, `material_system`, React preview).
 
 ## Dependencies
 
