@@ -9,6 +9,13 @@
 - Drive enemy attacks on a loop (idle → telegraph → strike → recovery or equivalent) aligned with existing attack systems (M8), using exported clip names / timing where present.
 - Validate at least one combat-room template spawns these enemies and they attack the player without manual placement.
 
+## Backlog tickets (execution order)
+
+1. `backlog/01_spec_procedural_enemy_spawn_attack_loop.md` — spec for spawn anchors, scene selection, attack-loop contract.
+2. `backlog/02_wire_generated_enemies_combat_rooms.md` — generated `.tscn` enemies in `room_combat_*` for `RunSceneAssembler`.
+3. `backlog/03_procedural_enemy_attack_loop_runtime.md` — continuous attack loop using M8 plumbing.
+4. `backlog/04_headless_tests_procedural_combat_enemies.md` — automated checks for combat rooms + generated enemies.
+
 ## Dependencies
 
 - M5 (Procedural Enemy Generation) — game-ready enemy scenes and naming
