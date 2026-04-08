@@ -1,4 +1,5 @@
 """Animated ember imp enemy builder."""
+from __future__ import annotations
 
 from typing import ClassVar
 
