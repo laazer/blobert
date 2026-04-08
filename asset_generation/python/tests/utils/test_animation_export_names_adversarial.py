@@ -28,7 +28,7 @@ bpy, mathutils, and bmesh are mocked at module level.
 
 import sys
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 # ---------------------------------------------------------------------------
 # Mock Blender modules. setdefault preserves real modules when running in Blender.
@@ -41,8 +41,7 @@ sys.modules.setdefault('bpy', MagicMock())
 sys.modules.setdefault('mathutils', MagicMock())
 sys.modules.setdefault('bmesh', MagicMock())
 
-from src.utils.constants import AnimationTypes, AnimationConfig
-
+from src.utils.constants import AnimationConfig, AnimationTypes
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -114,8 +113,9 @@ def _run_create_all_animations(animation_set='core'):
     _bpy_mock.context.scene.frame_start = 1
     _bpy_mock.context.scene.frame_end = 48
 
-    from src.animations.animation_system import create_all_animations
     import random
+
+    from src.animations.animation_system import create_all_animations
     rng = random.Random(42)
     create_all_animations(armature, 'blob', rng, animation_set=animation_set)
     return armature, created_action_names
@@ -611,8 +611,9 @@ class TestExportEnemyNLAFlagFixed(unittest.TestCase):
         _bpy_mock.ops.object.select_all.return_value = None
         _bpy_mock.context.view_layer.objects.active = None
 
-        from src.enemies.base_enemy import export_enemy
         import tempfile
+
+        from src.enemies.base_enemy import export_enemy
 
         with tempfile.TemporaryDirectory() as tmpdir:
             export_enemy(armature, mesh, "test_enemy_adv", tmpdir)
@@ -787,8 +788,9 @@ class TestFrameRangeAssignedBeforeNLAStrip(unittest.TestCase):
 
         armature.animation_data.nla_tracks.new.side_effect = _new_track_capturing
 
-        from src.animations.animation_system import create_all_animations
         import random
+
+        from src.animations.animation_system import create_all_animations
         rng = random.Random(42)
         create_all_animations(armature, 'blob', rng, animation_set='core')
 

@@ -4,9 +4,8 @@ Tests for the player slime character system.
 bpy / bmesh / mathutils are mocked before any src imports.
 """
 
-import sys
-import json
 import random
+import sys
 from unittest.mock import MagicMock, patch
 
 # ------------------------------------------------------------------
@@ -20,14 +19,13 @@ sys.modules.setdefault('mathutils.Euler', MagicMock())
 
 import pytest
 
+from src.player.player_materials import SLIME_COLORS
 from src.utils.constants import (
-    PlayerAnimationTypes,
     PlayerAnimationConfig,
+    PlayerAnimationTypes,
     PlayerBoneNames,
     PlayerExportConfig,
 )
-from src.player.player_materials import SLIME_COLORS
-
 
 # ------------------------------------------------------------------
 # Helpers
@@ -256,12 +254,8 @@ class TestPlayerSlimeAnimations:
         assert len(eye_calls) >= 4  # open + closed + reopen × 2 eyes
 
     def test_move_sets_squash_and_stretch(self):
-        from src.player.player_animations import _SQUASH, _BIG_SQUASH, _STRETCH
+        from src.player.player_animations import _BIG_SQUASH, _SQUASH, _STRETCH
         mock_kf = self._run_animation('create_move_animation', 24)
-        scales_used = [
-            c.kwargs.get('scale') or (c.args[3] if len(c.args) > 3 else None)
-            for c in mock_kf.call_args_list
-        ]
         # Check that both squash and stretch presets appear
         keyword_scales = [c.kwargs.get('scale') for c in mock_kf.call_args_list if 'scale' in c.kwargs]
         assert _SQUASH in keyword_scales or _BIG_SQUASH in keyword_scales

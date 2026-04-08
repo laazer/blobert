@@ -36,6 +36,18 @@ _MESH_ATTR_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 # Int ClassVars already covered by static build controls — do not duplicate as mesh sliders.
 _MESH_INT_KEYS_EXCLUDED: frozenset[str] = frozenset({"DEFAULT_EYE_COUNT", "PERIPHERAL_EYES_MAX"})
 
+# Material finish keys (keep aligned with materials.material_system.ENEMY_FINISH_PRESETS).
+_VALID_FINISHES: frozenset[str] = frozenset({"default", "glossy", "matte", "metallic", "gel"})
+_FINISH_OPTIONS_ORDER: tuple[str, ...] = ("default", "glossy", "matte", "metallic", "gel")
+
+# Per-slug material feature slots (body/head/limbs/extra) merged into build_options["features"].
+_FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
+    "imp": ("body", "head", "limbs"),
+    "slug": ("body", "extra"),
+}
+
+_FEAT_FLAT_KEY = re.compile(r"^feat_([a-z0-9_]+)_(finish|hex)$")
+
 
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
     ensure_blender_stubs()
@@ -59,6 +71,82 @@ def _is_mesh_tune_name(name: str) -> bool:
     if not name or name.startswith("_"):
         return False
     return bool(_MESH_ATTR_NAME.match(name))
+
+
+def _feature_zones(slug: str) -> tuple[str, ...]:
+    return _FEATURE_ZONES_BY_SLUG.get(slug, ("body",))
+
+
+def _default_features_dict(slug: str) -> dict[str, dict[str, str]]:
+    return {z: {"finish": "default", "hex": ""} for z in _feature_zones(slug)}
+
+
+def _sanitize_hex(raw: str) -> str:
+    s = "".join(c for c in str(raw).strip().lower() if c in "0123456789abcdef")
+    return s[:6]
+
+
+def _validate_features_map(d: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+    out: dict[str, dict[str, str]] = {}
+    for zone, inner in d.items():
+        fin = str(inner.get("finish", "default"))
+        if fin not in _VALID_FINISHES:
+            fin = "default"
+        out[zone] = {"finish": fin, "hex": _sanitize_hex(inner.get("hex", ""))}
+    return out
+
+
+def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str, Any]) -> dict[str, dict[str, str]]:
+    zones = _feature_zones(slug)
+    out: dict[str, dict[str, str]] = {}
+    for z in zones:
+        b = feat_base.get(z)
+        if isinstance(b, dict):
+            out[z] = {"finish": str(b.get("finish", "default")), "hex": str(b.get("hex", ""))}
+        else:
+            out[z] = {"finish": "default", "hex": ""}
+    nested = src.get("features")
+    if isinstance(nested, dict):
+        for zone, data in nested.items():
+            if zone not in out or not isinstance(data, dict):
+                continue
+            if "finish" in data:
+                out[zone]["finish"] = str(data["finish"])
+            if "hex" in data:
+                out[zone]["hex"] = str(data["hex"])
+    for k, v in src.items():
+        m = _FEAT_FLAT_KEY.match(k)
+        if not m:
+            continue
+        zone, field = m.group(1), m.group(2)
+        if zone not in out:
+            continue
+        out[zone][field] = str(v)
+    return _validate_features_map(out)
+
+
+def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
+    defs: list[dict[str, Any]] = []
+    for zone in _feature_zones(slug):
+        label = zone.replace("_", " ").title()
+        defs.append(
+            {
+                "key": f"feat_{zone}_finish",
+                "label": f"{label} finish",
+                "type": "select_str",
+                "options": list(_FINISH_OPTIONS_ORDER),
+                "default": "default",
+            }
+        )
+        defs.append(
+            {
+                "key": f"feat_{zone}_hex",
+                "label": f"{label} hex",
+                "type": "str",
+                "default": "",
+            }
+        )
+    return defs
 
 
 def _mesh_numeric_defaults(slug: str) -> dict[str, int | float]:
@@ -129,7 +217,7 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
         static = list(_ANIMATED_BUILD_CONTROLS.get(slug, []))
         if slug == "spider":
             static = _spider_eye_control_defs()
-        merged = static + _mesh_float_control_defs(slug)
+        merged = static + _mesh_float_control_defs(slug) + _feature_control_defs(slug)
         out[slug] = merged
     return out
 
@@ -144,6 +232,7 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
             out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
+    out["features"] = _default_features_dict(slug)
     return out
 
 
@@ -170,7 +259,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
                 mesh[k] = v
 
     for k, v in src.items():
-        if k == "mesh":
+        if k in ("mesh", "features"):
+            continue
+        if _FEAT_FLAT_KEY.match(k):
             continue
         if k in mesh_keys:
             mesh[k] = v
@@ -178,6 +269,10 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
             merged[k] = v
 
     merged["mesh"] = mesh
+    feat_base = merged.get("features")
+    if not isinstance(feat_base, dict):
+        feat_base = _default_features_dict(enemy_type)
+    merged["features"] = _merge_features_for_slug(enemy_type, src, feat_base)
     return _coerce_and_validate(enemy_type, merged)
 
 

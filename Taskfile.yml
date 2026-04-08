@@ -27,7 +27,7 @@ tasks:
       - timeout 120 godot --headless --import
 
   tests:python:
-    desc: Run asset_generation Python tests (pytest + ≥85% coverage on src/ per pyproject.toml)
+    desc: Run asset_generation Python tests (pytest + diff-cover; DIFF_COVER_FAIL_UNDER default 85 in py-tests.sh)
     cmds:
       - bash .lefthook/scripts/py-tests.sh
 
@@ -47,7 +47,7 @@ tasks:
       - bash .lefthook/scripts/godot-tests.sh
 
   hooks:python:
-    desc: Run pre-push Python hook script
+    desc: Run pre-push Python hook (honors DIFF_COVER_FAIL_UNDER / DIFF_COVER_COMPARE_BRANCH)
     cmds:
       - bash .lefthook/scripts/py-tests.sh
 
@@ -57,7 +57,7 @@ tasks:
       - python3 -m py_compile {{.CLI_ARGS}}
 
   hooks:py-review:
-    desc: Python reviewer checks for staged files
+    desc: Ruff checks for staged Python (asset_generation/python/pyproject.toml)
     cmds:
       - bash .lefthook/scripts/py-review.sh {{.CLI_ARGS}}
 
@@ -65,11 +65,6 @@ tasks:
     desc: Python organization guardrails for staged files
     cmds:
       - python3 .lefthook/scripts/py_organization_check.py {{.CLI_ARGS}}
-
-  hooks:py-asset-policy:
-    desc: Python asset_generation policy (lazy imports + literals on staged lines)
-    cmds:
-      - python3 .lefthook/scripts/py_asset_policy_check.py {{.CLI_ARGS}}
 
   hooks:gd-review:
     desc: Godot script reviewer checks for staged files

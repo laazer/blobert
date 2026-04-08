@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from mathutils import Vector
+
 from src.core.rig_types import BoneSpec, RigDefinition, rig_from_bone_map
 
 

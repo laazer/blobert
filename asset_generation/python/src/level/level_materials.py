@@ -5,8 +5,9 @@ All level objects are static meshes — they need simple, readable materials
 rather than the procedural biological/elemental system used for enemies.
 """
 
-import bpy
 from typing import Tuple
+
+import bpy
 
 Color = Tuple[float, float, float, float]  # RGBA, 0.0–1.0
 

@@ -2,17 +2,17 @@
 Trap level objects: spike and fire variants, with companion TrapData
 """
 
-from ..core.blender_utils import create_box, create_cylinder, random_variance
+from ..core.blender_utils import create_box, create_cylinder
 from ..materials.material_system import apply_material_to_object
 from .base_level_object import BaseLevelObject
-from .level_object_data import TrapData, TrapType
 from .level_materials import (
-    create_solid_material,
-    create_emissive_material,
-    METAL_GREY,
-    IRON_DARK,
     FIRE_ORANGE,
+    IRON_DARK,
+    METAL_GREY,
+    create_emissive_material,
+    create_solid_material,
 )
+from .level_object_data import TrapData, TrapType
 
 
 class SpikeTrap(BaseLevelObject):

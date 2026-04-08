@@ -12,9 +12,14 @@ Arm nubs wobble via rotation on the arm bones.
 """
 
 import bpy
-from ..animations.keyframe_system import set_bone_keyframe
+
 from ..animations.animation_system import set_rest_pose_keyframe
-from ..utils.constants import PlayerBoneNames, PlayerAnimationTypes, PlayerAnimationConfig
+from ..animations.keyframe_system import set_bone_keyframe
+from ..utils.constants import (
+    PlayerAnimationConfig,
+    PlayerAnimationTypes,
+    PlayerBoneNames,
+)
 
 # ------------------------------------------------------------------
 # Squash / stretch scale presets

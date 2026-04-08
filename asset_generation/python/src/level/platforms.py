@@ -5,10 +5,10 @@ Platform level objects: flat, moving, and crumbling variants
 from ..core.blender_utils import create_box, random_variance
 from .base_level_object import BaseLevelObject
 from .level_materials import (
-    create_solid_material,
-    STONE_GREY,
-    MOVING_BLUE,
     CRUMBLE_BROWN,
+    MOVING_BLUE,
+    STONE_GREY,
+    create_solid_material,
 )
 
 

@@ -3,9 +3,7 @@ Core Blender utilities for object creation and manipulation
 """
 
 import bpy
-import bmesh
-import mathutils
-from mathutils import Vector, Euler
+from mathutils import Vector
 
 
 def clear_scene():

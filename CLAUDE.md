@@ -38,8 +38,9 @@ timeout 300 godot -s tests/run_tests.gd
 # Force reimport (rebuilds class cache — run if tests fail to load scripts). Prefer bounded import via run_tests.sh in CI.
 timeout 120 godot --headless --import
 
-# asset_generation Python tests + coverage (same gate as pre-push: ≥85% line coverage on src/, see pyproject.toml)
-cd asset_generation/python && uv run --extra dev pytest tests/ -q --cov=src --cov-config=pyproject.toml --cov-report=term-missing:skip-covered
+# asset_generation Python tests + coverage XML + diff-cover (same gate as pre-push; threshold from DIFF_COVER_FAIL_UNDER, default 85)
+export DIFF_COVER_FAIL_UNDER="${DIFF_COVER_FAIL_UNDER:-85}"
+cd asset_generation/python && uv run --extra dev pytest tests/ -q --cov=src --cov-config=pyproject.toml --cov-report=term-missing:skip-covered --cov-report=xml && uv run --extra dev python -m diff_cover.diff_cover_tool coverage.xml --compare-branch="${DIFF_COVER_COMPARE_BRANCH:-origin/main}" --fail-under="$DIFF_COVER_FAIL_UNDER"
 ```
 
 ## ⏱ Always Use Timeout
@@ -84,4 +85,4 @@ Treat **unexplained numeric literals** in gameplay, physics, timing, or presenta
 These run via Lefthook / `task hooks:*` on **staged** changes (not a substitute for full review on whole files):
 
 - **GDScript:** `task hooks:gd-review` → `.lefthook/scripts/gd_review_check.py` — existing hygiene plus **numeric literals on newly added lines** (aligned with the GDScript subsection above). Skips paths under `tests/` and `reference_projects/`. Requires a git index (skipped outside a repo).
-- **Python (`asset_generation/`):** `task hooks:py-asset-policy` → `.lefthook/scripts/py_asset_policy_check.py` — **function-local imports** on newly added lines (requires an approved `# import cycle` / `# lazy import` / … comment on the previous line) and **numeric literals** on newly added lines (skips `def`/`class`/`import`/`from`/`@` header lines; integers **−1…10** and a small set of common **0–1** floats are exempt to reduce noise vs the stricter GDScript hook). Paths under `**/tests/**` are skipped (fixtures and diff strings). Requires a git index (skipped outside a repo).
+- **Python (`asset_generation/`):** `task hooks:py-review` → `.lefthook/scripts/py-review.sh` runs **[Ruff](https://docs.astral.sh/ruff/)** with rules from `asset_generation/python/pyproject.toml` (`[tool.ruff.lint]`, currently **E9**, **F**, **I**: runtime/syntax errors, Pyflakes, import sorting). Pre-push also runs `ruff check src tests main.py` before pytest. For **lazy imports** and **magic numbers** in Python, reviewers still apply the policy in the bullets above; GDScript literals remain enforced by `gd_review_check.py`.

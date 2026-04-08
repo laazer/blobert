@@ -2,9 +2,9 @@
 Data structures for level objects: trap definitions and per-object metadata
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
+from typing import Dict
 
 
 class TrapType(Enum):

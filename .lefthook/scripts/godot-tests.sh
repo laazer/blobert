@@ -2,6 +2,9 @@
 # Run the full Godot test suite.
 # Triggered by pre-push when any .gd, .tscn, .tres, or .gdshader file changed.
 # Mirrors ci/scripts/run_tests.sh but uses bin/godot directly (direnv not active in hooks).
+#
+# Python diff-cover (lefthook py-tests hook) uses DIFF_COVER_FAIL_UNDER / DIFF_COVER_COMPARE_BRANCH;
+# this script does not invoke pytest — env vars pass through from your shell when hooks run.
 set -e
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

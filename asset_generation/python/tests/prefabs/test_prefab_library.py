@@ -6,20 +6,19 @@ No Blender modules are needed here — prefab_library.py is pure Python.
 
 import os
 import tempfile
+
 import pytest
 
 from src.prefabs.prefab_library import (
+    _REGISTRY,
     PrefabEntry,
-    get_prefab,
-    get_prefab_path,
     get_all_names,
     get_by_category,
     get_download_instructions,
+    get_prefab,
+    get_prefab_path,
     is_prefab_downloaded,
-    _REGISTRY,
-    _SUPPORTED_EXTENSIONS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Registry contents

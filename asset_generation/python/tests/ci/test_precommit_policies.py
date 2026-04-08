@@ -22,7 +22,6 @@ def _load(name: str):
 
 precommit_git_diff = _load("precommit_git_diff")
 gd_magic = _load("gd_magic_number_check")
-py_policy = _load("py_asset_policy_check")
 
 
 def test_parse_staged_additions_simple_hunk():
@@ -70,33 +69,3 @@ def test_gd_magic_ignores_string():
     assert gd_magic._scan_line_for_magic('print("100")') == []
 
 
-def test_py_lazy_import_requires_comment():
-    src = """def f():
-    import os
-"""
-    err = py_policy.check_lazy_imports("m.py", src, {2})
-    assert len(err) == 1
-    assert "import inside function" in err[0]
-
-
-def test_py_lazy_import_allowed_with_comment():
-    src = """def f():
-    # import cycle: other -> m
-    import other
-"""
-    assert py_policy.check_lazy_imports("m.py", src, {3}) == []
-
-
-def test_py_lazy_import_skips_when_line_not_added():
-    src = """def f():
-    import os
-"""
-    assert py_policy.check_lazy_imports("m.py", src, set()) == []
-
-
-def test_py_magic_skips_def_line():
-    assert py_policy.scan_py_added_line("def foo(x=3):") == []
-
-
-def test_py_magic_flags_assignment():
-    assert py_policy.scan_py_added_line("timeout_seconds = 30") == ["30"]

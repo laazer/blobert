@@ -4,12 +4,12 @@ Factory for building and exporting level objects
 
 from typing import Type
 
-from ..utils.constants import LevelObjectTypes, LevelExportConfig
+from ..utils.constants import LevelExportConfig, LevelObjectTypes
 from .base_level_object import BaseLevelObject, export_level_object
-from .platforms import FlatPlatform, MovingPlatform, CrumblingPlatform
-from .walls import SolidWall, CrenellatedWall
-from .traps import SpikeTrap, FireTrap
 from .checkpoints import Checkpoint
+from .platforms import CrumblingPlatform, FlatPlatform, MovingPlatform
+from .traps import FireTrap, SpikeTrap
+from .walls import CrenellatedWall, SolidWall
 
 
 class LevelObjectBuilder:

@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
-# Run lightweight Python code review checks on staged files.
-# This gate focuses on correctness + import hygiene without requiring a full
-# repository reformat/lint migration in one step.
+# Run Ruff on staged Python files using asset_generation/python/pyproject.toml.
+# Rule set: [tool.ruff.lint] select (E9, F, I) — standard tooling; GDScript policy
+# stays in .lefthook/scripts/gd_*.
+#
+# Always runs from PY_ROOT with paths relative to that dir so isort/first-party
+# resolution matches `cd asset_generation/python && ruff check`.
 set -euo pipefail
 
 if [ "$#" -eq 0 ]; then
   exit 0
+fi
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+PY_ROOT="$ROOT/asset_generation/python"
+
+if [ ! -f "$PY_ROOT/pyproject.toml" ]; then
+  echo "pre-commit: missing Ruff config at $PY_ROOT/pyproject.toml" >&2
+  exit 1
 fi
 
 if command -v ruff >/dev/null 2>&1; then
@@ -13,9 +24,28 @@ if command -v ruff >/dev/null 2>&1; then
 elif command -v uvx >/dev/null 2>&1; then
   RUFF_CMD=(uvx --from ruff ruff)
 else
-  echo "pre-commit: ruff is required (install via 'uv tool install ruff' or ensure uvx is available)." >&2
+  echo "pre-commit: ruff is required (uv sync --extra dev in asset_generation/python, or uv tool install ruff)." >&2
   exit 1
 fi
 
-echo "pre-commit: running Python reviewer checks (ruff E9/F/I) on staged files..."
-"${RUFF_CMD[@]}" check --select E9,F,I "$@"
+rel_args=()
+for f in "$@"; do
+  case "$f" in
+    "$PY_ROOT"/*)
+      rel_args+=("${f#"$PY_ROOT"/}")
+      ;;
+    */asset_generation/python/*)
+      rel_args+=("${f##*asset_generation/python/}")
+      ;;
+    asset_generation/python/*)
+      rel_args+=("${f#asset_generation/python/}")
+      ;;
+    *)
+      rel_args+=("$f")
+      ;;
+  esac
+done
+
+echo "pre-commit: running Ruff (from pyproject.toml) on staged files..."
+cd "$PY_ROOT"
+"${RUFF_CMD[@]}" check --config pyproject.toml "${rel_args[@]}"

@@ -2,7 +2,7 @@
 Attack data structures for the enemy combat system
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
 

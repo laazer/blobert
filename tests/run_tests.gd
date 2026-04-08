@@ -5,6 +5,10 @@
 # Usage:
 #   godot --headless --path /path/to/blobert -s tests/run_tests.gd
 #
+# CI / pre-push also run Python tests via .lefthook/scripts/py-tests.sh (after this suite in
+# ci/scripts/run_tests.sh). That gate uses diff-cover; threshold DIFF_COVER_FAIL_UNDER (default 85)
+# and optional DIFF_COVER_COMPARE_BRANCH — see py-tests.sh (not read by this GDScript file).
+#
 # Exit codes:
 #   0  — all test suites passed
 #   1  — one or more tests failed

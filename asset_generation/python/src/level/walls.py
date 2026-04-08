@@ -4,7 +4,7 @@ Wall level objects: solid and crenellated (battlemented) variants
 
 from ..core.blender_utils import create_box, random_variance
 from .base_level_object import BaseLevelObject
-from .level_materials import create_solid_material, STONE_GREY, WALL_DARK
+from .level_materials import STONE_GREY, WALL_DARK, create_solid_material
 
 
 def _apply_single_material(parts, material_name: str, color):

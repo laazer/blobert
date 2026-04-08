@@ -6,9 +6,9 @@ Usage (via main.py):
     blender --background --python src/level_generator.py -- <object_type> [count] [seed]
 """
 
-import sys
 import os
 import random
+import sys
 
 import bpy
 

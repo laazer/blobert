@@ -3,12 +3,19 @@ Utility classes and constants for the enemy generation system
 """
 
 from .constants import (
-    EnemyTypes, AnimationTypes, EnemyBodyTypes, BoneNames, 
-    AnimationConfig, ExportConfig
+    AnimationConfig,
+    AnimationTypes,
+    BoneNames,
+    EnemyBodyTypes,
+    EnemyTypes,
+    ExportConfig,
 )
 from .materials import (
-    MaterialColors, MaterialNames, MaterialThemes, 
-    MaterialCategories, BodyPartMaterials
+    BodyPartMaterials,
+    MaterialCategories,
+    MaterialColors,
+    MaterialNames,
+    MaterialThemes,
 )
 
 __all__ = [

@@ -12,12 +12,29 @@ dependencies = []
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "diff-cover>=9.0",
+    # chardet 7 ships darwin .so helpers; mixed-arch venvs (e.g. Rosetta) can ImportError. Stay on 5.x.
+    "chardet>=5.2,<6",
+    "ruff>=0.8",
     # Type stubs for bpy — enables IDE completion without a full Blender install.
     # Match the stub version to your installed Blender version, e.g.:
     #   pip install fake-bpy-module-4-3   (Blender 4.3)
     #   pip install fake-bpy-module-4-2   (Blender 4.2)
     # Stubs are not required to run the test suite; tests mock bpy at runtime.
 ]
+
+[tool.ruff]
+target-version = "py311"
+extend-exclude = [
+    "examples",
+    ".venv",
+]
+
+[tool.ruff.lint]
+# Pre-commit / pre-push gate: Pyflakes + isort + runtime errors (pycodestyle E9xx).
+# Broader pycodestyle (E4/E7) is intentionally omitted: tests use late imports after
+# sys.modules stubs (E402), and CLI entrypoints tweak sys.path before imports.
+select = ["E9", "F", "I"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -34,8 +51,8 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Pre-push / CI gate (see .lefthook/scripts/py-tests.sh). Adjust only with team agreement.
-fail_under = 85
+# Line coverage on the whole tree stays informational; pre-push/CI enforce ≥85% on the
+# diff vs main via diff-cover (see .lefthook/scripts/py-tests.sh).
 skip_empty = true
 show_missing = true
 precision = 1

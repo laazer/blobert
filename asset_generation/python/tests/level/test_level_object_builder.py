@@ -4,10 +4,10 @@ Tests for LevelObjectBuilder and per-object trap data / metadata.
 bpy is mocked before any imports so these tests run outside Blender.
 """
 
-import sys
 import json
 import random
-from unittest.mock import MagicMock, patch, call
+import sys
+from unittest.mock import MagicMock, patch
 
 # ------------------------------------------------------------------
 # Mock Blender modules before any src imports
@@ -20,10 +20,9 @@ sys.modules.setdefault('mathutils.Euler', MagicMock())
 
 import pytest
 
-from src.level.level_object_data import TrapType
 from src.level.level_object_builder import LevelObjectBuilder
+from src.level.level_object_data import TrapType
 from src.utils.constants import LevelObjectTypes
-
 
 # ------------------------------------------------------------------
 # Helpers

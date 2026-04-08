@@ -5,7 +5,6 @@ These tests are pure Python and run outside Blender.
 """
 
 import json
-import pytest
 
 from src.level.level_object_data import TrapData, TrapType
 

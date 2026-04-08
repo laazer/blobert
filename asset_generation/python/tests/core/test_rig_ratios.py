@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 
 from mathutils import Vector
+
 from src.core.rig_models.humanoid_simple import HumanoidRigLayout, HumanoidSimpleRig
 from src.core.rig_models.import_rigs import imported_humanoid_rig
 from src.enemies.animated_enemy import AnimatedEnemy, UsesSimpleRigMixin

@@ -6,10 +6,10 @@ from ..core.blender_utils import create_box, create_cylinder, random_variance
 from ..materials.material_system import apply_material_to_object
 from .base_level_object import BaseLevelObject
 from .level_materials import (
-    create_solid_material,
-    create_emissive_material,
-    CHECKPOINT_STONE,
     CHECKPOINT_BEAM,
+    CHECKPOINT_STONE,
+    create_emissive_material,
+    create_solid_material,
 )
 
 

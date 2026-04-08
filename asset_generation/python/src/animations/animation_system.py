@@ -2,10 +2,10 @@
 Core animation system for procedural enemies
 """
 
+
 import bpy
-import math
-from .keyframe_system import set_bone_keyframe, create_simple_armature
-from ..utils.constants import AnimationTypes, AnimationConfig
+
+from ..utils.constants import AnimationConfig, AnimationTypes
 from .body_types import BodyTypeFactory
 
 
