@@ -46,6 +46,8 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
     "imp": ("body", "head", "limbs", "joints", "extra"),
     "carapace_husk": ("body", "head", "limbs", "joints", "extra"),
     "spider": ("body", "head", "limbs", "joints", "extra"),
+    "claw_crawler": ("body", "head", "limbs", "extra"),
+    "spitter": ("body", "head", "limbs"),
     "slug": ("body", "extra"),
 }
 

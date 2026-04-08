@@ -47,8 +47,8 @@ export function ColorsPane() {
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        These apply to themed mesh slots (body, head, limbs, extra). Global tint for export is still set in the command
-        bar (finish + hex).
+        Zone list below depends on the selected enemy (e.g. body / head / limbs / joints / extra). Global tint for
+        export stays in the command bar (finish + hex).
       </p>
       <FeatureMaterialControls slug={slug} showEmptyHint />
     </div>

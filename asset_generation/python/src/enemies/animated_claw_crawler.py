@@ -9,7 +9,7 @@ from ..core.rig_models.quadruped_simple import (
     QUADRUPED_LEG_THICKNESS,
     QuadrupedSimpleRig,
 )
-from ..materials.material_system import apply_material_to_object, get_enemy_materials
+from ..materials.material_system import apply_material_to_object
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
@@ -131,7 +131,7 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             self.parts.append(leg)
 
     def apply_themed_materials(self):
-        enemy_mats = get_enemy_materials("claw_crawler", self.materials, self.rng)
+        enemy_mats = self._themed_slot_materials_for("claw_crawler")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         eye_mat = enemy_mats["extra"]

@@ -221,6 +221,29 @@ def test_merge_skips_non_dict_part_entry_under_nested_features() -> None:
     assert parts.get("arm_1", {}).get("hex") == "aabbcc"
 
 
+def test_claw_crawler_and_spitter_have_multi_zone_features() -> None:
+    ctrl = animated_build_controls_for_api()
+    claw = {c["key"] for c in ctrl["claw_crawler"]}
+    assert "feat_body_hex" in claw
+    assert "feat_head_finish" in claw
+    assert "feat_limbs_hex" in claw
+    assert "feat_extra_finish" in claw
+    spit = {c["key"] for c in ctrl["spitter"]}
+    assert "feat_head_hex" in spit
+    assert "feat_limbs_finish" in spit
+    assert "feat_extra_hex" not in spit
+
+
+def test_options_defaults_claw_crawler_features_four_zones() -> None:
+    o = options_for_enemy("claw_crawler", {})
+    assert set(o["features"].keys()) == {"body", "head", "limbs", "extra"}
+
+
+def test_options_defaults_spitter_features_three_zones() -> None:
+    o = options_for_enemy("spitter", {})
+    assert set(o["features"].keys()) == {"body", "head", "limbs"}
+
+
 def test_feat_joint_flat_ignored_when_slug_has_no_joints_zone() -> None:
     o = options_for_enemy("slug", {"feat_joint_any_hex": "ff00ff"})
     assert "joints" not in o["features"]

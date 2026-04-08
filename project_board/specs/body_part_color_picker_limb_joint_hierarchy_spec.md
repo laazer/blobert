@@ -38,7 +38,8 @@
 ## Exceptions (zone breadth)
 
 - **Extended zones** (`limbs` + `joints` + per-part API): `imp`, `carapace_husk`, `spider` only.
-- **Other animated slugs** (e.g. `slug`, `claw_crawler`, blob families): unchanged feature zones — coarse `feat_body_*` / `feat_extra_*` only; no joint balls in the same humanoid/spider sense.
+- **Multi-zone, no joints slot:** `claw_crawler` → `body`, `head`, `limbs`, `extra` (eyes + claws share `extra`). `spitter` → `body`, `head`, `limbs` (tendrils use `limbs`).
+- **Minimal zones:** `slug` → `body`, `extra`. Default for unknown slugs remains `body` only.
 
 ## AC traceability
 
