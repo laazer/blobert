@@ -3,6 +3,67 @@
 Structured insights extracted after each completed ticket.
 
 ---
+## [M9-DDIM] — Freeze destructive API contract details before test design to avoid medium-confidence assumption drift
+*Completed: 2026-04-09*
+
+### Learnings
+- category: process
+  insight: Destructive-operation tickets need endpoint shape and payload contract freeze in spec, not test design.
+  impact: Test design had to proceed on medium-confidence assumptions about DELETE endpoint paths and request envelope semantics, increasing avoidable contract risk.
+  prevention: Add a spec exit gate for destructive APIs requiring explicit URI(s), method(s), required fields, and deterministic status-class mapping before test authoring begins.
+  severity: medium
+
+- category: architecture
+  insight: Confirmation booleans alone are insufficient for high-risk deletes; confirmation must be bound to target identity.
+  impact: Adversarial coverage had to assert that mismatched `confirm_text` versus request target hard-fails with no mutation to prevent intent spoofing.
+  prevention: Standardize an "intent-binding" rule for destructive endpoints: explicit confirmation plus target-identity match must be validated server-side.
+  severity: high
+
+- category: testing
+  insight: Repeat-delete and malformed-confirmation paths should be first-class deterministic contract tests for delete endpoints.
+  impact: Test-break added these adversarial cases late, revealing they are core safety behavior rather than optional edge coverage.
+  prevention: Require a baseline adversarial set for every destructive endpoint: stale-target repeat, encoded traversal, malformed confirmation, and no-side-effect assertions.
+  severity: medium
+
+### Anti-Patterns
+- description: Letting endpoint naming and payload strictness remain ambiguous until test design.
+  detection_signal: Test-design checkpoints include "would have asked" items about route shape or required confirmation fields.
+  prevention: Block transition to TEST_DESIGN until destructive API contract fields are explicit in the spec.
+
+- description: Treating operator confirmation as a generic boolean without validating target identity binding.
+  detection_signal: Requests with `confirm=true` but mismatched target text are not explicitly rejected in tests/spec.
+  prevention: Make target-bound confirmation validation mandatory and assert hard-failure/no-mutation behavior in backend tests.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every destructive endpoint, include a `Destructive Contract Freeze` subsection with exact method+URI, required confirmation fields, and deterministic status-class outcomes before handing off to Test Design."
+  reason: Eliminates medium-confidence test-authoring assumptions that create downstream contract drift.
+
+- agent: Test Designer Agent
+  change: "For each destructive API, include mandatory tests for (1) stale-target repeat delete determinism and (2) confirmation payload rejection when confirmation text does not match the requested target identity."
+  reason: Locks the two highest-risk safety behaviors early instead of relying on late adversarial discovery.
+
+- agent: Test Breaker Agent
+  change: "Always attempt intent-spoofing payloads on destructive routes (confirm true + mismatched target identity) and require explicit no-mutation assertions after rejection."
+  reason: Catches confirmation-bypass classes before implementation is accepted.
+
+### Workflow Improvements
+- issue: Spec-to-test handoff allowed unresolved destructive API contract details.
+  improvement: Add a handoff checklist item that fails SPECIFICATION completion if destructive route method/URI/payload/status taxonomy are not fully explicit.
+  expected_benefit: Reduces medium-confidence assumptions and rework pressure in TEST_DESIGN/TEST_BREAK.
+
+- issue: Safety-critical adversarial cases were discovered in TEST_BREAK rather than codified as baseline delete contract tests.
+  improvement: Promote a shared destructive-endpoint adversarial template into TEST_DESIGN stage requirements.
+  expected_benefit: Earlier detection of destructive-flow weaknesses with fewer late-stage adjustments.
+
+### Keep / Reinforce
+- practice: Recording `Would have asked` / `Assumption made` / `Confidence` for each ambiguity in scoped checkpoints.
+  reason: Makes assumption risk auditable and directly translatable into prompt and workflow improvements.
+
+- practice: Treating dependency spec as authoritative when ticket text can be interpreted multiple ways.
+  reason: Prevents local tickets from silently diverging from milestone-level safety policy.
+
+---
 
 ## [M9-EUDS] — Model registry draft / in-use UI + API
 
