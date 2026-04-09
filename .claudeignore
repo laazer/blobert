@@ -1,0 +1,19 @@
+# Reduce automatic context indexing in Claude Code (gitignore-style).
+# Does not block explicit reads. See CLAUDE.md for reference_projects policy.
+
+# Third-party / demo trees (read-only reference; very large)
+reference_projects/
+
+# Godot editor cache and import artifacts (regenerated locally)
+.godot/
+
+# Python tooling caches (if present)
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+.venv/
+venv/
+
+# Dependencies
+node_modules/
