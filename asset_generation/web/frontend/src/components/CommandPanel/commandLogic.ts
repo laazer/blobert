@@ -12,6 +12,9 @@ export type CommandConfig = {
   requiresEnemy: boolean;
 };
 
+/** Cmds that accept a second positional ``count`` (variants) in the preview string. */
+export const CMD_ALLOWS_VARIANT_COUNT: ReadonlySet<RunCmd> = new Set(["animated", "player", "level"]);
+
 export const CMD_CONFIG: Record<RunCmd, CommandConfig> = {
   animated: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
   player: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
@@ -44,6 +47,11 @@ function tokenizeCommand(value: string): string[] {
   return out;
 }
 
+export function clampVariantCount(raw: number): number {
+  if (!Number.isFinite(raw)) return 1;
+  return Math.max(1, Math.min(99, Math.floor(raw)));
+}
+
 export function formatCommandPreview(options: {
   cmd: RunCmd;
   enemy: string;
@@ -51,10 +59,16 @@ export function formatCommandPreview(options: {
   difficulty: string;
   finish: string;
   hexColor: string;
+  variantCount?: number;
 }): string {
   const cfg = CMD_CONFIG[options.cmd];
   const parts: string[] = [options.cmd];
-  if (cfg.showEnemy && options.enemy.trim()) parts.push(options.enemy.trim());
+  if (cfg.showEnemy && options.enemy.trim()) {
+    parts.push(options.enemy.trim());
+    if (CMD_ALLOWS_VARIANT_COUNT.has(options.cmd)) {
+      parts.push(String(clampVariantCount(options.variantCount ?? 1)));
+    }
+  }
   if (cfg.showDescription && options.description.trim()) {
     const clean = options.description.trim().replace(/"/g, '\\"');
     parts.push(`--description "${clean}"`);
@@ -73,6 +87,7 @@ export function parseCommandPreview(preview: string): {
   next: {
     cmd: RunCmd;
     enemy?: string;
+    variantCount?: number;
     description?: string;
     difficulty?: string;
     finish?: string;
@@ -92,6 +107,7 @@ export function parseCommandPreview(preview: string): {
   const next: {
     cmd: RunCmd;
     enemy?: string;
+    variantCount?: number;
     description?: string;
     difficulty?: string;
     finish?: string;
@@ -102,9 +118,25 @@ export function parseCommandPreview(preview: string): {
     positional.push(tokens[cursor]);
     cursor += 1;
   }
-  if (cfg.showEnemy && positional.length > 0) next.enemy = positional[0];
-  if (cfg.showEnemy && positional.length > 1) return { next: null, error: "Too many positional values." };
-  if (!cfg.showEnemy && positional.length > 0) return { next: null, error: `'${cmd}' does not take positional enemy/count values.` };
+  if (cfg.showEnemy) {
+    if (positional.length > 0) next.enemy = positional[0];
+    if (CMD_ALLOWS_VARIANT_COUNT.has(cmd)) {
+      if (positional.length > 2) {
+        return { next: null, error: "Too many positional values (use: cmd enemy [variant_count])." };
+      }
+      if (positional.length === 2) {
+        const n = Number(positional[1]);
+        if (!Number.isInteger(n) || n < 1 || n > 99) {
+          return { next: null, error: "Variant count must be an integer from 1 to 99." };
+        }
+        next.variantCount = n;
+      }
+    } else if (positional.length > 1) {
+      return { next: null, error: "Too many positional values." };
+    }
+  } else if (positional.length > 0) {
+    return { next: null, error: `'${cmd}' does not take positional enemy/count values.` };
+  }
   while (cursor < tokens.length) {
     const flag = tokens[cursor];
     const value = tokens[cursor + 1];

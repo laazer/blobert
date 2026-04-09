@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { appendSlotIfMissing, replaceSlotAssignment, slotListHasDuplicates } from "./registrySlotOps";
+import {
+  appendSlotIfMissing,
+  canAddEnemySlot,
+  nextEnemySlotsAfterAdd,
+  replaceSlotAssignment,
+  slotListHasDuplicates,
+} from "./registrySlotOps";
 
 describe("replaceSlotAssignment", () => {
   it("creates first slot when empty", () => {
@@ -12,6 +18,31 @@ describe("replaceSlotAssignment", () => {
 
   it("appends when index past end", () => {
     expect(replaceSlotAssignment(["a"], 3, "b")).toEqual(["a", "b"]);
+  });
+});
+
+describe("canAddEnemySlot", () => {
+  it("is false when every in-use version is already listed", () => {
+    const candidates = [{ id: "a", draft: false, in_use: true }];
+    expect(canAddEnemySlot(["a"], candidates)).toBe(false);
+  });
+
+  it("is true when an eligible version remains", () => {
+    const candidates = [
+      { id: "a", draft: false, in_use: true },
+      { id: "b", draft: false, in_use: true },
+    ];
+    expect(canAddEnemySlot(["a"], candidates)).toBe(true);
+  });
+});
+
+describe("nextEnemySlotsAfterAdd", () => {
+  it("uses preferred id first when provided and eligible", () => {
+    const candidates = [
+      { id: "a", draft: false, in_use: true },
+      { id: "b", draft: false, in_use: true },
+    ];
+    expect(nextEnemySlotsAfterAdd(["a"], candidates, "b")).toEqual(["a", "b"]);
   });
 });
 

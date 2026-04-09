@@ -273,8 +273,9 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
           Save model
         </h2>
         <p style={hint}>
-          Updates <span style={mono}>model_registry.json</span> for this family&apos;s default export ({versionId}). Export
-          the GLB first so the registry row exists.
+          Updates <span style={mono}>model_registry.json</span> for <span style={mono}>{versionId}</span>. The variant
+          matches the animated GLB in the 3D preview when it is the same family; otherwise it defaults to{" "}
+          <span style={mono}>_animated_00</span>. Export the GLB first so the registry row exists.
         </p>
         {loadError ? (
           <p style={err} role="alert">

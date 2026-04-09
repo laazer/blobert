@@ -1,4 +1,6 @@
 import type { Asset } from "../types";
+import { normalizeAnimatedSlug } from "./enemyDisplay";
+import { previewPathFromAssetsUrl } from "./previewPathFromAssetsUrl";
 
 /** Matches ``ExportConfig.ANIMATED_DIR`` in Python. */
 export const ANIMATED_EXPORT_DIR = "animated_exports";
@@ -38,6 +40,43 @@ export function parseAssetPathFromGlbUrl(url: string | null): string | null {
   if (!url) return null;
   const m = url.match(/\/api\/assets\/(.+?)(?:\?|$)/);
   return m ? m[1] : null;
+}
+
+/**
+ * Variant index for Save model / registry updates: use the GLB in preview when its stem matches
+ * ``{family}_animated_NN`` (same normalized family); otherwise ``0``.
+ */
+export function animatedVariantIndexFromPreviewGlb(
+  normalizedFamily: string | null,
+  activeGlbUrl: string | null,
+): number {
+  if (!normalizedFamily) return 0;
+  const rel = previewPathFromAssetsUrl(activeGlbUrl);
+  if (!rel || !rel.endsWith(".glb")) return 0;
+  const base = rel.split("/").pop() ?? "";
+  const parsed = parseAnimatedEnemyExportFilename(base);
+  if (!parsed) return 0;
+  if (normalizeAnimatedSlug(parsed.slug) !== normalizedFamily) return 0;
+  return parsed.variantIndex;
+}
+
+/**
+ * Registry version id for the animated GLB in preview when its stem matches ``{family}_animated_NN``;
+ * otherwise ``null`` (caller picks the first eligible version by manifest order).
+ */
+export function preferredAnimatedVersionIdFromPreview(
+  normalizedFamily: string,
+  activeGlbUrl: string | null,
+): string | null {
+  const fam = normalizeAnimatedSlug(normalizedFamily);
+  if (!fam) return null;
+  const rel = previewPathFromAssetsUrl(activeGlbUrl);
+  if (!rel || !rel.endsWith(".glb")) return null;
+  const base = rel.split("/").pop() ?? "";
+  const parsed = parseAnimatedEnemyExportFilename(base);
+  if (!parsed) return null;
+  if (normalizeAnimatedSlug(parsed.slug) !== fam) return null;
+  return animatedExportVersionId(fam, parsed.variantIndex);
 }
 
 export function assetByPath(assets: Asset[], path: string | null): Asset | null {

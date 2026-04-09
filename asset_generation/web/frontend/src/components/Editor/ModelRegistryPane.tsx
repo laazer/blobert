@@ -13,7 +13,13 @@ import {
 } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
+import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
 import { buildPlayerModelSelectOptions } from "../../utils/registryPlayerModelOptions";
+import {
+  canAddEnemySlot,
+  nextEnemySlotsAfterAdd,
+  nextEnemySlotsAfterRemove,
+} from "../../utils/registrySlotOps";
 import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
 import { RegistryPlayerSection } from "./RegistryPlayerSection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
@@ -32,6 +38,7 @@ export {
   PLAYER_RESTART_REQUIREMENT_COPY,
 } from "./registryPaneStrings";
 export type { EnemyDeletePlan } from "./registryEnemyTypes";
+export { nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove, canAddEnemySlot } from "../../utils/registrySlotOps";
 
 const noteStyle = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight: 1.45 };
 
@@ -73,21 +80,6 @@ export async function executeEnemyDeleteFlow(args: {
   }
 }
 
-export function nextEnemySlotsAfterAdd(
-  current: string[],
-  candidates: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">[],
-): string[] {
-  const firstAvailable = candidates.find((v) => !v.draft && v.in_use && !current.includes(v.id));
-  if (!firstAvailable) return current;
-  return [...current, firstAvailable.id];
-}
-
-export function nextEnemySlotsAfterRemove(current: string[], index: number): string[] {
-  const next = [...current];
-  next.splice(index, 1);
-  return next;
-}
-
 export function ModelRegistryPane() {
   const [data, setData] = useState<ModelRegistryPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +92,7 @@ export function ModelRegistryPane() {
   const [loadExistingBusy, setLoadExistingBusy] = useState<boolean>(false);
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
+  const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -168,6 +161,18 @@ export function ModelRegistryPane() {
     [data, playerCandidates],
   );
 
+  const familyAddSlotDisabled = useMemo(() => {
+    if (!data) return {} as Record<string, boolean>;
+    const out: Record<string, boolean> = {};
+    for (const family of families) {
+      const versions = data.enemies[family].versions;
+      const cur = slotVersionIdsByFamily[family] ?? [];
+      const preferred = preferredAnimatedVersionIdFromPreview(family, activeGlbUrl);
+      out[family] = !canAddEnemySlot(cur, versions, preferred);
+    }
+    return out;
+  }, [data, families, slotVersionIdsByFamily, activeGlbUrl]);
+
   async function applyFlags(family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
     const key = `${family}:${v.id}`;
     setBusyKey(key);
@@ -202,7 +207,8 @@ export function ModelRegistryPane() {
   function addEnemySlot(family: string) {
     const candidates = data?.enemies[family]?.versions ?? [];
     const draft = slotVersionIdsByFamily[family] ?? [];
-    const next = nextEnemySlotsAfterAdd(draft, candidates);
+    const preferred = preferredAnimatedVersionIdFromPreview(family, activeGlbUrl);
+    const next = nextEnemySlotsAfterAdd(draft, candidates, preferred);
     if (next === draft) return;
     setSlotVersionIdsByFamily((prev) => ({
       ...prev,
@@ -319,6 +325,7 @@ export function ModelRegistryPane() {
         families={families}
         enemies={data.enemies}
         slotVersionIdsByFamily={slotVersionIdsByFamily}
+        familyAddSlotDisabled={familyAddSlotDisabled}
         slotSaveBusyFamily={slotSaveBusyFamily}
         busyKey={busyKey}
         deleteBusyKey={deleteBusyKey}

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   animatedExportRelativePath,
   animatedExportVersionId,
+  animatedVariantIndexFromPreviewGlb,
   parseAnimatedEnemyExportFilename,
   parseVariantFilename,
+  preferredAnimatedVersionIdFromPreview,
 } from "./glbVariants";
 
 describe("animatedExportVersionId", () => {
@@ -39,6 +41,37 @@ describe("parseAnimatedEnemyExportFilename", () => {
 
   it("returns null for non-matching names", () => {
     expect(parseAnimatedEnemyExportFilename("misc.glb")).toBeNull();
+  });
+});
+
+describe("preferredAnimatedVersionIdFromPreview", () => {
+  it("returns version id when preview GLB matches family", () => {
+    expect(
+      preferredAnimatedVersionIdFromPreview("spider", "/api/assets/animated_exports/spider_animated_02.glb"),
+    ).toBe("spider_animated_02");
+  });
+
+  it("returns null when preview is another family", () => {
+    expect(preferredAnimatedVersionIdFromPreview("spider", "/api/assets/animated_exports/slug_animated_01.glb")).toBeNull();
+  });
+});
+
+describe("animatedVariantIndexFromPreviewGlb", () => {
+  it("returns variant from preview URL when family matches", () => {
+    expect(
+      animatedVariantIndexFromPreviewGlb("spider", "/api/assets/animated_exports/spider_animated_01.glb?t=1"),
+    ).toBe(1);
+  });
+
+  it("returns 0 when preview is another family", () => {
+    expect(
+      animatedVariantIndexFromPreviewGlb("spider", "/api/assets/animated_exports/slug_animated_02.glb"),
+    ).toBe(0);
+  });
+
+  it("returns 0 when URL missing or not a glb path", () => {
+    expect(animatedVariantIndexFromPreviewGlb("spider", null)).toBe(0);
+    expect(animatedVariantIndexFromPreviewGlb(null, "/api/assets/animated_exports/spider_animated_03.glb")).toBe(0);
   });
 });
 

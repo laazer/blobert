@@ -5,7 +5,7 @@ sys.modules.setdefault("fastapi", MagicMock())
 sys.modules.setdefault("fastapi.responses", MagicMock())
 sys.modules.setdefault("sse_starlette.sse", MagicMock())
 
-from routers.run import _build_command
+from routers.run import _build_command, _guess_output_file
 
 
 def test_build_command_includes_player_finish_and_hex_color():
@@ -36,6 +36,13 @@ def test_build_command_includes_enemy_finish_and_hex_for_animated():
     )
     assert "--finish" in command
     assert "--hex-color" in command
+
+
+def test_guess_output_file_points_at_last_variant_index():
+    assert _guess_output_file("animated", "spider", 1) == "animated_exports/spider_animated_00.glb"
+    assert _guess_output_file("animated", "spider", 3) == "animated_exports/spider_animated_02.glb"
+    assert _guess_output_file("player", "blue", 2) == "player_exports/player_slime_blue_01.glb"
+    assert _guess_output_file("level", "spike_trap", 4) == "level_exports/spike_trap_03.glb"
 
 
 def test_build_command_does_not_add_finish_flags_for_level():

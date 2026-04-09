@@ -4,8 +4,11 @@ import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
 import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
+import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
 import {
   ALL_CMDS,
+  clampVariantCount,
+  CMD_ALLOWS_VARIANT_COUNT,
   CMD_CONFIG,
   formatCommandPreview,
   ENEMY_FINISHES,
@@ -95,6 +98,7 @@ export function CommandPanel() {
   const enemyMetaError = useAppStore((state) => state.enemyMetaError);
   const metaBackend = useAppStore((state) => state.metaBackend);
   const metaBackendDetail = useAppStore((state) => state.metaBackendDetail);
+  const activeGlbUrl = useAppStore((state) => state.activeGlbUrl);
 
   const [cmd, setCmd] = useState<RunCmd>("animated");
   const [enemy, setEnemy] = useState("spider");
@@ -102,6 +106,7 @@ export function CommandPanel() {
   const [difficulty, setDifficulty] = useState("normal");
   const [finish, setFinish] = useState("glossy");
   const [hexColor, setHexColor] = useState("");
+  const [variantCount, setVariantCount] = useState(1);
   const [commandPreview, setCommandPreview] = useState("");
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
@@ -130,8 +135,10 @@ export function CommandPanel() {
 
   useEffect(() => {
     if (commandPreviewDirty) return;
-    setCommandPreview(formatCommandPreview({ cmd, enemy, description, difficulty, finish, hexColor }));
-  }, [cmd, enemy, description, difficulty, finish, hexColor, commandPreviewDirty]);
+    setCommandPreview(
+      formatCommandPreview({ cmd, enemy, description, difficulty, finish, hexColor, variantCount }),
+    );
+  }, [cmd, enemy, description, difficulty, finish, hexColor, variantCount, commandPreviewDirty]);
 
   function handleCmdChange(nextCmd: RunCmd) {
     const nextCfg = CMD_CONFIG[nextCmd];
@@ -146,6 +153,7 @@ export function CommandPanel() {
     if (!nextCfg.showEnemy) setEnemy("");
     if (!nextCfg.showDescription) setDescription("");
     if (!nextCfg.showDifficulty) setDifficulty("normal");
+    setVariantCount(1);
     setCmdTransitionHint(dropped.length > 0 ? `Switched to '${nextCmd}': ${dropped.join(", ")} hidden/reset.` : null);
   }
 
@@ -162,6 +170,7 @@ export function CommandPanel() {
     setDifficulty(next.difficulty ?? "normal");
     setFinish(next.finish ?? "glossy");
     setHexColor(next.hexColor ?? "");
+    setVariantCount(clampVariantCount(next.variantCount ?? 1));
     setCommandPreviewDirty(false);
     setCommandPreviewError(null);
     setCmdTransitionHint(null);
@@ -184,6 +193,9 @@ export function CommandPanel() {
     }
     if (cmd === "animated" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
       return "Custom color must be in #RRGGBB format.";
+    }
+    if (CMD_ALLOWS_VARIANT_COUNT.has(cmd) && (!Number.isFinite(variantCount) || variantCount < 1)) {
+      return "Variant count must be at least 1.";
     }
     return null;
   })();
@@ -214,7 +226,7 @@ export function CommandPanel() {
     start({
       cmd,
       enemy: showEnemy ? enemy : undefined,
-      count: singleOutputCmd ? 1 : undefined,
+      count: singleOutputCmd ? clampVariantCount(variantCount) : undefined,
       description: showDescription ? description : undefined,
       difficulty: showDifficulty ? difficulty : undefined,
       finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
@@ -229,6 +241,8 @@ export function CommandPanel() {
 
   const saveModelFamily =
     cmd === "animated" && enemy && enemy !== "all" ? normalizeAnimatedSlug(enemy) : null;
+
+  const saveModelVariantIndex = animatedVariantIndexFromPreviewGlb(saveModelFamily, activeGlbUrl);
 
   return (
     <div style={s.panel}>
@@ -260,6 +274,26 @@ export function CommandPanel() {
           </>
         )}
 
+        {CMD_ALLOWS_VARIANT_COUNT.has(cmd) && (
+          <>
+            <span style={s.label}>variants</span>
+            <input
+              type="number"
+              style={s.input}
+              min={1}
+              max={99}
+              step={1}
+              value={variantCount}
+              title="Number of GLB variants to write (_00 … _N−1). Registry rows are added when you save or migrate."
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setVariantCount(Number.isFinite(v) ? v : 1);
+              }}
+              onBlur={() => setVariantCount((c) => clampVariantCount(c))}
+            />
+          </>
+        )}
+
       </div>
 
       <div style={s.row}>
@@ -272,12 +306,14 @@ export function CommandPanel() {
             setCommandPreviewDirty(true);
             setCommandPreviewError(null);
           }}
-          placeholder='animated spider --finish matte --hex-color #4b627c'
+          placeholder='animated spider 1 --finish matte --hex-color #4b627c'
         />
         <button style={s.btn} onClick={applyParsedPreview} disabled={!commandPreviewDirty}>Apply</button>
       </div>
       <div style={s.row}>
-        <span style={s.helperText}>Format: &lt;cmd&gt; [enemy|color] [--description \"...\"] [--difficulty ...] [--finish ...] [--hex-color #RRGGBB]</span>
+        <span style={s.helperText}>
+          Format: &lt;cmd&gt; [enemy|color] [variants 1–99] [--description &quot;...&quot;] … (animated/player/level include variant count)
+        </span>
       </div>
       {commandPreviewError && <div style={s.errorText}>{commandPreviewError}</div>}
       {cmdTransitionHint && <div style={s.warningText}>{cmdTransitionHint}</div>}
@@ -345,7 +381,7 @@ export function CommandPanel() {
             style={{ ...s.btn, background: "#2d6a4f" }}
             onClick={() => setSaveModelModalOpen(true)}
             disabled={isRunning}
-            title="Update model_registry.json slots or draft flag for the default animated export (variant 00) of the selected enemy."
+            title="Update model_registry.json slots or draft flag for the animated GLB in preview when it matches the selected enemy (otherwise variant 00)."
           >
             Save model
           </button>
@@ -383,6 +419,7 @@ export function CommandPanel() {
           open={saveModelModalOpen}
           onClose={() => setSaveModelModalOpen(false)}
           family={saveModelFamily}
+          variantIndex={saveModelVariantIndex}
         />
       )}
     </div>

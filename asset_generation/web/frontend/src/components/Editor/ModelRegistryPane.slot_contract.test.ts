@@ -25,6 +25,28 @@ describe("ModelRegistryPane enemy slot UI contracts", () => {
     expect(nextEnemySlotsAfterAdd(existing, candidates)).toBe(existing);
   });
 
+  it("prefers an explicit preview version when it is slottable", () => {
+    const candidates = [
+      { id: "spider_animated_00", draft: false, in_use: true },
+      { id: "spider_animated_01", draft: false, in_use: true },
+    ];
+    expect(nextEnemySlotsAfterAdd(["spider_animated_00"], candidates, "spider_animated_01")).toEqual([
+      "spider_animated_00",
+      "spider_animated_01",
+    ]);
+  });
+
+  it("ignores preferred when already slotted and appends the next eligible", () => {
+    const candidates = [
+      { id: "spider_animated_00", draft: false, in_use: true },
+      { id: "spider_animated_01", draft: false, in_use: true },
+    ];
+    expect(nextEnemySlotsAfterAdd(["spider_animated_00"], candidates, "spider_animated_00")).toEqual([
+      "spider_animated_00",
+      "spider_animated_01",
+    ]);
+  });
+
   it("removes slot rows by index to produce full replacement payload order", () => {
     const before = ["spider_animated_01", "spider_animated_00"];
     expect(nextEnemySlotsAfterRemove(before, 0)).toEqual(["spider_animated_00"]);

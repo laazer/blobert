@@ -43,6 +43,8 @@ export type RegistryEnemyFamiliesSectionProps = {
   families: string[];
   enemies: ModelRegistryPayload["enemies"];
   slotVersionIdsByFamily: Record<string, string[]>;
+  /** True when every slottable version is already listed (or none exist). */
+  familyAddSlotDisabled: Record<string, boolean>;
   slotSaveBusyFamily: string | null;
   busyKey: string | null;
   deleteBusyKey: string | null;
@@ -59,6 +61,7 @@ export function RegistryEnemyFamiliesSection({
   families,
   enemies,
   slotVersionIdsByFamily,
+  familyAddSlotDisabled,
   slotSaveBusyFamily,
   busyKey,
   deleteBusyKey,
@@ -88,13 +91,20 @@ export function RegistryEnemyFamiliesSection({
         const validChoices = versions.filter((v) => !v.draft && v.in_use);
         const slotRows = slotVersionIdsByFamily[family] ?? [];
         const busy = slotSaveBusyFamily === family;
+        const addDisabled = familyAddSlotDisabled[family] ?? true;
 
         return (
           <div key={`enemy-family:${family}`} style={{ border: "1px solid #2d2d2d", borderRadius: 4, padding: 8, marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <strong style={{ fontSize: 13 }}>{family}</strong>
               <div style={{ display: "flex", gap: 8 }}>
-                <button type="button" style={btnSecondary} disabled={busy || validChoices.length === 0} onClick={() => onAddSlot(family)}>
+                <button
+                  type="button"
+                  style={btnSecondary}
+                  disabled={busy || addDisabled}
+                  data-testid={`registry-add-slot-${family}`}
+                  onClick={() => onAddSlot(family)}
+                >
                   Add slot
                 </button>
                 <button type="button" style={btnPrimary} disabled={busy} onClick={() => onSaveSlots(family)}>

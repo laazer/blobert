@@ -41,13 +41,19 @@ def _build_command(
 
 def _guess_output_file(cmd: str, enemy: Optional[str], count: Optional[int]) -> Optional[str]:
     if cmd == "animated" and enemy:
-        return f"animated_exports/{enemy}_animated_00.glb"
+        n = max(1, min(99, int(count) if count is not None else 1))
+        last = n - 1
+        return f"animated_exports/{enemy}_animated_{last:02d}.glb"
     if cmd == "test":
         return "animated_exports/spider_animated_00.glb"
     if cmd == "player" and enemy:
-        return f"player_exports/player_slime_{enemy}_00.glb"
+        n = max(1, min(99, int(count) if count is not None else 1))
+        last = n - 1
+        return f"player_exports/player_slime_{enemy}_{last:02d}.glb"
     if cmd == "level" and enemy:
-        return f"level_exports/{enemy}_00.glb"
+        n = max(1, min(99, int(count) if count is not None else 1))
+        last = n - 1
+        return f"level_exports/{enemy}_{last:02d}.glb"
     return None
 
 

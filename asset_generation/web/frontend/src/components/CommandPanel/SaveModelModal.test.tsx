@@ -78,6 +78,58 @@ describe("SaveModelModal", () => {
     });
   });
 
+  it("Save in new slot appends preview variant when not already in slots", async () => {
+    const onClose = vi.fn();
+    vi.mocked(client.fetchEnemyFamilySlots).mockResolvedValue({
+      family: "spider",
+      version_ids: ["spider_animated_00"],
+      resolved_paths: ["animated_exports/spider_animated_00.glb"],
+    });
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue({
+      schema_version: 1,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: false,
+              in_use: true,
+            },
+            {
+              id: "spider_animated_01",
+              path: "animated_exports/spider_animated_01.glb",
+              draft: false,
+              in_use: true,
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    } as never);
+    vi.mocked(client.putEnemyFamilySlots).mockResolvedValue({
+      family: "spider",
+      version_ids: ["spider_animated_00", "spider_animated_01"],
+      resolved_paths: [
+        "animated_exports/spider_animated_00.glb",
+        "animated_exports/spider_animated_01.glb",
+      ],
+    });
+
+    render(<SaveModelModal open family="spider" variantIndex={1} onClose={onClose} />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save in new slot" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Save in new slot" }));
+
+    await waitFor(() => {
+      expect(client.putEnemyFamilySlots).toHaveBeenCalledWith("spider", [
+        "spider_animated_00",
+        "spider_animated_01",
+      ]);
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
   it("Save as draft calls patchRegistryEnemyVersion", async () => {
     const onClose = vi.fn();
     render(<SaveModelModal open family="spider" onClose={onClose} />);

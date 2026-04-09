@@ -30,7 +30,7 @@ describe("command logic", () => {
     });
   });
 
-  it("formats player command preview without count", () => {
+  it("formats player command preview with variant count before flags", () => {
     const preview = formatCommandPreview({
       cmd: "player",
       enemy: "blue",
@@ -38,29 +38,58 @@ describe("command logic", () => {
       difficulty: "normal",
       finish: "glossy",
       hexColor: "",
+      variantCount: 1,
     });
-    expect(preview).toBe("player blue --finish glossy");
+    expect(preview).toBe("player blue 1 --finish glossy");
+  });
+
+  it("formats animated preview with multi-variant count", () => {
+    expect(
+      formatCommandPreview({
+        cmd: "animated",
+        enemy: "spider",
+        description: "",
+        difficulty: "normal",
+        finish: "default",
+        hexColor: "",
+        variantCount: 3,
+      }),
+    ).toBe("animated spider 3 --finish default");
   });
 
   it("parses player finish and hex color flags", () => {
-    const parsed = parseCommandPreview("player blue --finish matte --hex-color #112233");
+    const parsed = parseCommandPreview("player blue 1 --finish matte --hex-color #112233");
     expect(parsed.error).toBeNull();
     expect(parsed.next).toEqual({
       cmd: "player",
       enemy: "blue",
+      variantCount: 1,
       finish: "matte",
       hexColor: "#112233",
     });
   });
 
   it("parses animated finish and hex color flags", () => {
-    const parsed = parseCommandPreview("animated slug --finish metallic --hex-color #aa8844");
+    const parsed = parseCommandPreview("animated slug 1 --finish metallic --hex-color #aa8844");
     expect(parsed.error).toBeNull();
     expect(parsed.next).toEqual({
       cmd: "animated",
       enemy: "slug",
+      variantCount: 1,
       finish: "metallic",
       hexColor: "#aa8844",
     });
+  });
+
+  it("parses optional variant count for animated", () => {
+    const parsed = parseCommandPreview("animated imp 5 --finish matte");
+    expect(parsed.error).toBeNull();
+    expect(parsed.next?.variantCount).toBe(5);
+    expect(parsed.next?.enemy).toBe("imp");
+  });
+
+  it("rejects non-integer variant count", () => {
+    const parsed = parseCommandPreview("animated spider 3.5 --finish default");
+    expect(parsed.error).toContain("integer");
   });
 });
