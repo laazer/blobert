@@ -431,7 +431,7 @@ async def delete_enemy_version_endpoint(
         is_in_use = row.get("in_use") is True and not is_draft
 
         if is_draft:
-            if body.confirm_text is not None and body.confirm_text.strip():
+            if body.confirm_text is not None:
                 expected = f"delete draft {family} {version_id}"
                 if body.confirm_text.strip() != expected:
                     raise HTTPException(status_code=400, detail="malformed confirmation text")

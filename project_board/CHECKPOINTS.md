@@ -851,3 +851,44 @@ Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
 ### [M9-RSEVV] — OUTCOME: COMPLETE
 Runtime spawn now resolves visual variants via a shared selector seam that uniformly chooses only in-use non-draft entries, rejects malformed metadata fail-closed, and is covered by primary plus adversarial GDScript tests; `timeout 300 ci/scripts/run_tests.sh` exits 0.
 Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+
+---
+
+## Run: 2026-04-09T14-13-34Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/09_automated_tests_registry_allowlist_delete.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-ATRAD / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/09_automated_tests_registry_allowlist_delete.md`
+- Stage: PLANNING (bootstrap from malformed ticket)
+- Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+
+### [M9-ATRAD] — OUTCOME: COMPLETE
+Cross-cutting backend registry contract suite now guards allowlist/traversal rejection, draft exclusion from default game-pool readers, and delete invariants (including adversarial confirmation handling), with full gate evidence from `timeout 300 ci/scripts/run_tests.sh` exit `0`.
+Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+
+### M9-ATRAD / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/09_automated_tests_registry_allowlist_delete.md`
+- Stage: SPECIFICATION
+- Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+- Outcome: Planning decomposition completed for cross-cutting registry/allowlist/delete contract test suite; conservative backend-first scope assumption logged.
+
+### M9-ATRAD / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/09_automated_tests_registry_allowlist_delete.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+- Outcome: Published deterministic ATRAD spec for registry/allowlist/delete cross-cutting coverage; logged conservative assumption requiring both blocked and allowed delete invariant scenarios.
+
+### M9-ATRAD / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/09_automated_tests_registry_allowlist_delete.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+- Outcome: Authored primary backend ATRAD cross-cutting contract tests with strict allowlist/traversal rejection classes, draft-exclusion default spawn-pool assertions, and blocked+allowed delete invariant coverage.
+
+### M9-ATRAD / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/09_automated_tests_registry_allowlist_delete.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
+- Outcome: Added adversarial backend tests for encoded traversal/malformed encoding rejection, mixed-identity payload rejection, target-path mismatch guard, repeated-invalid delete stress determinism, and strict draft delete blank-confirmation assumption (`# CHECKPOINT`) exposing a backend contract gap.
