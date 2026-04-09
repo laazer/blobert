@@ -1,12 +1,8 @@
 # Git hooks for blobert (Godot 4 game + Blender asset pipeline).
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
-# Skip blog post only: SKIP_BLOG_POST=1 git push
-# Cursor → Claude retry on failure: off by default (one LLM call per push). Opt in:
-#   BLOG_POST_CURSOR_FALLBACK=1 git push
-# Manual blog hook run: BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
-# Blog provider: auto from environment (Claude Code → claude, Cursor → cursor-agent,
-#   else claude). Override: BLOG_POST_PROVIDER=claude|cursor. Binary: CURSOR_AGENT_BIN=...
+# Blog script is currently disabled from git hooks.
+# Manual run (still available): BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
 #
 # post-commit — session tracking only (no claude/cursor-agent, no blog_post_v1):
 #   - log-commit: appends commit hash + subject to .blog-session.log
@@ -19,23 +15,19 @@
 #   - py-review: Ruff (E9/F/I from asset_generation/python/pyproject.toml) on staged asset_generation/**/*.py
 #   - gd-review: hygiene + unexplained literals on added .gd lines (excludes tests/, reference_projects/)
 #
-# pre-push — full test suites + blog post:
+# pre-push — full test suites:
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
 #   - py-tests:    pytest + coverage.xml + diff-cover (DIFF_COVER_FAIL_UNDER, default 85; optional DIFF_COVER_COMPARE_BRANCH)
-#   - blog-post:   generate blog post (Claude Code vs Cursor Agent — auto-detected)
-#                  (skips if .lefthook/.blog-last-blogged-commit matches HEAD;
-#                   rate-limit / auth messages do not fail the hook; always exit 0)
 #
 # Requires:
 #   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
 #   - asset_generation/python/.venv or uv on PATH (hooks use ci/scripts/asset_python.sh + py-tests.sh)
-#   - claude and/or cursor-agent on PATH (for blog-post; see BLOG_POST_PROVIDER)
 #   - For py-tests: uv sync --extra dev in asset_generation/python/ (uses .venv)
 
 post-commit:
   commands:
     log-commit:
-      name: Queue commit for pre-push blog (no LLM)
+      name: Queue commit metadata (blog hook disabled)
       run: task hooks:log-commit
 
 pre-commit:
@@ -73,6 +65,3 @@ pre-push:
       name: Python tests (asset_generation)
       glob: "asset_generation/python/**/*.py"
       run: task hooks:python
-    blog-post:
-      name: Generate blog post for session
-      run: task hooks:blog
