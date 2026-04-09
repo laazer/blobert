@@ -7,6 +7,9 @@
 # post-commit — session tracking only (no claude/cursor-agent, no blog_post_v1):
 #   - log-commit: appends commit hash + subject to .blog-session.log
 #
+# commit-msg — advisory conventional commit guidance:
+#   - commit-msg-conventional: non-blocking format hint for type(scope): message
+#
 # task integration:
 #   - Hook commands delegate to Taskfile targets so local/manual and hook flows share one entry point.
 #
@@ -29,6 +32,12 @@ post-commit:
     log-commit:
       name: Queue commit metadata (blog hook disabled)
       run: task hooks:log-commit
+
+commit-msg:
+  commands:
+    commit-msg-conventional:
+      name: Conventional commit advisory (non-blocking)
+      run: task hooks:commit-msg -- {1}
 
 pre-commit:
   parallel: true

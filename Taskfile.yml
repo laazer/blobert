@@ -47,6 +47,11 @@ tasks:
     cmds:
       - bash .lefthook/scripts/log-commit.sh
 
+  hooks:commit-msg:
+    desc: Conventional commit advisory check (non-blocking)
+    cmds:
+      - bash .lefthook/scripts/commit-msg-conventional.sh {{.CLI_ARGS}}
+
   hooks:godot:
     desc: Run pre-push Godot hook script
     cmds:
