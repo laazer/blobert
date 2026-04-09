@@ -10,21 +10,24 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "@react-three/drei": "^9.115.0",
+    "@react-three/fiber": "^8.17.10",
+    "ansi-to-html": "^0.7.2",
+    "immer": "^10.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@monaco-editor/react": "^4.6.0",
-    "@react-three/fiber": "^8.17.10",
-    "@react-three/drei": "^9.115.0",
     "three": "^0.169.0",
-    "zustand": "^5.0.1",
-    "immer": "^10.1.1",
-    "ansi-to-html": "^0.7.2"
+    "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.169.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "jsdom": "^26.1.0",
     "typescript": "^5.5.3",
     "vite": "^5.4.2",
     "vitest": "^2.1.9"

@@ -11,6 +11,15 @@ import { normalizeAnimatedSlug, titleCaseSnake } from "../utils/enemyDisplay";
 
 const BASE = "/api";
 
+/** Encode each segment for ``GET/PUT /api/files/{path}`` (spaces, ``#``, Unicode, etc.). */
+export function encodeFileApiPath(relPath: string): string {
+  return relPath
+    .split("/")
+    .filter((seg) => seg.length > 0)
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+}
+
 export async function fetchFileTree(): Promise<FileNode[]> {
   const res = await fetch(`${BASE}/files`);
   if (!res.ok) throw new Error(await res.text());
@@ -19,19 +28,27 @@ export async function fetchFileTree(): Promise<FileNode[]> {
 }
 
 export async function fetchFileContent(path: string): Promise<string> {
-  const res = await fetch(`${BASE}/files/${path}`);
-  if (!res.ok) throw new Error(await res.text());
+  const enc = encodeFileApiPath(path);
+  const res = await fetch(`${BASE}/files/${enc}`);
+  if (!res.ok) {
+    const body = (await res.text()).trim();
+    throw new Error(body || `HTTP ${res.status} ${res.statusText}`);
+  }
   const data = await res.json();
   return data.content;
 }
 
 export async function saveFileContent(path: string, content: string): Promise<void> {
-  const res = await fetch(`${BASE}/files/${path}`, {
+  const enc = encodeFileApiPath(path);
+  const res = await fetch(`${BASE}/files/${enc}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const body = (await res.text()).trim();
+    throw new Error(body || `HTTP ${res.status} ${res.statusText}`);
+  }
 }
 
 export async function fetchAssets(): Promise<Asset[]> {
@@ -112,7 +129,7 @@ export async function fetchModelRegistry(): Promise<ModelRegistryPayload> {
 export async function patchRegistryEnemyVersion(
   family: string,
   versionId: string,
-  body: { draft?: boolean; in_use?: boolean },
+  body: { draft?: boolean; in_use?: boolean; name?: string | null },
 ): Promise<ModelRegistryPayload> {
   const encFamily = encodeURIComponent(family);
   const encVid = encodeURIComponent(versionId);

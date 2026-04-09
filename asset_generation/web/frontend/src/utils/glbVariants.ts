@@ -7,9 +7,14 @@ export const ANIMATED_EXPORT_DIR = "animated_exports";
  * Relative path under the asset server root for a procedural animated export
  * (same stem as Python ``export_naming.animated_export_stem``; no prefab segment).
  */
-export function animatedExportRelativePath(enemySlug: string, variantIndex: number): string {
+/** Registry / export stem for variant index (e.g. ``spider_animated_00``). */
+export function animatedExportVersionId(enemySlug: string, variantIndex: number): string {
   const v = Math.max(0, Math.min(99, Math.floor(variantIndex)));
-  const stem = `${enemySlug}_animated_${String(v).padStart(2, "0")}`;
+  return `${enemySlug}_animated_${String(v).padStart(2, "0")}`;
+}
+
+export function animatedExportRelativePath(enemySlug: string, variantIndex: number): string {
+  const stem = animatedExportVersionId(enemySlug, variantIndex);
   return `${ANIMATED_EXPORT_DIR}/${stem}.glb`;
 }
 

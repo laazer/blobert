@@ -30,6 +30,9 @@ ALLOWLIST_PREFIXES: tuple[str, ...] = (
 
 REGISTRY_FILENAME = "model_registry.json"
 
+# Optional human-readable label in ``enemies[*].versions[*].name`` (editor / tooling).
+_MAX_VERSION_NAME_LEN = 128
+
 # Default variant index for MRVC-7 migration (matches editor ``glbVariants`` stem ``*_00``).
 _DEFAULT_VARIANT_INDEX = 0
 
@@ -114,6 +117,12 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
         for i, row in enumerate(versions_raw):
             if not isinstance(row, dict):
                 raise ValueError(f"enemies[{family!r}].versions[{i}] must be an object")
+            allowed_keys = {"id", "path", "draft", "in_use", "name"}
+            extra = set(row.keys()) - allowed_keys
+            if extra:
+                raise ValueError(
+                    f"enemies[{family!r}].versions[{i}] unexpected keys: {sorted(extra)}",
+                )
             for k in ("id", "path", "draft", "in_use"):
                 if k not in row:
                     raise ValueError(f"enemies[{family!r}].versions[{i}] missing {k!r}")
@@ -133,9 +142,19 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             use = in_use
             if draft and in_use:
                 use = False
-            versions_out.append(
-                {"id": vid, "path": path, "draft": draft, "in_use": use},
-            )
+            out_row: dict[str, Any] = {"id": vid, "path": path, "draft": draft, "in_use": use}
+            if "name" in row and row["name"] is not None:
+                nraw = row["name"]
+                if not isinstance(nraw, str):
+                    raise ValueError(f"enemies[{family!r}].versions[{i}].name must be a string")
+                nstrip = nraw.strip()
+                if len(nstrip) > _MAX_VERSION_NAME_LEN:
+                    raise ValueError(
+                        f"enemies[{family!r}].versions[{i}].name exceeds max length {_MAX_VERSION_NAME_LEN}",
+                    )
+                if nstrip:
+                    out_row["name"] = nstrip
+            versions_out.append(out_row)
 
         family_out: dict[str, Any] = {"versions": versions_out}
         slots_raw = fam_val.get("slots")
@@ -217,13 +236,15 @@ def patch_enemy_version(
     python_root: Path,
     family: str,
     version_id: str,
-    *,
-    draft: bool | None = None,
-    in_use: bool | None = None,
+    patches: dict[str, Any],
 ) -> dict[str, Any]:
-    """Update flags for one enemy version; persists on success."""
-    if draft is None and in_use is None:
-        raise ValueError("at least one of draft or in_use must be set")
+    """Update one enemy version row; ``patches`` keys: draft, in_use, name (JSON ``null`` clears name)."""
+    if not patches:
+        raise ValueError("at least one patch field is required")
+    allowed = frozenset({"draft", "in_use", "name"})
+    bad = set(patches) - allowed
+    if bad:
+        raise ValueError(f"unsupported patch keys: {sorted(bad)}")
 
     data = load_effective_manifest(python_root)
     fam = data["enemies"].get(family)
@@ -234,10 +255,30 @@ def patch_enemy_version(
     if found is None:
         raise KeyError(f"unknown version {version_id!r} for family {family!r}")
 
-    if draft is not None:
-        found["draft"] = draft
-    if in_use is not None:
-        found["in_use"] = in_use
+    if "draft" in patches:
+        d = patches["draft"]
+        if not isinstance(d, bool):
+            raise ValueError("patch draft must be boolean")
+        found["draft"] = d
+    if "in_use" in patches:
+        u = patches["in_use"]
+        if not isinstance(u, bool):
+            raise ValueError("patch in_use must be boolean")
+        found["in_use"] = u
+    if "name" in patches:
+        n = patches["name"]
+        if n is None:
+            found.pop("name", None)
+        elif isinstance(n, str):
+            s = n.strip()
+            if not s:
+                found.pop("name", None)
+            elif len(s) > _MAX_VERSION_NAME_LEN:
+                raise ValueError(f"name exceeds max length {_MAX_VERSION_NAME_LEN}")
+            else:
+                found["name"] = s
+        else:
+            raise ValueError("patch name must be string or null")
 
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)

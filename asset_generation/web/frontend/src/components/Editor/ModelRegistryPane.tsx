@@ -9,25 +9,31 @@ import {
   patchRegistryPlayerActiveVisual,
   putEnemyFamilySlots,
   type LoadExistingCandidate,
-  type OpenExistingRegistryModelRequest,
   type DeleteEnemyVersionRequest,
 } from "../../api/client";
+import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
+import { buildPlayerModelSelectOptions } from "../../utils/registryPlayerModelOptions";
+import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
+import { RegistryPlayerSection } from "./RegistryPlayerSection";
+import type { EnemyDeletePlan } from "./registryEnemyTypes";
+import { loadExistingCandidateKey, toOpenExistingRequest } from "./registryLoadExisting";
+import {
+  DRAFT_DELETE_CONFIRM_COPY,
+  IN_USE_DELETE_CONFIRM_COPY,
+} from "./registryPaneStrings";
+
+export { loadExistingCandidateKey, loadExistingCandidateLabel, toOpenExistingRequest } from "./registryLoadExisting";
+export {
+  DRAFT_DELETE_CONFIRM_COPY,
+  ENEMY_EMPTY_SLOTS_COPY,
+  IN_USE_DELETE_CONFIRM_COPY,
+  LOAD_EXISTING_EMPTY_COPY,
+  PLAYER_RESTART_REQUIREMENT_COPY,
+} from "./registryPaneStrings";
+export type { EnemyDeletePlan } from "./registryEnemyTypes";
 
 const noteStyle = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight: 1.45 };
-export const PLAYER_RESTART_REQUIREMENT_COPY =
-  "Changes to player model selection are picked up on the next game load/restart. Live hot-reload is not guaranteed.";
-export const ENEMY_EMPTY_SLOTS_COPY = "No slots assigned. Runtime falls back to legacy default path for this family.";
-export const LOAD_EXISTING_EMPTY_COPY = "No draft or in-use registry models available.";
-export const DRAFT_DELETE_CONFIRM_COPY =
-  "Confirm irreversible draft delete. This removes the registry row and may also delete the draft file when file deletion is enabled.";
-export const IN_USE_DELETE_CONFIRM_COPY =
-  "Deleting an in-use version affects spawn eligibility and may be rejected by safety guards (for example: sole in-use version).";
-
-export type EnemyDeletePlan = {
-  confirmMessage: string;
-  request: DeleteEnemyVersionRequest;
-};
 
 export function buildEnemyDeletePlan(family: string, version: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">): EnemyDeletePlan | null {
   const isDraft = version.draft;
@@ -67,27 +73,6 @@ export async function executeEnemyDeleteFlow(args: {
   }
 }
 
-export function loadExistingCandidateKey(row: LoadExistingCandidate): string {
-  if (row.kind === "enemy") {
-    return `enemy:${row.family}:${row.version_id}`;
-  }
-  return `player:${row.path}`;
-}
-
-export function loadExistingCandidateLabel(row: LoadExistingCandidate): string {
-  if (row.kind === "enemy") {
-    return `${row.family}/${row.version_id} (${row.path})`;
-  }
-  return `player_active_visual (${row.path})`;
-}
-
-export function toOpenExistingRequest(row: LoadExistingCandidate): OpenExistingRegistryModelRequest {
-  if (row.kind === "enemy") {
-    return { kind: "enemy", family: row.family, version_id: row.version_id };
-  }
-  return { kind: "path", path: row.path };
-}
-
 export function nextEnemySlotsAfterAdd(
   current: string[],
   candidates: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">[],
@@ -113,7 +98,8 @@ export function ModelRegistryPane() {
   const [loadExistingCandidates, setLoadExistingCandidates] = useState<LoadExistingCandidate[]>([]);
   const [loadExistingSelection, setLoadExistingSelection] = useState<string>("");
   const [loadExistingBusy, setLoadExistingBusy] = useState<boolean>(false);
-  const [lastOpenedExistingPath, setLastOpenedExistingPath] = useState<string | null>(null);
+
+  const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -159,6 +145,28 @@ export function ModelRegistryPane() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  const families = useMemo(
+    () => (data ? Object.keys(data.enemies).sort() : []),
+    [data],
+  );
+  const playerCandidates = useMemo(() => {
+    if (!data) return [] as { family: string; id: string; path: string }[];
+    const rows: { family: string; id: string; path: string }[] = [];
+    for (const family of families) {
+      for (const version of data.enemies[family].versions) {
+        if (!version.draft && version.path.endsWith(".glb")) {
+          rows.push({ family, id: version.id, path: version.path });
+        }
+      }
+    }
+    return rows;
+  }, [data, families]);
+
+  const playerModelOptions = useMemo(
+    () => buildPlayerModelSelectOptions(data, playerCandidates),
+    [data, playerCandidates],
+  );
 
   async function applyFlags(family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
     const key = `${family}:${v.id}`;
@@ -240,7 +248,7 @@ export function ModelRegistryPane() {
     setError(null);
     try {
       const payload = await openExistingRegistryModel(toOpenExistingRequest(row));
-      setLastOpenedExistingPath(payload.path);
+      selectAssetByPath(payload.path);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -287,209 +295,45 @@ export function ModelRegistryPane() {
 
   if (!data) return null;
 
-  const families = useMemo(() => Object.keys(data.enemies).sort(), [data.enemies]);
-  const playerCandidates = useMemo(() => {
-    const rows: { family: string; id: string; path: string }[] = [];
-    for (const family of families) {
-      for (const version of data.enemies[family].versions) {
-        if (!version.draft && version.path.endsWith(".glb")) {
-          rows.push({ family, id: version.id, path: version.path });
-        }
-      }
-    }
-    return rows;
-  }, [data.enemies, families]);
   const playerBusy = busyKey === "player_active_visual";
 
   return (
     <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
-      <div style={{ ...sectionStyle, marginBottom: 16 }}>
-        <h3 style={h3Style}>Player Active Visual</h3>
-        <div style={noteStyle}>{PLAYER_RESTART_REQUIREMENT_COPY}</div>
-        <label style={{ display: "block", marginBottom: 6, color: "#9d9d9d" }} htmlFor="player-active-visual-select">
-          Active player model
-        </label>
-        <select
-          id="player-active-visual-select"
-          style={selectStyle}
-          disabled={playerBusy}
-          value={data.player_active_visual?.path ?? ""}
-          onChange={(e) => {
-            if (!e.target.value) return;
-            applyPlayerSelection(e.target.value);
-          }}
-        >
-          <option value="" disabled>
-            Select a non-draft .glb
-          </option>
-          {playerCandidates.map((row) => (
-            <option key={`${row.family}:${row.id}`} value={row.path}>
-              {row.path}
-            </option>
-          ))}
-        </select>
-      </div>
+      <RegistryPlayerSection
+        activeGamePath={data.player_active_visual?.path ?? null}
+        playerModelOptions={playerModelOptions}
+        playerBusy={playerBusy}
+        onSetGameActivePath={applyPlayerSelection}
+        loadExistingCandidates={loadExistingCandidates}
+        loadExistingSelection={loadExistingSelection}
+        onLoadExistingSelectionChange={setLoadExistingSelection}
+        loadExistingBusy={loadExistingBusy}
+        onLoadExistingInPreview={openExistingSelection}
+        onPreviewGameActive={() => {
+          const p = data.player_active_visual?.path;
+          if (p) selectAssetByPath(p);
+        }}
+      />
 
-      <div style={{ ...sectionStyle, marginBottom: 16 }}>
-        <h3 style={h3Style}>Load / Open Existing</h3>
-        <div style={noteStyle}>
-          This picker is registry-backed only. Arbitrary OS paths and free-form <code>res://</code> entries are not accepted.
-        </div>
-        {loadExistingCandidates.length === 0 ? (
-          <div style={{ color: "#d7ba7d", fontSize: 11 }}>{LOAD_EXISTING_EMPTY_COPY}</div>
-        ) : (
-          <>
-            <label style={{ display: "block", marginBottom: 6, color: "#9d9d9d" }} htmlFor="load-existing-select">
-              Existing model
-            </label>
-            <select
-              id="load-existing-select"
-              style={selectStyle}
-              disabled={loadExistingBusy}
-              value={loadExistingSelection}
-              onChange={(e) => setLoadExistingSelection(e.target.value)}
-            >
-              {loadExistingCandidates.map((row) => (
-                <option key={loadExistingCandidateKey(row)} value={loadExistingCandidateKey(row)}>
-                  {loadExistingCandidateLabel(row)}
-                </option>
-              ))}
-            </select>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
-              <button
-                type="button"
-                style={btnPrimary}
-                disabled={loadExistingBusy || !loadExistingSelection}
-                onClick={openExistingSelection}
-              >
-                Open Selected
-              </button>
-              {lastOpenedExistingPath ? (
-                <span style={{ color: "#9d9d9d", fontSize: 11 }}>Resolved: {lastOpenedExistingPath}</span>
-              ) : null}
-            </div>
-          </>
-        )}
-      </div>
+      <RegistryEnemyFamiliesSection
+        families={families}
+        enemies={data.enemies}
+        slotVersionIdsByFamily={slotVersionIdsByFamily}
+        slotSaveBusyFamily={slotSaveBusyFamily}
+        busyKey={busyKey}
+        deleteBusyKey={deleteBusyKey}
+        onAddSlot={addEnemySlot}
+        onRemoveSlot={removeEnemySlot}
+        onUpdateSlotVersion={updateEnemySlotVersion}
+        onSaveSlots={saveEnemySlots}
+        onApplyFlags={applyFlags}
+        onDeleteVersion={deleteEnemyVersion}
+        getEnemyDeletePlan={buildEnemyDeletePlan}
+      />
 
-      <div style={{ ...sectionStyle, marginBottom: 16 }}>
-        <h3 style={h3Style}>Enemy Version Slots</h3>
-        <div style={noteStyle}>
-          Slots are the runtime spawn pool per family. Add/remove rows, then save full replacement order for each
-          family.
-        </div>
-        {families.map((family) => {
-          const versions = data.enemies[family].versions;
-          const validChoices = versions.filter((v) => !v.draft && v.in_use);
-          const slotRows = slotVersionIdsByFamily[family] ?? [];
-          const busy = slotSaveBusyFamily === family;
-          return (
-            <div key={`slots:${family}`} style={{ border: "1px solid #2d2d2d", borderRadius: 4, padding: 8, marginBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <strong>{family}</strong>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" style={btnSecondary} disabled={busy || validChoices.length === 0} onClick={() => addEnemySlot(family)}>
-                    Add Slot
-                  </button>
-                  <button type="button" style={btnPrimary} disabled={busy} onClick={() => saveEnemySlots(family)}>
-                    Save Slots
-                  </button>
-                </div>
-              </div>
-              {slotRows.length === 0 ? (
-                <div style={{ color: "#d7ba7d", fontSize: 11 }}>{ENEMY_EMPTY_SLOTS_COPY}</div>
-              ) : (
-                slotRows.map((versionId, idx) => (
-                  <div key={`${family}:slot:${idx}`} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                    <select
-                      style={selectStyle}
-                      disabled={busy}
-                      value={versionId}
-                      onChange={(e) => updateEnemySlotVersion(family, idx, e.target.value)}
-                    >
-                      {validChoices.map((v) => (
-                        <option key={`${family}:${v.id}`} value={v.id}>
-                          {v.id}
-                        </option>
-                      ))}
-                    </select>
-                    <button type="button" style={btnSecondary} disabled={busy} onClick={() => removeEnemySlot(family, idx)}>
-                      Remove
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={noteStyle}>
-        <strong>Draft</strong> exports are excluded from the default spawn pool until promoted (MRVC-4).
-        <strong> Demotion:</strong> mark <strong>Draft</strong> — the version leaves the in-use pool but stays on disk.
-      </div>
       {error && (
         <div style={{ color: "#f14c4c", marginBottom: 8, fontSize: 11 }}>{error}</div>
       )}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
-            <th style={th}>Family</th>
-            <th style={th}>Version id</th>
-            <th style={th}>Path</th>
-            <th style={th}>Draft</th>
-            <th style={th}>In pool</th>
-            <th style={th}>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {families.map((fam) =>
-            data.enemies[fam].versions.map((row) => {
-              const key = `${fam}:${row.id}`;
-              const pending = busyKey === key || deleteBusyKey === key;
-              const deletePlan = buildEnemyDeletePlan(fam, row);
-              return (
-                <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
-                  <td style={td}>{fam}</td>
-                  <td style={td}>{row.id}</td>
-                  <td style={{ ...td, wordBreak: "break-all" }}>{row.path}</td>
-                  <td style={td}>
-                    <input
-                      type="checkbox"
-                      checked={row.draft}
-                      disabled={pending}
-                      onChange={(e) => {
-                        const d = e.target.checked;
-                        applyFlags(fam, row, d, d ? false : row.in_use);
-                      }}
-                    />
-                  </td>
-                  <td style={td}>
-                    <input
-                      type="checkbox"
-                      checked={row.in_use && !row.draft}
-                      disabled={pending || row.draft}
-                      onChange={(e) => {
-                        applyFlags(fam, row, row.draft, e.target.checked);
-                      }}
-                    />
-                  </td>
-                  <td style={td}>
-                    <button
-                      type="button"
-                      style={btnSecondary}
-                      disabled={pending || !deletePlan}
-                      onClick={() => deleteEnemyVersion(fam, row)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            }),
-          )}
-        </tbody>
-      </table>
       <div style={{ marginTop: 16, ...noteStyle }}>
         Persisted to <code style={{ color: "#ce9178" }}>asset_generation/python/model_registry.json</code> via API
         (atomic write; only this manifest path is modified).
@@ -498,20 +342,6 @@ export function ModelRegistryPane() {
   );
 }
 
-const th: CSSProperties = { padding: "6px 8px", color: "#9d9d9d", fontWeight: 600 };
-const td: CSSProperties = { padding: "6px 8px", verticalAlign: "middle" };
-const sectionStyle: CSSProperties = { border: "1px solid #3c3c3c", borderRadius: 4, padding: 10, background: "#202020" };
-const h3Style: CSSProperties = { marginTop: 0, marginBottom: 8, fontSize: 12, color: "#d4d4d4", fontWeight: 600 };
-const selectStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: 480,
-  fontSize: 11,
-  color: "#d4d4d4",
-  background: "#252526",
-  border: "1px solid #555",
-  borderRadius: 3,
-  padding: "4px 6px",
-};
 const btnSecondary: CSSProperties = {
   padding: "4px 10px",
   fontSize: 11,
@@ -520,9 +350,4 @@ const btnSecondary: CSSProperties = {
   cursor: "pointer",
   background: "#3c3c3c",
   color: "#d4d4d4",
-};
-const btnPrimary: CSSProperties = {
-  ...btnSecondary,
-  border: "1px solid #0e639c",
-  background: "#0e639c",
 };

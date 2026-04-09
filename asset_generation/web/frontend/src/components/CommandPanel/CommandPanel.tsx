@@ -15,6 +15,8 @@ import {
   PLAYER_COLORS,
   PLAYER_FINISHES,
 } from "./commandLogic";
+import { SaveModelModal } from "./SaveModelModal";
+import { SaveScriptModal } from "./SaveScriptModal";
 
 const s: Record<string, React.CSSProperties> = {
   panel: {
@@ -80,7 +82,12 @@ export function CommandPanel() {
   const isRunning = useAppStore((state) => state.isRunning);
   const clearTerminal = useAppStore((state) => state.clearTerminal);
   const saveFile = useAppStore((state) => state.saveFile);
+  const saveEditorToPath = useAppStore((state) => state.saveEditorToPath);
+  const loadFileTree = useAppStore((state) => state.loadFileTree);
+  const fileTree = useAppStore((state) => state.fileTree);
+  const isSaving = useAppStore((state) => state.isSaving);
   const isDirty = useAppStore((state) => state.isDirty);
+  const selectedFile = useAppStore((state) => state.selectedFile);
   const setCommandContext = useAppStore((state) => state.setCommandContext);
   const animatedEnemyMeta = useAppStore((state) => state.animatedEnemyMeta);
   const animatedBuildOptionValues = useAppStore((state) => state.animatedBuildOptionValues);
@@ -99,6 +106,8 @@ export function CommandPanel() {
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
   const [cmdTransitionHint, setCmdTransitionHint] = useState<string | null>(null);
+  const [saveScriptModalOpen, setSaveScriptModalOpen] = useState(false);
+  const [saveModelModalOpen, setSaveModelModalOpen] = useState(false);
 
   const { start } = useStreamingOutput();
 
@@ -218,6 +227,9 @@ export function CommandPanel() {
     await killProcess();
   }
 
+  const saveModelFamily =
+    cmd === "animated" && enemy && enemy !== "all" ? normalizeAnimatedSlug(enemy) : null;
+
   return (
     <div style={s.panel}>
       <div style={s.row}>
@@ -321,9 +333,32 @@ export function CommandPanel() {
       )}
 
       <div style={s.row}>
-        {isDirty && <span style={{ color: "#e2b714", fontSize: 11 }}>unsaved changes</span>}
+        {isDirty && (
+          <span style={{ color: "#e2b714", fontSize: 11 }} title={selectedFile ?? undefined}>
+            Unsaved script{selectedFile ? `: ${selectedFile}` : ""}
+          </span>
+        )}
         {runValidationError && <span style={s.errorText}>{runValidationError}</span>}
-        <button style={s.btn} onClick={saveFile} disabled={!isDirty}>Save</button>
+        {saveModelFamily && (
+          <button
+            type="button"
+            style={{ ...s.btn, background: "#2d6a4f" }}
+            onClick={() => setSaveModelModalOpen(true)}
+            disabled={isRunning}
+            title="Update model_registry.json slots or draft flag for the default animated export (variant 00) of the selected enemy."
+          >
+            Save model
+          </button>
+        )}
+        <button
+          type="button"
+          style={s.btn}
+          onClick={() => setSaveScriptModalOpen(true)}
+          disabled={isSaving}
+          title="Choose where to save the current editor buffer (API path). Renders above the layout (portal). Does not write model_registry.json or GLB exports."
+        >
+          Save script
+        </button>
         <button style={{ ...s.btn, opacity: isRunning ? 0.5 : 1 }} onClick={handleRun} disabled={isRunning}>
           Run
         </button>
@@ -334,6 +369,22 @@ export function CommandPanel() {
           Clear
         </button>
       </div>
+      <SaveScriptModal
+        open={saveScriptModalOpen}
+        onClose={() => setSaveScriptModalOpen(false)}
+        initialPath={selectedFile}
+        fileTree={fileTree}
+        onLoadFileTree={loadFileTree}
+        isSaving={isSaving}
+        onSave={saveEditorToPath}
+      />
+      {saveModelFamily && (
+        <SaveModelModal
+          open={saveModelModalOpen}
+          onClose={() => setSaveModelModalOpen(false)}
+          family={saveModelFamily}
+        />
+      )}
     </div>
   );
 }

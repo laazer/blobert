@@ -212,6 +212,8 @@ export function BuildControls() {
   }
 
   const defs = animatedBuildControls[slug] ?? [];
+  /** Per-part materials (`feat_*`) belong on the Colors tab only. */
+  const buildDefs = defs.filter((d) => !d.key.startsWith("feat_"));
   const controlSlugs = Object.keys(animatedBuildControls);
 
   if (defs.length === 0) {
@@ -279,8 +281,8 @@ export function BuildControls() {
   }
 
   const values = animatedBuildOptionValues[slug] ?? {};
-  const nonFloat = defs.filter((d) => d.type !== "float");
-  const allFloats = defs.filter((d) => d.type === "float");
+  const nonFloat = buildDefs.filter((d) => d.type !== "float");
+  const allFloats = buildDefs.filter((d) => d.type === "float");
   const rigFloats = allFloats.filter((d) => d.key.startsWith("RIG_"));
   const meshFloats = allFloats.filter((d) => !d.key.startsWith("RIG_"));
 
@@ -363,6 +365,12 @@ export function BuildControls() {
       }}
     >
       {meshPartTreeBlock}
+      {buildDefs.length === 0 && defs.length > 0 ? (
+        <span style={{ color: "#9d9d9d", fontSize: 11 }}>
+          No mesh or rig sliders here for this enemy — per-part finishes and hex colors are on the{" "}
+          <strong style={{ color: "#bbb" }}>Colors</strong> tab.
+        </span>
+      ) : null}
       {nonFloat.map((def) => (
         <ControlRow
           key={def.key}

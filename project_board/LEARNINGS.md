@@ -2995,3 +2995,60 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: High-value learning signals were recoverable for post-ticket process improvement.
 
 ---
+## [M9-EMVDES] — Umbrella pipeline: verify child gates before SPECIFICATION; BLOCK when gating work remains
+*Completed: 2026-04-09*
+
+### Learnings
+- category: process
+  insight: An umbrella ticket that only coordinates numbered children and defers detailed work to those children should not advance to SPECIFICATION for net-new umbrella-level feature prose while a documented **gating** child remains in `backlog/`; the umbrella’s “spec” is the aggregation of child outcomes plus any explicit gap list, not a parallel spec track.
+  impact: Advancing would risk duplicate or conflicting specification work and blur acceptance ownership across already-`done/` children and incomplete audit work.
+  prevention: Before moving any umbrella to SPECIFICATION, enumerate required children and verify each is in `done/` or explicitly waived; if a named gate (e.g. audit/mesh ticket) is still backlog, set Stage `BLOCKED` and record the execution order instead.
+  severity: medium
+
+- category: process
+  insight: Dependency verification for ticket sequencing should use **filesystem state** (presence in `backlog/` vs `done/`) as primary evidence, aligned with the umbrella’s own execution plan and blocking-issues list.
+  impact: The planner could resolve “should we spec the umbrella?” deterministically from repo state without guessing scope completion.
+  prevention: Make pre-SPECIFICATION checks mandatory: list expected child filenames and confirm their milestone folder; mismatch → BLOCKED or human routing, not stage advance.
+  severity: high
+
+- category: process
+  insight: For **coordination-only** umbrellas, “complete” means all acceptance themes satisfied by children (or signed waiver)—a BLOCKED umbrella with a clear gate and `Next Responsible Agent: Human` is a valid terminal state for an autonomous planning pass when work is intentionally deferred.
+  impact: Avoids falsely treating “not all children done” as a failure to close planning; it is correct to stop the pipeline at BLOCKED with documented unblock steps.
+  prevention: Distinguish “ticket failed” from “pipeline correctly parked”; require checkpoint text that states the gate, the blocking child id, and the ordered unblock actions.
+  severity: medium
+
+### Anti-Patterns
+- description: Advancing an umbrella to SPECIFICATION to “keep momentum” while a ticket it explicitly names as gating is still in `backlog/`.
+  detection_signal: Umbrella references child `02` (or similar) as prerequisite but planner runs SPECIFICATION without verifying `done/` contains that child.
+  prevention: Hard gate: no umbrella SPECIFICATION until all declared gating children are `done/` or waived in writing in the ticket.
+
+- description: Treating umbrella and first child as interchangeable in sequencing when the umbrella text says children `01`–`09` carry the real spec and tests.
+  detection_signal: Umbrella description says “detailed work is tracked in … `01` … `09`” but workflow tries to author a second top-level spec for the same themes.
+  prevention: If children already absorbed spec/test/implementation, umbrella stages should be verification + coordination only unless a gap register lists missing themes.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "When the ticket is labeled an umbrella and lists numbered child tickets as the source of detailed work, before setting Stage to SPECIFICATION or later: (1) verify each referenced child path exists and record whether it is in `backlog/`, `in_progress/`, or `done/`; (2) if any child explicitly listed under Blocking issues or execution plan as gating is not in `done/`, set Stage `BLOCKED`, increment Revision, set Next Responsible Agent to `Human`, and write an execution plan (complete gate → full test gate → verify umbrella AC vs named `done/` children). Do not open a parallel umbrella SPECIFICATION for net-new feature prose unless no such gating child remains."
+  reason: Prevents duplicate spec tracks and aligns autonomous defaults with on-disk dependency truth.
+
+- agent: Planner Agent
+  change: "For coordination or umbrella tickets, if the correct autonomous outcome is to park work, prefer `BLOCKED` with documented unblock criteria over advancing to SPECIFICATION; include in the checkpoint: `Would have asked` (umbrella spec vs blocked), `Assumption made` (conservative block), `Confidence`, and filesystem evidence lines listing which children are `done/` vs backlog."
+  reason: Makes BLOCKED vs advance decisions auditable and reproducible for future learning extraction.
+
+### Workflow Improvements
+- issue: Umbrella vs child responsibility can be ambiguous at stage transitions.
+  improvement: Add a workflow rule: umbrellas with child ticket lists get a “dependency matrix” row in planning output (child id → folder → blocks umbrella? y/n) before any stage beyond PLANNING.
+  expected_benefit: Fewer mistaken SPECIFICATION runs and clearer handoff to humans when gates exist.
+
+- issue: SPECIFICATION stage semantics overload “write spec” vs “verify child specs cover AC.”
+  improvement: Define two modes in workflow docs: **Umbrella-verify** (no new spec doc; checklist against `done/` children + tests) vs **Net-new-spec**; only the latter advances a spec-writing agent for the umbrella file itself.
+  expected_benefit: Reduces redundant work and clarifies when BLOCKED is correct.
+
+### Keep / Reinforce
+- practice: Conservative autonomous default—BLOCKED + human routing when a gating child is incomplete rather than speculative umbrella SPECIFICATION.
+  reason: Preserves single source of truth in child tickets and avoids conflicting narratives.
+
+- practice: Checkpoint entries that pair a concrete question (umbrella advance vs BLOCKED) with filesystem evidence and explicit assumption.
+  reason: Enables post-hoc learning and audit without re-deriving planner intent.
+
+---

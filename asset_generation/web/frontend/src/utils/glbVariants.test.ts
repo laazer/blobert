@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   animatedExportRelativePath,
+  animatedExportVersionId,
   parseAnimatedEnemyExportFilename,
   parseVariantFilename,
 } from "./glbVariants";
+
+describe("animatedExportVersionId", () => {
+  it("matches stem used by animatedExportRelativePath", () => {
+    expect(animatedExportVersionId("spider", 0)).toBe("spider_animated_00");
+    expect(animatedExportVersionId("slug", 2)).toBe("slug_animated_02");
+  });
+});
 
 describe("animatedExportRelativePath", () => {
   it("matches procedural animated stem", () => {

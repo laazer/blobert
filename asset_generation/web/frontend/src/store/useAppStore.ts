@@ -54,6 +54,8 @@ interface AppState {
   /** Current values per slug for build controls (merged with defaults). */
   animatedBuildOptionValues: Record<string, Record<string, unknown>>;
   setAnimatedBuildOption: (slug: string, key: string, value: unknown) => void;
+  /** Merge multiple build option keys in one immer update (e.g. element palette apply). */
+  applyAnimatedBuildOptionsForSlug: (slug: string, updates: Record<string, unknown>) => void;
   /** GET /api/meta/enemies — idle until first load, then ok/error. */
   enemyMetaStatus: "idle" | "loading" | "ok" | "error";
   enemyMetaError: string | null;
@@ -71,6 +73,8 @@ interface AppState {
   isSaving: boolean;
   setEditorContent: (content: string) => void;
   saveFile: () => Promise<void>;
+  /** PUT editor buffer to path; updates selected file and clears dirty without re-fetching content. */
+  saveEditorToPath: (path: string) => Promise<void>;
 
   // Run
   isRunning: boolean;
@@ -96,7 +100,26 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>()(
-  immer((set, get) => ({
+  immer((set, get) => {
+    async function persistEditorToTrimmedPath(trimmed: string) {
+      const { editorContent } = get();
+      set((s) => {
+        s.isSaving = true;
+      });
+      try {
+        await saveFileContent(trimmed, editorContent);
+        set((s) => {
+          s.selectedFile = trimmed;
+          s.isDirty = false;
+        });
+      } finally {
+        set((s) => {
+          s.isSaving = false;
+        });
+      }
+    }
+
+    return {
     // File tree
     fileTree: [],
     selectedFile: null,
@@ -117,6 +140,12 @@ export const useAppStore = create<AppState>()(
       set((s) => {
         const cur = s.animatedBuildOptionValues[slug] ?? {};
         s.animatedBuildOptionValues[slug] = { ...cur, [key]: value };
+      });
+    },
+    applyAnimatedBuildOptionsForSlug(slug, updates) {
+      set((s) => {
+        const cur = s.animatedBuildOptionValues[slug] ?? {};
+        s.animatedBuildOptionValues[slug] = { ...cur, ...updates };
       });
     },
     async loadAnimatedEnemyMeta() {
@@ -196,16 +225,18 @@ export const useAppStore = create<AppState>()(
         s.isDirty = true;
       });
     },
-    async saveFile() {
-      const { selectedFile, editorContent } = get();
-      if (!selectedFile) return;
-      set((s) => { s.isSaving = true; });
-      try {
-        await saveFileContent(selectedFile, editorContent);
-        set((s) => { s.isDirty = false; });
-      } finally {
-        set((s) => { s.isSaving = false; });
+    async saveEditorToPath(path: string) {
+      const trimmed = path.trim();
+      if (!trimmed) {
+        throw new Error("Save path is empty.");
       }
+      await persistEditorToTrimmedPath(trimmed);
+    },
+    async saveFile() {
+      const { selectedFile } = get();
+      const t = selectedFile?.trim();
+      if (!t) return;
+      await persistEditorToTrimmedPath(t);
     },
 
     // Run
@@ -263,8 +294,8 @@ export const useAppStore = create<AppState>()(
       set((s) => { s.assets = assets; });
       if (!outputFile) return;
       const normalized = outputFile.includes("/") ? outputFile : `animated_exports/${outputFile}`;
-      const basename = normalized.split("/").pop() ?? "";
       get().selectAssetByPath(normalized);
     },
-  }))
+  };
+  })
 );

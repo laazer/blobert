@@ -79,7 +79,7 @@ def test_save_and_reload_round_trip(tmp_path: Path):
 
 def test_patch_enemy_version_persists(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
-    patch_enemy_version(tmp_path, "imp", "imp_animated_00", draft=True, in_use=False)
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
     raw = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
     row = raw["enemies"]["imp"]["versions"][0]
     assert row["draft"] is True
@@ -89,7 +89,7 @@ def test_patch_enemy_version_persists(tmp_path: Path):
 def test_patch_unknown_family_raises(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
     with pytest.raises(KeyError):
-        patch_enemy_version(tmp_path, "nope_family", "v0", draft=True)
+        patch_enemy_version(tmp_path, "nope_family", "v0", {"draft": True})
 
 
 def test_validate_rejects_non_object():
@@ -236,14 +236,90 @@ def test_save_atomic_unlinks_tmp_on_replace_failure(tmp_path: Path):
 
 def test_patch_enemy_requires_flag(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
-    with pytest.raises(ValueError, match="at least one"):
-        patch_enemy_version(tmp_path, "imp", "imp_animated_00")
+    with pytest.raises(ValueError, match="at least one patch field"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {})
 
 
 def test_patch_enemy_unknown_version(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
     with pytest.raises(KeyError, match="unknown version"):
-        patch_enemy_version(tmp_path, "imp", "not_real", draft=True)
+        patch_enemy_version(tmp_path, "imp", "not_real", {"draft": True})
+
+
+def test_patch_enemy_version_name_set_and_clear(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": "  Boss imp  "})
+    raw = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
+    assert raw["enemies"]["imp"]["versions"][0]["name"] == "Boss imp"
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": None})
+    raw2 = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
+    assert "name" not in raw2["enemies"]["imp"]["versions"][0]
+
+
+def test_validate_version_name_too_long(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["name"] = "x" * 129
+    with pytest.raises(ValueError, match="name exceeds max"):
+        validate_manifest(m)
+
+
+def test_validate_version_rejects_unknown_keys():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["extra_field"] = "nope"
+    with pytest.raises(ValueError, match="unexpected keys"):
+        validate_manifest(m)
+
+
+def test_validate_version_optional_name_round_trip():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["name"] = "  Named imp  "
+    out = validate_manifest(m)
+    assert out["enemies"]["imp"]["versions"][0]["name"] == "Named imp"
+
+
+def test_validate_version_name_wrong_type():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["name"] = 123  # type: ignore[assignment]
+    with pytest.raises(ValueError, match="name must be a string"):
+        validate_manifest(m)
+
+
+def test_patch_enemy_version_rejects_unknown_keys(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="unsupported patch keys"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "bogus": 1})
+
+
+def test_patch_enemy_version_draft_must_be_bool(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="patch draft must be boolean"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": "yes"})
+
+
+def test_patch_enemy_version_in_use_must_be_bool(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="patch in_use must be boolean"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"in_use": 1})
+
+
+def test_patch_enemy_version_name_whitespace_clears(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": "keep"})
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": "   "})
+    raw = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
+    assert "name" not in raw["enemies"]["imp"]["versions"][0]
+
+
+def test_patch_enemy_version_name_too_long_in_patch(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="exceeds max length"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": "x" * 129})
+
+
+def test_patch_enemy_version_name_type_rejected(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="patch name must be string or null"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": 7})
 
 
 def test_patch_player_requires_flag(tmp_path: Path):

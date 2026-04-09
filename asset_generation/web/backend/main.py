@@ -1,6 +1,8 @@
 """
 FastAPI backend for the Live Asset Editor.
 """
+from __future__ import annotations
+
 from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

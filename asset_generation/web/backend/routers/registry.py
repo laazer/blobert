@@ -180,6 +180,10 @@ def _load_service():
 class EnemyVersionPatch(BaseModel):
     draft: bool | None = Field(default=None, description="Draft flag; draft entries are not spawn-eligible.")
     in_use: bool | None = Field(default=None, description="In-use (spawn pool) flag; ignored if draft.")
+    name: str | None = Field(
+        default=None,
+        description="Optional display name; omit for no change, null or empty string clears.",
+    )
 
 
 class PlayerVisualPatch(BaseModel):
@@ -277,18 +281,13 @@ async def patch_enemy_version_endpoint(
     version_id: str,
     body: EnemyVersionPatch,
 ) -> JSONResponse:
-    if body.draft is None and body.in_use is None:
-        raise HTTPException(status_code=400, detail="provide draft and/or in_use")
+    patches = body.model_dump(exclude_unset=True)
+    if not patches:
+        raise HTTPException(status_code=400, detail="provide at least one field to patch")
 
     try:
         reg = _load_service()
-        updated = reg.patch_enemy_version(
-            settings.python_root,
-            family,
-            version_id,
-            draft=body.draft,
-            in_use=body.in_use,
-        )
+        updated = reg.patch_enemy_version(settings.python_root, family, version_id, patches)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

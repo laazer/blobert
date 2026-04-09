@@ -1,5 +1,6 @@
 import { useAppStore } from "../../store/useAppStore";
 import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
+import { ElementPalettesSection } from "./ElementPalettesSection";
 import { FeatureMaterialControls } from "./FeatureMaterialControls";
 
 /**
@@ -46,9 +47,11 @@ export function ColorsPane() {
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
         Each coarse zone has <strong style={{ color: "#bbb" }}>finish</strong> + <strong style={{ color: "#bbb" }}>hex</strong>{" "}
-        (body, head, limbs, joints, extra on spider). Per-limb and per-joint overrides are in the collapsible sections below.
-        Global export tint stays in the command bar.
+        (body, head, limbs, joints, extra on spider). Click a palette swatch to copy <code style={{ color: "#ccc" }}>#RRGGBB</code>;
+        use <strong style={{ color: "#bbb" }}>Paste color</strong> on any hex row (including limb / joint overrides). Global export
+        tint stays in the command bar.
       </p>
+      <ElementPalettesSection slug={slug} />
       <FeatureMaterialControls slug={slug} showEmptyHint />
     </div>
   );

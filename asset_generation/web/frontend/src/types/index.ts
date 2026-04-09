@@ -71,6 +71,8 @@ export type RegistryEnemyVersion = {
   path: string;
   draft: boolean;
   in_use: boolean;
+  /** Optional display name (editor / tooling). */
+  name?: string;
 };
 
 /** GET /api/registry/model payload. */
