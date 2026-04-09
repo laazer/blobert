@@ -847,3 +847,7 @@ Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
 - Stage: INTEGRATION
 - Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
 - Outcome: Evidence refresh only: explicit AC1/AC2 test mapping in ticket Validation Status, fresh `timeout 300 ci/scripts/run_tests.sh` exit `0` evidence for AC3, and routing to Acceptance Criteria Gatekeeper Agent (`Proceed`) for final closure review.
+
+### [M9-RSEVV] — OUTCOME: COMPLETE
+Runtime spawn now resolves visual variants via a shared selector seam that uniformly chooses only in-use non-draft entries, rejects malformed metadata fail-closed, and is covered by primary plus adversarial GDScript tests; `timeout 300 ci/scripts/run_tests.sh` exits 0.
+Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
