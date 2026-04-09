@@ -4,6 +4,24 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [13_registry_paths] — Draft subtree + patch-time relocate
+*Completed: 2026-04-09*
+
+### Learnings
+- category: architecture
+  insight: Keep a single module (`path_layout`) for managed `*/draft/*.glb` rules and sidecar suffixes so registry patch and future tooling stay aligned.
+  impact: Relocate must move `.attacks.json`, `.player.json`, `.object.json` with the GLB or downstream paths break.
+  prevention: Extend `_sidecar_names` when new companion formats appear.
+  severity: medium
+
+- category: product
+  insight: Editor export target follows the preview URL (`/draft/` segment) and run-stream `output_draft`; CLI default stays live-root for backward compatibility.
+  impact: Users load a draft preview to regenerate into `draft/` unless a future explicit toggle is added.
+  prevention: Spec + milestone README document the layout.
+  severity: low
+
+---
+
 ## [M9-EBUI] — Center panel enum + synthetic control merge for new tab
 *Completed: 2026-04-09*
 
