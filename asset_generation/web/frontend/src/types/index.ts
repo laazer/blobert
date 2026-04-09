@@ -80,6 +80,13 @@ export type ModelRegistryPayload = {
   player_active_visual: null | { path: string; draft: boolean };
 };
 
+/** Enemy family slot assignment payload from /api/registry/model/enemies/{family}/slots. */
+export type EnemyFamilySlotsPayload = {
+  family: string;
+  version_ids: string[];
+  resolved_paths: string[];
+};
+
 /** GET /api/meta/enemies payload (enemies + procedural build controls per slug). */
 export type EnemyPreviewMeta = {
   enemies: AnimatedEnemyMeta[];

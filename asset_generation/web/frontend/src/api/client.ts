@@ -2,6 +2,7 @@ import {
   AnimatedBuildControlDef,
   AnimatedEnemyMeta,
   Asset,
+  EnemyFamilySlotsPayload,
   EnemyPreviewMeta,
   FileNode,
   ModelRegistryPayload,
@@ -122,6 +123,40 @@ export async function patchRegistryEnemyVersion(
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<ModelRegistryPayload>;
+}
+
+export async function patchRegistryPlayerActiveVisual(body: {
+  draft?: boolean;
+  path?: string;
+}): Promise<ModelRegistryPayload> {
+  const res = await fetch(`${BASE}/registry/model/player_active_visual`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
+export async function fetchEnemyFamilySlots(family: string): Promise<EnemyFamilySlotsPayload> {
+  const encFamily = encodeURIComponent(family);
+  const res = await fetch(`${BASE}/registry/model/enemies/${encFamily}/slots`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<EnemyFamilySlotsPayload>;
+}
+
+export async function putEnemyFamilySlots(
+  family: string,
+  versionIds: string[],
+): Promise<EnemyFamilySlotsPayload> {
+  const encFamily = encodeURIComponent(family);
+  const res = await fetch(`${BASE}/registry/model/enemies/${encFamily}/slots`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ version_ids: versionIds }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
 export async function fetchAnimations(): Promise<string[]> {

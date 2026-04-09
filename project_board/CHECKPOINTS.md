@@ -26,6 +26,64 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 - Lean: no
 - Log root: project_board/checkpoints/
 
+## Run: 2026-04-09T10-51-52Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-EGMS / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: PLANNING (bootstrap from malformed ticket)
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-autopilot.md`
+
+### [M9-EGMS] — OUTCOME: COMPLETE
+Editor model-selection flow now supports player replacement and per-family enemy slot pools with persistence + validation; backend service/router and frontend registry UI/contracts are covered by targeted tests and `timeout 300 ci/scripts/run_tests.sh` evidence.
+Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-autopilot.md`
+- Outcome: Planning decomposition completed; ticket advanced to SPECIFICATION for formal contract definition.
+
+### M9-EGMS / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: SPECIFICATION
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-autopilot.md`
+- Outcome: Spec assumptions logged for restart-required player model application and deterministic enemy empty-slot fallback.
+
+### M9-EGMS / run-2026-04-09-test-design
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-test-design.md`
+- Outcome: Primary API + UI contract tests authored for player active visual replacement and enemy family slot mutation validation.
+
+### M9-EGMS / run-2026-04-09-test-design
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: TEST_DESIGN (evidence-gap closure)
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-test-design.md`
+- Outcome: Added deterministic `model_registry.service` tests for slot/player validation branches; local diff-cover on `service.py` improved to 91% (gate now above 85% threshold).
+
+### M9-EGMS / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-autopilot.md`
+- Outcome: Logged conservative mixed-invalid slot status assumption; adversarial tests encode atomic rejection and no partial writes.
+
+### M9-EGMS / run-2026-04-09-test-break
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-autopilot.md`
+- Outcome: Added adversarial service tests for mixed-invalid slot payload precedence, atomic no-partial-write invariants, and malformed allowlisted non-`.glb` player paths.
+
+### M9-EGMS / run-2026-04-09-implementation-backend
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: IMPLEMENTATION_BACKEND → STATIC_QA
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-implementation-backend.md`
+- Outcome: Revalidated backend service tests (`56 passed`), confirmed no backend code delta required, and routed to Acceptance Criteria Gatekeeper with router-test environment blocker documented.
+
+### M9-EGMS / run-2026-04-09-implementation-generalist
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/05_editor_ui_game_model_selection.md`
+- Stage: IMPLEMENTATION_GENERALIST → STATIC_QA
+- Log: `project_board/checkpoints/M9-EGMS/run-2026-04-09-implementation-generalist.md`
+- Outcome: Added explicit frontend UI evidence for player restart copy and enemy slot add/remove contracts; targeted frontend suites green (`3 files, 12 tests`); ticket revised for gatekeeper AC traceability review.
+
 ### M9-EUDS / run-2026-04-08-autopilot
 - Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/04_editor_ui_draft_status_for_exports.md`
 - Stage: COMPLETE

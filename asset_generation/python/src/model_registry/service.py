@@ -102,6 +102,9 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("enemy family keys must be non-empty strings")
         if not isinstance(fam_val, dict):
             raise ValueError(f"enemies[{family!r}] must be an object")
+        extra_family = set(fam_val.keys()) - {"versions", "slots"}
+        if extra_family:
+            raise ValueError(f"unexpected keys for enemies[{family!r}]: {sorted(extra_family)}")
         versions_raw = fam_val.get("versions")
         if not isinstance(versions_raw, list):
             raise ValueError(f"enemies[{family!r}].versions must be an array")
@@ -134,7 +137,26 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
                 {"id": vid, "path": path, "draft": draft, "in_use": use},
             )
 
-        enemies_out[family] = {"versions": versions_out}
+        family_out: dict[str, Any] = {"versions": versions_out}
+        slots_raw = fam_val.get("slots")
+        if slots_raw is not None:
+            if not isinstance(slots_raw, list):
+                raise ValueError(f"enemies[{family!r}].slots must be an array")
+            seen_slot_ids: set[str] = set()
+            slots_out: list[str] = []
+            for i, version_id in enumerate(slots_raw):
+                if not isinstance(version_id, str) or not version_id.strip():
+                    raise ValueError(f"enemies[{family!r}].slots[{i}] invalid")
+                if version_id in seen_slot_ids:
+                    raise ValueError(f"duplicate slot version id {version_id!r} in family {family!r}")
+                if version_id not in seen_ids:
+                    raise ValueError(
+                        f"unknown slot version id {version_id!r} for family {family!r}",
+                    )
+                seen_slot_ids.add(version_id)
+                slots_out.append(version_id)
+            family_out["slots"] = slots_out
+        enemies_out[family] = family_out
 
     player_out: dict[str, Any] | None
     pav = data.get("player_active_visual")
@@ -243,12 +265,72 @@ def patch_player_active_visual(
             raise ValueError(f"invalid player path: {path!r}")
         next_pav["path"] = path
     if draft is not None:
-        next_pav["draft"] = draft
+        if draft:
+            raise ValueError("player_active_visual cannot be draft")
+        next_pav["draft"] = False
+    if path is not None and not path.endswith(".glb"):
+        raise ValueError("player_active_visual.path must end with .glb")
+    if path is not None:
+        # Selecting a player model is replacement semantics for a non-draft active visual.
+        next_pav["draft"] = False
 
     data["player_active_visual"] = next_pav
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
     return validated
+
+
+def get_enemy_slots(
+    python_root: Path,
+    family: str,
+) -> dict[str, Any]:
+    """Return currently configured slot IDs for a family."""
+    data = load_effective_manifest(python_root)
+    fam = data["enemies"].get(family)
+    if fam is None:
+        raise KeyError(f"unknown family: {family}")
+    version_ids = list(fam.get("slots") or [])
+    paths_by_id = {row["id"]: row["path"] for row in fam["versions"]}
+    resolved_paths = [paths_by_id[version_id] for version_id in version_ids if version_id in paths_by_id]
+    return {
+        "family": family,
+        "version_ids": version_ids,
+        "resolved_paths": resolved_paths,
+    }
+
+
+def put_enemy_slots(
+    python_root: Path,
+    family: str,
+    version_ids: list[str],
+) -> dict[str, Any]:
+    """Replace slot IDs for a family, validating draft/in_use and duplicates."""
+    if not version_ids:
+        raise ValueError("version_ids must not be empty")
+    if len(set(version_ids)) != len(version_ids):
+        raise ValueError("duplicate version_ids are not allowed")
+
+    data = load_effective_manifest(python_root)
+    fam = data["enemies"].get(family)
+    if fam is None:
+        raise KeyError(f"unknown family: {family}")
+
+    versions = fam["versions"]
+    versions_by_id = {row["id"]: row for row in versions}
+
+    for version_id in version_ids:
+        row = versions_by_id.get(version_id)
+        if row is None:
+            raise KeyError(f"unknown version {version_id!r} for family {family!r}")
+        if row.get("draft") is True:
+            raise ValueError(f"version {version_id!r} is draft and cannot be slotted")
+        if row.get("in_use") is not True:
+            raise ValueError(f"version {version_id!r} is not in_use and cannot be slotted")
+
+    fam["slots"] = list(version_ids)
+    validated = validate_manifest(data)
+    save_manifest_atomic(python_root, validated)
+    return get_enemy_slots(python_root, family)
 
 
 def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:

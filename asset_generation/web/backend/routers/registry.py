@@ -1,4 +1,5 @@
 """HTTP API for ``model_registry.json`` (MRVC draft / in-use)."""
+from __future__ import annotations
 
 import logging
 import sys
@@ -55,6 +56,10 @@ class EnemyVersionPatch(BaseModel):
 class PlayerVisualPatch(BaseModel):
     draft: bool | None = None
     path: str | None = Field(default=None, description="Allowlisted path under python_root.")
+
+
+class EnemySlotsPut(BaseModel):
+    version_ids: list[str] = Field(default_factory=list, description="Ordered slot IDs for a family.")
 
 
 @router.get("/model")
@@ -117,6 +122,37 @@ async def patch_player_active_visual_endpoint(body: PlayerVisualPatch) -> JSONRe
     except ImportError as e:
         raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
     return JSONResponse(updated)
+
+
+@router.get("/model/enemies/{family}/slots")
+async def get_enemy_slots_endpoint(family: str) -> JSONResponse:
+    try:
+        reg = _load_service()
+        payload = reg.get_enemy_slots(settings.python_root, family)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(payload)
+
+
+@router.put("/model/enemies/{family}/slots")
+async def put_enemy_slots_endpoint(
+    family: str,
+    body: EnemySlotsPut,
+) -> JSONResponse:
+    try:
+        reg = _load_service()
+        payload = reg.put_enemy_slots(settings.python_root, family, body.version_ids)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(payload)
 
 
 @router.get("/model/spawn_eligible/{family}")

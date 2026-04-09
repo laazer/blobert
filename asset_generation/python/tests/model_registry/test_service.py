@@ -8,9 +8,11 @@ import pytest
 
 from src.model_registry.service import (
     default_migrated_manifest,
+    get_enemy_slots,
     load_effective_manifest,
     patch_enemy_version,
     patch_player_active_visual,
+    put_enemy_slots,
     registry_path,
     save_manifest_atomic,
     spawn_eligible_paths,
@@ -274,6 +276,185 @@ def test_patch_player_rejects_non_allowlisted_path(tmp_path: Path):
     save_manifest_atomic(tmp_path, validate_manifest(m))
     with pytest.raises(ValueError, match="invalid player path"):
         patch_player_active_visual(tmp_path, path="outside/x.glb")
+
+
+def test_patch_player_rejects_non_glb_path(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["player_active_visual"] = {"path": "player_exports/p_00.glb", "draft": False}
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    with pytest.raises(ValueError, match=r"must end with \.glb"):
+        patch_player_active_visual(tmp_path, path="player_exports/p_00.gltf")
+
+
+def test_get_enemy_slots_returns_empty_when_slots_missing(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    payload = get_enemy_slots(tmp_path, "imp")
+    assert payload == {"family": "imp", "version_ids": [], "resolved_paths": []}
+
+
+def test_get_enemy_slots_unknown_family_raises(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(KeyError, match="unknown family"):
+        get_enemy_slots(tmp_path, "not_real")
+
+
+def test_put_enemy_slots_persists_order_and_resolves_paths(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"].append(
+        {
+            "id": "imp_animated_01",
+            "path": "animated_exports/imp_animated_01.glb",
+            "draft": False,
+            "in_use": True,
+        },
+    )
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+
+    out = put_enemy_slots(tmp_path, "imp", ["imp_animated_01", "imp_animated_00"])
+    assert out == {
+        "family": "imp",
+        "version_ids": ["imp_animated_01", "imp_animated_00"],
+        "resolved_paths": [
+            "animated_exports/imp_animated_01.glb",
+            "animated_exports/imp_animated_00.glb",
+        ],
+    }
+
+    reloaded = load_effective_manifest(tmp_path)
+    assert reloaded["enemies"]["imp"]["slots"] == ["imp_animated_01", "imp_animated_00"]
+
+
+def test_put_enemy_slots_rejects_empty_list(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="must not be empty"):
+        put_enemy_slots(tmp_path, "imp", [])
+
+
+def test_put_enemy_slots_rejects_duplicate_ids(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="duplicate"):
+        put_enemy_slots(tmp_path, "imp", ["imp_animated_00", "imp_animated_00"])
+
+
+def test_put_enemy_slots_rejects_unknown_version(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(KeyError, match="unknown version"):
+        put_enemy_slots(tmp_path, "imp", ["missing"])
+
+
+def test_put_enemy_slots_rejects_draft_version(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["draft"] = True
+    m["enemies"]["imp"]["versions"][0]["in_use"] = False
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    with pytest.raises(ValueError, match="draft and cannot be slotted"):
+        put_enemy_slots(tmp_path, "imp", ["imp_animated_00"])
+
+
+def test_put_enemy_slots_rejects_not_in_use_version(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["in_use"] = False
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    with pytest.raises(ValueError, match="not in_use and cannot be slotted"):
+        put_enemy_slots(tmp_path, "imp", ["imp_animated_00"])
+
+
+@pytest.mark.parametrize(
+    ("version_ids", "error_type", "error_match"),
+    [
+        (["imp_animated_00", "imp_animated_00", "missing"], ValueError, "duplicate"),
+        (["missing", "imp_animated_00"], KeyError, "unknown version"),
+        (["imp_animated_01", "imp_animated_00"], ValueError, "draft and cannot be slotted"),
+        (["imp_animated_02", "imp_animated_00"], ValueError, "not in_use and cannot be slotted"),
+    ],
+)
+def test_put_enemy_slots_rejected_payload_never_partially_mutates_slots(
+    tmp_path: Path,
+    version_ids: list[str],
+    error_type: type[Exception],
+    error_match: str,
+):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"].append(
+        {
+            "id": "imp_animated_01",
+            "path": "animated_exports/imp_animated_01.glb",
+            "draft": True,
+            "in_use": False,
+        },
+    )
+    m["enemies"]["imp"]["versions"].append(
+        {
+            "id": "imp_animated_02",
+            "path": "animated_exports/imp_animated_02.glb",
+            "draft": False,
+            "in_use": False,
+        },
+    )
+    m["enemies"]["imp"]["slots"] = ["imp_animated_00"]
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+
+    # CHECKPOINT: mixed-invalid payloads fail deterministically before any slot write.
+    with pytest.raises(error_type, match=error_match):
+        put_enemy_slots(tmp_path, "imp", version_ids)
+
+    reloaded = load_effective_manifest(tmp_path)
+    assert reloaded["enemies"]["imp"]["slots"] == ["imp_animated_00"]
+
+
+def test_put_enemy_slots_mixed_invalid_precedence_prefers_duplicate_guard(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"].append(
+        {
+            "id": "imp_animated_01",
+            "path": "animated_exports/imp_animated_01.glb",
+            "draft": False,
+            "in_use": True,
+        },
+    )
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+
+    with pytest.raises(ValueError, match="duplicate"):
+        put_enemy_slots(tmp_path, "imp", ["missing", "missing", "imp_animated_01"])
+
+
+@pytest.mark.parametrize(
+    "invalid_path",
+    [
+        "player_exports/new_00.GLB",
+        "player_exports/new_00.glb ",
+        "player_exports/new_00.glb?cache=1",
+        "player_exports/new_00.glb/child",
+    ],
+)
+def test_patch_player_rejects_malformed_allowlisted_non_glb_variants(
+    tmp_path: Path,
+    invalid_path: str,
+):
+    m = default_migrated_manifest()
+    m["player_active_visual"] = {"path": "player_exports/original_00.glb", "draft": False}
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+
+    with pytest.raises(ValueError, match=r"must end with \.glb"):
+        patch_player_active_visual(tmp_path, path=invalid_path)
+
+    reloaded = load_effective_manifest(tmp_path)
+    assert reloaded["player_active_visual"] == {
+        "path": "player_exports/original_00.glb",
+        "draft": False,
+    }
+
+
+def test_validate_rejects_slots_duplicates_and_unknown_ids():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["slots"] = ["imp_animated_00", "imp_animated_00"]
+    with pytest.raises(ValueError, match="duplicate slot version id"):
+        validate_manifest(m)
+
+    m2 = default_migrated_manifest()
+    m2["enemies"]["imp"]["slots"] = ["not_present"]
+    with pytest.raises(ValueError, match="unknown slot version id"):
+        validate_manifest(m2)
 
 
 def test_spawn_eligible_unknown_family():
