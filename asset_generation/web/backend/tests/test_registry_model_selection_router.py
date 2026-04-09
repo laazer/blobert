@@ -438,3 +438,18 @@ class TestPlayerActiveVisualNullInit:
         assert res.status_code == 400
         after = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
         assert after == before
+
+    @pytest.mark.asyncio
+    async def test_patch_invalid_path_when_null_leaves_manifest_unchanged(
+        self,
+        client_player_visual_null: AsyncClient,
+        python_root_player_visual_null: pathlib.Path,
+    ) -> None:
+        before = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
+        res = await client_player_visual_null.patch(
+            "/api/registry/model/player_active_visual",
+            json={"path": "outside/not_allowlisted.glb"},
+        )
+        assert res.status_code == 400
+        after = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
+        assert after == before

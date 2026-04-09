@@ -340,6 +340,14 @@ def test_patch_player_initializes_from_null_with_path(tmp_path: Path):
     assert out["player_active_visual"] == {"path": "player_exports/p_00.glb", "draft": False}
 
 
+def test_patch_player_initializes_from_null_rejects_non_allowlisted_path(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(ValueError, match="invalid player path"):
+        patch_player_active_visual(tmp_path, path="outside/x.glb")
+    raw = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
+    assert raw.get("player_active_visual") is None
+
+
 def test_patch_player_updates_path_and_draft(tmp_path: Path):
     m = default_migrated_manifest()
     m["player_active_visual"] = {"path": "player_exports/old_00.glb", "draft": True}
