@@ -11,7 +11,11 @@ echo "=== Starting Blobert Asset Editor ==="
 cd "$BACKEND_DIR"
 if [ ! -d ".venv" ]; then
   echo "Creating backend virtualenv..."
-  python3 -m venv .venv
+  if command -v python3.11 >/dev/null 2>&1; then
+    python3.11 -m venv .venv
+  else
+    python3 -m venv .venv
+  fi
   .venv/bin/pip install --quiet -r requirements.txt
 fi
 .venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000 &

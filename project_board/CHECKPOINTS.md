@@ -659,7 +659,7 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 - Ticket: `project_board/21_milestone_21_3d_model_quick_editor/in_progress/assets_router_and_glb_viewer.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_ENGINE_INTEGRATION
 - Log: `project_board/checkpoints/M19-ARGLB/run-2026-04-07T03-00-00Z-test-break.md`
-- Outcome: 15 adversarial tests added (38 total, 33 pass / 5 red); exposed 3 distinct implementation gaps: (1) null-byte in path causes unhandled ValueError from resolve() — not caught by try/except which only wraps relative_to(); (2) directory path causes unhandled RuntimeError from FileResponse — needs is_file() guard; (3) spec claims dotfile `.glb` has suffix `.glb` — Python 3.9 returns empty suffix so dotfiles are excluded. Double-encoded traversal (%252e%252e→403), uppercase extension MIME (octet-stream), stress 50 files, sort invariant, and within-jail traversal tests all pass.
+- Outcome: 15 adversarial tests added (38 total, 33 pass / 5 red); exposed 3 distinct implementation gaps: (1) null-byte in path causes unhandled ValueError from resolve() — not caught by try/except which only wraps relative_to(); (2) directory path causes unhandled RuntimeError from FileResponse — needs is_file() guard; (3) spec claims dotfile `.glb` has suffix `.glb` — stdlib pathlib returns empty suffix so dotfiles are excluded. Double-encoded traversal (%252e%252e→403), uppercase extension MIME (octet-stream), stress 50 files, sort invariant, and within-jail traversal tests all pass.
 
 ## Resume: 2026-04-07 (ap-continue) — M19-ARGLB
 - Ticket: `project_board/21_milestone_21_3d_model_quick_editor/done/assets_router_and_glb_viewer.md`

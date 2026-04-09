@@ -599,24 +599,23 @@ class TestAdversarialListEndpoint:
         assert response.json() == {"assets": []}
 
     @pytest.mark.asyncio
-    async def test_list_dotfile_glb_excluded_by_python39_suffix_behavior(
+    async def test_list_dotfile_glb_excluded_by_pathlib_suffix_behavior(
         self, python_root: pathlib.Path, client: AsyncClient
     ):
         """
         ARGLB-1 edge case — file named '.glb' (dotfile): spec-vs-implementation gap.
 
         The spec notes this file "will appear in the list" because "Path.suffix returns
-        '.glb'". This is INCORRECT for Python 3.9: `Path(".glb").suffix` returns `""`
-        (empty string), not `".glb"`. Python 3.9 treats `.glb` as a dotfile with stem
-        `.glb` and no extension. The `f.suffix in _MIME` filter therefore EXCLUDES this
-        file because `"" not in _MIME`.
+        '.glb'". That is incorrect for stdlib `pathlib` (including Python 3.11 used with
+        Blender): `Path(".glb").suffix` returns `""` (empty string), not `".glb"`.
+        Pathlib treats `.glb` as a dotfile with no extension segment. The
+        `f.suffix in _MIME` filter therefore EXCLUDES this file because `"" not in _MIME`.
 
-        This test documents the spec inaccuracy and asserts the actual Python 3.9
-        behavior: the dotfile `.glb` is NOT included in the list. The spec must be
-        corrected to note that dotfile behavior is Python-version-dependent.
+        This test documents the spec inaccuracy and asserts actual pathlib behavior:
+        the dotfile `.glb` is NOT included in the list. The spec should describe this
+        dotfile case explicitly.
 
-        Python 3.12+ behavior: `Path(".glb").suffix` → `""` (same — no change).
-        This is consistent across all current Python versions for dotfiles.
+        Same empty-suffix behavior holds for Python 3.12+ in current releases.
         """
         animated = python_root / "animated_exports"
         animated.mkdir(parents=True, exist_ok=True)
