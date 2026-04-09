@@ -2729,3 +2729,74 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Provides cross-layer verification even when one infrastructure slice is temporarily unavailable.
 
 ---
+## [M9-LEMA] — Freeze load-existing contract semantics early to avoid security and fixture rework
+*Completed: 2026-04-09*
+
+### Learnings
+- category: architecture
+  insight: Load/open endpoints that permit multiple selector forms (identity fields and optional path) require explicit ambiguity handling in the spec; mixed-selector payloads must be rejected, not silently precedence-resolved.
+  impact: Test-break had to add and lock a conservative `400` rejection for identity+path payloads after contract ambiguity surfaced mid-pipeline.
+  prevention: Require a selector-composition rule in spec for all open/load APIs: "single selector mode only; mixed modes rejected with deterministic status."
+  severity: high
+
+- category: testing
+  insight: Security-path contracts need deterministic fixture coherence between "successful open" and "stale/missing file" cases for the same identity, otherwise tests encode contradictory expectations.
+  impact: Backend implementation required rework to align fixture setup (`alpha_live_00.glb`) with missing-file `404` assertions while preserving positive-path coverage.
+  prevention: Add a fixture sanity check in test-design: every identity used in both success and stale-file tests must be explicitly created, then deleted only within the stale-file test path.
+  severity: medium
+
+- category: process
+  insight: Endpoint and payload-envelope assumptions deferred to test-design increase churn even when security intent is clear.
+  impact: The stage had medium-confidence assumptions on exact route names and payload shape before tests could be authored.
+  prevention: Planner-to-spec handoff should require explicit endpoint URI and request schema freeze before test-authoring starts.
+  severity: medium
+
+- category: testing
+  insight: When environment architecture blocks one required command, confidence should come from an explicit substitution chain plus later architecture-correct rerun, not silent omission.
+  impact: Test-break initially failed due to `pydantic_core` architecture mismatch; final evidence used architecture-pinned execution and preserved deterministic suite proof.
+  prevention: Standardize a test-evidence fallback: record blocked command/root cause, run architecture-correct equivalent, and carry residual risk if no equivalent exists.
+  severity: medium
+
+### Anti-Patterns
+- description: Allowing multi-selector request ambiguity (identity + raw path) and relying on implicit implementation order as contract.
+  detection_signal: Checkpoints or tests debate whether identity or path "wins" for the same request payload.
+  prevention: Treat mixed selector forms as invalid input and codify status/message in spec and adversarial tests.
+
+- description: Building stale-file tests from identities that were never created in fixtures.
+  detection_signal: Positive and missing-file tests reference the same identity but setup lacks explicit file creation before deletion.
+  prevention: Require fixture lifecycle tables in backend router tests (created -> opened -> removed -> 404) for each shared identity.
+
+- description: Freezing endpoint details at test-design instead of spec stage.
+  detection_signal: Test-design checkpoint includes "would have asked" on route names or payload envelopes.
+  prevention: Add a spec completeness gate that blocks test design until endpoint names, payload schema, and error layering are explicit.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every new load/open workflow, include a `Selector Mode Contract` section that explicitly states allowed selector forms, mixed-selector rejection behavior, and exact status/message for ambiguity (`400`)."
+  reason: Prevents late security-contract ambiguity and removes test-break precedence assumptions.
+
+- agent: Test Designer Agent
+  change: "When a registry identity appears in both success and stale-file tests, add a fixture lifecycle assertion proving the file exists before success-path assertions and is removed only inside stale-path cases."
+  reason: Prevents contradictory expectations that force backend fixture rework.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If a required suite fails due to runtime architecture mismatch, require an evidence note with (1) failing command + mismatch detail, (2) architecture-correct equivalent command and output, and (3) residual-risk statement if equivalence is partial."
+  reason: Keeps completion decisions deterministic under local runtime constraints.
+
+### Workflow Improvements
+- issue: Contract details (URI/payload ambiguity) were finalized too late, shifting design decisions into test-design/test-break.
+  improvement: Add a spec exit checklist item: endpoint paths, request schema, selector-mode rules, and error precedence must be explicit before advancing to test design.
+  expected_benefit: Less downstream churn and fewer medium-confidence assumptions.
+
+- issue: Fixture consistency for stale-file flows was validated reactively during implementation.
+  improvement: Add a pre-implementation "fixture coherence" review step for backend tests that pair success and not-found paths on shared identities.
+  expected_benefit: Fewer rework loops caused by contradictory test scaffolding.
+
+### Keep / Reinforce
+- practice: Registry-backed candidate derivation with strict allowlist and deterministic sorting was validated across backend and frontend contract tests.
+  reason: Security and UX behavior stayed aligned without introducing arbitrary filesystem exposure paths.
+
+- practice: Scoped checkpointing of `Would have asked`/`Assumption made`/`Confidence` captured ambiguity at each stage.
+  reason: High-value learning signals were recoverable for post-ticket process improvement.
+
+---
