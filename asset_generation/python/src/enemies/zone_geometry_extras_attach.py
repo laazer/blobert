@@ -9,6 +9,13 @@ import bpy
 from mathutils import Vector
 
 from ..core.blender_utils import create_cone, create_sphere
+from ..core.rig_models.blob_simple import MESH_BODY_CENTER_Z_FACTOR
+from ..materials.material_system import (
+    apply_feature_slot_overrides,
+    apply_material_to_object,
+    get_enemy_materials,
+    material_for_zone_geometry_extra,
+)
 
 
 def _vec_xyz(v: Vector) -> tuple[float, float, float]:
@@ -18,13 +25,6 @@ def _vec_xyz(v: Vector) -> tuple[float, float, float]:
     if inner is not None and len(inner) >= 3:
         return (float(inner[0]), float(inner[1]), float(inner[2]))
     return (0.0, 0.0, 0.0)
-from ..core.rig_models.blob_simple import MESH_BODY_CENTER_Z_FACTOR
-from ..materials.material_system import (
-    apply_feature_slot_overrides,
-    apply_material_to_object,
-    get_enemy_materials,
-    material_for_zone_geometry_extra,
-)
 
 
 def _ellipsoid_point(cz: float, a: float, b: float, h: float, theta: float, phi: float) -> tuple[float, float, float]:

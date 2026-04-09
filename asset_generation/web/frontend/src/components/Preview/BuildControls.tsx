@@ -212,8 +212,10 @@ export function BuildControls() {
   }
 
   const defs = animatedBuildControls[slug] ?? [];
-  /** Per-part materials (`feat_*`) belong on the Colors tab only. */
-  const buildDefs = defs.filter((d) => !d.key.startsWith("feat_"));
+  /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras. */
+  const buildDefs = defs.filter(
+    (d) => !d.key.startsWith("feat_") && !d.key.startsWith("extra_zone_"),
+  );
   const controlSlugs = Object.keys(animatedBuildControls);
 
   if (defs.length === 0) {

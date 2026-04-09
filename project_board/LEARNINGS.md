@@ -4,6 +4,29 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-EBUI] — Center panel enum + synthetic control merge for new tab
+*Completed: 2026-04-09*
+
+### Learnings
+- category: architecture
+  insight: New build-option families should be stripped from the Build tab explicitly (`feat_*` and `extra_zone_*`) so each center tab owns one concern.
+  impact: Without filtering, `extra_zone_*` floats appeared alongside mesh sliders after ticket 11.
+  prevention: When adding meta-driven rows, decide primary surface in layout and filter `BuildControls` defs accordingly.
+  severity: medium
+
+- category: testing
+  insight: `diff-cover` against `origin/main` aggregates all commits ahead plus unstaged lines; partial Python coverage from a prior commit can block a frontend-only ticket until attach tests catch up.
+  impact: Required expanding `test_slug_zone_extras_attach` and fixing a broken import order in `zone_geometry_extras_attach.py` surfaced during the same run.
+  prevention: Keep attach/helper modules syntactically linted and maintain coverage when adding generator paths.
+  severity: medium
+
+### Anti-Patterns
+- description: Relying on API-only `extra_zone_*` defs with empty `animated_build_controls` fallback (offline editor).
+  detection_signal: Extras tab empty hint with no rows for slug despite ticket 11 backend contract.
+  prevention: Mirror Python defaults via `syntheticExtraZoneDefsForSlug` in `mergeCanonicalZoneControls`, same as coarse `feat_*` zones.
+
+---
+
 ## [M9-EBPE] — Zone extras: stub mathutils vs Blender and diff-cover on new modules
 *Completed: 2026-04-09*
 

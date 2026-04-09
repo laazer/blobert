@@ -31,8 +31,8 @@ export type CommandPanelContext = {
   enemy: string;
 };
 
-/** Center column: code, build, colors, and model registry share this space (one visible at a time; column can be hidden). */
-export type CenterPanel = "none" | "code" | "build" | "colors" | "registry";
+/** Center column: code, build, colors, extras, and model registry share this space (one visible at a time; column can be hidden). */
+export type CenterPanel = "none" | "code" | "build" | "colors" | "extras" | "registry";
 
 let _lineId = 0;
 

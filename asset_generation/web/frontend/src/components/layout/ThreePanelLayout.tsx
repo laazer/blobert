@@ -6,6 +6,7 @@ import { ModelRegistryPane } from "../Editor/ModelRegistryPane";
 import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
 import { BuildControls } from "../Preview/BuildControls";
 import { ColorsPane } from "../Preview/ColorsPane";
+import { ExtrasPane } from "../Preview/ExtrasPane";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
 import { CommandPanel } from "../CommandPanel/CommandPanel";
@@ -73,6 +74,14 @@ function CenterSwitchBar() {
         title="Per-part materials (feat_* slots) for the selected animated enemy"
       >
         Colors
+      </button>
+      <button
+        type="button"
+        style={tabBtn(centerPanel === "extras")}
+        onClick={() => setCenterPanel("extras")}
+        title="Per-zone geometry extras (extra_zone_* — spikes, bulbs, horns, shell)"
+      >
+        Extras
       </button>
       <button
         type="button"
@@ -169,6 +178,20 @@ export function ThreePanelLayout() {
               <ColorsPane />
             </div>
           )}
+          {centerPanel === "extras" && (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "auto",
+                display: "flex",
+                flexDirection: "column",
+                background: "#1e1e1e",
+              }}
+            >
+              <ExtrasPane />
+            </div>
+          )}
           {centerPanel === "registry" && (
             <div
               style={{
@@ -209,6 +232,14 @@ export function ThreePanelLayout() {
             title="Show per-part colors"
           >
             Colors
+          </button>
+          <button
+            type="button"
+            style={showFilesBtn}
+            onClick={() => setCenterPanel("extras")}
+            title="Geometry extras"
+          >
+            Extras
           </button>
           <button
             type="button"

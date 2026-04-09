@@ -927,3 +927,20 @@ Log: `project_board/checkpoints/M9-EMVDES/run-2026-04-09T16-32-06Z-planning.md`
 ### [M9-EBPE] — OUTCOME: COMPLETE
 `zone_geometry_extras` + flat `extra_zone_*` API, slug spike/bulb/horn attachment (`zone_geometry_extras_attach`), `material_for_zone_geometry_extra`, spec `project_board/specs/enemy_body_part_extras_spec.md`; slug feature zones extended to `body/head/extra`; pytest + `timeout 300 ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/M9-EBPE/run-2026-04-09-autopilot.md`
+
+---
+
+## Run: 2026-04-09T19-30-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/12_enemy_body_part_extras_editor_ui.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-EBUI / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/12_enemy_body_part_extras_editor_ui.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/M9-EBUI/run-2026-04-09-autopilot.md`
+
+### [M9-EBUI] — OUTCOME: COMPLETE
+Asset editor **Extras** center tab (`ExtrasPane`, `ZoneExtraControls`), `centerPanel: "extras"`, synthetic `extra_zone_*` merge for offline/API parity, Build panel excludes extra keys; tests `ExtrasPane.test.tsx`, `ThreePanelLayout.extras_tab.test.tsx`, `zoneExtrasPartition.test.ts`; attach import fix + expanded pytest for diff-cover; `npm test` / `npm run build` / `timeout 300 ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/M9-EBUI/run-2026-04-09-autopilot.md`

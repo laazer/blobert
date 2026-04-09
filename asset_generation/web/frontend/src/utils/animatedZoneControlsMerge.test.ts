@@ -60,6 +60,15 @@ describe("mergeCanonicalZoneControls", () => {
     ];
     expect(mergeCanonicalZoneControls("unknown_enemy", defs)).toEqual(defs);
   });
+
+  it("appends synthetic extra_zone_* controls for slug", () => {
+    const merged = mergeCanonicalZoneControls("slug", []);
+    const extraKeys = merged.filter((d) => d.key.startsWith("extra_zone_")).map((d) => d.key);
+    expect(extraKeys).toContain("extra_zone_body_kind");
+    expect(extraKeys).toContain("extra_zone_head_spike_shape");
+    expect(extraKeys).toContain("extra_zone_extra_hex");
+    expect(extraKeys).toHaveLength(18);
+  });
 });
 
 describe("mergeCanonicalZoneControlsForAllSlugs", () => {

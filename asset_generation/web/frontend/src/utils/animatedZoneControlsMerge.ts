@@ -15,6 +15,9 @@ export const FEATURE_ZONES_BY_SLUG: Readonly<Record<string, readonly string[]>> 
 /** Aligned with ``_FINISH_OPTIONS_ORDER`` in animated_build_options.py. */
 export const FINISH_OPTIONS_ORDER = ["default", "glossy", "matte", "metallic", "gel"] as const;
 
+const EXTRA_KINDS_SYNTHETIC = ["none", "shell", "spikes", "horns", "bulbs"] as const;
+const SPIKE_SHAPES = ["cone", "pyramid"] as const;
+
 function titleZone(zone: string): string {
   return zone
     .split("_")
@@ -40,6 +43,61 @@ export function syntheticZoneControl(zone: string, field: "finish" | "hex"): Ani
     type: "str",
     default: "",
   };
+}
+
+/** Mirrors Python ``_zone_extra_control_defs`` for offline / partial API responses. */
+export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildControlDef[] {
+  const slugKey = normalizeAnimatedSlug(slug);
+  const zones = FEATURE_ZONES_BY_SLUG[slugKey];
+  if (!zones?.length) return [];
+  const out: AnimatedBuildControlDef[] = [];
+  for (const zone of zones) {
+    const zlabel = titleZone(zone);
+    out.push({
+      key: `extra_zone_${zone}_kind`,
+      label: `${zlabel} geometry extra`,
+      type: "select_str",
+      options: [...EXTRA_KINDS_SYNTHETIC],
+      default: "none",
+    });
+    out.push({
+      key: `extra_zone_${zone}_spike_shape`,
+      label: `${zlabel} spike shape`,
+      type: "select_str",
+      options: [...SPIKE_SHAPES],
+      default: "cone",
+    });
+    out.push({
+      key: `extra_zone_${zone}_spike_count`,
+      label: `${zlabel} spike count`,
+      type: "int",
+      min: 1,
+      max: 24,
+      default: 8,
+    });
+    out.push({
+      key: `extra_zone_${zone}_bulb_count`,
+      label: `${zlabel} bulb count`,
+      type: "int",
+      min: 1,
+      max: 16,
+      default: 4,
+    });
+    out.push({
+      key: `extra_zone_${zone}_finish`,
+      label: `${zlabel} extra finish`,
+      type: "select_str",
+      options: [...FINISH_OPTIONS_ORDER],
+      default: "default",
+    });
+    out.push({
+      key: `extra_zone_${zone}_hex`,
+      label: `${zlabel} extra hex`,
+      type: "str",
+      default: "",
+    });
+  }
+  return out;
 }
 
 /**
@@ -71,10 +129,20 @@ export function mergeCanonicalZoneControls(
   const limbJointIdx = withoutZones.findIndex(
     (d) => d.key.startsWith("feat_limb_") || d.key.startsWith("feat_joint_"),
   );
+  let merged: AnimatedBuildControlDef[];
   if (limbJointIdx >= 0) {
-    return [...withoutZones.slice(0, limbJointIdx), ...canonicalZoneDefs, ...withoutZones.slice(limbJointIdx)];
+    merged = [...withoutZones.slice(0, limbJointIdx), ...canonicalZoneDefs, ...withoutZones.slice(limbJointIdx)];
+  } else {
+    merged = [...withoutZones, ...canonicalZoneDefs];
   }
-  return [...withoutZones, ...canonicalZoneDefs];
+  const seen = new Set(merged.map((d) => d.key));
+  for (const d of syntheticExtraZoneDefsForSlug(slugKey)) {
+    if (!seen.has(d.key)) {
+      merged.push(d);
+      seen.add(d.key);
+    }
+  }
+  return merged;
 }
 
 /**
