@@ -892,3 +892,21 @@ Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
 - Stage: TEST_BREAK
 - Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
 - Outcome: Added adversarial backend tests for encoded traversal/malformed encoding rejection, mixed-identity payload rejection, target-path mismatch guard, repeated-invalid delete stress determinism, and strict draft delete blank-confirmation assumption (`# CHECKPOINT`) exposing a backend contract gap.
+
+---
+
+## Run: 2026-04-09T16-32-06Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/enemy_model_versions_draft_editor_and_spawn.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-EMVDES / run-2026-04-09T16-32-06Z-planning
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/enemy_model_versions_draft_editor_and_spawn.md`
+- Stage: BLOCKED (planning; gating child 02)
+- Log: `project_board/checkpoints/M9-EMVDES/run-2026-04-09T16-32-06Z-planning.md`
+- Outcome: Umbrella marked BLOCKED on backlog `02_mesh_and_material_audit_enemy_families_and_player.md`; execution plan and NEXT ACTION updated; verified `01` and `03`–`09` in `done/`.
+
+### [M9-EMVDES] — OUTCOME: BLOCKED
+Umbrella cannot close: child `02_mesh_and_material_audit_enemy_families_and_player.md` still in backlog while `01` and `03`–`09` are in `done/`; ticket updated with execution plan and unblock path.
+Log: `project_board/checkpoints/M9-EMVDES/run-2026-04-09T16-32-06Z-planning.md`

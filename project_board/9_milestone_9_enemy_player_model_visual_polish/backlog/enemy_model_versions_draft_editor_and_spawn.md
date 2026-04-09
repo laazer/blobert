@@ -7,10 +7,10 @@ Enemy model versions, draft lifecycle, editor load rules, and spawn-time randomi
 | Field | Value |
 |---|---|
 | Stage | BLOCKED |
-| Revision | 1 |
-| Last Updated By | Human |
-| Next Responsible Agent | Planner Agent |
-| Validation Status | Blocked — see Blocking issues; work split into `backlog/01`–`09` |
+| Status | Blocked |
+| Revision | 2 |
+| Last Updated By | Planner Agent |
+| Next Responsible Agent | Human |
 
 ---
 
@@ -47,11 +47,19 @@ Acceptance Criteria:
 - Draft deletion and in-use deletion flows are implemented per the written safety rules; automated tests cover allowlist and at least one deletion path.
 - `timeout 300 ci/scripts/run_tests.sh` passes (Godot + Python suites as applicable).
 
+## Execution plan
+1. Complete backlog ticket `02_mesh_and_material_audit_enemy_families_and_player.md`.
+2. Re-run full `timeout 300 ci/scripts/run_tests.sh`.
+3. Verify umbrella acceptance criteria against `done/` tickets `01`, `03`–`09` and ticket `02` when complete.
+
 ---
 
 Blocking issues:
-- **Data contract** — owned by backlog `01_spec_model_registry_draft_versions_and_editor_contract.md` (spec file under `project_board/specs/`).
+- **Ticket 02 (gating)** — `02_mesh_and_material_audit_enemy_families_and_player.md` remains in `backlog/`; complete before this umbrella leaves BLOCKED. Child tickets `01` and `03`–`09` are in `done/`.
 - **M10** — procedural spawn path should be stable enough to hang version selection off a single choke point (soft dependency; can stub in sandbox first if ticket is split).
 - **M21** — 3D Model Quick Editor surfaces must exist or be extended for load/browse/delete; coordinate to avoid duplicate file browsers.
 
-Unblock when blocking issues are resolved. **Backlog tickets `01`–`09`** implement the partitioned scope; unblock this umbrella when their collective acceptance matches the criteria above (especially random variant spawn + draft + allowlisted load + deletion tests).
+Unblock when ticket **02** and remaining blocking issues are resolved; then verify acceptance against `done/` tickets `01`, `03`–`09` plus completed **02**.
+
+## NEXT ACTION
+- Finish `02_mesh_and_material_audit_enemy_families_and_player.md`, run `timeout 300 ci/scripts/run_tests.sh`, and verify umbrella acceptance criteria against all child tickets when **02** is done.
