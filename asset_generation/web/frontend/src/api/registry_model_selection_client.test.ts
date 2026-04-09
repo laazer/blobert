@@ -185,6 +185,7 @@ describe("registry model-selection client contracts", () => {
             },
             {
               kind: "player",
+              version_id: "blobert_blue_00",
               path: "player_exports/blobert_blue_00.glb",
             },
           ],
@@ -204,6 +205,7 @@ describe("registry model-selection client contracts", () => {
       },
       {
         kind: "player",
+        version_id: "blobert_blue_00",
         path: "player_exports/blobert_blue_00.glb",
       },
     ]);
@@ -237,6 +239,34 @@ describe("registry model-selection client contracts", () => {
       }),
     });
     expect(out.path).toBe("animated_exports/alpha_live_00.glb");
+  });
+
+  it("POST load-existing open accepts player version_id identity", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          kind: "player",
+          version_id: "blobert_blue_00",
+          path: "player_exports/blobert_blue_00.glb",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await openExistingRegistryModel({
+      kind: "player",
+      version_id: "blobert_blue_00",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/load_existing/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "player",
+        version_id: "blobert_blue_00",
+      }),
+    });
+    expect(out.path).toBe("player_exports/blobert_blue_00.glb");
+    expect(out.kind).toBe("player");
   });
 
   it("POST load-existing open surfaces deterministic rejection errors (400/403/404)", async () => {

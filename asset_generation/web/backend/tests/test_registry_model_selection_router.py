@@ -193,6 +193,20 @@ class TestEnemySlotManagement:
         ]
 
     @pytest.mark.asyncio
+    async def test_put_slots_accepts_empty_string_placeholders(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        res = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["", "spider_animated_00", ""]},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["version_ids"] == ["", "spider_animated_00", ""]
+        assert body["resolved_paths"] == ["animated_exports/spider_animated_00.glb"]
+
+    @pytest.mark.asyncio
     async def test_put_slots_rejects_draft_version_without_partial_write(
         self,
         client: AsyncClient,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ENEMY_EMPTY_SLOTS_COPY,
+  filterLoadExistingCandidates,
   LOAD_EXISTING_EMPTY_COPY,
   loadExistingCandidateKey,
   loadExistingCandidateLabel,
@@ -69,9 +70,10 @@ describe("ModelRegistryPane enemy slot UI contracts", () => {
     expect(
       loadExistingCandidateKey({
         kind: "player",
+        version_id: "blobert_blue_00",
         path: "player_exports/blobert_blue_00.glb",
       }),
-    ).toBe("player:player_exports/blobert_blue_00.glb");
+    ).toBe("player:blobert_blue_00");
   });
 
   it("builds open requests from candidate identity only (no arbitrary manual path input control)", () => {
@@ -90,12 +92,38 @@ describe("ModelRegistryPane enemy slot UI contracts", () => {
     expect(
       toOpenExistingRequest({
         kind: "player",
+        version_id: "blobert_blue_00",
         path: "player_exports/blobert_blue_00.glb",
       }),
     ).toEqual({
-      kind: "path",
-      path: "player_exports/blobert_blue_00.glb",
+      kind: "player",
+      version_id: "blobert_blue_00",
     });
+  });
+
+  it("filters load-existing candidates by model type and enemy family", () => {
+    const rows = [
+      {
+        kind: "enemy" as const,
+        family: "alpha",
+        version_id: "a0",
+        path: "animated_exports/a0.glb",
+      },
+      {
+        kind: "enemy" as const,
+        family: "beta",
+        version_id: "b0",
+        path: "exports/b0.glb",
+      },
+      {
+        kind: "player" as const,
+        version_id: "p0",
+        path: "player_exports/p0.glb",
+      },
+    ];
+    expect(filterLoadExistingCandidates(rows, "player", null).map((r) => r.kind)).toEqual(["player"]);
+    expect(filterLoadExistingCandidates(rows, "enemy", null)).toHaveLength(2);
+    expect(filterLoadExistingCandidates(rows, "all", "alpha")).toHaveLength(2);
   });
 
   it("renders clear labels and empty-state guidance for constrained picker UX", () => {

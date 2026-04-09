@@ -1,12 +1,12 @@
 """HTTP API for ``model_registry.json`` (MRVC draft / in-use)."""
 from __future__ import annotations
 
+import json
 import logging
 import sys
-from urllib.parse import unquote
-import json
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 from core.config import settings
 from fastapi import APIRouter, HTTPException
@@ -79,6 +79,51 @@ def _safe_is_file_under_python_root(python_root: Path, rel_path: str) -> bool:
         return False
 
 
+def _player_export_rows_for_load_existing(data: dict[str, Any]) -> list[dict[str, str]]:
+    """Registry-backed player rows (draft or in-use), same eligibility as enemy versions."""
+    out: list[dict[str, str]] = []
+    player_block = data.get("player")
+    pav = data.get("player_active_visual")
+    use_legacy_pav = False
+    if isinstance(player_block, dict):
+        versions = player_block.get("versions")
+        if isinstance(versions, list) and len(versions) > 0:
+            for row in versions:
+                if not isinstance(row, dict):
+                    continue
+                version_id = row.get("id")
+                path = row.get("path")
+                draft = row.get("draft")
+                in_use = row.get("in_use")
+                if not isinstance(version_id, str) or not isinstance(path, str):
+                    continue
+                if draft is not True and in_use is not True:
+                    continue
+                try:
+                    canonical = _normalize_registry_relative_glb_path(path)
+                except (HTTPException, ValueError):
+                    continue
+                out.append({"kind": "player", "version_id": version_id, "path": canonical})
+        elif isinstance(pav, dict):
+            use_legacy_pav = True
+    elif isinstance(pav, dict):
+        use_legacy_pav = True
+
+    if use_legacy_pav and isinstance(pav, dict):
+        ppath = pav.get("path")
+        pdraft = pav.get("draft")
+        if isinstance(ppath, str) and isinstance(pdraft, bool):
+            try:
+                canonical = _normalize_registry_relative_glb_path(ppath)
+            except (HTTPException, ValueError):
+                return out
+            name = Path(ppath).name
+            stem = name[:-4] if name.lower().endswith(".glb") else Path(ppath).stem
+            vid = stem.strip() or "player_registry_00"
+            out.append({"kind": "player", "version_id": vid, "path": canonical})
+    return out
+
+
 def _load_existing_candidates_from_registry(python_root: Path) -> list[dict[str, str]]:
     data = _load_registry_json_unvalidated(python_root)
     enemies = data.get("enemies")
@@ -116,18 +161,9 @@ def _load_existing_candidates_from_registry(python_root: Path) -> list[dict[str,
                 )
 
     rows.sort(key=lambda row: (row["family"], row["version_id"]))
-
-    pav = data.get("player_active_visual")
-    if isinstance(pav, dict):
-        ppath = pav.get("path")
-        if isinstance(ppath, str):
-            try:
-                canonical = _normalize_registry_relative_glb_path(ppath)
-            except (HTTPException, ValueError):
-                canonical = None
-            if canonical is not None:
-                rows.append({"kind": "player", "path": canonical})
-    return rows
+    player_rows = _player_export_rows_for_load_existing(data)
+    player_rows.sort(key=lambda row: row["version_id"])
+    return rows + player_rows
 
 
 def _resolve_enemy_identity_path(
@@ -141,6 +177,15 @@ def _resolve_enemy_identity_path(
         if row.get("family") == family and row.get("version_id") == version_id:
             return row["path"]
     raise KeyError(f"unknown version {version_id!r} for family {family!r}")
+
+
+def _resolve_player_identity_path(python_root: Path, version_id: str) -> str:
+    for row in _load_existing_candidates_from_registry(python_root):
+        if row.get("kind") != "player":
+            continue
+        if row.get("version_id") == version_id:
+            return row["path"]
+    raise KeyError(f"unknown player version id {version_id!r}")
 
 
 def _canonical_python_roots() -> tuple[Path, Path]:
@@ -207,7 +252,7 @@ class PlayerActiveVisualDeleteRequest(BaseModel):
 
 
 class LoadExistingOpenRequest(BaseModel):
-    kind: str = Field(description="One of enemy|path for constrained load-open.")
+    kind: str = Field(description="One of enemy|player|path for constrained load-open.")
     family: str | None = None
     version_id: str | None = None
     path: str | None = None
@@ -239,6 +284,19 @@ async def open_load_existing(body: LoadExistingOpenRequest) -> JSONResponse:
                 {
                     "kind": "enemy",
                     "family": body.family,
+                    "version_id": body.version_id,
+                    "path": canonical_path,
+                },
+            )
+        if body.kind == "player":
+            if body.family is not None or body.path is not None or body.version_id is None:
+                raise HTTPException(status_code=400, detail="malformed target payload: player-requires-version-id")
+            canonical_path = _resolve_player_identity_path(settings.python_root, body.version_id)
+            if not _safe_is_file_under_python_root(settings.python_root, canonical_path):
+                raise HTTPException(status_code=404, detail="registry target file not found")
+            return JSONResponse(
+                {
+                    "kind": "player",
                     "version_id": body.version_id,
                     "path": canonical_path,
                 },

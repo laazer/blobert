@@ -51,6 +51,7 @@ export type RegistryEnemyFamiliesSectionProps = {
   busyKey: string | null;
   deleteBusyKey: string | null;
   onAddSlot: (family: string) => void;
+  onAddEmptySlot: (family: string) => void;
   onRemoveSlot: (family: string, index: number) => void;
   onUpdateSlotVersion: (family: string, index: number, versionId: string) => void;
   onSaveSlots: (family: string) => void;
@@ -69,6 +70,7 @@ export function RegistryEnemyFamiliesSection({
   busyKey,
   deleteBusyKey,
   onAddSlot,
+  onAddEmptySlot,
   onRemoveSlot,
   onUpdateSlotVersion,
   onSaveSlots,
@@ -91,7 +93,8 @@ export function RegistryEnemyFamiliesSection({
       <div style={noteStyle}>
         <strong>Add slot</strong> first scans <code style={{ color: "#ce9178" }}>animated_exports/</code> for{" "}
         <code style={{ color: "#ce9178" }}>{`{family}_animated_*.glb`}</code> files on disk and registers any missing
-        variants in the manifest (then you pick which version to append to the slot list).
+        variants in the manifest (then you pick which version to append to the slot list).{" "}
+        <strong>Add empty slot</strong> appends an unassigned row (pick a version later, then Save slots).
       </div>
 
       {families.map((family) => {
@@ -106,7 +109,7 @@ export function RegistryEnemyFamiliesSection({
           <div key={`enemy-family:${family}`} style={{ border: "1px solid #2d2d2d", borderRadius: 4, padding: 8, marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <strong style={{ fontSize: 13 }}>{family}</strong>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
                   type="button"
                   style={btnSecondary}
@@ -120,6 +123,16 @@ export function RegistryEnemyFamiliesSection({
                   onClick={() => onAddSlot(family)}
                 >
                   {preparing ? "Scanning…" : "Add slot"}
+                </button>
+                <button
+                  type="button"
+                  style={btnSecondary}
+                  disabled={busy}
+                  title="Append an unassigned slot (assign a version in the dropdown, then Save slots)"
+                  data-testid={`registry-add-empty-slot-${family}`}
+                  onClick={() => onAddEmptySlot(family)}
+                >
+                  Add empty slot
                 </button>
                 <button type="button" style={btnPrimary} disabled={busy} onClick={() => onSaveSlots(family)}>
                   Save slots
@@ -139,6 +152,7 @@ export function RegistryEnemyFamiliesSection({
                     value={versionId}
                     onChange={(e) => onUpdateSlotVersion(family, idx, e.target.value)}
                   >
+                    <option value="">— Unassigned —</option>
                     {validChoices.map((v) => (
                       <option key={`${family}:${v.id}`} value={v.id}>
                         {versionOptionLabel(v)}

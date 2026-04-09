@@ -28,7 +28,12 @@ import {
   IN_USE_DELETE_CONFIRM_COPY,
 } from "./registryPaneStrings";
 
-export { loadExistingCandidateKey, loadExistingCandidateLabel, toOpenExistingRequest } from "./registryLoadExisting";
+export {
+  filterLoadExistingCandidates,
+  loadExistingCandidateKey,
+  loadExistingCandidateLabel,
+  toOpenExistingRequest,
+} from "./registryLoadExisting";
 export {
   DRAFT_DELETE_CONFIRM_COPY,
   ENEMY_EMPTY_SLOTS_COPY,
@@ -256,6 +261,13 @@ export function ModelRegistryPane() {
     }
   }
 
+  function addEmptyEnemySlot(family: string) {
+    setSlotVersionIdsByFamily((prev) => {
+      const cur = [...(prev[family] ?? [])];
+      return { ...prev, [family]: [...cur, ""] };
+    });
+  }
+
   function removeEnemySlot(family: string, index: number) {
     setSlotVersionIdsByFamily((prev) => {
       const current = prev[family] ?? [];
@@ -370,6 +382,7 @@ export function ModelRegistryPane() {
         busyKey={busyKey}
         deleteBusyKey={deleteBusyKey}
         onAddSlot={requestAddSlotModal}
+        onAddEmptySlot={addEmptyEnemySlot}
         onRemoveSlot={removeEnemySlot}
         onUpdateSlotVersion={updateEnemySlotVersion}
         onSaveSlots={saveEnemySlots}

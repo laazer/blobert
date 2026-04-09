@@ -234,6 +234,7 @@ export type LoadExistingCandidate =
     }
   | {
       kind: "player";
+      version_id: string;
       path: string;
     };
 
@@ -248,12 +249,16 @@ export type OpenExistingRegistryModelRequest =
       version_id: string;
     }
   | {
+      kind: "player";
+      version_id: string;
+    }
+  | {
       kind: "path";
       path: string;
     };
 
 export type OpenExistingRegistryModelResponse = {
-  kind: "enemy" | "path";
+  kind: "enemy" | "player" | "path";
   path: string;
   family?: string;
   version_id?: string;

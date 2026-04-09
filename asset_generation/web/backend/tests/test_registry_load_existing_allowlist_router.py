@@ -159,6 +159,11 @@ class TestLoadExistingCandidates:
         assert ("alpha", "alpha_filtered_00") not in ids
         assert ("beta", "beta_live_00") in ids
 
+        player_rows = [row for row in rows if row.get("kind") == "player"]
+        assert len(player_rows) == 1
+        assert player_rows[0]["version_id"] == "blobert_blue_00"
+        assert player_rows[0]["path"] == "player_exports/blobert_blue_00.glb"
+
     @pytest.mark.asyncio
     async def test_candidates_exclude_invalid_or_out_of_allowlist_paths(
         self,
@@ -225,6 +230,21 @@ class TestLoadExistingOpenEndpoint:
         assert body["kind"] == "enemy"
         assert body["family"] == "alpha"
         assert body["version_id"] == "alpha_live_00"
+
+    @pytest.mark.asyncio
+    async def test_open_valid_player_identity_returns_resolved_canonical_path(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        res = await client.post(
+            "/api/registry/model/load_existing/open",
+            json={"kind": "player", "version_id": "blobert_blue_00"},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["path"] == "player_exports/blobert_blue_00.glb"
+        assert body["kind"] == "player"
+        assert body["version_id"] == "blobert_blue_00"
 
     @pytest.mark.asyncio
     async def test_open_rejects_traversal_like_payloads_with_400_or_403(

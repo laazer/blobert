@@ -72,6 +72,30 @@ describe("ModelRegistryPane Add slot", () => {
     });
 
     expect(screen.getByTestId("registry-add-slot-spider")).toBeDisabled();
+    expect(screen.getByTestId("registry-add-empty-slot-spider")).not.toBeDisabled();
+  });
+
+  it("Add empty slot appends an unassigned row while Add slot stays disabled", async () => {
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryWithSpiderVersions([...baseVersions]));
+    vi.mocked(client.fetchEnemyFamilySlots).mockImplementation(async (family: string) => ({
+      family,
+      version_ids: ["spider_animated_00", "spider_animated_01"],
+      resolved_paths: [],
+    }));
+
+    render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("registry-add-empty-slot-spider")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("registry-add-empty-slot-spider"));
+
+    await waitFor(() => {
+      const selects = screen.getAllByRole("combobox");
+      expect(selects).toHaveLength(3);
+      expect(selects[2]).toHaveValue("");
+    });
   });
 
   it("enables Add slot when an eligible version is not yet listed", async () => {

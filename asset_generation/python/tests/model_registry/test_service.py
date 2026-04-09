@@ -7,16 +7,23 @@ from unittest import mock
 import pytest
 
 from src.model_registry.service import (
+    _MAX_VERSION_NAME_LEN,
+    _derive_player_active_visual_from_block,
+    _legacy_pav_to_player_block,
     default_migrated_manifest,
     get_enemy_slots,
+    get_player_slots,
     load_effective_manifest,
     patch_enemy_version,
     patch_player_active_visual,
+    patch_player_version,
     put_enemy_slots,
+    put_player_slots,
     registry_path,
     save_manifest_atomic,
     spawn_eligible_paths,
     sync_discovered_animated_glb_versions,
+    sync_discovered_player_glb_versions,
     validate_manifest,
 )
 
@@ -24,6 +31,7 @@ from src.model_registry.service import (
 def test_default_migrated_has_all_animated_slugs():
     m = default_migrated_manifest()
     assert m["schema_version"] == 1
+    assert m["player"] == {"versions": [], "slots": []}
     assert m["player_active_visual"] is None
     for slug in ("spider", "spitter", "claw_crawler"):
         assert slug in m["enemies"]
@@ -213,7 +221,14 @@ def test_validate_player_branch_preserves_valid():
     m = default_migrated_manifest()
     m["player_active_visual"] = {"path": "player_exports/p_00.glb", "draft": True}
     out = validate_manifest(m)
-    assert out["player_active_visual"] == {"path": "player_exports/p_00.glb", "draft": True}
+    assert out["player"]["versions"][0] == {
+        "id": "p_00",
+        "path": "player_exports/p_00.glb",
+        "draft": True,
+        "in_use": False,
+    }
+    assert out["player"].get("slots") == []
+    assert out["player_active_visual"] is None
 
 
 def test_load_effective_invalid_json(tmp_path: Path):
@@ -427,6 +442,22 @@ def test_put_enemy_slots_rejects_duplicate_ids(tmp_path: Path):
         put_enemy_slots(tmp_path, "imp", ["imp_animated_00", "imp_animated_00"])
 
 
+def test_put_enemy_slots_allows_empty_placeholders_and_multiple_blanks(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    out = put_enemy_slots(tmp_path, "imp", ["", "imp_animated_00", ""])
+    assert out["version_ids"] == ["", "imp_animated_00", ""]
+    assert out["resolved_paths"] == ["animated_exports/imp_animated_00.glb"]
+    reloaded = load_effective_manifest(tmp_path)
+    assert reloaded["enemies"]["imp"]["slots"] == ["", "imp_animated_00", ""]
+
+
+def test_validate_manifest_allows_duplicate_empty_slot_entries():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["slots"] = ["", ""]
+    out = validate_manifest(m)
+    assert out["enemies"]["imp"]["slots"] == ["", ""]
+
+
 def test_put_enemy_slots_rejects_unknown_version(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
     with pytest.raises(KeyError, match="unknown version"):
@@ -560,6 +591,8 @@ def test_patch_player_rejects_malformed_allowlisted_non_glb_variants(
         patch_player_active_visual(tmp_path, path=invalid_path)
 
     reloaded = load_effective_manifest(tmp_path)
+    assert reloaded["player"]["versions"][0]["path"] == "player_exports/original_00.glb"
+    assert reloaded["player"]["slots"] == ["original_00"]
     assert reloaded["player_active_visual"] == {
         "path": "player_exports/original_00.glb",
         "draft": False,
@@ -590,3 +623,164 @@ def test_spawn_eligible_skips_non_string_path():
         },
     }
     assert spawn_eligible_paths(manifest, "imp") == []
+
+
+def test_player_active_visual_derived_skips_leading_empty_slots():
+    m = default_migrated_manifest()
+    m["player"] = {
+        "versions": [
+            {"id": "p0", "path": "player_exports/p0.glb", "draft": False, "in_use": True},
+        ],
+        "slots": ["", "p0"],
+    }
+    out = validate_manifest(m)
+    assert out["player_active_visual"] == {"path": "player_exports/p0.glb", "draft": False}
+
+
+def test_player_active_visual_none_when_only_placeholder_slots():
+    m = default_migrated_manifest()
+    m["player"] = {
+        "versions": [
+            {"id": "p0", "path": "player_exports/p0.glb", "draft": False, "in_use": True},
+        ],
+        "slots": ["", ""],
+    }
+    out = validate_manifest(m)
+    assert out["player_active_visual"] is None
+
+
+def test_derive_player_active_visual_skips_non_string_and_missing_rows():
+    block = {
+        "versions": [{"id": "a", "path": "player_exports/a.glb", "draft": False}],
+        "slots": ["", "not_a_version_id", "a"],
+    }
+    assert _derive_player_active_visual_from_block(block) == {
+        "path": "player_exports/a.glb",
+        "draft": False,
+    }
+
+
+def test_validate_player_slots_must_be_array():
+    m = default_migrated_manifest()
+    m["player"] = {"versions": [], "slots": "bad"}
+    with pytest.raises(ValueError, match=r"player.*slots must be an array"):
+        validate_manifest(m)
+
+
+def test_validate_enemy_slot_entry_must_be_string():
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["slots"] = [123]
+    with pytest.raises(ValueError, match=r"enemies\[.imp.\].slots\[0\] invalid"):
+        validate_manifest(m)
+
+
+def test_legacy_pav_empty_stem_uses_default_id():
+    block = _legacy_pav_to_player_block({"path": "player_exports/.glb", "draft": False})
+    assert block["versions"][0]["id"] == "player_registry_00"
+
+
+def test_discovered_animated_skips_non_glb_and_wrong_prefix(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    export_dir = tmp_path / "animated_exports"
+    export_dir.mkdir(parents=True)
+    (export_dir / "notes.txt").write_text("x", encoding="utf-8")
+    (export_dir / "other_family_animated_00.glb").write_bytes(b"x")
+    before = load_effective_manifest(tmp_path)
+    after = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    assert after == before
+
+
+def test_sync_discovered_player_glb_versions_adds_and_is_idempotent(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    pe = tmp_path / "player_exports"
+    pe.mkdir(parents=True)
+    (pe / "disk_only_00.glb").write_bytes(b"x")
+    out1 = sync_discovered_player_glb_versions(tmp_path)
+    ids1 = {v["id"] for v in out1["player"]["versions"]}
+    assert "disk_only_00" in ids1
+    out2 = sync_discovered_player_glb_versions(tmp_path)
+    assert out2 == out1
+
+
+def test_patch_player_version_name_and_errors(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["player"] = {
+        "versions": [
+            {"id": "pv0", "path": "player_exports/pv0.glb", "draft": False, "in_use": True},
+        ],
+        "slots": ["pv0"],
+    }
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    (tmp_path / "player_exports").mkdir(parents=True)
+    (tmp_path / "player_exports" / "pv0.glb").write_bytes(b"x")
+
+    patch_player_version(tmp_path, "pv0", {"name": "  "})
+    r0 = load_effective_manifest(tmp_path)["player"]["versions"][0]
+    assert "name" not in r0
+
+    patch_player_version(tmp_path, "pv0", {"name": "Display"})
+    assert load_effective_manifest(tmp_path)["player"]["versions"][0]["name"] == "Display"
+
+    patch_player_version(tmp_path, "pv0", {"name": None})
+    assert "name" not in load_effective_manifest(tmp_path)["player"]["versions"][0]
+
+    with pytest.raises(ValueError, match="unsupported patch keys"):
+        patch_player_version(tmp_path, "pv0", {"path": "nope"})
+
+    with pytest.raises(KeyError, match="unknown player version"):
+        patch_player_version(tmp_path, "missing", {"draft": False})
+
+    with pytest.raises(ValueError, match="patch draft must be boolean"):
+        patch_player_version(tmp_path, "pv0", {"draft": "no"})
+
+    with pytest.raises(ValueError, match="patch name must be string or null"):
+        patch_player_version(tmp_path, "pv0", {"name": 1})
+
+    long_name = "x" * (_MAX_VERSION_NAME_LEN + 1)
+    with pytest.raises(ValueError, match="name exceeds max length"):
+        patch_player_version(tmp_path, "pv0", {"name": long_name})
+
+
+def test_get_put_player_slots_with_placeholders(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["player"] = {
+        "versions": [
+            {"id": "pa", "path": "player_exports/pa.glb", "draft": False, "in_use": True},
+            {"id": "pb", "path": "player_exports/pb.glb", "draft": False, "in_use": True},
+        ],
+        "slots": ["pa"],
+    }
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    pe = tmp_path / "player_exports"
+    pe.mkdir(parents=True)
+    (pe / "pa.glb").write_bytes(b"x")
+    (pe / "pb.glb").write_bytes(b"x")
+
+    g = get_player_slots(tmp_path)
+    assert g["family"] == "player"
+    assert g["version_ids"] == ["pa"]
+    assert g["resolved_paths"] == ["player_exports/pa.glb"]
+
+    out = put_player_slots(tmp_path, ["pa", "", "pb"])
+    assert out["version_ids"] == ["pa", "", "pb"]
+    assert out["resolved_paths"] == ["player_exports/pa.glb", "player_exports/pb.glb"]
+
+    with pytest.raises(ValueError, match="duplicate"):
+        put_player_slots(tmp_path, ["pa", "pa"])
+
+    with pytest.raises(KeyError, match="unknown player version"):
+        put_player_slots(tmp_path, ["nope"])
+
+    m2 = load_effective_manifest(tmp_path)
+    m2["player"]["versions"].append(
+        {
+            "id": "pd",
+            "path": "player_exports/pd.glb",
+            "draft": True,
+            "in_use": False,
+        },
+    )
+    save_manifest_atomic(tmp_path, validate_manifest(m2))
+    (pe / "pd.glb").write_bytes(b"x")
+    with pytest.raises(ValueError, match="draft and cannot be slotted"):
+        put_player_slots(tmp_path, ["pd"])
