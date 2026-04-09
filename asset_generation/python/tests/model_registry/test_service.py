@@ -16,6 +16,7 @@ from src.model_registry.service import (
     registry_path,
     save_manifest_atomic,
     spawn_eligible_paths,
+    sync_discovered_animated_glb_versions,
     validate_manifest,
 )
 
@@ -447,6 +448,36 @@ def test_put_enemy_slots_rejects_not_in_use_version(tmp_path: Path):
     save_manifest_atomic(tmp_path, validate_manifest(m))
     with pytest.raises(ValueError, match="not in_use and cannot be slotted"):
         put_enemy_slots(tmp_path, "imp", ["imp_animated_00"])
+
+
+def test_sync_discovered_animated_glb_versions_adds_on_disk_stems(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    export_dir = tmp_path / "animated_exports"
+    export_dir.mkdir(parents=True)
+    (export_dir / "imp_animated_01.glb").write_bytes(b"x")
+    out = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    ids = [row["id"] for row in out["enemies"]["imp"]["versions"]]
+    assert "imp_animated_01" in ids
+    row = next(r for r in out["enemies"]["imp"]["versions"] if r["id"] == "imp_animated_01")
+    assert row == {
+        "id": "imp_animated_01",
+        "path": "animated_exports/imp_animated_01.glb",
+        "draft": False,
+        "in_use": False,
+    }
+
+
+def test_sync_discovered_animated_glb_versions_idempotent(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    out1 = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    out2 = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    assert out1 == out2
+
+
+def test_sync_discovered_animated_glb_versions_unknown_family(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    with pytest.raises(KeyError, match="unknown family"):
+        sync_discovered_animated_glb_versions(tmp_path, "not_a_family_slug")
 
 
 @pytest.mark.parametrize(

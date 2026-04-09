@@ -45,6 +45,8 @@ export type RegistryEnemyFamiliesSectionProps = {
   slotVersionIdsByFamily: Record<string, string[]>;
   /** True when every slottable version is already listed (or none exist). */
   familyAddSlotDisabled: Record<string, boolean>;
+  /** Family currently running POST sync_animated_exports before the add-slot modal opens. */
+  addSlotPreparingFamily: string | null;
   slotSaveBusyFamily: string | null;
   busyKey: string | null;
   deleteBusyKey: string | null;
@@ -62,6 +64,7 @@ export function RegistryEnemyFamiliesSection({
   enemies,
   slotVersionIdsByFamily,
   familyAddSlotDisabled,
+  addSlotPreparingFamily,
   slotSaveBusyFamily,
   busyKey,
   deleteBusyKey,
@@ -85,6 +88,11 @@ export function RegistryEnemyFamiliesSection({
         <strong>Draft</strong> exports stay off the default spawn pool until promoted. <strong>In pool</strong> is off
         while draft is on.
       </div>
+      <div style={noteStyle}>
+        <strong>Add slot</strong> first scans <code style={{ color: "#ce9178" }}>animated_exports/</code> for{" "}
+        <code style={{ color: "#ce9178" }}>{`{family}_animated_*.glb`}</code> files on disk and registers any missing
+        variants in the manifest (then you pick which version to append to the slot list).
+      </div>
 
       {families.map((family) => {
         const versions = enemies[family].versions;
@@ -92,6 +100,7 @@ export function RegistryEnemyFamiliesSection({
         const slotRows = slotVersionIdsByFamily[family] ?? [];
         const busy = slotSaveBusyFamily === family;
         const addDisabled = familyAddSlotDisabled[family] ?? true;
+        const preparing = addSlotPreparingFamily === family;
 
         return (
           <div key={`enemy-family:${family}`} style={{ border: "1px solid #2d2d2d", borderRadius: 4, padding: 8, marginBottom: 12 }}>
@@ -101,11 +110,16 @@ export function RegistryEnemyFamiliesSection({
                 <button
                   type="button"
                   style={btnSecondary}
-                  disabled={busy || addDisabled}
+                  disabled={busy || addDisabled || preparing}
+                  title={
+                    preparing
+                      ? "Scanning animated_exports for GLB files not yet in the registry…"
+                      : undefined
+                  }
                   data-testid={`registry-add-slot-${family}`}
                   onClick={() => onAddSlot(family)}
                 >
-                  Add slot
+                  {preparing ? "Scanning…" : "Add slot"}
                 </button>
                 <button type="button" style={btnPrimary} disabled={busy} onClick={() => onSaveSlots(family)}>
                   Save slots

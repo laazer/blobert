@@ -44,6 +44,7 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchEnemyFamilySlots: vi.fn(),
     fetchAssets: vi.fn(),
     patchRegistryPlayerActiveVisual: vi.fn(),
+    postSyncDiscoveredAnimatedGlbVersions: vi.fn(),
   };
 });
 
@@ -62,6 +63,9 @@ describe("ModelRegistryPane player active model modal", () => {
       resolved_paths: [],
     }));
     vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryFixture);
+    vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockImplementation(() =>
+      vi.mocked(client.fetchModelRegistry)(),
+    );
     vi.mocked(client.fetchAssets).mockResolvedValue(assetRows);
     vi.mocked(client.patchRegistryPlayerActiveVisual).mockResolvedValue({
       ...registryFixture,

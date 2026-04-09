@@ -349,6 +349,69 @@ def get_enemy_slots(
     }
 
 
+def _discovered_animated_export_rows(
+    python_root: Path,
+    family: str,
+    existing_ids: set[str],
+    existing_paths: set[str],
+) -> list[dict[str, Any]]:
+    """
+    Build new version dicts for ``animated_exports`` GLBs whose stem starts with
+    ``{family}_animated_`` (procedural or prefab stems), exist on disk, and are not
+    already represented by id or path in the manifest.
+    """
+    out: list[dict[str, Any]] = []
+    prefix = f"{family}_animated_"
+    export_dir = python_root / "animated_exports"
+    if not export_dir.is_dir():
+        return out
+    for path in sorted(export_dir.iterdir()):
+        if not path.is_file() or path.suffix.lower() != ".glb":
+            continue
+        stem = path.stem
+        if not stem.startswith(prefix):
+            continue
+        rel = f"animated_exports/{path.name}"
+        if not _path_is_allowlisted(rel):
+            continue
+        if stem in existing_ids or rel in existing_paths:
+            continue
+        out.append(
+            {
+                "id": stem,
+                "path": rel,
+                "draft": False,
+                "in_use": False,
+            },
+        )
+    return out
+
+
+def sync_discovered_animated_glb_versions(python_root: Path, family: str) -> dict[str, Any]:
+    """
+    Persist new ``versions`` rows for on-disk animated GLBs under ``animated_exports/`` that
+    match this family's export stem prefix but are absent from the manifest.
+
+    New rows default to ``in_use: false`` so spawn pools are unchanged until the editor
+    promotes them (e.g. via Add slot).
+    """
+    data = load_effective_manifest(python_root)
+    fam = data["enemies"].get(family)
+    if fam is None:
+        raise KeyError(f"unknown family: {family}")
+    versions = fam["versions"]
+    existing_ids = {str(row["id"]) for row in versions if isinstance(row.get("id"), str)}
+    existing_paths = {str(row["path"]) for row in versions if isinstance(row.get("path"), str)}
+    new_rows = _discovered_animated_export_rows(python_root, family, existing_ids, existing_paths)
+    if not new_rows:
+        return data
+    new_fam = {**fam, "versions": list(versions) + new_rows}
+    new_data = {**data, "enemies": {**data["enemies"], family: new_fam}}
+    validated = validate_manifest(new_data)
+    save_manifest_atomic(python_root, validated)
+    return validated
+
+
 def put_enemy_slots(
     python_root: Path,
     family: str,

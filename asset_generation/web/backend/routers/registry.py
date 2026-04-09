@@ -332,6 +332,21 @@ async def get_enemy_slots_endpoint(family: str) -> JSONResponse:
     return JSONResponse(payload)
 
 
+@router.post("/model/enemies/{family}/sync_animated_exports")
+async def post_sync_animated_exports_endpoint(family: str) -> JSONResponse:
+    """Register on-disk ``animated_exports/{family}_animated_*.glb`` files missing from the manifest."""
+    try:
+        reg = _load_service()
+        updated = reg.sync_discovered_animated_glb_versions(settings.python_root, family)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(updated)
+
+
 @router.put("/model/enemies/{family}/slots")
 async def put_enemy_slots_endpoint(
     family: str,

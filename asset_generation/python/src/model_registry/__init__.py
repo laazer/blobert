@@ -7,6 +7,7 @@ from .service import (
     patch_player_active_visual,
     save_manifest_atomic,
     spawn_eligible_paths,
+    sync_discovered_animated_glb_versions,
     validate_manifest,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "patch_player_active_visual",
     "save_manifest_atomic",
     "spawn_eligible_paths",
+    "sync_discovered_animated_glb_versions",
     "validate_manifest",
 ]

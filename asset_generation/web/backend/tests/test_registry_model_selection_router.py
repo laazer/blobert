@@ -453,3 +453,27 @@ class TestPlayerActiveVisualNullInit:
         assert res.status_code == 400
         after = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
         assert after == before
+
+
+class TestSyncAnimatedExports:
+    @pytest.mark.asyncio
+    async def test_post_adds_version_row_for_new_glb_on_disk(
+        self,
+        client: AsyncClient,
+        python_root: pathlib.Path,
+    ) -> None:
+        exports = python_root / "animated_exports"
+        exports.mkdir(parents=True, exist_ok=True)
+        (exports / "slug_animated_01.glb").write_bytes(b"\x00" * 4)
+        res = await client.post("/api/registry/model/enemies/slug/sync_animated_exports")
+        assert res.status_code == 200
+        body = res.json()
+        ids = [v["id"] for v in body["enemies"]["slug"]["versions"]]
+        assert ids == ["slug_animated_00", "slug_animated_01"]
+        disk = json.loads((python_root / "model_registry.json").read_text(encoding="utf-8"))
+        assert len(disk["enemies"]["slug"]["versions"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_post_unknown_family_404(self, client: AsyncClient) -> None:
+        res = await client.post("/api/registry/model/enemies/nonexistent_enemy_xyz/sync_animated_exports")
+        assert res.status_code == 404

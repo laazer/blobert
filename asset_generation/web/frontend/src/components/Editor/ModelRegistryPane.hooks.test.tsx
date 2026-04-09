@@ -27,6 +27,7 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchModelRegistry: vi.fn(),
     fetchLoadExistingCandidates: vi.fn(),
     fetchEnemyFamilySlots: vi.fn(),
+    postSyncDiscoveredAnimatedGlbVersions: vi.fn(),
   };
 });
 
@@ -40,6 +41,9 @@ describe("ModelRegistryPane hooks", () => {
       version_ids: [],
       resolved_paths: [],
     }));
+    vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockImplementation(() =>
+      vi.mocked(client.fetchModelRegistry)(),
+    );
   });
 
   it("uses the same hook sequence after loading finishes (loading → loaded)", async () => {

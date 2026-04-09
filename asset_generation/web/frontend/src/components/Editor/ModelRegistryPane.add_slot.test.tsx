@@ -37,6 +37,7 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchEnemyFamilySlots: vi.fn(),
     putEnemyFamilySlots: vi.fn(),
     patchRegistryEnemyVersion: vi.fn(),
+    postSyncDiscoveredAnimatedGlbVersions: vi.fn(),
   };
 });
 
@@ -50,6 +51,9 @@ describe("ModelRegistryPane Add slot", () => {
   beforeEach(() => {
     vi.mocked(client.fetchLoadExistingCandidates).mockResolvedValue({ candidates: [] });
     vi.mocked(client.patchRegistryEnemyVersion).mockReset();
+    vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockImplementation(() =>
+      vi.mocked(client.fetchModelRegistry)(),
+    );
     useAppStore.setState({ activeGlbUrl: null });
   });
 
@@ -148,6 +152,30 @@ describe("ModelRegistryPane Add slot", () => {
       expect(vi.mocked(client.patchRegistryEnemyVersion)).toHaveBeenCalledWith("spider", "spider_animated_01", {
         in_use: true,
       });
+    });
+  });
+
+  it("calls sync_animated_exports before opening the add-slot modal", async () => {
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryWithSpiderVersions([...baseVersions]));
+    vi.mocked(client.fetchEnemyFamilySlots).mockImplementation(async (family: string) => ({
+      family,
+      version_ids: ["spider_animated_00"],
+      resolved_paths: [],
+    }));
+
+    render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("registry-add-slot-spider")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("registry-add-slot-spider"));
+
+    await waitFor(() => {
+      expect(vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions)).toHaveBeenCalledWith("spider");
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("add-enemy-slot-modal")).toBeInTheDocument();
     });
   });
 });

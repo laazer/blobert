@@ -162,6 +162,16 @@ export async function fetchEnemyFamilySlots(family: string): Promise<EnemyFamily
   return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
+/** Register ``animated_exports/{family}_animated_*.glb`` on disk that are missing from the manifest. */
+export async function postSyncDiscoveredAnimatedGlbVersions(family: string): Promise<ModelRegistryPayload> {
+  const encFamily = encodeURIComponent(family);
+  const res = await fetch(`${BASE}/registry/model/enemies/${encFamily}/sync_animated_exports`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
 export async function putEnemyFamilySlots(
   family: string,
   versionIds: string[],

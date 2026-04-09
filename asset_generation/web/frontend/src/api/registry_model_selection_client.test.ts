@@ -6,6 +6,7 @@ import {
   fetchEnemyFamilySlots,
   openExistingRegistryModel,
   patchRegistryPlayerActiveVisual,
+  postSyncDiscoveredAnimatedGlbVersions,
   putEnemyFamilySlots,
 } from "./client";
 
@@ -56,6 +57,44 @@ describe("registry model-selection client contracts", () => {
         draft: true,
       }),
     ).rejects.toThrow();
+  });
+
+  it("POST sync_animated_exports registers on-disk GLBs and returns full manifest", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          schema_version: 1,
+          enemies: {
+            slug: {
+              versions: [
+                {
+                  id: "slug_animated_00",
+                  path: "animated_exports/slug_animated_00.glb",
+                  draft: false,
+                  in_use: true,
+                },
+                {
+                  id: "slug_animated_01",
+                  path: "animated_exports/slug_animated_01.glb",
+                  draft: false,
+                  in_use: false,
+                },
+              ],
+            },
+          },
+          player_active_visual: null,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await postSyncDiscoveredAnimatedGlbVersions("slug");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/enemies/slug/sync_animated_exports", {
+      method: "POST",
+    });
+    expect(out.enemies.slug.versions).toHaveLength(2);
+    expect(out.enemies.slug.versions[1].id).toBe("slug_animated_01");
   });
 
   it("PUT enemy slots sends full replacement version_ids and returns server payload", async () => {

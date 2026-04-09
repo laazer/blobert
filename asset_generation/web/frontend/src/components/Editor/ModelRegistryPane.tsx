@@ -7,6 +7,7 @@ import {
   openExistingRegistryModel,
   patchRegistryEnemyVersion,
   patchRegistryPlayerActiveVisual,
+  postSyncDiscoveredAnimatedGlbVersions,
   putEnemyFamilySlots,
   type LoadExistingCandidate,
   type DeleteEnemyVersionRequest,
@@ -91,6 +92,7 @@ export function ModelRegistryPane() {
   const [playerPickOpen, setPlayerPickOpen] = useState(false);
   const [addSlotFamily, setAddSlotFamily] = useState<string | null>(null);
   const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
+  const [addSlotPreparingFamily, setAddSlotPreparingFamily] = useState<string | null>(null);
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
@@ -212,6 +214,21 @@ export function ModelRegistryPane() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusyKey(null);
+    }
+  }
+
+  async function requestAddSlotModal(family: string) {
+    if (addSlotPreparingFamily) return;
+    setAddSlotPreparingFamily(family);
+    setError(null);
+    try {
+      const updated = await postSyncDiscoveredAnimatedGlbVersions(family);
+      await syncFromRegistry(updated);
+      setAddSlotFamily(family);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAddSlotPreparingFamily(null);
     }
   }
 
@@ -348,10 +365,11 @@ export function ModelRegistryPane() {
         enemies={data.enemies}
         slotVersionIdsByFamily={slotVersionIdsByFamily}
         familyAddSlotDisabled={familyAddSlotDisabled}
+        addSlotPreparingFamily={addSlotPreparingFamily}
         slotSaveBusyFamily={slotSaveBusyFamily}
         busyKey={busyKey}
         deleteBusyKey={deleteBusyKey}
-        onAddSlot={(family) => setAddSlotFamily(family)}
+        onAddSlot={requestAddSlotModal}
         onRemoveSlot={removeEnemySlot}
         onUpdateSlotVersion={updateEnemySlotVersion}
         onSaveSlots={saveEnemySlots}
