@@ -60,11 +60,25 @@ _SPIKE_COUNT_MIN = 1
 _SPIKE_COUNT_MAX = 24
 _BULB_COUNT_MIN = 1
 _BULB_COUNT_MAX = 16
+_SPIKE_SIZE_MIN = 0.25
+_SPIKE_SIZE_MAX = 3.0
+_BULB_SIZE_MIN = 0.25
+_BULB_SIZE_MAX = 3.0
 _EXTRA_ZONE_FLAT_KEY = re.compile(
-    r"^extra_zone_(body|head|limbs|joints|extra)_(kind|spike_shape|spike_count|bulb_count|finish|hex)$"
+    r"^extra_zone_(body|head|limbs|joints|extra)_"
+    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|finish|hex)$"
 )
 _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
-    {"kind", "spike_shape", "spike_count", "bulb_count", "finish", "hex"}
+    {
+        "kind",
+        "spike_shape",
+        "spike_count",
+        "spike_size",
+        "bulb_count",
+        "bulb_size",
+        "finish",
+        "hex",
+    }
 )
 
 
@@ -105,7 +119,9 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "kind": "none",
         "spike_shape": "cone",
         "spike_count": 8,
+        "spike_size": 1.0,
         "bulb_count": 4,
+        "bulb_size": 1.0,
         "finish": "default",
         "hex": "",
     }
@@ -263,6 +279,11 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 out[zone][field] = int(v)
             except (TypeError, ValueError):
                 pass
+        elif field in ("spike_size", "bulb_size"):
+            try:
+                out[zone][field] = float(v)
+            except (TypeError, ValueError):
+                pass
         else:
             out[zone][field] = v
     return out
@@ -291,10 +312,20 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
             sc = 8
         entry["spike_count"] = max(_SPIKE_COUNT_MIN, min(_SPIKE_COUNT_MAX, sc))
         try:
+            ss = float(raw.get("spike_size", entry["spike_size"]))
+        except (TypeError, ValueError):
+            ss = 1.0
+        entry["spike_size"] = max(_SPIKE_SIZE_MIN, min(_SPIKE_SIZE_MAX, ss))
+        try:
             bc = int(raw.get("bulb_count", entry["bulb_count"]))
         except (TypeError, ValueError):
             bc = 4
         entry["bulb_count"] = max(_BULB_COUNT_MIN, min(_BULB_COUNT_MAX, bc))
+        try:
+            bs = float(raw.get("bulb_size", entry["bulb_size"]))
+        except (TypeError, ValueError):
+            bs = 1.0
+        entry["bulb_size"] = max(_BULB_SIZE_MIN, min(_BULB_SIZE_MAX, bs))
         fin = str(raw.get("finish", "default"))
         if fin not in _VALID_FINISHES:
             fin = "default"
@@ -338,12 +369,34 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
         )
         defs.append(
             {
+                "key": f"extra_zone_{zone}_spike_size",
+                "label": f"{zlabel} spike / horn size",
+                "type": "float",
+                "min": _SPIKE_SIZE_MIN,
+                "max": _SPIKE_SIZE_MAX,
+                "step": 0.05,
+                "default": 1.0,
+            }
+        )
+        defs.append(
+            {
                 "key": f"extra_zone_{zone}_bulb_count",
                 "label": f"{zlabel} bulb count",
                 "type": "int",
                 "min": _BULB_COUNT_MIN,
                 "max": _BULB_COUNT_MAX,
                 "default": 4,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_bulb_size",
+                "label": f"{zlabel} bulb size",
+                "type": "float",
+                "min": _BULB_SIZE_MIN,
+                "max": _BULB_SIZE_MAX,
+                "step": 0.05,
+                "default": 1.0,
             }
         )
         defs.append(

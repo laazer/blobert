@@ -290,6 +290,8 @@ def test_slug_defaults_zone_geometry_extras() -> None:
     assert set(z.keys()) == {"body", "head", "extra"}
     assert z["body"]["kind"] == "none"
     assert z["body"]["spike_count"] == 8
+    assert z["body"]["spike_size"] == 1.0
+    assert z["body"]["bulb_size"] == 1.0
 
 
 def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
@@ -305,6 +307,7 @@ def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
     assert b["kind"] == "spikes"
     assert b["spike_shape"] == "pyramid"
     assert b["spike_count"] == 12
+    assert b["spike_size"] == 1.0
 
 
 def test_zone_geometry_extras_flat_keys_merge() -> None:
@@ -313,12 +316,14 @@ def test_zone_geometry_extras_flat_keys_merge() -> None:
         {
             "extra_zone_body_kind": "bulbs",
             "extra_zone_body_bulb_count": 9,
+            "extra_zone_body_bulb_size": 2.0,
             "extra_zone_body_finish": "metallic",
         },
     )
     b = o["zone_geometry_extras"]["body"]
     assert b["kind"] == "bulbs"
     assert b["bulb_count"] == 9
+    assert b["bulb_size"] == 2.0
     assert b["finish"] == "metallic"
 
 
@@ -343,11 +348,25 @@ def test_spike_and_bulb_counts_clamped() -> None:
     assert o["zone_geometry_extras"]["extra"]["bulb_count"] == 1
 
 
+def test_spike_and_bulb_sizes_clamped() -> None:
+    o = options_for_enemy(
+        "slug",
+        {
+            "extra_zone_body_spike_size": 0.01,
+            "extra_zone_head_bulb_size": 99,
+        },
+    )
+    assert o["zone_geometry_extras"]["body"]["spike_size"] == 0.25
+    assert o["zone_geometry_extras"]["head"]["bulb_size"] == 3.0
+
+
 def test_api_slug_includes_zone_extra_control_keys() -> None:
     ctrl = animated_build_controls_for_api()
     keys = {c["key"] for c in ctrl["slug"]}
     assert "extra_zone_body_kind" in keys
     assert "extra_zone_extra_bulb_count" in keys
+    assert "extra_zone_body_spike_size" in keys
+    assert "extra_zone_body_bulb_size" in keys
 
 
 def test_unknown_kind_coerced_to_none() -> None:
@@ -414,6 +433,15 @@ def test_merge_zone_geometry_extras_flat_invalid_int_ignored() -> None:
     assert got["body"]["spike_count"] == 8
 
 
+def test_merge_zone_geometry_extras_flat_invalid_float_ignored() -> None:
+    got = abo._merge_zone_geometry_extras(
+        "slug",
+        {"extra_zone_body_spike_size": "nope"},
+        abo._default_zone_geometry_extras("slug"),
+    )
+    assert got["body"]["spike_size"] == 1.0
+
+
 def test_sanitize_zone_geometry_extras_invalid_shape_and_int_fields() -> None:
     got = abo._sanitize_zone_geometry_extras(
         "slug",
@@ -431,6 +459,21 @@ def test_sanitize_zone_geometry_extras_invalid_shape_and_int_fields() -> None:
     assert got["body"]["spike_count"] == 8
     assert got["body"]["bulb_count"] == 4
     assert got["body"]["finish"] == "default"
+
+
+def test_sanitize_zone_geometry_extras_float_sizes() -> None:
+    got = abo._sanitize_zone_geometry_extras(
+        "slug",
+        {
+            "body": {
+                "kind": "spikes",
+                "spike_size": "x",
+                "bulb_size": {},
+            }
+        },
+    )
+    assert got["body"]["spike_size"] == 1.0
+    assert got["body"]["bulb_size"] == 1.0
 
 
 def test_merge_flat_skips_zone_absent_from_slug() -> None:

@@ -43,6 +43,14 @@ def _ellipsoid_normal(cx: float, cy: float, cz: float, a: float, b: float, h: fl
     return Vector((nx / ln, ny / ln, nz / ln))
 
 
+def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: float = 0.25, hi: float = 3.0) -> float:
+    try:
+        s = float(spec.get(key, default))
+    except (TypeError, ValueError):
+        s = default
+    return max(lo, min(hi, s))
+
+
 def _orient_cone_outward(obj: bpy.types.Object, _base_center: tuple[float, float, float], outward: Vector) -> None:
     z_axis = Vector((0.0, 0.0, 1.0))
     ol = outward.length
@@ -108,6 +116,7 @@ def _append_slug_body_extras(
     )
     if kind == "spikes":
         n = max(1, int(spec.get("spike_count", 8)))
+        spike_sz = _zone_extra_scale(spec, "spike_size")
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         for i in range(n):
@@ -115,10 +124,10 @@ def _append_slug_body_extras(
             phi = math.pi * 0.5
             p = _ellipsoid_point(cz, a, b, h, theta, phi)
             nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
-            tip = Vector(p) + nrm * 0.12
+            tip = Vector(p) + nrm * (0.12 * spike_sz)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.06, 0.06, 0.12),
+                scale=(0.06 * spike_sz, 0.06 * spike_sz, 0.12 * spike_sz),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.4,
@@ -129,11 +138,12 @@ def _append_slug_body_extras(
             model.parts.append(cone)
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 4)))
+        bulb_sz = _zone_extra_scale(spec, "bulb_size")
         for _ in range(nb):
             t1 = model.rng.random() * 2.0 * math.pi
             t2 = model.rng.random() * math.pi
             p = _ellipsoid_point(cz, a * 0.92, b * 0.92, h * 0.92, t1, t2)
-            bulb = create_sphere(location=p, scale=(0.07, 0.07, 0.07))
+            bulb = create_sphere(location=p, scale=(0.07 * bulb_sz, 0.07 * bulb_sz, 0.07 * bulb_sz))
             apply_material_to_object(bulb, mat)
             model.parts.append(bulb)
 
@@ -158,6 +168,7 @@ def _append_slug_head_extras(
     hc = (hx, 0.0, hz)
 
     if kind == "horns":
+        spike_sz = _zone_extra_scale(spec, "spike_size")
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         for side in (-1, 1):
@@ -166,10 +177,10 @@ def _append_slug_head_extras(
             pz = hz + head_scale * 0.5
             p = (px, py, pz)
             nrm = _ellipsoid_normal(hx, 0.0, hz, head_scale, head_scale, head_scale, p)
-            tip = Vector(p) + nrm * 0.08
+            tip = Vector(p) + nrm * (0.08 * spike_sz)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.05, 0.05, 0.14),
+                scale=(0.05 * spike_sz, 0.05 * spike_sz, 0.14 * spike_sz),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.35,
@@ -179,6 +190,7 @@ def _append_slug_head_extras(
             apply_material_to_object(cone, mat)
             model.parts.append(cone)
     elif kind == "spikes":
+        spike_sz = _zone_extra_scale(spec, "spike_size")
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         count = max(1, int(spec.get("spike_count", 4)))
@@ -189,10 +201,10 @@ def _append_slug_head_extras(
             pz = hz + head_scale * 0.55
             p = (px, py, pz)
             nrm = _ellipsoid_normal(hx, 0.0, hz, head_scale, head_scale, head_scale, p)
-            tip = Vector(p) + nrm * 0.08
+            tip = Vector(p) + nrm * (0.08 * spike_sz)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.05, 0.05, 0.12),
+                scale=(0.05 * spike_sz, 0.05 * spike_sz, 0.12 * spike_sz),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.35,
@@ -203,12 +215,16 @@ def _append_slug_head_extras(
             model.parts.append(cone)
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 3)))
+        bulb_sz = _zone_extra_scale(spec, "bulb_size")
         for _ in range(nb):
             t1 = model.rng.random() * 2.0 * math.pi
             t2 = model.rng.random() * 0.6 * math.pi + 0.2 * math.pi
             px = hx + head_scale * 0.45 * math.sin(t2) * math.cos(t1)
             py = head_scale * 0.45 * math.sin(t2) * math.sin(t1)
             pz = hz + head_scale * 0.45 * math.cos(t2)
-            bulb = create_sphere(location=(px, py, pz), scale=(0.06, 0.06, 0.06))
+            bulb = create_sphere(
+                location=(px, py, pz),
+                scale=(0.06 * bulb_sz, 0.06 * bulb_sz, 0.06 * bulb_sz),
+            )
             apply_material_to_object(bulb, mat)
             model.parts.append(bulb)

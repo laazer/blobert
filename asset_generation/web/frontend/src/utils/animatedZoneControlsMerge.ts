@@ -76,12 +76,30 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       default: 8,
     });
     out.push({
+      key: `extra_zone_${zone}_spike_size`,
+      label: `${zlabel} spike / horn size`,
+      type: "float",
+      min: 0.25,
+      max: 3,
+      step: 0.05,
+      default: 1,
+    });
+    out.push({
       key: `extra_zone_${zone}_bulb_count`,
       label: `${zlabel} bulb count`,
       type: "int",
       min: 1,
       max: 16,
       default: 4,
+    });
+    out.push({
+      key: `extra_zone_${zone}_bulb_size`,
+      label: `${zlabel} bulb size`,
+      type: "float",
+      min: 0.25,
+      max: 3,
+      step: 0.05,
+      default: 1,
     });
     out.push({
       key: `extra_zone_${zone}_finish`,

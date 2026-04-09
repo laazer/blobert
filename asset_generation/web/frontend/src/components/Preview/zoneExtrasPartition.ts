@@ -5,7 +5,16 @@
 import { FEATURE_ZONES_BY_SLUG } from "../../utils/animatedZoneControlsMerge";
 import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 
-const SUFFIX_ORDER = ["kind", "spike_shape", "spike_count", "bulb_count", "finish", "hex"] as const;
+const SUFFIX_ORDER = [
+  "kind",
+  "spike_shape",
+  "spike_count",
+  "spike_size",
+  "bulb_count",
+  "bulb_size",
+  "finish",
+  "hex",
+] as const;
 
 /** ``extra_zone_<zone>_<suffix>`` */
 export const EXTRA_ZONE_PREFIX_RE = /^extra_zone_(body|head|limbs|joints|extra)_/;
