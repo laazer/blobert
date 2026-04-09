@@ -159,6 +159,45 @@ export async function putEnemyFamilySlots(
   return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
+export type DeleteEnemyVersionRequest = {
+  delete_files?: boolean;
+  confirm: boolean;
+  confirm_text?: string;
+  target_path?: string;
+};
+
+export async function deleteRegistryEnemyVersion(
+  family: string,
+  versionId: string,
+  body: DeleteEnemyVersionRequest,
+): Promise<ModelRegistryPayload> {
+  const encFamily = encodeURIComponent(family);
+  const encVid = encodeURIComponent(versionId);
+  const res = await fetch(`${BASE}/registry/model/enemies/${encFamily}/versions/${encVid}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
+export type DeletePlayerActiveVisualRequest = {
+  confirm: boolean;
+};
+
+export async function deleteRegistryPlayerActiveVisual(
+  body: DeletePlayerActiveVisualRequest,
+): Promise<ModelRegistryPayload> {
+  const res = await fetch(`${BASE}/registry/model/player_active_visual`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
 export type LoadExistingCandidate =
   | {
       kind: "enemy";

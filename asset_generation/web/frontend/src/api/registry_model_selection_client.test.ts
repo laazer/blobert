@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  deleteRegistryEnemyVersion,
+  deleteRegistryPlayerActiveVisual,
   fetchLoadExistingCandidates,
   fetchEnemyFamilySlots,
   openExistingRegistryModel,
@@ -212,5 +214,56 @@ describe("registry model-selection client contracts", () => {
         path: "/abs/path.glb",
       }),
     ).rejects.toThrow();
+  });
+
+  it("DELETE enemy version sends explicit confirmation payload", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          schema_version: 1,
+          enemies: {
+            spider: {
+              versions: [
+                { id: "spider_live_00", path: "animated_exports/spider_live_00.glb", draft: false, in_use: true },
+              ],
+            },
+          },
+          player_active_visual: { path: "player_exports/blobert_blue_00.glb", draft: false },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await deleteRegistryEnemyVersion("spider", "spider_draft_00", {
+      delete_files: true,
+      confirm: true,
+      confirm_text: "delete draft spider spider_draft_00",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/enemies/spider/versions/spider_draft_00", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        delete_files: true,
+        confirm: true,
+        confirm_text: "delete draft spider spider_draft_00",
+      }),
+    });
+  });
+
+  it("DELETE player active visual sends explicit confirmation payload", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ detail: "cannot delete sole active player visual" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(deleteRegistryPlayerActiveVisual({ confirm: true })).rejects.toThrow();
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/player_active_visual", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
   });
 });

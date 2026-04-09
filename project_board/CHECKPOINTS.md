@@ -762,3 +762,45 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 ### [M9-LEMA] — OUTCOME: COMPLETE
 Load/open existing models now uses allowlisted canonical roots only with traversal-safe backend normalization, registry-backed candidate filtering (draft/in-use), frontend constrained picker/open flow, adversarial path-injection tests, and `timeout 300 ci/scripts/run_tests.sh` exit `0`.
 Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`
+
+---
+
+## Run: 2026-04-09T12-50-55Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-DDIM / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Stage: PLANNING (bootstrap from malformed ticket)
+- Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+
+### [M9-DDIM] — OUTCOME: COMPLETE
+Delete draft + delete in-use model flows are implemented with explicit confirmation safeguards, invariant-protecting backend routes, deterministic frontend state refresh/error behavior, adversarial coverage, and `timeout 300 ci/scripts/run_tests.sh` exit `0`.
+Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+- Outcome: Conservative planning assumptions logged; dependency spec declared authoritative for delete safety rules.
+
+### M9-DDIM / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Stage: SPECIFICATION
+- Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+- Outcome: Planning decomposition completed for delete-draft and delete-in-use safeguards; ticket advanced to SPECIFICATION.
+
+### M9-DDIM / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+- Outcome: Produced dependency-aligned deterministic delete contract (draft delete, in-use guardrails, confirmation/error semantics, idempotency) and advanced ticket to TEST_DESIGN.
+
+### M9-DDIM / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+- Outcome: Added primary backend/frontend delete contract tests; strict assumptions logged for explicit DELETE endpoint shape and mandatory confirmation payload semantics.
+
+### M9-DDIM / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/07_editor_delete_draft_and_in_use_models.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
+- Outcome: Added adversarial delete tests for concurrent double-delete determinism, encoded traversal rejection, malformed in-use confirmation rejection, and slot-reference cleanup invariant checks.

@@ -191,6 +191,17 @@ class EnemySlotsPut(BaseModel):
     version_ids: list[str] = Field(default_factory=list, description="Ordered slot IDs for a family.")
 
 
+class EnemyVersionDeleteRequest(BaseModel):
+    delete_files: bool = False
+    confirm: bool = False
+    confirm_text: str | None = None
+    target_path: str | None = None
+
+
+class PlayerActiveVisualDeleteRequest(BaseModel):
+    confirm: bool = False
+
+
 class LoadExistingOpenRequest(BaseModel):
     kind: str = Field(description="One of enemy|path for constrained load-open.")
     family: str | None = None
@@ -352,3 +363,125 @@ async def get_spawn_eligible(family: str) -> JSONResponse:
         raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
     payload: dict[str, Any] = {"family": family, "paths": paths}
     return JSONResponse(payload)
+
+
+def _require_delete_confirmation(confirm: bool) -> None:
+    if not confirm:
+        raise HTTPException(status_code=400, detail="delete requires explicit confirmation")
+
+
+def _find_enemy_version(manifest: dict[str, Any], family: str, version_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    enemies = manifest.get("enemies")
+    if not isinstance(enemies, dict):
+        raise HTTPException(status_code=400, detail="malformed target payload: missing-enemies")
+    fam = enemies.get(family)
+    if not isinstance(fam, dict):
+        raise HTTPException(status_code=404, detail="unknown target")
+    versions = fam.get("versions")
+    if not isinstance(versions, list):
+        raise HTTPException(status_code=400, detail="malformed target payload: missing-versions")
+    for row in versions:
+        if isinstance(row, dict) and row.get("id") == version_id:
+            return fam, row
+    raise HTTPException(status_code=404, detail="unknown target")
+
+
+def _normalized_target_path_or_row_path(
+    row_path: str,
+    request_target_path: str | None,
+) -> str:
+    if request_target_path is None:
+        return _normalize_registry_relative_glb_path(row_path)
+    normalized = _normalize_registry_relative_glb_path(request_target_path)
+    if normalized != row_path:
+        raise HTTPException(status_code=403, detail="forbidden target path class: target-mismatch")
+    return normalized
+
+
+def _apply_enemy_version_delete(
+    manifest: dict[str, Any],
+    family: str,
+    version_id: str,
+) -> None:
+    fam, row = _find_enemy_version(manifest, family, version_id)
+    versions = fam["versions"]
+    versions[:] = [version for version in versions if version is not row]
+    slots = fam.get("slots")
+    if isinstance(slots, list):
+        fam["slots"] = [slot for slot in slots if slot != version_id]
+
+
+@router.delete("/model/enemies/{family}/versions/{version_id}")
+async def delete_enemy_version_endpoint(
+    family: str,
+    version_id: str,
+    body: EnemyVersionDeleteRequest,
+) -> JSONResponse:
+    _require_delete_confirmation(body.confirm)
+    try:
+        reg = _load_service()
+        manifest = reg.load_effective_manifest(settings.python_root)
+        fam, row = _find_enemy_version(manifest, family, version_id)
+
+        row_path_raw = row.get("path")
+        if not isinstance(row_path_raw, str):
+            raise HTTPException(status_code=400, detail="malformed target payload: missing-path")
+        row_path = _normalized_target_path_or_row_path(row_path_raw, body.target_path)
+        is_draft = row.get("draft") is True
+        is_in_use = row.get("in_use") is True and not is_draft
+
+        if is_draft:
+            if body.confirm_text is not None and body.confirm_text.strip():
+                expected = f"delete draft {family} {version_id}"
+                if body.confirm_text.strip() != expected:
+                    raise HTTPException(status_code=400, detail="malformed confirmation text")
+        elif is_in_use:
+            expected = f"delete in-use {family} {version_id}"
+            if (body.confirm_text or "").strip() != expected:
+                raise HTTPException(status_code=400, detail="malformed confirmation text")
+            live_rows = [
+                candidate
+                for candidate in fam.get("versions", [])
+                if isinstance(candidate, dict)
+                and candidate.get("id") != version_id
+                and candidate.get("draft") is False
+                and candidate.get("in_use") is True
+            ]
+            if not live_rows:
+                raise HTTPException(status_code=409, detail="cannot delete sole in-use enemy version")
+        else:
+            raise HTTPException(status_code=400, detail="delete requires draft or in-use target")
+
+        _apply_enemy_version_delete(manifest, family, version_id)
+        validated = reg.validate_manifest(manifest)
+        reg.save_manifest_atomic(settings.python_root, validated)
+        if body.delete_files:
+            target_file = settings.python_root / row_path
+            if target_file.exists():
+                target_file.unlink()
+        return JSONResponse(validated)
+    except HTTPException:
+        raise
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="unknown target") from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+
+
+@router.delete("/model/player_active_visual")
+async def delete_player_active_visual_endpoint(body: PlayerActiveVisualDeleteRequest) -> JSONResponse:
+    _require_delete_confirmation(body.confirm)
+    try:
+        reg = _load_service()
+        manifest = reg.load_effective_manifest(settings.python_root)
+        if manifest.get("player_active_visual") is None:
+            raise HTTPException(status_code=404, detail="unknown target")
+        raise HTTPException(status_code=409, detail="cannot delete sole active player visual")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e

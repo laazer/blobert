@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
+  deleteRegistryEnemyVersion,
   fetchLoadExistingCandidates,
   fetchEnemyFamilySlots,
   fetchModelRegistry,
@@ -9,6 +10,7 @@ import {
   putEnemyFamilySlots,
   type LoadExistingCandidate,
   type OpenExistingRegistryModelRequest,
+  type DeleteEnemyVersionRequest,
 } from "../../api/client";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 
@@ -17,6 +19,53 @@ export const PLAYER_RESTART_REQUIREMENT_COPY =
   "Changes to player model selection are picked up on the next game load/restart. Live hot-reload is not guaranteed.";
 export const ENEMY_EMPTY_SLOTS_COPY = "No slots assigned. Runtime falls back to legacy default path for this family.";
 export const LOAD_EXISTING_EMPTY_COPY = "No draft or in-use registry models available.";
+export const DRAFT_DELETE_CONFIRM_COPY =
+  "Confirm irreversible draft delete. This removes the registry row and may also delete the draft file when file deletion is enabled.";
+export const IN_USE_DELETE_CONFIRM_COPY =
+  "Deleting an in-use version affects spawn eligibility and may be rejected by safety guards (for example: sole in-use version).";
+
+export type EnemyDeletePlan = {
+  confirmMessage: string;
+  request: DeleteEnemyVersionRequest;
+};
+
+export function buildEnemyDeletePlan(family: string, version: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">): EnemyDeletePlan | null {
+  const isDraft = version.draft;
+  const isInUse = version.in_use && !version.draft;
+  if (!isDraft && !isInUse) return null;
+  const confirmTextPrefix = isDraft ? "delete draft" : "delete in-use";
+  return {
+    confirmMessage: isDraft ? DRAFT_DELETE_CONFIRM_COPY : IN_USE_DELETE_CONFIRM_COPY,
+    request: {
+      confirm: true,
+      delete_files: isDraft,
+      confirm_text: `${confirmTextPrefix} ${family} ${version.id}`,
+    },
+  };
+}
+
+export async function executeEnemyDeleteFlow(args: {
+  family: string;
+  version: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">;
+  confirmDelete: (message: string) => boolean;
+  onDelete: (family: string, versionId: string, body: DeleteEnemyVersionRequest) => Promise<ModelRegistryPayload>;
+  onSuccess: (nextRegistry: ModelRegistryPayload) => Promise<void> | void;
+  onError: (message: string) => void;
+}): Promise<"cancelled" | "deleted" | "failed"> {
+  const plan = buildEnemyDeletePlan(args.family, args.version);
+  if (!plan) return "failed";
+  if (!args.confirmDelete(plan.confirmMessage)) {
+    return "cancelled";
+  }
+  try {
+    const nextRegistry = await args.onDelete(args.family, args.version.id, plan.request);
+    await args.onSuccess(nextRegistry);
+    return "deleted";
+  } catch (e: unknown) {
+    args.onError(e instanceof Error ? e.message : String(e));
+    return "failed";
+  }
+}
 
 export function loadExistingCandidateKey(row: LoadExistingCandidate): string {
   if (row.kind === "enemy") {
@@ -58,6 +107,7 @@ export function ModelRegistryPane() {
   const [data, setData] = useState<ModelRegistryPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [deleteBusyKey, setDeleteBusyKey] = useState<string | null>(null);
   const [slotVersionIdsByFamily, setSlotVersionIdsByFamily] = useState<Record<string, string[]>>({});
   const [slotSaveBusyFamily, setSlotSaveBusyFamily] = useState<string | null>(null);
   const [loadExistingCandidates, setLoadExistingCandidates] = useState<LoadExistingCandidate[]>([]);
@@ -80,26 +130,31 @@ export function ModelRegistryPane() {
     setSlotVersionIdsByFamily(Object.fromEntries(entries));
   }, []);
 
+  const syncFromRegistry = useCallback(
+    async (registry: ModelRegistryPayload) => {
+      setData(registry);
+      await loadEnemySlots(registry);
+      const candidatePayload = await fetchLoadExistingCandidates();
+      const candidates = candidatePayload.candidates;
+      setLoadExistingCandidates(candidates);
+      setLoadExistingSelection((prev) => {
+        if (!candidates.some((row) => loadExistingCandidateKey(row) === prev)) {
+          return candidates.length > 0 ? loadExistingCandidateKey(candidates[0]) : "";
+        }
+        return prev;
+      });
+    },
+    [loadEnemySlots],
+  );
+
   const reload = useCallback(() => {
     setError(null);
     fetchModelRegistry()
-      .then(async (registry) => {
-        setData(registry);
-        await loadEnemySlots(registry);
-        const candidatePayload = await fetchLoadExistingCandidates();
-        const candidates = candidatePayload.candidates;
-        setLoadExistingCandidates(candidates);
-        setLoadExistingSelection((prev) => {
-          if (!candidates.some((row) => loadExistingCandidateKey(row) === prev)) {
-            return candidates.length > 0 ? loadExistingCandidateKey(candidates[0]) : "";
-          }
-          return prev;
-        });
-      })
+      .then((registry) => syncFromRegistry(registry))
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : String(e));
       });
-  }, [loadEnemySlots]);
+  }, [syncFromRegistry]);
 
   useEffect(() => {
     reload();
@@ -115,7 +170,7 @@ export function ModelRegistryPane() {
         draft: nextDraft,
         in_use: use,
       });
-      setData(updated);
+      await syncFromRegistry(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -128,7 +183,7 @@ export function ModelRegistryPane() {
     setError(null);
     try {
       const updated = await patchRegistryPlayerActiveVisual({ path });
-      setData(updated);
+      await syncFromRegistry(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -190,6 +245,24 @@ export function ModelRegistryPane() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoadExistingBusy(false);
+    }
+  }
+
+  async function deleteEnemyVersion(family: string, version: RegistryEnemyVersion) {
+    const key = `${family}:${version.id}`;
+    setDeleteBusyKey(key);
+    setError(null);
+    try {
+      await executeEnemyDeleteFlow({
+        family,
+        version,
+        confirmDelete: (message) => window.confirm(message),
+        onDelete: deleteRegistryEnemyVersion,
+        onSuccess: syncFromRegistry,
+        onError: (message) => setError(message),
+      });
+    } finally {
+      setDeleteBusyKey(null);
     }
   }
 
@@ -366,13 +439,15 @@ export function ModelRegistryPane() {
             <th style={th}>Path</th>
             <th style={th}>Draft</th>
             <th style={th}>In pool</th>
+            <th style={th}>Delete</th>
           </tr>
         </thead>
         <tbody>
           {families.map((fam) =>
             data.enemies[fam].versions.map((row) => {
               const key = `${fam}:${row.id}`;
-              const pending = busyKey === key;
+              const pending = busyKey === key || deleteBusyKey === key;
+              const deletePlan = buildEnemyDeletePlan(fam, row);
               return (
                 <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
                   <td style={td}>{fam}</td>
@@ -398,6 +473,16 @@ export function ModelRegistryPane() {
                         applyFlags(fam, row, row.draft, e.target.checked);
                       }}
                     />
+                  </td>
+                  <td style={td}>
+                    <button
+                      type="button"
+                      style={btnSecondary}
+                      disabled={pending || !deletePlan}
+                      onClick={() => deleteEnemyVersion(fam, row)}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               );
