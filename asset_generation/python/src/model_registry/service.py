@@ -150,6 +150,9 @@ def _normalize_registry_family_block(context: str, fam_val: Any) -> dict[str, An
         use = in_use
         if draft and in_use:
             use = False
+        if not draft and not use:
+            draft = True
+            use = False
         out_row: dict[str, Any] = {"id": vid, "path": path, "draft": draft, "in_use": use}
         if "name" in row and row["name"] is not None:
             nraw = row["name"]
@@ -448,7 +451,7 @@ def _discovered_animated_export_rows(
             {
                 "id": stem,
                 "path": rel,
-                "draft": False,
+                "draft": True,
                 "in_use": False,
             },
         )
@@ -460,8 +463,8 @@ def sync_discovered_animated_glb_versions(python_root: Path, family: str) -> dic
     Persist new ``versions`` rows for on-disk animated GLBs under ``animated_exports/`` that
     match this family's export stem prefix but are absent from the manifest.
 
-    New rows default to ``in_use: false`` so spawn pools are unchanged until the editor
-    promotes them (e.g. via Add slot).
+    New rows default to ``draft: true`` so spawn pools are unchanged until the editor
+    promotes them to in pool (e.g. via Add slot).
     """
     data = load_effective_manifest(python_root)
     fam = data["enemies"].get(family)
@@ -600,7 +603,7 @@ def _discovered_player_export_rows(
             {
                 "id": stem,
                 "path": rel,
-                "draft": False,
+                "draft": True,
                 "in_use": False,
             },
         )

@@ -78,7 +78,7 @@ function CenterSwitchBar() {
         type="button"
         style={tabBtn(centerPanel === "registry")}
         onClick={() => setCenterPanel("registry")}
-        title="Draft / in-use flags for model exports (model_registry.json)"
+        title="Spawn state (draft vs in pool) for model exports (model_registry.json)"
       >
         Registry
       </button>

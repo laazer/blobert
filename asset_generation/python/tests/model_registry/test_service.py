@@ -57,6 +57,16 @@ def test_validate_normalizes_draft_and_in_use():
     assert out["enemies"]["imp"]["versions"][0]["in_use"] is False
 
 
+def test_validate_normalizes_neither_draft_nor_in_use_to_draft():
+    base = default_migrated_manifest()
+    base["enemies"]["imp"]["versions"][0]["draft"] = False
+    base["enemies"]["imp"]["versions"][0]["in_use"] = False
+    out = validate_manifest(base)
+    row = out["enemies"]["imp"]["versions"][0]
+    assert row["draft"] is True
+    assert row["in_use"] is False
+
+
 def test_spawn_eligible_excludes_draft(tmp_path: Path):
     m = default_migrated_manifest()
     m["enemies"]["slug"]["versions"][0]["draft"] = True
@@ -477,7 +487,7 @@ def test_put_enemy_slots_rejects_not_in_use_version(tmp_path: Path):
     m = default_migrated_manifest()
     m["enemies"]["imp"]["versions"][0]["in_use"] = False
     save_manifest_atomic(tmp_path, validate_manifest(m))
-    with pytest.raises(ValueError, match="not in_use and cannot be slotted"):
+    with pytest.raises(ValueError, match="draft and cannot be slotted"):
         put_enemy_slots(tmp_path, "imp", ["imp_animated_00"])
 
 
@@ -493,7 +503,7 @@ def test_sync_discovered_animated_glb_versions_adds_on_disk_stems(tmp_path: Path
     assert row == {
         "id": "imp_animated_01",
         "path": "animated_exports/imp_animated_01.glb",
-        "draft": False,
+        "draft": True,
         "in_use": False,
     }
 
@@ -517,7 +527,7 @@ def test_sync_discovered_animated_glb_versions_unknown_family(tmp_path: Path):
         (["imp_animated_00", "imp_animated_00", "missing"], ValueError, "duplicate"),
         (["missing", "imp_animated_00"], KeyError, "unknown version"),
         (["imp_animated_01", "imp_animated_00"], ValueError, "draft and cannot be slotted"),
-        (["imp_animated_02", "imp_animated_00"], ValueError, "not in_use and cannot be slotted"),
+        (["imp_animated_02", "imp_animated_00"], ValueError, "draft and cannot be slotted"),
     ],
 )
 def test_put_enemy_slots_rejected_payload_never_partially_mutates_slots(

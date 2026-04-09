@@ -33,6 +33,12 @@ const btnPrimary: CSSProperties = {
 const th: CSSProperties = { padding: "6px 8px", color: "#9d9d9d", fontWeight: 600 };
 const td: CSSProperties = { padding: "6px 8px", verticalAlign: "middle" };
 const subHead: CSSProperties = { fontSize: 11, color: "#b5b5b5", margin: "10px 0 6px", fontWeight: 600 };
+const radioRow: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" };
+const radioLabel: CSSProperties = { display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#d4d4d4" };
+
+function enemyVersionSpawnState(row: RegistryEnemyVersion): "draft" | "pool" {
+  return row.draft ? "draft" : "pool";
+}
 
 function versionOptionLabel(v: RegistryEnemyVersion): string {
   const n = v.name?.trim();
@@ -83,12 +89,12 @@ export function RegistryEnemyFamiliesSection({
       <h3 style={h3Style}>Enemy version slots &amp; versions</h3>
       <div style={noteStyle}>
         <strong>Slots</strong> are the runtime spawn pool per family (order is saved per family).{" "}
-        <strong>Versions</strong> lists every registered row: draft / in-use flags and delete apply to the manifest
-        immediately (separate from Save Slots).
+        <strong>Versions</strong> lists every registered row: <strong>Draft</strong> vs <strong>In pool</strong> and delete
+        apply to the manifest immediately (separate from Save Slots).
       </div>
       <div style={noteStyle}>
-        <strong>Draft</strong> exports stay off the default spawn pool until promoted. <strong>In pool</strong> is off
-        while draft is on.
+        <strong>Draft</strong> versions are not slottable until you switch them to <strong>In pool</strong>. Use slots to
+        order which in-pool variants spawn.
       </div>
       <div style={noteStyle}>
         <strong>Add slot</strong> first scans <code style={{ color: "#ce9178" }}>animated_exports/</code> for{" "}
@@ -173,8 +179,7 @@ export function RegistryEnemyFamiliesSection({
                   <th style={th}>Version id</th>
                   <th style={th}>Name</th>
                   <th style={th}>Path</th>
-                  <th style={th}>Draft</th>
-                  <th style={th}>In pool</th>
+                  <th style={th}>Spawn state</th>
                   <th style={th}>Delete</th>
                 </tr>
               </thead>
@@ -189,25 +194,38 @@ export function RegistryEnemyFamiliesSection({
                       <td style={td}>{row.name?.trim() ? row.name.trim() : "—"}</td>
                       <td style={{ ...td, wordBreak: "break-all" }}>{row.path}</td>
                       <td style={td}>
-                        <input
-                          type="checkbox"
-                          checked={row.draft}
-                          disabled={pending}
-                          onChange={(e) => {
-                            const d = e.target.checked;
-                            onApplyFlags(family, row, d, d ? false : row.in_use);
-                          }}
-                        />
-                      </td>
-                      <td style={td}>
-                        <input
-                          type="checkbox"
-                          checked={row.in_use && !row.draft}
-                          disabled={pending || row.draft}
-                          onChange={(e) => {
-                            onApplyFlags(family, row, row.draft, e.target.checked);
-                          }}
-                        />
+                        <div
+                          role="radiogroup"
+                          aria-label={`Spawn state for ${row.id}`}
+                          style={radioRow}
+                          data-testid={`registry-enemy-spawn-${family}-${row.id}`}
+                        >
+                          {(
+                            [
+                              ["draft", "Draft"],
+                              ["pool", "In pool"],
+                            ] as const
+                          ).map(([value, label]) => {
+                            const current = enemyVersionSpawnState(row);
+                            return (
+                              <label key={value} style={radioLabel}>
+                                <input
+                                  type="radio"
+                                  name={`enemy-spawn-${family}-${row.id}`}
+                                  value={value}
+                                  checked={current === value}
+                                  disabled={pending}
+                                  data-testid={`registry-enemy-spawn-${family}-${row.id}-${value}`}
+                                  onChange={() => {
+                                    if (value === "draft") onApplyFlags(family, row, true, false);
+                                    else onApplyFlags(family, row, false, true);
+                                  }}
+                                />
+                                <span>{label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td style={td}>
                         <button

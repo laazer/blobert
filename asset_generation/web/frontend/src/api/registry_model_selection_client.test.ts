@@ -76,7 +76,7 @@ describe("registry model-selection client contracts", () => {
                 {
                   id: "slug_animated_01",
                   path: "animated_exports/slug_animated_01.glb",
-                  draft: false,
+                  draft: true,
                   in_use: false,
                 },
               ],
