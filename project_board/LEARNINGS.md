@@ -75,6 +75,68 @@ Structured insights extracted after each completed ticket.
   reason: It keeps closure decisions test-grounded even when design choices were assumption-constrained earlier.
 
 ---
+
+## [M9-ATRAD] — Cross-cutting contract tests exposed confirmation and status-taxonomy drift risks
+*Completed: 2026-04-09*
+
+### Learnings
+- category: testing
+  insight: Cross-cutting regression suites should intentionally include both “blocked safety” and “allowed success” invariant paths for destructive operations.
+  impact: Requiring both blocked and allowed delete scenarios prevented one-sided coverage that would miss either over-permissive or over-restrictive regressions.
+  prevention: Treat destructive-operation contracts as two-sided by default: one deterministic guardrail rejection and one deterministic success with post-state assertions.
+  severity: high
+
+- category: architecture
+  insight: Confirmation inputs in destructive APIs need explicit semantics for “present but blank” values instead of relying on implicit truthiness behavior.
+  impact: Adversarial tests surfaced a backend contract gap around blank `confirm_text`, forcing explicit rejection behavior to avoid intent-check bypass ambiguity.
+  prevention: Add explicit request-schema rules that distinguish omitted confirmation fields from whitespace-only confirmation payloads and bind each to deterministic status outcomes.
+  severity: high
+
+- category: process
+  insight: Status-code taxonomy for security/path validation should be fixed at spec stage, not inferred during test authoring.
+  impact: Medium-confidence assumptions were needed to pin exact `400` vs `403` outcomes for traversal vs allowlist-prefix violations.
+  prevention: Require a “failure taxonomy” table in specs for path-security endpoints before test design begins.
+  severity: medium
+
+### Anti-Patterns
+- description: Testing only one side of delete invariants (only blocked or only allowed) and calling contract coverage complete.
+  detection_signal: Delete test suites lack either a successful post-delete invariant assertion or a blocked-state no-mutation assertion.
+  prevention: Enforce a two-scenario minimum for delete invariants in primary test design checklists.
+
+- description: Leaving blank-but-explicit confirmation payload behavior unspecified for destructive endpoints.
+  detection_signal: Checkpoints or tests debate whether whitespace confirmation should pass or fail.
+  prevention: Define confirmation-field normalization and reject-class behavior explicitly in the API contract.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For any destructive endpoint with confirmation semantics, include a `Confirmation Input Contract` section that explicitly defines outcomes for omitted, empty-string, and whitespace-only confirmation values with exact status classes."
+  reason: Prevents late discovery of ambiguity that can weaken safety guarantees.
+
+- agent: Test Breaker Agent
+  change: "Always add adversarial tests for destructive endpoints that cover blank/whitespace confirmation payloads and assert deterministic rejection plus no state mutation."
+  reason: Catches intent-check bypass gaps that primary happy-path tests often miss.
+
+- agent: Test Designer Agent
+  change: "For path-security contracts, include one explicit assertion per rejection class (`400` normalization failure vs `403` allowlist violation) rather than broad class assertions, when the router contract is deterministic."
+  reason: Locks status taxonomy so security regressions are caught early and unambiguously.
+
+### Workflow Improvements
+- issue: Critical status semantics and destructive-confirmation edge cases were finalized through assumptions during test stages.
+  improvement: Add a spec exit gate requiring explicit failure-taxonomy and confirmation-input tables before test design.
+  expected_benefit: Fewer medium-confidence assumptions and less implementation churn from late contract clarification.
+
+- issue: Cross-cutting tickets can unintentionally under-cover destructive invariants when they focus mainly on rejection vectors.
+  improvement: Add a mandatory “safety pair” checklist item in planning/spec for all delete/update invariants: blocked case + allowed case + post-read verification.
+  expected_benefit: Better regression resistance against both permissive and restrictive drift.
+
+### Keep / Reinforce
+- practice: Backend-first contract testing for security-critical allowlist/traversal behavior.
+  reason: It validates enforcement at the authoritative layer and avoids false confidence from UI-only coverage.
+
+- practice: Scoped checkpoint logging of `Would have asked` / `Assumption made` / `Confidence`.
+  reason: It made autonomy decisions auditable and enabled high-signal post-ticket learning extraction.
+
+---
 ## [M9-DDIM] — Freeze destructive API contract details before test design to avoid medium-confidence assumption drift
 *Completed: 2026-04-09*
 
