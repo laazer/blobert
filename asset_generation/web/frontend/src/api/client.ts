@@ -159,6 +159,58 @@ export async function putEnemyFamilySlots(
   return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
+export type LoadExistingCandidate =
+  | {
+      kind: "enemy";
+      family: string;
+      version_id: string;
+      path: string;
+    }
+  | {
+      kind: "player";
+      path: string;
+    };
+
+export type LoadExistingCandidatesPayload = {
+  candidates: LoadExistingCandidate[];
+};
+
+export type OpenExistingRegistryModelRequest =
+  | {
+      kind: "enemy";
+      family: string;
+      version_id: string;
+    }
+  | {
+      kind: "path";
+      path: string;
+    };
+
+export type OpenExistingRegistryModelResponse = {
+  kind: "enemy" | "path";
+  path: string;
+  family?: string;
+  version_id?: string;
+};
+
+export async function fetchLoadExistingCandidates(): Promise<LoadExistingCandidatesPayload> {
+  const res = await fetch(`${BASE}/registry/model/load_existing/candidates`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<LoadExistingCandidatesPayload>;
+}
+
+export async function openExistingRegistryModel(
+  body: OpenExistingRegistryModelRequest,
+): Promise<OpenExistingRegistryModelResponse> {
+  const res = await fetch(`${BASE}/registry/model/load_existing/open`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<OpenExistingRegistryModelResponse>;
+}
+
 export async function fetchAnimations(): Promise<string[]> {
   const res = await fetch(`${BASE}/meta/animations`);
   if (!res.ok) throw new Error(await res.text());

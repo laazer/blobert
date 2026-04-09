@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  fetchLoadExistingCandidates,
   fetchEnemyFamilySlots,
+  openExistingRegistryModel,
   patchRegistryPlayerActiveVisual,
   putEnemyFamilySlots,
 } from "./client";
@@ -127,5 +129,88 @@ describe("registry model-selection client contracts", () => {
     );
 
     await expect(putEnemyFamilySlots("not_real", ["spider_animated_00"])).rejects.toThrow();
+  });
+
+  it("GET load-existing candidates returns deterministic candidate payload", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              kind: "enemy",
+              family: "alpha",
+              version_id: "alpha_live_00",
+              path: "animated_exports/alpha_live_00.glb",
+            },
+            {
+              kind: "player",
+              path: "player_exports/blobert_blue_00.glb",
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await fetchLoadExistingCandidates();
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/load_existing/candidates");
+    expect(out.candidates).toEqual([
+      {
+        kind: "enemy",
+        family: "alpha",
+        version_id: "alpha_live_00",
+        path: "animated_exports/alpha_live_00.glb",
+      },
+      {
+        kind: "player",
+        path: "player_exports/blobert_blue_00.glb",
+      },
+    ]);
+  });
+
+  it("POST load-existing open sends registry identity payload and returns resolved path", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          kind: "enemy",
+          family: "alpha",
+          version_id: "alpha_live_00",
+          path: "animated_exports/alpha_live_00.glb",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await openExistingRegistryModel({
+      kind: "enemy",
+      family: "alpha",
+      version_id: "alpha_live_00",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/load_existing/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "enemy",
+        family: "alpha",
+        version_id: "alpha_live_00",
+      }),
+    });
+    expect(out.path).toBe("animated_exports/alpha_live_00.glb");
+  });
+
+  it("POST load-existing open surfaces deterministic rejection errors (400/403/404)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ detail: "forbidden target path class: absolute-path" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(
+      openExistingRegistryModel({
+        kind: "path",
+        path: "/abs/path.glb",
+      }),
+    ).rejects.toThrow();
   });
 });

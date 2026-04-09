@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
+  fetchLoadExistingCandidates,
   fetchEnemyFamilySlots,
   fetchModelRegistry,
+  openExistingRegistryModel,
   patchRegistryEnemyVersion,
   patchRegistryPlayerActiveVisual,
   putEnemyFamilySlots,
+  type LoadExistingCandidate,
+  type OpenExistingRegistryModelRequest,
 } from "../../api/client";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 
@@ -12,6 +16,29 @@ const noteStyle = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight
 export const PLAYER_RESTART_REQUIREMENT_COPY =
   "Changes to player model selection are picked up on the next game load/restart. Live hot-reload is not guaranteed.";
 export const ENEMY_EMPTY_SLOTS_COPY = "No slots assigned. Runtime falls back to legacy default path for this family.";
+export const LOAD_EXISTING_EMPTY_COPY = "No draft or in-use registry models available.";
+
+export function loadExistingCandidateKey(row: LoadExistingCandidate): string {
+  if (row.kind === "enemy") {
+    return `enemy:${row.family}:${row.version_id}`;
+  }
+  return `player:${row.path}`;
+}
+
+export function loadExistingCandidateLabel(row: LoadExistingCandidate): string {
+  if (row.kind === "enemy") {
+    return `${row.family}/${row.version_id} (${row.path})`;
+  }
+  return `player_active_visual (${row.path})`;
+}
+
+export function toOpenExistingRequest(row: LoadExistingCandidate): OpenExistingRegistryModelRequest {
+  if (row.kind === "enemy") {
+    return { kind: "enemy", family: row.family, version_id: row.version_id };
+  }
+  return { kind: "path", path: row.path };
+}
+
 export function nextEnemySlotsAfterAdd(
   current: string[],
   candidates: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">[],
@@ -33,6 +60,10 @@ export function ModelRegistryPane() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [slotVersionIdsByFamily, setSlotVersionIdsByFamily] = useState<Record<string, string[]>>({});
   const [slotSaveBusyFamily, setSlotSaveBusyFamily] = useState<string | null>(null);
+  const [loadExistingCandidates, setLoadExistingCandidates] = useState<LoadExistingCandidate[]>([]);
+  const [loadExistingSelection, setLoadExistingSelection] = useState<string>("");
+  const [loadExistingBusy, setLoadExistingBusy] = useState<boolean>(false);
+  const [lastOpenedExistingPath, setLastOpenedExistingPath] = useState<string | null>(null);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -55,6 +86,15 @@ export function ModelRegistryPane() {
       .then(async (registry) => {
         setData(registry);
         await loadEnemySlots(registry);
+        const candidatePayload = await fetchLoadExistingCandidates();
+        const candidates = candidatePayload.candidates;
+        setLoadExistingCandidates(candidates);
+        setLoadExistingSelection((prev) => {
+          if (!candidates.some((row) => loadExistingCandidateKey(row) === prev)) {
+            return candidates.length > 0 ? loadExistingCandidateKey(candidates[0]) : "";
+          }
+          return prev;
+        });
       })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : String(e));
@@ -137,6 +177,22 @@ export function ModelRegistryPane() {
     }
   }
 
+  async function openExistingSelection() {
+    if (loadExistingBusy) return;
+    const row = loadExistingCandidates.find((candidate) => loadExistingCandidateKey(candidate) === loadExistingSelection);
+    if (!row) return;
+    setLoadExistingBusy(true);
+    setError(null);
+    try {
+      const payload = await openExistingRegistryModel(toOpenExistingRequest(row));
+      setLastOpenedExistingPath(payload.path);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadExistingBusy(false);
+    }
+  }
+
   if (!data && !error) {
     return (
       <div style={{ padding: 16, color: "#9d9d9d", fontSize: 12 }}>
@@ -199,6 +255,48 @@ export function ModelRegistryPane() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div style={{ ...sectionStyle, marginBottom: 16 }}>
+        <h3 style={h3Style}>Load / Open Existing</h3>
+        <div style={noteStyle}>
+          This picker is registry-backed only. Arbitrary OS paths and free-form <code>res://</code> entries are not accepted.
+        </div>
+        {loadExistingCandidates.length === 0 ? (
+          <div style={{ color: "#d7ba7d", fontSize: 11 }}>{LOAD_EXISTING_EMPTY_COPY}</div>
+        ) : (
+          <>
+            <label style={{ display: "block", marginBottom: 6, color: "#9d9d9d" }} htmlFor="load-existing-select">
+              Existing model
+            </label>
+            <select
+              id="load-existing-select"
+              style={selectStyle}
+              disabled={loadExistingBusy}
+              value={loadExistingSelection}
+              onChange={(e) => setLoadExistingSelection(e.target.value)}
+            >
+              {loadExistingCandidates.map((row) => (
+                <option key={loadExistingCandidateKey(row)} value={loadExistingCandidateKey(row)}>
+                  {loadExistingCandidateLabel(row)}
+                </option>
+              ))}
+            </select>
+            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                style={btnPrimary}
+                disabled={loadExistingBusy || !loadExistingSelection}
+                onClick={openExistingSelection}
+              >
+                Open Selected
+              </button>
+              {lastOpenedExistingPath ? (
+                <span style={{ color: "#9d9d9d", fontSize: 11 }}>Resolved: {lastOpenedExistingPath}</span>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ ...sectionStyle, marginBottom: 16 }}>

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 import sys
+from urllib.parse import unquote
+import json
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,131 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/registry", tags=["registry"])
+
+_ALLOWLIST_PREFIXES: tuple[str, ...] = (
+    "animated_exports/",
+    "exports/",
+    "player_exports/",
+    "level_exports/",
+)
+_MAX_URL_DECODE_PASSES = 3
+
+
+def _load_registry_json_unvalidated(python_root: Path) -> dict[str, Any]:
+    registry_file = python_root / "model_registry.json"
+    if not registry_file.is_file():
+        reg = _load_service()
+        return reg.default_migrated_manifest()
+    try:
+        data = json.loads(registry_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise ValueError("invalid registry JSON") from e
+    if not isinstance(data, dict):
+        raise ValueError("registry payload must be an object")
+    return data
+
+
+def _normalize_registry_relative_glb_path(path: str) -> str:
+    if any(ord(ch) < 32 for ch in path):
+        raise ValueError("malformed target path class: control-character")
+    if "\\" in path:
+        raise ValueError("malformed target path class: mixed-separator")
+    if path.startswith("res://"):
+        raise HTTPException(status_code=403, detail="forbidden target path class: res-path")
+    if path.startswith("/"):
+        raise HTTPException(status_code=403, detail="forbidden target path class: absolute-path")
+
+    decoded = path
+    for _ in range(_MAX_URL_DECODE_PASSES):
+        next_decoded = unquote(decoded)
+        if next_decoded == decoded:
+            break
+        decoded = next_decoded
+
+    if any(ord(ch) < 32 for ch in decoded):
+        raise ValueError("malformed target path class: control-character")
+    if "%" in decoded:
+        raise ValueError("malformed target path class: malformed-encoding")
+
+    parts = decoded.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        raise ValueError("malformed target path class: traversal")
+    if not decoded.endswith(".glb"):
+        raise ValueError("malformed target path class: extension")
+    if not any(decoded.startswith(prefix) for prefix in _ALLOWLIST_PREFIXES):
+        raise HTTPException(status_code=403, detail="forbidden target path class: allowlist-prefix")
+    return decoded
+
+
+def _safe_is_file_under_python_root(python_root: Path, rel_path: str) -> bool:
+    try:
+        return (python_root / rel_path).is_file()
+    except OSError:
+        return False
+
+
+def _load_existing_candidates_from_registry(python_root: Path) -> list[dict[str, str]]:
+    data = _load_registry_json_unvalidated(python_root)
+    enemies = data.get("enemies")
+    rows: list[dict[str, str]] = []
+
+    if isinstance(enemies, dict):
+        for family, family_data in enemies.items():
+            if not isinstance(family, str):
+                continue
+            versions = family_data.get("versions") if isinstance(family_data, dict) else None
+            if not isinstance(versions, list):
+                continue
+            for row in versions:
+                if not isinstance(row, dict):
+                    continue
+                version_id = row.get("id")
+                path = row.get("path")
+                draft = row.get("draft")
+                in_use = row.get("in_use")
+                if not isinstance(version_id, str) or not isinstance(path, str):
+                    continue
+                if draft is not True and in_use is not True:
+                    continue
+                try:
+                    canonical = _normalize_registry_relative_glb_path(path)
+                except (HTTPException, ValueError):
+                    continue
+                rows.append(
+                    {
+                        "kind": "enemy",
+                        "family": family,
+                        "version_id": version_id,
+                        "path": canonical,
+                    },
+                )
+
+    rows.sort(key=lambda row: (row["family"], row["version_id"]))
+
+    pav = data.get("player_active_visual")
+    if isinstance(pav, dict):
+        ppath = pav.get("path")
+        if isinstance(ppath, str):
+            try:
+                canonical = _normalize_registry_relative_glb_path(ppath)
+            except (HTTPException, ValueError):
+                canonical = None
+            if canonical is not None:
+                rows.append({"kind": "player", "path": canonical})
+    return rows
+
+
+def _resolve_enemy_identity_path(
+    python_root: Path,
+    family: str,
+    version_id: str,
+) -> str:
+    for row in _load_existing_candidates_from_registry(python_root):
+        if row.get("kind") != "enemy":
+            continue
+        if row.get("family") == family and row.get("version_id") == version_id:
+            return row["path"]
+    raise KeyError(f"unknown version {version_id!r} for family {family!r}")
 
 
 def _canonical_python_roots() -> tuple[Path, Path]:
@@ -40,6 +167,8 @@ def _ensure_python_import_path() -> None:
 
 def _load_service():
     _ensure_python_import_path()
+    # Deferred imports are required because router module import happens before runtime path
+    # injection; importing these modules at file import time can fail in test/app startup.
     from utils.blender_stubs import ensure_blender_stubs
 
     ensure_blender_stubs()
@@ -60,6 +189,61 @@ class PlayerVisualPatch(BaseModel):
 
 class EnemySlotsPut(BaseModel):
     version_ids: list[str] = Field(default_factory=list, description="Ordered slot IDs for a family.")
+
+
+class LoadExistingOpenRequest(BaseModel):
+    kind: str = Field(description="One of enemy|path for constrained load-open.")
+    family: str | None = None
+    version_id: str | None = None
+    path: str | None = None
+
+
+@router.get("/model/load_existing/candidates")
+async def get_load_existing_candidates() -> JSONResponse:
+    try:
+        candidates = _load_existing_candidates_from_registry(settings.python_root)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse({"candidates": candidates})
+
+
+@router.post("/model/load_existing/open")
+async def open_load_existing(body: LoadExistingOpenRequest) -> JSONResponse:
+    if body.path is not None and (body.family is not None or body.version_id is not None):
+        raise HTTPException(status_code=400, detail="malformed target payload: mixed-identity-and-path")
+    try:
+        if body.kind == "enemy":
+            if body.family is None or body.version_id is None or body.path is not None:
+                raise HTTPException(status_code=400, detail="malformed target payload: enemy-requires-identity")
+            canonical_path = _resolve_enemy_identity_path(settings.python_root, body.family, body.version_id)
+            if not _safe_is_file_under_python_root(settings.python_root, canonical_path):
+                raise HTTPException(status_code=404, detail="registry target file not found")
+            return JSONResponse(
+                {
+                    "kind": "enemy",
+                    "family": body.family,
+                    "version_id": body.version_id,
+                    "path": canonical_path,
+                },
+            )
+        if body.kind == "path":
+            if body.path is None or body.family is not None or body.version_id is not None:
+                raise HTTPException(status_code=400, detail="malformed target payload: path-requires-path-only")
+            canonical_path = _normalize_registry_relative_glb_path(body.path)
+            if not _safe_is_file_under_python_root(settings.python_root, canonical_path):
+                raise HTTPException(status_code=404, detail="registry target file not found")
+            return JSONResponse({"kind": "path", "path": canonical_path})
+        raise HTTPException(status_code=400, detail="malformed target payload: unsupported-kind")
+    except HTTPException:
+        raise
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
 
 
 @router.get("/model")

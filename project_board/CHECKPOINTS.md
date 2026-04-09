@@ -720,3 +720,45 @@ Log: `project_board/checkpoints/claw_enemy_attack/`
 - Stage: PLANNING bootstrap → COMPLETE
 - Log: `project_board/checkpoints/ui_polish_and_start_sh/run-2026-04-07-ap-continue.md`
 - Outcome: Existing UI polish/startup implementation validated via bounded `start.sh` smoke and AC code-path evidence.
+
+---
+
+## Run: 2026-04-09T11-52-08Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/06_editor_load_existing_models_allowlist.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-LEMA / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/06_editor_load_existing_models_allowlist.md`
+- Stage: PLANNING (bootstrap from malformed ticket)
+- Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`
+- Outcome: Planning assumption logged for canonical-root registry-backed visibility contract (draft + active in-use only).
+
+### M9-LEMA / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/06_editor_load_existing_models_allowlist.md`
+- Stage: SPECIFICATION
+- Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`
+- Outcome: Spec-stage assumption logged to omit non-registry `.glb` files even when they exist inside canonical allowlisted roots.
+
+### M9-LEMA / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/06_editor_load_existing_models_allowlist.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`
+- Outcome: Logged endpoint-shape assumption and authored primary backend/frontend load-existing contract tests (candidate filtering + constrained open semantics).
+
+### M9-LEMA / run-2026-04-09-test-break
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/06_editor_load_existing_models_allowlist.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-test-break.md`
+- Outcome: Added adversarial load-existing tests for encoded traversal/control-char vectors, strict suffix filtering, ambiguity rejection, no host-path detail leakage, and repeated-call determinism.
+
+### M9-LEMA / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/06_editor_load_existing_models_allowlist.md`
+- Stage: IMPLEMENTATION_BACKEND
+- Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`
+- Outcome: Implemented constrained load-existing backend endpoints and allowlist normalization; preserved missing-file `404` behavior with fixture coherence update; targeted backend suite `12 passed`.
+
+### [M9-LEMA] — OUTCOME: COMPLETE
+Load/open existing models now uses allowlisted canonical roots only with traversal-safe backend normalization, registry-backed candidate filtering (draft/in-use), frontend constrained picker/open flow, adversarial path-injection tests, and `timeout 300 ci/scripts/run_tests.sh` exit `0`.
+Log: `project_board/checkpoints/M9-LEMA/run-2026-04-09-autopilot.md`

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ENEMY_EMPTY_SLOTS_COPY,
+  LOAD_EXISTING_EMPTY_COPY,
   PLAYER_RESTART_REQUIREMENT_COPY,
 } from "./ModelRegistryPane";
 
@@ -13,5 +14,9 @@ describe("ModelRegistryPane UX copy contracts", () => {
   it("documents fallback behavior when a family has zero slots", () => {
     expect(ENEMY_EMPTY_SLOTS_COPY.toLowerCase()).toContain("falls back");
     expect(ENEMY_EMPTY_SLOTS_COPY.toLowerCase()).toContain("legacy default path");
+  });
+
+  it("documents explicit empty-state guidance for load-existing picker", () => {
+    expect(LOAD_EXISTING_EMPTY_COPY.toLowerCase()).toContain("no draft or in-use registry models available");
   });
 });
