@@ -2667,3 +2667,65 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Unblocks umbrella blocked ticket’s “data contract” without implementation tickets reopening scope.
 
 ---
+
+## [M9-EGMS] — Make API error precedence explicit and separate contract confidence from environment constraints
+*Completed: 2026-04-09*
+
+### Learnings
+- category: architecture
+  insight: APIs that validate multiple independent error classes (duplicate IDs, unknown IDs, draft/ineligible IDs) need an explicit precedence rule in the spec, not just "reject invalid input."
+  impact: Mixed-invalid enemy-slot payloads created ambiguity (400 vs 404 ordering) and required conservative assumptions plus extra adversarial tests to stabilize behavior.
+  prevention: Add a mandatory "validation precedence matrix" section to API specs that rank checks and status codes for mixed-invalid requests.
+  severity: high
+
+- category: process
+  insight: Product behavior that affects UX trust (hot-reload vs restart-required and empty-pool fallback policy) must be declared before test design begins.
+  impact: Planning/spec needed medium-confidence assumptions and checkpointed clarifications before tests could lock contracts.
+  prevention: Planner/spec handoff should fail fast unless runtime-application semantics and fallback policy are explicitly declared.
+  severity: medium
+
+- category: testing
+  insight: When one execution layer is environment-blocked, confidence can still be preserved by pairing deterministic lower-layer contract tests with API-boundary client tests and explicitly logging the remaining gap.
+  impact: Router-suite execution was blocked by local `pydantic_core` architecture mismatch, but service tests plus frontend client validation tests provided acceptable AC evidence without silent risk.
+  prevention: Require an "evidence substitution" pattern: (1) blocked layer noted, (2) compensating deterministic suites identified, (3) residual risk carried to gatekeeper.
+  severity: medium
+
+### Anti-Patterns
+- description: Leaving mixed-invalid request semantics unspecified and expecting implementation order to become de-facto API contract.
+  detection_signal: Tests or checkpoints debate whether 400 or 404 should win for one payload containing multiple violations.
+  prevention: Define precedence in spec and encode one deterministic adversarial test for each mixed-invalid pair.
+
+- description: Treating environment failures as either full blockers or as ignorable noise, with no formal substitute evidence model.
+  detection_signal: Validation narratives jump from "cannot run X" directly to "complete" without compensating contract-level proof and residual-risk statement.
+  prevention: Use a standard fallback evidence template and require gatekeeper acknowledgment of constrained confidence.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every new mutation endpoint, include a `Validation Precedence` table that defines check order and exact status/code outcome for mixed-invalid payloads (e.g., duplicate + unknown + ineligible)."
+  reason: Removes ambiguous failure semantics that otherwise surface late during test-break.
+
+- agent: Test Breaker Agent
+  change: "Always add at least one mixed-invalid payload test per mutation endpoint that asserts both atomic no-partial-write behavior and the declared precedence status code."
+  reason: Prevents unstable contracts where only single-error cases are tested.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If any required suite is environment-blocked, require an explicit evidence-substitution triad in the ticket: blocked command/root cause, compensating deterministic suites, and residual-risk note before allowing COMPLETE."
+  reason: Keeps completion decisions auditable without over- or under-blocking.
+
+### Workflow Improvements
+- issue: Runtime behavior decisions (restart-required player updates, zero-slot fallback) were clarified during planning/spec instead of being guaranteed up front.
+  improvement: Add a planner exit criterion that blocks transition to SPECIFICATION unless runtime application timing and empty-state fallback are explicitly selected.
+  expected_benefit: Fewer medium-confidence assumptions and less downstream contract churn.
+
+- issue: Contract confidence depended on ad-hoc interpretation when router tests could not execute locally.
+  improvement: Introduce a reusable "constrained environment evidence matrix" checklist in checkpoints for backend/API tickets.
+  expected_benefit: Consistent, transparent AC closure under local environment constraints.
+
+### Keep / Reinforce
+- practice: Checkpointing `Would have asked` + `Assumption made` + `Confidence` at each uncertainty point.
+  reason: Preserves decision provenance and prevents implicit assumptions from disappearing in final AC claims.
+
+- practice: Pairing backend service-contract tests with frontend API-client contract tests for the same mutation semantics.
+  reason: Provides cross-layer verification even when one infrastructure slice is temporarily unavailable.
+
+---
