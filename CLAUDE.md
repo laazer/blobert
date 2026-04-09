@@ -191,6 +191,7 @@ Prefer `git mv` for renames/moves to preserve history.
 
 - Prefer module-level imports; lazy imports require explicit justification.
 - Treat unexplained tuning/threshold literals as findings.
+- In `asset_generation/**`, avoid bare `dict` and untyped dicts: use `dict[str, T]`, `Mapping[str, T]` for read-only arguments, `TypedDict` for fixed key sets, and Pydantic models for FastAPI payloads. Reserve `dict[str, Any]` for validated JSON boundaries (e.g. registry/manifest parse → validate → serialize), not as a routine internal type.
 
 ### Pre-commit enforcement
 

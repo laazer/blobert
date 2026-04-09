@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict
+from typing import TYPE_CHECKING, Callable, TypedDict
 
 from .ids import EnemyBodyTypes
 from .keywords import keywords_for_family
@@ -15,6 +15,14 @@ if TYPE_CHECKING:
         from core.rig_types import RigDefinition
     except ImportError:
         from src.core.rig_types import RigDefinition
+
+
+class BodyFamilyRegistryEntry(TypedDict):
+    """Static registry row: motion class, rig factory, and text keywords."""
+
+    motion_class: type
+    rig_factory: Callable[[], RigDefinition]
+    keywords: list[str]
 
 
 def _rig_blob() -> RigDefinition:
@@ -41,7 +49,7 @@ def _rig_humanoid() -> RigDefinition:
     return imported_humanoid_rig()
 
 
-BODY_FAMILY_REGISTRY: Dict[str, Dict[str, Any]] = {
+BODY_FAMILY_REGISTRY: dict[str, BodyFamilyRegistryEntry] = {
     EnemyBodyTypes.BLOB: {
         "motion_class": BlobBodyType,
         "rig_factory": _rig_blob,

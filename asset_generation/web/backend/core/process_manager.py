@@ -22,7 +22,7 @@ class ProcessManager:
             return self._process.returncode
         return None
 
-    async def start(self, cmd: list[str], cwd: Path, env: dict) -> str:
+    async def start(self, cmd: list[str], cwd: Path, env: dict[str, str]) -> str:
         if self.is_running:
             raise RuntimeError("A process is already running")
         self._run_id = str(uuid.uuid4())

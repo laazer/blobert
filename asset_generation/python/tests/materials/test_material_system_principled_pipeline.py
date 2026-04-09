@@ -10,6 +10,7 @@ from src.materials.material_system import (
     add_metallic_texture,
     add_organic_texture,
     create_material,
+    setup_materials,
 )
 
 
@@ -140,3 +141,13 @@ def test_create_material_toxic_green_organic_no_roughness_link() -> None:
 def test_organic_detail_fac_stays_below_legacy_wash_ceiling() -> None:
     # CHECKPOINT: legacy organic multiply used Fac=0.3 — keep pipeline visibly more saturated.
     assert _ORGANIC_BASE_COLOR_DETAIL_FAC < 0.3
+
+
+def test_setup_materials_returns_str_keyed_material_map() -> None:
+    """Palette setup builds one entry per palette name without a full Blender graph."""
+    with patch.object(ms, "create_material", side_effect=lambda name, *_a, **_k: MagicMock(name=name)):
+        mats = setup_materials()
+    assert isinstance(mats, dict)
+    assert mats
+    assert all(isinstance(k, str) for k in mats)
+    assert all(v is not None for v in mats.values())

@@ -1,6 +1,7 @@
 from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, ConfigDict
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -17,22 +18,35 @@ _MIME = {
 }
 
 
+class ListedAsset(BaseModel):
+    """One file entry from an export directory (ARGLB-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    name: str
+    dir: str
+    size: int
+
+
 @router.get("")
 async def list_assets() -> JSONResponse:
-    assets: list[dict] = []
+    assets: list[ListedAsset] = []
     for export_dir in _EXPORT_DIRS:
         d = settings.python_root / export_dir
         if not d.exists():
             continue
         for f in sorted(d.iterdir()):
             if f.suffix in _MIME:
-                assets.append({
-                    "path": f"{export_dir}/{f.name}",
-                    "name": f.name,
-                    "dir": export_dir,
-                    "size": f.stat().st_size,
-                })
-    return JSONResponse({"assets": assets})
+                assets.append(
+                    ListedAsset(
+                        path=f"{export_dir}/{f.name}",
+                        name=f.name,
+                        dir=export_dir,
+                        size=f.stat().st_size,
+                    ),
+                )
+    return JSONResponse({"assets": [a.model_dump() for a in assets]})
 
 
 @router.get("/{asset_path:path}")

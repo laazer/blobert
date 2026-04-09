@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import os
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from core.config import settings
 from core.path_guard import resolve_src_path
@@ -13,9 +15,29 @@ from core.path_guard import resolve_src_path
 router = APIRouter(prefix="/api/files", tags=["files"])
 
 
-def _build_tree(directory: Path, base: Path) -> list[dict[str, Any]]:
+class FileTreeFile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["file"] = "file"
+    path: str
+    name: str
+
+
+class FileTreeDir(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["dir"] = "dir"
+    path: str
+    name: str
+    children: list[FileTreeFile | FileTreeDir]
+
+
+FileTreeNode = FileTreeFile | FileTreeDir
+
+
+def _build_tree(directory: Path, base: Path) -> list[FileTreeNode]:
     """Recursively build a file tree of .py files."""
-    entries: list[dict[str, Any]] = []
+    entries: list[FileTreeNode] = []
     try:
         items = sorted(directory.iterdir(), key=lambda p: (p.is_file(), p.name))
     except PermissionError:
@@ -26,9 +48,16 @@ def _build_tree(directory: Path, base: Path) -> list[dict[str, Any]]:
         if item.is_dir():
             children = _build_tree(item, base)
             if children:
-                entries.append({"type": "dir", "path": str(rel), "name": item.name, "children": children})
+                entries.append(
+                    FileTreeDir(
+                        type="dir",
+                        path=str(rel),
+                        name=item.name,
+                        children=children,
+                    ),
+                )
         elif item.is_file() and item.suffix == ".py":
-            entries.append({"type": "file", "path": str(rel), "name": item.name})
+            entries.append(FileTreeFile(type="file", path=str(rel), name=item.name))
     return entries
 
 
@@ -38,7 +67,7 @@ async def list_files() -> JSONResponse:
     if not src_root.exists():
         raise HTTPException(status_code=404, detail="src/ directory not found")
     tree = _build_tree(src_root, src_root)
-    return JSONResponse({"tree": tree})
+    return JSONResponse({"tree": [n.model_dump() for n in tree]})
 
 
 @router.get("/{file_path:path}")

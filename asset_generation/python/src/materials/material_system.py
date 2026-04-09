@@ -3,6 +3,8 @@ Material creation system with procedural textures
 """
 from __future__ import annotations
 
+from typing import Any, Callable, Mapping
+
 import bpy
 
 from ..utils.materials import (
@@ -12,8 +14,10 @@ from ..utils.materials import (
     MaterialThemes,
 )
 
+TextureHandler = Callable[..., None]
+
 # Map texture type → handler function (populated after handler definitions below)
-_TEXTURE_HANDLERS: dict = {}
+_TEXTURE_HANDLERS: dict[str, TextureHandler] = {}
 
 ENEMY_FINISH_PRESETS = {
     "default": (None, None, None),
@@ -247,9 +251,12 @@ _TEXTURE_HANDLERS = {
 }
 
 
-def setup_materials(enemy_finish: str = "default", enemy_hex_color: str = "") -> dict:
+def setup_materials(
+    enemy_finish: str = "default",
+    enemy_hex_color: str = "",
+) -> dict[str, bpy.types.Material]:
     """Create all materials from the shared color palette"""
-    materials = {}
+    materials: dict[str, bpy.types.Material] = {}
     override_color = _parse_hex_color(enemy_hex_color) if enemy_hex_color else None
     finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
         enemy_finish,
@@ -335,12 +342,15 @@ def _material_for_finish_hex(
     )
 
 
-def apply_feature_slot_overrides(slot_materials: dict, features: dict | None) -> dict:
+def apply_feature_slot_overrides(
+    slot_materials: dict[str, bpy.types.Material | None],
+    features: Mapping[str, Any] | None,
+) -> dict[str, bpy.types.Material | None]:
     """Re-create body/head/limbs/extra materials when ``features`` sets finish or hex overrides."""
     if not features:
         return slot_materials
 
-    out = dict(slot_materials)
+    out: dict[str, bpy.types.Material | None] = dict(slot_materials)
 
     for slot_key, mat in list(out.items()):
         if mat is None:
@@ -366,9 +376,9 @@ def apply_feature_slot_overrides(slot_materials: dict, features: dict | None) ->
 def material_for_zone_part(
     zone: str,
     part_id: str | None,
-    slot_materials: dict,
-    features: dict | None,
-):
+    slot_materials: dict[str, bpy.types.Material | None],
+    features: Mapping[str, Any] | None,
+) -> bpy.types.Material | None:
     """Resolve material for a sub-part: optional ``features[zone]['parts'][part_id]`` overrides zone slot."""
     base = slot_materials.get(zone)
     if base is None or not part_id or not features:
@@ -412,7 +422,10 @@ def apply_material_to_object(obj, material) -> None:
             obj.data.materials[0] = material
 
 
-def _build_body_part_material_map(available_mats: list, rng) -> dict:
+def _build_body_part_material_map(
+    available_mats: list[bpy.types.Material],
+    rng,
+) -> dict[str, bpy.types.Material]:
     """Map body part names to materials given a list of available theme materials"""
     count = len(available_mats)
     if count >= 3:
@@ -442,7 +455,11 @@ def _build_body_part_material_map(available_mats: list, rng) -> dict:
     }
 
 
-def get_enemy_materials(enemy_name: str, materials: dict, rng) -> dict:
+def get_enemy_materials(
+    enemy_name: str,
+    materials: dict[str, bpy.types.Material],
+    rng,
+) -> dict[str, bpy.types.Material | None]:
     """Return a body-part → material mapping for the given enemy type"""
     default_fallback = {
         'body': materials.get(MaterialNames.ORGANIC_BROWN),
