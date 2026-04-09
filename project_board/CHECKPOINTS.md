@@ -954,3 +954,13 @@ Log: `project_board/checkpoints/M9-EBUI/run-2026-04-09-autopilot.md`
 ### [13_registry_paths] — OUTCOME: COMPLETE
 Draft/live `draft/` subtrees for animated/player/level exports; `patch_*_version` relocates GLB + sidecars; sync + asset list cover draft; run stream `output_draft` + `BLOBERT_EXPORT_USE_DRAFT_SUBDIR`; spec `registry_draft_live_directory_layout_spec.md`; CI green.
 Log: `project_board/checkpoints/13_registry_paths/run-2026-04-09-handoff.md`
+
+## Run: 2026-04-09T22-30-00Z-ticket-14-preview-collapse
+- Queue mode: single ticket (handoff completion)
+- Queue scope: `14_hideable_animation_chooser_and_log_terminal`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### [14_preview_collapse] — OUTCOME: COMPLETE
+Collapsible **Animations** and **Log / run output** in `ThreePanelLayout` with `usePersistedBoolean` + localStorage; `GlbViewer` in flex-grow wrapper; Terminal `scrollIntoView` guard for tests; RTL coverage.
+Log: `project_board/checkpoints/14_preview_collapse/run-2026-04-09-handoff.md`

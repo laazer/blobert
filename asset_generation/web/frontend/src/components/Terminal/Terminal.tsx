@@ -17,7 +17,6 @@ const styles: Record<string, React.CSSProperties> = {
     maxHeight: "28vh",
     minHeight: 120,
     flexShrink: 0,
-    borderTop: "1px solid #3c3c3c",
   },
   line: {
     whiteSpace: "pre-wrap",
@@ -30,7 +29,10 @@ export function Terminal() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = bottomRef.current;
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
   }, [lines]);
 
   return (

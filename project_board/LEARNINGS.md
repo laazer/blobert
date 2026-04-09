@@ -4,6 +4,18 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [14_preview_collapse] — jsdom and scrollIntoView
+*Completed: 2026-04-09*
+
+### Learnings
+- category: testing
+  insight: `Terminal`’s auto-scroll called `scrollIntoView` unconditionally; jsdom’s `Element` stub lacks it, breaking any RTL mount of the real `Terminal`.
+  impact: New layout tests that render `Terminal` failed until guarded with `typeof el.scrollIntoView === "function"`.
+  prevention: Guard DOM APIs that are browser-only when components are tested under jsdom.
+  severity: low
+
+---
+
 ## [13_registry_paths] — Draft subtree + patch-time relocate
 *Completed: 2026-04-09*
 

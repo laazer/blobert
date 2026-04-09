@@ -26,7 +26,7 @@
 11. `backlog/11_enemy_body_part_extras_spec_and_pipeline.md` — **Extras** feature: spec, per-part exclusive extra type (shell / spikes / horns / bulbs), spike shape + counts, materials; Python + Blender pipeline + tests.
 12. `backlog/12_enemy_body_part_extras_editor_ui.md` — **Extras** tab in asset editor (`ThreePanelLayout`), per-part extra + material/color UI; depends on **11**.
 13. `done/13_registry_paths_align_with_draft_vs_in_use_directories.md` — on-disk dirs match **draft** vs **live** / pool lifecycle; export + promote move files and registry paths; git-friendly commits for in-use assets only.
-14. `backlog/14_hideable_animation_chooser_and_log_terminal.md` — collapsible **AnimationControls** + **Terminal** in `ThreePanelLayout`; optional persisted visibility.
+14. `done/14_hideable_animation_chooser_and_log_terminal.md` — collapsible **AnimationControls** + **Terminal** in `ThreePanelLayout`; optional persisted visibility.
 
 ## Dependencies
 

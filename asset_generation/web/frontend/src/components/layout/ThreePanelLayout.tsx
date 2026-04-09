@@ -1,5 +1,6 @@
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { usePersistedBoolean } from "../../hooks/usePersistedBoolean";
 import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
 import { ModelRegistryPane } from "../Editor/ModelRegistryPane";
@@ -34,6 +35,79 @@ const tabBtn = (active: boolean): CSSProperties => ({
   background: active ? "#0e639c" : "#3c3c3c",
   color: "#d4d4d4",
 });
+
+const LS_PREVIEW_ANIMATION_EXPANDED = "blobert.editor.preview.animationExpanded";
+const LS_PREVIEW_TERMINAL_EXPANDED = "blobert.editor.preview.terminalExpanded";
+
+const collapsibleBar: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "4px 8px",
+  background: "#252526",
+  borderTop: "1px solid #3c3c3c",
+  flexShrink: 0,
+};
+
+const collapsibleTitle: CSSProperties = {
+  fontSize: 11,
+  color: "#9d9d9d",
+  flex: 1,
+};
+
+const collapsibleToggle: CSSProperties = {
+  background: "#3c3c3c",
+  color: "#d4d4d4",
+  border: "1px solid #555",
+  borderRadius: 3,
+  padding: "2px 8px",
+  cursor: "pointer",
+  fontSize: 11,
+};
+
+type CollapsiblePreviewSectionProps = {
+  panelId: string;
+  title: string;
+  regionLabel: string;
+  expandLabel: string;
+  collapseLabel: string;
+  expanded: boolean;
+  onExpandedChange: (next: boolean) => void;
+  children: ReactNode;
+};
+
+function CollapsiblePreviewSection({
+  panelId,
+  title,
+  regionLabel,
+  expandLabel,
+  collapseLabel,
+  expanded,
+  onExpandedChange,
+  children,
+}: CollapsiblePreviewSectionProps) {
+  return (
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" }}>
+      <div style={collapsibleBar}>
+        <span style={collapsibleTitle}>{title}</span>
+        <button
+          type="button"
+          style={collapsibleToggle}
+          aria-expanded={expanded}
+          aria-controls={expanded ? panelId : undefined}
+          onClick={() => onExpandedChange(!expanded)}
+        >
+          {expanded ? collapseLabel : expandLabel}
+        </button>
+      </div>
+      {expanded ? (
+        <div id={panelId} role="region" aria-label={regionLabel} style={{ flexShrink: 0 }}>
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function CenterSwitchBar() {
   const centerPanel = useAppStore((s) => s.centerPanel);
@@ -114,6 +188,8 @@ function CenterSwitchBar() {
 
 export function ThreePanelLayout() {
   const [fileTreeVisible, setFileTreeVisible] = useState(false);
+  const [animationExpanded, setAnimationExpanded] = usePersistedBoolean(LS_PREVIEW_ANIMATION_EXPANDED, true);
+  const [terminalExpanded, setTerminalExpanded] = usePersistedBoolean(LS_PREVIEW_TERMINAL_EXPANDED, true);
   const centerPanel = useAppStore((s) => s.centerPanel);
   const setCenterPanel = useAppStore((s) => s.setCenterPanel);
 
@@ -256,16 +332,48 @@ export function ThreePanelLayout() {
         style={{
           flex: centerOpen ? 1 : "1 1 0%",
           minWidth: 0,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
         }}
       >
-        <PreviewSourceBar />
-        <GlbViewer />
-        <AnimationControls />
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <PreviewSourceBar />
+          <GlbViewer />
+        </div>
+        <CollapsiblePreviewSection
+          panelId="blobert-preview-animation-panel"
+          title="Animations"
+          regionLabel="Animation clips and playback"
+          expandLabel="Show animations"
+          collapseLabel="Hide animations"
+          expanded={animationExpanded}
+          onExpandedChange={setAnimationExpanded}
+        >
+          <AnimationControls />
+        </CollapsiblePreviewSection>
         <CommandPanel />
-        <Terminal />
+        {/* Terminal unmount hides the view only; `terminalLines` in the store keeps buffering. */}
+        <CollapsiblePreviewSection
+          panelId="blobert-preview-terminal-panel"
+          title="Log / run output"
+          regionLabel="Run output log"
+          expandLabel="Show log"
+          collapseLabel="Hide log"
+          expanded={terminalExpanded}
+          onExpandedChange={setTerminalExpanded}
+        >
+          <Terminal />
+        </CollapsiblePreviewSection>
       </div>
     </div>
   );

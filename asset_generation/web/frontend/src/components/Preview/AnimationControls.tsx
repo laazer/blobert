@@ -18,7 +18,6 @@ export function AnimationControls() {
   return (
     <div style={{
       background: "#252526",
-      borderTop: "1px solid #3c3c3c",
       padding: "4px 8px",
       display: "flex",
       gap: 4,
