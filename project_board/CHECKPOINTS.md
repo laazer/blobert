@@ -804,3 +804,46 @@ Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
 - Stage: TEST_BREAK
 - Log: `project_board/checkpoints/M9-DDIM/run-2026-04-09-autopilot.md`
 - Outcome: Added adversarial delete tests for concurrent double-delete determinism, encoded traversal rejection, malformed in-use confirmation rejection, and slot-reference cleanup invariant checks.
+
+---
+
+## Run: 2026-04-09T13-38-52Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/08_runtime_spawn_random_enemy_visual_variant.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-RSEVV / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: PLANNING (bootstrap from malformed ticket)
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+
+### M9-RSEVV / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: PLANNING → SPECIFICATION
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+- Outcome: Planner decomposition completed with conservative assumptions for uniform-default variant selection and single spawn-choke-point integration shared by sandbox and procedural flows.
+
+### M9-RSEVV / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: SPECIFICATION
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+- Outcome: Formal runtime selection specification completed with deterministic RNG seam and explicit sandbox/procedural choke-point integration contract.
+
+### M9-RSEVV / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: TEST_DESIGN
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+- Outcome: Logged strict selector API/choke-point assumptions and authored primary runtime visual-variant behavioral tests.
+
+### M9-RSEVV / run-2026-04-09-test-break
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: TEST_BREAK
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+- Outcome: Added adversarial selector tests for malformed metadata fail-closed behavior, duplicate-id conflict rejection, wrong-shape manifest handling, ineligible leakage prevention, and deterministic stress-sequence invariants.
+
+### M9-RSEVV / run-2026-04-09-integration-evidence
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/08_runtime_spawn_random_enemy_visual_variant.md`
+- Stage: INTEGRATION
+- Log: `project_board/checkpoints/M9-RSEVV/run-2026-04-09-autopilot.md`
+- Outcome: Evidence refresh only: explicit AC1/AC2 test mapping in ticket Validation Status, fresh `timeout 300 ci/scripts/run_tests.sh` exit `0` evidence for AC3, and routing to Acceptance Criteria Gatekeeper Agent (`Proceed`) for final closure review.

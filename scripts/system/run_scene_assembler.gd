@@ -27,9 +27,13 @@ const POOL: Dictionary = {
 }
 
 const _DEFAULT_ROOM_WIDTH: float = 30.0
+const _ENEMY_VISUAL_VARIANT_SELECTOR_PATH: String = "res://scripts/system/enemy_visual_variant_selector.gd"
+const _ENEMY_VISUAL_VARIANT_SELECTOR_METHOD: String = "resolve_spawn_visual_variant"
+const _ENEMY_VISUAL_VARIANT_SELECTOR_SCRIPT: GDScript = preload("res://scripts/system/enemy_visual_variant_selector.gd")
 
 var _rsm: RunStateManager
 var _active_rooms: Array[Node3D] = []
+var _enemy_visual_variant_selector: RefCounted = _ENEMY_VISUAL_VARIANT_SELECTOR_SCRIPT.new()
 
 
 func _ready() -> void:
@@ -84,3 +88,25 @@ func _clear_rooms() -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	_active_rooms.clear()
+
+
+func _resolve_spawn_visual_variant_for_enemy_family(
+	enemy_family: String,
+	manifest: Dictionary,
+	rng: Variant = null
+) -> Dictionary:
+	if _enemy_visual_variant_selector == null:
+		push_error("RunSceneAssembler: enemy visual variant selector is unavailable")
+		return {"ok": false, "error": "selector unavailable", "path": ""}
+	if not _enemy_visual_variant_selector.has_method(_ENEMY_VISUAL_VARIANT_SELECTOR_METHOD):
+		push_error("RunSceneAssembler: selector missing method %s" % _ENEMY_VISUAL_VARIANT_SELECTOR_METHOD)
+		return {"ok": false, "error": "selector method missing", "path": ""}
+	var result: Variant = _enemy_visual_variant_selector.call(
+		_ENEMY_VISUAL_VARIANT_SELECTOR_METHOD,
+		enemy_family,
+		manifest,
+		rng
+	)
+	if not (result is Dictionary):
+		return {"ok": false, "error": "selector returned non-dictionary", "path": ""}
+	return result as Dictionary

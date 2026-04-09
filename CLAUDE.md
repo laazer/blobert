@@ -163,6 +163,7 @@ No explicit build/deploy command is currently defined in `Taskfile.yml` or CI sc
 
 - `timeout 300 godot -s tests/run_tests.gd`
 - `timeout 120 godot --headless --import`
+- Keep import steps bounded and fail-fast: do not swallow `godot --import` errors with `|| true` or stderr redirection.
 
 ### Do not use `godot --check-only`
 
