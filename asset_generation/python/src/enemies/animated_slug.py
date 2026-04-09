@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from mathutils import Vector
+
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models.blob_simple import (
     CYLINDER_VERTICES_HEX,
@@ -11,7 +13,7 @@ from ..core.rig_models.blob_simple import (
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
-from .zone_geometry_extras_attach import append_slug_zone_extras
+from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
 class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -51,9 +53,18 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         self.width = width
         self.height = height
 
+        cz = float(height * MESH_BODY_CENTER_Z_FACTOR)
+        self._zone_geom_body_center = Vector((0.0, 0.0, cz))
+        self._zone_geom_body_radii = Vector((length, width, height))
+
         head_scale = self.width * self._mesh("HEAD_WIDTH_RATIO")
+        hx = float(self.length * self._mesh("HEAD_X_RATIO"))
+        hz = float(self.height * self._mesh("HEAD_Z_RATIO"))
+        self._zone_geom_head_center = Vector((hx, 0.0, hz))
+        self._zone_geom_head_radii = Vector((head_scale, head_scale, head_scale))
+
         head = create_sphere(
-            location=(self.length * self._mesh("HEAD_X_RATIO"), 0, self.height * self._mesh("HEAD_Z_RATIO")),
+            location=(hx, 0, hz),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
@@ -92,7 +103,7 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             else:
                 apply_material_to_object(part, eye_material)
 
-        append_slug_zone_extras(self)
+        append_animated_enemy_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.BLOB

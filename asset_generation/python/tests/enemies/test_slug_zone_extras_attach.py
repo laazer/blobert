@@ -4,11 +4,13 @@ from unittest.mock import MagicMock, patch
 
 from mathutils import Vector
 
+from src.core.rig_models.blob_simple import MESH_BODY_CENTER_Z_FACTOR
 from src.enemies.animated_slug import AnimatedSlug
 from src.enemies.zone_geometry_extras_attach import (
     _ellipsoid_normal,
     _orient_cone_outward,
     _vec_xyz,
+    append_animated_enemy_zone_extras,
     append_slug_zone_extras,
 )
 
@@ -21,6 +23,14 @@ def _minimal_slug() -> AnimatedSlug:
     slug.length = 2.0
     slug.width = 0.8
     slug.height = 0.6
+    cz = float(slug.height * MESH_BODY_CENTER_Z_FACTOR)
+    slug._zone_geom_body_center = Vector((0.0, 0.0, cz))
+    slug._zone_geom_body_radii = Vector((slug.length, slug.width, slug.height))
+    hs = float(slug.width * AnimatedSlug.HEAD_WIDTH_RATIO)
+    hx = float(slug.length * AnimatedSlug.HEAD_X_RATIO)
+    hz = float(slug.height * AnimatedSlug.HEAD_Z_RATIO)
+    slug._zone_geom_head_center = Vector((hx, 0.0, hz))
+    slug._zone_geom_head_radii = Vector((hs, hs, hs))
     slug.parts = [MagicMock(), MagicMock()]
     return slug
 
@@ -35,7 +45,7 @@ def test_slug_apply_themed_materials_calls_zone_extras_hook() -> None:
     }
     with patch("src.enemies.animated_slug.get_enemy_materials", return_value=mats):
         with patch("src.enemies.animated_slug.apply_material_to_object"):
-            with patch("src.enemies.animated_slug.append_slug_zone_extras") as ap:
+            with patch("src.enemies.animated_slug.append_animated_enemy_zone_extras") as ap:
                 s.apply_themed_materials()
     ap.assert_called_once_with(s)
 
@@ -182,3 +192,39 @@ def test_append_skips_bad_zone_geometry_extras() -> None:
     s.build_options = {"zone_geometry_extras": "nope"}
     append_slug_zone_extras(s)
     assert len(s.parts) == 2
+
+
+def test_append_animated_enemy_zone_extras_non_slug_theme() -> None:
+    """Unified attach uses ``model.name`` for ``get_enemy_materials`` (e.g. imp)."""
+    inst = MagicMock()
+    inst.name = "imp"
+    inst.materials = {}
+    inst.rng = MagicMock()
+    inst.rng.random = MagicMock(return_value=0.3)
+    inst.build_options = {
+        "features": {},
+        "zone_geometry_extras": {"body": {"kind": "spikes", "spike_count": 2, "spike_shape": "cone"}},
+    }
+    inst.parts = [MagicMock(), MagicMock()]
+    inst._zone_geom_body_center = Vector((0.0, 0.0, 0.6))
+    inst._zone_geom_body_radii = Vector((0.4, 0.4, 1.0))
+    inst._zone_geom_head_center = Vector((0.0, 0.0, 1.5))
+    inst._zone_geom_head_radii = Vector((0.3, 0.3, 0.3))
+    fake_cone = MagicMock()
+    with patch("src.enemies.zone_geometry_extras_attach.create_cone", return_value=fake_cone):
+        with patch("src.enemies.zone_geometry_extras_attach.apply_material_to_object"):
+            with patch(
+                "src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"body": MagicMock()}
+            ) as gm:
+                with patch(
+                    "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
+                    side_effect=lambda slots, _f: slots,
+                ):
+                    with patch(
+                        "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
+                        return_value=MagicMock(),
+                    ):
+                        append_animated_enemy_zone_extras(inst)
+    gm.assert_called_once()
+    assert gm.call_args[0][0] == "imp"
+    assert len(inst.parts) == 4

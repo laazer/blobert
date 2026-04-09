@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { AnimatedBuildControlDef } from "../../types";
 import {
   formatCommandPreview,
   getEnemyOptions,
   normalizeEnemyForCmd,
   parseCommandPreview,
+  partitionAnimatedBuildOptionsForJson,
   PLAYER_COLORS,
 } from "./commandLogic";
 
@@ -91,5 +93,42 @@ describe("command logic", () => {
   it("rejects non-integer variant count", () => {
     const parsed = parseCommandPreview("animated spider 3.5 --finish default");
     expect(parsed.error).toContain("integer");
+  });
+});
+
+describe("partitionAnimatedBuildOptionsForJson", () => {
+  const defs: AnimatedBuildControlDef[] = [
+    { key: "BODY_BASE", label: "Body", type: "float", min: 0.5, max: 2, step: 0.05, default: 1 },
+    {
+      key: "extra_zone_body_spike_size",
+      label: "Spike size",
+      type: "float",
+      min: 0.25,
+      max: 3,
+      step: 0.05,
+      default: 1,
+    },
+    {
+      key: "extra_zone_body_place_top",
+      label: "Top",
+      type: "bool",
+      default: true,
+    },
+  ];
+
+  it("puts only uppercase mesh float keys under mesh", () => {
+    const out = partitionAnimatedBuildOptionsForJson(
+      { BODY_BASE: 1.4, extra_zone_body_spike_size: 2.5, extra_zone_body_place_top: false },
+      defs,
+    );
+    expect(out.mesh).toEqual({ BODY_BASE: 1.4 });
+    expect(out.extra_zone_body_spike_size).toBe(2.5);
+    expect(out.extra_zone_body_place_top).toBe(false);
+  });
+
+  it("omits mesh when no mesh keys are set", () => {
+    const out = partitionAnimatedBuildOptionsForJson({ extra_zone_body_spike_size: 1.8 }, defs);
+    expect(out.mesh).toBeUndefined();
+    expect(out.extra_zone_body_spike_size).toBe(1.8);
   });
 });

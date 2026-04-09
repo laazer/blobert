@@ -116,7 +116,7 @@ export function ControlRow({
 }: {
   def: AnimatedBuildControlDef;
   value: unknown;
-  onChange: (v: number | string) => void;
+  onChange: (v: number | string | boolean) => void;
 }) {
   const rs = rowStyles;
   if (def.type === "float") {
@@ -173,6 +173,15 @@ export function ControlRow({
             </option>
           ))}
         </select>
+      </label>
+    );
+  }
+  if (def.type === "bool") {
+    const b = typeof value === "boolean" ? value : def.default;
+    return (
+      <label style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer" }}>
+        <input type="checkbox" checked={b} onChange={(e) => onChange(e.target.checked)} />
+        <span style={rs.label}>{def.label}</span>
       </label>
     );
   }

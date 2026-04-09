@@ -16,6 +16,7 @@ import {
   getEnemyOptions,
   normalizeEnemyForCmd,
   parseCommandPreview,
+  partitionAnimatedBuildOptionsForJson,
   PLAYER_COLORS,
   PLAYER_FINISHES,
 } from "./commandLogic";
@@ -211,16 +212,7 @@ export function CommandPanel() {
       const opts = animatedBuildOptionValues[slug];
       if (opts && Object.keys(opts).length > 0) {
         const defs = animatedBuildControls[slug] ?? [];
-        const meshKeys = new Set(
-          defs.filter((d) => d.type === "float").map((d) => d.key),
-        );
-        const top: Record<string, unknown> = {};
-        const mesh: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(opts)) {
-          if (meshKeys.has(k)) mesh[k] = v;
-          else top[k] = v;
-        }
-        if (Object.keys(mesh).length > 0) top.mesh = mesh;
+        const top = partitionAnimatedBuildOptionsForJson(opts, defs);
         buildOptionsJson = JSON.stringify({ [slug]: top });
       }
     }

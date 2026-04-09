@@ -9,7 +9,6 @@ import bpy
 from mathutils import Vector
 
 from ..core.blender_utils import create_cone, create_sphere
-from ..core.rig_models.blob_simple import MESH_BODY_CENTER_Z_FACTOR
 from ..materials.material_system import (
     apply_feature_slot_overrides,
     apply_material_to_object,
@@ -27,9 +26,11 @@ def _vec_xyz(v: Vector) -> tuple[float, float, float]:
     return (0.0, 0.0, 0.0)
 
 
-def _ellipsoid_point(cz: float, a: float, b: float, h: float, theta: float, phi: float) -> tuple[float, float, float]:
-    x = a * math.sin(phi) * math.cos(theta)
-    y = b * math.sin(phi) * math.sin(theta)
+def _ellipsoid_point_at(
+    cx: float, cy: float, cz: float, a: float, b: float, h: float, theta: float, phi: float
+) -> tuple[float, float, float]:
+    x = cx + a * math.sin(phi) * math.cos(theta)
+    y = cy + b * math.sin(phi) * math.sin(theta)
     z = cz + h * math.cos(phi)
     return (x, y, z)
 
@@ -51,6 +52,61 @@ def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: 
     return max(lo, min(hi, s))
 
 
+# World axes (Blender Z-up): extras spawn only where the surface normal aligns with enabled facings.
+_PLACE_KEYS: tuple[str, ...] = (
+    "place_top",
+    "place_bottom",
+    "place_front",
+    "place_back",
+    "place_left",
+    "place_right",
+)
+_PLACE_WORLD: dict[str, Vector] = {
+    "place_top": Vector((0.0, 0.0, 1.0)),
+    "place_bottom": Vector((0.0, 0.0, -1.0)),
+    "place_front": Vector((1.0, 0.0, 0.0)),
+    "place_back": Vector((-1.0, 0.0, 0.0)),
+    "place_right": Vector((0.0, 1.0, 0.0)),
+    "place_left": Vector((0.0, -1.0, 0.0)),
+}
+_FACING_DOT_MIN = 0.45
+
+
+def _place_flags(spec: dict[str, Any]) -> list[bool]:
+    return [bool(spec.get(k, True)) for k in _PLACE_KEYS]
+
+
+def _facing_allows_normal(spec: dict[str, Any], nrm: Vector) -> bool:
+    flags = _place_flags(spec)
+    if not any(flags):
+        return True
+    if all(flags):
+        return True
+    ol = nrm.length
+    if ol < 1e-12:
+        return False
+    nn = nrm * (1.0 / ol)
+    for k, on in zip(_PLACE_KEYS, flags):
+        if not on:
+            continue
+        if nn.dot(_PLACE_WORLD[k]) >= _FACING_DOT_MIN:
+            return True
+    return False
+
+
+def _body_ref_scale(a: float, b: float, h: float) -> float:
+    """Characteristic length from body semi-axes (scales spike/bulb mesh with creature size)."""
+    ax = max(1e-6, abs(a))
+    ay = max(1e-6, abs(b))
+    az = max(1e-6, abs(h))
+    return float((ax * ay * az) ** (1.0 / 3.0))
+
+
+def _head_ref_scale(ax: float, ay: float, az: float) -> float:
+    u = max(1e-6, abs(ax), abs(ay), abs(az))
+    return float(u)
+
+
 def _orient_cone_outward(obj: bpy.types.Object, _base_center: tuple[float, float, float], outward: Vector) -> None:
     z_axis = Vector((0.0, 0.0, 1.0))
     ol = outward.length
@@ -66,35 +122,76 @@ def _orient_cone_outward(obj: bpy.types.Object, _base_center: tuple[float, float
         obj.rotation_euler = (0.0, 0.0, 0.0)
 
 
-def append_slug_zone_extras(model: Any) -> None:
-    from .animated_slug import AnimatedSlug
-
-    if not isinstance(model, AnimatedSlug):
-        return
-
+def append_animated_enemy_zone_extras(model: Any) -> None:
+    """Attach ``zone_geometry_extras`` body/head geometry for any animated enemy that set ``_zone_geom_*`` in ``build_mesh_parts``."""
     raw = model.build_options.get("zone_geometry_extras")
     if not isinstance(raw, dict):
         return
 
+    theme = getattr(model, "name", None)
+    if not isinstance(theme, str) or not theme:
+        return
+
+    bc = getattr(model, "_zone_geom_body_center", None)
+    br = getattr(model, "_zone_geom_body_radii", None)
+    hc = getattr(model, "_zone_geom_head_center", None)
+    hr = getattr(model, "_zone_geom_head_radii", None)
+
     features = model.build_options.get("features")
     feat_dict = features if isinstance(features, dict) else None
-    enemy_mats = get_enemy_materials("slug", model.materials, model.rng)
+    enemy_mats = get_enemy_materials(theme, model.materials, model.rng)
     slot_mats = apply_feature_slot_overrides(enemy_mats, feat_dict)
 
-    cz = model.height * MESH_BODY_CENTER_Z_FACTOR
-    cx, cy = 0.0, 0.0
-    a, b, h = model.length, model.width, model.height
-
     body_spec = raw.get("body")
-    if isinstance(body_spec, dict):
-        _append_slug_body_extras(model, body_spec, slot_mats, feat_dict, cx, cy, cz, a, b, h)
+    if bc is not None and br is not None and isinstance(body_spec, dict):
+        _append_body_ellipsoid_extras(
+            model,
+            body_spec,
+            slot_mats,
+            feat_dict,
+            float(bc.x),
+            float(bc.y),
+            float(bc.z),
+            float(br.x),
+            float(br.y),
+            float(br.z),
+        )
 
     head_spec = raw.get("head")
-    if isinstance(head_spec, dict):
-        _append_slug_head_extras(model, head_spec, slot_mats, feat_dict)
+    if hc is not None and hr is not None and isinstance(head_spec, dict):
+        ax, ay, az = float(hr.x), float(hr.y), float(hr.z)
+        if max(ax, ay, az) > 1e-8:
+            _append_head_ellipsoid_extras(
+                model,
+                head_spec,
+                slot_mats,
+                feat_dict,
+                float(hc.x),
+                float(hc.y),
+                float(hc.z),
+                ax,
+                ay,
+                az,
+            )
 
 
-def _append_slug_body_extras(
+def append_slug_zone_extras(model: Any) -> None:
+    """Backward-compatible entry: slug instances only."""
+    from .animated_slug import AnimatedSlug
+
+    if isinstance(model, AnimatedSlug):
+        append_animated_enemy_zone_extras(model)
+
+
+def append_spider_zone_extras(model: Any) -> None:
+    """Backward-compatible entry: spider instances only."""
+    from .animated_spider import AnimatedSpider
+
+    if isinstance(model, AnimatedSpider):
+        append_animated_enemy_zone_extras(model)
+
+
+def _append_body_ellipsoid_extras(
     model: Any,
     spec: dict[str, Any],
     slot_mats: dict[str, bpy.types.Material | None],
@@ -114,20 +211,29 @@ def _append_slug_body_extras(
         str(spec.get("finish", "default")),
         str(spec.get("hex", "")),
     )
+    ref = _body_ref_scale(a, b, h)
     if kind == "spikes":
         n = max(1, int(spec.get("spike_count", 8)))
         spike_sz = _zone_extra_scale(spec, "spike_size")
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
-        for i in range(n):
-            theta = (2.0 * math.pi * i) / max(1, n)
-            phi = math.pi * 0.5
-            p = _ellipsoid_point(cz, a, b, h, theta, phi)
+        rad = ref * 0.22 * spike_sz
+        depth = ref * 0.48 * spike_sz
+        placed = 0
+        max_attempts = max(300, n * 60)
+        attempts = 0
+        while placed < n and attempts < max_attempts:
+            attempts += 1
+            t1 = model.rng.random() * 2.0 * math.pi
+            t2 = model.rng.random() * math.pi
+            p = _ellipsoid_point_at(cx, cy, cz, a, b, h, t1, t2)
             nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
-            tip = Vector(p) + nrm * (0.12 * spike_sz)
+            if not _facing_allows_normal(spec, nrm):
+                continue
+            tip = Vector(p) + nrm * (depth * 0.55)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.06 * spike_sz, 0.06 * spike_sz, 0.12 * spike_sz),
+                scale=(rad, rad, depth),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.4,
@@ -136,23 +242,39 @@ def _append_slug_body_extras(
             _orient_cone_outward(cone, (cx, cy, cz), nrm)
             apply_material_to_object(cone, mat)
             model.parts.append(cone)
+            placed += 1
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 4)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
-        for _ in range(nb):
+        br = ref * 0.2 * bulb_sz
+        placed = 0
+        max_attempts = max(400, nb * 80)
+        attempts = 0
+        while placed < nb and attempts < max_attempts:
+            attempts += 1
             t1 = model.rng.random() * 2.0 * math.pi
             t2 = model.rng.random() * math.pi
-            p = _ellipsoid_point(cz, a * 0.92, b * 0.92, h * 0.92, t1, t2)
-            bulb = create_sphere(location=p, scale=(0.07 * bulb_sz, 0.07 * bulb_sz, 0.07 * bulb_sz))
+            p = _ellipsoid_point_at(cx, cy, cz, a * 0.92, b * 0.92, h * 0.92, t1, t2)
+            nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
+            if not _facing_allows_normal(spec, nrm):
+                continue
+            bulb = create_sphere(location=p, scale=(br, br, br))
             apply_material_to_object(bulb, mat)
             model.parts.append(bulb)
+            placed += 1
 
 
-def _append_slug_head_extras(
+def _append_head_ellipsoid_extras(
     model: Any,
     spec: dict[str, Any],
     slot_mats: dict[str, bpy.types.Material | None],
     features: dict[str, Any] | None,
+    hx: float,
+    hy: float,
+    hz: float,
+    ax: float,
+    ay: float,
+    az: float,
 ) -> None:
     kind = str(spec.get("kind", "none"))
     mat = material_for_zone_geometry_extra(
@@ -162,25 +284,27 @@ def _append_slug_head_extras(
         str(spec.get("finish", "default")),
         str(spec.get("hex", "")),
     )
-    head_scale = model.width * float(model._mesh("HEAD_WIDTH_RATIO"))
-    hx = model.length * float(model._mesh("HEAD_X_RATIO"))
-    hz = model.height * float(model._mesh("HEAD_Z_RATIO"))
-    hc = (hx, 0.0, hz)
+    hc = (hx, hy, hz)
+    ref = _head_ref_scale(ax, ay, az)
 
     if kind == "horns":
         spike_sz = _zone_extra_scale(spec, "spike_size")
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
+        rad = ref * 0.18 * spike_sz
+        depth = ref * 0.42 * spike_sz
         for side in (-1, 1):
-            px = hx + head_scale * 0.3
-            py = float(side) * head_scale * 0.35
-            pz = hz + head_scale * 0.5
+            px = hx + ax * 0.3
+            py = hy + float(side) * ay * 0.35
+            pz = hz + az * 0.5
             p = (px, py, pz)
-            nrm = _ellipsoid_normal(hx, 0.0, hz, head_scale, head_scale, head_scale, p)
-            tip = Vector(p) + nrm * (0.08 * spike_sz)
+            nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
+            if not _facing_allows_normal(spec, nrm):
+                continue
+            tip = Vector(p) + nrm * (depth * 0.55)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.05 * spike_sz, 0.05 * spike_sz, 0.14 * spike_sz),
+                scale=(rad, rad, depth),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.35,
@@ -194,17 +318,26 @@ def _append_slug_head_extras(
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         count = max(1, int(spec.get("spike_count", 4)))
-        for si in range(count):
-            angle = (2.0 * math.pi * si) / max(1, count)
-            px = hx + head_scale * 0.4 * math.cos(angle)
-            py = head_scale * 0.4 * math.sin(angle)
-            pz = hz + head_scale * 0.55
+        rad = ref * 0.18 * spike_sz
+        depth = ref * 0.4 * spike_sz
+        placed = 0
+        max_attempts = max(300, count * 60)
+        attempts = 0
+        while placed < count and attempts < max_attempts:
+            attempts += 1
+            t1 = model.rng.random() * 2.0 * math.pi
+            t2 = model.rng.random() * 0.55 * math.pi + 0.15 * math.pi
+            px = hx + ax * math.sin(t2) * math.cos(t1)
+            py = hy + ay * math.sin(t2) * math.sin(t1)
+            pz = hz + az * math.cos(t2)
             p = (px, py, pz)
-            nrm = _ellipsoid_normal(hx, 0.0, hz, head_scale, head_scale, head_scale, p)
-            tip = Vector(p) + nrm * (0.08 * spike_sz)
+            nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
+            if not _facing_allows_normal(spec, nrm):
+                continue
+            tip = Vector(p) + nrm * (depth * 0.55)
             cone = create_cone(
                 location=_vec_xyz(tip),
-                scale=(0.05 * spike_sz, 0.05 * spike_sz, 0.12 * spike_sz),
+                scale=(rad, rad, depth),
                 vertices=verts,
                 depth=1.0,
                 radius1=0.35,
@@ -213,18 +346,26 @@ def _append_slug_head_extras(
             _orient_cone_outward(cone, hc, nrm)
             apply_material_to_object(cone, mat)
             model.parts.append(cone)
+            placed += 1
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 3)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
-        for _ in range(nb):
+        br = ref * 0.17 * bulb_sz
+        placed = 0
+        max_attempts = max(400, nb * 80)
+        attempts = 0
+        while placed < nb and attempts < max_attempts:
+            attempts += 1
             t1 = model.rng.random() * 2.0 * math.pi
             t2 = model.rng.random() * 0.6 * math.pi + 0.2 * math.pi
-            px = hx + head_scale * 0.45 * math.sin(t2) * math.cos(t1)
-            py = head_scale * 0.45 * math.sin(t2) * math.sin(t1)
-            pz = hz + head_scale * 0.45 * math.cos(t2)
-            bulb = create_sphere(
-                location=(px, py, pz),
-                scale=(0.06 * bulb_sz, 0.06 * bulb_sz, 0.06 * bulb_sz),
-            )
+            px = hx + ax * 0.45 * math.sin(t2) * math.cos(t1)
+            py = hy + ay * 0.45 * math.sin(t2) * math.sin(t1)
+            pz = hz + az * 0.45 * math.cos(t2)
+            p = (px, py, pz)
+            nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
+            if not _facing_allows_normal(spec, nrm):
+                continue
+            bulb = create_sphere(location=p, scale=(br, br, br))
             apply_material_to_object(bulb, mat)
             model.parts.append(bulb)
+            placed += 1

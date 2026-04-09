@@ -4,6 +4,8 @@ from __future__ import annotations
 import math
 from typing import ClassVar
 
+from mathutils import Vector
+
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models.quadruped_simple import (
     CYLINDER_VERTICES_HEX,
@@ -13,6 +15,7 @@ from ..core.rig_models.quadruped_simple import (
 from ..materials.material_system import apply_material_to_object
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
 class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -64,11 +67,18 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
 
     def build_mesh_parts(self):
         body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
+        flatten_y = random_variance(self._mesh("BODY_FLATTEN_Y_BASE"), self._mesh("BODY_FLATTEN_Y_VARIANCE"), self.rng)
+        bz = float(self._mesh("BODY_CENTER_Z"))
+        self._zone_geom_body_center = Vector((0.0, 0.0, bz))
+        self._zone_geom_body_radii = Vector(
+            (body_scale, body_scale * flatten_y, body_scale * float(self._mesh("BODY_FLATTEN_Z")))
+        )
+
         body = create_sphere(
-            location=(0, 0, self._mesh("BODY_CENTER_Z")),
+            location=(0, 0, bz),
             scale=(
                 body_scale,
-                body_scale * random_variance(self._mesh("BODY_FLATTEN_Y_BASE"), self._mesh("BODY_FLATTEN_Y_VARIANCE"), self.rng),
+                body_scale * flatten_y,
                 body_scale * self._mesh("BODY_FLATTEN_Z"),
             ),
         )
@@ -78,9 +88,15 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         head_scale = self.body_scale * random_variance(
             self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
         )
+        hx = float(self.body_scale * self._mesh("HEAD_X_ALONG"))
+        hz = float(self._mesh("HEAD_CENTER_Z"))
+        rz = float(head_scale * self._mesh("HEAD_FLATTEN_Z"))
+        self._zone_geom_head_center = Vector((hx, 0.0, hz))
+        self._zone_geom_head_radii = Vector((head_scale, head_scale, rz))
+
         head = create_sphere(
-            location=(self.body_scale * self._mesh("HEAD_X_ALONG"), 0, self._mesh("HEAD_CENTER_Z")),
-            scale=(head_scale, head_scale, head_scale * self._mesh("HEAD_FLATTEN_Z")),
+            location=(hx, 0, hz),
+            scale=(head_scale, head_scale, rz),
         )
         self.parts.append(head)
         self.head_scale = head_scale
@@ -148,6 +164,8 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         for _ in range(int(self._mesh("LEG_COUNT"))):
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
+
+        append_animated_enemy_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

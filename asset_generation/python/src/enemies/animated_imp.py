@@ -16,6 +16,7 @@ from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
 def _humanoid_limb_part_kinds(
@@ -74,9 +75,17 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         self.body_height = body_height
         self.body_width = body_width
 
+        bz = float(body_height * MESH_BODY_CENTER_Z_FACTOR)
+        self._zone_geom_body_center = Vector((0.0, 0.0, bz))
+        self._zone_geom_body_radii = Vector((body_width, body_width, body_height))
+
         head_scale = self.body_width * self._mesh("HEAD_SCALE_WIDTH_RATIO")
+        hz = float(self.body_height + head_scale * self._mesh("HEAD_ABOVE_BODY_SCALE"))
+        self._zone_geom_head_center = Vector((0.0, 0.0, hz))
+        self._zone_geom_head_radii = Vector((head_scale, head_scale, head_scale))
+
         head = create_sphere(
-            location=(0, 0, self.body_height + head_scale * self._mesh("HEAD_ABOVE_BODY_SCALE")),
+            location=(0, 0, hz),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
@@ -174,6 +183,8 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                     mat = limb_material
                 apply_material_to_object(self.parts[i + j], mat)
             i += cnt
+
+        append_animated_enemy_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.HUMANOID

@@ -63,6 +63,12 @@ export type AnimatedBuildControlDef =
       type: "select_str";
       options: string[];
       default: string;
+    }
+  | {
+      key: string;
+      label: string;
+      type: "bool";
+      default: boolean;
     };
 
 /** One row under ``enemies[slug].versions`` (MRVC-2). */

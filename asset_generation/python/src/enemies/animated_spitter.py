@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from mathutils import Vector
+
 from ..core.blender_utils import create_cylinder, create_sphere, random_variance
 from ..core.rig_models.blob_simple import (
     CYLINDER_VERTICES_HEX,
@@ -12,6 +14,7 @@ from ..core.rig_models.blob_simple import (
 from ..materials.material_system import apply_material_to_object
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
 class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -36,11 +39,16 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     def build_mesh_parts(self):
         body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         height = random_variance(self._mesh("HEIGHT_BASE"), self._mesh("HEIGHT_VARIANCE"), self.rng)
+        width_j = random_variance(1.0, self._mesh("WIDTH_JITTER_VARIANCE"), self.rng)
+        bz = float(height * MESH_BODY_CENTER_Z_FACTOR)
+        self._zone_geom_body_center = Vector((0.0, 0.0, bz))
+        self._zone_geom_body_radii = Vector((body_scale, body_scale * width_j, height))
+
         body = create_sphere(
-            location=(0, 0, height * MESH_BODY_CENTER_Z_FACTOR),
+            location=(0, 0, bz),
             scale=(
                 body_scale,
-                body_scale * random_variance(1.0, self._mesh("WIDTH_JITTER_VARIANCE"), self.rng),
+                body_scale * width_j,
                 height,
             ),
         )
@@ -51,12 +59,13 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         head_scale = self.body_scale * random_variance(
             self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
         )
+        hx = float(self.body_scale * self._mesh("HEAD_X_ALONG"))
+        hz = float(self.height * self._mesh("HEAD_Z_HEIGHT_RATIO"))
+        self._zone_geom_head_center = Vector((hx, 0.0, hz))
+        self._zone_geom_head_radii = Vector((head_scale, head_scale, head_scale))
+
         head = create_sphere(
-            location=(
-                self.body_scale * self._mesh("HEAD_X_ALONG"),
-                0,
-                self.height * self._mesh("HEAD_Z_HEIGHT_RATIO"),
-            ),
+            location=(hx, 0, hz),
             scale=(head_scale, head_scale, head_scale),
         )
         self.parts.append(head)
@@ -79,6 +88,8 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         for part in self.parts[2:]:
             apply_material_to_object(part, enemy_mats["limbs"])
+
+        append_animated_enemy_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.BLOB

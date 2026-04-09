@@ -101,6 +101,21 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       step: 0.05,
       default: 1,
     });
+    for (const [pk, plab] of [
+      ["place_top", "Top (+Z)"],
+      ["place_bottom", "Bottom (−Z)"],
+      ["place_front", "Front (+X)"],
+      ["place_back", "Back (−X)"],
+      ["place_right", "Right side (+Y)"],
+      ["place_left", "Left side (−Y)"],
+    ] as const) {
+      out.push({
+        key: `extra_zone_${zone}_${pk}`,
+        label: `${zlabel} extra on ${plab}`,
+        type: "bool",
+        default: true,
+      });
+    }
     out.push({
       key: `extra_zone_${zone}_finish`,
       label: `${zlabel} extra finish`,

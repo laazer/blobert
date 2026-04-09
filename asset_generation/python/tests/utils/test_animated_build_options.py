@@ -2,6 +2,8 @@
 
 import re
 
+import pytest
+
 from src.utils import animated_build_options as abo
 from src.utils.animated_build_options import (
     animated_build_controls_for_api,
@@ -292,6 +294,53 @@ def test_slug_defaults_zone_geometry_extras() -> None:
     assert z["body"]["spike_count"] == 8
     assert z["body"]["spike_size"] == 1.0
     assert z["body"]["bulb_size"] == 1.0
+    assert z["body"]["place_top"] is True
+    assert z["body"]["place_front"] is True
+
+
+def test_zone_geometry_extras_place_flat_keys_merge() -> None:
+    o = options_for_enemy(
+        "slug",
+        {
+            "extra_zone_body_place_top": False,
+            "extra_zone_body_place_bottom": True,
+            "extra_zone_head_place_front": 0,
+        },
+    )
+    assert o["zone_geometry_extras"]["body"]["place_top"] is False
+    assert o["zone_geometry_extras"]["body"]["place_bottom"] is True
+    assert o["zone_geometry_extras"]["head"]["place_front"] is False
+
+
+def test_extra_zone_spike_size_nested_top_level_applies() -> None:
+    o = options_for_enemy("slug", {"slug": {"extra_zone_body_spike_size": 2.2}})
+    assert o["zone_geometry_extras"]["body"]["spike_size"] == 2.2
+
+
+def test_extra_zone_spike_size_under_mesh_dict_is_ignored() -> None:
+    """``mesh`` only accepts ClassVar keys; misplaced ``extra_zone_*`` floats must not merge into extras."""
+    o = options_for_enemy(
+        "slug",
+        {"slug": {"mesh": {"extra_zone_body_spike_size": 2.2, "LENGTH_BASE": 1.55}}},
+    )
+    assert o["zone_geometry_extras"]["body"]["spike_size"] == 1.0
+    assert o["mesh"]["LENGTH_BASE"] == pytest.approx(1.55)
+
+
+def test_sanitize_zone_geometry_extras_place_bools() -> None:
+    got = abo._sanitize_zone_geometry_extras(
+        "slug",
+        {
+            "body": {
+                "place_top": "false",
+                "place_front": 1,
+                "place_bottom": 0,
+            }
+        },
+    )
+    assert got["body"]["place_top"] is False
+    assert got["body"]["place_front"] is True
+    assert got["body"]["place_bottom"] is False
 
 
 def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
@@ -367,6 +416,8 @@ def test_api_slug_includes_zone_extra_control_keys() -> None:
     assert "extra_zone_extra_bulb_count" in keys
     assert "extra_zone_body_spike_size" in keys
     assert "extra_zone_body_bulb_size" in keys
+    assert "extra_zone_body_place_top" in keys
+    assert any(c["key"] == "extra_zone_body_place_top" and c["type"] == "bool" for c in ctrl["slug"])
 
 
 def test_unknown_kind_coerced_to_none() -> None:

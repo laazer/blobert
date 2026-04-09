@@ -25,6 +25,9 @@ function rowDisabled(kind: string, defKey: string): boolean {
   if (defKey.endsWith("_kind") || defKey.endsWith("_finish") || defKey.endsWith("_hex")) {
     return false;
   }
+  if (defKey.includes("_place_")) {
+    return kind === "none" || kind === "shell";
+  }
   if (kind === "none" || kind === "shell") {
     return defKey.includes("_spike_") || defKey.includes("_bulb_");
   }

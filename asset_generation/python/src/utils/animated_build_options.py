@@ -66,7 +66,16 @@ _BULB_SIZE_MIN = 0.25
 _BULB_SIZE_MAX = 3.0
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
-    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|finish|hex)$"
+    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|finish|hex|"
+    r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
+)
+_ZONE_GEOM_EXTRA_PLACE_KEYS: tuple[str, ...] = (
+    "place_top",
+    "place_bottom",
+    "place_front",
+    "place_back",
+    "place_left",
+    "place_right",
 )
 _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
     {
@@ -78,6 +87,7 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
         "bulb_size",
         "finish",
         "hex",
+        *_ZONE_GEOM_EXTRA_PLACE_KEYS,
     }
 )
 
@@ -124,11 +134,32 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "bulb_size": 1.0,
         "finish": "default",
         "hex": "",
+        "place_top": True,
+        "place_bottom": True,
+        "place_front": True,
+        "place_back": True,
+        "place_left": True,
+        "place_right": True,
     }
 
 
 def _default_zone_geometry_extras(slug: str) -> dict[str, Any]:
     return {z: dict(_default_zone_geometry_extras_payload()) for z in _feature_zones(slug)}
+
+
+def _coerce_boolish(v: Any, default: bool = True) -> bool:
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return bool(int(v))
+    if isinstance(v, str):
+        s = v.strip().lower()
+        if s in ("1", "true", "yes", "on"):
+            return True
+        if s in ("0", "false", "no", "off", ""):
+            return False
+        return default
+    return default
 
 
 def _sanitize_hex(raw: str) -> str:
@@ -253,7 +284,8 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
             entry = dict(_default_zone_geometry_extras_payload())
             for fk in _ZONE_GEOM_EXTRA_FIELDS:
                 if fk in b:
-                    entry[fk] = b[fk]
+                    val = b[fk]
+                    entry[fk] = _coerce_boolish(val, True) if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS else val
             out[z] = entry
         else:
             out[z] = dict(_default_zone_geometry_extras_payload())
@@ -265,7 +297,11 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 continue
             for fk in _ZONE_GEOM_EXTRA_FIELDS:
                 if fk in data:
-                    out[zone][fk] = data[fk]
+                    val = data[fk]
+                    if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
+                        out[zone][fk] = _coerce_boolish(val, True)
+                    else:
+                        out[zone][fk] = val
 
     for k, v in src.items():
         m = _EXTRA_ZONE_FLAT_KEY.match(k)
@@ -284,6 +320,8 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 out[zone][field] = float(v)
             except (TypeError, ValueError):
                 pass
+        elif field in _ZONE_GEOM_EXTRA_PLACE_KEYS:
+            out[zone][field] = _coerce_boolish(v, True)
         else:
             out[zone][field] = v
     return out
@@ -326,6 +364,8 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
         except (TypeError, ValueError):
             bs = 1.0
         entry["bulb_size"] = max(_BULB_SIZE_MIN, min(_BULB_SIZE_MAX, bs))
+        for pk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
+            entry[pk] = _coerce_boolish(raw.get(pk, entry[pk]), True)
         fin = str(raw.get("finish", "default"))
         if fin not in _VALID_FINISHES:
             fin = "default"
@@ -399,6 +439,22 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "default": 1.0,
             }
         )
+        for pk, plab in (
+            ("place_top", "Top (+Z)"),
+            ("place_bottom", "Bottom (−Z)"),
+            ("place_front", "Front (+X)"),
+            ("place_back", "Back (−X)"),
+            ("place_right", "Right side (+Y)"),
+            ("place_left", "Left side (−Y)"),
+        ):
+            defs.append(
+                {
+                    "key": f"extra_zone_{zone}_{pk}",
+                    "label": f"{zlabel} extra on {plab}",
+                    "type": "bool",
+                    "default": True,
+                }
+            )
         defs.append(
             {
                 "key": f"extra_zone_{zone}_finish",

@@ -1,4 +1,29 @@
-import { RunCmd } from "../../types";
+import type { AnimatedBuildControlDef } from "../../types";
+import type { RunCmd } from "../../types";
+
+/** Matches Python ``_MESH_ATTR_NAME`` / ClassVar mesh keys (``BODY_BASE``, ``RIG_*``, …). */
+const MESH_FLOAT_CONTROL_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
+
+/**
+ * Split editor build-option values for ``--build-options`` JSON: only uppercase mesh float keys
+ * belong under ``mesh``; ``extra_zone_*_spike_size`` and other extras must stay top-level.
+ */
+export function partitionAnimatedBuildOptionsForJson(
+  opts: Record<string, unknown>,
+  defs: readonly AnimatedBuildControlDef[],
+): Record<string, unknown> {
+  const meshKeys = new Set(
+    defs.filter((d) => d.type === "float" && MESH_FLOAT_CONTROL_KEY_RE.test(d.key)).map((d) => d.key),
+  );
+  const top: Record<string, unknown> = {};
+  const mesh: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(opts)) {
+    if (meshKeys.has(k)) mesh[k] = v;
+    else top[k] = v;
+  }
+  if (Object.keys(mesh).length > 0) top.mesh = mesh;
+  return top;
+}
 
 export const ALL_CMDS: RunCmd[] = ["animated", "player", "level", "smart", "stats", "test"];
 export const PLAYER_COLORS = ["blue", "green", "pink", "purple", "yellow", "orange", "red", "white"];

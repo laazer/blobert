@@ -17,6 +17,7 @@ from ..core.rig_models.quadruped_simple import (
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
 class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -35,7 +36,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     EYE_SCALE_HEAD_RATIO: ClassVar[float] = 0.15
     EYE_X_ALONG: ClassVar[float] = 1.2
     EYE_Y_SIDE: ClassVar[float] = 0.4
-    EYE_Z: ClassVar[float] = 0.4
+    EYE_Z: ClassVar[float] = 1.0
     LEG_LENGTH_BASE: ClassVar[float] = 0.9
     LEG_LENGTH_VARIANCE: ClassVar[float] = 0.1
     LEG_COUNT: ClassVar[int] = 8
@@ -197,6 +198,8 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         )
         self.parts.append(body)
         self.body_scale = body_scale
+        self._zone_geom_body_center = body_center
+        self._zone_geom_body_radii = body_radii
 
         head_scale = self.body_scale * random_variance(
             self._mesh("HEAD_SCALE_REL"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
@@ -209,6 +212,8 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         )
         self.parts.append(head)
         self.head_scale = head_scale
+        self._zone_geom_head_center = head_center
+        self._zone_geom_head_radii = Vector((head_scale, head_scale, head_scale))
 
         eye_count = self._resolved_eye_count()
         self._eye_count = eye_count
@@ -299,6 +304,8 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 else:
                     mat = material_for_zone_part("limbs", f"leg_{leg}", enemy_mats, features)
                 apply_material_to_object(self.parts[idx], mat)
+
+        append_animated_enemy_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.QUADRUPED

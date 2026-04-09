@@ -42,6 +42,13 @@ async def test_meta_enemies_returns_full_build_controls_for_spider(monkeypatch: 
     assert eye["type"] == "select"
     assert len(eye["options"]) >= 1
 
+    slug = data["animated_build_controls"].get("slug")
+    assert slug is not None
+    place_top = next((c for c in slug if c["key"] == "extra_zone_body_place_top"), None)
+    assert place_top is not None
+    assert place_top["type"] == "bool"
+    assert place_top["default"] is True
+
 
 @pytest.mark.asyncio
 async def test_meta_enemies_fallback_on_import_error(

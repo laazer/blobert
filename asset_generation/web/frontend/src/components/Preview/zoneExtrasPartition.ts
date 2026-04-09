@@ -12,6 +12,12 @@ const SUFFIX_ORDER = [
   "spike_size",
   "bulb_count",
   "bulb_size",
+  "place_top",
+  "place_bottom",
+  "place_front",
+  "place_back",
+  "place_right",
+  "place_left",
   "finish",
   "hex",
 ] as const;
