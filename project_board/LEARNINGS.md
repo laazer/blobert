@@ -3,6 +3,78 @@
 Structured insights extracted after each completed ticket.
 
 ---
+
+## [M9-RSEVV] — Freeze selector contract and spawn seam boundaries before test authoring
+*Completed: 2026-04-09*
+
+### Learnings
+- category: process
+  insight: Runtime randomness features need policy freeze (uniform vs weighted) in planning/spec before test design.
+  impact: Medium-confidence assumptions were required to proceed, which increases contract drift risk even when implementation succeeds.
+  prevention: Add a specification gate requiring explicit selection policy, weighting scope, and fallback behavior before TEST_DESIGN.
+  severity: medium
+
+- category: architecture
+  insight: Cross-flow runtime features should define one authoritative integration seam and ownership boundary up front.
+  impact: Sandbox/procedural choke-point ownership had to be assumption-driven during planning, creating avoidable integration uncertainty.
+  prevention: Require planner output to name the single choke point (or state deferred boundary) and record whether wiring is in-scope now vs future milestone handoff.
+  severity: medium
+
+- category: testing
+  insight: Deterministic RNG injection is a required contract surface for non-flaky behavioral validation of random selectors.
+  impact: Deterministic evidence quality depended on introducing an injectable RNG seam rather than relying on global randomness.
+  prevention: Treat deterministic hook design as mandatory in spec for any runtime behavior that includes randomness and must satisfy acceptance criteria.
+  severity: high
+
+- category: architecture
+  insight: Fail-closed semantics for malformed eligibility metadata must be explicit and non-coercive in runtime selectors.
+  impact: Adversarial tests had to lock rejection behavior for missing/non-boolean `draft` and `in_use` fields to prevent ineligible leakage.
+  prevention: Standardize metadata-validation rules: malformed eligibility fields are invalid candidates, never coerced to truthy/falsy defaults.
+  severity: high
+
+### Anti-Patterns
+- description: Letting random-selection policy remain ambiguous until downstream stages.
+  detection_signal: Planning/spec checkpoints contain "would have asked" about uniform vs weighted semantics.
+  prevention: Block test design until selection policy and optional-weighting conditions are explicitly documented.
+
+- description: Defining selector APIs in tests before canonical seam naming is frozen.
+  detection_signal: Test-design assumptions include file/function naming decisions that were not specified earlier.
+  prevention: Require spec to publish canonical selector module/function contract and integration callers before test authoring.
+
+- description: Coercing malformed eligibility metadata instead of rejecting it.
+  detection_signal: Tests accept or rely on truthy/falsy interpretation of missing or non-boolean eligibility fields.
+  prevention: Enforce fail-closed malformed-metadata rejection in both spec language and adversarial baseline tests.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "For randomness-driven runtime tickets, include a `Selection Policy Freeze` block that explicitly states default policy (uniform/weighted), weighting scope (in/out), deterministic test hook requirement, and fail-closed fallback rules before handoff to Spec."
+  reason: Removes medium-confidence policy assumptions that otherwise propagate into test and implementation stages.
+
+- agent: Spec Agent
+  change: "Before handing off to Test Design, declare the canonical selector seam contract (module path, function name/signature, and authoritative integration caller[s]) and mark any deferred cross-milestone wiring boundaries explicitly."
+  reason: Prevents test-side API naming assumptions and reduces integration ambiguity across spawn flows.
+
+- agent: Test Breaker Agent
+  change: "For selector eligibility logic, always include adversarial cases for missing/non-boolean status fields and assert strict fail-closed rejection with no ineligible fallback selection."
+  reason: Catches metadata-coercion bugs that can silently leak draft or out-of-policy variants.
+
+### Workflow Improvements
+- issue: Stage transitions allowed unresolved policy and seam-contract ambiguity into TEST_DESIGN.
+  improvement: Add a pre-test-design readiness checklist for randomness features: policy freeze, deterministic hook contract, canonical seam naming, and malformed-metadata behavior.
+  expected_benefit: Fewer assumption-driven decisions and more stable cross-stage contracts.
+
+- issue: Cross-milestone integration boundaries were handled by assumption instead of standardized declaration.
+  improvement: Add a required "Deferred Boundary Statement" field in planner/spec outputs when current ticket depends on future wiring.
+  expected_benefit: Cleaner scope control and lower risk of duplicate or diverging integration logic.
+
+### Keep / Reinforce
+- practice: Scoped checkpoint capture of `Would have asked` / `Assumption made` / `Confidence`.
+  reason: It exposes uncertainty early and produces actionable prompt/workflow improvements post-closure.
+
+- practice: AC evidence mapping to specific primary and adversarial tests plus full-suite rerun.
+  reason: It keeps closure decisions test-grounded even when design choices were assumption-constrained earlier.
+
+---
 ## [M9-DDIM] — Freeze destructive API contract details before test design to avoid medium-confidence assumption drift
 *Completed: 2026-04-09*
 
