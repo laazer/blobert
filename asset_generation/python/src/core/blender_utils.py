@@ -33,6 +33,27 @@ def create_cylinder(location=(0, 0, 0), scale=(1, 1, 1), vertices=8, depth=2.0):
     return bpy.context.active_object
 
 
+def create_cone(
+    location=(0, 0, 0),
+    scale=(1, 1, 1),
+    *,
+    vertices: int = 16,
+    depth: float = 2.0,
+    radius1: float = 1.0,
+    radius2: float = 0.0,
+):
+    """Create a cone mesh; use ``vertices=4`` for a pyramid."""
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=vertices,
+        radius1=radius1,
+        radius2=radius2,
+        depth=depth,
+        location=location,
+        scale=scale,
+    )
+    return bpy.context.active_object
+
+
 def create_box(location=(0, 0, 0), scale=(1, 1, 1)):
     """Create a box mesh with the specified dimensions.
 

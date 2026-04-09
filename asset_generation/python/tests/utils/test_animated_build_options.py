@@ -282,3 +282,183 @@ def test_coerce_skips_static_control_when_key_absent() -> None:
     del base["peripheral_eyes"]
     out = abo._coerce_and_validate("claw_crawler", base)
     assert "peripheral_eyes" not in out
+
+
+def test_slug_defaults_zone_geometry_extras() -> None:
+    o = options_for_enemy("slug", {})
+    z = o["zone_geometry_extras"]
+    assert set(z.keys()) == {"body", "head", "extra"}
+    assert z["body"]["kind"] == "none"
+    assert z["body"]["spike_count"] == 8
+
+
+def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
+    raw = {
+        "slug": {
+            "zone_geometry_extras": {
+                "body": {"kind": "spikes", "spike_shape": "pyramid", "spike_count": 12},
+            }
+        }
+    }
+    o = options_for_enemy("slug", raw)
+    b = o["zone_geometry_extras"]["body"]
+    assert b["kind"] == "spikes"
+    assert b["spike_shape"] == "pyramid"
+    assert b["spike_count"] == 12
+
+
+def test_zone_geometry_extras_flat_keys_merge() -> None:
+    o = options_for_enemy(
+        "slug",
+        {
+            "extra_zone_body_kind": "bulbs",
+            "extra_zone_body_bulb_count": 9,
+            "extra_zone_body_finish": "metallic",
+        },
+    )
+    b = o["zone_geometry_extras"]["body"]
+    assert b["kind"] == "bulbs"
+    assert b["bulb_count"] == 9
+    assert b["finish"] == "metallic"
+
+
+def test_horns_on_slug_body_coerced_to_none() -> None:
+    o = options_for_enemy("slug", {"extra_zone_body_kind": "horns"})
+    assert o["zone_geometry_extras"]["body"]["kind"] == "none"
+
+
+def test_horns_on_slug_head_preserved() -> None:
+    o = options_for_enemy("slug", {"extra_zone_head_kind": "horns", "extra_zone_head_spike_shape": "pyramid"})
+    h = o["zone_geometry_extras"]["head"]
+    assert h["kind"] == "horns"
+    assert h["spike_shape"] == "pyramid"
+
+
+def test_spike_and_bulb_counts_clamped() -> None:
+    o = options_for_enemy(
+        "slug",
+        {"extra_zone_body_spike_count": 999, "extra_zone_extra_bulb_count": 0},
+    )
+    assert o["zone_geometry_extras"]["body"]["spike_count"] == 24
+    assert o["zone_geometry_extras"]["extra"]["bulb_count"] == 1
+
+
+def test_api_slug_includes_zone_extra_control_keys() -> None:
+    ctrl = animated_build_controls_for_api()
+    keys = {c["key"] for c in ctrl["slug"]}
+    assert "extra_zone_body_kind" in keys
+    assert "extra_zone_extra_bulb_count" in keys
+
+
+def test_unknown_kind_coerced_to_none() -> None:
+    o = options_for_enemy("slug", {"extra_zone_body_kind": "quantum_spikes"})
+    assert o["zone_geometry_extras"]["body"]["kind"] == "none"
+
+
+def test_features_unchanged_when_zone_extras_set() -> None:
+    o = options_for_enemy(
+        "slug",
+        {"feat_body_finish": "glossy", "extra_zone_body_kind": "spikes"},
+    )
+    assert o["features"]["body"]["finish"] == "glossy"
+    assert o["zone_geometry_extras"]["body"]["kind"] == "spikes"
+
+
+def test_merge_zone_extras_nested_then_flat_overwrites() -> None:
+    o = options_for_enemy(
+        "slug",
+        {
+            "slug": {
+                "zone_geometry_extras": {"body": {"kind": "spikes", "spike_count": 4}},
+            },
+            "extra_zone_body_kind": "bulbs",
+        },
+    )
+    assert o["zone_geometry_extras"]["body"]["kind"] == "bulbs"
+    assert o["zone_geometry_extras"]["body"]["spike_count"] == 4
+
+
+def test_adversarial_duplicate_zone_extra_sources_last_flat_wins_kind() -> None:
+    # CHECKPOINT: flat kind after nested slug envelope wins (documented merge order).
+    o = options_for_enemy(
+        "slug",
+        {"slug": {"zone_geometry_extras": {"body": {"kind": "shell"}}}, "extra_zone_body_kind": "none"},
+    )
+    assert o["zone_geometry_extras"]["body"]["kind"] == "none"
+
+
+def test_merge_zone_geometry_extras_non_dict_base_zone() -> None:
+    base = {"body": "bad", "head": {"kind": "spikes", "spike_count": 3}}
+    got = abo._merge_zone_geometry_extras("slug", {}, base)
+    assert got["body"]["kind"] == "none"
+    assert got["head"]["kind"] == "spikes"
+    assert got["head"]["spike_count"] == 3
+
+
+def test_merge_zone_geometry_extras_nested_skips_unknown_zone() -> None:
+    got = abo._merge_zone_geometry_extras(
+        "slug",
+        {"zone_geometry_extras": {"torso": {"kind": "spikes"}, "body": {"kind": "bulbs"}}},
+        abo._default_zone_geometry_extras("slug"),
+    )
+    assert "torso" not in got
+    assert got["body"]["kind"] == "bulbs"
+
+
+def test_merge_zone_geometry_extras_flat_invalid_int_ignored() -> None:
+    got = abo._merge_zone_geometry_extras(
+        "slug",
+        {"extra_zone_body_spike_count": "nope"},
+        abo._default_zone_geometry_extras("slug"),
+    )
+    assert got["body"]["spike_count"] == 8
+
+
+def test_sanitize_zone_geometry_extras_invalid_shape_and_int_fields() -> None:
+    got = abo._sanitize_zone_geometry_extras(
+        "slug",
+        {
+            "body": {
+                "kind": "spikes",
+                "spike_shape": "torus",
+                "spike_count": "x",
+                "bulb_count": [],
+                "finish": "not_real",
+            }
+        },
+    )
+    assert got["body"]["spike_shape"] == "cone"
+    assert got["body"]["spike_count"] == 8
+    assert got["body"]["bulb_count"] == 4
+    assert got["body"]["finish"] == "default"
+
+
+def test_merge_flat_skips_zone_absent_from_slug() -> None:
+    got = abo._merge_zone_geometry_extras(
+        "slug",
+        {"extra_zone_joints_kind": "spikes"},
+        abo._default_zone_geometry_extras("slug"),
+    )
+    assert "joints" not in got
+
+
+def test_options_recovers_zone_geometry_extras_when_defaults_omit_key(monkeypatch) -> None:
+    real = abo._defaults_for_slug
+
+    def strip_zg(slug: str):
+        d = real(slug)
+        del d["zone_geometry_extras"]
+        return d
+
+    monkeypatch.setattr(abo, "_defaults_for_slug", strip_zg)
+    o = options_for_enemy("slug", {})
+    assert isinstance(o["zone_geometry_extras"], dict)
+    assert o["zone_geometry_extras"]["body"]["kind"] == "none"
+
+
+def test_coerce_zone_geometry_extras_non_dict_reset() -> None:
+    base = abo._defaults_for_slug("slug")
+    base["zone_geometry_extras"] = None
+    out = abo._coerce_and_validate("slug", base)
+    assert isinstance(out["zone_geometry_extras"], dict)
+    assert out["zone_geometry_extras"]["body"]["kind"] == "none"

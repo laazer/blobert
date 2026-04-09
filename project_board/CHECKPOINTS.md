@@ -910,3 +910,20 @@ Log: `project_board/checkpoints/M9-ATRAD/run-2026-04-09-autopilot.md`
 ### [M9-EMVDES] — OUTCOME: BLOCKED
 Umbrella cannot close: child `02_mesh_and_material_audit_enemy_families_and_player.md` still in backlog while `01` and `03`–`09` are in `done/`; ticket updated with execution plan and unblock path.
 Log: `project_board/checkpoints/M9-EMVDES/run-2026-04-09T16-32-06Z-planning.md`
+
+---
+
+## Run: 2026-04-09T18-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/11_enemy_body_part_extras_spec_and_pipeline.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M9-EBPE / run-2026-04-09-autopilot
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/11_enemy_body_part_extras_spec_and_pipeline.md`
+- Stage: COMPLETE
+- Log: `project_board/checkpoints/M9-EBPE/run-2026-04-09-autopilot.md`
+
+### [M9-EBPE] — OUTCOME: COMPLETE
+`zone_geometry_extras` + flat `extra_zone_*` API, slug spike/bulb/horn attachment (`zone_geometry_extras_attach`), `material_for_zone_geometry_extra`, spec `project_board/specs/enemy_body_part_extras_spec.md`; slug feature zones extended to `body/head/extra`; pytest + `timeout 300 ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/M9-EBPE/run-2026-04-09-autopilot.md`

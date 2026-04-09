@@ -4,6 +4,29 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-EBPE] — Zone extras: stub mathutils vs Blender and diff-cover on new modules
+*Completed: 2026-04-09*
+
+### Learnings
+- category: testing
+  insight: Geometry attach code that runs under pytest uses `mathutils` stubs without `.normalize()`, `.x`, or `Quaternion.to_euler()`; normalize with scalar math and guard optional Blender APIs.
+  impact: First attach tests failed until Vector/rotation paths were stub-safe.
+  prevention: For Blender-adjacent modules imported in CI pytest, prefer scalar fallbacks or `getattr` guards for mathutils-only methods.
+  severity: medium
+
+- category: process
+  insight: `diff-cover` against `origin/main` required narrow unit tests for `create_cone`, `material_for_zone_geometry_extra`, merge branches, and `apply_themed_materials` hook coverage.
+  impact: Full suite green was insufficient until diff-cover thresholds met on changed lines.
+  prevention: After adding new Python surface area, plan companion tests alongside implementation to satisfy org diff-cover gates early.
+  severity: medium
+
+### Anti-Patterns
+- description: Assuming nested slug JSON envelope includes root-level flat keys in the same `src` dict used for merges.
+  detection_signal: Tests expect root `extra_zone_*` to override nested `zone_geometry_extras` but `options_for_enemy` only forwarded nested `src`.
+  prevention: Document and implement explicit second-pass merge from raw root for flat `extra_zone_*` keys when a nested slug object is present.
+
+---
+
 ## [M9-RSEVV] — Freeze selector contract and spawn seam boundaries before test authoring
 *Completed: 2026-04-09*
 

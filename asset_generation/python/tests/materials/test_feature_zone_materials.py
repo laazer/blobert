@@ -110,6 +110,28 @@ def test_material_for_zone_part_ignores_non_dict_part_payload() -> None:
     )
 
 
+def test_material_for_zone_geometry_extra_returns_base_when_no_override() -> None:
+    limb = MagicMock()
+    limb.name = "Bone_White"
+    slots = {"body": limb}
+    assert ms.material_for_zone_geometry_extra("body", slots, {"body": {}}, "default", "") is limb
+
+
+def test_material_for_zone_geometry_extra_creates_when_extra_hex() -> None:
+    b = MagicMock()
+    b.name = "Organic_Brown"
+    slots = {"body": b}
+    new_m = MagicMock()
+    with patch.object(ms, "create_material", return_value=new_m) as cm:
+        got = ms.material_for_zone_geometry_extra("body", slots, None, "default", "ff00aa")
+    assert got is new_m
+    assert cm.called
+
+
+def test_material_for_zone_geometry_extra_returns_none_when_slot_missing() -> None:
+    assert ms.material_for_zone_geometry_extra("body", {}, {}, "matte", "aabbcc") is None
+
+
 def test_get_enemy_materials_single_theme_color_fills_all_slots() -> None:
     m0 = MagicMock(name="M0")
     palette = {"M0": m0}

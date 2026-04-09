@@ -413,6 +413,35 @@ def material_for_zone_part(
     )
 
 
+def material_for_zone_geometry_extra(
+    zone: str,
+    slot_materials: dict[str, bpy.types.Material | None],
+    features: Mapping[str, Any] | None,
+    extra_finish: str,
+    extra_hex: str,
+) -> bpy.types.Material | None:
+    """Material for procedural geometry overlay on ``zone``, using extra finish/hex with feature-zone fallback."""
+    base = slot_materials.get(zone)
+    if base is None:
+        return None
+    xz = _sanitize_hex_input(extra_hex)
+    fin = str(extra_finish or "default")
+    zf = (features or {}).get(zone) if features else None
+    z_hex = _sanitize_hex_input(zf.get("hex", "")) if isinstance(zf, dict) else ""
+    z_fin = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+    eff_fin = fin if fin != "default" else z_fin
+    eff_hex = xz or z_hex
+    if eff_fin == "default" and not eff_hex:
+        return base
+    base_palette_name = _palette_base_name_from_material(base)
+    return _material_for_finish_hex(
+        base_palette_name=base_palette_name,
+        finish=eff_fin,
+        hex_str=eff_hex,
+        instance_suffix=f"{zone}_zgeom_extra",
+    )
+
+
 def apply_material_to_object(obj, material) -> None:
     """Apply material to a mesh object"""
     if obj and obj.type == 'MESH' and material:

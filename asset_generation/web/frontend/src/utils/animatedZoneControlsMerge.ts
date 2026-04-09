@@ -9,7 +9,7 @@ export const FEATURE_ZONES_BY_SLUG: Readonly<Record<string, readonly string[]>> 
   spider: ["body", "head", "limbs", "joints", "extra"],
   claw_crawler: ["body", "head", "limbs", "extra"],
   spitter: ["body", "head", "limbs"],
-  slug: ["body", "extra"],
+  slug: ["body", "head", "extra"],
 };
 
 /** Aligned with ``_FINISH_OPTIONS_ORDER`` in animated_build_options.py. */

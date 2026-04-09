@@ -48,12 +48,24 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
     "spider": ("body", "head", "limbs", "joints", "extra"),
     "claw_crawler": ("body", "head", "limbs", "extra"),
     "spitter": ("body", "head", "limbs"),
-    "slug": ("body", "extra"),
+    "slug": ("body", "head", "extra"),
 }
 
 _FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex)$")
 _FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
+
+_EXTRA_KINDS_ORDER: tuple[str, ...] = ("none", "shell", "spikes", "horns", "bulbs")
+_SPIKE_COUNT_MIN = 1
+_SPIKE_COUNT_MAX = 24
+_BULB_COUNT_MIN = 1
+_BULB_COUNT_MAX = 16
+_EXTRA_ZONE_FLAT_KEY = re.compile(
+    r"^extra_zone_(body|head|limbs|joints|extra)_(kind|spike_shape|spike_count|bulb_count|finish|hex)$"
+)
+_ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
+    {"kind", "spike_shape", "spike_count", "bulb_count", "finish", "hex"}
+)
 
 
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
@@ -86,6 +98,21 @@ def _feature_zones(slug: str) -> tuple[str, ...]:
 
 def _default_features_dict(slug: str) -> dict[str, dict[str, str]]:
     return {z: {"finish": "default", "hex": ""} for z in _feature_zones(slug)}
+
+
+def _default_zone_geometry_extras_payload() -> dict[str, Any]:
+    return {
+        "kind": "none",
+        "spike_shape": "cone",
+        "spike_count": 8,
+        "bulb_count": 4,
+        "finish": "default",
+        "hex": "",
+    }
+
+
+def _default_zone_geometry_extras(slug: str) -> dict[str, Any]:
+    return {z: dict(_default_zone_geometry_extras_payload()) for z in _feature_zones(slug)}
 
 
 def _sanitize_hex(raw: str) -> str:
@@ -199,6 +226,144 @@ def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str
                 entry[field] = str(v)
             continue
     return _validate_features_map(out)
+
+
+def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
+    zones = _feature_zones(slug)
+    out: dict[str, Any] = {}
+    for z in zones:
+        b = base.get(z)
+        if isinstance(b, dict):
+            entry = dict(_default_zone_geometry_extras_payload())
+            for fk in _ZONE_GEOM_EXTRA_FIELDS:
+                if fk in b:
+                    entry[fk] = b[fk]
+            out[z] = entry
+        else:
+            out[z] = dict(_default_zone_geometry_extras_payload())
+
+    nested = src.get("zone_geometry_extras")
+    if isinstance(nested, dict):
+        for zone, data in nested.items():
+            if zone not in out or not isinstance(data, dict):
+                continue
+            for fk in _ZONE_GEOM_EXTRA_FIELDS:
+                if fk in data:
+                    out[zone][fk] = data[fk]
+
+    for k, v in src.items():
+        m = _EXTRA_ZONE_FLAT_KEY.match(k)
+        if not m:
+            continue
+        zone, field = m.group(1), m.group(2)
+        if zone not in out:
+            continue
+        if field in ("spike_count", "bulb_count"):
+            try:
+                out[zone][field] = int(v)
+            except (TypeError, ValueError):
+                pass
+        else:
+            out[zone][field] = v
+    return out
+
+
+def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, Any]:
+    zones = _feature_zones(slug)
+    valid_kinds = frozenset(_EXTRA_KINDS_ORDER)
+    out: dict[str, Any] = {}
+    for z in zones:
+        raw = d.get(z)
+        if not isinstance(raw, dict):
+            raw = {}
+        entry = dict(_default_zone_geometry_extras_payload())
+        kind = str(raw.get("kind", "none")).strip().lower()
+        if kind not in valid_kinds:
+            kind = "none"
+        if kind == "horns" and z != "head":
+            kind = "none"
+        entry["kind"] = kind
+        shape = str(raw.get("spike_shape", "cone")).strip().lower()
+        entry["spike_shape"] = shape if shape in ("cone", "pyramid") else "cone"
+        try:
+            sc = int(raw.get("spike_count", entry["spike_count"]))
+        except (TypeError, ValueError):
+            sc = 8
+        entry["spike_count"] = max(_SPIKE_COUNT_MIN, min(_SPIKE_COUNT_MAX, sc))
+        try:
+            bc = int(raw.get("bulb_count", entry["bulb_count"]))
+        except (TypeError, ValueError):
+            bc = 4
+        entry["bulb_count"] = max(_BULB_COUNT_MIN, min(_BULB_COUNT_MAX, bc))
+        fin = str(raw.get("finish", "default"))
+        if fin not in _VALID_FINISHES:
+            fin = "default"
+        entry["finish"] = fin
+        entry["hex"] = _sanitize_hex(raw.get("hex", ""))
+        out[z] = entry
+    return out
+
+
+def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
+    defs: list[dict[str, Any]] = []
+    for zone in _feature_zones(slug):
+        zlabel = zone.replace("_", " ").title()
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_kind",
+                "label": f"{zlabel} geometry extra",
+                "type": "select_str",
+                "options": list(_EXTRA_KINDS_ORDER),
+                "default": "none",
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_spike_shape",
+                "label": f"{zlabel} spike shape",
+                "type": "select_str",
+                "options": ["cone", "pyramid"],
+                "default": "cone",
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_spike_count",
+                "label": f"{zlabel} spike count",
+                "type": "int",
+                "min": _SPIKE_COUNT_MIN,
+                "max": _SPIKE_COUNT_MAX,
+                "default": 8,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_bulb_count",
+                "label": f"{zlabel} bulb count",
+                "type": "int",
+                "min": _BULB_COUNT_MIN,
+                "max": _BULB_COUNT_MAX,
+                "default": 4,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_finish",
+                "label": f"{zlabel} extra finish",
+                "type": "select_str",
+                "options": list(_FINISH_OPTIONS_ORDER),
+                "default": "default",
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_hex",
+                "label": f"{zlabel} extra hex",
+                "type": "str",
+                "default": "",
+            }
+        )
+    return defs
 
 
 def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
@@ -399,6 +564,7 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
             + _mesh_float_control_defs(slug)
             + _feature_control_defs(slug)
             + _part_feature_control_defs(slug)
+            + _zone_extra_control_defs(slug)
         )
         out[slug] = merged
     return out
@@ -415,6 +581,7 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
     out["features"] = _default_features_dict(slug)
+    out["zone_geometry_extras"] = _default_zone_geometry_extras(slug)
     return out
 
 
@@ -441,12 +608,13 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
                 mesh[k] = v
 
     for k, v in src.items():
-        if k in ("mesh", "features"):
+        if k in ("mesh", "features", "zone_geometry_extras"):
             continue
         if (
             _FEAT_ZONE_FLAT_KEY.match(k)
             or _FEAT_LIMB_PART_FLAT_KEY.match(k)
             or _FEAT_JOINT_PART_FLAT_KEY.match(k)
+            or _EXTRA_ZONE_FLAT_KEY.match(k)
         ):
             continue
         if k in mesh_keys:
@@ -459,6 +627,22 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     if not isinstance(feat_base, dict):
         feat_base = _default_features_dict(enemy_type)
     merged["features"] = _merge_features_for_slug(enemy_type, src, feat_base)
+    zg_base = merged.get("zone_geometry_extras")
+    if not isinstance(zg_base, dict):
+        zg_base = _default_zone_geometry_extras(enemy_type)
+    merged["zone_geometry_extras"] = _merge_zone_geometry_extras(enemy_type, src, zg_base)
+    if raw:
+        root_flat = {
+            str(k): v
+            for k, v in raw.items()
+            if k != enemy_type and _EXTRA_ZONE_FLAT_KEY.match(str(k))
+        }
+        if root_flat:
+            merged["zone_geometry_extras"] = _merge_zone_geometry_extras(
+                enemy_type,
+                root_flat,
+                merged["zone_geometry_extras"],
+            )
     return _coerce_and_validate(enemy_type, merged)
 
 
@@ -497,6 +681,10 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
             mesh_out[key] = v
 
     out["mesh"] = mesh_out
+    zg = out.get("zone_geometry_extras")
+    if not isinstance(zg, dict):
+        zg = _default_zone_geometry_extras(enemy_type)
+    out["zone_geometry_extras"] = _sanitize_zone_geometry_extras(enemy_type, zg)
     return out
 
 

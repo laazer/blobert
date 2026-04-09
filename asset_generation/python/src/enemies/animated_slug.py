@@ -11,6 +11,7 @@ from ..core.rig_models.blob_simple import (
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .zone_geometry_extras_attach import append_slug_zone_extras
 
 
 class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -90,6 +91,8 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 apply_material_to_object(part, stalk_material)
             else:
                 apply_material_to_object(part, eye_material)
+
+        append_slug_zone_extras(self)
 
     def get_body_type(self):
         return EnemyBodyTypes.BLOB
