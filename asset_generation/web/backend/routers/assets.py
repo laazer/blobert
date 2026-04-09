@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
@@ -29,23 +31,29 @@ class ListedAsset(BaseModel):
     size: int
 
 
+def _append_glb_json_files(assets: list[ListedAsset], base_dir: str, disk_dir: Path) -> None:
+    if not disk_dir.is_dir():
+        return
+    for f in sorted(disk_dir.iterdir()):
+        if f.is_file() and f.suffix in _MIME:
+            assets.append(
+                ListedAsset(
+                    path=f"{base_dir}/{f.name}",
+                    name=f.name,
+                    dir=base_dir,
+                    size=f.stat().st_size,
+                ),
+            )
+
+
 @router.get("")
 async def list_assets() -> JSONResponse:
     assets: list[ListedAsset] = []
     for export_dir in _EXPORT_DIRS:
         d = settings.python_root / export_dir
-        if not d.exists():
-            continue
-        for f in sorted(d.iterdir()):
-            if f.suffix in _MIME:
-                assets.append(
-                    ListedAsset(
-                        path=f"{export_dir}/{f.name}",
-                        name=f.name,
-                        dir=export_dir,
-                        size=f.stat().st_size,
-                    ),
-                )
+        _append_glb_json_files(assets, export_dir, d)
+        draft_d = d / "draft"
+        _append_glb_json_files(assets, f"{export_dir}/draft", draft_d)
     return JSONResponse({"assets": [a.model_dump() for a in assets]})
 
 

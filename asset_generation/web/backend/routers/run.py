@@ -39,21 +39,28 @@ def _build_command(
     return parts
 
 
-def _guess_output_file(cmd: str, enemy: Optional[str], count: Optional[int]) -> Optional[str]:
+def _guess_output_file(
+    cmd: str,
+    enemy: Optional[str],
+    count: Optional[int],
+    *,
+    output_draft: bool = False,
+) -> Optional[str]:
+    draft_seg = "draft/" if output_draft else ""
     if cmd == "animated" and enemy:
         n = max(1, min(99, int(count) if count is not None else 1))
         last = n - 1
-        return f"animated_exports/{enemy}_animated_{last:02d}.glb"
+        return f"animated_exports/{draft_seg}{enemy}_animated_{last:02d}.glb"
     if cmd == "test":
         return "animated_exports/spider_animated_00.glb"
     if cmd == "player" and enemy:
         n = max(1, min(99, int(count) if count is not None else 1))
         last = n - 1
-        return f"player_exports/player_slime_{enemy}_{last:02d}.glb"
+        return f"player_exports/{draft_seg}player_slime_{enemy}_{last:02d}.glb"
     if cmd == "level" and enemy:
         n = max(1, min(99, int(count) if count is not None else 1))
         last = n - 1
-        return f"level_exports/{enemy}_{last:02d}.glb"
+        return f"level_exports/{draft_seg}{enemy}_{last:02d}.glb"
     return None
 
 
@@ -66,6 +73,7 @@ async def _run_stream(
     finish: Optional[str],
     hex_color: Optional[str],
     build_options: Optional[str],
+    output_draft: bool = False,
 ):
     if cmd not in _ALLOWED_CMDS:
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": f"Unknown command: {cmd}"})}
@@ -87,6 +95,8 @@ async def _run_stream(
                                          env.get("PYTHONPATH", "").split(os.pathsep))
     if build_options and str(build_options).strip():
         env["BLOBERT_BUILD_OPTIONS_JSON"] = str(build_options).strip()
+    if output_draft and cmd in ("animated", "player", "level"):
+        env["BLOBERT_EXPORT_USE_DRAFT_SUBDIR"] = "1"
 
     try:
         run_id = await process_manager.start(command, cwd=settings.python_root, env=env)
@@ -98,7 +108,7 @@ async def _run_stream(
         yield {"event": "log", "data": json.dumps({"line": line, "run_id": run_id})}
 
     exit_code = process_manager.exit_code()
-    output_file = _guess_output_file(cmd, enemy, count)
+    output_file = _guess_output_file(cmd, enemy, count, output_draft=output_draft)
 
     if exit_code == 0:
         yield {"event": "done", "data": json.dumps({"exit_code": 0, "output_file": output_file})}
@@ -116,9 +126,20 @@ async def run_stream(
     finish: Optional[str] = Query(None),
     hex_color: Optional[str] = Query(None),
     build_options: Optional[str] = Query(None),
+    output_draft: bool = Query(False),
 ):
     return EventSourceResponse(
-        _run_stream(cmd, enemy, count, description, difficulty, finish, hex_color, build_options)
+        _run_stream(
+            cmd,
+            enemy,
+            count,
+            description,
+            difficulty,
+            finish,
+            hex_color,
+            build_options,
+            output_draft=output_draft,
+        )
     )
 
 

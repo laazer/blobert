@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.level.level_object_builder import LevelObjectBuilder
-from src.utils.constants import LevelExportConfig
+from src.utils.export_subdir import level_export_directory
 
 
 def setup_scene():
@@ -35,9 +35,11 @@ def generate_level_object(
     object_type: str,
     count: int = 1,
     seed: int = None,
-    export_dir: str = LevelExportConfig.LEVEL_DIR,
+    export_dir: str | None = None,
 ):
     """Generate one or more variants of the specified level object type."""
+    if export_dir is None:
+        export_dir = level_export_directory()
     if seed is not None:
         random.seed(seed)
 

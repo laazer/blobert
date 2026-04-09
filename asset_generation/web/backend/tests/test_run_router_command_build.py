@@ -45,6 +45,21 @@ def test_guess_output_file_points_at_last_variant_index():
     assert _guess_output_file("level", "spike_trap", 4) == "level_exports/spike_trap_03.glb"
 
 
+def test_guess_output_file_draft_subdir_when_requested():
+    assert (
+        _guess_output_file("animated", "spider", 1, output_draft=True)
+        == "animated_exports/draft/spider_animated_00.glb"
+    )
+    assert (
+        _guess_output_file("player", "blue", 2, output_draft=True)
+        == "player_exports/draft/player_slime_blue_01.glb"
+    )
+    assert (
+        _guess_output_file("level", "spike_trap", 4, output_draft=True)
+        == "level_exports/draft/spike_trap_03.glb"
+    )
+
+
 def test_build_command_does_not_add_finish_flags_for_level():
     command = _build_command(
         cmd="level",

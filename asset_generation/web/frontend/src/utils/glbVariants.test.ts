@@ -19,6 +19,9 @@ describe("animatedExportRelativePath", () => {
   it("matches procedural animated stem", () => {
     expect(animatedExportRelativePath("slug", 0)).toBe("animated_exports/slug_animated_00.glb");
     expect(animatedExportRelativePath("spider", 2)).toBe("animated_exports/spider_animated_02.glb");
+    expect(animatedExportRelativePath("spider", 2, true)).toBe(
+      "animated_exports/draft/spider_animated_02.glb",
+    );
   });
 
   it("clamps variant index to 0–99", () => {

@@ -19,8 +19,8 @@ from src.enemies.base_enemy import export_enemy
 from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
-from src.utils.constants import ExportConfig
 from src.utils.export_naming import animated_export_stem
+from src.utils.export_subdir import animated_export_directory
 
 
 def _build_options_for_current_enemy(enemy_type: str) -> dict:
@@ -37,7 +37,7 @@ def generate_animated_enemy(
     enemy_type,
     count: int = 1,
     seed: int = None,
-    export_dir: str = ExportConfig.ANIMATED_DIR,
+    export_dir: str | None = None,
     prefab_name: str = None,
     finish: str = "default",
     hex_color: str = "",
@@ -48,10 +48,12 @@ def generate_animated_enemy(
         enemy_type: Registered enemy type string.
         count: Number of variants to generate.
         seed: Optional random seed for reproducibility.
-        export_dir: Output directory for GLB files.
+        export_dir: Output directory for GLB files (default: live root or ``…/draft`` from env).
         prefab_name: Optional prefab name; when given, the downloaded model
             is used as the mesh base instead of procedural geometry.
     """
+    if export_dir is None:
+        export_dir = animated_export_directory()
     if seed is not None:
         random.seed(seed)
 

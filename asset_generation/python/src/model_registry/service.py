@@ -15,8 +15,10 @@ from typing import Any
 
 # Dual entry: pytest imports ``src.model_registry``; FastAPI adds ``python/src`` only.
 try:
+    from model_registry.path_layout import relocate_registry_row_assets
     from utils.enemy_slug_registry import ANIMATED_SLUGS
 except ImportError:
+    from src.model_registry.path_layout import relocate_registry_row_assets
     from src.utils.enemy_slug_registry import ANIMATED_SLUGS
 
 SCHEMA_VERSION = 1
@@ -55,6 +57,16 @@ def _default_version_id_for_slug(slug: str) -> str:
 def _default_path_for_slug(slug: str) -> str:
     stem = _default_version_id_for_slug(slug)
     return f"animated_exports/{stem}.glb"
+
+
+def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
+    d = bool(row["draft"])
+    u = bool(row["in_use"])
+    if d and u:
+        row["in_use"] = False
+    elif not d and not u:
+        row["draft"] = True
+        row["in_use"] = False
 
 
 def default_migrated_manifest() -> dict[str, Any]:
@@ -336,6 +348,10 @@ def patch_enemy_version(
         else:
             raise ValueError("patch name must be string or null")
 
+    _coerce_version_row_draft_in_use(found)
+    new_path, _ = relocate_registry_row_assets(python_root, found["path"], bool(found["draft"]))
+    found["path"] = new_path
+
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
     return validated
@@ -433,28 +449,32 @@ def _discovered_animated_export_rows(
     """
     out: list[dict[str, Any]] = []
     prefix = f"{family}_animated_"
-    export_dir = python_root / "animated_exports"
-    if not export_dir.is_dir():
-        return out
-    for path in sorted(export_dir.iterdir()):
-        if not path.is_file() or path.suffix.lower() != ".glb":
+    scan_dirs: tuple[tuple[Path, str], ...] = (
+        (python_root / "animated_exports", "animated_exports"),
+        (python_root / "animated_exports" / "draft", "animated_exports/draft"),
+    )
+    for export_dir, rel_prefix in scan_dirs:
+        if not export_dir.is_dir():
             continue
-        stem = path.stem
-        if not stem.startswith(prefix):
-            continue
-        rel = f"animated_exports/{path.name}"
-        if not _path_is_allowlisted(rel):
-            continue
-        if stem in existing_ids or rel in existing_paths:
-            continue
-        out.append(
-            {
-                "id": stem,
-                "path": rel,
-                "draft": True,
-                "in_use": False,
-            },
-        )
+        for path in sorted(export_dir.iterdir()):
+            if not path.is_file() or path.suffix.lower() != ".glb":
+                continue
+            stem = path.stem
+            if not stem.startswith(prefix):
+                continue
+            rel = f"{rel_prefix}/{path.name}"
+            if not _path_is_allowlisted(rel):
+                continue
+            if stem in existing_ids or rel in existing_paths:
+                continue
+            out.append(
+                {
+                    "id": stem,
+                    "path": rel,
+                    "draft": True,
+                    "in_use": False,
+                },
+            )
     return out
 
 
@@ -528,6 +548,10 @@ def patch_player_version(
         else:
             raise ValueError("patch name must be string or null")
 
+    _coerce_version_row_draft_in_use(found)
+    new_path, _ = relocate_registry_row_assets(python_root, found["path"], bool(found["draft"]))
+    found["path"] = new_path
+
     data.pop("player_active_visual", None)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
@@ -587,26 +611,30 @@ def _discovered_player_export_rows(
     existing_paths: set[str],
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    export_dir = python_root / "player_exports"
-    if not export_dir.is_dir():
-        return out
-    for path in sorted(export_dir.iterdir()):
-        if not path.is_file() or path.suffix.lower() != ".glb":
+    scan_dirs: tuple[tuple[Path, str], ...] = (
+        (python_root / "player_exports", "player_exports"),
+        (python_root / "player_exports" / "draft", "player_exports/draft"),
+    )
+    for export_dir, rel_prefix in scan_dirs:
+        if not export_dir.is_dir():
             continue
-        stem = path.stem
-        rel = f"player_exports/{path.name}"
-        if not _path_is_allowlisted(rel):
-            continue
-        if stem in existing_ids or rel in existing_paths:
-            continue
-        out.append(
-            {
-                "id": stem,
-                "path": rel,
-                "draft": True,
-                "in_use": False,
-            },
-        )
+        for path in sorted(export_dir.iterdir()):
+            if not path.is_file() or path.suffix.lower() != ".glb":
+                continue
+            stem = path.stem
+            rel = f"{rel_prefix}/{path.name}"
+            if not _path_is_allowlisted(rel):
+                continue
+            if stem in existing_ids or rel in existing_paths:
+                continue
+            out.append(
+                {
+                    "id": stem,
+                    "path": rel,
+                    "draft": True,
+                    "in_use": False,
+                },
+            )
     return out
 
 

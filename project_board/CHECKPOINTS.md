@@ -944,3 +944,13 @@ Log: `project_board/checkpoints/M9-EBPE/run-2026-04-09-autopilot.md`
 ### [M9-EBUI] — OUTCOME: COMPLETE
 Asset editor **Extras** center tab (`ExtrasPane`, `ZoneExtraControls`), `centerPanel: "extras"`, synthetic `extra_zone_*` merge for offline/API parity, Build panel excludes extra keys; tests `ExtrasPane.test.tsx`, `ThreePanelLayout.extras_tab.test.tsx`, `zoneExtrasPartition.test.ts`; attach import fix + expanded pytest for diff-cover; `npm test` / `npm run build` / `timeout 300 ci/scripts/run_tests.sh` exit 0.
 Log: `project_board/checkpoints/M9-EBUI/run-2026-04-09-autopilot.md`
+
+## Run: 2026-04-09T22-15-00Z-ticket-13-registry-paths
+- Queue mode: single ticket (handoff completion)
+- Queue scope: `13_registry_paths_align_with_draft_vs_in_use_directories`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### [13_registry_paths] — OUTCOME: COMPLETE
+Draft/live `draft/` subtrees for animated/player/level exports; `patch_*_version` relocates GLB + sidecars; sync + asset list cover draft; run stream `output_draft` + `BLOBERT_EXPORT_USE_DRAFT_SUBDIR`; spec `registry_draft_live_directory_layout_spec.md`; CI green.
+Log: `project_board/checkpoints/13_registry_paths/run-2026-04-09-handoff.md`

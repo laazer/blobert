@@ -15,9 +15,14 @@ export function animatedExportVersionId(enemySlug: string, variantIndex: number)
   return `${enemySlug}_animated_${String(v).padStart(2, "0")}`;
 }
 
-export function animatedExportRelativePath(enemySlug: string, variantIndex: number): string {
+export function animatedExportRelativePath(
+  enemySlug: string,
+  variantIndex: number,
+  draft: boolean = false,
+): string {
   const stem = animatedExportVersionId(enemySlug, variantIndex);
-  return `${ANIMATED_EXPORT_DIR}/${stem}.glb`;
+  const mid = draft ? `${ANIMATED_EXPORT_DIR}/draft` : ANIMATED_EXPORT_DIR;
+  return `${mid}/${stem}.glb`;
 }
 
 /** Parse `spider_animated_03.glb` → slug + index (procedural animated exports only). */

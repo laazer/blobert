@@ -19,6 +19,7 @@ from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.constants import PlayerExportConfig
+from src.utils.export_subdir import player_export_directory
 
 
 def setup_scene():
@@ -36,7 +37,7 @@ def generate_player_slime(
     color: str = "blue",
     count: int = 1,
     seed: int = None,
-    export_dir: str = PlayerExportConfig.PLAYER_DIR,
+    export_dir: str | None = None,
     prefab_name: str = None,
     finish: str = "glossy",
     custom_color_hex: str = "",
@@ -47,10 +48,12 @@ def generate_player_slime(
         color: Slime color key from SLIME_COLORS.
         count: Number of variants to generate.
         seed: Optional random seed for reproducibility.
-        export_dir: Output directory for GLB files.
+        export_dir: Output directory for GLB files (default: live or draft from env).
         prefab_name: Optional prefab name; when given, the downloaded model
             replaces procedural body geometry (player animations still applied).
     """
+    if export_dir is None:
+        export_dir = player_export_directory()
     if seed is not None:
         random.seed(seed)
 

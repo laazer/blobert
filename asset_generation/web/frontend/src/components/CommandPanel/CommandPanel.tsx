@@ -5,6 +5,7 @@ import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
 import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
+import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import {
   ALL_CMDS,
   clampVariantCount,
@@ -223,6 +224,12 @@ export function CommandPanel() {
         buildOptionsJson = JSON.stringify({ [slug]: top });
       }
     }
+    const previewRel = previewPathFromAssetsUrl(activeGlbUrl);
+    const outputDraft =
+      (cmd === "animated" || cmd === "player" || cmd === "level") &&
+      previewRel != null &&
+      previewRel.includes("/draft/");
+
     start({
       cmd,
       enemy: showEnemy ? enemy : undefined,
@@ -232,6 +239,7 @@ export function CommandPanel() {
       finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
       hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined,
       buildOptionsJson,
+      outputDraft,
     });
   }
 

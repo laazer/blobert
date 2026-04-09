@@ -12,6 +12,8 @@ interface RunOptions {
   hexColor?: string;
   /** JSON string for `BLOBERT_BUILD_OPTIONS_JSON` (animated only). */
   buildOptionsJson?: string;
+  /** When true, GLBs write under `animated_exports/draft`, `player_exports/draft`, or `level_exports/draft`. */
+  outputDraft?: boolean;
 }
 
 export function useStreamingOutput() {
@@ -36,6 +38,7 @@ export function useStreamingOutput() {
     if (options.finish) params.set("finish", options.finish);
     if (options.hexColor) params.set("hex_color", options.hexColor);
     if (options.buildOptionsJson) params.set("build_options", options.buildOptionsJson);
+    if (options.outputDraft) params.set("output_draft", "true");
 
     const url = `${endpoint}?${params.toString()}`;
     const es = new EventSource(url);

@@ -9,6 +9,7 @@
 - Align with M13 (Blobert Visual Identity) for player-side readability; avoid one-off shaders unless shared.
 - Document any families deferred to a follow-up ticket with a clear reason (blocked only when scoped).
 - **Versions / draft / editor / spawn:** decomposed into ordered backlog tickets `01`–`09` below. **Umbrella blocked ticket** (cross-cutting acceptance + old “single card” text): `blocked/enemy_model_versions_draft_editor_and_spawn.md`.
+- **Draft vs live on disk:** shipped GLBs stay under `animated_exports/`, `player_exports/`, `level_exports/` at the root; draft iterations use the `draft/` subfolder under each (see `project_board/specs/registry_draft_live_directory_layout_spec.md`). Optional: `.gitignore` `**/draft/**` under those roots if you do not want draft GLBs in commits.
 
 ## Backlog tickets (execution order)
 
@@ -21,7 +22,11 @@
 7. `backlog/07_editor_delete_draft_and_in_use_models.md` — delete draft + delete in-use with safety rules.
 8. `backlog/08_runtime_spawn_random_enemy_visual_variant.md` — random visual variant among in-use versions at spawn (coordinate M10).
 9. `backlog/09_automated_tests_registry_allowlist_delete.md` — cross-cutting tests for registry, allowlist, delete invariants.
-10. `backlog/10_body_part_color_picker_limb_joint_hierarchy.md` — fix editor color picker; **limb** + **joint** category colors + per-limb/joint overrides (`animated_build_options`, `material_system`, React preview).
+10. `done/10_body_part_color_picker_limb_joint_hierarchy.md` — fix editor color picker; **limb** + **joint** category colors + per-limb/joint overrides (`animated_build_options`, `material_system`, React preview).
+11. `backlog/11_enemy_body_part_extras_spec_and_pipeline.md` — **Extras** feature: spec, per-part exclusive extra type (shell / spikes / horns / bulbs), spike shape + counts, materials; Python + Blender pipeline + tests.
+12. `backlog/12_enemy_body_part_extras_editor_ui.md` — **Extras** tab in asset editor (`ThreePanelLayout`), per-part extra + material/color UI; depends on **11**.
+13. `done/13_registry_paths_align_with_draft_vs_in_use_directories.md` — on-disk dirs match **draft** vs **live** / pool lifecycle; export + promote move files and registry paths; git-friendly commits for in-use assets only.
+14. `backlog/14_hideable_animation_chooser_and_log_terminal.md` — collapsible **AnimationControls** + **Terminal** in `ThreePanelLayout`; optional persisted visibility.
 
 ## Dependencies
 

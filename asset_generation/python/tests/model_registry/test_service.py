@@ -103,6 +103,7 @@ def test_patch_enemy_version_persists(tmp_path: Path):
     row = raw["enemies"]["imp"]["versions"][0]
     assert row["draft"] is True
     assert row["in_use"] is False
+    assert row["path"] == "animated_exports/draft/imp_animated_00.glb"
 
 
 def test_patch_unknown_family_raises(tmp_path: Path):
@@ -506,6 +507,56 @@ def test_sync_discovered_animated_glb_versions_adds_on_disk_stems(tmp_path: Path
         "draft": True,
         "in_use": False,
     }
+
+
+def test_sync_discovered_animated_glb_versions_scans_draft_subdir(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    draft_dir = tmp_path / "animated_exports" / "draft"
+    draft_dir.mkdir(parents=True)
+    (draft_dir / "imp_animated_02.glb").write_bytes(b"y")
+    out = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    row = next(r for r in out["enemies"]["imp"]["versions"] if r["id"] == "imp_animated_02")
+    assert row["path"] == "animated_exports/draft/imp_animated_02.glb"
+
+
+def test_patch_enemy_version_moves_glb_when_demoting(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    glb = tmp_path / "animated_exports" / "imp_animated_00.glb"
+    glb.parent.mkdir(parents=True)
+    glb.write_bytes(b"glb")
+    atk = tmp_path / "animated_exports" / "imp_animated_00.attacks.json"
+    atk.write_text("{}", encoding="utf-8")
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
+    assert not glb.exists()
+    assert (tmp_path / "animated_exports" / "draft" / "imp_animated_00.glb").read_bytes() == b"glb"
+    assert (tmp_path / "animated_exports" / "draft" / "imp_animated_00.attacks.json").is_file()
+
+
+def test_patch_enemy_version_moves_glb_when_promoting(tmp_path: Path):
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"][0]["draft"] = True
+    m["enemies"]["imp"]["versions"][0]["in_use"] = False
+    m["enemies"]["imp"]["versions"][0]["path"] = "animated_exports/draft/imp_animated_00.glb"
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    draft_glb = tmp_path / "animated_exports" / "draft" / "imp_animated_00.glb"
+    draft_glb.parent.mkdir(parents=True)
+    draft_glb.write_bytes(b"z")
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": False, "in_use": True})
+    assert not draft_glb.exists()
+    live = tmp_path / "animated_exports" / "imp_animated_00.glb"
+    assert live.read_bytes() == b"z"
+
+
+def test_patch_enemy_version_relocate_refuses_dest_collision(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    live = tmp_path / "animated_exports" / "imp_animated_00.glb"
+    live.parent.mkdir(parents=True)
+    live.write_bytes(b"a")
+    draft_dir = tmp_path / "animated_exports" / "draft"
+    draft_dir.mkdir(parents=True)
+    (draft_dir / "imp_animated_00.glb").write_bytes(b"b")
+    with pytest.raises(ValueError, match="refusing relocate"):
+        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
 
 
 def test_sync_discovered_animated_glb_versions_idempotent(tmp_path: Path):
