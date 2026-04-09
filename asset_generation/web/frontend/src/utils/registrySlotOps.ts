@@ -33,10 +33,9 @@ export function nextEnemySlotsAfterRemove(current: string[], index: number): str
 export function canAddEnemySlot(
   current: string[],
   candidates: readonly EnemySlotCandidate[],
-  preferredVersionId?: string | null,
+  _preferredVersionId?: string | null,
 ): boolean {
-  const next = nextEnemySlotsAfterAdd(current, candidates, preferredVersionId);
-  return next !== current;
+  return candidates.some((v) => !v.draft && !current.includes(v.id));
 }
 
 /** Replace the slot at ``slotIndex`` (0-based) with ``versionId``. Appends if ``slotIndex`` ≥ current length. */

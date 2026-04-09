@@ -328,10 +328,16 @@ def test_patch_player_requires_flag(tmp_path: Path):
         patch_player_active_visual(tmp_path)
 
 
-def test_patch_player_when_null_raises(tmp_path: Path):
+def test_patch_player_when_null_requires_path(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
-    with pytest.raises(KeyError, match="player_active_visual is null"):
+    with pytest.raises(ValueError, match="player_active_visual is unset"):
         patch_player_active_visual(tmp_path, draft=False)
+
+
+def test_patch_player_initializes_from_null_with_path(tmp_path: Path):
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    out = patch_player_active_visual(tmp_path, path="player_exports/p_00.glb")
+    assert out["player_active_visual"] == {"path": "player_exports/p_00.glb", "draft": False}
 
 
 def test_patch_player_updates_path_and_draft(tmp_path: Path):

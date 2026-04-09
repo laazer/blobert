@@ -355,3 +355,86 @@ class TestEnemySlotManagement:
         reread = await client.get("/api/registry/model/enemies/spider/slots")
         assert reread.status_code == 200
         assert reread.json()["version_ids"] == ["spider_animated_01"]
+
+
+def _seed_manifest_player_visual_null(python_root: pathlib.Path) -> None:
+    payload = {
+        "schema_version": 1,
+        "enemies": {
+            "spider": {
+                "slots": ["spider_animated_00"],
+                "versions": [
+                    {
+                        "id": "spider_animated_00",
+                        "path": "animated_exports/spider_animated_00.glb",
+                        "draft": False,
+                        "in_use": True,
+                    },
+                ],
+            },
+        },
+        "player_active_visual": None,
+    }
+    (python_root / "model_registry.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+@pytest.fixture()
+def python_root_player_visual_null(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> pathlib.Path:
+    root = tmp_path / "python"
+    (root / "animated_exports").mkdir(parents=True)
+    (root / "player_exports").mkdir(parents=True)
+    (root / "animated_exports" / "spider_animated_00.glb").write_bytes(b"\x00" * 8)
+    (root / "player_exports" / "blobert_green_00.glb").write_bytes(b"\x00" * 8)
+    _seed_manifest_player_visual_null(root)
+    monkeypatch.setattr(config_module.settings, "python_root", root)
+    return root
+
+
+@pytest_asyncio.fixture()
+async def client_player_visual_null(python_root_player_visual_null: pathlib.Path):  # noqa: ARG001
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c
+
+
+class TestPlayerActiveVisualNullInit:
+    @pytest.mark.asyncio
+    async def test_patch_with_path_initializes_when_player_active_visual_was_null(
+        self,
+        client_player_visual_null: AsyncClient,
+        python_root_player_visual_null: pathlib.Path,
+    ) -> None:
+        res = await client_player_visual_null.patch(
+            "/api/registry/model/player_active_visual",
+            json={"path": "player_exports/blobert_green_00.glb"},
+        )
+        assert res.status_code == 200
+        assert res.json()["player_active_visual"] == {
+            "path": "player_exports/blobert_green_00.glb",
+            "draft": False,
+        }
+        persisted = json.loads((python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8"))
+        assert persisted["player_active_visual"] == {
+            "path": "player_exports/blobert_green_00.glb",
+            "draft": False,
+        }
+
+    @pytest.mark.asyncio
+    async def test_patch_without_path_when_null_returns_400(
+        self,
+        client_player_visual_null: AsyncClient,
+        python_root_player_visual_null: pathlib.Path,
+    ) -> None:
+        before = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
+        res = await client_player_visual_null.patch(
+            "/api/registry/model/player_active_visual",
+            json={"draft": False},
+        )
+        assert res.status_code == 400
+        after = (python_root_player_visual_null / "model_registry.json").read_text(encoding="utf-8")
+        assert after == before

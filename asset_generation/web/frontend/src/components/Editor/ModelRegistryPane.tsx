@@ -14,12 +14,10 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
-import { buildPlayerModelSelectOptions } from "../../utils/registryPlayerModelOptions";
-import {
-  canAddEnemySlot,
-  nextEnemySlotsAfterAdd,
-  nextEnemySlotsAfterRemove,
-} from "../../utils/registrySlotOps";
+import { buildPlayerModelSelectOptions, playerExportGlbPathsFromAssets } from "../../utils/registryPlayerModelOptions";
+import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
+import { AddEnemySlotModal } from "./AddEnemySlotModal";
+import { PlayerActiveModelModal } from "./PlayerActiveModelModal";
 import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
 import { RegistryPlayerSection } from "./RegistryPlayerSection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
@@ -90,9 +88,14 @@ export function ModelRegistryPane() {
   const [loadExistingCandidates, setLoadExistingCandidates] = useState<LoadExistingCandidate[]>([]);
   const [loadExistingSelection, setLoadExistingSelection] = useState<string>("");
   const [loadExistingBusy, setLoadExistingBusy] = useState<boolean>(false);
+  const [playerPickOpen, setPlayerPickOpen] = useState(false);
+  const [addSlotFamily, setAddSlotFamily] = useState<string | null>(null);
+  const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
+  const assets = useAppStore((s) => s.assets);
+  const loadAssets = useAppStore((s) => s.loadAssets);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -157,8 +160,13 @@ export function ModelRegistryPane() {
   }, [data, families]);
 
   const playerModelOptions = useMemo(
-    () => buildPlayerModelSelectOptions(data, playerCandidates),
-    [data, playerCandidates],
+    () =>
+      buildPlayerModelSelectOptions(
+        data,
+        playerCandidates,
+        playerExportGlbPathsFromAssets(assets),
+      ),
+    [data, playerCandidates, assets],
   );
 
   const familyAddSlotDisabled = useMemo(() => {
@@ -167,11 +175,14 @@ export function ModelRegistryPane() {
     for (const family of families) {
       const versions = data.enemies[family].versions;
       const cur = slotVersionIdsByFamily[family] ?? [];
-      const preferred = preferredAnimatedVersionIdFromPreview(family, activeGlbUrl);
-      out[family] = !canAddEnemySlot(cur, versions, preferred);
+      out[family] = !canAddEnemySlot(cur, versions);
     }
     return out;
-  }, [data, families, slotVersionIdsByFamily, activeGlbUrl]);
+  }, [data, families, slotVersionIdsByFamily]);
+
+  useEffect(() => {
+    if (playerPickOpen) void loadAssets();
+  }, [playerPickOpen, loadAssets]);
 
   async function applyFlags(family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
     const key = `${family}:${v.id}`;
@@ -204,16 +215,28 @@ export function ModelRegistryPane() {
     }
   }
 
-  function addEnemySlot(family: string) {
-    const candidates = data?.enemies[family]?.versions ?? [];
-    const draft = slotVersionIdsByFamily[family] ?? [];
-    const preferred = preferredAnimatedVersionIdFromPreview(family, activeGlbUrl);
-    const next = nextEnemySlotsAfterAdd(draft, candidates, preferred);
-    if (next === draft) return;
-    setSlotVersionIdsByFamily((prev) => ({
-      ...prev,
-      [family]: next,
-    }));
+  async function confirmAddEnemySlot(family: string, versionId: string) {
+    if (!data) return;
+    const row = data.enemies[family]?.versions.find((v) => v.id === versionId);
+    if (!row || row.draft) return;
+    setAddSlotBusyFamily(family);
+    setError(null);
+    try {
+      if (!row.in_use) {
+        const updated = await patchRegistryEnemyVersion(family, versionId, { in_use: true });
+        await syncFromRegistry(updated);
+      }
+      setSlotVersionIdsByFamily((prev) => {
+        const cur = [...(prev[family] ?? [])];
+        if (cur.includes(versionId)) return prev;
+        return { ...prev, [family]: [...cur, versionId] };
+      });
+      setAddSlotFamily(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAddSlotBusyFamily(null);
+    }
   }
 
   function removeEnemySlot(family: string, index: number) {
@@ -307,9 +330,8 @@ export function ModelRegistryPane() {
     <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
       <RegistryPlayerSection
         activeGamePath={data.player_active_visual?.path ?? null}
-        playerModelOptions={playerModelOptions}
         playerBusy={playerBusy}
-        onSetGameActivePath={applyPlayerSelection}
+        onOpenPickGameActive={() => setPlayerPickOpen(true)}
         loadExistingCandidates={loadExistingCandidates}
         loadExistingSelection={loadExistingSelection}
         onLoadExistingSelectionChange={setLoadExistingSelection}
@@ -329,7 +351,7 @@ export function ModelRegistryPane() {
         slotSaveBusyFamily={slotSaveBusyFamily}
         busyKey={busyKey}
         deleteBusyKey={deleteBusyKey}
-        onAddSlot={addEnemySlot}
+        onAddSlot={(family) => setAddSlotFamily(family)}
         onRemoveSlot={removeEnemySlot}
         onUpdateSlotVersion={updateEnemySlotVersion}
         onSaveSlots={saveEnemySlots}
@@ -337,6 +359,31 @@ export function ModelRegistryPane() {
         onDeleteVersion={deleteEnemyVersion}
         getEnemyDeletePlan={buildEnemyDeletePlan}
       />
+
+      <PlayerActiveModelModal
+        open={playerPickOpen}
+        options={playerModelOptions}
+        currentPath={data.player_active_visual?.path ?? null}
+        busy={playerBusy}
+        onClose={() => setPlayerPickOpen(false)}
+        onPick={async (path) => {
+          await applyPlayerSelection(path);
+          setPlayerPickOpen(false);
+        }}
+      />
+
+      {addSlotFamily && (
+        <AddEnemySlotModal
+          open
+          family={addSlotFamily}
+          versions={data.enemies[addSlotFamily]?.versions ?? []}
+          slotVersionIds={slotVersionIdsByFamily[addSlotFamily] ?? []}
+          preferredVersionId={preferredAnimatedVersionIdFromPreview(addSlotFamily, activeGlbUrl)}
+          busy={addSlotBusyFamily === addSlotFamily}
+          onClose={() => setAddSlotFamily(null)}
+          onPick={(versionId) => confirmAddEnemySlot(addSlotFamily, versionId)}
+        />
+      )}
 
       {error && (
         <div style={{ color: "#f14c4c", marginBottom: 8, fontSize: 11 }}>{error}</div>

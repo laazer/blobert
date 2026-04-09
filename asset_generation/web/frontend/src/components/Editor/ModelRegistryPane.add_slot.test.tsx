@@ -36,6 +36,7 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchLoadExistingCandidates: vi.fn(),
     fetchEnemyFamilySlots: vi.fn(),
     putEnemyFamilySlots: vi.fn(),
+    patchRegistryEnemyVersion: vi.fn(),
   };
 });
 
@@ -48,6 +49,7 @@ describe("ModelRegistryPane Add slot", () => {
 
   beforeEach(() => {
     vi.mocked(client.fetchLoadExistingCandidates).mockResolvedValue({ candidates: [] });
+    vi.mocked(client.patchRegistryEnemyVersion).mockReset();
     useAppStore.setState({ activeGlbUrl: null });
   });
 
@@ -105,11 +107,47 @@ describe("ModelRegistryPane Add slot", () => {
     fireEvent.click(screen.getByTestId("registry-add-slot-spider"));
 
     await waitFor(() => {
-      const slotSelects = screen
-        .getAllByRole("combobox")
-        .filter((el) => el.id !== "player-active-visual-select");
+      expect(screen.getByTestId("add-enemy-slot-modal")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("registry-add-slot-pick-spider_animated_01"));
+
+    await waitFor(() => {
+      const slotSelects = screen.getAllByRole("combobox");
       expect(slotSelects).toHaveLength(2);
       expect(slotSelects[1]).toHaveValue("spider_animated_01");
+    });
+  });
+
+  it("add slot turns on in pool when the chosen version was not in_use", async () => {
+    const v0 = { ...baseVersions[0] };
+    const v1 = { ...baseVersions[1], in_use: false };
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryWithSpiderVersions([v0, v1]));
+    vi.mocked(client.fetchEnemyFamilySlots).mockImplementation(async (family: string) => ({
+      family,
+      version_ids: ["spider_animated_00"],
+      resolved_paths: [],
+    }));
+    vi.mocked(client.patchRegistryEnemyVersion).mockResolvedValue(
+      registryWithSpiderVersions([v0, { ...v1, in_use: true }]),
+    );
+
+    render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("registry-add-slot-spider")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("registry-add-slot-spider"));
+    await waitFor(() => {
+      expect(screen.getByTestId("add-enemy-slot-modal")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("registry-add-slot-pick-spider_animated_01"));
+
+    await waitFor(() => {
+      expect(vi.mocked(client.patchRegistryEnemyVersion)).toHaveBeenCalledWith("spider", "spider_animated_01", {
+        in_use: true,
+      });
     });
   });
 });

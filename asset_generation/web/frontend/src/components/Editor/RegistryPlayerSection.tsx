@@ -3,7 +3,6 @@ import { useAppStore } from "../../store/useAppStore";
 import type { LoadExistingCandidate } from "../../api/client";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import { loadExistingCandidateKey, loadExistingCandidateLabel } from "./registryLoadExisting";
-import type { PlayerModelSelectOption } from "../../utils/registryPlayerModelOptions";
 import { LOAD_EXISTING_EMPTY_COPY, PLAYER_RESTART_REQUIREMENT_COPY } from "./registryPaneStrings";
 
 export const PLAYER_MODEL_SECTION_HEADING = "Player model";
@@ -42,9 +41,8 @@ const divider: CSSProperties = { borderTop: "1px solid #2d2d2d", margin: "12px 0
 
 export type RegistryPlayerSectionProps = {
   activeGamePath: string | null;
-  playerModelOptions: PlayerModelSelectOption[];
   playerBusy: boolean;
-  onSetGameActivePath: (path: string) => void;
+  onOpenPickGameActive: () => void;
   loadExistingCandidates: LoadExistingCandidate[];
   loadExistingSelection: string;
   onLoadExistingSelectionChange: (key: string) => void;
@@ -55,9 +53,8 @@ export type RegistryPlayerSectionProps = {
 
 export function RegistryPlayerSection({
   activeGamePath,
-  playerModelOptions,
   playerBusy,
-  onSetGameActivePath,
+  onOpenPickGameActive,
   loadExistingCandidates,
   loadExistingSelection,
   onLoadExistingSelectionChange,
@@ -105,28 +102,18 @@ export function RegistryPlayerSection({
 
       <div style={noteStyle}>{PLAYER_RESTART_REQUIREMENT_COPY}</div>
 
-      <label style={labelStyle} htmlFor="player-active-visual-select">
-        Set game active model
-      </label>
-      <select
-        id="player-active-visual-select"
-        style={selectStyle}
-        disabled={playerBusy}
-        value={activeGamePath ?? ""}
-        onChange={(e) => {
-          if (!e.target.value) return;
-          onSetGameActivePath(e.target.value);
-        }}
-      >
-        <option value="" disabled>
-          Select a non-draft .glb
-        </option>
-        {playerModelOptions.map((row) => (
-          <option key={row.path} value={row.path}>
-            {row.label}
-          </option>
-        ))}
-      </select>
+      <div style={{ marginBottom: 8 }}>
+        <button
+          type="button"
+          style={btnPrimary}
+          disabled={playerBusy}
+          data-testid="player-active-model-open"
+          title="Searchable list of allowlisted player .glb paths"
+          onClick={onOpenPickGameActive}
+        >
+          Choose game active model…
+        </button>
+      </div>
 
       <div style={divider}>
         <div style={noteStyle}>

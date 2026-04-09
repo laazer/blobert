@@ -34,6 +34,14 @@ describe("canAddEnemySlot", () => {
     ];
     expect(canAddEnemySlot(["a"], candidates)).toBe(true);
   });
+
+  it("is true when a non-draft version is not in pool but not yet slotted", () => {
+    const candidates = [
+      { id: "a", draft: false, in_use: true },
+      { id: "b", draft: false, in_use: false },
+    ];
+    expect(canAddEnemySlot(["a"], candidates)).toBe(true);
+  });
 });
 
 describe("nextEnemySlotsAfterAdd", () => {

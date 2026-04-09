@@ -298,7 +298,16 @@ def patch_player_active_visual(
     data = load_effective_manifest(python_root)
     pav = data.get("player_active_visual")
     if pav is None:
-        raise KeyError("player_active_visual is null; set an active path before toggling draft")
+        if path is None:
+            raise ValueError("player_active_visual is unset; provide path to initialize")
+        if not _path_is_allowlisted(path):
+            raise ValueError(f"invalid player path: {path!r}")
+        if not path.endswith(".glb"):
+            raise ValueError("player_active_visual.path must end with .glb")
+        data["player_active_visual"] = {"path": path, "draft": False}
+        validated = validate_manifest(data)
+        save_manifest_atomic(python_root, validated)
+        return validated
 
     next_pav = dict(pav)
     if path is not None:
