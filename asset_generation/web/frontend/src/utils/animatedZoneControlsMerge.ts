@@ -101,6 +101,15 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       step: 0.05,
       default: 1,
     });
+    out.push({
+      key: `extra_zone_${zone}_clustering`,
+      label: `${zlabel} extra clustering`,
+      type: "float",
+      min: 0,
+      max: 1,
+      step: 0.05,
+      default: 0.5,
+    });
     for (const [pk, plab] of [
       ["place_top", "Top (+Z)"],
       ["place_bottom", "Bottom (−Z)"],

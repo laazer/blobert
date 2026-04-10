@@ -64,9 +64,12 @@ _SPIKE_SIZE_MIN = 0.25
 _SPIKE_SIZE_MAX = 3.0
 _BULB_SIZE_MIN = 0.25
 _BULB_SIZE_MAX = 3.0
+_PLACEMENT_CLUSTERING_MIN = 0.0
+_PLACEMENT_CLUSTERING_MAX = 1.0
+_DEFAULT_PLACEMENT_CLUSTERING = 0.5
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
-    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|finish|hex|"
+    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|clustering|finish|hex|"
     r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
 )
 _ZONE_GEOM_EXTRA_PLACE_KEYS: tuple[str, ...] = (
@@ -85,6 +88,7 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
         "spike_size",
         "bulb_count",
         "bulb_size",
+        "clustering",
         "finish",
         "hex",
         *_ZONE_GEOM_EXTRA_PLACE_KEYS,
@@ -106,6 +110,15 @@ def _spider_eye_control_defs() -> list[dict[str, Any]]:
             "type": "select",
             "options": list(AnimatedSpider.ALLOWED_EYE_COUNTS),
             "default": AnimatedSpider.DEFAULT_EYE_COUNT,
+        },
+        {
+            "key": "eye_clustering",
+            "label": "Eye clustering (multi-eye)",
+            "type": "float",
+            "min": _PLACEMENT_CLUSTERING_MIN,
+            "max": _PLACEMENT_CLUSTERING_MAX,
+            "step": 0.05,
+            "default": _DEFAULT_PLACEMENT_CLUSTERING,
         },
     ]
 
@@ -132,6 +145,7 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "spike_size": 1.0,
         "bulb_count": 4,
         "bulb_size": 1.0,
+        "clustering": _DEFAULT_PLACEMENT_CLUSTERING,
         "finish": "default",
         "hex": "",
         "place_top": True,
@@ -315,7 +329,7 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 out[zone][field] = int(v)
             except (TypeError, ValueError):
                 pass
-        elif field in ("spike_size", "bulb_size"):
+        elif field in ("spike_size", "bulb_size", "clustering"):
             try:
                 out[zone][field] = float(v)
             except (TypeError, ValueError):
@@ -364,6 +378,13 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
         except (TypeError, ValueError):
             bs = 1.0
         entry["bulb_size"] = max(_BULB_SIZE_MIN, min(_BULB_SIZE_MAX, bs))
+        try:
+            cl = float(raw.get("clustering", entry["clustering"]))
+        except (TypeError, ValueError):
+            cl = _DEFAULT_PLACEMENT_CLUSTERING
+        entry["clustering"] = max(
+            _PLACEMENT_CLUSTERING_MIN, min(_PLACEMENT_CLUSTERING_MAX, cl)
+        )
         for pk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
             entry[pk] = _coerce_boolish(raw.get(pk, entry[pk]), True)
         fin = str(raw.get("finish", "default"))
@@ -437,6 +458,17 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _BULB_SIZE_MAX,
                 "step": 0.05,
                 "default": 1.0,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_clustering",
+                "label": f"{zlabel} extra clustering",
+                "type": "float",
+                "min": _PLACEMENT_CLUSTERING_MIN,
+                "max": _PLACEMENT_CLUSTERING_MAX,
+                "step": 0.05,
+                "default": _DEFAULT_PLACEMENT_CLUSTERING,
             }
         )
         for pk, plab in (
@@ -767,6 +799,11 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
             v = int(out[key])
             lo = int(c["min"])
             hi = int(c["max"])
+            out[key] = max(lo, min(hi, v))
+        elif t == "float":
+            v = float(out[key])
+            lo = float(c["min"])
+            hi = float(c["max"])
             out[key] = max(lo, min(hi, v))
         elif t == "select":
             opts = c["options"]

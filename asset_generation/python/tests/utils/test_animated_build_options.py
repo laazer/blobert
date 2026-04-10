@@ -357,6 +357,23 @@ def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
     assert b["spike_shape"] == "pyramid"
     assert b["spike_count"] == 12
     assert b["spike_size"] == 1.0
+    assert b["clustering"] == 0.5
+
+
+def test_zone_geometry_extras_clustering_merge_and_clamp() -> None:
+    o = options_for_enemy(
+        "slug",
+        {"extra_zone_body_clustering": 0.2, "extra_zone_head_clustering": 9},
+    )
+    assert o["zone_geometry_extras"]["body"]["clustering"] == 0.2
+    assert o["zone_geometry_extras"]["head"]["clustering"] == 1.0
+
+
+def test_spider_eye_clustering_defaults_and_clamp() -> None:
+    o = options_for_enemy("spider", {})
+    assert o["eye_clustering"] == 0.5
+    assert options_for_enemy("spider", {"eye_clustering": -1})["eye_clustering"] == 0.0
+    assert options_for_enemy("spider", {"eye_clustering": 2})["eye_clustering"] == 1.0
 
 
 def test_zone_geometry_extras_flat_keys_merge() -> None:
@@ -416,8 +433,17 @@ def test_api_slug_includes_zone_extra_control_keys() -> None:
     assert "extra_zone_extra_bulb_count" in keys
     assert "extra_zone_body_spike_size" in keys
     assert "extra_zone_body_bulb_size" in keys
+    assert "extra_zone_body_clustering" in keys
     assert "extra_zone_body_place_top" in keys
     assert any(c["key"] == "extra_zone_body_place_top" and c["type"] == "bool" for c in ctrl["slug"])
+
+
+def test_api_spider_includes_eye_clustering_control() -> None:
+    ctrl = animated_build_controls_for_api()
+    keys = {c["key"] for c in ctrl["spider"]}
+    assert "eye_clustering" in keys
+    ec = next(c for c in ctrl["spider"] if c["key"] == "eye_clustering")
+    assert ec["type"] == "float"
 
 
 def test_unknown_kind_coerced_to_none() -> None:
@@ -491,6 +517,15 @@ def test_merge_zone_geometry_extras_flat_invalid_float_ignored() -> None:
         abo._default_zone_geometry_extras("slug"),
     )
     assert got["body"]["spike_size"] == 1.0
+
+
+def test_merge_zone_geometry_extras_flat_invalid_clustering_ignored() -> None:
+    got = abo._merge_zone_geometry_extras(
+        "slug",
+        {"extra_zone_body_clustering": "nope"},
+        abo._default_zone_geometry_extras("slug"),
+    )
+    assert got["body"]["clustering"] == 0.5
 
 
 def test_sanitize_zone_geometry_extras_invalid_shape_and_int_fields() -> None:

@@ -89,6 +89,23 @@ def ensure_blender_stubs() -> None:
                 return _Vector(tuple(a / scalar for a in self._t))
             return NotImplemented
 
+        def dot(self, other):
+            if isinstance(other, _Vector):
+                return float(sum(a * b for a, b in zip(self._t, other._t)))
+            return NotImplemented
+
+        @property
+        def x(self) -> float:
+            return float(self._t[0])
+
+        @property
+        def y(self) -> float:
+            return float(self._t[1])
+
+        @property
+        def z(self) -> float:
+            return float(self._t[2])
+
         @property
         def length(self) -> float:
             return float(math.sqrt(sum(x * x for x in self._t)))

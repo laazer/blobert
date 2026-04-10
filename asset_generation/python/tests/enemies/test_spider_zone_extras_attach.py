@@ -3,7 +3,10 @@
 from unittest.mock import MagicMock, patch
 
 from src.enemies.animated_spider import AnimatedSpider
-from src.enemies.zone_geometry_extras_attach import append_animated_enemy_zone_extras, append_spider_zone_extras
+from src.enemies.zone_geometry_extras_attach import (
+    append_animated_enemy_zone_extras,
+    append_spider_zone_extras,
+)
 
 
 def _minimal_spider() -> AnimatedSpider:

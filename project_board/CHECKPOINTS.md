@@ -964,3 +964,15 @@ Log: `project_board/checkpoints/13_registry_paths/run-2026-04-09-handoff.md`
 ### [14_preview_collapse] — OUTCOME: COMPLETE
 Collapsible **Animations** and **Log / run output** in `ThreePanelLayout` with `usePersistedBoolean` + localStorage; `GlbViewer` in flex-grow wrapper; Terminal `scrollIntoView` guard for tests; RTL coverage.
 Log: `project_board/checkpoints/14_preview_collapse/run-2026-04-09-handoff.md`
+
+---
+
+## Run: 2026-04-10T08-30-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/15_eye_and_extras_placement_clustering_controls.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### [M9-EPEC / 15] — OUTCOME: COMPLETE
+Eye clustering (`eye_clustering`) for spider multi-eye layout; per-zone `clustering` for `zone_geometry_extras` RNG placement + horn lateral spread; spec `eye_and_extras_placement_clustering_spec.md`; `placement_clustering` module; frontend extras + API defs; `blender_stubs.Vector` `dot` + `x`/`y`/`z`; `timeout 300 ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/M9-EPEC/run-2026-04-10-autopilot.md`

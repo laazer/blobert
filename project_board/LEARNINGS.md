@@ -4,6 +4,18 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-EPEC / 15_eye_extras_clustering] — Stub Vector parity
+*Completed: 2026-04-10*
+
+### Learnings
+- category: testing
+  insight: `zone_geometry_extras_attach._facing_allows_normal` uses `Vector.dot` and `bc.x` style access; the mathutils stub lacked `dot` and `x`/`y`/`z`, so unrelated facing tests failed once attach code exercised those paths consistently.
+  impact: CI red on `test_zone_geometry_extras_facing` and slug/spider attach tests until stub matches minimal Blender `mathutils.Vector` surface.
+  prevention: When adding geometry code that uses `dot` or axis properties, extend `blender_stubs._Vector` in the same change.
+  severity: medium
+
+---
+
 ## [14_preview_collapse] — jsdom and scrollIntoView
 *Completed: 2026-04-09*
 

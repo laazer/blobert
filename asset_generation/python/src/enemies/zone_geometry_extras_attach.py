@@ -15,6 +15,7 @@ from ..materials.material_system import (
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
+from ..utils.placement_clustering import clamp01, clustered_ellipsoid_angles_bounded
 
 
 def _vec_xyz(v: Vector) -> tuple[float, float, float]:
@@ -42,6 +43,10 @@ def _ellipsoid_normal(cx: float, cy: float, cz: float, a: float, b: float, h: fl
     if ln < 1e-9:
         return Vector((0.0, 0.0, 1.0))
     return Vector((nx / ln, ny / ln, nz / ln))
+
+
+def _zone_extra_clustering(spec: dict[str, Any]) -> float:
+    return clamp01(spec.get("clustering"), 0.5)
 
 
 def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: float = 0.25, hi: float = 3.0) -> float:
@@ -215,6 +220,7 @@ def _append_body_ellipsoid_extras(
     if kind == "spikes":
         n = max(1, int(spec.get("spike_count", 8)))
         spike_sz = _zone_extra_scale(spec, "spike_size")
+        cl = _zone_extra_clustering(spec)
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         rad = ref * 0.22 * spike_sz
@@ -224,8 +230,14 @@ def _append_body_ellipsoid_extras(
         attempts = 0
         while placed < n and attempts < max_attempts:
             attempts += 1
-            t1 = model.rng.random() * 2.0 * math.pi
-            t2 = model.rng.random() * math.pi
+            t1, t2 = clustered_ellipsoid_angles_bounded(
+                model.rng,
+                cl,
+                theta_lo=0.0,
+                theta_hi=2.0 * math.pi,
+                phi_lo=0.0,
+                phi_hi=math.pi,
+            )
             p = _ellipsoid_point_at(cx, cy, cz, a, b, h, t1, t2)
             nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
             if not _facing_allows_normal(spec, nrm):
@@ -246,14 +258,21 @@ def _append_body_ellipsoid_extras(
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 4)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
+        cl = _zone_extra_clustering(spec)
         br = ref * 0.2 * bulb_sz
         placed = 0
         max_attempts = max(400, nb * 80)
         attempts = 0
         while placed < nb and attempts < max_attempts:
             attempts += 1
-            t1 = model.rng.random() * 2.0 * math.pi
-            t2 = model.rng.random() * math.pi
+            t1, t2 = clustered_ellipsoid_angles_bounded(
+                model.rng,
+                cl,
+                theta_lo=0.0,
+                theta_hi=2.0 * math.pi,
+                phi_lo=0.0,
+                phi_hi=math.pi,
+            )
             p = _ellipsoid_point_at(cx, cy, cz, a * 0.92, b * 0.92, h * 0.92, t1, t2)
             nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
             if not _facing_allows_normal(spec, nrm):
@@ -289,13 +308,15 @@ def _append_head_ellipsoid_extras(
 
     if kind == "horns":
         spike_sz = _zone_extra_scale(spec, "spike_size")
+        cl = _zone_extra_clustering(spec)
+        horn_spread = 1.0 - cl * 0.88
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         rad = ref * 0.18 * spike_sz
         depth = ref * 0.42 * spike_sz
         for side in (-1, 1):
             px = hx + ax * 0.3
-            py = hy + float(side) * ay * 0.35
+            py = hy + float(side) * ay * 0.35 * horn_spread
             pz = hz + az * 0.5
             p = (px, py, pz)
             nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
@@ -315,6 +336,7 @@ def _append_head_ellipsoid_extras(
             model.parts.append(cone)
     elif kind == "spikes":
         spike_sz = _zone_extra_scale(spec, "spike_size")
+        cl = _zone_extra_clustering(spec)
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         count = max(1, int(spec.get("spike_count", 4)))
@@ -325,8 +347,14 @@ def _append_head_ellipsoid_extras(
         attempts = 0
         while placed < count and attempts < max_attempts:
             attempts += 1
-            t1 = model.rng.random() * 2.0 * math.pi
-            t2 = model.rng.random() * 0.55 * math.pi + 0.15 * math.pi
+            t1, t2 = clustered_ellipsoid_angles_bounded(
+                model.rng,
+                cl,
+                theta_lo=0.0,
+                theta_hi=2.0 * math.pi,
+                phi_lo=0.15 * math.pi,
+                phi_hi=0.7 * math.pi,
+            )
             px = hx + ax * math.sin(t2) * math.cos(t1)
             py = hy + ay * math.sin(t2) * math.sin(t1)
             pz = hz + az * math.cos(t2)
@@ -350,14 +378,21 @@ def _append_head_ellipsoid_extras(
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 3)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
+        cl = _zone_extra_clustering(spec)
         br = ref * 0.17 * bulb_sz
         placed = 0
         max_attempts = max(400, nb * 80)
         attempts = 0
         while placed < nb and attempts < max_attempts:
             attempts += 1
-            t1 = model.rng.random() * 2.0 * math.pi
-            t2 = model.rng.random() * 0.6 * math.pi + 0.2 * math.pi
+            t1, t2 = clustered_ellipsoid_angles_bounded(
+                model.rng,
+                cl,
+                theta_lo=0.0,
+                theta_hi=2.0 * math.pi,
+                phi_lo=0.2 * math.pi,
+                phi_hi=0.8 * math.pi,
+            )
             px = hx + ax * 0.45 * math.sin(t2) * math.cos(t1)
             py = hy + ay * 0.45 * math.sin(t2) * math.sin(t1)
             pz = hz + az * 0.45 * math.cos(t2)

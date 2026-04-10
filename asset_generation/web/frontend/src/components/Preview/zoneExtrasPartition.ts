@@ -12,6 +12,7 @@ const SUFFIX_ORDER = [
   "spike_size",
   "bulb_count",
   "bulb_size",
+  "clustering",
   "place_top",
   "place_bottom",
   "place_front",

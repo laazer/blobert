@@ -103,12 +103,21 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             return int(self._mesh("DEFAULT_EYE_COUNT"))
         return eye_count
 
+    def _eye_clustering(self) -> float:
+        try:
+            c = float(self.build_options.get("eye_clustering", 0.5))
+        except (TypeError, ValueError):
+            c = 0.5
+        return max(0.0, min(1.0, c))
+
     def _eye_dirs(self, eye_count: int, head_center: Vector, head_scale: float) -> list[Vector]:
+        cl = self._eye_clustering()
+        spread = 1.0 - cl * 0.92
         eye_base_z = self._mesh("EYE_Z")
         if eye_count == 1:
             eyes = [Vector((1.0, 0.0, (eye_base_z - head_center.z) / max(1e-8, head_scale)))]
         elif eye_count == 2:
-            eye_y = head_scale * self._mesh("EYE_Y_SIDE")
+            eye_y = head_scale * self._mesh("EYE_Y_SIDE") * spread
             eyes = [
                 Vector((1.0, eye_y / max(1e-8, head_scale), (eye_base_z - head_center.z) / max(1e-8, head_scale))),
                 Vector((1.0, -eye_y / max(1e-8, head_scale), (eye_base_z - head_center.z) / max(1e-8, head_scale))),
@@ -119,7 +128,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             eyes = []
             for i in range(eye_count):
                 t = (i / span) * 2.0 - 1.0
-                angle = t * (math.pi * 0.42)
+                angle = t * (math.pi * 0.42) * spread
                 eye_y = head_scale * eye_arc * math.sin(angle)
                 eye_z = eye_base_z + head_scale * 0.30 * math.cos(angle)
                 eye_x = head_center.x + head_scale

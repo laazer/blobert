@@ -29,7 +29,7 @@ function rowDisabled(kind: string, defKey: string): boolean {
     return kind === "none" || kind === "shell";
   }
   if (kind === "none" || kind === "shell") {
-    return defKey.includes("_spike_") || defKey.includes("_bulb_");
+    return defKey.includes("_spike_") || defKey.includes("_bulb_") || defKey.endsWith("_clustering");
   }
   if (kind === "spikes") {
     return defKey.includes("_bulb_");
