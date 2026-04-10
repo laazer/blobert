@@ -8,6 +8,7 @@ mode; until then, ellipsoid extras use ``model.rng`` with this concentration fac
 from __future__ import annotations
 
 import math
+import random
 from typing import Any, Protocol
 
 
@@ -52,3 +53,68 @@ def clustered_ellipsoid_angles_bounded(
     else:
         phi = max(phi_lo + 1e-6, min(phi_hi - 1e-6, phi))
     return theta, phi
+
+
+def uniform_arc_angles(
+    index: int,
+    count: int,
+    *,
+    theta_lo: float,
+    theta_hi: float,
+    phi_lo: float,
+    phi_hi: float,
+    clustering: float,
+) -> tuple[float, float]:
+    """Deterministic ``(theta, phi)`` for instance ``index`` of ``count`` (arc preset).
+
+    Evenly spaces ``theta`` along ``[theta_lo, theta_hi]``; ``phi`` sits at band center,
+    narrowed toward mid-band as ``clustering`` approaches 1.
+    """
+    c = clamp01(clustering, 0.5)
+    n = max(1, count)
+    span_t = theta_hi - theta_lo
+    theta_mid = (theta_lo + theta_hi) * 0.5
+    t_raw = theta_lo + (index + 0.5) / n * span_t
+    half_t = span_t * 0.5 * (1.0 - c * 0.92) + 1e-9
+    theta = theta_mid + (t_raw - theta_mid) * (half_t / max(1e-9, span_t * 0.5))
+    theta = theta % (2.0 * math.pi)
+
+    phi_mid = (phi_lo + phi_hi) * 0.5
+    phi = max(phi_lo + 1e-6, min(phi_hi - 1e-6, phi_mid))
+    return theta, phi
+
+
+def uniform_ring_angles(
+    index: int,
+    count: int,
+    *,
+    theta_lo: float,
+    theta_hi: float,
+    phi_a: float,
+    phi_b: float,
+    clustering: float,
+) -> tuple[float, float]:
+    """Alternating latitudes ``phi_a`` / ``phi_b`` with even ``theta`` spacing."""
+    c = clamp01(clustering, 0.5)
+    n = max(1, count)
+    span_t = theta_hi - theta_lo
+    theta_mid = (theta_lo + theta_hi) * 0.5
+    t_raw = theta_lo + (index + 0.5) / n * span_t
+    half_t = span_t * 0.5 * (1.0 - c * 0.92) + 1e-9
+    theta = theta_mid + (t_raw - theta_mid) * (half_t / max(1e-9, span_t * 0.5))
+    theta = theta % (2.0 * math.pi)
+    phi_pick = phi_a if index % 2 == 0 else phi_b
+    mid_p = (phi_a + phi_b) * 0.5
+    phi = mid_p + (phi_pick - mid_p) * (1.0 - c * 0.88)
+    lo, hi = min(phi_a, phi_b), max(phi_a, phi_b)
+    phi = max(lo + 1e-6, min(hi - 1e-6, phi))
+    return theta, phi
+
+
+def placement_prng(model: Any) -> random.Random:
+    """Deterministic RNG stream from ``build_options['placement_seed']`` (random distribution path)."""
+    try:
+        seed = int(model.build_options.get("placement_seed", 0))
+    except (TypeError, ValueError):
+        seed = 0
+    return random.Random(seed % (2**31))

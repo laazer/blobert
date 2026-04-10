@@ -14,6 +14,10 @@ import json
 import re
 from typing import Any
 
+from .animated_build_options_mesh_controls import (
+    _mesh_float_control_defs,
+    _mesh_numeric_defaults,
+)
 from .blender_stubs import ensure_blender_stubs
 
 # Declarative controls for GET /api/meta (and validation). Spider eye_count comes from
@@ -30,11 +34,6 @@ _ANIMATED_BUILD_CONTROLS: dict[str, list[dict[str, Any]]] = {
         },
     ],
 }
-
-_MESH_ATTR_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
-
-# Int ClassVars already covered by static build controls — do not duplicate as mesh sliders.
-_MESH_INT_KEYS_EXCLUDED: frozenset[str] = frozenset({"DEFAULT_EYE_COUNT", "PERIPHERAL_EYES_MAX"})
 
 # Material finish keys (keep aligned with materials.material_system.ENEMY_FINISH_PRESETS).
 _VALID_FINISHES: frozenset[str] = frozenset({"default", "glossy", "matte", "metallic", "gel"})
@@ -67,9 +66,15 @@ _BULB_SIZE_MAX = 3.0
 _PLACEMENT_CLUSTERING_MIN = 0.0
 _PLACEMENT_CLUSTERING_MAX = 1.0
 _DEFAULT_PLACEMENT_CLUSTERING = 0.5
+_DISTRIBUTION_MODES: tuple[str, ...] = ("uniform", "random")
+_UNIFORM_SHAPES: tuple[str, ...] = ("arc", "ring")
+_DEFAULT_DISTRIBUTION = "uniform"
+_DEFAULT_UNIFORM_SHAPE = "arc"
+_PLACEMENT_SEED_MAX = 2_147_483_647
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
-    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|clustering|finish|hex|"
+    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|clustering|distribution|uniform_shape|"
+    r"finish|hex|"
     r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
 )
 _ZONE_GEOM_EXTRA_PLACE_KEYS: tuple[str, ...] = (
@@ -89,11 +94,24 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
         "bulb_count",
         "bulb_size",
         "clustering",
+        "distribution",
+        "uniform_shape",
         "finish",
         "hex",
         *_ZONE_GEOM_EXTRA_PLACE_KEYS,
     }
 )
+
+
+def _placement_seed_def() -> dict[str, Any]:
+    return {
+        "key": "placement_seed",
+        "label": "Placement seed (random distribution)",
+        "type": "int",
+        "min": 0,
+        "max": _PLACEMENT_SEED_MAX,
+        "default": 0,
+    }
 
 
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
@@ -112,6 +130,21 @@ def _spider_eye_control_defs() -> list[dict[str, Any]]:
             "default": AnimatedSpider.DEFAULT_EYE_COUNT,
         },
         {
+            "key": "eye_distribution",
+            "label": "Eye placement",
+            "type": "select_str",
+            "options": list(_DISTRIBUTION_MODES),
+            "default": _DEFAULT_DISTRIBUTION,
+            "segmented": True,
+        },
+        {
+            "key": "eye_uniform_shape",
+            "label": "Eye uniform pattern",
+            "type": "select_str",
+            "options": ["arc"],
+            "default": "arc",
+        },
+        {
             "key": "eye_clustering",
             "label": "Eye clustering (multi-eye)",
             "type": "float",
@@ -121,12 +154,6 @@ def _spider_eye_control_defs() -> list[dict[str, Any]]:
             "default": _DEFAULT_PLACEMENT_CLUSTERING,
         },
     ]
-
-
-def _is_mesh_tune_name(name: str) -> bool:
-    if not name or name.startswith("_"):
-        return False
-    return bool(_MESH_ATTR_NAME.match(name))
 
 
 def _feature_zones(slug: str) -> tuple[str, ...]:
@@ -146,6 +173,8 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "bulb_count": 4,
         "bulb_size": 1.0,
         "clustering": _DEFAULT_PLACEMENT_CLUSTERING,
+        "distribution": _DEFAULT_DISTRIBUTION,
+        "uniform_shape": _DEFAULT_UNIFORM_SHAPE,
         "finish": "default",
         "hex": "",
         "place_top": True,
@@ -385,6 +414,12 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
         entry["clustering"] = max(
             _PLACEMENT_CLUSTERING_MIN, min(_PLACEMENT_CLUSTERING_MAX, cl)
         )
+        dist = str(raw.get("distribution", entry["distribution"])).strip().lower()
+        entry["distribution"] = dist if dist in _DISTRIBUTION_MODES else _DEFAULT_DISTRIBUTION
+        us = str(raw.get("uniform_shape", entry["uniform_shape"])).strip().lower()
+        entry["uniform_shape"] = us if us in _UNIFORM_SHAPES else _DEFAULT_UNIFORM_SHAPE
+        if kind == "horns":
+            entry["uniform_shape"] = "arc"
         for pk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
             entry[pk] = _coerce_boolish(raw.get(pk, entry[pk]), True)
         fin = str(raw.get("finish", "default"))
@@ -469,6 +504,25 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _PLACEMENT_CLUSTERING_MAX,
                 "step": 0.05,
                 "default": _DEFAULT_PLACEMENT_CLUSTERING,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_distribution",
+                "label": f"{zlabel} extra distribution",
+                "type": "select_str",
+                "options": list(_DISTRIBUTION_MODES),
+                "default": _DEFAULT_DISTRIBUTION,
+                "segmented": True,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_uniform_shape",
+                "label": f"{zlabel} uniform pattern",
+                "type": "select_str",
+                "options": list(_UNIFORM_SHAPES),
+                "default": _DEFAULT_UNIFORM_SHAPE,
             }
         )
         for pk, plab in (
@@ -632,60 +686,6 @@ def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
     return defs
 
 
-def _mesh_numeric_defaults(slug: str) -> dict[str, int | float]:
-    ensure_blender_stubs()
-    try:
-        from enemies.animated.registry import AnimatedEnemyBuilder
-    except ImportError:
-        from src.enemies.animated.registry import AnimatedEnemyBuilder
-
-    cls = AnimatedEnemyBuilder.ENEMY_CLASSES.get(slug)
-    if cls is None:
-        return {}
-    out: dict[str, int | float] = {}
-    for name in dir(cls):
-        if not _is_mesh_tune_name(name):
-            continue
-        val = getattr(cls, name, None)
-        if type(val) is bool:
-            continue
-        if isinstance(val, (int, float)):
-            if name in _MESH_INT_KEYS_EXCLUDED:
-                continue
-            out[name] = val
-    return out
-
-
-def _humanize_mesh_control_label(key: str) -> str:
-    if key.startswith("RIG_"):
-        return "Rig " + key[4:].replace("_", " ").title()
-    return key.replace("_", " ").title()
-
-
-def _mesh_float_control_defs(slug: str) -> list[dict[str, Any]]:
-    defaults = _mesh_numeric_defaults(slug)
-    out: list[dict[str, Any]] = []
-    for key, v in sorted(defaults.items()):
-        vf = float(v)
-        if vf == 0.0:
-            lo, hi = 0.0, 2.0
-        else:
-            lo = max(0.01, min(vf * 0.05, vf * 0.5))
-            hi = max(5.0, vf * 5.0)
-        out.append(
-            {
-                "key": key,
-                "label": _humanize_mesh_control_label(key),
-                "type": "float",
-                "min": lo,
-                "max": hi,
-                "step": 0.05,
-                "default": vf,
-            }
-        )
-    return out
-
-
 def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
     """Slug -> control definitions for the web client (static + introspected mesh floats)."""
     ensure_blender_stubs()
@@ -706,6 +706,7 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
             + _feature_control_defs(slug)
             + _part_feature_control_defs(slug)
             + _zone_extra_control_defs(slug)
+            + [_placement_seed_def()]
         )
         out[slug] = merged
     return out
@@ -723,6 +724,7 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     out["mesh"] = dict(mesh)
     out["features"] = _default_features_dict(slug)
     out["zone_geometry_extras"] = _default_zone_geometry_extras(slug)
+    out["placement_seed"] = 0
     return out
 
 
@@ -742,6 +744,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
         allowed_non_mesh = {c["key"] for c in _spider_eye_control_defs()}
     else:
         allowed_non_mesh = {c["key"] for c in _ANIMATED_BUILD_CONTROLS.get(enemy_type, [])}
+    allowed_non_mesh |= {"placement_seed"}
 
     if isinstance(src.get("mesh"), dict):
         for k, v in src["mesh"].items():
@@ -789,7 +792,10 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
 
 def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
     out = dict(merged)
-    static_defs = _spider_eye_control_defs() if enemy_type == "spider" else _ANIMATED_BUILD_CONTROLS.get(enemy_type, [])
+    static_defs: list[dict[str, Any]] = (
+        list(_spider_eye_control_defs()) if enemy_type == "spider" else list(_ANIMATED_BUILD_CONTROLS.get(enemy_type, []))
+    )
+    static_defs.append(_placement_seed_def())
     for c in static_defs:
         key = c["key"]
         if key not in out:
@@ -809,6 +815,14 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
             opts = c["options"]
             if out[key] not in opts:
                 out[key] = c.get("default", opts[0])
+        elif t == "select_str":
+            opts = tuple(c.get("options", ()))
+            raw_s = str(out[key]).strip().lower()
+            if raw_s not in opts:
+                d = c.get("default")
+                out[key] = d if isinstance(d, str) and d in opts else (opts[0] if opts else raw_s)
+            else:
+                out[key] = raw_s
 
     mesh_in = dict(out.get("mesh") or {})
     mesh_out: dict[str, Any] = {}

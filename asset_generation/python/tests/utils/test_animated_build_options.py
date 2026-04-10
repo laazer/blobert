@@ -358,6 +358,8 @@ def test_golden_slug_nested_zone_geometry_extras_spikes() -> None:
     assert b["spike_count"] == 12
     assert b["spike_size"] == 1.0
     assert b["clustering"] == 0.5
+    assert b["distribution"] == "uniform"
+    assert b["uniform_shape"] == "arc"
 
 
 def test_zone_geometry_extras_clustering_merge_and_clamp() -> None:
@@ -442,8 +444,17 @@ def test_api_spider_includes_eye_clustering_control() -> None:
     ctrl = animated_build_controls_for_api()
     keys = {c["key"] for c in ctrl["spider"]}
     assert "eye_clustering" in keys
+    assert "eye_distribution" in keys
+    assert "placement_seed" in keys
     ec = next(c for c in ctrl["spider"] if c["key"] == "eye_clustering")
     assert ec["type"] == "float"
+
+
+def test_options_spider_eye_distribution_coerce() -> None:
+    o = options_for_enemy("spider", {"eye_distribution": "random"})
+    assert o["eye_distribution"] == "random"
+    o2 = options_for_enemy("spider", {"eye_distribution": "bogus"})
+    assert o2["eye_distribution"] == "uniform"
 
 
 def test_unknown_kind_coerced_to_none() -> None:

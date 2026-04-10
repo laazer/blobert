@@ -159,6 +159,42 @@ export function ControlRow({
   }
   if (def.type === "select_str") {
     const strVal = typeof value === "string" ? value : def.default;
+    if (def.segmented && def.options.length >= 2) {
+      const n = def.options.length;
+      return (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={rs.label}>{def.label}</span>
+          <div role="group" aria-label={def.label} style={{ display: "inline-flex" }}>
+            {def.options.map((opt, i) => {
+              const active = strVal === opt;
+              const radiusLeft = i === 0 ? 3 : 0;
+              const radiusRight = i === n - 1 ? 3 : 0;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  style={{
+                    padding: "3px 10px",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    border: "1px solid #555",
+                    marginLeft: i > 0 ? -1 : 0,
+                    borderRadius: `${radiusLeft}px ${radiusRight}px ${radiusRight}px ${radiusLeft}px`,
+                    background: active ? "#0e639c" : "#3c3c3c",
+                    color: "#d4d4d4",
+                    zIndex: active ? 1 : 0,
+                  }}
+                  aria-pressed={active}
+                  onClick={() => onChange(opt)}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
     return (
       <label style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
         <span style={rs.label}>{def.label}</span>

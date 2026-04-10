@@ -110,6 +110,21 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       step: 0.05,
       default: 0.5,
     });
+    out.push({
+      key: `extra_zone_${zone}_distribution`,
+      label: `${zlabel} extra distribution`,
+      type: "select_str",
+      options: ["uniform", "random"],
+      default: "uniform",
+      segmented: true,
+    });
+    out.push({
+      key: `extra_zone_${zone}_uniform_shape`,
+      label: `${zlabel} uniform pattern`,
+      type: "select_str",
+      options: ["arc", "ring"],
+      default: "arc",
+    });
     for (const [pk, plab] of [
       ["place_top", "Top (+Z)"],
       ["place_bottom", "Bottom (−Z)"],

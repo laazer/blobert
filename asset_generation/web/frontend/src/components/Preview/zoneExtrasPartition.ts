@@ -13,6 +13,8 @@ const SUFFIX_ORDER = [
   "bulb_count",
   "bulb_size",
   "clustering",
+  "distribution",
+  "uniform_shape",
   "place_top",
   "place_bottom",
   "place_front",

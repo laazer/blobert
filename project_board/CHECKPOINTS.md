@@ -20,6 +20,16 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-09T17-15-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/16_random_vs_uniform_distribution_eyes_and_extras.md` → `done/16_random_vs_uniform_distribution_eyes_and_extras.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### [16_random_vs_uniform_distribution_eyes_and_extras] — OUTCOME: COMPLETE
+Random vs uniform distribution for spider eyes and per-zone geometry extras (`placement_seed`, `arc`/`ring`, segmented UI); spec at `project_board/specs/eye_and_extras_random_uniform_distribution_spec.md`; CI green.
+Log: `project_board/checkpoints/16_random_vs_uniform_distribution_eyes_and_extras/run-2026-04-09-autopilot.md`
+
 ## Run: 2026-04-08T20-00-00Z-autopilot-single
 - Queue mode: single ticket
 - Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/04_editor_ui_draft_status_for_exports.md`

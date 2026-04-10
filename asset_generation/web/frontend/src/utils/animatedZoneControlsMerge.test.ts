@@ -68,7 +68,7 @@ describe("mergeCanonicalZoneControls", () => {
     expect(extraKeys).toContain("extra_zone_head_spike_shape");
     expect(extraKeys).toContain("extra_zone_extra_hex");
     expect(extraKeys).toContain("extra_zone_body_place_top");
-    expect(extraKeys).toHaveLength(45);
+    expect(extraKeys).toHaveLength(51);
   });
 });
 

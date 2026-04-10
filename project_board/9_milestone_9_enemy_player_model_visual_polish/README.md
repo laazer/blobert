@@ -27,6 +27,9 @@
 12. `backlog/12_enemy_body_part_extras_editor_ui.md` — **Extras** tab in asset editor (`ThreePanelLayout`), per-part extra + material/color UI; depends on **11**.
 13. `done/13_registry_paths_align_with_draft_vs_in_use_directories.md` — on-disk dirs match **draft** vs **live** / pool lifecycle; export + promote move files and registry paths; git-friendly commits for in-use assets only.
 14. `done/14_hideable_animation_chooser_and_log_terminal.md` — collapsible **AnimationControls** + **Terminal** in `ThreePanelLayout`; optional persisted visibility.
+15. `done/15_eye_and_extras_placement_clustering_controls.md` — **Clustering** slider/step controls (Build-style) for multi-eye and multi-extra placement; uniform **shape** presets coordinated with **16**.
+16. `done/16_random_vs_uniform_distribution_eyes_and_extras.md` — **Random vs uniform** distribution (**radio** / segmented, not checkbox); seed for reproducible random; coordinated with **15**.
+17. `backlog/17_zone_extras_offset_xyz_controls.md` — per-zone **offset X/Y/Z** for all geometry extras (Build-style floats in `animated_build_options` + apply in `zone_geometry_extras_attach`).
 
 ## Dependencies
 

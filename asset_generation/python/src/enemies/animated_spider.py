@@ -16,6 +16,7 @@ from ..core.rig_models.quadruped_simple import (
 )
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.constants import EnemyBodyTypes
+from ..utils.placement_clustering import placement_prng
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
@@ -110,7 +111,11 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             c = 0.5
         return max(0.0, min(1.0, c))
 
-    def _eye_dirs(self, eye_count: int, head_center: Vector, head_scale: float) -> list[Vector]:
+    def _eye_distribution(self) -> str:
+        v = str(self.build_options.get("eye_distribution", "uniform")).strip().lower()
+        return v if v in ("random", "uniform") else "uniform"
+
+    def _eye_dirs_uniform(self, eye_count: int, head_center: Vector, head_scale: float) -> list[Vector]:
         cl = self._eye_clustering()
         spread = 1.0 - cl * 0.92
         eye_base_z = self._mesh("EYE_Z")
@@ -141,6 +146,23 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                         )
                     )
                 )
+        return eyes
+
+    def _eye_dirs_random(self, eye_count: int, head_center: Vector, head_scale: float) -> list[Vector]:
+        prng = placement_prng(self)
+        cl = self._eye_clustering()
+        spread = max(0.08, (1.0 - cl * 0.92) * 0.62)
+        eye_base_z = self._mesh("EYE_Z")
+        rel_z0 = (eye_base_z - head_center.z) / max(1e-8, head_scale)
+        hs = max(1e-8, head_scale)
+        eyes: list[Vector] = []
+        if eye_count == 1:
+            eyes.append(Vector((1.0, 0.0, rel_z0)))
+            return eyes
+        for _ in range(eye_count):
+            jy = (prng.random() - 0.5) * 2.0 * spread * self._mesh("EYE_Y_SIDE")
+            jz = (prng.random() - 0.5) * 0.55 * spread
+            eyes.append(Vector((1.0, jy / hs, rel_z0 + jz)))
         return eyes
 
     def _leg_chain_points(
@@ -227,7 +249,10 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         eye_count = self._resolved_eye_count()
         self._eye_count = eye_count
         eye_scale = self.head_scale * self._mesh("EYE_SCALE_HEAD_RATIO")
-        eyes = self._eye_dirs(eye_count, head_center, head_scale)
+        if self._eye_distribution() == "uniform":
+            eyes = self._eye_dirs_uniform(eye_count, head_center, head_scale)
+        else:
+            eyes = self._eye_dirs_random(eye_count, head_center, head_scale)
         # Keep center-to-center spacing >= roughly 2x eye radius on the head sphere.
         min_center_dist = max(0.05, 2.2 * eye_scale / max(1e-8, head_scale))
         eyes = self._separate_eye_dirs(eyes, min_center_dist)

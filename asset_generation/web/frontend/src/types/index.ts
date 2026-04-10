@@ -63,6 +63,8 @@ export type AnimatedBuildControlDef =
       type: "select_str";
       options: string[];
       default: string;
+      /** When true, render a two-option segmented control instead of a dropdown. */
+      segmented?: boolean;
     }
   | {
       key: string;

@@ -15,7 +15,13 @@ from ..materials.material_system import (
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
-from ..utils.placement_clustering import clamp01, clustered_ellipsoid_angles_bounded
+from ..utils.placement_clustering import (
+    clamp01,
+    clustered_ellipsoid_angles_bounded,
+    placement_prng,
+    uniform_arc_angles,
+    uniform_ring_angles,
+)
 
 
 def _vec_xyz(v: Vector) -> tuple[float, float, float]:
@@ -47,6 +53,16 @@ def _ellipsoid_normal(cx: float, cy: float, cz: float, a: float, b: float, h: fl
 
 def _zone_extra_clustering(spec: dict[str, Any]) -> float:
     return clamp01(spec.get("clustering"), 0.5)
+
+
+def _zone_distribution(spec: dict[str, Any]) -> str:
+    v = str(spec.get("distribution", "uniform")).strip().lower()
+    return v if v in ("random", "uniform") else "uniform"
+
+
+def _zone_uniform_shape(spec: dict[str, Any]) -> str:
+    v = str(spec.get("uniform_shape", "arc")).strip().lower()
+    return v if v in ("arc", "ring") else "arc"
 
 
 def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: float = 0.25, hi: float = 3.0) -> float:
@@ -221,66 +237,152 @@ def _append_body_ellipsoid_extras(
         n = max(1, int(spec.get("spike_count", 8)))
         spike_sz = _zone_extra_scale(spec, "spike_size")
         cl = _zone_extra_clustering(spec)
+        dist_m = _zone_distribution(spec)
+        u_shape = _zone_uniform_shape(spec)
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         rad = ref * 0.22 * spike_sz
         depth = ref * 0.48 * spike_sz
+        prng = placement_prng(model)
         placed = 0
-        max_attempts = max(300, n * 60)
-        attempts = 0
-        while placed < n and attempts < max_attempts:
-            attempts += 1
-            t1, t2 = clustered_ellipsoid_angles_bounded(
-                model.rng,
-                cl,
-                theta_lo=0.0,
-                theta_hi=2.0 * math.pi,
-                phi_lo=0.0,
-                phi_hi=math.pi,
-            )
-            p = _ellipsoid_point_at(cx, cy, cz, a, b, h, t1, t2)
-            nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
-            if not _facing_allows_normal(spec, nrm):
-                continue
-            tip = Vector(p) + nrm * (depth * 0.55)
-            cone = create_cone(
-                location=_vec_xyz(tip),
-                scale=(rad, rad, depth),
-                vertices=verts,
-                depth=1.0,
-                radius1=0.4,
-                radius2=0.0,
-            )
-            _orient_cone_outward(cone, (cx, cy, cz), nrm)
-            apply_material_to_object(cone, mat)
-            model.parts.append(cone)
-            placed += 1
+        if dist_m == "uniform":
+            for i in range(n):
+                for attempt in range(48):
+                    phase = attempt * 0.21
+                    if u_shape == "ring":
+                        t1, t2 = uniform_ring_angles(
+                            i,
+                            n,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_a=0.22 * math.pi,
+                            phi_b=0.78 * math.pi,
+                            clustering=cl,
+                        )
+                    else:
+                        t1, t2 = uniform_arc_angles(
+                            i,
+                            n,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_lo=0.0,
+                            phi_hi=math.pi,
+                            clustering=cl,
+                        )
+                    t1 = (t1 + phase) % (2.0 * math.pi)
+                    p = _ellipsoid_point_at(cx, cy, cz, a, b, h, t1, t2)
+                    nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
+                    if not _facing_allows_normal(spec, nrm):
+                        continue
+                    tip = Vector(p) + nrm * (depth * 0.55)
+                    cone = create_cone(
+                        location=_vec_xyz(tip),
+                        scale=(rad, rad, depth),
+                        vertices=verts,
+                        depth=1.0,
+                        radius1=0.4,
+                        radius2=0.0,
+                    )
+                    _orient_cone_outward(cone, (cx, cy, cz), nrm)
+                    apply_material_to_object(cone, mat)
+                    model.parts.append(cone)
+                    placed += 1
+                    break
+        else:
+            max_attempts = max(300, n * 60)
+            attempts = 0
+            while placed < n and attempts < max_attempts:
+                attempts += 1
+                t1, t2 = clustered_ellipsoid_angles_bounded(
+                    prng,
+                    cl,
+                    theta_lo=0.0,
+                    theta_hi=2.0 * math.pi,
+                    phi_lo=0.0,
+                    phi_hi=math.pi,
+                )
+                p = _ellipsoid_point_at(cx, cy, cz, a, b, h, t1, t2)
+                nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
+                if not _facing_allows_normal(spec, nrm):
+                    continue
+                tip = Vector(p) + nrm * (depth * 0.55)
+                cone = create_cone(
+                    location=_vec_xyz(tip),
+                    scale=(rad, rad, depth),
+                    vertices=verts,
+                    depth=1.0,
+                    radius1=0.4,
+                    radius2=0.0,
+                )
+                _orient_cone_outward(cone, (cx, cy, cz), nrm)
+                apply_material_to_object(cone, mat)
+                model.parts.append(cone)
+                placed += 1
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 4)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
         cl = _zone_extra_clustering(spec)
+        dist_m = _zone_distribution(spec)
+        u_shape = _zone_uniform_shape(spec)
         br = ref * 0.2 * bulb_sz
+        prng = placement_prng(model)
+        aa, bb, hh = a * 0.92, b * 0.92, h * 0.92
         placed = 0
-        max_attempts = max(400, nb * 80)
-        attempts = 0
-        while placed < nb and attempts < max_attempts:
-            attempts += 1
-            t1, t2 = clustered_ellipsoid_angles_bounded(
-                model.rng,
-                cl,
-                theta_lo=0.0,
-                theta_hi=2.0 * math.pi,
-                phi_lo=0.0,
-                phi_hi=math.pi,
-            )
-            p = _ellipsoid_point_at(cx, cy, cz, a * 0.92, b * 0.92, h * 0.92, t1, t2)
-            nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
-            if not _facing_allows_normal(spec, nrm):
-                continue
-            bulb = create_sphere(location=p, scale=(br, br, br))
-            apply_material_to_object(bulb, mat)
-            model.parts.append(bulb)
-            placed += 1
+        if dist_m == "uniform":
+            for i in range(nb):
+                for attempt in range(48):
+                    phase = attempt * 0.19
+                    if u_shape == "ring":
+                        t1, t2 = uniform_ring_angles(
+                            i,
+                            nb,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_a=0.28 * math.pi,
+                            phi_b=0.72 * math.pi,
+                            clustering=cl,
+                        )
+                    else:
+                        t1, t2 = uniform_arc_angles(
+                            i,
+                            nb,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_lo=0.0,
+                            phi_hi=math.pi,
+                            clustering=cl,
+                        )
+                    t1 = (t1 + phase) % (2.0 * math.pi)
+                    p = _ellipsoid_point_at(cx, cy, cz, aa, bb, hh, t1, t2)
+                    nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
+                    if not _facing_allows_normal(spec, nrm):
+                        continue
+                    bulb = create_sphere(location=p, scale=(br, br, br))
+                    apply_material_to_object(bulb, mat)
+                    model.parts.append(bulb)
+                    placed += 1
+                    break
+        else:
+            max_attempts = max(400, nb * 80)
+            attempts = 0
+            while placed < nb and attempts < max_attempts:
+                attempts += 1
+                t1, t2 = clustered_ellipsoid_angles_bounded(
+                    prng,
+                    cl,
+                    theta_lo=0.0,
+                    theta_hi=2.0 * math.pi,
+                    phi_lo=0.0,
+                    phi_hi=math.pi,
+                )
+                p = _ellipsoid_point_at(cx, cy, cz, aa, bb, hh, t1, t2)
+                nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
+                if not _facing_allows_normal(spec, nrm):
+                    continue
+                bulb = create_sphere(location=p, scale=(br, br, br))
+                apply_material_to_object(bulb, mat)
+                model.parts.append(bulb)
+                placed += 1
 
 
 def _append_head_ellipsoid_extras(
@@ -337,70 +439,165 @@ def _append_head_ellipsoid_extras(
     elif kind == "spikes":
         spike_sz = _zone_extra_scale(spec, "spike_size")
         cl = _zone_extra_clustering(spec)
+        dist_m = _zone_distribution(spec)
+        u_shape = _zone_uniform_shape(spec)
         shape = str(spec.get("spike_shape", "cone"))
         verts = 4 if shape == "pyramid" else 10
         count = max(1, int(spec.get("spike_count", 4)))
         rad = ref * 0.18 * spike_sz
         depth = ref * 0.4 * spike_sz
+        prng = placement_prng(model)
+        phi_lo, phi_hi = 0.15 * math.pi, 0.7 * math.pi
         placed = 0
-        max_attempts = max(300, count * 60)
-        attempts = 0
-        while placed < count and attempts < max_attempts:
-            attempts += 1
-            t1, t2 = clustered_ellipsoid_angles_bounded(
-                model.rng,
-                cl,
-                theta_lo=0.0,
-                theta_hi=2.0 * math.pi,
-                phi_lo=0.15 * math.pi,
-                phi_hi=0.7 * math.pi,
-            )
+
+        def _head_point(t1: float, t2: float) -> tuple[tuple[float, float, float], Vector]:
             px = hx + ax * math.sin(t2) * math.cos(t1)
             py = hy + ay * math.sin(t2) * math.sin(t1)
             pz = hz + az * math.cos(t2)
             p = (px, py, pz)
             nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
-            if not _facing_allows_normal(spec, nrm):
-                continue
-            tip = Vector(p) + nrm * (depth * 0.55)
-            cone = create_cone(
-                location=_vec_xyz(tip),
-                scale=(rad, rad, depth),
-                vertices=verts,
-                depth=1.0,
-                radius1=0.35,
-                radius2=0.0,
-            )
-            _orient_cone_outward(cone, hc, nrm)
-            apply_material_to_object(cone, mat)
-            model.parts.append(cone)
-            placed += 1
+            return p, nrm
+
+        if dist_m == "uniform":
+            for i in range(count):
+                for attempt in range(48):
+                    phase = attempt * 0.18
+                    if u_shape == "ring":
+                        t1, t2 = uniform_ring_angles(
+                            i,
+                            count,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_a=phi_lo + 0.06 * math.pi,
+                            phi_b=phi_hi - 0.06 * math.pi,
+                            clustering=cl,
+                        )
+                    else:
+                        t1, t2 = uniform_arc_angles(
+                            i,
+                            count,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_lo=phi_lo,
+                            phi_hi=phi_hi,
+                            clustering=cl,
+                        )
+                    t1 = (t1 + phase) % (2.0 * math.pi)
+                    p, nrm = _head_point(t1, t2)
+                    if not _facing_allows_normal(spec, nrm):
+                        continue
+                    tip = Vector(p) + nrm * (depth * 0.55)
+                    cone = create_cone(
+                        location=_vec_xyz(tip),
+                        scale=(rad, rad, depth),
+                        vertices=verts,
+                        depth=1.0,
+                        radius1=0.35,
+                        radius2=0.0,
+                    )
+                    _orient_cone_outward(cone, hc, nrm)
+                    apply_material_to_object(cone, mat)
+                    model.parts.append(cone)
+                    placed += 1
+                    break
+        else:
+            max_attempts = max(300, count * 60)
+            attempts = 0
+            while placed < count and attempts < max_attempts:
+                attempts += 1
+                t1, t2 = clustered_ellipsoid_angles_bounded(
+                    prng,
+                    cl,
+                    theta_lo=0.0,
+                    theta_hi=2.0 * math.pi,
+                    phi_lo=phi_lo,
+                    phi_hi=phi_hi,
+                )
+                p, nrm = _head_point(t1, t2)
+                if not _facing_allows_normal(spec, nrm):
+                    continue
+                tip = Vector(p) + nrm * (depth * 0.55)
+                cone = create_cone(
+                    location=_vec_xyz(tip),
+                    scale=(rad, rad, depth),
+                    vertices=verts,
+                    depth=1.0,
+                    radius1=0.35,
+                    radius2=0.0,
+                )
+                _orient_cone_outward(cone, hc, nrm)
+                apply_material_to_object(cone, mat)
+                model.parts.append(cone)
+                placed += 1
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 3)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
         cl = _zone_extra_clustering(spec)
+        dist_m = _zone_distribution(spec)
+        u_shape = _zone_uniform_shape(spec)
         br = ref * 0.17 * bulb_sz
+        prng = placement_prng(model)
+        phi_lo, phi_hi = 0.2 * math.pi, 0.8 * math.pi
         placed = 0
-        max_attempts = max(400, nb * 80)
-        attempts = 0
-        while placed < nb and attempts < max_attempts:
-            attempts += 1
-            t1, t2 = clustered_ellipsoid_angles_bounded(
-                model.rng,
-                cl,
-                theta_lo=0.0,
-                theta_hi=2.0 * math.pi,
-                phi_lo=0.2 * math.pi,
-                phi_hi=0.8 * math.pi,
-            )
+
+        def _head_bulb_point(t1: float, t2: float) -> tuple[tuple[float, float, float], Vector]:
             px = hx + ax * 0.45 * math.sin(t2) * math.cos(t1)
             py = hy + ay * 0.45 * math.sin(t2) * math.sin(t1)
             pz = hz + az * 0.45 * math.cos(t2)
             p = (px, py, pz)
             nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
-            if not _facing_allows_normal(spec, nrm):
-                continue
-            bulb = create_sphere(location=p, scale=(br, br, br))
-            apply_material_to_object(bulb, mat)
-            model.parts.append(bulb)
-            placed += 1
+            return p, nrm
+
+        if dist_m == "uniform":
+            for i in range(nb):
+                for attempt in range(48):
+                    phase = attempt * 0.17
+                    if u_shape == "ring":
+                        t1, t2 = uniform_ring_angles(
+                            i,
+                            nb,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_a=phi_lo + 0.05 * math.pi,
+                            phi_b=phi_hi - 0.05 * math.pi,
+                            clustering=cl,
+                        )
+                    else:
+                        t1, t2 = uniform_arc_angles(
+                            i,
+                            nb,
+                            theta_lo=0.0,
+                            theta_hi=2.0 * math.pi,
+                            phi_lo=phi_lo,
+                            phi_hi=phi_hi,
+                            clustering=cl,
+                        )
+                    t1 = (t1 + phase) % (2.0 * math.pi)
+                    p, nrm = _head_bulb_point(t1, t2)
+                    if not _facing_allows_normal(spec, nrm):
+                        continue
+                    bulb = create_sphere(location=p, scale=(br, br, br))
+                    apply_material_to_object(bulb, mat)
+                    model.parts.append(bulb)
+                    placed += 1
+                    break
+        else:
+            max_attempts = max(400, nb * 80)
+            attempts = 0
+            while placed < nb and attempts < max_attempts:
+                attempts += 1
+                t1, t2 = clustered_ellipsoid_angles_bounded(
+                    prng,
+                    cl,
+                    theta_lo=0.0,
+                    theta_hi=2.0 * math.pi,
+                    phi_lo=phi_lo,
+                    phi_hi=phi_hi,
+                )
+                p, nrm = _head_bulb_point(t1, t2)
+                if not _facing_allows_normal(spec, nrm):
+                    continue
+                bulb = create_sphere(location=p, scale=(br, br, br))
+                apply_material_to_object(bulb, mat)
+                model.parts.append(bulb)
+                placed += 1

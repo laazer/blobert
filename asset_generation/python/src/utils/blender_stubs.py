@@ -94,6 +94,9 @@ def ensure_blender_stubs() -> None:
                 return float(sum(a * b for a, b in zip(self._t, other._t)))
             return NotImplemented
 
+        def __iter__(self):
+            return iter(self._t)
+
         @property
         def x(self) -> float:
             return float(self._t[0])

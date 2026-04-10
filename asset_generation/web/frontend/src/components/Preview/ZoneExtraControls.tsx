@@ -21,9 +21,20 @@ function effectiveKind(zone: string, raw: string): string {
   return raw === "horns" ? "none" : raw;
 }
 
-function rowDisabled(kind: string, defKey: string): boolean {
+function rowDisabled(kind: string, defKey: string, distribution: string): boolean {
   if (defKey.endsWith("_kind") || defKey.endsWith("_finish") || defKey.endsWith("_hex")) {
     return false;
+  }
+  if (defKey.endsWith("_distribution")) {
+    return kind === "none" || kind === "shell";
+  }
+  if (defKey.endsWith("_uniform_shape")) {
+    return (
+      kind === "none" ||
+      kind === "shell" ||
+      kind === "horns" ||
+      distribution === "random"
+    );
   }
   if (defKey.includes("_place_")) {
     return kind === "none" || kind === "shell";
@@ -72,8 +83,11 @@ export function ZoneExtraControls({ slug, showEmptyHint }: Props) {
         const zdefs = byZone[zone] ?? [];
         if (zdefs.length === 0) return null;
         const kindKey = `extra_zone_${zone}_kind`;
+        const distKey = `extra_zone_${zone}_distribution`;
         const rawKind = typeof values[kindKey] === "string" ? (values[kindKey] as string) : "none";
         const kind = effectiveKind(zone, rawKind);
+        const distribution =
+          typeof values[distKey] === "string" ? (values[distKey] as string) : "uniform";
         const allowedKinds = kindOptionsForZone(zone);
         const kindDef = zdefs.find((d) => d.key === kindKey);
 
@@ -105,7 +119,7 @@ export function ZoneExtraControls({ slug, showEmptyHint }: Props) {
               ) : null}
               {zdefs.map((def) => {
                 if (def.key === kindKey) return null;
-                const dis = rowDisabled(kind, def.key);
+                const dis = rowDisabled(kind, def.key, distribution);
                 return (
                   <div
                     key={def.key}

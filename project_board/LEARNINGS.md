@@ -4,6 +4,23 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [16_random_vs_uniform_distribution_eyes_and_extras] — Stub Vector iteration + diff-cover
+*Completed: 2026-04-09*
+
+### Learnings
+- category: testing
+  insight: `AnimatedSpider.build_mesh_parts` uses `tuple(body_center)` on a `mathutils.Vector`; the headless stub `Vector` lacked `__iter__`, so an integration-style spider build test could not run until the stub matched iterable Blender behavior.
+  impact: Local spider build smoke and diff-cover for the random eye branch were blocked without stub parity or heavy patching.
+  prevention: When procedural builders use `tuple(vector)` or unpacking, ensure `blender_stubs._Vector` supports iteration (or document that all such tests must patch constructors).
+  severity: medium
+- category: ci
+  insight: `ci/scripts/run_tests.sh` enforces diff-cover vs `origin/main` at 85%; new branches in `zone_geometry_extras_attach` need several small procedural tests (uniform ring, head random spikes/bulbs) to stay above the gate.
+  impact: CI failed at 75% until placement/attach tests were expanded.
+  prevention: After large branching changes in attach modules, add one test per major branch (uniform ring, random loop) early.
+  severity: low
+
+---
+
 ## [M9-EPEC / 15_eye_extras_clustering] — Stub Vector parity
 *Completed: 2026-04-10*
 

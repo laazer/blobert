@@ -106,6 +106,28 @@ const s = {
   },
 } as const;
 
+/** Spider multi-eye placement controls are inert when there is at most one eye. */
+function spiderPlacementRowDisabled(defKey: string, values: Readonly<Record<string, unknown>>): boolean {
+  const ec = values.eye_count;
+  const eyeCount = typeof ec === "number" ? ec : 2;
+  if (eyeCount <= 1) {
+    return defKey === "eye_distribution" || defKey === "eye_uniform_shape" || defKey === "eye_clustering";
+  }
+  if (defKey === "eye_uniform_shape") {
+    const ed = values.eye_distribution;
+    return (typeof ed === "string" ? ed : "uniform") === "random";
+  }
+  return false;
+}
+
+function buildControlDisabled(
+  slug: string,
+  defKey: string,
+  values: Readonly<Record<string, unknown>>,
+): boolean {
+  return slug === "spider" && spiderPlacementRowDisabled(defKey, values);
+}
+
 function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }) {
   return (
     <>
@@ -326,14 +348,21 @@ export function BuildControls() {
           style={s.filterInput}
         />
         <div style={scrollStyle}>
-          {filtered.map((def) => (
-            <ControlRow
-              key={def.key}
-              def={def}
-              value={values[def.key]}
-              onChange={(v: number | string) => setAnimatedBuildOption(slug, def.key, v)}
-            />
-          ))}
+          {filtered.map((def) => {
+            const dis = buildControlDisabled(slug, def.key, values);
+            return (
+              <div
+                key={def.key}
+                style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}
+              >
+                <ControlRow
+                  def={def}
+                  value={values[def.key]}
+                  onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
+                />
+              </div>
+            );
+          })}
         </div>
       </>
     );
@@ -373,14 +402,21 @@ export function BuildControls() {
           <strong style={{ color: "#bbb" }}>Colors</strong> tab.
         </span>
       ) : null}
-      {nonFloat.map((def) => (
-        <ControlRow
-          key={def.key}
-          def={def}
-          value={values[def.key]}
-          onChange={(v: number | string) => setAnimatedBuildOption(slug, def.key, v)}
-        />
-      ))}
+      {nonFloat.map((def) => {
+        const dis = buildControlDisabled(slug, def.key, values);
+        return (
+          <div
+            key={def.key}
+            style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}
+          >
+            <ControlRow
+              def={def}
+              value={values[def.key]}
+              onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
+            />
+          </div>
+        );
+      })}
       {floatSection(
         "Rig",
         rigFloats,
