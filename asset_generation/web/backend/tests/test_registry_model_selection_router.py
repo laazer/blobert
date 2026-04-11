@@ -441,6 +441,67 @@ class TestEnemySlotManagement:
         assert reread.json()["version_ids"] == ["spider_animated_01"]
 
 
+class TestPlayerSlotManagement:
+    """registry-fix-versions-slots-load R2: HTTP parity with enemy slot PUT (``put_player_slots``)."""
+
+    @pytest.mark.asyncio
+    async def test_get_player_slots_matches_service_shape(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        res = await client.get("/api/registry/model/player/slots")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["family"] == "player"
+        assert body["version_ids"] == ["blobert_blue_00"]
+        assert body["resolved_paths"] == ["player_exports/blobert_blue_00.glb"]
+
+    @pytest.mark.asyncio
+    async def test_put_player_slots_r2_leading_placeholder(
+        self,
+        client: AsyncClient,
+        python_root: pathlib.Path,
+    ) -> None:
+        res = await client.put(
+            "/api/registry/model/player/slots",
+            json={"version_ids": ["", "blobert_blue_00"]},
+        )
+        assert res.status_code == 200
+        assert res.json()["version_ids"] == ["", "blobert_blue_00"]
+        disk = json.loads((python_root / "model_registry.json").read_text(encoding="utf-8"))
+        assert disk["player"]["slots"] == ["", "blobert_blue_00"]
+
+    @pytest.mark.asyncio
+    async def test_put_player_slots_rejects_empty_list(
+        self,
+        client: AsyncClient,
+        python_root: pathlib.Path,
+    ) -> None:
+        reg_path = python_root / "model_registry.json"
+        before_txt = reg_path.read_text(encoding="utf-8")
+        res = await client.put(
+            "/api/registry/model/player/slots",
+            json={"version_ids": []},
+        )
+        assert res.status_code == 400
+        assert reg_path.read_text(encoding="utf-8") == before_txt
+
+    @pytest.mark.asyncio
+    async def test_put_player_slots_unknown_version_404(
+        self,
+        client: AsyncClient,
+        python_root: pathlib.Path,
+    ) -> None:
+        reg_path = python_root / "model_registry.json"
+        before_txt = reg_path.read_text(encoding="utf-8")
+        res = await client.put(
+            "/api/registry/model/player/slots",
+            json={"version_ids": ["not_a_player_version"]},
+        )
+        assert res.status_code == 404
+        assert reg_path.read_text(encoding="utf-8") == before_txt
+
+
 def _seed_manifest_player_visual_null(python_root: pathlib.Path) -> None:
     payload = {
         "schema_version": 1,

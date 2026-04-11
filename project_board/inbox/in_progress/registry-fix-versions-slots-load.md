@@ -48,16 +48,16 @@ the registry needs fixing. i still can't save more then one version of a model. 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+IMPLEMENTATION_FRONTEND
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Backend Agent
 
 ## Validation Status
-- Tests: Partial (Python + backend registry tests green including adversarial suite; Vitest still red on `canAddEnemySlot` / Add slot until R3 frontend implementation)
+- Tests: Partial (Python `model_registry` + backend `test_registry_*` green, including adversarial suite and new `GET`/`PUT` `/api/registry/model/player/slots`; Vitest still red on R3 `canAddEnemySlot` / Add slot until frontend implementation)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -72,7 +72,7 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Backend Agent
+Implementation Frontend Agent
 
 ## Required Input Schema
 ```json
@@ -86,4 +86,4 @@ Implementation Backend Agent
 Proceed
 
 ## Reason
-Test Breaker added adversarial/edge tests (placeholder-only and long-placeholder PUT, player slot atomicity, multi-GLB sync stress, cross-family slot isolation, legacy `player_active_visual` load-existing candidates, repeated GET determinism, frontend filter/identity cases). Stage advances to backend implementation per execution plan task 5 (`service.py`, router alignment); frontend R3 reds remain for Implementation Frontend.
+Backend scope complete: `model_registry.service` already satisfied R1–R2/R5 tests from prior work; FastAPI now exposes `GET`/`PUT` `/api/registry/model/player/slots` (same body as enemy slots) for R2 parity and frontend player slot editing. Router tests added in `test_registry_model_selection_router.py`. R3/R4 UI and Vitest fixes remain for Implementation Frontend.

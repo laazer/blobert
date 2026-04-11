@@ -422,6 +422,32 @@ async def put_enemy_slots_endpoint(
     return JSONResponse(payload)
 
 
+@router.get("/model/player/slots")
+async def get_player_slots_endpoint() -> JSONResponse:
+    try:
+        reg = _load_service()
+        payload = reg.get_player_slots(settings.python_root)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(payload)
+
+
+@router.put("/model/player/slots")
+async def put_player_slots_endpoint(body: EnemySlotsPut) -> JSONResponse:
+    try:
+        reg = _load_service()
+        payload = reg.put_player_slots(settings.python_root, body.version_ids)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(payload)
+
+
 @router.get("/model/spawn_eligible/{family}")
 async def get_spawn_eligible(family: str) -> JSONResponse:
     """Consumer-facing view: paths eligible for default spawn pool (MRVC-4)."""
