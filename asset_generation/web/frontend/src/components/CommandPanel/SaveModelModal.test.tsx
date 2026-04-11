@@ -187,4 +187,66 @@ describe("SaveModelModal", () => {
       expect(onClose).toHaveBeenCalled();
     });
   });
+
+  it("registry-fix-versions-slots-load R3: Save in new slot shows draft error and does not PUT", async () => {
+    const onClose = vi.fn();
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue({
+      schema_version: 1,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: true,
+              in_use: false,
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    } as never);
+
+    render(<SaveModelModal open family="spider" onClose={onClose} />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save in new slot" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Save in new slot" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/draft/i);
+    });
+    expect(client.putEnemyFamilySlots).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("registry-fix-versions-slots-load R3: Save in new slot shows in_use error when not in spawn pool", async () => {
+    const onClose = vi.fn();
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue({
+      schema_version: 1,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: false,
+              in_use: false,
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    } as never);
+
+    render(<SaveModelModal open family="spider" onClose={onClose} />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save in new slot" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Save in new slot" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/spawn pool/i);
+    });
+    expect(client.putEnemyFamilySlots).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

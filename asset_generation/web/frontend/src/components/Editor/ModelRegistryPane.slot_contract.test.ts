@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { canAddEnemySlot } from "../../utils/registrySlotOps";
 import {
   ENEMY_EMPTY_SLOTS_COPY,
   filterLoadExistingCandidates,
@@ -136,5 +137,15 @@ describe("ModelRegistryPane enemy slot UI contracts", () => {
       }),
     ).toContain("alpha/alpha_live_00");
     expect(LOAD_EXISTING_EMPTY_COPY.toLowerCase()).toContain("no draft or in-use registry models available");
+  });
+
+  it("registry-fix-versions-slots-load R3: canAddEnemySlot matches nextEnemySlotsAfterAdd when only extra rows are not in pool", () => {
+    const candidates = [
+      { id: "spider_animated_00", draft: false, in_use: true },
+      { id: "spider_animated_01", draft: false, in_use: false },
+    ];
+    const cur = ["spider_animated_00"];
+    expect(nextEnemySlotsAfterAdd(cur, candidates)).toEqual(cur);
+    expect(canAddEnemySlot(cur, candidates)).toBe(false);
   });
 });

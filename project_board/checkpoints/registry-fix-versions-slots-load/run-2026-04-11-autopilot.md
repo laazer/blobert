@@ -32,3 +32,37 @@ Orchestrator: ticket created from user description (registry: multiple versions,
 **Confidence:** High
 
 ---
+
+### [registry-fix-versions-slots-load] SPECIFICATION — Player slot PUT exposure
+
+**Would have asked:** Must the spec require a new or documented HTTP endpoint for `PUT` player slots if the UI currently only edits enemy slots in the pane?
+
+**Assumption made:** R2/R3 require **player** slot rules to match **enemy** at the **service/API** layer where `put_player_slots` already exists; frontend work targets exposed routes. If player slot editing is not in the UI today, tests may target **Python service + router** only until the UI gains player slot editing—R2 acceptance item 4 is satisfied by backend tests if no player slot PUT is user-facing yet.
+
+**Confidence:** Medium
+
+### [registry-fix-versions-slots-load] SPECIFICATION — Auto-promote vs strict errors
+
+**Would have asked:** Should `SaveModelModal` always auto-patch `in_use` before slotting, or only when the user clicks a specific action?
+
+**Assumption made:** Spec allows **either** automatic promotion **or** disabled control + explicit error, as long as eligibility helpers and server rules agree (R3). Implementer picks one consistent approach per surface; tests lock the chosen behavior.
+
+**Confidence:** High
+
+### [registry-fix-versions-slots-load] TEST_DESIGN — Slot-eligibility test vs modal promotion
+
+**Would have asked:** Should `canAddEnemySlot` stay permissive for not-in-use rows so **Add slot** opens the modal (which patches `in_use`), or should it require `in_use` and force promotion via spawn radios first?
+
+**Assumption made:** Spec R3 requires the **same** predicate as `nextEnemySlotsAfterAdd` and PUT validation: non-empty slottable entries need `draft === false` and `in_use === true`. Tests encode that; **Add slot** is disabled until the user promotes via **In pool** radios, then the modal can append.
+
+**Confidence:** High
+
+### [registry-fix-versions-slots-load] TEST_DESIGN — Outcome
+
+**Would have asked:** None.
+
+**Assumption made:** New Python R1 tests and backend R2 PUT test are green against current code; Vitest fails on `canAddEnemySlot` / pane integration until Implementation Frontend aligns `registrySlotOps.canAddEnemySlot` with `nextEnemySlotsAfterAdd`.
+
+**Confidence:** High
+
+---

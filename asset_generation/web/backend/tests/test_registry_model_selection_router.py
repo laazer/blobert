@@ -207,6 +207,24 @@ class TestEnemySlotManagement:
         assert body["resolved_paths"] == ["animated_exports/spider_animated_00.glb"]
 
     @pytest.mark.asyncio
+    async def test_put_slots_spec_r2_leading_placeholder_before_assigned_id(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """registry-fix-versions-slots-load R2: PUT accepts ['', valid_id] order (leading empty slot)."""
+        res = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["", "spider_animated_00"]},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["version_ids"] == ["", "spider_animated_00"]
+        assert body["resolved_paths"] == ["animated_exports/spider_animated_00.glb"]
+        reread = await client.get("/api/registry/model/enemies/spider/slots")
+        assert reread.status_code == 200
+        assert reread.json()["version_ids"] == ["", "spider_animated_00"]
+
+    @pytest.mark.asyncio
     async def test_put_slots_rejects_draft_version_without_partial_write(
         self,
         client: AsyncClient,

@@ -35,12 +35,24 @@ describe("canAddEnemySlot", () => {
     expect(canAddEnemySlot(["a"], candidates)).toBe(true);
   });
 
-  it("is true when a non-draft version is not in pool but not yet slotted", () => {
+  it("registry-fix-versions-slots-load R3: is false when the only unslotted rows are not in pool", () => {
     const candidates = [
       { id: "a", draft: false, in_use: true },
       { id: "b", draft: false, in_use: false },
     ];
-    expect(canAddEnemySlot(["a"], candidates)).toBe(true);
+    expect(canAddEnemySlot(["a"], candidates)).toBe(false);
+  });
+
+  it("registry-fix-versions-slots-load R3: matches nextEnemySlotsAfterAdd eligibility (!draft && in_use && not slotted)", () => {
+    const current = ["spider_animated_00"] as string[];
+    const candidates = [
+      { id: "spider_animated_00", draft: false, in_use: true },
+      { id: "spider_animated_01", draft: false, in_use: true },
+      { id: "spider_animated_draft", draft: true, in_use: false },
+    ];
+    const can = canAddEnemySlot(current, candidates);
+    const longer = nextEnemySlotsAfterAdd(current, candidates);
+    expect(can).toBe(longer.length > current.length);
   });
 });
 

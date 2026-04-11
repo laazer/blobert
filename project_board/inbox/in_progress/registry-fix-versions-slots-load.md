@@ -9,6 +9,8 @@ Created On: 2026-04-11
 ## Description
 the registry needs fixing. i still can't save more then one version of a model. i still can't save models to empty slots. and i still cant load existing models easily
 
+**Spec:** `project_board/specs/registry-fix-versions-slots-load.md`
+
 **Context (orchestrator):** Registry flow spans `asset_generation/web/frontend` (e.g. `SaveModelModal.tsx`, `ModelRegistryPane.tsx`), FastAPI `asset_generation/web/backend/routers/registry.py`, and Python `asset_generation/python/src/model_registry/service.py`. Save/slot operations currently gate on version existing in registry, `draft`/`in_use`, and non-empty slot lists in APIs.
 
 ---
@@ -23,7 +25,7 @@ the registry needs fixing. i still can't save more then one version of a model. 
 ---
 
 ## Dependencies
-- None
+- `project_board/specs/registry-fix-versions-slots-load.md` (behavioral source of truth for this ticket)
 
 ---
 
@@ -46,16 +48,16 @@ the registry needs fixing. i still can't save more then one version of a model. 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_BREAK
 
 ## Revision
-2
+4
 
 ## Last Updated By
-Planner Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Partial (Python + new backend case green; Vitest red on `canAddEnemySlot` / Add slot until R3 implementation)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -70,12 +72,13 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "string"
+  "ticket_path": "string",
+  "spec_path": "project_board/specs/registry-fix-versions-slots-load.md"
 }
 ```
 
@@ -83,4 +86,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete: execution plan decomposes registry fixes across spec, tests, Python service/router, and frontend (`SaveModelModal`, `ModelRegistryPane`, slot/load-existing helpers). Next step is Spec Agent to lock behaviors and API/UI contracts before test design.
+Primary behavioral tests added per spec (Python R1, backend R2 PUT leading placeholder, frontend R3/R4 + `registryLoadExisting`); three Vitest cases intentionally red until `canAddEnemySlot` matches `nextEnemySlotsAfterAdd` and pane behavior matches R3.

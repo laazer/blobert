@@ -147,23 +147,40 @@ describe("ModelRegistryPane Add slot", () => {
     });
   });
 
-  it("add slot turns on in pool when the chosen version was not in_use", async () => {
+  it("registry-fix-versions-slots-load R3: Add slot disabled until not-in-pool version is promoted via spawn radios", async () => {
     const v0 = { ...baseVersions[0] };
     const v1 = { ...baseVersions[1], in_use: false };
+    const registryAfterPool = registryWithSpiderVersions([v0, { ...v1, in_use: true }]);
     vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryWithSpiderVersions([v0, v1]));
     vi.mocked(client.fetchEnemyFamilySlots).mockImplementation(async (family: string) => ({
       family,
       version_ids: ["spider_animated_00"],
       resolved_paths: [],
     }));
-    vi.mocked(client.patchRegistryEnemyVersion).mockResolvedValue(
-      registryWithSpiderVersions([v0, { ...v1, in_use: true }]),
-    );
+    vi.mocked(client.patchRegistryEnemyVersion).mockImplementation(async () => {
+      vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryAfterPool);
+      return registryAfterPool;
+    });
 
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
       expect(screen.getByTestId("registry-add-slot-spider")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("registry-add-slot-spider")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("registry-enemy-spawn-spider-spider_animated_01-pool"));
+
+    await waitFor(() => {
+      expect(vi.mocked(client.patchRegistryEnemyVersion)).toHaveBeenCalledWith("spider", "spider_animated_01", {
+        draft: false,
+        in_use: true,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("registry-add-slot-spider")).not.toBeDisabled();
     });
 
     fireEvent.click(screen.getByTestId("registry-add-slot-spider"));
@@ -173,9 +190,9 @@ describe("ModelRegistryPane Add slot", () => {
     fireEvent.click(screen.getByTestId("registry-add-slot-pick-spider_animated_01"));
 
     await waitFor(() => {
-      expect(vi.mocked(client.patchRegistryEnemyVersion)).toHaveBeenCalledWith("spider", "spider_animated_01", {
-        in_use: true,
-      });
+      const slotSelects = screen.getAllByRole("combobox");
+      expect(slotSelects).toHaveLength(2);
+      expect(slotSelects[1]).toHaveValue("spider_animated_01");
     });
   });
 

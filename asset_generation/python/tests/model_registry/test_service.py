@@ -509,6 +509,52 @@ def test_sync_discovered_animated_glb_versions_adds_on_disk_stems(tmp_path: Path
     }
 
 
+def test_r1_sync_keeps_existing_enemy_version_row_when_new_glb_discovered(tmp_path: Path):
+    """registry-fix-versions-slots-load R1: multiple distinct version rows per family after sync."""
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    before_ids = {r["id"] for r in load_effective_manifest(tmp_path)["enemies"]["imp"]["versions"]}
+    assert "imp_animated_00" in before_ids
+    export_dir = tmp_path / "animated_exports"
+    export_dir.mkdir(parents=True)
+    (export_dir / "imp_animated_01.glb").write_bytes(b"x")
+    out = sync_discovered_animated_glb_versions(tmp_path, "imp")
+    after_ids = {r["id"] for r in out["enemies"]["imp"]["versions"]}
+    assert before_ids.issubset(after_ids)
+    assert "imp_animated_01" in after_ids
+
+
+def test_r1_patch_enemy_version_does_not_mutate_sibling_version_row(tmp_path: Path):
+    """registry-fix-versions-slots-load R1: patch targets one version_id only."""
+    m = default_migrated_manifest()
+    m["enemies"]["imp"]["versions"].append(
+        {
+            "id": "imp_animated_01",
+            "path": "animated_exports/imp_animated_01.glb",
+            "draft": False,
+            "in_use": True,
+        },
+    )
+    save_manifest_atomic(tmp_path, validate_manifest(m))
+    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"name": "OnlyRowZero"})
+    raw = json.loads((tmp_path / "model_registry.json").read_text(encoding="utf-8"))
+    rows = {r["id"]: r for r in raw["enemies"]["imp"]["versions"]}
+    assert rows["imp_animated_00"].get("name") == "OnlyRowZero"
+    assert "name" not in rows["imp_animated_01"]
+
+
+def test_r1_player_two_distinct_versions_after_sync_two_on_disk_stems(tmp_path: Path):
+    """registry-fix-versions-slots-load R1: player manifest holds two rows after two exports on disk."""
+    save_manifest_atomic(tmp_path, default_migrated_manifest())
+    pe = tmp_path / "player_exports"
+    pe.mkdir(parents=True)
+    (pe / "player_sync_a_00.glb").write_bytes(b"a")
+    (pe / "player_sync_b_00.glb").write_bytes(b"b")
+    out = sync_discovered_player_glb_versions(tmp_path)
+    ids = {v["id"] for v in out["player"]["versions"]}
+    assert "player_sync_a_00" in ids
+    assert "player_sync_b_00" in ids
+
+
 def test_sync_discovered_animated_glb_versions_scans_draft_subdir(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
     draft_dir = tmp_path / "animated_exports" / "draft"

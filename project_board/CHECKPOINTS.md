@@ -20,6 +20,20 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-11-test-design-registry-fix
+- Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/registry-fix-versions-slots-load/run-2026-04-11-autopilot.md`
+- Outcome: Spec-trace tests added; Vitest red on `canAddEnemySlot`/Add slot until R3 implementation; Python + new backend PUT test green.
+
+## Run: 2026-04-11-spec-registry-fix
+- Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/registry-fix-versions-slots-load/run-2026-04-11-autopilot.md`
+- Outcome: Spec written to `project_board/specs/registry-fix-versions-slots-load.md`; assumptions appended to scoped checkpoint.
+
 ## Run: 2026-04-11T23-59-00Z-planner-decomposition
 - Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
 - Stage: PLANNING → SPECIFICATION
@@ -62,3 +76,10 @@ Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-1
 - Stage: PLANNING → SPECIFICATION
 - Next Agent: Spec Agent
 - Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+
+## Run: 2026-04-11T-spec-agent
+- Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+- Outcome: Spec updated — shell kind promoted from v1 stub to ellipsoid overlay; shell_scale field documented; 5 spike tip call sites identified and documented; capability matrix updated.
