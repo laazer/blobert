@@ -3233,3 +3233,66 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Enables post-hoc learning and audit without re-deriving planner intent.
 
 ---
+
+## [extras-shell-visible-spikes-on-top] — Base-distance protrusion tests and grep-verified multi-site literals
+*Completed: 2026-04-11*
+
+### Learnings
+- category: testing
+  insight: For cones placed along a surface normal, asserting only that the apex lies outside the body can still pass when the base circle is embedded; encode the real invariant (e.g. base at apex − depth × normal at or beyond the surface radius along that direction), not a weaker tip-only distance check.
+  impact: An initial protrusion test keyed on tip distance would have stayed green with factor 0.55; the design was corrected before implementation to assert base-on-surface, producing a failing test that matched the AC.
+  prevention: For “proud of surface” AC, Test Designer specifies apex vs base geometry and asserts non-embedded base (or equivalent exterior predicate) on a simple probe zone (e.g. unit sphere).
+  severity: high
+
+- category: process
+  insight: Plans that state “change literal at N call sites” without a mechanical grep can miscount branches (this ticket: four vs five 0.55 sites); one path can retain the old factor until caught by path-specific tests.
+  impact: Spec/plan text drifted until grep listed all sites; adversarial coverage explicitly targeted horns vs spikes paths.
+  prevention: Before implementation, grep the target file for the literal and record count plus branch labels (body/head, uniform/random, horns) in the plan or spec.
+  severity: medium
+
+- category: testing
+  insight: When the same primitive is invoked with mixed calling styles (positional tuple vs `location=` keyword), tests that assert only one form are brittle or can miss real calls.
+  impact: TEST_DESIGN assumed shell tests should read location from both `args` and `kwargs`, consistent with existing bulb paths.
+  prevention: Mirror the assertion style used by tests for sibling primitives in the same module, or accept both extraction paths in the mock capture.
+  severity: low
+
+- category: architecture
+  insight: New zone float tunables should extend the existing `_zone_extra_scale` (or equivalent) path so attach-layer NaN/default/clamp behavior stays aligned with sanitize instead of ad hoc parsing per field.
+  impact: `shell_scale` reused shared coercion with spike_size/bulb_size for defense in depth.
+  prevention: Implementation agents add new keys to the shared helper and its tests rather than one-off float handling in attach-only code.
+  severity: low
+
+### Anti-Patterns
+- description: “Protrusion” tests that only compare apex distance to the surface point while the cone base remains inside the mesh.
+  detection_signal: Tests pass; art or manual preview still shows buried spikes; factor < 1.0 still green.
+  prevention: Assert base center along normal at or outside the surface (or mesh-exterior equivalent) for the stated AC.
+
+- description: Stating a call-site count for a repeated magic number from memory in the plan or spec.
+  detection_signal: Narrative says “four sites” but the file has five code paths (e.g. extra random/uniform or horn branch).
+  prevention: Enumerate matches from grep in the ticket/spec before merge.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For zone extras spikes, horns, or cones on an ellipsoid/sphere zone, if AC is spikes not buried or flush, do not rely on tip-only distance-from-center: assert the cone base (apex minus depth along the outward normal) is on or outside the surface (e.g. for a unit sphere probe, base distance from center ≥ 1.0). Explain in the test or spec why tip-only checks can pass while the base remains embedded."
+  reason: Prevents false-green coverage that would have masked the 0.55 factor.
+
+- agent: Planner Agent
+  change: "When changing a repeated numeric literal or factor in one module, require a grep of that literal in the target file, record the exact number of matches, and list each logical branch (e.g. body uniform, body random, head horns, head spikes uniform, head spikes random). Do not use a hand-count in the execution plan."
+  reason: Avoids missing the fifth call site and plan/spec miscounts.
+
+- agent: Test Breaker Agent
+  change: "After core protrusion tests exist, add path-specific or analytical cases so each distinct branch that could retain an old factor is exercised (e.g. horns expected tip at factor 1.0 vs captured `create_cone`, not only body spikes)."
+  reason: Catches a horn call site left at 0.55 when other paths were updated.
+
+### Workflow Improvements
+- issue: Multi-branch numeric edits planned without mechanical enumeration.
+  improvement: Insert a short gate between spec and implementation: grep literal → paste line roles → sign-off that all branches are in scope for the change.
+  expected_benefit: Fewer partial factor updates across symmetric code paths.
+
+### Keep / Reinforce
+- practice: TEST_DESIGN checkpoint resolving positional vs keyword `location` for `create_sphere` by matching existing bulb call patterns in assertions.
+  reason: Documents API ambiguity and keeps tests aligned with production call style.
+- practice: Failing tests without `xfail` through TEST_BREAK when implementation follows immediately.
+  reason: Preserves a clear red stage before green for the pipeline.
+
+---
