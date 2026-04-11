@@ -65,4 +65,28 @@ Orchestrator: ticket created from user description (registry: multiple versions,
 
 **Confidence:** High
 
+### [registry-fix-versions-slots-load] TEST_BREAK — Adversarial coverage scope
+
+**Would have asked:** Should stress tests cap list sizes (e.g. max slots) to avoid CI timeouts, or mirror worst-case UI payloads?
+
+**Assumption made:** Use bounded but non-trivial sizes (32–48 placeholders, 14 sync rows, 12 repeated GETs) to stress validation paths without multi-second runs.
+
+**Confidence:** High
+
+### [registry-fix-versions-slots-load] TEST_BREAK — Legacy-only player candidates
+
+**Would have asked:** Is `player_active_visual` with empty `player.versions` still a supported production shape for load-existing?
+
+**Assumption made:** Spec R4 requires legacy `player_active_visual` to yield candidates; backend tests lock `legacy_only_player_00` stem resolution.
+
+**Confidence:** High
+
+### [registry-fix-versions-slots-load] TEST_BREAK — Outcome
+
+**Would have asked:** None.
+
+**Assumption made:** Added Python service tests (all-placeholder slots, player slot atomicity, multi-file sync, cross-family isolation), backend HTTP tests (placeholder stress, sequential PUT ordering, legacy PAV candidates, repeated GET determinism), and Vitest filter/identity adversarial cases; all green. Hand off to Implementation Backend for `service.py` / router alignment per plan.
+
+**Confidence:** High
+
 ---

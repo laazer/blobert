@@ -20,6 +20,13 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-11-test-break-registry-fix
+- Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_BACKEND
+- Next Agent: Implementation Backend Agent
+- Log: `project_board/checkpoints/registry-fix-versions-slots-load/run-2026-04-11-autopilot.md`
+- Outcome: Adversarial tests added (Python service, FastAPI registry routers, `registryLoadExisting` Vitest); all new tests green; handoff to backend implementation.
+
 ## Run: 2026-04-11-test-design-registry-fix
 - Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
 - Stage: TEST_DESIGN → TEST_BREAK

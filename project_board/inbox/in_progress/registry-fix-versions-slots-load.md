@@ -48,16 +48,16 @@ the registry needs fixing. i still can't save more then one version of a model. 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Partial (Python + new backend case green; Vitest red on `canAddEnemySlot` / Add slot until R3 implementation)
+- Tests: Partial (Python + backend registry tests green including adversarial suite; Vitest still red on `canAddEnemySlot` / Add slot until R3 frontend implementation)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -72,7 +72,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Backend Agent
 
 ## Required Input Schema
 ```json
@@ -86,4 +86,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary behavioral tests added per spec (Python R1, backend R2 PUT leading placeholder, frontend R3/R4 + `registryLoadExisting`); three Vitest cases intentionally red until `canAddEnemySlot` matches `nextEnemySlotsAfterAdd` and pane behavior matches R3.
+Test Breaker added adversarial/edge tests (placeholder-only and long-placeholder PUT, player slot atomicity, multi-GLB sync stress, cross-family slot isolation, legacy `player_active_visual` load-existing candidates, repeated GET determinism, frontend filter/identity cases). Stage advances to backend implementation per execution plan task 5 (`service.py`, router alignment); frontend R3 reds remain for Implementation Frontend.

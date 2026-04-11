@@ -367,6 +367,58 @@ class TestEnemySlotManagement:
         assert reread.json()["version_ids"] == ["spider_animated_01"]
 
     @pytest.mark.asyncio
+    async def test_put_slots_r2_all_empty_string_entries_succeeds(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """registry-fix-versions-slots-load R2: non-empty list of only placeholders is valid."""
+        res = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["", "", ""]},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["version_ids"] == ["", "", ""]
+        assert body["resolved_paths"] == []
+
+    @pytest.mark.asyncio
+    async def test_put_slots_stress_long_placeholder_run_with_one_valid_id(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        version_ids = [""] * 32 + ["spider_animated_00"]
+        res = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": version_ids},
+        )
+        assert res.status_code == 200
+        assert res.json()["version_ids"] == version_ids
+
+    @pytest.mark.asyncio
+    async def test_put_slots_sequential_mutations_last_write_wins_deterministically(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        # CHECKPOINT: assume no server-side batching; each PUT is fully applied in arrival order.
+        first = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["spider_animated_00"]},
+        )
+        assert first.status_code == 200
+        second = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["", "spider_animated_01"]},
+        )
+        assert second.status_code == 200
+        third = await client.put(
+            "/api/registry/model/enemies/spider/slots",
+            json={"version_ids": ["spider_animated_01", "spider_animated_00"]},
+        )
+        assert third.status_code == 200
+        final = await client.get("/api/registry/model/enemies/spider/slots")
+        assert final.json()["version_ids"] == ["spider_animated_01", "spider_animated_00"]
+
+    @pytest.mark.asyncio
     async def test_put_slots_stress_large_duplicate_payload_rejected_deterministically(
         self,
         client: AsyncClient,

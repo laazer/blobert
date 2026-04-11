@@ -213,6 +213,19 @@ class TestLoadExistingCandidates:
         # LEMA-F1.3: raw files are never candidates without registry backing.
         assert "animated_exports/orphan_disk_only.glb" not in paths
 
+    @pytest.mark.asyncio
+    async def test_candidates_stress_repeated_gets_identical_json(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        # CHECKPOINT: repeated candidate listing must stay byte-stable for fixed on-disk state.
+        snapshots: list[list[dict[str, object]]] = []
+        for _ in range(12):
+            res = await client.get("/api/registry/model/load_existing/candidates")
+            assert res.status_code == 200
+            snapshots.append(res.json()["candidates"])
+        assert all(s == snapshots[0] for s in snapshots[1:])
+
 
 class TestLoadExistingOpenEndpoint:
     @pytest.mark.asyncio
@@ -366,4 +379,66 @@ class TestLoadExistingOpenEndpoint:
             json={"kind": "enemy", "family": "alpha", "version_id": "alpha_live_00"},
         )
         assert stale_file.status_code == 404
+
+
+@pytest.fixture()
+def python_root_legacy_player_active_visual_only(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> pathlib.Path:
+    """R4: manifest with empty/missing player.versions but legacy player_active_visual."""
+    root = tmp_path / "python"
+    root.mkdir(parents=True)
+    player_exports = root / "player_exports"
+    player_exports.mkdir(parents=True)
+    (player_exports / "legacy_only_player_00.glb").write_bytes(b"\x00" * 8)
+    payload = {
+        "schema_version": 1,
+        "enemies": {},
+        "player_active_visual": {
+            "path": "player_exports/legacy_only_player_00.glb",
+            "draft": True,
+        },
+    }
+    (root / "model_registry.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(config_module.settings, "python_root", root)
+    return root
+
+
+@pytest_asyncio.fixture()
+async def client_legacy_pav(python_root_legacy_player_active_visual_only: pathlib.Path):  # noqa: ARG001
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c
+
+
+class TestLoadExistingLegacyPlayerActiveVisual:
+    @pytest.mark.asyncio
+    async def test_candidates_include_player_from_legacy_active_visual_when_versions_empty(
+        self,
+        client_legacy_pav: AsyncClient,
+    ) -> None:
+        res = await client_legacy_pav.get("/api/registry/model/load_existing/candidates")
+        assert res.status_code == 200
+        rows = res.json()["candidates"]
+        player_rows = [r for r in rows if r.get("kind") == "player"]
+        assert len(player_rows) == 1
+        assert player_rows[0]["version_id"] == "legacy_only_player_00"
+        assert player_rows[0]["path"] == "player_exports/legacy_only_player_00.glb"
+
+    @pytest.mark.asyncio
+    async def test_open_legacy_player_candidate_by_version_id(
+        self,
+        client_legacy_pav: AsyncClient,
+    ) -> None:
+        res = await client_legacy_pav.post(
+            "/api/registry/model/load_existing/open",
+            json={"kind": "player", "version_id": "legacy_only_player_00"},
+        )
+        assert res.status_code == 200
+        body = res.json()
+        assert body["path"] == "player_exports/legacy_only_player_00.glb"
+        assert body["kind"] == "player"
 
