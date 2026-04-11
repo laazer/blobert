@@ -602,3 +602,4 @@ def test_coerce_zone_geometry_extras_non_dict_reset() -> None:
     out = abo._coerce_and_validate("slug", base)
     assert isinstance(out["zone_geometry_extras"], dict)
     assert out["zone_geometry_extras"]["body"]["kind"] == "none"
+

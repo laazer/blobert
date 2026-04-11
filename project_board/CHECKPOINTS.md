@@ -20,6 +20,18 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-11T00-00-00Z-autopilot-single
+- Queue mode: single ticket
+- Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/17_zone_extras_offset_xyz_controls.md` → `in_progress/17_zone_extras_offset_xyz_controls.md`
+- Lean: no
+- Log root: project_board/checkpoints/17_zone_extras_offset_xyz_controls/
+
+## Run: 2026-04-11T12-00-00Z-test-design
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/17_zone_extras_offset_xyz_controls.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-11-test-design.md`
+- Outcome: 41 Python tests and 14 frontend tests written; all new tests RED; 755 Python + 170 frontend existing tests still GREEN.
+
 ## Run: 2026-04-09T17-15-00Z-autopilot-single
 - Queue mode: single ticket
 - Queue scope: `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/16_random_vs_uniform_distribution_eyes_and_extras.md` → `done/16_random_vs_uniform_distribution_eyes_and_extras.md`
