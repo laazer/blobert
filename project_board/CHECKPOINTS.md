@@ -62,6 +62,10 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 - Log root: project_board/checkpoints/registry-fix-versions-slots-load/
 - Created ticket from description: project_board/inbox/in_progress/registry-fix-versions-slots-load.md
 
+### [registry-fix-versions-slots-load] — OUTCOME: COMPLETE
+Registry: player slot GET/PUT API; frontend `in_use`/draft alignment, placeholder duplicate fix, Vitest + model_registry + router tests green. Full `run_tests.sh` still red from unrelated shell_scale failing-first tests on main.
+Log: project_board/checkpoints/registry-fix-versions-slots-load/run-2026-04-11-ac-gatekeeper-complete.md
+
 ## Run: 2026-04-11T19-59-11Z-autopilot-description
 - Queue mode: single ticket (created from description)
 - Queue scope: "fix the extras so that the shell is actually visible and spikes properly appear on top too"
