@@ -77,6 +77,8 @@ _DEFAULT_UNIFORM_SHAPE = "arc"
 _PLACEMENT_SEED_MAX = 2_147_483_647
 _OFFSET_XYZ_MIN = -2.0
 _OFFSET_XYZ_MAX = 2.0
+OFFSET_XYZ_MIN = _OFFSET_XYZ_MIN
+OFFSET_XYZ_MAX = _OFFSET_XYZ_MAX
 _OFFSET_XYZ_STEP = 0.05
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
@@ -803,14 +805,28 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
             continue
         t = c["type"]
         if t == "int":
-            v = int(out[key])
             lo = int(c["min"])
             hi = int(c["max"])
+            try:
+                v = int(out[key])
+            except (TypeError, ValueError):
+                dv = c.get("default", lo)
+                try:
+                    v = int(dv)
+                except (TypeError, ValueError):
+                    v = lo
             out[key] = max(lo, min(hi, v))
         elif t == "float":
-            v = float(out[key])
             lo = float(c["min"])
             hi = float(c["max"])
+            try:
+                v = float(out[key])
+            except (TypeError, ValueError):
+                dv = c.get("default", lo)
+                try:
+                    v = float(dv)
+                except (TypeError, ValueError):
+                    v = lo
             out[key] = max(lo, min(hi, v))
         elif t == "select":
             opts = c["options"]
@@ -832,7 +848,10 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
         key = c["key"]
         base_v = defaults[key]
         raw_v = mesh_in.get(key, base_v)
-        v = float(raw_v)
+        try:
+            v = float(raw_v)
+        except (TypeError, ValueError):
+            v = float(base_v)
         lo = float(c["min"])
         hi = float(c["max"])
         v = max(lo, min(hi, v))

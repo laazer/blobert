@@ -15,7 +15,7 @@ from ..materials.material_system import (
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
-from ..utils.animated_build_options import _OFFSET_XYZ_MAX, _OFFSET_XYZ_MIN
+from ..utils.animated_build_options import OFFSET_XYZ_MAX, OFFSET_XYZ_MIN
 from ..utils.placement_clustering import (
     clamp01,
     clustered_ellipsoid_angles_bounded,
@@ -85,7 +85,7 @@ def _zone_extra_offset(spec: dict[str, Any], axis: str) -> float:
         return 0.0
     if math.isnan(v):
         return 0.0
-    return max(_OFFSET_XYZ_MIN, min(_OFFSET_XYZ_MAX, v))
+    return max(OFFSET_XYZ_MIN, min(OFFSET_XYZ_MAX, v))
 
 
 # World axes (Blender Z-up): extras spawn only where the surface normal aligns with enabled facings.
