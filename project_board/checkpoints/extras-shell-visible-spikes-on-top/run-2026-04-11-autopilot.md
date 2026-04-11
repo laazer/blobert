@@ -68,6 +68,13 @@ Run: run-2026-04-11-autopilot
 **Assumption made:** Workflow stage `IMPLEMENTATION_GENERALIST` is the correct enum for Python-only pipeline work (no `IMPLEMENTATION_ENGINE` in `workflow_enforcement_v1.md`).
 **Confidence:** High
 
+### [extras-shell-visible-spikes-on-top] IMPLEMENTATION — Engine Integration Agent (shell_scale + shell geometry + spike factor 1.0)
+**Date:** 2026-04-11
+**Scope:** `asset_generation/python/src/utils/animated_build_options.py`, `asset_generation/python/src/enemies/zone_geometry_extras_attach.py`; docstring fix in `tests/enemies/test_zone_extras_offset_attach.py` (tip factor 1.0).
+**Assumption made:** `_zone_extra_scale` treats `NaN` as default and signed infinity as clamp-to-bounds for all keys (spike_size, bulb_size, shell_scale, etc.) so attach-layer defense matches sanitize behavior for shell_scale without a separate helper.
+**Evidence:** `uv run pytest` on `test_shell_and_spike_protrusion.py`, `test_shell_and_spike_protrusion_adversarial.py`, `test_animated_build_options_shell_scale.py` — 55 passed, exit 0; `test_slug_zone_extras_attach.py` + `test_zone_extras_offset_attach.py` — 28 passed; `bash .lefthook/scripts/py-tests.sh` — exit 0. Full `ci/scripts/run_tests.sh` not run in this handoff.
+**Handoff:** Stage → `STATIC_QA`; Next → Acceptance Criteria Gatekeeper Agent.
+
 ### [extras-shell-visible-spikes-on-top] SPECIFICATION — Call site count correction
 **Would have asked:** The ticket execution plan says "four call sites" for the 0.55 factor. Actual grep of zone_geometry_extras_attach.py finds 5 occurrences. How should the spec handle this?
 **Assumption made:** All 5 confirmed call sites (lines 291, 322, 444, 506, 536) must be updated to factor 1.0. The breakdown is: body spikes uniform (line 291), body spikes random (line 322), head horns (line 444), head spikes uniform (line 506), head spikes random (line 536). The ticket's "four" was a miscounting omission of the fifth (head spikes random). Spec documents 5 sites.

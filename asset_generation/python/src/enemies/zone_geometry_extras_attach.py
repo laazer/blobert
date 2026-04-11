@@ -71,6 +71,10 @@ def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: 
         s = float(spec.get(key, default))
     except (TypeError, ValueError):
         s = default
+    if math.isnan(s):
+        s = default
+    elif math.isinf(s):
+        s = lo if s < 0 else hi
     return max(lo, min(hi, s))
 
 
@@ -288,7 +292,7 @@ def _append_body_ellipsoid_extras(
                     nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
                     if not _facing_allows_normal(spec, nrm):
                         continue
-                    tip = Vector(p) + nrm * (depth * 0.55)
+                    tip = Vector(p) + nrm * depth
                     cone = create_cone(
                         location=_vec_xyz(tip),
                         scale=(rad, rad, depth),
@@ -319,7 +323,7 @@ def _append_body_ellipsoid_extras(
                 nrm = _ellipsoid_normal(cx, cy, cz, a, b, h, p)
                 if not _facing_allows_normal(spec, nrm):
                     continue
-                tip = Vector(p) + nrm * (depth * 0.55)
+                tip = Vector(p) + nrm * depth
                 cone = create_cone(
                     location=_vec_xyz(tip),
                     scale=(rad, rad, depth),
@@ -332,6 +336,14 @@ def _append_body_ellipsoid_extras(
                 apply_material_to_object(cone, mat)
                 model.parts.append(cone)
                 placed += 1
+    elif kind == "shell":
+        shell_s = _zone_extra_scale(spec, "shell_scale", default=1.08, lo=1.01, hi=1.5)
+        shell_obj = create_sphere(
+            location=(cx, cy, cz),
+            scale=(a * shell_s, b * shell_s, h * shell_s),
+        )
+        apply_material_to_object(shell_obj, mat)
+        model.parts.append(shell_obj)
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 4)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")
@@ -441,7 +453,7 @@ def _append_head_ellipsoid_extras(
             nrm = _ellipsoid_normal(hx, hy, hz, ax, ay, az, p)
             if not _facing_allows_normal(spec, nrm):
                 continue
-            tip = Vector(p) + nrm * (depth * 0.55)
+            tip = Vector(p) + nrm * depth
             cone = create_cone(
                 location=_vec_xyz(tip),
                 scale=(rad, rad, depth),
@@ -503,7 +515,7 @@ def _append_head_ellipsoid_extras(
                     p, nrm = _head_point(t1, t2)
                     if not _facing_allows_normal(spec, nrm):
                         continue
-                    tip = Vector(p) + nrm * (depth * 0.55)
+                    tip = Vector(p) + nrm * depth
                     cone = create_cone(
                         location=_vec_xyz(tip),
                         scale=(rad, rad, depth),
@@ -533,7 +545,7 @@ def _append_head_ellipsoid_extras(
                 p, nrm = _head_point(t1, t2)
                 if not _facing_allows_normal(spec, nrm):
                     continue
-                tip = Vector(p) + nrm * (depth * 0.55)
+                tip = Vector(p) + nrm * depth
                 cone = create_cone(
                     location=_vec_xyz(tip),
                     scale=(rad, rad, depth),
@@ -546,6 +558,14 @@ def _append_head_ellipsoid_extras(
                 apply_material_to_object(cone, mat)
                 model.parts.append(cone)
                 placed += 1
+    elif kind == "shell":
+        shell_s = _zone_extra_scale(spec, "shell_scale", default=1.08, lo=1.01, hi=1.5)
+        shell_obj = create_sphere(
+            location=(hx, hy, hz),
+            scale=(ax * shell_s, ay * shell_s, az * shell_s),
+        )
+        apply_material_to_object(shell_obj, mat)
+        model.parts.append(shell_obj)
     elif kind == "bulbs":
         nb = max(1, int(spec.get("bulb_count", 3)))
         bulb_sz = _zone_extra_scale(spec, "bulb_size")

@@ -101,18 +101,18 @@ Fix any findings.
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ## Validation Status
-- Tests: Extended — adversarial cases added (attach: shell raw-spec clamp/missing/string/offset×scale, spike pyramid/random/ring/horns analytical tips; options: NaN/−inf, merge string coercion, root-flat override, epsilon bounds). Split `test_shell_and_spike_protrusion_adversarial.py` for module line cap. Pre-implementation: 55 tests total (51 failing / 4 passing) across the three focused files until shell branch + spike factor fix + shell_scale API land.
-- Static QA: `task hooks:py-review` clean on modified test files
-- Integration: Not Run
+- Tests: `uv run pytest` — `tests/enemies/test_shell_and_spike_protrusion.py`, `tests/enemies/test_shell_and_spike_protrusion_adversarial.py`, `tests/utils/test_animated_build_options_shell_scale.py` — 55 passed (exit 0). Related: `tests/enemies/test_slug_zone_extras_attach.py`, `tests/enemies/test_zone_extras_offset_attach.py` — 28 passed. `bash .lefthook/scripts/py-tests.sh` — exit 0.
+- Static QA: Pending AC Gatekeeper (`task hooks:py-review` / org on changed src paths as needed)
+- Integration: Full `timeout 300 ci/scripts/run_tests.sh` not yet run this handoff
 
 ## Blocking Issues
 - None
@@ -125,7 +125,7 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Engine Integration Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -147,4 +147,4 @@ Engine Integration Agent
 Proceed
 
 ## Reason
-Adversarial test extension complete (shell attach clamp/missing/invalid string, combinatorial offset×scale, spike pyramid/random/ring paths, horn tip vs analytical factor=1.0, options NaN/inf/merge order/string coercion/epsilon bounds). Hand off to Engine Integration Agent to implement shell geometry, spike tip factor 1.0 at all five sites, and shell_scale in animated_build_options per spec.
+Engine Integration Agent implemented `shell_scale` in `animated_build_options` (constants, defaults, flat regex, merge/sanitize with NaN/inf/string handling, control defs) and `kind=shell` body/head branches plus spike/horn tip offset factor 1.0 at all five attach sites. Focused and related Python tests green; hand off to AC Gatekeeper for static QA sign-off and CI traceability.

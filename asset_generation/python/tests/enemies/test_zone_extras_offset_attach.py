@@ -146,7 +146,7 @@ def test_body_offset_x_shifts_spike_location_x() -> None:
 
     The body ellipsoid center starts at cx=0.0.  With offset_x=1.0, the effective
     center is 1.0 before the surface formula runs.  The tip X-component is:
-        tip_x = (cx + offset_x) + a * sin(phi) * cos(theta) + nrm_x * depth * 0.55
+        tip_x = (cx + offset_x) + a * sin(phi) * cos(theta) + nrm_x * depth * 1.0
     The difference between the two calls' tip_x values is exactly offset_x (1.0)
     because all other terms are equal (same angles, same radii).
     """

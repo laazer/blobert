@@ -64,6 +64,9 @@ _SPIKE_SIZE_MIN = 0.25
 _SPIKE_SIZE_MAX = 3.0
 _BULB_SIZE_MIN = 0.25
 _BULB_SIZE_MAX = 3.0
+_SHELL_SCALE_MIN = 1.01
+_SHELL_SCALE_MAX = 1.5
+_DEFAULT_SHELL_SCALE = 1.08
 _PLACEMENT_CLUSTERING_MIN = 0.0
 _PLACEMENT_CLUSTERING_MAX = 1.0
 _DEFAULT_PLACEMENT_CLUSTERING = 0.5
@@ -77,7 +80,7 @@ _OFFSET_XYZ_MAX = 2.0
 _OFFSET_XYZ_STEP = 0.05
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
-    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|clustering|distribution|uniform_shape|"
+    r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|shell_scale|clustering|distribution|uniform_shape|"
     r"finish|hex|offset_x|offset_y|offset_z|"
     r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
 )
@@ -97,6 +100,7 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
         "spike_size",
         "bulb_count",
         "bulb_size",
+        "shell_scale",
         "clustering",
         "distribution",
         "uniform_shape",
@@ -193,6 +197,7 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "offset_x": 0.0,
         "offset_y": 0.0,
         "offset_z": 0.0,
+        "shell_scale": _DEFAULT_SHELL_SCALE,
     }
 
 
@@ -340,7 +345,7 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                     val = b[fk]
                     if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
                         entry[fk] = _coerce_boolish(val, True)
-                    elif fk in ("offset_x", "offset_y", "offset_z"):
+                    elif fk in ("offset_x", "offset_y", "offset_z", "shell_scale"):
                         try:
                             entry[fk] = float(val)
                         except (TypeError, ValueError):
@@ -361,7 +366,7 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                     val = data[fk]
                     if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
                         out[zone][fk] = _coerce_boolish(val, True)
-                    elif fk in ("offset_x", "offset_y", "offset_z"):
+                    elif fk in ("offset_x", "offset_y", "offset_z", "shell_scale"):
                         try:
                             out[zone][fk] = float(val)
                         except (TypeError, ValueError):
@@ -381,7 +386,15 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 out[zone][field] = int(v)
             except (TypeError, ValueError):
                 pass
-        elif field in ("spike_size", "bulb_size", "clustering", "offset_x", "offset_y", "offset_z"):
+        elif field in (
+            "spike_size",
+            "bulb_size",
+            "clustering",
+            "offset_x",
+            "offset_y",
+            "offset_z",
+            "shell_scale",
+        ):
             try:
                 out[zone][field] = float(v)
             except (TypeError, ValueError):
@@ -458,6 +471,17 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
             if math.isnan(ov):
                 ov = 0.0
             entry[axis] = max(_OFFSET_XYZ_MIN, min(_OFFSET_XYZ_MAX, ov))
+        try:
+            sh = float(raw.get("shell_scale", entry["shell_scale"]))
+        except (TypeError, ValueError):
+            sh = _DEFAULT_SHELL_SCALE
+        if math.isnan(sh):
+            sh = _DEFAULT_SHELL_SCALE
+        elif math.isinf(sh):
+            sh = _SHELL_SCALE_MIN if sh < 0 else _SHELL_SCALE_MAX
+        else:
+            sh = max(_SHELL_SCALE_MIN, min(_SHELL_SCALE_MAX, sh))
+        entry["shell_scale"] = sh
         out[z] = entry
     return out
 
@@ -524,6 +548,17 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _BULB_SIZE_MAX,
                 "step": 0.05,
                 "default": 1.0,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_shell_scale",
+                "label": f"{zlabel} shell scale",
+                "type": "float",
+                "min": _SHELL_SCALE_MIN,
+                "max": _SHELL_SCALE_MAX,
+                "step": 0.01,
+                "default": _DEFAULT_SHELL_SCALE,
             }
         )
         defs.append(
