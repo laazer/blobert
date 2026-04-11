@@ -105,6 +105,13 @@ def test_zone_extra_offset_invalid_string_returns_zero() -> None:
     assert fn({"offset_x": "bad"}, "offset_x") == pytest.approx(0.0)
 
 
+def test_zone_extra_offset_string_abc_returns_zero() -> None:
+    """ADVERSARIAL: _zone_extra_offset({'offset_x': 'abc'}, 'offset_x') == 0.0."""
+    # ADVERSARIAL
+    fn = _get_zone_extra_offset()
+    assert fn({"offset_x": "abc"}, "offset_x") == pytest.approx(0.0)
+
+
 def test_zone_extra_offset_clamped_to_max() -> None:
     """AC-5.4: _zone_extra_offset({'offset_x': 5.0}, 'offset_x') == 2.0 (clamped)."""
     fn = _get_zone_extra_offset()

@@ -26,6 +26,16 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 - Lean: no
 - Log root: project_board/checkpoints/17_zone_extras_offset_xyz_controls/
 
+## Resume: 2026-04-11T15-05-00Z-ap-continue
+- Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/17_zone_extras_offset_xyz_controls.md`
+- Resuming at Stage: `TEST_BREAK` → implementation → `COMPLETE`
+- Next Agent: (completed in-session) Engine Integration + frontend + AC closure
+- Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-11-test-break.md`
+
+### [17_zone_extras_offset_xyz_controls] — OUTCOME: COMPLETE
+Per-zone offset X/Y/Z in `animated_build_options` + `zone_geometry_extras_attach`; Extras UI `SUFFIX_ORDER` / `suffixRank` / `rowDisabled`; tests + `timeout 300 ci/scripts/run_tests.sh` exit 0.
+Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-11-test-break.md`
+
 ## Run: 2026-04-11T12-00-00Z-test-design
 - Ticket: `project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/17_zone_extras_offset_xyz_controls.md`
 - Stage: TEST_DESIGN → TEST_BREAK

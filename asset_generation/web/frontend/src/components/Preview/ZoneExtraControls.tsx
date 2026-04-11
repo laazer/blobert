@@ -21,8 +21,15 @@ function effectiveKind(zone: string, raw: string): string {
   return raw === "horns" ? "none" : raw;
 }
 
-function rowDisabled(kind: string, defKey: string, distribution: string): boolean {
-  if (defKey.endsWith("_kind") || defKey.endsWith("_finish") || defKey.endsWith("_hex")) {
+export function rowDisabled(kind: string, defKey: string, distribution: string): boolean {
+  if (
+    defKey.endsWith("_kind") ||
+    defKey.endsWith("_finish") ||
+    defKey.endsWith("_hex") ||
+    defKey.endsWith("_offset_x") ||
+    defKey.endsWith("_offset_y") ||
+    defKey.endsWith("_offset_z")
+  ) {
     return false;
   }
   if (defKey.endsWith("_distribution")) {

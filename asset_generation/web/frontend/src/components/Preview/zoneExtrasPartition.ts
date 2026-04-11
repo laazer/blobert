@@ -5,7 +5,7 @@
 import { FEATURE_ZONES_BY_SLUG } from "../../utils/animatedZoneControlsMerge";
 import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 
-const SUFFIX_ORDER = [
+export const SUFFIX_ORDER = [
   "kind",
   "spike_shape",
   "spike_count",
@@ -23,6 +23,9 @@ const SUFFIX_ORDER = [
   "place_left",
   "finish",
   "hex",
+  "offset_x",
+  "offset_y",
+  "offset_z",
 ] as const;
 
 /** ``extra_zone_<zone>_<suffix>`` */
@@ -33,8 +36,8 @@ export function extraZoneFromDefKey(key: string): string | null {
   return m ? m[1] : null;
 }
 
-function suffixRank(key: string): number {
-  const m = /^extra_zone_\w+_(\w+)$/.exec(key);
+export function suffixRank(key: string): number {
+  const m = /^extra_zone_(?:body|head|limbs|joints|extra)_([a-z0-9_]+)$/.exec(key);
   const s = m?.[1] ?? "";
   const i = SUFFIX_ORDER.indexOf(s as (typeof SUFFIX_ORDER)[number]);
   return i >= 0 ? i : 99;

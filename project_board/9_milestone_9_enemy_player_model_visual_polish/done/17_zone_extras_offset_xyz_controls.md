@@ -89,18 +89,18 @@ All four planning-phase open questions are now resolved in `project_board/specs/
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+COMPLETE
 
 ## Revision
-4
+7
 
 ## Last Updated By
-Test Designer Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: 41 new Python tests RED (as expected, pre-implementation); 755 existing Python tests GREEN. 14 new frontend tests RED (as expected, pre-implementation); 170 existing frontend tests GREEN.
-- Static QA: Ruff clean (no errors on new test files)
-- Integration: Not Run
+- Tests: `uv run pytest tests/` → 833 passed (includes `test_animated_build_options_offset_xyz.py`, `test_animated_build_options_offset_xyz_adversarial.py`, `test_zone_extras_offset_attach.py`). Frontend `npm test` → 184 passed (includes `zoneExtrasPartition.test.ts`).
+- Static QA: Ruff clean on changed Python paths (`animated_build_options.py`, `zone_geometry_extras_attach.py`, adversarial test file).
+- Integration: `timeout 300 ci/scripts/run_tests.sh` exit 0 (`=== ALL TESTS PASSED ===`, diff-cover 94% on changed lines).
 
 ## Blocking Issues
 - None
@@ -113,7 +113,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Human
 
 ## Required Input Schema
 ```json
@@ -124,8 +124,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary tests written. Files modified:
-- `asset_generation/python/tests/utils/test_animated_build_options.py` — 41 new test cases appended covering Requirements 1–6 and 10 (constants, regex, fields, default payload, merge flat/nested/priority, sanitize clamp/reset/boundary, control defs shape, round-trip via options_for_enemy, backward compat).
-- `asset_generation/python/tests/enemies/test_zone_extras_offset_attach.py` — new file with 16 tests covering Requirement 5 (_zone_extra_offset helper AC-5.1–5.4; body offset_x/y/z vector assertions AC-5.5–5.6; head offset_z vector assertion AC-5.7; isolation AC-5.8; kind=none no-exception AC-5.9).
-- `asset_generation/web/frontend/src/components/Preview/zoneExtrasPartition.test.ts` — 14 new frontend tests covering Requirement 7 (SUFFIX_ORDER last-three AC-7.1, suffixRank ordering AC-7.2–7.3, partitionZoneExtraDefs placement AC-7.4, existing order unchanged AC-7.5) and Requirement 8 (rowDisabled always returns false for offset keys AC-8.1–8.7, existing disable behavior preserved).
-Test Breaker Agent must add adversarial/edge-case tests (zero-offset no-op, extreme clamp, cross-zone contamination, invalid float ignored) per Task 3 in the planning table.
+AC met: per-zone `offset_x` / `offset_y` / `offset_z` in `animated_build_options` (merge, sanitize, API defs, flat regex), applied in `zone_geometry_extras_attach` via `_zone_extra_offset` shifting body/head ellipsoid centers; Extras UI (`zoneExtrasPartition` `SUFFIX_ORDER` + fixed `suffixRank` regex, exported `rowDisabled`) renders floats and keeps offsets enabled for all kinds. Adversarial coverage includes cross-zone, clamp, `abc`/NaN/Inf, merge priority, and attach vector checks.

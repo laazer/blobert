@@ -4,6 +4,18 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [17_zone_extras_offset_xyz_controls] — Greedy regex in suffix parsers
+*Completed: 2026-04-11*
+
+### Learnings
+- category: testing
+  insight: A `suffixRank` regex of the form `^extra_zone_\w+_(\w+)$` is unsafe when suffixes contain underscores (e.g. `offset_x`): the middle `\w+` can greedily eat part of the suffix, so the captured token no longer matches `SUFFIX_ORDER` entries and tests fall back to rank 99.
+  impact: Vitest AC-7.3 failed until the zone segment was pinned to the known zone alternation (matching `EXTRA_ZONE_PREFIX_RE`).
+  prevention: For `extra_zone_<zone>_<suffix>` keys, parse zone with a fixed alternation (or split on the first two delimiters) instead of a single greedy `\w+` bridge.
+  severity: medium
+
+---
+
 ## [16_random_vs_uniform_distribution_eyes_and_extras] — Stub Vector iteration + diff-cover
 *Completed: 2026-04-09*
 

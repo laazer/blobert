@@ -11,6 +11,7 @@ Numeric ClassVars on each enemy class (``BODY_*`` mesh tuning and ``RIG_*`` rig 
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Any
 
@@ -71,10 +72,13 @@ _UNIFORM_SHAPES: tuple[str, ...] = ("arc", "ring")
 _DEFAULT_DISTRIBUTION = "uniform"
 _DEFAULT_UNIFORM_SHAPE = "arc"
 _PLACEMENT_SEED_MAX = 2_147_483_647
+_OFFSET_XYZ_MIN = -2.0
+_OFFSET_XYZ_MAX = 2.0
+_OFFSET_XYZ_STEP = 0.05
 _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"^extra_zone_(body|head|limbs|joints|extra)_"
     r"(kind|spike_shape|spike_count|spike_size|bulb_count|bulb_size|clustering|distribution|uniform_shape|"
-    r"finish|hex|"
+    r"finish|hex|offset_x|offset_y|offset_z|"
     r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
 )
 _ZONE_GEOM_EXTRA_PLACE_KEYS: tuple[str, ...] = (
@@ -98,6 +102,9 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
         "uniform_shape",
         "finish",
         "hex",
+        "offset_x",
+        "offset_y",
+        "offset_z",
         *_ZONE_GEOM_EXTRA_PLACE_KEYS,
     }
 )
@@ -183,6 +190,9 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "place_back": True,
         "place_left": True,
         "place_right": True,
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "offset_z": 0.0,
     }
 
 
@@ -328,7 +338,15 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
             for fk in _ZONE_GEOM_EXTRA_FIELDS:
                 if fk in b:
                     val = b[fk]
-                    entry[fk] = _coerce_boolish(val, True) if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS else val
+                    if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
+                        entry[fk] = _coerce_boolish(val, True)
+                    elif fk in ("offset_x", "offset_y", "offset_z"):
+                        try:
+                            entry[fk] = float(val)
+                        except (TypeError, ValueError):
+                            pass
+                    else:
+                        entry[fk] = val
             out[z] = entry
         else:
             out[z] = dict(_default_zone_geometry_extras_payload())
@@ -343,6 +361,11 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                     val = data[fk]
                     if fk in _ZONE_GEOM_EXTRA_PLACE_KEYS:
                         out[zone][fk] = _coerce_boolish(val, True)
+                    elif fk in ("offset_x", "offset_y", "offset_z"):
+                        try:
+                            out[zone][fk] = float(val)
+                        except (TypeError, ValueError):
+                            pass
                     else:
                         out[zone][fk] = val
 
@@ -358,7 +381,7 @@ def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, 
                 out[zone][field] = int(v)
             except (TypeError, ValueError):
                 pass
-        elif field in ("spike_size", "bulb_size", "clustering"):
+        elif field in ("spike_size", "bulb_size", "clustering", "offset_x", "offset_y", "offset_z"):
             try:
                 out[zone][field] = float(v)
             except (TypeError, ValueError):
@@ -427,6 +450,14 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
             fin = "default"
         entry["finish"] = fin
         entry["hex"] = _sanitize_hex(raw.get("hex", ""))
+        for axis in ("offset_x", "offset_y", "offset_z"):
+            try:
+                ov = float(raw.get(axis, 0.0))
+            except (TypeError, ValueError):
+                ov = 0.0
+            if math.isnan(ov):
+                ov = 0.0
+            entry[axis] = max(_OFFSET_XYZ_MIN, min(_OFFSET_XYZ_MAX, ov))
         out[z] = entry
     return out
 
@@ -558,6 +589,39 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "default": "",
             }
         )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_offset_x",
+                "label": f"{zlabel} offset X (Blender world +X = front)",
+                "type": "float",
+                "min": _OFFSET_XYZ_MIN,
+                "max": _OFFSET_XYZ_MAX,
+                "step": _OFFSET_XYZ_STEP,
+                "default": 0.0,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_offset_y",
+                "label": f"{zlabel} offset Y (Blender world +Y = right)",
+                "type": "float",
+                "min": _OFFSET_XYZ_MIN,
+                "max": _OFFSET_XYZ_MAX,
+                "step": _OFFSET_XYZ_STEP,
+                "default": 0.0,
+            }
+        )
+        defs.append(
+            {
+                "key": f"extra_zone_{zone}_offset_z",
+                "label": f"{zlabel} offset Z (Blender world +Z = up)",
+                "type": "float",
+                "min": _OFFSET_XYZ_MIN,
+                "max": _OFFSET_XYZ_MAX,
+                "step": _OFFSET_XYZ_STEP,
+                "default": 0.0,
+            }
+        )
     return defs
 
 
@@ -585,105 +649,7 @@ def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
     return defs
 
 
-def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
-    """Optional per-limb / per-joint material keys (flat API); merged into ``features[*].parts``."""
-    ensure_blender_stubs()
-    try:
-        from enemies.animated.registry import AnimatedEnemyBuilder
-    except ImportError:
-        from src.enemies.animated.registry import AnimatedEnemyBuilder
-
-    cls = AnimatedEnemyBuilder.ENEMY_CLASSES.get(slug)
-    if cls is None:
-        return []
-    defs: list[dict[str, Any]] = []
-    if slug in ("imp", "carapace_husk"):
-        n_arm = max(1, min(8, int(getattr(cls, "ARM_SEGMENTS", 1))))
-        n_leg = max(1, min(8, int(getattr(cls, "LEG_SEGMENTS", 1))))
-        jvis = bool(getattr(cls, "LIMB_JOINT_VISUAL", False))
-        for label_base, idx_prefix, n_seg in (
-            ("Arm", "arm", n_arm),
-            ("Leg", "leg", n_leg),
-        ):
-            for side in range(2):
-                pid = f"{idx_prefix}_{side}"
-                defs.append(
-                    {
-                        "key": f"feat_limb_{pid}_finish",
-                        "label": f"{label_base} {side} (limb) finish",
-                        "type": "select_str",
-                        "options": list(_FINISH_OPTIONS_ORDER),
-                        "default": "default",
-                    }
-                )
-                defs.append(
-                    {
-                        "key": f"feat_limb_{pid}_hex",
-                        "label": f"{label_base} {side} (limb) hex",
-                        "type": "str",
-                        "default": "",
-                    }
-                )
-                if jvis:
-                    for ji in range(max(0, n_seg - 1)):
-                        jpid = f"{idx_prefix}_{side}_j{ji}"
-                        defs.append(
-                            {
-                                "key": f"feat_joint_{jpid}_finish",
-                                "label": f"{label_base} {side} joint {ji} finish",
-                                "type": "select_str",
-                                "options": list(_FINISH_OPTIONS_ORDER),
-                                "default": "default",
-                            }
-                        )
-                        defs.append(
-                            {
-                                "key": f"feat_joint_{jpid}_hex",
-                                "label": f"{label_base} {side} joint {ji} hex",
-                                "type": "str",
-                                "default": "",
-                            }
-                        )
-    if slug == "spider":
-        for leg in range(8):
-            pid = f"leg_{leg}"
-            defs.append(
-                {
-                    "key": f"feat_limb_{pid}_finish",
-                    "label": f"Leg {leg} cylinders finish",
-                    "type": "select_str",
-                    "options": list(_FINISH_OPTIONS_ORDER),
-                    "default": "default",
-                }
-            )
-            defs.append(
-                {
-                    "key": f"feat_limb_{pid}_hex",
-                    "label": f"Leg {leg} cylinders hex",
-                    "type": "str",
-                    "default": "",
-                }
-            )
-            for jn in ("root", "knee", "ankle", "foot"):
-                jpid = f"leg_{leg}_{jn}"
-                defs.append(
-                    {
-                        "key": f"feat_joint_{jpid}_finish",
-                        "label": f"Leg {leg} joint ({jn}) finish",
-                        "type": "select_str",
-                        "options": list(_FINISH_OPTIONS_ORDER),
-                        "default": "default",
-                    }
-                )
-                defs.append(
-                    {
-                        "key": f"feat_joint_{jpid}_hex",
-                        "label": f"Leg {leg} joint ({jn}) hex",
-                        "type": "str",
-                        "default": "",
-                    }
-                )
-    return defs
+from .animated_build_options_part_feature_defs import _part_feature_control_defs
 
 
 def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:

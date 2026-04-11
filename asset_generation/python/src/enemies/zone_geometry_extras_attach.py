@@ -15,6 +15,7 @@ from ..materials.material_system import (
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
+from ..utils.animated_build_options import _OFFSET_XYZ_MAX, _OFFSET_XYZ_MIN
 from ..utils.placement_clustering import (
     clamp01,
     clustered_ellipsoid_angles_bounded,
@@ -71,6 +72,16 @@ def _zone_extra_scale(spec: dict[str, Any], key: str, default: float = 1.0, lo: 
     except (TypeError, ValueError):
         s = default
     return max(lo, min(hi, s))
+
+
+def _zone_extra_offset(spec: dict[str, Any], axis: str) -> float:
+    try:
+        v = float(spec.get(axis, 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+    if math.isnan(v):
+        return 0.0
+    return max(_OFFSET_XYZ_MIN, min(_OFFSET_XYZ_MAX, v))
 
 
 # World axes (Blender Z-up): extras spawn only where the surface normal aligns with enabled facings.
@@ -233,6 +244,9 @@ def _append_body_ellipsoid_extras(
         str(spec.get("hex", "")),
     )
     ref = _body_ref_scale(a, b, h)
+    cx += _zone_extra_offset(spec, "offset_x")
+    cy += _zone_extra_offset(spec, "offset_y")
+    cz += _zone_extra_offset(spec, "offset_z")
     if kind == "spikes":
         n = max(1, int(spec.get("spike_count", 8)))
         spike_sz = _zone_extra_scale(spec, "spike_size")
@@ -405,8 +419,11 @@ def _append_head_ellipsoid_extras(
         str(spec.get("finish", "default")),
         str(spec.get("hex", "")),
     )
-    hc = (hx, hy, hz)
     ref = _head_ref_scale(ax, ay, az)
+    hx += _zone_extra_offset(spec, "offset_x")
+    hy += _zone_extra_offset(spec, "offset_y")
+    hz += _zone_extra_offset(spec, "offset_z")
+    hc = (hx, hy, hz)
 
     if kind == "horns":
         spike_sz = _zone_extra_scale(spec, "spike_size")
