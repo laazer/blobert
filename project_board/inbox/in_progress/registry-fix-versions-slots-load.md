@@ -48,16 +48,16 @@ the registry needs fixing. i still can't save more then one version of a model. 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_FRONTEND
+STATIC_QA
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Backend Agent
+Implementation Frontend Agent
 
 ## Validation Status
-- Tests: Partial (Python `model_registry` + backend `test_registry_*` green, including adversarial suite and new `GET`/`PUT` `/api/registry/model/player/slots`; Vitest still red on R3 `canAddEnemySlot` / Add slot until frontend implementation)
+- Tests: Partial (Python + backend registry layers green from prior handoff; `cd asset_generation/web/frontend && npm test` — Vitest 197/197 pass, including R3 slot eligibility and player slots client contract tests)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -72,7 +72,7 @@ Implementation Backend Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Frontend Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -86,4 +86,4 @@ Implementation Frontend Agent
 Proceed
 
 ## Reason
-Backend scope complete: `model_registry.service` already satisfied R1–R2/R5 tests from prior work; FastAPI now exposes `GET`/`PUT` `/api/registry/model/player/slots` (same body as enemy slots) for R2 parity and frontend player slot editing. Router tests added in `test_registry_model_selection_router.py`. R3/R4 UI and Vitest fixes remain for Implementation Frontend.
+Frontend implementation complete: `canAddEnemySlot` / `nextEnemySlotsAfterAdd` share one eligibility predicate (`!draft && in_use && not listed`); `slotListHasDuplicates` ignores `""` placeholders (R2); spawn radios treat non-draft `in_use: false` as neither Draft nor In pool so promoting to pool fires PATCH; `fetchPlayerFamilySlots` / `putPlayerFamilySlots` added in `api/client.ts` with contract tests. R4 load-existing UI was already wired in `RegistryPlayerSection` / `registryLoadExisting`; no pane change required beyond R3 fixes. Run Static QA / full integration (`ci/scripts/run_tests.sh`) per execution plan before AC closure.

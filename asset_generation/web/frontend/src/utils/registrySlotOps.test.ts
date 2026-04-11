@@ -81,4 +81,9 @@ describe("slotListHasDuplicates", () => {
     expect(slotListHasDuplicates(["a", "a"])).toBe(true);
     expect(slotListHasDuplicates(["a", "b"])).toBe(false);
   });
+
+  it("registry-fix-versions-slots-load R2: ignores empty slot placeholders", () => {
+    expect(slotListHasDuplicates(["", ""])).toBe(false);
+    expect(slotListHasDuplicates(["", "a", ""])).toBe(false);
+  });
 });

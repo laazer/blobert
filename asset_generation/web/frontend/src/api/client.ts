@@ -186,6 +186,25 @@ export async function putEnemyFamilySlots(
   return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
+/** Player slot list; same payload shape as enemy slots with ``family: "player"``. */
+export type PlayerFamilySlotsPayload = EnemyFamilySlotsPayload;
+
+export async function fetchPlayerFamilySlots(): Promise<PlayerFamilySlotsPayload> {
+  const res = await fetch(`${BASE}/registry/model/player/slots`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<PlayerFamilySlotsPayload>;
+}
+
+export async function putPlayerFamilySlots(versionIds: string[]): Promise<PlayerFamilySlotsPayload> {
+  const res = await fetch(`${BASE}/registry/model/player/slots`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ version_ids: versionIds }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<PlayerFamilySlotsPayload>;
+}
+
 export type DeleteEnemyVersionRequest = {
   delete_files?: boolean;
   confirm: boolean;

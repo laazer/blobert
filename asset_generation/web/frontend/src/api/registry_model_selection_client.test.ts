@@ -4,10 +4,12 @@ import {
   deleteRegistryPlayerActiveVisual,
   fetchLoadExistingCandidates,
   fetchEnemyFamilySlots,
+  fetchPlayerFamilySlots,
   openExistingRegistryModel,
   patchRegistryPlayerActiveVisual,
   postSyncDiscoveredAnimatedGlbVersions,
   putEnemyFamilySlots,
+  putPlayerFamilySlots,
 } from "./client";
 
 describe("registry model-selection client contracts", () => {
@@ -148,6 +150,45 @@ describe("registry model-selection client contracts", () => {
     const out = await fetchEnemyFamilySlots("spider");
     expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/enemies/spider/slots");
     expect(out.version_ids).toEqual(["spider_animated_00"]);
+  });
+
+  it("GET player slots returns persisted server state", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          family: "player",
+          version_ids: ["player_slime_blue_00", ""],
+          resolved_paths: ["player_exports/player_slime_blue_00.glb"],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await fetchPlayerFamilySlots();
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/player/slots");
+    expect(out.family).toBe("player");
+    expect(out.version_ids).toEqual(["player_slime_blue_00", ""]);
+  });
+
+  it("PUT player slots sends version_ids and returns server payload", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          family: "player",
+          version_ids: ["player_slime_blue_00"],
+          resolved_paths: ["player_exports/player_slime_blue_00.glb"],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const out = await putPlayerFamilySlots(["player_slime_blue_00"]);
+    expect(fetchMock).toHaveBeenCalledWith("/api/registry/model/player/slots", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version_ids: ["player_slime_blue_00"] }),
+    });
+    expect(out.resolved_paths).toEqual(["player_exports/player_slime_blue_00.glb"]);
   });
 
   it("PUT enemy slots surfaces 400 validation errors (draft/duplicate)", async () => {

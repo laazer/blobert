@@ -90,3 +90,10 @@ Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-1
 - Next Agent: Test Designer Agent
 - Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
 - Outcome: Spec updated — shell kind promoted from v1 stub to ellipsoid overlay; shell_scale field documented; 5 spike tip call sites identified and documented; capability matrix updated.
+
+## Run: 2026-04-11T00-00-00Z-test-design-shell-spike
+- Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/2026-04-11T00-00-00Z-test-design.md`
+- Outcome: 11 attach tests (9 red / 2 green pre-implementation) + 27 options tests (25 red / 2 green pre-implementation) written; blender stub check clean; all failures confirmed against current code.

@@ -36,8 +36,11 @@ const subHead: CSSProperties = { fontSize: 11, color: "#b5b5b5", margin: "10px 0
 const radioRow: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" };
 const radioLabel: CSSProperties = { display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#d4d4d4" };
 
-function enemyVersionSpawnState(row: RegistryEnemyVersion): "draft" | "pool" {
-  return row.draft ? "draft" : "pool";
+/** Draft vs spawn pool: non-draft rows can still be out of the pool (``in_use: false``); those must not show as pool or clicks are a no-op. */
+function enemyVersionSpawnSelection(row: RegistryEnemyVersion): "draft" | "pool" | null {
+  if (row.draft) return "draft";
+  if (row.in_use) return "pool";
+  return null;
 }
 
 function versionOptionLabel(v: RegistryEnemyVersion): string {
@@ -206,14 +209,14 @@ export function RegistryEnemyFamiliesSection({
                               ["pool", "In pool"],
                             ] as const
                           ).map(([value, label]) => {
-                            const current = enemyVersionSpawnState(row);
+                            const selected = enemyVersionSpawnSelection(row);
                             return (
                               <label key={value} style={radioLabel}>
                                 <input
                                   type="radio"
                                   name={`enemy-spawn-${family}-${row.id}`}
                                   value={value}
-                                  checked={current === value}
+                                  checked={selected === value}
                                   disabled={pending}
                                   data-testid={`registry-enemy-spawn-${family}-${row.id}-${value}`}
                                   onChange={() => {
