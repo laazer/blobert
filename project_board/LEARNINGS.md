@@ -4,6 +4,70 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [registry-fix-versions-slots-load] — Align slot UI predicates, placeholder semantics, and scoped CI gates
+*Completed: 2026-04-11*
+
+### Learnings
+- category: testing
+  insight: Any UI helper that enables “add slot” or “save to slot” must implement the same eligibility rules as code that builds the PUT payload and as the server (`draft`/`in_use`, already assigned, etc.); otherwise Vitest goes red with no backend bug.
+  impact: `canAddEnemySlot` diverged from `nextEnemySlotsAfterAdd` until frontend matched spec R3; rework in modal vs pane integration tests.
+  prevention: Single shared predicate (or tests that assert two named helpers agree on a matrix of registry rows) before shipping either path.
+  severity: medium
+- category: architecture
+  insight: Duplicate-slot validation for ordered slot arrays must apply only to non-empty assigned IDs; multiple `""` placeholders are valid and must not be treated as conflicting assignments.
+  impact: Wrong duplicate logic rejects legitimate multi-placeholder payloads or blocks “add empty slot” flows.
+  prevention: Spec and `validate_manifest` tests explicitly cover multiple `""` with mixed assigned ids; reviewers check duplicate detection scopes to non-empty entries only.
+  severity: medium
+- category: process
+  insight: `ci/scripts/run_tests.sh` can fail in unrelated Godot modules on the same branch while registry/Python/frontend evidence is green; closure then depends on whether AC means full suite vs touched surfaces only.
+  impact: 34 failures in shell geometry tests blocked a naive “integration = full CI green” interpretation without documented scope.
+  prevention: Gatekeeper records failing modules and paths touched; if policy is “green where touched,” say so in validation and track full-suite repair separately.
+  severity: medium
+- category: architecture
+  insight: Before spec’ing or implementing new HTTP slot APIs, inventory existing service methods (e.g. `put_player_slots` already in Python); gaps may be router exposure only, not new core logic.
+  impact: Risk of duplicate endpoints or inconsistent contracts if planning starts at UI without reading `service.py` / existing routes.
+  prevention: Spec/plan step: list current `put_*_slots` and router mappings, then require only deltas.
+  severity: low
+
+### Anti-Patterns
+- description: Separate frontend helpers for “can user proceed?” vs “what will we send?” with different `draft`/`in_use` rules.
+  detection_signal: Add-slot enabled while modal or PUT would 400; or Vitest passes one helper and fails integration on the other.
+  prevention: One predicate or explicit test: `canAddEnemySlot` ≡ slottable-for-PUT.
+- description: Treating repeated `""` in `version_ids` as duplicate slot assignments.
+  detection_signal: 400 on payloads with multiple placeholders and one valid id; tests for `["", "", "id"]` missing.
+  prevention: Align validation with spec: duplicates only among non-empty slot strings.
+- description: Blocking ticket COMPLETE solely because full Godot CI is red when failures are outside changed areas and AC allows scoped green.
+  detection_signal: Validation lists only unrelated test modules; no registry/web/python paths in failure output.
+  prevention: AC gatekeeper documents out-of-scope failures and optional follow-up ticket for full-suite repair.
+
+### Prompt Patches
+- agent: Implementation Frontend
+  change: Before completing slot/save UI, ensure `canAddEnemySlot` (and any player analogue) uses the exact same eligibility predicate as `nextEnemySlotsAfterAdd` and server PUT rules for assigned IDs (non-draft, in-use, and any “already in slot” rule); if two functions remain, add a Vitest that asserts they agree on a fixed matrix of version rows.
+  reason: Prevents permissive UI vs strict PUT drift that produced reds on this ticket.
+- agent: Spec Agent
+  change: For slot arrays that allow `""` placeholders, explicitly require that duplicate-slot detection applies only to non-empty assigned `version_id` values, and that all-`""` lists remain structurally valid where the spec allows.
+  reason: Prevents implementers from over-applying duplicate-id rules to placeholders.
+- agent: Planner / Spec Agent
+  change: When the ticket mentions player + enemy slots, grep `asset_generation/python/src/model_registry/service.py` (and router) for existing `put_player_slots` / `put_enemy_slots` before proposing new HTTP surface; specify only missing routes or behavioral gaps.
+  reason: Avoids redundant API design when service already supports the operation.
+- agent: Acceptance Criteria Gatekeeper
+  change: When `run_tests.sh` fails, classify failures by path/module; if none touch the ticket’s declared change surface and AC says full suite green “where touched,” document the unrelated failures in Validation Status and do not treat them as blocking this ticket unless release policy overrides.
+  reason: Separates unrelated branch debt from ticket acceptance.
+
+### Workflow Improvements
+- issue: Frontend slot work planned without an explicit “predicate parity” checkpoint between gating helpers and PUT builders.
+  improvement: Test Designer or Implementation Frontend checklist item: shared slottability helper + one adversarial test for disabled add-slot when promotion is required (radio/`in_use` path).
+  expected_benefit: Catches draft/in_use UI radio state bugs before integration.
+- issue: Single integration gate conflates scoped regression with repo-wide Godot health.
+  improvement: Validation template lists targeted commands (pytest/Vitest paths) plus optional full `run_tests.sh` with explicit in-scope vs out-of-scope failure buckets.
+  expected_benefit: Clearer COMPLETE vs follow-up work for unrelated reds.
+
+### Keep / Reinforce
+- practice: Execution plan row calling out `canAddEnemySlot` vs `nextEnemySlotsAfterAdd` mismatch as a known risk before implementation.
+  reason: Surfacing predicate drift early reduces surprise rework; keep similar “helper A vs helper B” callouts for paired UI/server concepts.
+
+---
+
 ## [17_zone_extras_offset_xyz_controls] — Greedy regex in suffix parsers
 *Completed: 2026-04-11*
 
