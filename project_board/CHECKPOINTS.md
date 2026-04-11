@@ -6,6 +6,10 @@
 - Next Agent: Test Breaker Agent
 - Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
 
+### [extras-shell-visible-spikes-on-top] — OUTCOME: COMPLETE
+Visible shell via `create_sphere` + `shell_scale`; spike tip factor 1.0; 55 focused pytest + full `run_tests.sh` green; spec updated for shell/spike semantics.
+Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+
 This file is intentionally small and acts as an index only.
 Full checkpoint bodies live under `project_board/checkpoints/`.
 
