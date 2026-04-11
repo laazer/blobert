@@ -20,8 +20,13 @@ Round-trip via options_for_enemy:
   AC-RT3 — shell_scale out-of-range clamped through full pipeline
 """
 
+import math
+
 from src.utils import animated_build_options as abo
-from src.utils.animated_build_options import options_for_enemy
+from src.utils.animated_build_options import (
+    _merge_zone_geometry_extras,
+    options_for_enemy,
+)
 
 # ---------------------------------------------------------------------------
 # AC-SS1: Constants defined
@@ -307,3 +312,84 @@ def test_options_for_enemy_shell_scale_present_for_imp() -> None:
     assert result == 1.08, (
         f"expected shell_scale default 1.08 for imp, got {result}"
     )
+
+
+# ---------------------------------------------------------------------------
+# ADVERSARIAL — NaN / inf, merge order, string coercion
+# ---------------------------------------------------------------------------
+
+
+def test_sanitize_shell_scale_nan_resets_to_default() -> None:
+    """
+    ADV: float('nan') must not poison clamp (min/max with NaN stays NaN in Python).
+
+    Parity with offset_xyz handling in the same sanitize function.
+    """
+    got = abo._sanitize_zone_geometry_extras("slug", {"body": {"shell_scale": float("nan")}})
+    assert got["body"]["shell_scale"] == 1.08, (
+        f"NaN shell_scale should reset to default 1.08, got {got['body']['shell_scale']}"
+    )
+    assert not math.isnan(float(got["body"]["shell_scale"]))
+
+
+def test_sanitize_shell_scale_negative_infinity_clamped_to_min() -> None:
+    """ADV: -inf coerces through float() then must clamp to 1.01, not crash."""
+    got = abo._sanitize_zone_geometry_extras("slug", {"body": {"shell_scale": float("-inf")}})
+    assert got["body"]["shell_scale"] == 1.01, (
+        f"-inf shell_scale should clamp to min 1.01, got {got['body']['shell_scale']}"
+    )
+
+
+def test_options_for_enemy_root_flat_shell_scale_overrides_slug_envelope_nested() -> None:
+    """
+    ADV merge order: options_for_enemy applies root-level flat keys after the slug dict merge.
+
+    Catches: second _merge_zone_geometry_extras pass omitted for shell_scale flat keys.
+    """
+    raw = {
+        "slug": {"zone_geometry_extras": {"body": {"shell_scale": 1.1}}},
+        "extra_zone_body_shell_scale": 1.35,
+    }
+    o = options_for_enemy("slug", raw)
+    assert abs(o["zone_geometry_extras"]["body"]["shell_scale"] - 1.35) < 1e-9
+
+
+def test_merge_zone_geometry_extras_coerces_shell_scale_numeric_string() -> None:
+    """
+    ADV: Flat API may send JSON numbers as strings; merge + sanitize must yield float.
+
+    Requires shell_scale in the merge float-coercion branch (alongside spike_size).
+    """
+    base = abo._default_zone_geometry_extras("slug")
+    merged = _merge_zone_geometry_extras(
+        "slug",
+        {"extra_zone_body_shell_scale": "1.22"},
+        base,
+    )
+    sanitized = abo._sanitize_zone_geometry_extras("slug", merged)
+    assert abs(sanitized["body"]["shell_scale"] - 1.22) < 1e-9
+
+
+def test_options_for_enemy_body_and_head_shell_scale_independent() -> None:
+    """ADV combinatorial: both zones set; neither bleeds into the other."""
+    o = options_for_enemy(
+        "slug",
+        {
+            "extra_zone_body_shell_scale": 1.11,
+            "extra_zone_head_shell_scale": 1.44,
+        },
+    )
+    assert abs(o["zone_geometry_extras"]["body"]["shell_scale"] - 1.11) < 1e-9
+    assert abs(o["zone_geometry_extras"]["head"]["shell_scale"] - 1.44) < 1e-9
+
+
+def test_sanitize_shell_scale_just_below_min_epsilon_clamped() -> None:
+    """ADV boundary: 1.009 (just below 1.01) clamps up to 1.01."""
+    got = abo._sanitize_zone_geometry_extras("slug", {"body": {"shell_scale": 1.009}})
+    assert got["body"]["shell_scale"] == 1.01
+
+
+def test_sanitize_shell_scale_just_above_max_epsilon_clamped() -> None:
+    """ADV boundary: 1.5001 clamps down to 1.5."""
+    got = abo._sanitize_zone_geometry_extras("slug", {"body": {"shell_scale": 1.5001}})
+    assert abs(got["body"]["shell_scale"] - 1.5) < 1e-9

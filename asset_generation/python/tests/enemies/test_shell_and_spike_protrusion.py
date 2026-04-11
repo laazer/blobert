@@ -19,6 +19,8 @@ Mocking strategy:
     patched to avoid material-system dependencies.
   - The _vec_xyz helper is NOT patched — it is tested indirectly through location
     assertions to ensure it extracts correctly from Vector stubs.
+
+Adversarial / boundary cases: ``test_shell_and_spike_protrusion_adversarial.py``.
 """
 
 from __future__ import annotations

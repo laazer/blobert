@@ -1,5 +1,11 @@
 # Checkpoint Index
 
+## Resume: 2026-04-11T21-00-00Z-ap-continue
+- Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md` (from spec `@enemy_body_part_extras_spec.md`)
+- Resuming at Stage: `TEST_BREAK`
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+
 This file is intentionally small and acts as an index only.
 Full checkpoint bodies live under `project_board/checkpoints/`.
 
@@ -101,6 +107,13 @@ Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-1
 - Next Agent: Test Designer Agent
 - Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
 - Outcome: Spec updated — shell kind promoted from v1 stub to ellipsoid overlay; shell_scale field documented; 5 spike tip call sites identified and documented; capability matrix updated.
+
+## Run: 2026-04-11-test-break-shell-spike
+- Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+- Outcome: Adversarial tests added (incl. `test_shell_and_spike_protrusion_adversarial.py`); 55 tests 51 fail / 4 pass pre-impl; py-review + py-organization clean; handoff to implementation.
 
 ## Run: 2026-04-11T00-00-00Z-test-design-shell-spike
 - Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md`

@@ -101,17 +101,17 @@ Fix any findings.
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Written — pre-implementation failures confirmed (9/11 attach tests red, 25/27 options tests red; 2 noop/compat tests green in each file)
-- Static QA: Not Run
+- Tests: Extended — adversarial cases added (attach: shell raw-spec clamp/missing/string/offset×scale, spike pyramid/random/ring/horns analytical tips; options: NaN/−inf, merge string coercion, root-flat override, epsilon bounds). Split `test_shell_and_spike_protrusion_adversarial.py` for module line cap. Pre-implementation: 55 tests total (51 failing / 4 passing) across the three focused files until shell branch + spike factor fix + shell_scale API land.
+- Static QA: `task hooks:py-review` clean on modified test files
 - Integration: Not Run
 
 ## Blocking Issues
@@ -125,16 +125,21 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Engine Integration Agent
 
 ## Required Input Schema
 ```json
 {
+  "implementation_paths": [
+    "asset_generation/python/src/enemies/zone_geometry_extras_attach.py",
+    "asset_generation/python/src/utils/animated_build_options.py"
+  ],
+  "spec_path": "project_board/specs/enemy_body_part_extras_spec.md",
   "test_files": [
     "asset_generation/python/tests/enemies/test_shell_and_spike_protrusion.py",
+    "asset_generation/python/tests/enemies/test_shell_and_spike_protrusion_adversarial.py",
     "asset_generation/python/tests/utils/test_animated_build_options_shell_scale.py"
-  ],
-  "spec_path": "project_board/specs/enemy_body_part_extras_spec.md"
+  ]
 }
 ```
 
@@ -142,4 +147,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test suite written and confirmed. 11 attach tests covering shell geometry (body/head), noop, scale, offset, and spike protrusion (base-flush invariant). 27 options tests covering shell_scale constants, frozenset, regex, default payload, sanitize clamping/reset, control defs, and round-trip pipeline. Blender stub check clean. All implementation-requiring tests fail against current pre-implementation code with clear error messages. Test Breaker Agent should add adversarial/boundary edge cases.
+Adversarial test extension complete (shell attach clamp/missing/invalid string, combinatorial offset×scale, spike pyramid/random/ring paths, horn tip vs analytical factor=1.0, options NaN/inf/merge order/string coercion/epsilon bounds). Hand off to Engine Integration Agent to implement shell geometry, spike tip factor 1.0 at all five sites, and shell_scale in animated_build_options per spec.
