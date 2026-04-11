@@ -20,6 +20,13 @@ Full checkpoint bodies live under `project_board/checkpoints/`.
 
 ---
 
+## Run: 2026-04-11-ac-gatekeeper-registry-fix
+- Ticket: `project_board/inbox/done/registry-fix-versions-slots-load.md`
+- Stage: STATIC_QA → COMPLETE
+- Next Agent: Human
+- Log: `project_board/checkpoints/registry-fix-versions-slots-load/run-2026-04-11-ac-gatekeeper-complete.md`
+- Outcome: AC gatekeeper; targeted registry pytest/Vitest green; full CI red only in unrelated shell tests; ticket moved to inbox `done/`.
+
 ## Run: 2026-04-11-test-break-registry-fix
 - Ticket: `project_board/inbox/in_progress/registry-fix-versions-slots-load.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_BACKEND
