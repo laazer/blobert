@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import type { ModelRegistryPayload } from "../../types";
-import { PLAYER_MODEL_SECTION_HEADING } from "./RegistryPlayerSection";
+import { PLAYER_POWER_TYPES_HEADING } from "./RegistryPlayerPowerTypesSection";
 import { REGISTRY_ENEMY_LOAD_EXISTING_HEADING } from "./RegistryEnemyLoadExistingSection";
 import { ModelRegistryPane } from "./ModelRegistryPane";
 
@@ -15,6 +15,7 @@ const registryFixture: ModelRegistryPayload = {
       ],
     },
   },
+  player: { versions: [], slots: [] },
   player_active_visual: { path: "player_exports/p.glb", draft: false },
 };
 
@@ -49,17 +50,26 @@ describe("ModelRegistryPane registry sub-tabs", () => {
     vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryFixture);
   });
 
-  it("defaults to Animated tab with enemy section and without player section", async () => {
+  it("defaults to Enemies tab with enemy section and without player section", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Enemy version slots & versions" })).toBeInTheDocument();
     });
-    expect(screen.queryByRole("heading", { name: PLAYER_MODEL_SECTION_HEADING })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: PLAYER_POWER_TYPES_HEADING })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: REGISTRY_ENEMY_LOAD_EXISTING_HEADING })).toBeInTheDocument();
   });
 
-  it("Player tab shows player section and hides enemy section", async () => {
+  it("Enemies tab is labeled 'Enemies' not 'Animated'", async () => {
+    render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Enemies" })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("tab", { name: "Animated" })).not.toBeInTheDocument();
+  });
+
+  it("Player tab shows player power types section and hides enemy section", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
@@ -68,24 +78,20 @@ describe("ModelRegistryPane registry sub-tabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Player" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: PLAYER_MODEL_SECTION_HEADING })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: PLAYER_POWER_TYPES_HEADING })).toBeInTheDocument();
     });
     expect(screen.queryByRole("heading", { name: "Enemy version slots & versions" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: REGISTRY_ENEMY_LOAD_EXISTING_HEADING })).not.toBeInTheDocument();
   });
 
-  it("Smart tab shows neither enemy nor player registry sections", async () => {
+  it("Smart, Stats, and Test tabs are not rendered", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "Smart" })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Enemies" })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("tab", { name: "Smart" }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/not tied to this command/i)).toBeInTheDocument();
-    });
-    expect(screen.queryByRole("heading", { name: PLAYER_MODEL_SECTION_HEADING })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Enemy version slots & versions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Smart" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Stats" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Test" })).not.toBeInTheDocument();
   });
 });

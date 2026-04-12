@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Adversarial / edge coverage for registry RunCmd sub-tabs (ticket 18).
+ * Adversarial / edge coverage for registry RunCmd sub-tabs.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import type { ModelRegistryPayload } from "../../types";
-import { PLAYER_MODEL_SECTION_HEADING } from "./RegistryPlayerSection";
+import { PLAYER_POWER_TYPES_HEADING } from "./RegistryPlayerPowerTypesSection";
 import { ModelRegistryPane } from "./ModelRegistryPane";
 
 const registryFixture: ModelRegistryPayload = {
@@ -17,6 +17,7 @@ const registryFixture: ModelRegistryPayload = {
       ],
     },
   },
+  player: { versions: [], slots: [] },
   player_active_visual: { path: "player_exports/p.glb", draft: false },
 };
 
@@ -53,13 +54,13 @@ describe("ModelRegistryPane registry sub-tabs (adversarial)", () => {
     vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryFixture);
   });
 
-  it("falls back to Animated when localStorage holds an unknown cmd token", async () => {
+  it("falls back to Enemies tab when localStorage holds an unknown cmd token", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Enemy version slots & versions" })).toBeInTheDocument();
     });
-    expect(screen.queryByRole("heading", { name: PLAYER_MODEL_SECTION_HEADING })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: PLAYER_POWER_TYPES_HEADING })).not.toBeInTheDocument();
   });
 
   it("does not refetch registry when switching to Level tab (empty state only)", async () => {
@@ -80,18 +81,13 @@ describe("ModelRegistryPane registry sub-tabs (adversarial)", () => {
     expect(fetchRegistry.mock.calls.length).toBe(callsAfterLoad);
   });
 
-  it("Stats tab shows N/A copy and does not mount enemy or player headings", async () => {
+  it("old-format localStorage value 'smart' falls back to Enemies tab", async () => {
+    localStorage.setItem("blobert.registry.subtab", "smart");
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "Stats" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Enemy version slots & versions" })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole("tab", { name: "Stats" }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/not tied to this command/i)).toBeInTheDocument();
-    });
-    expect(screen.queryByRole("heading", { name: PLAYER_MODEL_SECTION_HEADING })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Enemy version slots & versions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Smart" })).not.toBeInTheDocument();
   });
 });

@@ -186,6 +186,13 @@ export async function putEnemyFamilySlots(
   return res.json() as Promise<EnemyFamilySlotsPayload>;
 }
 
+/** POST /api/registry/model/player/sync_player_exports — scan player_exports/*.glb and register missing rows. */
+export async function postSyncDiscoveredPlayerGlbVersions(): Promise<ModelRegistryPayload> {
+  const res = await fetch(`${BASE}/registry/model/player/sync_player_exports`, { method: "POST" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<ModelRegistryPayload>;
+}
+
 /** Player slot list; same payload shape as enemy slots with ``family: "player"``. */
 export type PlayerFamilySlotsPayload = EnemyFamilySlotsPayload;
 

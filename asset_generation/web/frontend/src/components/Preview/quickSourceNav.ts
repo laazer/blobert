@@ -52,22 +52,6 @@ export function getModelCodeTarget(
     case "level":
       return { path: "level/level_object_builder.py", description: "Level object mesh builder" };
 
-    case "test":
-      return {
-        path: "enemies/animated_spider.py",
-        description: "Test command uses spider mesh (animated_spider.py)",
-      };
-
-    case "stats":
-      if (e && animatedSlugs.includes(e)) {
-        return {
-          path: animatedEnemyModulePath(e),
-          description: `Mesh builder: ${slugDisplayLabel(e, animatedMeta)} (${e})`,
-        };
-      }
-      return { path: "enemies/base_enemy.py", description: "Base enemy mesh API" };
-
-    case "smart":
     default:
       return null;
   }
@@ -77,8 +61,6 @@ export function getAnimationCodeTarget(cmd: RunCmd, _enemy: string): SourceNavTa
   switch (cmd) {
     case "player":
       return { path: "player/player_animations.py", description: "Player animation clips" };
-    case "smart":
-      return null;
     default:
       return { path: "animations/animation_system.py", description: "Enemy animation system" };
   }
@@ -100,8 +82,6 @@ export function getAnimationCodeExtras(cmd: RunCmd): SourceNavTarget[] {
           shortLabel: "Armature",
         },
       ];
-    case "smart":
-      return [];
     default:
       return [
         {
@@ -460,11 +440,11 @@ export function getMeshPartTree(
 
   const knownAnimated = animatedSlugs.includes(e) ? e : "";
 
-  if (cmd === "test" || ((cmd === "animated" || cmd === "stats") && e === "spider")) {
+  if (cmd === "animated" && e === "spider") {
     return [animatedEnemyPartTree("spider", buildOptions, hints)];
   }
 
-  if ((cmd === "animated" || cmd === "stats") && knownAnimated) {
+  if (cmd === "animated" && knownAnimated) {
     return [animatedEnemyPartTree(knownAnimated, buildOptions, hints)];
   }
 

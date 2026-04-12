@@ -22,14 +22,10 @@ describe("command logic", () => {
     expect(normalizeEnemyForCmd("player", "pink", ["spider"])).toBe("pink");
   });
 
-  it("parses command preview with flags", () => {
+  it("returns error for removed 'smart' command", () => {
     const parsed = parseCommandPreview('smart --description "fire slug" --difficulty hard');
-    expect(parsed.error).toBeNull();
-    expect(parsed.next).toEqual({
-      cmd: "smart",
-      description: "fire slug",
-      difficulty: "hard",
-    });
+    expect(parsed.error).toContain("Unknown cmd 'smart'");
+    expect(parsed.next).toBeNull();
   });
 
   it("formats player command preview with finish before flags", () => {

@@ -9,8 +9,8 @@ import {
   fetchModelRegistry,
   openExistingRegistryModel,
   patchRegistryEnemyVersion,
-  patchRegistryPlayerActiveVisual,
   postSyncDiscoveredAnimatedGlbVersions,
+  postSyncDiscoveredPlayerGlbVersions,
   putEnemyFamilySlots,
   type LoadExistingCandidate,
   type DeleteEnemyVersionRequest,
@@ -18,13 +18,11 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
-import { buildPlayerModelSelectOptions, playerExportGlbPathsFromAssets } from "../../utils/registryPlayerModelOptions";
 import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
 import { AddEnemySlotModal } from "./AddEnemySlotModal";
-import { PlayerActiveModelModal } from "./PlayerActiveModelModal";
 import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
 import { RegistryEnemyLoadExistingSection } from "./RegistryEnemyLoadExistingSection";
-import { RegistryPlayerSection } from "./RegistryPlayerSection";
+import { RegistryPlayerPowerTypesSection } from "./RegistryPlayerPowerTypesSection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
 import { loadExistingCandidateKey, toOpenExistingRequest } from "./registryLoadExisting";
 import {
@@ -43,10 +41,10 @@ export {
   ENEMY_EMPTY_SLOTS_COPY,
   IN_USE_DELETE_CONFIRM_COPY,
   LOAD_EXISTING_EMPTY_COPY,
-  PLAYER_RESTART_REQUIREMENT_COPY,
 } from "./registryPaneStrings";
 export type { EnemyDeletePlan } from "./registryEnemyTypes";
 export { nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove, canAddEnemySlot } from "../../utils/registrySlotOps";
+export { PLAYER_POWER_TYPES_HEADING } from "./RegistryPlayerPowerTypesSection";
 
 const REGISTRY_SUBTAB_LS = "blobert.registry.subtab";
 
@@ -63,6 +61,7 @@ function parseSavedRegistrySubtab(): RunCmd | null {
 }
 
 function registrySubtabLabel(cmd: RunCmd): string {
+  if (cmd === "animated") return "Enemies";
   return cmd.slice(0, 1).toUpperCase() + cmd.slice(1);
 }
 
@@ -116,7 +115,7 @@ export function ModelRegistryPane() {
   const [loadExistingCandidates, setLoadExistingCandidates] = useState<LoadExistingCandidate[]>([]);
   const [loadExistingSelection, setLoadExistingSelection] = useState<string>("");
   const [loadExistingBusy, setLoadExistingBusy] = useState<boolean>(false);
-  const [playerPickOpen, setPlayerPickOpen] = useState(false);
+  const [playerScanBusy, setPlayerScanBusy] = useState(false);
   const [addSlotFamily, setAddSlotFamily] = useState<string | null>(null);
   const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
   const [addSlotPreparingFamily, setAddSlotPreparingFamily] = useState<string | null>(null);
@@ -124,8 +123,6 @@ export function ModelRegistryPane() {
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
-  const assets = useAppStore((s) => s.assets);
-  const loadAssets = useAppStore((s) => s.loadAssets);
   const registryReloadSeq = useAppStore((s) => s.registryReloadSeq);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
@@ -187,28 +184,6 @@ export function ModelRegistryPane() {
     () => (data ? Object.keys(data.enemies).sort() : []),
     [data],
   );
-  const playerCandidates = useMemo(() => {
-    if (!data) return [] as { family: string; id: string; path: string }[];
-    const rows: { family: string; id: string; path: string }[] = [];
-    for (const family of families) {
-      for (const version of data.enemies[family].versions) {
-        if (!version.draft && version.path.endsWith(".glb")) {
-          rows.push({ family, id: version.id, path: version.path });
-        }
-      }
-    }
-    return rows;
-  }, [data, families]);
-
-  const playerModelOptions = useMemo(
-    () =>
-      buildPlayerModelSelectOptions(
-        data,
-        playerCandidates,
-        playerExportGlbPathsFromAssets(assets),
-      ),
-    [data, playerCandidates, assets],
-  );
 
   const familyAddSlotDisabled = useMemo(() => {
     if (!data) return {} as Record<string, boolean>;
@@ -220,10 +195,6 @@ export function ModelRegistryPane() {
     }
     return out;
   }, [data, families, slotVersionIdsByFamily]);
-
-  useEffect(() => {
-    if (playerPickOpen) void loadAssets();
-  }, [playerPickOpen, loadAssets]);
 
   function previewVersion(_family: string, v: RegistryEnemyVersion) {
     selectAssetByPath(v.path);
@@ -247,16 +218,32 @@ export function ModelRegistryPane() {
     }
   }
 
-  async function applyPlayerSelection(path: string) {
-    setBusyKey("player_active_visual");
+  async function applyPlayerVersionFlags(v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
+    const key = `player:${v.id}`;
+    setBusyKey(key);
     setError(null);
     try {
-      const updated = await patchRegistryPlayerActiveVisual({ path });
+      const use = nextDraft ? false : nextInUse;
+      const updated = await patchRegistryEnemyVersion("player", v.id, { draft: nextDraft, in_use: use });
       await syncFromRegistry(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusyKey(null);
+    }
+  }
+
+  async function scanPlayerExports() {
+    if (playerScanBusy) return;
+    setPlayerScanBusy(true);
+    setError(null);
+    try {
+      const updated = await postSyncDiscoveredPlayerGlbVersions();
+      await syncFromRegistry(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPlayerScanBusy(false);
     }
   }
 
@@ -391,7 +378,7 @@ export function ModelRegistryPane() {
 
   if (!data) return null;
 
-  const playerBusy = busyKey === "player_active_visual";
+  const playerVersions = data.player?.versions ?? [];
 
   return (
     <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
@@ -447,19 +434,13 @@ export function ModelRegistryPane() {
       ) : null}
 
       {registrySubtab === "player" ? (
-        <RegistryPlayerSection
-          activeGamePath={data.player_active_visual?.path ?? null}
-          playerBusy={playerBusy}
-          onOpenPickGameActive={() => setPlayerPickOpen(true)}
-          loadExistingCandidates={loadExistingCandidates}
-          loadExistingSelection={loadExistingSelection}
-          onLoadExistingSelectionChange={setLoadExistingSelection}
-          loadExistingBusy={loadExistingBusy}
-          onLoadExistingInPreview={openExistingSelection}
-          onPreviewGameActive={() => {
-            const p = data.player_active_visual?.path;
-            if (p) selectAssetByPath(p);
-          }}
+        <RegistryPlayerPowerTypesSection
+          playerVersions={playerVersions}
+          scanBusy={playerScanBusy}
+          busyKey={busyKey}
+          onScanPlayerExports={scanPlayerExports}
+          onApplyFlags={applyPlayerVersionFlags}
+          onPreviewVersion={(v) => selectAssetByPath(v.path)}
         />
       ) : null}
 
@@ -471,24 +452,6 @@ export function ModelRegistryPane() {
           </p>
         </div>
       ) : null}
-
-      {registrySubtab === "smart" || registrySubtab === "stats" || registrySubtab === "test" ? (
-        <div style={{ color: "#9d9d9d", fontSize: 12, lineHeight: 1.45 }}>
-          Registry management is not tied to this command in the asset editor.
-        </div>
-      ) : null}
-
-      <PlayerActiveModelModal
-        open={playerPickOpen}
-        options={playerModelOptions}
-        currentPath={data.player_active_visual?.path ?? null}
-        busy={playerBusy}
-        onClose={() => setPlayerPickOpen(false)}
-        onPick={async (path) => {
-          await applyPlayerSelection(path);
-          setPlayerPickOpen(false);
-        }}
-      />
 
       {addSlotFamily && (
         <AddEnemySlotModal

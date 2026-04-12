@@ -448,6 +448,19 @@ async def put_player_slots_endpoint(body: EnemySlotsPut) -> JSONResponse:
     return JSONResponse(payload)
 
 
+@router.post("/model/player/sync_player_exports")
+async def post_sync_player_exports_endpoint() -> JSONResponse:
+    """Register on-disk ``player_exports/*.glb`` files missing from the manifest."""
+    try:
+        reg = _load_service()
+        updated = reg.sync_discovered_player_glb_versions(settings.python_root)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except ImportError as e:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    return JSONResponse(updated)
+
+
 @router.get("/model/spawn_eligible/{family}")
 async def get_spawn_eligible(family: str) -> JSONResponse:
     """Consumer-facing view: paths eligible for default spawn pool (MRVC-4)."""

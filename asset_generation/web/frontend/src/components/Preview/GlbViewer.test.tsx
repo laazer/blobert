@@ -1,123 +1,76 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { GlbViewer } from "./GlbViewer";
 
-describe("GlbViewer fullscreen", () => {
-  let origRequestFullscreen: typeof HTMLElement.prototype.requestFullscreen;
-  let origExitFullscreen: typeof Document.prototype.exitFullscreen;
-  let fullscreenEl: Element | null = null;
-  let exitFullscreenSpy: ReturnType<typeof vi.fn>;
-
+describe("GlbViewer expand/collapse", () => {
   beforeEach(() => {
     useAppStore.setState({ activeGlbUrl: null, activeAnimation: null });
-    origRequestFullscreen = HTMLElement.prototype.requestFullscreen;
-    origExitFullscreen = Document.prototype.exitFullscreen;
-    fullscreenEl = null;
-
-    Object.defineProperty(document, "fullscreenEnabled", { value: true, configurable: true });
-    Object.defineProperty(document, "fullscreenElement", {
-      configurable: true,
-      get: () => fullscreenEl,
-    });
-
-    HTMLElement.prototype.requestFullscreen = function mockRequestFullscreen(this: HTMLElement) {
-      fullscreenEl = this;
-      return Promise.resolve();
-    };
-
-    exitFullscreenSpy = vi.fn(() => {
-      fullscreenEl = null;
-      return Promise.resolve();
-    });
-    document.exitFullscreen = exitFullscreenSpy as typeof Document.prototype.exitFullscreen;
   });
 
   afterEach(() => {
     cleanup();
-    HTMLElement.prototype.requestFullscreen = origRequestFullscreen;
-    document.exitFullscreen = origExitFullscreen;
-    vi.restoreAllMocks();
   });
 
-  it("toggle calls requestFullscreen then exitFullscreen on the viewer wrapper", async () => {
+  it("renders with Expand viewer button and aria-pressed false", async () => {
     render(<GlbViewer />);
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
+    expect(btn).toBeInTheDocument();
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+  });
 
-    const btn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
+  it("button is always enabled regardless of browser API support", async () => {
+    render(<GlbViewer />);
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
     expect(btn).not.toBeDisabled();
-    const viewerWrap = btn.parentElement;
-    expect(viewerWrap).toBeTruthy();
+  });
+
+  it("button text reads 'Fullscreen' when not expanded", async () => {
+    render(<GlbViewer />);
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
+    expect(btn).toHaveTextContent("Fullscreen");
+  });
+
+  it("clicking expand toggles aria-pressed to true and changes label to Collapse viewer", async () => {
+    render(<GlbViewer />);
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
 
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(fullscreenEl).toBe(viewerWrap);
+      expect(screen.getByRole("button", { name: "Collapse viewer" })).toBeInTheDocument();
     });
-
-    document.dispatchEvent(new Event("fullscreenchange"));
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Exit fullscreen" })).toBeTruthy();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Exit fullscreen" }));
-
-    await waitFor(() => {
-      expect(exitFullscreenSpy).toHaveBeenCalled();
-    });
-    document.dispatchEvent(new Event("fullscreenchange"));
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Enter fullscreen" })).toBeTruthy();
-    });
+    expect(screen.getByRole("button", { name: "Collapse viewer" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("uses aria-pressed false when not fullscreen", async () => {
+  it("button text reads 'Exit fullscreen' when expanded", async () => {
     render(<GlbViewer />);
-    const btn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
-    expect(btn).toHaveAttribute("aria-pressed", "false");
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
+
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      const collapseBtn = screen.getByRole("button", { name: "Collapse viewer" });
+      expect(collapseBtn).toHaveTextContent("Exit fullscreen");
+    });
   });
 
-  it("returns to enter state when fullscreen clears (e.g. Escape) via fullscreenchange", async () => {
+  it("clicking collapse restores button to Expand viewer state", async () => {
     render(<GlbViewer />);
+    const expandBtn = await waitFor(() => screen.getByRole("button", { name: "Expand viewer" }));
 
-    const enterBtn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
-    fireEvent.click(enterBtn);
-
-    await waitFor(() => {
-      expect(fullscreenEl).toBeTruthy();
-    });
-    document.dispatchEvent(new Event("fullscreenchange"));
+    fireEvent.click(expandBtn);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Exit fullscreen" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Collapse viewer" })).toBeInTheDocument();
     });
 
-    fullscreenEl = null;
-    document.dispatchEvent(new Event("fullscreenchange"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse viewer" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Enter fullscreen" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Expand viewer" })).toBeInTheDocument();
     });
-  });
-});
-
-describe("GlbViewer fullscreen (unsupported API)", () => {
-  afterEach(() => {
-    cleanup();
-    Object.defineProperty(document, "fullscreenEnabled", { value: true, configurable: true });
-  });
-
-  beforeEach(() => {
-    useAppStore.setState({ activeGlbUrl: null, activeAnimation: null });
-    Object.defineProperty(document, "fullscreenEnabled", { value: false, configurable: true });
-  });
-
-  it("disables control when fullscreenEnabled is false", async () => {
-    render(<GlbViewer />);
-
-    const btn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
-    expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute("title", "Fullscreen not supported");
+    expect(screen.getByRole("button", { name: "Expand viewer" })).toHaveAttribute("aria-pressed", "false");
   });
 });

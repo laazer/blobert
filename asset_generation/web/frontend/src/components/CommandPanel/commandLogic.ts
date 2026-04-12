@@ -25,7 +25,7 @@ export function partitionAnimatedBuildOptionsForJson(
   return top;
 }
 
-export const ALL_CMDS: RunCmd[] = ["animated", "player", "level", "smart", "stats", "test"];
+export const ALL_CMDS: RunCmd[] = ["animated", "player", "level"];
 export const PLAYER_COLORS = ["blue", "green", "pink", "purple", "yellow", "orange", "red", "white"];
 export const PLAYER_FINISHES = ["glossy", "matte", "metallic", "gel"];
 export const ENEMY_FINISHES = ["default", "glossy", "matte", "metallic", "gel"];
@@ -44,9 +44,6 @@ export const CMD_CONFIG: Record<RunCmd, CommandConfig> = {
   animated: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
   player: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
   level: { showEnemy: true, showDescription: false, showDifficulty: false, requiresEnemy: true },
-  smart: { showEnemy: false, showDescription: true, showDifficulty: true, requiresEnemy: false },
-  stats: { showEnemy: true, showDescription: false, showDifficulty: true, requiresEnemy: true },
-  test: { showEnemy: false, showDescription: false, showDifficulty: false, requiresEnemy: false },
 };
 
 export function getEnemyOptions(cmd: RunCmd, enemies: string[]): string[] {
@@ -160,7 +157,7 @@ export function parseCommandPreview(preview: string): {
       if (!cfg.showDescription) return { next: null, error: `'${cmd}' does not use --description.` };
       next.description = value;
     } else if (flag === "--difficulty") {
-      if (!cfg.showDifficulty) return { next: null, error: `'${cmd}' does not use --difficulty.` };
+      if (!cfg.showDifficulty) return { next: null, error: `'${cmd}' does not use --difficulty (only stat/smart variants do).` };
       next.difficulty = value;
     } else if (flag === "--finish") {
       if (cmd !== "player" && cmd !== "animated") return { next: null, error: `'${cmd}' does not use --finish.` };

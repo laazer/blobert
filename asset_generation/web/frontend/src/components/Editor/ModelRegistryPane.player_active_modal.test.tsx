@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
+/**
+ * Player tab: power-types section renders correctly and patches player version flags.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import type { ModelRegistryPayload } from "../../types";
-import { useAppStore } from "../../store/useAppStore";
 import { ModelRegistryPane } from "./ModelRegistryPane";
 
-function pickPlayerTestId(path: string): string {
-  return `player-active-model-pick-${encodeURIComponent(path)}`;
-}
+const playerVersion = {
+  id: "player_slime_blue_00",
+  path: "player_exports/player_slime_blue_00.glb",
+  draft: true,
+  in_use: false,
+};
 
 const registryFixture: ModelRegistryPayload = {
   schema_version: 1,
@@ -23,17 +28,12 @@ const registryFixture: ModelRegistryPayload = {
       ],
     },
   },
+  player: {
+    versions: [playerVersion],
+    slots: [],
+  },
   player_active_visual: null,
 };
-
-const assetRows = [
-  {
-    path: "player_exports/player_slime_blue_00.glb",
-    name: "player_slime_blue_00.glb",
-    dir: "player_exports",
-    size: 8,
-  },
-];
 
 vi.mock("../../api/client", async (importOriginal) => {
   const mod = await importOriginal<typeof import("../../api/client")>();
@@ -42,42 +42,44 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchModelRegistry: vi.fn(),
     fetchLoadExistingCandidates: vi.fn(),
     fetchEnemyFamilySlots: vi.fn(),
-    fetchAssets: vi.fn(),
-    patchRegistryPlayerActiveVisual: vi.fn(),
+    patchRegistryEnemyVersion: vi.fn(),
     postSyncDiscoveredAnimatedGlbVersions: vi.fn(),
+    postSyncDiscoveredPlayerGlbVersions: vi.fn(),
   };
 });
 
 import * as client from "../../api/client";
 
-describe("ModelRegistryPane player active model modal", () => {
+describe("ModelRegistryPane player tab — power types section", () => {
   afterEach(() => {
     cleanup();
+    localStorage.removeItem("blobert.player.power_types");
   });
 
   beforeEach(() => {
     vi.mocked(client.fetchLoadExistingCandidates).mockResolvedValue({ candidates: [] });
     vi.mocked(client.fetchEnemyFamilySlots).mockImplementation(async (family: string) => ({
       family,
-      version_ids: ["spider_animated_00"],
+      version_ids: [],
       resolved_paths: [],
     }));
     vi.mocked(client.fetchModelRegistry).mockResolvedValue(registryFixture);
     vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockImplementation(() =>
       vi.mocked(client.fetchModelRegistry)(),
     );
-    vi.mocked(client.fetchAssets).mockResolvedValue(assetRows);
-    vi.mocked(client.patchRegistryPlayerActiveVisual).mockResolvedValue({
+    vi.mocked(client.postSyncDiscoveredPlayerGlbVersions).mockImplementation(() =>
+      vi.mocked(client.fetchModelRegistry)(),
+    );
+    vi.mocked(client.patchRegistryEnemyVersion).mockResolvedValue({
       ...registryFixture,
-      player_active_visual: { path: "player_exports/player_slime_blue_00.glb", draft: false },
-    });
-    useAppStore.setState({
-      activeGlbUrl: null,
-      assets: assetRows,
+      player: {
+        versions: [{ ...playerVersion, draft: false, in_use: true }],
+        slots: [],
+      },
     });
   });
 
-  it("opens modal from Choose game active and PATCHes the picked player export path", async () => {
+  it("shows player power types section when Player tab is active", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
@@ -86,29 +88,11 @@ describe("ModelRegistryPane player active model modal", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Player" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("player-active-model-open")).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId("player-active-model-open"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("player-active-model-modal")).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId(pickPlayerTestId("player_exports/player_slime_blue_00.glb")));
-
-    await waitFor(() => {
-      expect(vi.mocked(client.patchRegistryPlayerActiveVisual)).toHaveBeenCalledWith({
-        path: "player_exports/player_slime_blue_00.glb",
-      });
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByTestId("player-active-model-modal")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Player power types" })).toBeInTheDocument();
     });
   });
 
-  it("shows updated game active path in the pane after a successful pick", async () => {
+  it("shows player version in the versions table", async () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
@@ -117,19 +101,49 @@ describe("ModelRegistryPane player active model modal", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Player" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("player-active-model-open")).toBeInTheDocument();
+      expect(screen.getByText("player_slime_blue_00")).toBeInTheDocument();
     });
+  });
 
-    fireEvent.click(screen.getByTestId("player-active-model-open"));
+  it("PATCHes player version to in_use when In pool radio is selected", async () => {
+    render(<ModelRegistryPane />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("player-active-model-modal")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Player" })).toBeInTheDocument();
     });
-
-    fireEvent.click(screen.getByTestId(pickPlayerTestId("player_exports/player_slime_blue_00.glb")));
+    fireEvent.click(screen.getByRole("tab", { name: "Player" }));
 
     await waitFor(() => {
-      expect(screen.getByText("player_exports/player_slime_blue_00.glb")).toBeInTheDocument();
+      expect(screen.getByTestId("player-version-spawn-player_slime_blue_00-pool")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("player-version-spawn-player_slime_blue_00-pool"));
+
+    await waitFor(() => {
+      expect(vi.mocked(client.patchRegistryEnemyVersion)).toHaveBeenCalledWith(
+        "player",
+        "player_slime_blue_00",
+        { draft: false, in_use: true },
+      );
+    });
+  });
+
+  it("scan player exports button triggers postSyncDiscoveredPlayerGlbVersions", async () => {
+    render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Player" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "Player" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("player-scan-exports")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("player-scan-exports"));
+
+    await waitFor(() => {
+      expect(vi.mocked(client.postSyncDiscoveredPlayerGlbVersions)).toHaveBeenCalled();
     });
   });
 });

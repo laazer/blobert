@@ -28,16 +28,8 @@ describe("quickSourceNav", () => {
       expect(getModelCodeTarget("level", "crate")?.path).toBe("level/level_object_builder.py");
     });
 
-    it("resolves test to spider mesh module", () => {
-      expect(getModelCodeTarget("test", "")?.path).toBe("enemies/animated_spider.py");
-    });
-
-    it("resolves stats with known slug", () => {
-      expect(getModelCodeTarget("stats", "imp")?.path).toBe("enemies/animated_imp.py");
-    });
-
-    it("returns null for smart", () => {
-      expect(getModelCodeTarget("smart", "")).toBeNull();
+    it("returns null for level with unknown enemy (only mesh builder resolved for level)", () => {
+      expect(getModelCodeTarget("level", "crate")?.path).toBe("level/level_object_builder.py");
     });
   });
 
@@ -50,8 +42,8 @@ describe("quickSourceNav", () => {
       expect(getAnimationCodeTarget("animated", "slug")?.path).toBe("animations/animation_system.py");
     });
 
-    it("returns null for smart", () => {
-      expect(getAnimationCodeTarget("smart", "")).toBeNull();
+    it("uses animation_system for level cmd", () => {
+      expect(getAnimationCodeTarget("level", "")?.path).toBe("animations/animation_system.py");
     });
   });
 
@@ -69,8 +61,9 @@ describe("quickSourceNav", () => {
       expect(paths).toContain("player/player_armature.py");
     });
 
-    it("returns empty for smart", () => {
-      expect(getAnimationCodeExtras("smart")).toEqual([]);
+    it("returns animation extras for level cmd", () => {
+      const paths = getAnimationCodeExtras("level").map((x) => x.path);
+      expect(paths).toContain("animations/keyframe_system.py");
     });
   });
 

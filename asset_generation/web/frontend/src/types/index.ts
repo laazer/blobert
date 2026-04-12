@@ -17,7 +17,7 @@ export interface TerminalLine {
   text: string;
 }
 
-export type RunCmd = "animated" | "player" | "level" | "smart" | "stats" | "test";
+export type RunCmd = "animated" | "player" | "level";
 
 /** Animated enemy slug + display label from GET /api/meta/enemies (source of truth: Python registry). */
 export type AnimatedEnemyMeta = {
@@ -87,6 +87,7 @@ export type RegistryEnemyVersion = {
 export type ModelRegistryPayload = {
   schema_version: number;
   enemies: Record<string, { versions: RegistryEnemyVersion[] }>;
+  player?: { versions: RegistryEnemyVersion[]; slots: string[] } | null;
   player_active_visual: null | { path: string; draft: boolean };
 };
 
