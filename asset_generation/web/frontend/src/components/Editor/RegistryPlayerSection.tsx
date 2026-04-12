@@ -120,7 +120,7 @@ export function RegistryPlayerSection({
         independent. Use the controls below to align them when you want.
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 8 }}>
         <div>
           <div style={statusLabel}>Editor preview</div>
           <div style={statusValue}>{previewPath ?? "— none —"}</div>

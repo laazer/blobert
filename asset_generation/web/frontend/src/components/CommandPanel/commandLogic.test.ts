@@ -32,7 +32,7 @@ describe("command logic", () => {
     });
   });
 
-  it("formats player command preview with variant count before flags", () => {
+  it("formats player command preview with finish before flags", () => {
     const preview = formatCommandPreview({
       cmd: "player",
       enemy: "blue",
@@ -40,12 +40,11 @@ describe("command logic", () => {
       difficulty: "normal",
       finish: "glossy",
       hexColor: "",
-      variantCount: 1,
     });
-    expect(preview).toBe("player blue 1 --finish glossy");
+    expect(preview).toBe("player blue --finish glossy");
   });
 
-  it("formats animated preview with multi-variant count", () => {
+  it("formats animated preview without variant count", () => {
     expect(
       formatCommandPreview({
         cmd: "animated",
@@ -54,9 +53,8 @@ describe("command logic", () => {
         difficulty: "normal",
         finish: "default",
         hexColor: "",
-        variantCount: 3,
       }),
-    ).toBe("animated spider 3 --finish default");
+    ).toBe("animated spider --finish default");
   });
 
   it("parses player finish and hex color flags", () => {
@@ -65,7 +63,6 @@ describe("command logic", () => {
     expect(parsed.next).toEqual({
       cmd: "player",
       enemy: "blue",
-      variantCount: 1,
       finish: "matte",
       hexColor: "#112233",
     });
@@ -77,20 +74,19 @@ describe("command logic", () => {
     expect(parsed.next).toEqual({
       cmd: "animated",
       enemy: "slug",
-      variantCount: 1,
       finish: "metallic",
       hexColor: "#aa8844",
     });
   });
 
-  it("parses optional variant count for animated", () => {
+  it("accepts legacy optional count token after enemy (ignored)", () => {
     const parsed = parseCommandPreview("animated imp 5 --finish matte");
     expect(parsed.error).toBeNull();
-    expect(parsed.next?.variantCount).toBe(5);
     expect(parsed.next?.enemy).toBe("imp");
+    expect(parsed.next?.finish).toBe("matte");
   });
 
-  it("rejects non-integer variant count", () => {
+  it("rejects non-integer legacy count token", () => {
     const parsed = parseCommandPreview("animated spider 3.5 --finish default");
     expect(parsed.error).toContain("integer");
   });

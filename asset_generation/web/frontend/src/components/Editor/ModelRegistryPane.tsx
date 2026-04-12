@@ -103,6 +103,7 @@ export function ModelRegistryPane() {
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
   const assets = useAppStore((s) => s.assets);
   const loadAssets = useAppStore((s) => s.loadAssets);
+  const registryReloadSeq = useAppStore((s) => s.registryReloadSeq);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -147,7 +148,7 @@ export function ModelRegistryPane() {
 
   useEffect(() => {
     reload();
-  }, [reload]);
+  }, [reload, registryReloadSeq]);
 
   const families = useMemo(
     () => (data ? Object.keys(data.enemies).sort() : []),
@@ -190,6 +191,10 @@ export function ModelRegistryPane() {
   useEffect(() => {
     if (playerPickOpen) void loadAssets();
   }, [playerPickOpen, loadAssets]);
+
+  function previewVersion(_family: string, v: RegistryEnemyVersion) {
+    selectAssetByPath(v.path);
+  }
 
   async function applyFlags(family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
     const key = `${family}:${v.id}`;
@@ -387,6 +392,7 @@ export function ModelRegistryPane() {
         onUpdateSlotVersion={updateEnemySlotVersion}
         onSaveSlots={saveEnemySlots}
         onApplyFlags={applyFlags}
+        onPreviewVersion={previewVersion}
         onDeleteVersion={deleteEnemyVersion}
         getEnemyDeletePlan={buildEnemyDeletePlan}
       />

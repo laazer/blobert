@@ -22,8 +22,21 @@ fi
 BACK=$!
 echo "Backend started (pid $BACK)"
 
-# Frontend
+# Frontend (Vite 5+ needs Node 18+ for globalThis.crypto.getRandomValues)
 cd "$FRONTEND_DIR"
+NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "$NVM_DIR/nvm.sh" ] && [ -f ".nvmrc" ]; then
+  # shellcheck source=/dev/null
+  . "$NVM_DIR/nvm.sh"
+  nvm install
+  nvm use
+fi
+if ! node -e "if (typeof globalThis.crypto?.getRandomValues !== 'function') process.exit(1)"; then
+  echo "ERROR: Node.js 18 or newer is required for the frontend dev server."
+  echo "Current interpreter: $(command -v node) ($(node -v))"
+  echo "This repo pins Node in frontend/.nvmrc — with nvm: cd \"$FRONTEND_DIR\" && nvm use"
+  exit 1
+fi
 if [ ! -d "node_modules" ]; then
   echo "Installing frontend dependencies (this may take a minute)..."
   npm install --silent

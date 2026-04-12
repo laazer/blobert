@@ -30,8 +30,8 @@ const btnPrimary: CSSProperties = {
   border: "1px solid #0e639c",
   background: "#0e639c",
 };
-const th: CSSProperties = { padding: "6px 8px", color: "#9d9d9d", fontWeight: 600 };
-const td: CSSProperties = { padding: "6px 8px", verticalAlign: "middle" };
+const th: CSSProperties = { padding: "5px 6px", color: "#9d9d9d", fontWeight: 600, whiteSpace: "nowrap" };
+const td: CSSProperties = { padding: "5px 6px", verticalAlign: "middle" };
 const subHead: CSSProperties = { fontSize: 11, color: "#b5b5b5", margin: "10px 0 6px", fontWeight: 600 };
 const radioRow: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" };
 const radioLabel: CSSProperties = { display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#d4d4d4" };
@@ -65,6 +65,7 @@ export type RegistryEnemyFamiliesSectionProps = {
   onUpdateSlotVersion: (family: string, index: number, versionId: string) => void;
   onSaveSlots: (family: string) => void;
   onApplyFlags: (family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) => void;
+  onPreviewVersion: (family: string, v: RegistryEnemyVersion) => void;
   onDeleteVersion: (family: string, v: RegistryEnemyVersion) => void;
   getEnemyDeletePlan: (family: string, v: RegistryEnemyVersion) => EnemyDeletePlan | null;
 };
@@ -84,6 +85,7 @@ export function RegistryEnemyFamiliesSection({
   onUpdateSlotVersion,
   onSaveSlots,
   onApplyFlags,
+  onPreviewVersion,
   onDeleteVersion,
   getEnemyDeletePlan,
 }: RegistryEnemyFamiliesSectionProps) {
@@ -176,13 +178,15 @@ export function RegistryEnemyFamiliesSection({
             )}
 
             <div style={subHead}>All versions</div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <div style={{ overflowX: "auto", width: "100%" }}>
+            <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 11 }}>
               <thead>
                 <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
                   <th style={th}>Version id</th>
                   <th style={th}>Name</th>
-                  <th style={th}>Path</th>
+                  <th style={{ ...th, maxWidth: 180 }}>Path</th>
                   <th style={th}>Spawn state</th>
+                  <th style={th}>Preview</th>
                   <th style={th}>Delete</th>
                 </tr>
               </thead>
@@ -195,7 +199,7 @@ export function RegistryEnemyFamiliesSection({
                     <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
                       <td style={td}>{row.id}</td>
                       <td style={td}>{row.name?.trim() ? row.name.trim() : "—"}</td>
-                      <td style={{ ...td, wordBreak: "break-all" }}>{row.path}</td>
+                      <td style={{ ...td, maxWidth: 180, wordBreak: "break-all", fontSize: 10, color: "#9d9d9d" }}>{row.path}</td>
                       <td style={td}>
                         <div
                           role="radiogroup"
@@ -234,6 +238,17 @@ export function RegistryEnemyFamiliesSection({
                         <button
                           type="button"
                           style={btnSecondary}
+                          disabled={pending}
+                          title={`Load ${row.id} into the 3D preview`}
+                          onClick={() => onPreviewVersion(family, row)}
+                        >
+                          Preview
+                        </button>
+                      </td>
+                      <td style={td}>
+                        <button
+                          type="button"
+                          style={btnSecondary}
                           disabled={pending || !deletePlan}
                           onClick={() => onDeleteVersion(family, row)}
                         >
@@ -245,6 +260,7 @@ export function RegistryEnemyFamiliesSection({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         );
       })}

@@ -83,6 +83,11 @@ interface AppState {
   appendLine: (text: string) => void;
   clearTerminal: () => void;
 
+  // Registry
+  /** Incremented after a run completes so the registry pane re-fetches automatically. */
+  registryReloadSeq: number;
+  bumpRegistryReload: () => void;
+
   // Assets
   assets: Asset[];
   activeGlbUrl: string | null;
@@ -256,6 +261,12 @@ export const useAppStore = create<AppState>()(
     },
     clearTerminal() {
       set((s) => { s.terminalLines = []; });
+    },
+
+    // Registry
+    registryReloadSeq: 0,
+    bumpRegistryReload() {
+      set((s) => { s.registryReloadSeq += 1; });
     },
 
     // Assets

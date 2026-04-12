@@ -21,6 +21,7 @@ export function useStreamingOutput() {
   const appendLine = useAppStore((s) => s.appendLine);
   const setIsRunning = useAppStore((s) => s.setIsRunning);
   const refreshAssetsAndAutoSelect = useAppStore((s) => s.refreshAssetsAndAutoSelect);
+  const bumpRegistryReload = useAppStore((s) => s.bumpRegistryReload);
 
   function start(options: RunOptions, endpoint = "/api/run/stream") {
     if (esRef.current) {
@@ -59,6 +60,7 @@ export function useStreamingOutput() {
         const { output_file } = JSON.parse(e.data);
         appendLine("--- Done (exit 0) ---");
         refreshAssetsAndAutoSelect(output_file ?? null);
+        bumpRegistryReload();
       } catch {
         appendLine("--- Done ---");
       }

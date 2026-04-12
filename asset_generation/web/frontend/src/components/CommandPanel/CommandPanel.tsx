@@ -8,8 +8,6 @@ import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import {
   ALL_CMDS,
-  clampVariantCount,
-  CMD_ALLOWS_VARIANT_COUNT,
   CMD_CONFIG,
   formatCommandPreview,
   ENEMY_FINISHES,
@@ -40,15 +38,6 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: 3,
     padding: "2px 6px",
     fontSize: 12,
-  },
-  input: {
-    background: "#3c3c3c",
-    color: "#d4d4d4",
-    border: "1px solid #555",
-    borderRadius: 3,
-    padding: "2px 6px",
-    fontSize: 12,
-    width: 60,
   },
   textInput: {
     background: "#3c3c3c",
@@ -108,7 +97,6 @@ export function CommandPanel() {
   const [difficulty, setDifficulty] = useState("normal");
   const [finish, setFinish] = useState("glossy");
   const [hexColor, setHexColor] = useState("");
-  const [variantCount, setVariantCount] = useState(1);
   const [commandPreview, setCommandPreview] = useState("");
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
@@ -138,9 +126,9 @@ export function CommandPanel() {
   useEffect(() => {
     if (commandPreviewDirty) return;
     setCommandPreview(
-      formatCommandPreview({ cmd, enemy, description, difficulty, finish, hexColor, variantCount }),
+      formatCommandPreview({ cmd, enemy, description, difficulty, finish, hexColor }),
     );
-  }, [cmd, enemy, description, difficulty, finish, hexColor, variantCount, commandPreviewDirty]);
+  }, [cmd, enemy, description, difficulty, finish, hexColor, commandPreviewDirty]);
 
   function handleCmdChange(nextCmd: RunCmd) {
     const nextCfg = CMD_CONFIG[nextCmd];
@@ -155,7 +143,6 @@ export function CommandPanel() {
     if (!nextCfg.showEnemy) setEnemy("");
     if (!nextCfg.showDescription) setDescription("");
     if (!nextCfg.showDifficulty) setDifficulty("normal");
-    setVariantCount(1);
     setCmdTransitionHint(dropped.length > 0 ? `Switched to '${nextCmd}': ${dropped.join(", ")} hidden/reset.` : null);
   }
 
@@ -172,7 +159,6 @@ export function CommandPanel() {
     setDifficulty(next.difficulty ?? "normal");
     setFinish(next.finish ?? "glossy");
     setHexColor(next.hexColor ?? "");
-    setVariantCount(clampVariantCount(next.variantCount ?? 1));
     setCommandPreviewDirty(false);
     setCommandPreviewError(null);
     setCmdTransitionHint(null);
@@ -195,9 +181,6 @@ export function CommandPanel() {
     }
     if (cmd === "animated" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
       return "Custom color must be in #RRGGBB format.";
-    }
-    if (CMD_ALLOWS_VARIANT_COUNT.has(cmd) && (!Number.isFinite(variantCount) || variantCount < 1)) {
-      return "Variant count must be at least 1.";
     }
     return null;
   })();
@@ -225,7 +208,7 @@ export function CommandPanel() {
     start({
       cmd,
       enemy: showEnemy ? enemy : undefined,
-      count: singleOutputCmd ? clampVariantCount(variantCount) : undefined,
+      count: singleOutputCmd ? 1 : undefined,
       description: showDescription ? description : undefined,
       difficulty: showDifficulty ? difficulty : undefined,
       finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
@@ -274,26 +257,6 @@ export function CommandPanel() {
           </>
         )}
 
-        {CMD_ALLOWS_VARIANT_COUNT.has(cmd) && (
-          <>
-            <span style={s.label}>variants</span>
-            <input
-              type="number"
-              style={s.input}
-              min={1}
-              max={99}
-              step={1}
-              value={variantCount}
-              title="Number of GLB variants to write (_00 … _N−1). Registry rows are added when you save or migrate."
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setVariantCount(Number.isFinite(v) ? v : 1);
-              }}
-              onBlur={() => setVariantCount((c) => clampVariantCount(c))}
-            />
-          </>
-        )}
-
       </div>
 
       <div style={s.row}>
@@ -306,13 +269,13 @@ export function CommandPanel() {
             setCommandPreviewDirty(true);
             setCommandPreviewError(null);
           }}
-          placeholder='animated spider 1 --finish matte --hex-color #4b627c'
+          placeholder='animated spider --finish matte --hex-color #4b627c'
         />
         <button style={s.btn} onClick={applyParsedPreview} disabled={!commandPreviewDirty}>Apply</button>
       </div>
       <div style={s.row}>
         <span style={s.helperText}>
-          Format: &lt;cmd&gt; [enemy|color] [variants 1–99] [--description &quot;...&quot;] … (animated/player/level include variant count)
+          Format: &lt;cmd&gt; [enemy|color] [--description &quot;...&quot;] [--difficulty …] [--finish …] [--hex-color #RRGGBB]
         </span>
       </div>
       {commandPreviewError && <div style={s.errorText}>{commandPreviewError}</div>}
