@@ -46,15 +46,15 @@ Optional: mirror **F11**-style is out of scope (browser chrome); stick to elemen
 
 ## Stage
 
-PLANNING
+SPECIFICATION
 
 ## Revision
 
-1
+2
 
 ## Last Updated By
 
-Human
+Planner Agent
 
 ## Validation Status
 
@@ -76,12 +76,16 @@ Human
 
 ## Next Responsible Agent
 
-Planner
+Spec Agent
 
 ## Required Input Schema
 
 ```json
-{}
+{
+  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/19_model_viewer_fullscreen_button.md",
+  "spec_path": "project_board/specs/19_model_viewer_fullscreen_button_spec.md",
+  "spec_completeness_type": "generic"
+}
 ```
 
 ## Status
@@ -90,4 +94,4 @@ Proceed
 
 ## Reason
 
-Straightforward UI task in the existing React preview stack; no backend changes expected.
+Planning complete; Spec must define Fullscreen API contract, resize/fullscreenchange behavior, a11y labels, and test doubles before the spec exit gate.

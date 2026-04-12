@@ -51,15 +51,15 @@ Optional (nice-to-have, not blocking): persist the selected Registry sub-tab in 
 
 ## Stage
 
-PLANNING
+SPECIFICATION
 
 ## Revision
 
-1
+2
 
 ## Last Updated By
 
-Human
+Planner Agent
 
 ## Validation Status
 
@@ -81,12 +81,16 @@ Human
 
 ## Next Responsible Agent
 
-Planner
+Spec Agent
 
 ## Required Input Schema
 
 ```json
-{}
+{
+  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/18_registry_subtabs_by_pipeline_cmd.md",
+  "spec_path": "project_board/specs/18_registry_subtabs_by_pipeline_cmd_spec.md",
+  "spec_completeness_type": "generic"
+}
 ```
 
 ## Status
@@ -95,4 +99,4 @@ Proceed
 
 ## Reason
 
-Ticket is scoped for decomposition into spec/test tasks; implementation is frontend-focused with optional backend only if level registry requires new API fields.
+Planning complete: execution plan and artifact paths are in the orchestrator handoff; Spec must author `18_registry_subtabs_by_pipeline_cmd_spec.md` and align ACs with tab/empty-state behavior before the spec exit gate (`python ci/scripts/spec_completeness_check.py`).
