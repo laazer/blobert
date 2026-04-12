@@ -51,21 +51,31 @@ Optional (nice-to-have, not blocking): persist the selected Registry sub-tab in 
 
 ## Stage
 
-STATIC_QA
+COMPLETE
 
 ## Revision
 
-4
+5
 
 ## Last Updated By
 
-Implementation (frontend)
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: Passing (`npm test` with Node 20 — see `asset_generation/web/frontend/.nvmrc`)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Passing — `npm test` (Vitest) under Node 20 per `asset_generation/web/frontend/.nvmrc`; 207 tests including `ModelRegistryPane.subtabs.test.tsx`, `ModelRegistryPane.subtabs.adversarial.test.tsx`, and updated `ModelRegistryPane.*.test.tsx` for Player tab.
+- Static QA: Passing — `npm run build` (`tsc` + `vite build`) in `asset_generation/web/frontend`.
+- Integration: N/A — editor-only UI; no new backend routes required.
+
+## AC evidence (gatekeeper)
+
+- **Sub-tab per `ALL_CMDS` + labels:** Implementation iterates `ALL_CMDS` with title-case labels; primary + adversarial tests assert six `role="tab"` names (Animated … Test).
+- **Animated = enemy only:** Tests assert `RegistryEnemyFamiliesSection` heading present and `PLAYER_MODEL_SECTION_HEADING` absent on default tab; `RegistryEnemyLoadExistingSection` on Animated.
+- **Player = player only:** Test switches to Player tab; enemy headings absent; player open control reachable.
+- **Level:** Adversarial test asserts manifest empty copy; no extra `fetchModelRegistry` on tab switch.
+- **Smart / Stats / Test:** Primary (Smart) + adversarial (Stats) assert N/A copy; no enemy/player headings.
+- **Frontend tests + npm test:** As above; suite green.
+- **Optional localStorage:** Implemented (`blobert.registry.subtab`); adversarial test invalid token → fallback Animated.
 
 ## Blocking Issues
 
@@ -81,20 +91,13 @@ Implementation (frontend)
 
 ## Next Responsible Agent
 
-Test Breaker Agent (optional adversarial) → AC Gatekeeper Agent
+Human
 
 ## Required Input Schema
 
 ```json
 {
-  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/18_registry_subtabs_by_pipeline_cmd.md",
-  "spec_path": "project_board/specs/18_registry_subtabs_by_pipeline_cmd_spec.md",
-  "implementation_paths": [
-    "asset_generation/web/frontend/src/components/Editor/ModelRegistryPane.tsx",
-    "asset_generation/web/frontend/src/components/Editor/RegistryEnemyLoadExistingSection.tsx",
-    "asset_generation/web/frontend/src/components/layout/centerPanelTabStyles.ts",
-    "asset_generation/web/frontend/src/components/layout/ThreePanelLayout.tsx"
-  ]
+  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/done/18_registry_subtabs_by_pipeline_cmd.md"
 }
 ```
 
@@ -104,4 +107,4 @@ Proceed
 
 ## Reason
 
-Sub-tabs, enemy-scoped load-existing on Animated tab, shared `centerPanelTabBtnStyle`, Level/Smart/Stats/Test empty states, optional `localStorage` sub-tab persistence, and `ModelRegistryPane.subtabs.test.tsx` are implemented; Vitest green under Node 20.
+All acceptance criteria have documented automated or N/A evidence; ticket moved under `done/` per workflow folder rule.

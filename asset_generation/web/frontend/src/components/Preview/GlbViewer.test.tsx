@@ -77,4 +77,47 @@ describe("GlbViewer fullscreen", () => {
     const btn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
     expect(btn).toHaveAttribute("aria-pressed", "false");
   });
+
+  it("returns to enter state when fullscreen clears (e.g. Escape) via fullscreenchange", async () => {
+    render(<GlbViewer />);
+
+    const enterBtn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
+    fireEvent.click(enterBtn);
+
+    await waitFor(() => {
+      expect(fullscreenEl).toBeTruthy();
+    });
+    document.dispatchEvent(new Event("fullscreenchange"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Exit fullscreen" })).toBeInTheDocument();
+    });
+
+    fullscreenEl = null;
+    document.dispatchEvent(new Event("fullscreenchange"));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Enter fullscreen" })).toBeInTheDocument();
+    });
+  });
+});
+
+describe("GlbViewer fullscreen (unsupported API)", () => {
+  afterEach(() => {
+    cleanup();
+    Object.defineProperty(document, "fullscreenEnabled", { value: true, configurable: true });
+  });
+
+  beforeEach(() => {
+    useAppStore.setState({ activeGlbUrl: null, activeAnimation: null });
+    Object.defineProperty(document, "fullscreenEnabled", { value: false, configurable: true });
+  });
+
+  it("disables control when fullscreenEnabled is false", async () => {
+    render(<GlbViewer />);
+
+    const btn = await waitFor(() => screen.getByRole("button", { name: "Enter fullscreen" }));
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("title", "Fullscreen not supported");
+  });
 });

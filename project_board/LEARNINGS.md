@@ -4,6 +4,47 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [18_registry_subtabs_by_pipeline_cmd] + [19_model_viewer_fullscreen_button] — Registry RunCmd tabs and GLB fullscreen
+*Completed: 2026-04-11*
+
+### Learnings
+- category: infra
+  insight: Vitest/Vite 5 on Node 16 fails at startup (`crypto.getRandomValues`); the frontend pins Node ≥18 in `package.json` and should treat Node 20 (`.nvmrc`) as the supported test/build runtime in ticket validation text.
+  impact: Local/CI agents using system Node 16 see a cryptic Vite error instead of a clear engines mismatch.
+  prevention: Document `nvm use` / `.nvmrc` in AC validation and optional CI `engines` enforcement; fail fast with a pretest script if needed.
+  severity: medium
+- category: testing
+  insight: UI that persists enum-like keys in `localStorage` needs adversarial coverage for unknown tokens so the pane never mounts the wrong subtree or throws.
+  impact: Invalid saved sub-tab could have caused wrong default until invalid-key test was added.
+  prevention: Test Designer / Test Breaker: one test per persisted key with garbage + out-of-enum values.
+  severity: low
+- category: process
+  insight: `workflow_enforcement_v1.md` references `ci/scripts/spec_completeness_check.py`, which is not present in the repo; the pipeline still advanced with specs authored and a note on the ticket.
+  impact: Orchestrators may block waiting for a missing script.
+  prevention: Add the script or amend workflow doc to mark the gate optional until implemented.
+  severity: low
+
+### Anti-Patterns
+- description: Claiming Fullscreen API + OrbitControls ACs are fully proven by jsdom-only tests.
+  detection_signal: No `resize`/`fullscreenchange` wiring and no note that WebGL interaction is smoke-tested elsewhere.
+  prevention: Keep resize dispatch on fullscreen transitions and document manual or browser-automation smoke in validation when policy requires it.
+
+### Prompt Patches
+- agent: Planner
+  change: When scheduling frontend Vitest work, require Node version alignment (read `asset_generation/web/frontend/.nvmrc` or `engines`) in the execution plan artifact paths.
+  reason: Avoids false-red environments on older Node.
+
+### Workflow Improvements
+- issue: Spec exit gate script path is documented but missing from repository.
+  improvement: Track a chore ticket to implement `spec_completeness_check.py` or remove the gate reference until it exists.
+  expected_benefit: Clear handoff between Spec and TEST_DESIGN without agent confusion.
+
+### Keep / Reinforce
+- practice: Extract shared center-panel tab styles (`centerPanelTabBtnStyle`) instead of duplicating literals when adding a second tab strip inside a pane.
+  reason: Keeps Registry sub-tabs visually aligned with Code/Build/Registry with a single source of truth.
+
+---
+
 ## [registry-fix-versions-slots-load] — Align slot UI predicates, placeholder semantics, and scoped CI gates
 *Completed: 2026-04-11*
 

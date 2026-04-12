@@ -46,21 +46,29 @@ Optional: mirror **F11**-style is out of scope (browser chrome); stick to elemen
 
 ## Stage
 
-STATIC_QA
+COMPLETE
 
 ## Revision
 
-4
+5
 
 ## Last Updated By
 
-Implementation (frontend)
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
 
-- Tests: Passing (`npm test` with Node 20 — see `asset_generation/web/frontend/.nvmrc`)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Passing — `npm test` under Node 20; `GlbViewer.test.tsx` covers toggle on wrapper, `aria-pressed`, Escape-equivalent `fullscreenchange` when `fullscreenElement` clears, and disabled + tooltip when `fullscreenEnabled === false`.
+- Static QA: Passing — `npm run build` (`tsc` + `vite build`) in `asset_generation/web/frontend`.
+- Integration: N/A — browser Fullscreen API; automated suite uses jsdom mocks. **OrbitControls / canvas sizing:** implementation dispatches `resize` after `fullscreenchange` so R3F can reflow; manual orbit smoke still recommended before release if policy requires it.
+
+## AC evidence (gatekeeper)
+
+- **Control visible (empty + loaded):** `GlbViewer` always renders the control on the root wrapper; empty and loaded branches share the same outer `div` (verified in code review path).
+- **Exit via control + Escape:** Toggle covered by tests; Escape native behavior mirrored by test that clears `fullscreenElement` and fires `fullscreenchange` → UI returns to “Enter fullscreen”.
+- **OrbitControls usable:** Contract = `fullscreenchange` → `window` `resize` dispatch; no automated WebGL drag test in CI.
+- **Accessibility:** Tests assert `aria-pressed` and enter/exit names; native `<button>` focusable.
+- **Vitest mocks + npm test:** `GlbViewer.test.tsx` as above; full frontend suite green.
 
 ## Blocking Issues
 
@@ -76,18 +84,13 @@ Implementation (frontend)
 
 ## Next Responsible Agent
 
-Test Breaker Agent (optional adversarial) → AC Gatekeeper Agent
+Human
 
 ## Required Input Schema
 
 ```json
 {
-  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/19_model_viewer_fullscreen_button.md",
-  "spec_path": "project_board/specs/19_model_viewer_fullscreen_button_spec.md",
-  "implementation_paths": [
-    "asset_generation/web/frontend/src/components/Preview/GlbViewer.tsx",
-    "asset_generation/web/frontend/src/components/Preview/GlbViewer.test.tsx"
-  ]
+  "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/done/19_model_viewer_fullscreen_button.md"
 }
 ```
 
@@ -97,4 +100,4 @@ Proceed
 
 ## Reason
 
-Element fullscreen on the `GlbViewer` wrapper, `fullscreenchange` + resize bump, disabled path when API unsupported, a11y (`aria-pressed` + labels), and `GlbViewer.test.tsx` are implemented; Vitest green under Node 20.
+All acceptance criteria have test-backed or documented implementation evidence; ticket moved under `done/`.

@@ -1,5 +1,10 @@
 # Checkpoint Index
 
+## Run: 2026-04-11-pipeline-18-19-complete
+- Tickets: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/18_registry_subtabs_by_pipeline_cmd.md`, `.../done/19_model_viewer_fullscreen_button.md`
+- Stage: STATIC_QA → COMPLETE (AC Gatekeeper)
+- Outcome: Vitest adversarial tests + `npm run build`; tickets moved to milestone `done/`.
+
 ## Resume: 2026-04-11T21-00-00Z-ap-continue
 - Ticket: `project_board/inbox/in_progress/extras-shell-visible-spikes-on-top.md` (from spec `@enemy_body_part_extras_spec.md`)
 - Resuming at Stage: `TEST_BREAK`
