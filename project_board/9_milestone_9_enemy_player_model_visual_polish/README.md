@@ -30,6 +30,8 @@
 15. `done/15_eye_and_extras_placement_clustering_controls.md` — **Clustering** slider/step controls (Build-style) for multi-eye and multi-extra placement; uniform **shape** presets coordinated with **16**.
 16. `done/16_random_vs_uniform_distribution_eyes_and_extras.md` — **Random vs uniform** distribution (**radio** / segmented, not checkbox); seed for reproducible random; coordinated with **15**.
 17. `backlog/17_zone_extras_offset_xyz_controls.md` — per-zone **offset X/Y/Z** for all geometry extras (Build-style floats in `animated_build_options` + apply in `zone_geometry_extras_attach`).
+18. `backlog/18_registry_subtabs_by_pipeline_cmd.md` — Registry pane **sub-tabs** per pipeline **`RunCmd`** (animated vs player vs level vs …) so each cmd has its own registry / slots / draft view for readability.
+19. `backlog/19_model_viewer_fullscreen_button.md` — **Fullscreen** control for the **3D model viewer** (`GlbViewer` / Fullscreen API; resize-safe canvas, a11y, frontend test).
 
 ## Dependencies
 
