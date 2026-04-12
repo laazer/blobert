@@ -15,10 +15,8 @@ from typing import Any
 
 # Dual entry: pytest imports ``src.model_registry``; FastAPI adds ``python/src`` only.
 try:
-    from model_registry.path_layout import relocate_registry_row_assets
     from utils.enemy_slug_registry import ANIMATED_SLUGS
 except ImportError:
-    from src.model_registry.path_layout import relocate_registry_row_assets
     from src.utils.enemy_slug_registry import ANIMATED_SLUGS
 
 SCHEMA_VERSION = 1
@@ -67,6 +65,64 @@ def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
     elif not d and not u:
         row["draft"] = True
         row["in_use"] = False
+
+
+def _get_family_block(data: dict[str, Any], family: str) -> dict[str, Any]:
+    """Return the versions/slots dict for either an enemy family or the player."""
+    if family == "player":
+        return data["player"]
+    fam = data["enemies"].get(family)
+    if fam is None:
+        raise KeyError(f"unknown family: {family!r}")
+    return fam
+
+
+def _evict_from_slots(fam_block: dict[str, Any], version_id: str) -> None:
+    """Replace any slot entry for version_id with an empty placeholder."""
+    slots = fam_block.get("slots")
+    if isinstance(slots, list):
+        fam_block["slots"] = ["" if s == version_id else s for s in slots]
+
+
+def _apply_version_patches(
+    fam_block: dict[str, Any],
+    version_id: str,
+    patches: dict[str, Any],
+) -> None:
+    """Apply patches in-place, coerce flags, and evict from slots if the version becomes draft."""
+    versions: list[dict[str, Any]] = fam_block["versions"]
+    found = next((v for v in versions if v["id"] == version_id), None)
+    if found is None:
+        raise KeyError(f"unknown version {version_id!r}")
+
+    if "draft" in patches:
+        d = patches["draft"]
+        if not isinstance(d, bool):
+            raise ValueError("patch draft must be boolean")
+        found["draft"] = d
+    if "in_use" in patches:
+        u = patches["in_use"]
+        if not isinstance(u, bool):
+            raise ValueError("patch in_use must be boolean")
+        found["in_use"] = u
+    if "name" in patches:
+        n = patches["name"]
+        if n is None:
+            found.pop("name", None)
+        elif isinstance(n, str):
+            s = n.strip()
+            if not s:
+                found.pop("name", None)
+            elif len(s) > _MAX_VERSION_NAME_LEN:
+                raise ValueError(f"name exceeds max length {_MAX_VERSION_NAME_LEN}")
+            else:
+                found["name"] = s
+        else:
+            raise ValueError("patch name must be string or null")
+
+    _coerce_version_row_draft_in_use(found)
+    if found.get("draft"):
+        _evict_from_slots(fam_block, version_id)
 
 
 def default_migrated_manifest() -> dict[str, Any]:
@@ -198,6 +254,11 @@ def _normalize_registry_family_block(context: str, fam_val: Any) -> dict[str, An
                 raise ValueError(f"duplicate slot version id {version_id!r} in {context}")
             if version_id not in seen_ids:
                 raise ValueError(f"unknown slot version id {version_id!r} for {context}")
+            slot_row = next((r for r in versions_out if r["id"] == version_id), None)
+            if slot_row is not None and (slot_row.get("draft") or not slot_row.get("in_use")):
+                # Auto-repair: demoted or non-in-use version left in slots — replace with placeholder.
+                slots_out.append("")
+                continue
             seen_slot_ids.add(version_id)
             slots_out.append(version_id)
         family_out["slots"] = slots_out
@@ -309,49 +370,13 @@ def patch_enemy_version(
     """Update one enemy version row; ``patches`` keys: draft, in_use, name (JSON ``null`` clears name)."""
     if not patches:
         raise ValueError("at least one patch field is required")
-    allowed = frozenset({"draft", "in_use", "name"})
-    bad = set(patches) - allowed
+    bad = set(patches) - frozenset({"draft", "in_use", "name"})
     if bad:
         raise ValueError(f"unsupported patch keys: {sorted(bad)}")
 
     data = load_effective_manifest(python_root)
-    fam = data["enemies"].get(family)
-    if fam is None:
-        raise KeyError(f"unknown family: {family}")
-    versions: list[dict[str, Any]] = fam["versions"]
-    found = next((v for v in versions if v["id"] == version_id), None)
-    if found is None:
-        raise KeyError(f"unknown version {version_id!r} for family {family!r}")
-
-    if "draft" in patches:
-        d = patches["draft"]
-        if not isinstance(d, bool):
-            raise ValueError("patch draft must be boolean")
-        found["draft"] = d
-    if "in_use" in patches:
-        u = patches["in_use"]
-        if not isinstance(u, bool):
-            raise ValueError("patch in_use must be boolean")
-        found["in_use"] = u
-    if "name" in patches:
-        n = patches["name"]
-        if n is None:
-            found.pop("name", None)
-        elif isinstance(n, str):
-            s = n.strip()
-            if not s:
-                found.pop("name", None)
-            elif len(s) > _MAX_VERSION_NAME_LEN:
-                raise ValueError(f"name exceeds max length {_MAX_VERSION_NAME_LEN}")
-            else:
-                found["name"] = s
-        else:
-            raise ValueError("patch name must be string or null")
-
-    _coerce_version_row_draft_in_use(found)
-    new_path, _ = relocate_registry_row_assets(python_root, found["path"], bool(found["draft"]))
-    found["path"] = new_path
-
+    fam = _get_family_block(data, family)
+    _apply_version_patches(fam, version_id, patches)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
     return validated
@@ -417,23 +442,22 @@ def patch_player_active_visual(
     return validated
 
 
+def _slots_payload(fam_block: dict[str, Any], family: str) -> dict[str, Any]:
+    """Build the slots response dict from an already-loaded family block."""
+    version_ids = list(fam_block.get("slots") or [])
+    paths_by_id = {row["id"]: row["path"] for row in fam_block["versions"]}
+    resolved_paths = [paths_by_id[vid] for vid in version_ids if vid and vid in paths_by_id]
+    return {"family": family, "version_ids": version_ids, "resolved_paths": resolved_paths}
+
+
 def get_enemy_slots(
     python_root: Path,
     family: str,
 ) -> dict[str, Any]:
     """Return currently configured slot IDs for a family."""
     data = load_effective_manifest(python_root)
-    fam = data["enemies"].get(family)
-    if fam is None:
-        raise KeyError(f"unknown family: {family}")
-    version_ids = list(fam.get("slots") or [])
-    paths_by_id = {row["id"]: row["path"] for row in fam["versions"]}
-    resolved_paths = [paths_by_id[version_id] for version_id in version_ids if version_id in paths_by_id]
-    return {
-        "family": family,
-        "version_ids": version_ids,
-        "resolved_paths": resolved_paths,
-    }
+    fam = _get_family_block(data, family)
+    return _slots_payload(fam, family)
 
 
 def _discovered_animated_export_rows(
@@ -511,47 +535,13 @@ def patch_player_version(
     """Update one player version row (same patch keys as ``patch_enemy_version``)."""
     if not patches:
         raise ValueError("at least one patch field is required")
-    allowed = frozenset({"draft", "in_use", "name"})
-    bad = set(patches) - allowed
+    bad = set(patches) - frozenset({"draft", "in_use", "name"})
     if bad:
         raise ValueError(f"unsupported patch keys: {sorted(bad)}")
 
     data = load_effective_manifest(python_root)
-    fam = data["player"]
-    versions: list[dict[str, Any]] = fam["versions"]
-    found = next((v for v in versions if v["id"] == version_id), None)
-    if found is None:
-        raise KeyError(f"unknown player version {version_id!r}")
-
-    if "draft" in patches:
-        d = patches["draft"]
-        if not isinstance(d, bool):
-            raise ValueError("patch draft must be boolean")
-        found["draft"] = d
-    if "in_use" in patches:
-        u = patches["in_use"]
-        if not isinstance(u, bool):
-            raise ValueError("patch in_use must be boolean")
-        found["in_use"] = u
-    if "name" in patches:
-        n = patches["name"]
-        if n is None:
-            found.pop("name", None)
-        elif isinstance(n, str):
-            s = n.strip()
-            if not s:
-                found.pop("name", None)
-            elif len(s) > _MAX_VERSION_NAME_LEN:
-                raise ValueError(f"name exceeds max length {_MAX_VERSION_NAME_LEN}")
-            else:
-                found["name"] = s
-        else:
-            raise ValueError("patch name must be string or null")
-
-    _coerce_version_row_draft_in_use(found)
-    new_path, _ = relocate_registry_row_assets(python_root, found["path"], bool(found["draft"]))
-    found["path"] = new_path
-
+    fam = _get_family_block(data, "player")
+    _apply_version_patches(fam, version_id, patches)
     data.pop("player_active_visual", None)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
@@ -560,15 +550,7 @@ def patch_player_version(
 
 def get_player_slots(python_root: Path) -> dict[str, Any]:
     data = load_effective_manifest(python_root)
-    fam = data["player"]
-    version_ids = list(fam.get("slots") or [])
-    paths_by_id = {row["id"]: row["path"] for row in fam["versions"]}
-    resolved_paths = [paths_by_id[version_id] for version_id in version_ids if version_id in paths_by_id]
-    return {
-        "family": "player",
-        "version_ids": version_ids,
-        "resolved_paths": resolved_paths,
-    }
+    return _slots_payload(data["player"], "player")
 
 
 def _assert_assigned_slot_ids_unique(version_ids: list[str]) -> None:
@@ -584,8 +566,7 @@ def put_player_slots(python_root: Path, version_ids: list[str]) -> dict[str, Any
 
     data = load_effective_manifest(python_root)
     fam = data["player"]
-    versions = fam["versions"]
-    versions_by_id = {row["id"]: row for row in versions}
+    versions_by_id = {row["id"]: row for row in fam["versions"]}
 
     for version_id in version_ids:
         if version_id == "":
@@ -602,7 +583,7 @@ def put_player_slots(python_root: Path, version_ids: list[str]) -> dict[str, Any
     data.pop("player_active_visual", None)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
-    return get_player_slots(python_root)
+    return _slots_payload(validated["player"], "player")
 
 
 def _discovered_player_export_rows(
@@ -667,12 +648,8 @@ def put_enemy_slots(
     _assert_assigned_slot_ids_unique(version_ids)
 
     data = load_effective_manifest(python_root)
-    fam = data["enemies"].get(family)
-    if fam is None:
-        raise KeyError(f"unknown family: {family}")
-
-    versions = fam["versions"]
-    versions_by_id = {row["id"]: row for row in versions}
+    fam = _get_family_block(data, family)
+    versions_by_id = {row["id"]: row for row in fam["versions"]}
 
     for version_id in version_ids:
         if version_id == "":
@@ -688,7 +665,7 @@ def put_enemy_slots(
     fam["slots"] = list(version_ids)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
-    return get_enemy_slots(python_root, family)
+    return _slots_payload(_get_family_block(validated, family), family)
 
 
 def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:

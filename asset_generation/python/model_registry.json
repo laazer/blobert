@@ -1,0 +1,103 @@
+{
+  "enemies": {
+    "acid_spitter": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "acid_spitter_animated_00",
+          "in_use": true,
+          "path": "animated_exports/acid_spitter_animated_00.glb"
+        }
+      ]
+    },
+    "adhesion_bug": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "adhesion_bug_animated_00",
+          "in_use": true,
+          "path": "animated_exports/adhesion_bug_animated_00.glb"
+        }
+      ]
+    },
+    "carapace_husk": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "carapace_husk_animated_00",
+          "in_use": true,
+          "path": "animated_exports/carapace_husk_animated_00.glb"
+        }
+      ]
+    },
+    "claw_crawler": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "claw_crawler_animated_00",
+          "in_use": true,
+          "path": "animated_exports/claw_crawler_animated_00.glb"
+        }
+      ]
+    },
+    "ember_imp": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "ember_imp_animated_00",
+          "in_use": true,
+          "path": "animated_exports/ember_imp_animated_00.glb"
+        }
+      ]
+    },
+    "spider": {
+      "slots": [
+        ""
+      ],
+      "versions": [
+        {
+          "draft": true,
+          "id": "spider_animated_00",
+          "in_use": false,
+          "name": "spider a",
+          "path": "animated_exports/spider_animated_00.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_01",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_01.glb"
+        },
+        {
+          "draft": false,
+          "id": "spider_animated_02",
+          "in_use": true,
+          "name": "spider ex",
+          "path": "animated_exports/spider_animated_02.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_03",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_03.glb"
+        }
+      ]
+    },
+    "tar_slug": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "tar_slug_animated_00",
+          "in_use": true,
+          "path": "animated_exports/tar_slug_animated_00.glb"
+        }
+      ]
+    }
+  },
+  "player": {
+    "slots": [],
+    "versions": []
+  },
+  "player_active_visual": null,
+  "schema_version": 1
+}

@@ -576,7 +576,18 @@ async def delete_player_active_visual_endpoint(body: PlayerActiveVisualDeleteReq
         manifest = reg.load_effective_manifest(settings.python_root)
         if manifest.get("player_active_visual") is None:
             raise HTTPException(status_code=404, detail="unknown target")
-        raise HTTPException(status_code=409, detail="cannot delete sole active player visual")
+        player = manifest["player"]
+        assigned_slots = [s for s in (player.get("slots") or []) if s]
+        if len(assigned_slots) <= 1:
+            raise HTTPException(status_code=409, detail="cannot delete sole active player visual")
+        # Unslot the current active (first assigned slot entry)
+        old_slots = list(player.get("slots") or [])
+        first_assigned = next((s for s in old_slots if s), None)
+        player["slots"] = ["" if s == first_assigned else s for s in old_slots]
+        manifest.pop("player_active_visual", None)
+        validated = reg.validate_manifest(manifest)
+        reg.save_manifest_atomic(settings.python_root, validated)
+        return JSONResponse(validated)
     except HTTPException:
         raise
     except ValueError as e:

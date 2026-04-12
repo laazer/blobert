@@ -87,6 +87,24 @@ def test_load_effective_missing_file_uses_default(tmp_path: Path):
     assert "spider" in m["enemies"]
 
 
+def test_load_effective_manifest_auto_repairs_draft_in_slots(tmp_path: Path):
+    """load_effective_manifest must succeed and evict draft entries from slots rather than raising."""
+    m = default_migrated_manifest()
+    m["enemies"]["spider"]["versions"][0]["draft"] = True
+    m["enemies"]["spider"]["versions"][0]["in_use"] = False
+    m["enemies"]["spider"]["slots"] = [m["enemies"]["spider"]["versions"][0]["id"]]
+    # Write raw (bypassing validate_manifest so the invalid state reaches disk)
+    import json
+    (tmp_path / "model_registry.json").write_text(
+        json.dumps(m, indent=2), encoding="utf-8"
+    )
+    result = load_effective_manifest(tmp_path)
+    spider = result["enemies"]["spider"]
+    assert spider["versions"][0]["draft"] is True
+    # Slot must have been evicted to placeholder, not raised as an error
+    assert spider["slots"] == [""]
+
+
 def test_save_and_reload_round_trip(tmp_path: Path):
     m = default_migrated_manifest()
     save_manifest_atomic(tmp_path, m)
@@ -103,7 +121,7 @@ def test_patch_enemy_version_persists(tmp_path: Path):
     row = raw["enemies"]["imp"]["versions"][0]
     assert row["draft"] is True
     assert row["in_use"] is False
-    assert row["path"] == "animated_exports/draft/imp_animated_00.glb"
+    assert row["path"] == "animated_exports/imp_animated_00.glb"
 
 
 def test_patch_unknown_family_raises(tmp_path: Path):
@@ -565,44 +583,40 @@ def test_sync_discovered_animated_glb_versions_scans_draft_subdir(tmp_path: Path
     assert row["path"] == "animated_exports/draft/imp_animated_02.glb"
 
 
-def test_patch_enemy_version_moves_glb_when_demoting(tmp_path: Path):
+def test_patch_enemy_version_demoting_updates_manifest_files_stay(tmp_path: Path):
     save_manifest_atomic(tmp_path, default_migrated_manifest())
     glb = tmp_path / "animated_exports" / "imp_animated_00.glb"
     glb.parent.mkdir(parents=True)
     glb.write_bytes(b"glb")
     atk = tmp_path / "animated_exports" / "imp_animated_00.attacks.json"
     atk.write_text("{}", encoding="utf-8")
-    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
-    assert not glb.exists()
-    assert (tmp_path / "animated_exports" / "draft" / "imp_animated_00.glb").read_bytes() == b"glb"
-    assert (tmp_path / "animated_exports" / "draft" / "imp_animated_00.attacks.json").is_file()
+    out = patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
+    # Files stay in place — no relocation on demotion
+    assert glb.read_bytes() == b"glb"
+    assert atk.is_file()
+    # Manifest reflects the new draft state
+    row = next(r for r in out["enemies"]["imp"]["versions"] if r["id"] == "imp_animated_00")
+    assert row["draft"] is True
+    assert row["in_use"] is False
+    # Evicted from slots (slots key may be absent if family had no slots defined)
+    assert "imp_animated_00" not in out["enemies"]["imp"].get("slots", [])
 
 
-def test_patch_enemy_version_moves_glb_when_promoting(tmp_path: Path):
+def test_patch_enemy_version_promoting_updates_manifest_files_stay(tmp_path: Path):
     m = default_migrated_manifest()
     m["enemies"]["imp"]["versions"][0]["draft"] = True
     m["enemies"]["imp"]["versions"][0]["in_use"] = False
-    m["enemies"]["imp"]["versions"][0]["path"] = "animated_exports/draft/imp_animated_00.glb"
     save_manifest_atomic(tmp_path, validate_manifest(m))
-    draft_glb = tmp_path / "animated_exports" / "draft" / "imp_animated_00.glb"
-    draft_glb.parent.mkdir(parents=True)
-    draft_glb.write_bytes(b"z")
-    patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": False, "in_use": True})
-    assert not draft_glb.exists()
-    live = tmp_path / "animated_exports" / "imp_animated_00.glb"
-    assert live.read_bytes() == b"z"
-
-
-def test_patch_enemy_version_relocate_refuses_dest_collision(tmp_path: Path):
-    save_manifest_atomic(tmp_path, default_migrated_manifest())
-    live = tmp_path / "animated_exports" / "imp_animated_00.glb"
-    live.parent.mkdir(parents=True)
-    live.write_bytes(b"a")
-    draft_dir = tmp_path / "animated_exports" / "draft"
-    draft_dir.mkdir(parents=True)
-    (draft_dir / "imp_animated_00.glb").write_bytes(b"b")
-    with pytest.raises(ValueError, match="refusing relocate"):
-        patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": True, "in_use": False})
+    glb = tmp_path / "animated_exports" / "imp_animated_00.glb"
+    glb.parent.mkdir(parents=True)
+    glb.write_bytes(b"z")
+    out = patch_enemy_version(tmp_path, "imp", "imp_animated_00", {"draft": False, "in_use": True})
+    # File stays in place — no relocation on promotion
+    assert glb.read_bytes() == b"z"
+    # Manifest reflects the new live state
+    row = next(r for r in out["enemies"]["imp"]["versions"] if r["id"] == "imp_animated_00")
+    assert row["draft"] is False
+    assert row["in_use"] is True
 
 
 def test_sync_discovered_animated_glb_versions_idempotent(tmp_path: Path):
@@ -834,7 +848,7 @@ def test_patch_player_version_name_and_errors(tmp_path: Path):
     with pytest.raises(ValueError, match="unsupported patch keys"):
         patch_player_version(tmp_path, "pv0", {"path": "nope"})
 
-    with pytest.raises(KeyError, match="unknown player version"):
+    with pytest.raises(KeyError, match="unknown version"):
         patch_player_version(tmp_path, "missing", {"draft": False})
 
     with pytest.raises(ValueError, match="patch draft must be boolean"):
