@@ -46,19 +46,19 @@ Optional: mirror **F11**-style is out of scope (browser chrome); stick to elemen
 
 ## Stage
 
-SPECIFICATION
+STATIC_QA
 
 ## Revision
 
-2
+4
 
 ## Last Updated By
 
-Planner Agent
+Implementation (frontend)
 
 ## Validation Status
 
-- Tests: Not Run
+- Tests: Passing (`npm test` with Node 20 — see `asset_generation/web/frontend/.nvmrc`)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -76,7 +76,7 @@ Planner Agent
 
 ## Next Responsible Agent
 
-Spec Agent
+Test Breaker Agent (optional adversarial) → AC Gatekeeper Agent
 
 ## Required Input Schema
 
@@ -84,7 +84,10 @@ Spec Agent
 {
   "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/19_model_viewer_fullscreen_button.md",
   "spec_path": "project_board/specs/19_model_viewer_fullscreen_button_spec.md",
-  "spec_completeness_type": "generic"
+  "implementation_paths": [
+    "asset_generation/web/frontend/src/components/Preview/GlbViewer.tsx",
+    "asset_generation/web/frontend/src/components/Preview/GlbViewer.test.tsx"
+  ]
 }
 ```
 
@@ -94,4 +97,4 @@ Proceed
 
 ## Reason
 
-Planning complete; Spec must define Fullscreen API contract, resize/fullscreenchange behavior, a11y labels, and test doubles before the spec exit gate.
+Element fullscreen on the `GlbViewer` wrapper, `fullscreenchange` + resize bump, disabled path when API unsupported, a11y (`aria-pressed` + labels), and `GlbViewer.test.tsx` are implemented; Vitest green under Node 20.

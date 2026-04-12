@@ -51,19 +51,19 @@ Optional (nice-to-have, not blocking): persist the selected Registry sub-tab in 
 
 ## Stage
 
-SPECIFICATION
+STATIC_QA
 
 ## Revision
 
-2
+4
 
 ## Last Updated By
 
-Planner Agent
+Implementation (frontend)
 
 ## Validation Status
 
-- Tests: Not Run
+- Tests: Passing (`npm test` with Node 20 — see `asset_generation/web/frontend/.nvmrc`)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -81,7 +81,7 @@ Planner Agent
 
 ## Next Responsible Agent
 
-Spec Agent
+Test Breaker Agent (optional adversarial) → AC Gatekeeper Agent
 
 ## Required Input Schema
 
@@ -89,7 +89,12 @@ Spec Agent
 {
   "ticket_path": "project_board/9_milestone_9_enemy_player_model_visual_polish/in_progress/18_registry_subtabs_by_pipeline_cmd.md",
   "spec_path": "project_board/specs/18_registry_subtabs_by_pipeline_cmd_spec.md",
-  "spec_completeness_type": "generic"
+  "implementation_paths": [
+    "asset_generation/web/frontend/src/components/Editor/ModelRegistryPane.tsx",
+    "asset_generation/web/frontend/src/components/Editor/RegistryEnemyLoadExistingSection.tsx",
+    "asset_generation/web/frontend/src/components/layout/centerPanelTabStyles.ts",
+    "asset_generation/web/frontend/src/components/layout/ThreePanelLayout.tsx"
+  ]
 }
 ```
 
@@ -99,4 +104,4 @@ Proceed
 
 ## Reason
 
-Planning complete: execution plan and artifact paths are in the orchestrator handoff; Spec must author `18_registry_subtabs_by_pipeline_cmd_spec.md` and align ACs with tab/empty-state behavior before the spec exit gate (`python ci/scripts/spec_completeness_check.py`).
+Sub-tabs, enemy-scoped load-existing on Animated tab, shared `centerPanelTabBtnStyle`, Level/Smart/Stats/Test empty states, optional `localStorage` sub-tab persistence, and `ModelRegistryPane.subtabs.test.tsx` are implemented; Vitest green under Node 20.

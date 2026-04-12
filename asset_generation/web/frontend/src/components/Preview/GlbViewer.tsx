@@ -1,4 +1,5 @@
-import { Component, Suspense, useEffect, useRef } from "react";
+import { Component, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, useGLTF, useAnimations } from "@react-three/drei";
 import { useAppStore } from "../../store/useAppStore";
@@ -66,18 +67,92 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   return <primitive object={scene} />;
 }
 
+function useFullscreenApiSupported(): boolean {
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const probe = document.createElement("div");
+    setSupported(Boolean(document.fullscreenEnabled && typeof probe.requestFullscreen === "function"));
+  }, []);
+  return supported;
+}
+
+const fullscreenBtnStyle: CSSProperties = {
+  position: "absolute",
+  top: 8,
+  right: 8,
+  zIndex: 5,
+  padding: "4px 8px",
+  fontSize: 11,
+  border: "1px solid #555",
+  borderRadius: 3,
+  background: "#3c3c3c",
+  color: "#d4d4d4",
+};
+
 export function GlbViewer() {
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
   const activeAnimation = useAppStore((s) => s.activeAnimation);
   const setIsAnimationPaused = useAppStore((s) => s.setIsAnimationPaused);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const fsSupported = useFullscreenApiSupported();
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     // Reset pause on model swap for predictable playback
     setIsAnimationPaused(false);
   }, [activeGlbUrl, setIsAnimationPaused]);
 
+  useEffect(() => {
+    const sync = () => {
+      const el = wrapRef.current;
+      setIsFullscreen(Boolean(el && document.fullscreenElement === el));
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  useEffect(() => {
+    const bumpResize = () => {
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    };
+    document.addEventListener("fullscreenchange", bumpResize);
+    return () => document.removeEventListener("fullscreenchange", bumpResize);
+  }, []);
+
+  const onFullscreenToggle = useCallback(async () => {
+    const el = wrapRef.current;
+    if (!el || !fsSupported) return;
+    try {
+      if (document.fullscreenElement === el) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+    } catch {
+      /* user gesture / policy — ignore */
+    }
+  }, [fsSupported]);
+
   return (
-    <div style={{ flex: 1, background: "#1a1a2e", position: "relative", overflow: "hidden" }}>
+    <div ref={wrapRef} style={{ flex: 1, background: "#1a1a2e", position: "relative", overflow: "hidden" }}>
+      <button
+        type="button"
+        aria-pressed={isFullscreen}
+        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        disabled={!fsSupported}
+        title={
+          fsSupported ? (isFullscreen ? "Exit fullscreen" : "Enter fullscreen") : "Fullscreen not supported"
+        }
+        onClick={onFullscreenToggle}
+        style={{
+          ...fullscreenBtnStyle,
+          cursor: fsSupported ? "pointer" : "not-allowed",
+          opacity: fsSupported ? 1 : 0.5,
+        }}
+      >
+        {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+      </button>
       {!activeGlbUrl ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
           height: "100%", color: "#555", fontSize: 12 }}>

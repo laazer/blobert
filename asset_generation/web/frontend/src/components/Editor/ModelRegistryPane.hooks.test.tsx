@@ -64,7 +64,7 @@ describe("ModelRegistryPane hooks", () => {
     resolveRegistry(registryFixture);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Player model" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Enemy version slots & versions" })).toBeTruthy();
     });
   });
 });

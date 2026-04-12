@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import type { RunCmd } from "../../types";
+import { ALL_CMDS } from "../CommandPanel/commandLogic";
+import { centerPanelTabBtnStyle } from "../layout/centerPanelTabStyles";
 import {
   deleteRegistryEnemyVersion,
   fetchLoadExistingCandidates,
@@ -20,6 +23,7 @@ import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } fr
 import { AddEnemySlotModal } from "./AddEnemySlotModal";
 import { PlayerActiveModelModal } from "./PlayerActiveModelModal";
 import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
+import { RegistryEnemyLoadExistingSection } from "./RegistryEnemyLoadExistingSection";
 import { RegistryPlayerSection } from "./RegistryPlayerSection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
 import { loadExistingCandidateKey, toOpenExistingRequest } from "./registryLoadExisting";
@@ -43,6 +47,24 @@ export {
 } from "./registryPaneStrings";
 export type { EnemyDeletePlan } from "./registryEnemyTypes";
 export { nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove, canAddEnemySlot } from "../../utils/registrySlotOps";
+
+const REGISTRY_SUBTAB_LS = "blobert.registry.subtab";
+
+function parseSavedRegistrySubtab(): RunCmd | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(REGISTRY_SUBTAB_LS);
+    if (!raw) return null;
+    if (!ALL_CMDS.includes(raw as RunCmd)) return null;
+    return raw as RunCmd;
+  } catch {
+    return null;
+  }
+}
+
+function registrySubtabLabel(cmd: RunCmd): string {
+  return cmd.slice(0, 1).toUpperCase() + cmd.slice(1);
+}
 
 const noteStyle = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight: 1.45 };
 
@@ -98,6 +120,7 @@ export function ModelRegistryPane() {
   const [addSlotFamily, setAddSlotFamily] = useState<string | null>(null);
   const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
   const [addSlotPreparingFamily, setAddSlotPreparingFamily] = useState<string | null>(null);
+  const [registrySubtab, setRegistrySubtab] = useState<RunCmd>(() => parseSavedRegistrySubtab() ?? "animated");
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
@@ -149,6 +172,16 @@ export function ModelRegistryPane() {
   useEffect(() => {
     reload();
   }, [reload, registryReloadSeq]);
+
+  useEffect(() => {
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(REGISTRY_SUBTAB_LS, registrySubtab);
+      }
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [registrySubtab]);
 
   const families = useMemo(
     () => (data ? Object.keys(data.enemies).sort() : []),
@@ -362,40 +395,88 @@ export function ModelRegistryPane() {
 
   return (
     <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
-      <RegistryPlayerSection
-        activeGamePath={data.player_active_visual?.path ?? null}
-        playerBusy={playerBusy}
-        onOpenPickGameActive={() => setPlayerPickOpen(true)}
-        loadExistingCandidates={loadExistingCandidates}
-        loadExistingSelection={loadExistingSelection}
-        onLoadExistingSelectionChange={setLoadExistingSelection}
-        loadExistingBusy={loadExistingBusy}
-        onLoadExistingInPreview={openExistingSelection}
-        onPreviewGameActive={() => {
-          const p = data.player_active_visual?.path;
-          if (p) selectAssetByPath(p);
-        }}
-      />
+      <div
+        style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}
+        role="tablist"
+        aria-label="Registry categories"
+      >
+        {ALL_CMDS.map((cmd) => (
+          <button
+            key={cmd}
+            type="button"
+            role="tab"
+            aria-selected={registrySubtab === cmd}
+            id={`registry-subtab-${cmd}`}
+            style={centerPanelTabBtnStyle(registrySubtab === cmd)}
+            onClick={() => setRegistrySubtab(cmd)}
+          >
+            {registrySubtabLabel(cmd)}
+          </button>
+        ))}
+      </div>
 
-      <RegistryEnemyFamiliesSection
-        families={families}
-        enemies={data.enemies}
-        slotVersionIdsByFamily={slotVersionIdsByFamily}
-        familyAddSlotDisabled={familyAddSlotDisabled}
-        addSlotPreparingFamily={addSlotPreparingFamily}
-        slotSaveBusyFamily={slotSaveBusyFamily}
-        busyKey={busyKey}
-        deleteBusyKey={deleteBusyKey}
-        onAddSlot={requestAddSlotModal}
-        onAddEmptySlot={addEmptyEnemySlot}
-        onRemoveSlot={removeEnemySlot}
-        onUpdateSlotVersion={updateEnemySlotVersion}
-        onSaveSlots={saveEnemySlots}
-        onApplyFlags={applyFlags}
-        onPreviewVersion={previewVersion}
-        onDeleteVersion={deleteEnemyVersion}
-        getEnemyDeletePlan={buildEnemyDeletePlan}
-      />
+      {registrySubtab === "animated" ? (
+        <>
+          <RegistryEnemyFamiliesSection
+            families={families}
+            enemies={data.enemies}
+            slotVersionIdsByFamily={slotVersionIdsByFamily}
+            familyAddSlotDisabled={familyAddSlotDisabled}
+            addSlotPreparingFamily={addSlotPreparingFamily}
+            slotSaveBusyFamily={slotSaveBusyFamily}
+            busyKey={busyKey}
+            deleteBusyKey={deleteBusyKey}
+            onAddSlot={requestAddSlotModal}
+            onAddEmptySlot={addEmptyEnemySlot}
+            onRemoveSlot={removeEnemySlot}
+            onUpdateSlotVersion={updateEnemySlotVersion}
+            onSaveSlots={saveEnemySlots}
+            onApplyFlags={applyFlags}
+            onPreviewVersion={previewVersion}
+            onDeleteVersion={deleteEnemyVersion}
+            getEnemyDeletePlan={buildEnemyDeletePlan}
+          />
+          <RegistryEnemyLoadExistingSection
+            loadExistingCandidates={loadExistingCandidates}
+            loadExistingSelection={loadExistingSelection}
+            onLoadExistingSelectionChange={setLoadExistingSelection}
+            loadExistingBusy={loadExistingBusy}
+            onLoadExistingInPreview={openExistingSelection}
+          />
+        </>
+      ) : null}
+
+      {registrySubtab === "player" ? (
+        <RegistryPlayerSection
+          activeGamePath={data.player_active_visual?.path ?? null}
+          playerBusy={playerBusy}
+          onOpenPickGameActive={() => setPlayerPickOpen(true)}
+          loadExistingCandidates={loadExistingCandidates}
+          loadExistingSelection={loadExistingSelection}
+          onLoadExistingSelectionChange={setLoadExistingSelection}
+          loadExistingBusy={loadExistingBusy}
+          onLoadExistingInPreview={openExistingSelection}
+          onPreviewGameActive={() => {
+            const p = data.player_active_visual?.path;
+            if (p) selectAssetByPath(p);
+          }}
+        />
+      ) : null}
+
+      {registrySubtab === "level" ? (
+        <div style={{ color: "#9d9d9d", fontSize: 12, lineHeight: 1.45, marginBottom: 12 }}>
+          <p style={{ marginTop: 0 }}>
+            Level export registry rows are not available in the manifest yet. This tab will list level assets when the API
+            exposes them.
+          </p>
+        </div>
+      ) : null}
+
+      {registrySubtab === "smart" || registrySubtab === "stats" || registrySubtab === "test" ? (
+        <div style={{ color: "#9d9d9d", fontSize: 12, lineHeight: 1.45 }}>
+          Registry management is not tied to this command in the asset editor.
+        </div>
+      ) : null}
 
       <PlayerActiveModelModal
         open={playerPickOpen}

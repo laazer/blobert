@@ -81,6 +81,11 @@ describe("ModelRegistryPane player active model modal", () => {
     render(<ModelRegistryPane />);
 
     await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Player" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "Player" }));
+
+    await waitFor(() => {
       expect(screen.getByTestId("player-active-model-open")).toBeInTheDocument();
     });
 
@@ -105,6 +110,11 @@ describe("ModelRegistryPane player active model modal", () => {
 
   it("shows updated game active path in the pane after a successful pick", async () => {
     render(<ModelRegistryPane />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Player" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "Player" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("player-active-model-open")).toBeInTheDocument();

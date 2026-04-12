@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { centerPanelTabBtnStyle } from "./centerPanelTabStyles";
 import { usePersistedBoolean } from "../../hooks/usePersistedBoolean";
 import { FileTree } from "../FileTree/FileTree";
 import { EditorPane } from "../Editor/EditorPane";
@@ -25,16 +26,6 @@ const showFilesBtn: CSSProperties = {
   padding: "8px 4px",
   flexShrink: 0,
 };
-
-const tabBtn = (active: boolean): CSSProperties => ({
-  padding: "4px 10px",
-  fontSize: 11,
-  border: "1px solid #555",
-  borderRadius: 3,
-  cursor: "pointer",
-  background: active ? "#0e639c" : "#3c3c3c",
-  color: "#d4d4d4",
-});
 
 const LS_PREVIEW_ANIMATION_EXPANDED = "blobert.editor.preview.animationExpanded";
 const LS_PREVIEW_TERMINAL_EXPANDED = "blobert.editor.preview.terminalExpanded";
@@ -127,7 +118,7 @@ function CenterSwitchBar() {
     >
       <button
         type="button"
-        style={tabBtn(centerPanel === "code")}
+        style={centerPanelTabBtnStyle(centerPanel === "code")}
         onClick={() => setCenterPanel("code")}
         title="Show Python editor"
       >
@@ -135,7 +126,7 @@ function CenterSwitchBar() {
       </button>
       <button
         type="button"
-        style={tabBtn(centerPanel === "build")}
+        style={centerPanelTabBtnStyle(centerPanel === "build")}
         onClick={() => setCenterPanel("build")}
         title="Procedural build options (eyes, mesh, rig)"
       >
@@ -143,7 +134,7 @@ function CenterSwitchBar() {
       </button>
       <button
         type="button"
-        style={tabBtn(centerPanel === "colors")}
+        style={centerPanelTabBtnStyle(centerPanel === "colors")}
         onClick={() => setCenterPanel("colors")}
         title="Per-part materials (feat_* slots) for the selected animated enemy"
       >
@@ -151,7 +142,7 @@ function CenterSwitchBar() {
       </button>
       <button
         type="button"
-        style={tabBtn(centerPanel === "extras")}
+        style={centerPanelTabBtnStyle(centerPanel === "extras")}
         onClick={() => setCenterPanel("extras")}
         title="Per-zone geometry extras (extra_zone_* — spikes, bulbs, horns, shell)"
       >
@@ -159,7 +150,7 @@ function CenterSwitchBar() {
       </button>
       <button
         type="button"
-        style={tabBtn(centerPanel === "registry")}
+        style={centerPanelTabBtnStyle(centerPanel === "registry")}
         onClick={() => setCenterPanel("registry")}
         title="Spawn state (draft vs in pool) for model exports (model_registry.json)"
       >
