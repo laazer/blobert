@@ -1,6 +1,9 @@
 import json
+import logging
 import os
+import re
 import sys
+from pathlib import Path
 from typing import Optional
 
 from core.config import settings
@@ -9,9 +12,38 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/run", tags=["run"])
 
 _ALLOWED_CMDS = {"animated", "player", "level", "smart", "stats", "test"}
+_EXPORT_START_INDEX_ENV = "BLOBERT_EXPORT_START_INDEX"
+
+
+def _sync_registry_for_family(family: str) -> None:
+    """Register any on-disk GLBs for *family* that are not yet in the manifest.
+
+    Called after a successful animated run so that the new variant is visible
+    in the registry immediately (as ``draft: true``) without requiring a manual
+    "Add slot → Scanning…" cycle.  Failures are non-fatal — logged and swallowed.
+    """
+    try:
+        from routers.registry import _ensure_python_import_path  # noqa: PLC0415
+        _ensure_python_import_path()
+        from model_registry import service as reg  # noqa: PLC0415
+        reg.sync_discovered_animated_glb_versions(settings.python_root, family)
+    except Exception:
+        logger.warning("post-run registry sync failed for family %r", family, exc_info=True)
+
+
+def _next_start_index(export_dir: Path, stem_prefix: str) -> int:
+    """Return max existing variant index + 1 for files matching ``{stem_prefix}_*.glb``."""
+    indices = []
+    for p in export_dir.glob(f"{stem_prefix}_*.glb"):
+        m = re.search(r"_(\d{2})$", p.stem)
+        if m:
+            indices.append(int(m.group(1)))
+    return max(indices) + 1 if indices else 0
 
 
 def _build_command(
@@ -44,22 +76,19 @@ def _guess_output_file(
     enemy: Optional[str],
     count: Optional[int],
     *,
+    start_index: int = 0,
     output_draft: bool = False,
 ) -> Optional[str]:
     draft_seg = "draft/" if output_draft else ""
+    n = max(1, min(99, int(count) if count is not None else 1))
+    last = start_index + n - 1
     if cmd == "animated" and enemy:
-        n = max(1, min(99, int(count) if count is not None else 1))
-        last = n - 1
         return f"animated_exports/{draft_seg}{enemy}_animated_{last:02d}.glb"
     if cmd == "test":
         return "animated_exports/spider_animated_00.glb"
     if cmd == "player" and enemy:
-        n = max(1, min(99, int(count) if count is not None else 1))
-        last = n - 1
         return f"player_exports/{draft_seg}player_slime_{enemy}_{last:02d}.glb"
     if cmd == "level" and enemy:
-        n = max(1, min(99, int(count) if count is not None else 1))
-        last = n - 1
         return f"level_exports/{draft_seg}{enemy}_{last:02d}.glb"
     return None
 
@@ -98,6 +127,19 @@ async def _run_stream(
     if output_draft and cmd in ("animated", "player", "level"):
         env["BLOBERT_EXPORT_USE_DRAFT_SUBDIR"] = "1"
 
+    # Determine the next unused variant index so we never overwrite existing files.
+    start_index = 0
+    if cmd == "animated" and enemy and enemy != "all":
+        draft_subdir = "draft" if output_draft else ""
+        export_dir = settings.python_root / "animated_exports" / draft_subdir if draft_subdir else settings.python_root / "animated_exports"
+        start_index = _next_start_index(export_dir, f"{enemy}_animated")
+        env[_EXPORT_START_INDEX_ENV] = str(start_index)
+    elif cmd == "player" and enemy:
+        draft_subdir = "draft" if output_draft else ""
+        export_dir = settings.python_root / "player_exports" / draft_subdir if draft_subdir else settings.python_root / "player_exports"
+        start_index = _next_start_index(export_dir, f"player_slime_{enemy}")
+        env[_EXPORT_START_INDEX_ENV] = str(start_index)
+
     try:
         run_id = await process_manager.start(command, cwd=settings.python_root, env=env)
     except Exception as e:
@@ -108,9 +150,11 @@ async def _run_stream(
         yield {"event": "log", "data": json.dumps({"line": line, "run_id": run_id})}
 
     exit_code = process_manager.exit_code()
-    output_file = _guess_output_file(cmd, enemy, count, output_draft=output_draft)
+    output_file = _guess_output_file(cmd, enemy, count, start_index=start_index, output_draft=output_draft)
 
     if exit_code == 0:
+        if cmd == "animated" and enemy and enemy != "all":
+            _sync_registry_for_family(enemy)
         yield {"event": "done", "data": json.dumps({"exit_code": 0, "output_file": output_file})}
     else:
         yield {"event": "error", "data": json.dumps({"exit_code": exit_code, "message": "Process exited with error"})}

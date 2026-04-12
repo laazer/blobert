@@ -19,7 +19,7 @@ from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.constants import PlayerExportConfig
-from src.utils.export_subdir import player_export_directory
+from src.utils.export_subdir import player_export_directory, variant_start_index
 
 
 def setup_scene():
@@ -57,8 +57,9 @@ def generate_player_slime(
     if seed is not None:
         random.seed(seed)
 
+    start = variant_start_index()
     for variant_index in range(count):
-        print(f"Generating player slime ({color}) #{variant_index:02d}...")
+        print(f"Generating player slime ({color}) #{start + variant_index:02d}...")
 
         clear_scene()
         setup_scene()
@@ -78,7 +79,7 @@ def generate_player_slime(
             )
 
             filename = PlayerExportConfig.FILENAME_PATTERN.format(
-                color=color, variant=variant_index
+                color=color, variant=start + variant_index
             )
             filepath = export_player_slime(armature, mesh, filename, export_dir)
             print(f"✅ Exported: {filepath}")

@@ -20,7 +20,7 @@ from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
 from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
 from src.utils.export_naming import animated_export_stem
-from src.utils.export_subdir import animated_export_directory
+from src.utils.export_subdir import animated_export_directory, variant_start_index
 
 
 def _build_options_for_current_enemy(enemy_type: str) -> dict:
@@ -62,9 +62,10 @@ def generate_animated_enemy(
     # Initialize material system
     materials = setup_materials(enemy_finish=finish, enemy_hex_color=hex_color)
 
+    start = variant_start_index()
     # Generate enemies
     for i in range(count):
-        print(f"Generating {enemy_type} #{i:02d}...")
+        print(f"Generating {enemy_type} #{start + i:02d}...")
 
         # Clear scene for each enemy
         clear_scene()
@@ -88,7 +89,7 @@ def generate_animated_enemy(
             armature, mesh, attack_profile = built.armature, built.mesh, built.attack_profile
 
             if armature and mesh:
-                filename = animated_export_stem(enemy_type, i, prefab_name=prefab_name)
+                filename = animated_export_stem(enemy_type, start + i, prefab_name=prefab_name)
                 filepath = export_enemy(armature, mesh, filename, export_dir, attack_profile)
                 print(f"✅ Exported: {filepath}")
             else:
