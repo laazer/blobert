@@ -1,5 +1,6 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
+import { enemyRegistryRowKey } from "../../utils/registryVersionSelection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
 import { ENEMY_EMPTY_SLOTS_COPY } from "./registryPaneStrings";
 
@@ -48,6 +49,37 @@ function versionOptionLabel(v: RegistryEnemyVersion): string {
   return n ? `${v.id} — ${n}` : v.id;
 }
 
+function FamilyVersionSelectAllCheckbox({
+  family,
+  allSelected,
+  someSelected,
+  disabled,
+  onChange,
+}: {
+  family: string;
+  allSelected: boolean;
+  someSelected: boolean;
+  disabled: boolean;
+  onChange: (nextChecked: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) el.indeterminate = someSelected;
+  }, [someSelected]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={allSelected}
+      disabled={disabled}
+      aria-label={`Select all versions for ${family}`}
+      data-testid={`registry-enemy-select-all-${family}`}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+  );
+}
+
 export type RegistryEnemyFamiliesSectionProps = {
   families: string[];
   enemies: ModelRegistryPayload["enemies"];
@@ -68,6 +100,13 @@ export type RegistryEnemyFamiliesSectionProps = {
   onPreviewVersion: (family: string, v: RegistryEnemyVersion) => void;
   onDeleteVersion: (family: string, v: RegistryEnemyVersion) => void;
   getEnemyDeletePlan: (family: string, v: RegistryEnemyVersion) => EnemyDeletePlan | null;
+  selectedEnemyVersionKeys: ReadonlySet<string>;
+  onToggleEnemyVersionSelect: (family: string, versionId: string) => void;
+  onEnemyFamilySelectAllVersions: (family: string, nextChecked: boolean) => void;
+  bulkEnemyBusyFamily: string | null;
+  onBulkEnemySetDraft: (family: string) => void;
+  onBulkEnemySetInPool: (family: string) => void;
+  onBulkEnemyDeleteSelected: (family: string) => void;
 };
 
 export function RegistryEnemyFamiliesSection({
@@ -88,6 +127,13 @@ export function RegistryEnemyFamiliesSection({
   onPreviewVersion,
   onDeleteVersion,
   getEnemyDeletePlan,
+  selectedEnemyVersionKeys,
+  onToggleEnemyVersionSelect,
+  onEnemyFamilySelectAllVersions,
+  bulkEnemyBusyFamily,
+  onBulkEnemySetDraft,
+  onBulkEnemySetInPool,
+  onBulkEnemyDeleteSelected,
 }: RegistryEnemyFamiliesSectionProps) {
   return (
     <div style={{ ...sectionStyle, marginBottom: 16 }}>
@@ -107,6 +153,10 @@ export function RegistryEnemyFamiliesSection({
         variants in the manifest (then you pick which version to append to the slot list).{" "}
         <strong>Add empty slot</strong> appends an unassigned row (pick a version later, then Save slots).
       </div>
+      <div style={noteStyle}>
+        Use the <strong>Select</strong> column to choose multiple versions, then <strong>Set selected</strong> for draft / in
+        pool or <strong>Delete selected</strong> (same rules as per-row delete).
+      </div>
 
       {families.map((family) => {
         const versions = enemies[family].versions;
@@ -115,6 +165,12 @@ export function RegistryEnemyFamiliesSection({
         const busy = slotSaveBusyFamily === family;
         const addDisabled = familyAddSlotDisabled[family] ?? true;
         const preparing = addSlotPreparingFamily === family;
+        const bulkBusy = bulkEnemyBusyFamily === family;
+        const selectedInFamily = versions.filter((v) =>
+          selectedEnemyVersionKeys.has(enemyRegistryRowKey(family, v.id)),
+        ).length;
+        const allSelected = versions.length > 0 && selectedInFamily === versions.length;
+        const someSelected = selectedInFamily > 0 && !allSelected;
 
         return (
           <div key={`enemy-family:${family}`} style={{ border: "1px solid #2d2d2d", borderRadius: 4, padding: 8, marginBottom: 12 }}>
@@ -178,10 +234,57 @@ export function RegistryEnemyFamiliesSection({
             )}
 
             <div style={subHead}>All versions</div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ fontSize: 10, color: "#888" }}>Selected:</span>
+              <button
+                type="button"
+                style={btnSecondary}
+                disabled={busy || bulkBusy || selectedInFamily === 0}
+                data-testid={`registry-enemy-bulk-draft-${family}`}
+                onClick={() => onBulkEnemySetDraft(family)}
+              >
+                Set selected → Draft
+              </button>
+              <button
+                type="button"
+                style={btnSecondary}
+                disabled={busy || bulkBusy || selectedInFamily === 0}
+                data-testid={`registry-enemy-bulk-pool-${family}`}
+                onClick={() => onBulkEnemySetInPool(family)}
+              >
+                Set selected → In pool
+              </button>
+              <button
+                type="button"
+                style={btnSecondary}
+                disabled={busy || bulkBusy || selectedInFamily === 0}
+                data-testid={`registry-enemy-bulk-delete-${family}`}
+                onClick={() => onBulkEnemyDeleteSelected(family)}
+              >
+                Delete selected
+              </button>
+            </div>
             <div style={{ overflowX: "auto", width: "100%" }}>
             <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 11 }}>
               <thead>
                 <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
+                  <th style={{ ...th, width: 36 }}>
+                    <FamilyVersionSelectAllCheckbox
+                      family={family}
+                      allSelected={allSelected}
+                      someSelected={someSelected}
+                      disabled={busy || bulkBusy}
+                      onChange={(checked) => onEnemyFamilySelectAllVersions(family, checked)}
+                    />
+                  </th>
                   <th style={th}>Version id</th>
                   <th style={th}>Name</th>
                   <th style={{ ...th, maxWidth: 180 }}>Path</th>
@@ -193,10 +296,21 @@ export function RegistryEnemyFamiliesSection({
               <tbody>
                 {versions.map((row) => {
                   const key = `${family}:${row.id}`;
-                  const pending = busyKey === key || deleteBusyKey === key;
+                  const pending = busyKey === key || deleteBusyKey === key || bulkBusy;
                   const deletePlan = getEnemyDeletePlan(family, row);
+                  const rowSelectKey = enemyRegistryRowKey(family, row.id);
                   return (
                     <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
+                      <td style={td}>
+                        <input
+                          type="checkbox"
+                          checked={selectedEnemyVersionKeys.has(rowSelectKey)}
+                          disabled={pending}
+                          aria-label={`Select ${row.id}`}
+                          data-testid={`registry-enemy-select-${family}-${row.id}`}
+                          onChange={() => onToggleEnemyVersionSelect(family, row.id)}
+                        />
+                      </td>
                       <td style={td}>{row.id}</td>
                       <td style={td}>{row.name?.trim() ? row.name.trim() : "—"}</td>
                       <td style={{ ...td, maxWidth: 180, wordBreak: "break-all", fontSize: 10, color: "#9d9d9d" }}>{row.path}</td>

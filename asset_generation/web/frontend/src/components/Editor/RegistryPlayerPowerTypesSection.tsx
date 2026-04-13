@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RegistryEnemyVersion } from "../../types";
 import { canAddEnemySlot, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
 import {
@@ -75,12 +75,41 @@ function versionSpawnSelection(row: RegistryEnemyVersion): "draft" | "pool" | nu
   return null;
 }
 
+function PlayerVersionSelectAllCheckbox({
+  allSelected,
+  someSelected,
+  disabled,
+  onChange,
+}: {
+  allSelected: boolean;
+  someSelected: boolean;
+  disabled: boolean;
+  onChange: (nextChecked: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) el.indeterminate = someSelected;
+  }, [someSelected]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={allSelected}
+      disabled={disabled}
+      aria-label="Select all player versions"
+      data-testid="player-version-select-all"
+      onChange={(e) => onChange(e.target.checked)}
+    />
+  );
+}
+
 export type RegistryPlayerPowerTypesSectionProps = {
   playerVersions: RegistryEnemyVersion[];
   scanBusy: boolean;
   busyKey: string | null;
   onScanPlayerExports: () => void;
-  onApplyFlags: (v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) => void;
+  onApplyFlags: (v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) => void | Promise<void>;
   onPreviewVersion: (v: RegistryEnemyVersion) => void;
 };
 
@@ -99,6 +128,8 @@ export function RegistryPlayerPowerTypesSection({
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState("");
+  const [selectedPlayerVersionIds, setSelectedPlayerVersionIds] = useState<Set<string>>(() => new Set());
+  const [playerBulkBusy, setPlayerBulkBusy] = useState(false);
 
   const setPowerTypes = useCallback((next: PlayerPowerType[]) => {
     savePlayerPowerTypes(next);
@@ -156,6 +187,37 @@ export function RegistryPlayerPowerTypesSection({
   }
 
   const validChoices = playerVersions.filter((v) => !v.draft && v.in_use);
+
+  useEffect(() => {
+    setSelectedPlayerVersionIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (playerVersions.some((v) => v.id === id)) next.add(id);
+      }
+      return next;
+    });
+  }, [playerVersions]);
+
+  const selectedPlayerCount = playerVersions.filter((v) => selectedPlayerVersionIds.has(v.id)).length;
+  const allPlayerSelected =
+    playerVersions.length > 0 && selectedPlayerCount === playerVersions.length;
+  const somePlayerSelected = selectedPlayerCount > 0 && !allPlayerSelected;
+
+  async function bulkPlayerApplyFlags(nextDraft: boolean, nextInUse: boolean) {
+    const ids = [...selectedPlayerVersionIds];
+    if (ids.length === 0) return;
+    setPlayerBulkBusy(true);
+    try {
+      for (const id of ids) {
+        const row = playerVersions.find((v) => v.id === id);
+        if (!row) continue;
+        await onApplyFlags(row, nextDraft, nextInUse);
+      }
+      setSelectedPlayerVersionIds(new Set());
+    } finally {
+      setPlayerBulkBusy(false);
+    }
+  }
 
   return (
     <div style={{ ...sectionStyle, marginBottom: 16 }}>
@@ -300,97 +362,158 @@ export function RegistryPlayerPowerTypesSection({
                 </div>
               ))
             )}
-
-            <div style={subHead}>All versions</div>
-            {playerVersions.length === 0 ? (
-              <div style={{ color: "#9d9d9d", fontSize: 11 }}>
-                No player versions registered. Use &ldquo;Scan player exports&rdquo; to detect{" "}
-                <code style={{ color: "#ce9178" }}>player_exports/*.glb</code> files.
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto", width: "100%" }}>
-                <table
-                  style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 11 }}
-                >
-                  <thead>
-                    <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
-                      <th style={th}>Version id</th>
-                      <th style={{ ...th, maxWidth: 180 }}>Path</th>
-                      <th style={th}>Spawn state</th>
-                      <th style={th}>Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {playerVersions.map((row) => {
-                      const key = `player:${row.id}`;
-                      const pending = busyKey === key;
-                      const selected = versionSpawnSelection(row);
-                      return (
-                        <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
-                          <td style={td}>{row.id}</td>
-                          <td
-                            style={{
-                              ...td,
-                              maxWidth: 180,
-                              wordBreak: "break-all",
-                              fontSize: 10,
-                              color: "#9d9d9d",
-                            }}
-                          >
-                            {row.path}
-                          </td>
-                          <td style={td}>
-                            <div
-                              role="radiogroup"
-                              aria-label={`Spawn state for ${row.id}`}
-                              style={radioRow}
-                              data-testid={`player-version-spawn-${row.id}`}
-                            >
-                              {(
-                                [
-                                  ["draft", "Draft"],
-                                  ["pool", "In pool"],
-                                ] as const
-                              ).map(([value, label]) => (
-                                <label key={value} style={radioLabel}>
-                                  <input
-                                    type="radio"
-                                    name={`player-spawn-${row.id}`}
-                                    value={value}
-                                    checked={selected === value}
-                                    disabled={pending}
-                                    data-testid={`player-version-spawn-${row.id}-${value}`}
-                                    onChange={() => {
-                                      if (value === "draft") onApplyFlags(row, true, false);
-                                      else onApplyFlags(row, false, true);
-                                    }}
-                                  />
-                                  <span>{label}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </td>
-                          <td style={td}>
-                            <button
-                              type="button"
-                              style={btnSecondary}
-                              disabled={pending}
-                              title={`Load ${row.id} into the 3D preview`}
-                              onClick={() => onPreviewVersion(row)}
-                            >
-                              Preview
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         );
       })}
+
+      <div style={{ ...subHead, marginTop: 16 }}>All versions</div>
+      <div style={noteStyle}>
+        Select multiple rows to <strong>Set selected → Draft</strong> or <strong>In pool</strong> in one pass.
+      </div>
+      {playerVersions.length === 0 ? (
+        <div style={{ color: "#9d9d9d", fontSize: 11 }}>
+          No player versions registered. Use &ldquo;Scan player exports&rdquo; to detect{" "}
+          <code style={{ color: "#ce9178" }}>player_exports/*.glb</code> files.
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <span style={{ fontSize: 10, color: "#888" }}>Selected:</span>
+            <button
+              type="button"
+              style={btnSecondary}
+              disabled={playerBulkBusy || selectedPlayerCount === 0}
+              data-testid="player-version-bulk-draft"
+              onClick={() => void bulkPlayerApplyFlags(true, false)}
+            >
+              Set selected → Draft
+            </button>
+            <button
+              type="button"
+              style={btnSecondary}
+              disabled={playerBulkBusy || selectedPlayerCount === 0}
+              data-testid="player-version-bulk-pool"
+              onClick={() => void bulkPlayerApplyFlags(false, true)}
+            >
+              Set selected → In pool
+            </button>
+          </div>
+          <div style={{ overflowX: "auto", width: "100%" }}>
+            <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 11 }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
+                  <th style={{ ...th, width: 36 }}>
+                    <PlayerVersionSelectAllCheckbox
+                      allSelected={allPlayerSelected}
+                      someSelected={somePlayerSelected}
+                      disabled={playerBulkBusy}
+                      onChange={(checked) =>
+                        setSelectedPlayerVersionIds(
+                          checked ? new Set(playerVersions.map((v) => v.id)) : new Set(),
+                        )
+                      }
+                    />
+                  </th>
+                  <th style={th}>Version id</th>
+                  <th style={{ ...th, maxWidth: 180 }}>Path</th>
+                  <th style={th}>Spawn state</th>
+                  <th style={th}>Preview</th>
+                </tr>
+              </thead>
+              <tbody>
+                {playerVersions.map((row) => {
+                  const key = `player:${row.id}`;
+                  const pending = busyKey === key || playerBulkBusy;
+                  const selected = versionSpawnSelection(row);
+                  return (
+                    <tr key={key} style={{ borderBottom: "1px solid #2d2d2d" }}>
+                      <td style={td}>
+                        <input
+                          type="checkbox"
+                          checked={selectedPlayerVersionIds.has(row.id)}
+                          disabled={pending}
+                          aria-label={`Select ${row.id}`}
+                          data-testid={`player-version-select-${row.id}`}
+                          onChange={() => {
+                            setSelectedPlayerVersionIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(row.id)) next.delete(row.id);
+                              else next.add(row.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      </td>
+                      <td style={td}>{row.id}</td>
+                      <td
+                        style={{
+                          ...td,
+                          maxWidth: 180,
+                          wordBreak: "break-all",
+                          fontSize: 10,
+                          color: "#9d9d9d",
+                        }}
+                      >
+                        {row.path}
+                      </td>
+                      <td style={td}>
+                        <div
+                          role="radiogroup"
+                          aria-label={`Spawn state for ${row.id}`}
+                          style={radioRow}
+                          data-testid={`player-version-spawn-${row.id}`}
+                        >
+                          {(
+                            [
+                              ["draft", "Draft"],
+                              ["pool", "In pool"],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <label key={value} style={radioLabel}>
+                              <input
+                                type="radio"
+                                name={`player-spawn-${row.id}`}
+                                value={value}
+                                checked={selected === value}
+                                disabled={pending}
+                                data-testid={`player-version-spawn-${row.id}-${value}`}
+                                onChange={() => {
+                                  if (value === "draft") void onApplyFlags(row, true, false);
+                                  else void onApplyFlags(row, false, true);
+                                }}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={td}>
+                        <button
+                          type="button"
+                          style={btnSecondary}
+                          disabled={pending}
+                          title={`Load ${row.id} into the 3D preview`}
+                          onClick={() => onPreviewVersion(row)}
+                        >
+                          Preview
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

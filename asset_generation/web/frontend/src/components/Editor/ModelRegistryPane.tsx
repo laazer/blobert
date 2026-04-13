@@ -19,6 +19,11 @@ import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
 import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
+import {
+  enemyRegistryRowKey,
+  parseEnemyRegistryRowKey,
+  pruneEnemyVersionSelectionKeys,
+} from "../../utils/registryVersionSelection";
 import { AddEnemySlotModal } from "./AddEnemySlotModal";
 import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
 import { RegistryEnemyLoadExistingSection } from "./RegistryEnemyLoadExistingSection";
@@ -120,6 +125,8 @@ export function ModelRegistryPane() {
   const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
   const [addSlotPreparingFamily, setAddSlotPreparingFamily] = useState<string | null>(null);
   const [registrySubtab, setRegistrySubtab] = useState<RunCmd>(() => parseSavedRegistrySubtab() ?? "animated");
+  const [selectedEnemyVersionKeys, setSelectedEnemyVersionKeys] = useState<Set<string>>(() => new Set());
+  const [bulkEnemyBusyFamily, setBulkEnemyBusyFamily] = useState<string | null>(null);
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
@@ -143,6 +150,7 @@ export function ModelRegistryPane() {
   const syncFromRegistry = useCallback(
     async (registry: ModelRegistryPayload) => {
       setData(registry);
+      setSelectedEnemyVersionKeys((prev) => pruneEnemyVersionSelectionKeys(prev, registry.enemies));
       await loadEnemySlots(registry);
       const candidatePayload = await fetchLoadExistingCandidates();
       const candidates = candidatePayload.candidates;
@@ -198,6 +206,110 @@ export function ModelRegistryPane() {
 
   function previewVersion(_family: string, v: RegistryEnemyVersion) {
     selectAssetByPath(v.path);
+  }
+
+  function toggleEnemyVersionSelect(family: string, versionId: string) {
+    const k = enemyRegistryRowKey(family, versionId);
+    setSelectedEnemyVersionKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  }
+
+  function setEnemyFamilySelectAllVersions(family: string, nextChecked: boolean) {
+    if (!data) return;
+    const versions = data.enemies[family]?.versions ?? [];
+    setSelectedEnemyVersionKeys((prev) => {
+      const next = new Set(prev);
+      for (const v of versions) {
+        const k = enemyRegistryRowKey(family, v.id);
+        if (nextChecked) next.add(k);
+        else next.delete(k);
+      }
+      return next;
+    });
+  }
+
+  function clearEnemyFamilySelection(family: string) {
+    setSelectedEnemyVersionKeys((prev) => {
+      const next = new Set(prev);
+      for (const k of [...next]) {
+        if (k.startsWith(`${family}:`)) next.delete(k);
+      }
+      return next;
+    });
+  }
+
+  async function bulkEnemyApplyFlags(family: string, nextDraft: boolean, nextInUse: boolean) {
+    if (!data) return;
+    const keys = [...selectedEnemyVersionKeys].filter((k) => k.startsWith(`${family}:`));
+    const rows: RegistryEnemyVersion[] = [];
+    for (const k of keys) {
+      const p = parseEnemyRegistryRowKey(k);
+      if (!p || p.family !== family) continue;
+      const v = data.enemies[family]?.versions.find((x) => x.id === p.versionId);
+      if (v) rows.push(v);
+    }
+    if (rows.length === 0) return;
+    setBulkEnemyBusyFamily(family);
+    setError(null);
+    try {
+      let nextRegistry: ModelRegistryPayload = data;
+      for (const row of rows) {
+        const use = nextDraft ? false : nextInUse;
+        nextRegistry = await patchRegistryEnemyVersion(family, row.id, {
+          draft: nextDraft,
+          in_use: use,
+        });
+      }
+      await syncFromRegistry(nextRegistry);
+      clearEnemyFamilySelection(family);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBulkEnemyBusyFamily(null);
+    }
+  }
+
+  async function bulkDeleteEnemyVersions(family: string) {
+    if (!data) return;
+    const keys = [...selectedEnemyVersionKeys].filter((k) => k.startsWith(`${family}:`));
+    const rows: RegistryEnemyVersion[] = [];
+    for (const k of keys) {
+      const p = parseEnemyRegistryRowKey(k);
+      if (!p || p.family !== family) continue;
+      const v = data.enemies[family]?.versions.find((x) => x.id === p.versionId);
+      if (v && buildEnemyDeletePlan(family, v)) rows.push(v);
+    }
+    if (rows.length === 0) {
+      window.alert(
+        "No deletable versions selected. Only draft or in-pool rows can be deleted from this table.",
+      );
+      return;
+    }
+    const drafts = rows.filter((r) => r.draft).length;
+    const inPool = rows.filter((r) => r.in_use && !r.draft).length;
+    const msg = `Delete ${rows.length} version(s)? ${drafts} draft (files may be removed), ${inPool} in pool (spawn rules apply).`;
+    if (!window.confirm(msg)) return;
+    setBulkEnemyBusyFamily(family);
+    setError(null);
+    try {
+      let nextRegistry: ModelRegistryPayload = data;
+      for (const v of rows) {
+        const plan = buildEnemyDeletePlan(family, v);
+        if (!plan) continue;
+        nextRegistry = await deleteRegistryEnemyVersion(family, v.id, plan.request);
+      }
+      await syncFromRegistry(nextRegistry);
+      clearEnemyFamilySelection(family);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+      await reload();
+    } finally {
+      setBulkEnemyBusyFamily(null);
+    }
   }
 
   async function applyFlags(family: string, v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) {
@@ -422,6 +534,13 @@ export function ModelRegistryPane() {
             onPreviewVersion={previewVersion}
             onDeleteVersion={deleteEnemyVersion}
             getEnemyDeletePlan={buildEnemyDeletePlan}
+            selectedEnemyVersionKeys={selectedEnemyVersionKeys}
+            onToggleEnemyVersionSelect={toggleEnemyVersionSelect}
+            onEnemyFamilySelectAllVersions={setEnemyFamilySelectAllVersions}
+            bulkEnemyBusyFamily={bulkEnemyBusyFamily}
+            onBulkEnemySetDraft={(family) => bulkEnemyApplyFlags(family, true, false)}
+            onBulkEnemySetInPool={(family) => bulkEnemyApplyFlags(family, false, true)}
+            onBulkEnemyDeleteSelected={bulkDeleteEnemyVersions}
           />
           <RegistryEnemyLoadExistingSection
             loadExistingCandidates={loadExistingCandidates}

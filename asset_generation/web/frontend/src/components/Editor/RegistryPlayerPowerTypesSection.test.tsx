@@ -84,6 +84,19 @@ describe("RegistryPlayerPowerTypesSection", () => {
     expect(screen.getByText(/no player versions registered/i)).toBeInTheDocument();
   });
 
+  it("bulk Set selected → Draft calls onApplyFlags for each checked version", async () => {
+    noopFlags.mockImplementation(() => Promise.resolve());
+    renderSection([draftVersion, inUseVersion]);
+    fireEvent.click(screen.getByTestId(`player-version-select-${draftVersion.id}`));
+    fireEvent.click(screen.getByTestId(`player-version-select-${inUseVersion.id}`));
+    fireEvent.click(screen.getByTestId("player-version-bulk-draft"));
+    await waitFor(() => {
+      expect(noopFlags).toHaveBeenCalledTimes(2);
+    });
+    expect(noopFlags).toHaveBeenCalledWith(draftVersion, true, false);
+    expect(noopFlags).toHaveBeenCalledWith(inUseVersion, true, false);
+  });
+
   // ── Apply flags callback ─────────────────────────────────────────────────
   it("calls onApplyFlags(v, false, true) when In pool radio is clicked", () => {
     renderSection([draftVersion]);
