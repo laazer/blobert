@@ -30,6 +30,65 @@ Add a **small MCP server package** in-repo (path chosen during implementation; e
 - Ticket `02_backend_blocking_or_polled_run_endpoint.md` for blocking run tool
 - Ticket `01` spec for exact tool names and shapes
 
-## Workflow State
+## Execution Plan
 
-Stage: BACKLOG
+1. Add `fastmcp` optional extra `mcp` + dev pin; extend pytest `pythonpath` with `src`.
+2. Implement `src/blobert_asset_pipeline_mcp/` (`http_util.py`, `server.py`, `__main__.py`) mapping APMCP tool names → httpx calls.
+3. README with env vars and `PYTHONPATH=src uv run --extra mcp python -m blobert_asset_pipeline_mcp`.
+4. Unit tests for encoding/response formatting and `list_tools` name coverage.
+
+## Specification
+
+- **APMCP:** `project_board/specs/asset_pipeline_mcp_spec.md` §MCP tool catalog
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+7
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: Passing — `uv run pytest tests/blobert_asset_pipeline_mcp/ -v` (7 passed); full `uv run pytest tests/` 933 passed; FastMCP `list_tools` covers frozen APMCP names.
+- Static QA: Passing — `ruff check src/blobert_asset_pipeline_mcp tests/blobert_asset_pipeline_mcp`
+- Integration: Manual — with `task editor` running, `PYTHONPATH=src uv run --extra mcp python -m blobert_asset_pipeline_mcp` in another shell; Cursor MCP config is ticket `04`. Smoke: health, `registry_get`, `files_read`, `run_complete` (`cmd=stats`, `enemy=spider`, low `max_wait_ms`).
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Status
+
+Proceed
+
+## Reason
+
+MCP server implemented; ticket `04` documents Cursor/Claude registration fragments.

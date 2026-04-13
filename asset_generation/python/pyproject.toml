@@ -21,11 +21,16 @@ dev = [
     # chardet 7 ships darwin .so helpers; mixed-arch venvs (e.g. Rosetta) can ImportError. Stay on 5.x.
     "chardet>=5.2,<6",
     "ruff>=0.8",
+    # MCP stdio server (ticket M23-03); also in optional group `mcp` for minimal installs.
+    "fastmcp>=3.2.3",
     # Type stubs for bpy — enables IDE completion without a full Blender install.
     # Match the stub version to your installed Blender version, e.g.:
     #   pip install fake-bpy-module-4-3   (Blender 4.3)
     #   pip install fake-bpy-module-4-2   (Blender 4.2)
     # Stubs are not required to run the test suite; tests mock bpy at runtime.
+]
+mcp = [
+    "fastmcp>=3.2.3",
 ]
 
 [tool.ruff]
@@ -45,7 +50,7 @@ select = ["E9", "F", "I"]
 testpaths = ["tests"]
 # Ensures "from src." imports resolve from the project root without installing
 # the package or manually adjusting sys.path.
-pythonpath = ["."]
+pythonpath = [".", "src"]
 filterwarnings = [
     # Pure-Python coverage (timid) avoids tracer .so; keep a net if plugins warn anyway.
     "ignore:Couldn't import C tracer:coverage.exceptions.CoverageWarning",

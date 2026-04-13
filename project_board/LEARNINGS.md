@@ -3336,6 +3336,20 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: Failing tests without `xfail` through TEST_BREAK when implementation follows immediately.
   reason: Preserves a clear red stage before green for the pipeline.
 
+## [03_mcp_stdio_server_wrapping_asset_editor_api] — FastMCP stdio MCP
+*Completed: 2026-04-13*
+
+### Learnings
+- category: packaging
+  insight: This repo’s pytest layout uses `from src.*` with `pythonpath = ["."]`; adding a second import root `"src"` enables a conventional package name (`blobert_asset_pipeline_mcp`) for the MCP entrypoint while keeping existing tests unchanged.
+  impact: README and MCP `cwd`/`PYTHONPATH` must stay aligned (`PYTHONPATH=src`, cwd `asset_generation/python`).
+  prevention: Ticket `04` copies the exact `uv run` + env from `src/blobert_asset_pipeline_mcp/README.md`.
+  severity: low
+
+### Keep / Reinforce
+- practice: Thin `@mcp.tool` wrappers + shared `_request` / `format_http_response` instead of duplicating httpx per tool.
+  reason: Keeps catalog drift visible in one module.
+
 ## [02_backend_blocking_or_polled_run_endpoint] — GET /api/run/complete
 *Completed: 2026-04-13*
 

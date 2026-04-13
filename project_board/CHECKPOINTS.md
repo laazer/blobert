@@ -150,3 +150,13 @@ Log: `project_board/checkpoints/01-spec-asset-pipeline-mcp/run-2026-04-13-autopi
 ### [02_backend_blocking_or_polled_run_endpoint] — OUTCOME: COMPLETE
 `GET /api/run/complete` + settings + backend pytest; APMCP spec frozen (409, 504, 262_144 log cap, `max_wait_ms`); `_prepare_run_environment` shared with SSE.
 Log: `project_board/checkpoints/02-backend-run-complete/run-2026-04-13-autopilot.md`
+
+## Run: 2026-04-13T14-30-00Z-autopilot-single-m23-03
+- Queue mode: single ticket
+- Queue scope: `project_board/23_milestone_23_asset_editor_pipeline_mcp/backlog/03_mcp_stdio_server_wrapping_asset_editor_api.md`
+- Lean: no
+- Log root: `project_board/checkpoints/03-mcp-stdio-server/`
+
+### [03_mcp_stdio_server_wrapping_asset_editor_api] — OUTCOME: COMPLETE
+FastMCP stdio server `blobert_asset_pipeline_mcp` under `asset_generation/python/src/`; optional `mcp` extra; README + 7 pytest; APMCP tool names registered.
+Log: `project_board/checkpoints/03-mcp-stdio-server/run-2026-04-13-autopilot.md`
