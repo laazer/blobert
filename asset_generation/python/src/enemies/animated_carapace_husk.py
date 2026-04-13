@@ -58,6 +58,10 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     LEG_X_SPREAD_RATIO: ClassVar[float] = 0.35
     LEG_Z_HALF_LENGTH: ClassVar[float] = 0.5
     LIMB_PAIRS: ClassVar[int] = 2
+    # Dorsal carapace plate: wider shallow cylinder on upper torso (between body and head in parts[]).
+    CARAPACE_XY_SCALE: ClassVar[float] = 1.14
+    CARAPACE_Z_SCALE: ClassVar[float] = 0.14
+    CARAPACE_Z_ABOVE_CENTER: ClassVar[float] = 0.42
 
     def build_mesh_parts(self):
         body_height = random_variance(self._mesh("BODY_HEIGHT_BASE"), self._mesh("BODY_HEIGHT_VARIANCE"), self.rng)
@@ -74,6 +78,16 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         bz = float(body_height * MESH_BODY_CENTER_Z_FACTOR)
         self._zone_geom_body_center = Vector((0.0, 0.0, bz))
         self._zone_geom_body_radii = Vector((body_width, body_width, body_height))
+
+        cw = body_width * float(self._mesh("CARAPACE_XY_SCALE"))
+        cz = body_height * float(self._mesh("CARAPACE_Z_SCALE"))
+        carapace_z = bz + body_height * float(self._mesh("CARAPACE_Z_ABOVE_CENTER"))
+        carapace = create_cylinder(
+            location=(0.0, 0.0, carapace_z),
+            scale=(cw, cw, cz),
+            vertices=CYLINDER_VERTICES_OCT,
+        )
+        self.parts.append(carapace)
 
         head_scale = self.body_width * random_variance(
             self._mesh("HEAD_SCALE_BASE"), self._mesh("HEAD_SCALE_VARIANCE"), self.rng
@@ -137,7 +151,8 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     def apply_themed_materials(self):
         enemy_mats = self._themed_slot_materials_for("carapace_husk")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
-        apply_material_to_object(self.parts[1], enemy_mats["head"])
+        apply_material_to_object(self.parts[1], enemy_mats["limbs"])
+        apply_material_to_object(self.parts[2], enemy_mats["head"])
         limb_material = enemy_mats["limbs"]
         features = self.build_options.get("features")
 
@@ -153,7 +168,7 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             end = 0 if end_shape == "none" else 1
             return cyl + joints + end
 
-        i = 2
+        i = 3
         lp = int(self._mesh("LIMB_PAIRS"))
         arm_kinds = _humanoid_limb_part_kinds(n_arm, joint_vis, arm_end)
         leg_kinds = _humanoid_limb_part_kinds(n_leg, joint_vis, leg_end)

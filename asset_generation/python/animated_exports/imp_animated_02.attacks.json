@@ -1,0 +1,31 @@
+{
+  "filename": "imp_animated_02",
+  "attacks": [
+    {
+      "name": "fire_punch",
+      "animation_name": "attack",
+      "attack_type": "fire",
+      "damage_min": 8.0,
+      "damage_max": 15.0,
+      "range": 1.5,
+      "hit_frame": 18,
+      "cooldown_seconds": 1.5,
+      "knockback_force": 4.0,
+      "is_area_of_effect": false,
+      "aoe_radius": 0.0
+    },
+    {
+      "name": "inferno_slam",
+      "animation_name": "special_attack",
+      "attack_type": "fire",
+      "damage_min": 20.0,
+      "damage_max": 38.0,
+      "range": 2.5,
+      "hit_frame": 40,
+      "cooldown_seconds": 6.0,
+      "knockback_force": 8.0,
+      "is_area_of_effect": true,
+      "aoe_radius": 2.5
+    }
+  ]
+}
