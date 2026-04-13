@@ -3336,4 +3336,22 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: Failing tests without `xfail` through TEST_BREAK when implementation follows immediately.
   reason: Preserves a clear red stage before green for the pipeline.
 
+## [01_spec_asset_pipeline_mcp_and_agent_http_api] — APMCP normative spec + contract tests
+*Completed: 2026-04-13*
+
+### Learnings
+- category: process
+  insight: Spec-only milestone tickets still benefit from `spec_completeness_check.py --type api` plus markdown contract tests (pattern from MRVC) so AC for “frozen tool names” and security sections cannot drift silently.
+  impact: Downstream MCP/backend tickets have executable guardrails without waiting for OpenAPI from ticket `02`.
+  prevention: Reuse `tests/specs/test_*_spec_contract.py` for any normative `project_board/specs/*.md` that gates implementation.
+  severity: low
+- category: spec_authoring
+  insight: Normative `GET /api/run/complete` URI may need revision if ticket `02` chooses POST; the spec already allows a documented one-line table update — keep that escape hatch explicit in APMCP-RUN handoffs.
+  impact: Avoids false failures if implementation prefers POST for large `build_options`.
+  prevention: Implementation ticket updates spec **Date** and endpoint freeze row in the same PR as the route.
+
+### Keep / Reinforce
+- practice: Frozen MCP tool names in a single catalog table referenced by skill ticket `06`.
+  reason: Prevents string drift between MCP server and agent skill.
+
 ---
