@@ -27,7 +27,8 @@ def test_spec_lists_four_allowlist_prefixes() -> None:
         assert p in t
 
 
-# CHECKPOINT: single-flight conflict must surface as 409 or 429 class
+# CHECKPOINT: single-flight conflict frozen to 409 for /complete (not 429)
 def test_spec_mentions_conflict_status_for_runs() -> None:
     t = _text()
-    assert "409" in t and "429" in t
+    assert "409" in t
+    assert "504" in t and "timed_out" in t.lower()

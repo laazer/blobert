@@ -74,7 +74,7 @@ def test_spec_mrvc_no_bypass() -> None:
 
 def test_spec_run_query_parity_named() -> None:
     text = _spec_text()
-    for param in ("cmd", "enemy", "count", "build_options", "output_draft"):
+    for param in ("cmd", "enemy", "count", "build_options", "output_draft", "max_wait_ms"):
         assert param in text
 
 
@@ -96,3 +96,7 @@ def test_downstream_tickets_listed() -> None:
 def test_spec_mentions_security_threats() -> None:
     text = _spec_text().lower()
     assert "shell" in text and "localhost" in text
+
+
+def test_spec_frozen_log_byte_cap_documented() -> None:
+    assert "262_144" in _spec_text() or "262144" in _spec_text()

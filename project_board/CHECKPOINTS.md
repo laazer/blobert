@@ -140,3 +140,13 @@ Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-1
 ### [01_spec_asset_pipeline_mcp_and_agent_http_api] — OUTCOME: COMPLETE
 APMCP normative spec at `project_board/specs/asset_pipeline_mcp_spec.md`, API spec completeness PASS, 26 pytest contract tests green; ticket in milestone `done/`.
 Log: `project_board/checkpoints/01-spec-asset-pipeline-mcp/run-2026-04-13-autopilot.md`
+
+## Run: 2026-04-13T12-00-00Z-autopilot-single-m23-02
+- Queue mode: single ticket
+- Queue scope: `project_board/23_milestone_23_asset_editor_pipeline_mcp/backlog/02_backend_blocking_or_polled_run_endpoint.md`
+- Lean: no
+- Log root: `project_board/checkpoints/02-backend-run-complete/`
+
+### [02_backend_blocking_or_polled_run_endpoint] — OUTCOME: COMPLETE
+`GET /api/run/complete` + settings + backend pytest; APMCP spec frozen (409, 504, 262_144 log cap, `max_wait_ms`); `_prepare_run_environment` shared with SSE.
+Log: `project_board/checkpoints/02-backend-run-complete/run-2026-04-13-autopilot.md`

@@ -5,7 +5,7 @@
 **Spec path (stable):** `project_board/specs/asset_pipeline_mcp_spec.md`  
 **Spec ID prefix:** APMCP  
 **Date:** 2026-04-13  
-**Last Updated By:** Spec Agent (autopilot orchestration)
+**Last Updated By:** Implementation (ticket `02` — `/api/run/complete` freeze)
 
 ---
 
@@ -123,10 +123,10 @@ Applies to **run completion** (`/api/run/complete`) and reiterates ordering for 
 |-------|--------|----------------------|
 | 1 | HTTP method + route registered | 404 if not found |
 | 2 | `cmd` ∈ allowed set (`animated`, `player`, `level`, `smart`, `stats`, `test`) | 400 JSON body if unknown cmd |
-| 3 | `process_manager` single-flight: no second run while one is active | **409** or **429** with machine-readable JSON (ticket `02` MUST freeze choice in OpenAPI) |
+| 3 | `process_manager` single-flight: no second run while one is active | **409 Conflict** with JSON `{"detail", "run_id"}` (frozen; 429 not used for this case) |
 | 4 | Query/body parameter validation (types, mutual constraints) | 422 or 400 per FastAPI |
-| 5 | Subprocess start failures | 200 with `exit_code != 0` in body **or** 500 class — ticket `02` MUST pick one documented pattern for “spawn failed” |
-| 6 | Max wait exceeded | **504** **or** **202** + `run_id` + poll contract — ticket `02` MUST implement exactly one primary strategy and document here in a spec revision |
+| 5 | Subprocess start failures | **200** with `exit_code: -1`, `message`, null `run_id` (matches SSE error shape) |
+| 6 | Max wait exceeded while subprocess still running | **504** with partial `log_text`, `timed_out: true`, `run_id`; subprocess continues draining in the background until exit (stdout back-pressure avoided) |
 
 Registry and files endpoints keep their **existing** FastAPI validation order (path normalization before business logic); MCP tools MUST NOT reorder checks client-side.
 
@@ -175,18 +175,19 @@ Command construction, `PYTHONPATH`, `BLOBERT_EXPORT_START_INDEX`, `BLOBERT_EXPOR
 
 JSON object including at minimum:
 
-- `exit_code`: integer
-- `log_text`: string — stdout/stderr aggregate **bounded** by server max bytes (exact limit and tail-vs-full policy frozen in ticket `02`)
-- `output_file`: string or null — same relative path semantics as SSE `done` event (`_guess_output_file` logic)
-- `run_id`: string or null — correlation id for poll mode if used
+- `exit_code`: integer (or `null` when **504** timeout response before process exit)
+- `log_text`: string — stdout/stderr aggregate **bounded** by **262_144** UTF-8 bytes (`Settings.run_complete_max_log_bytes`); if over limit, response uses a **tail-only** truncation with prefix `…` + `[log truncated — tail only]`
+- `output_file`: string or null — same relative path semantics as SSE `done` event (`_guess_output_file` logic); null when `exit_code != 0`
+- `run_id`: string or null — correlation id; always set when the subprocess was started (including 504 timeout responses)
 
 **APMCP-RUN-4 — SSE preservation**
 
-`/api/run/stream` MUST remain available and behaviorally unchanged for the M21 UI.
+`/api/run/stream` MUST remain available and behaviorally unchanged for the M21 UI. Automated coverage targets `/api/run/complete`; operators should still smoke an `animated` run via the editor locally after backend changes.
 
 **APMCP-RUN-5 — Timeouts**
 
-Server-side **max wait** MUST be configurable (settings and/or query). Behavior when exceeded MUST match the frozen **202+poll** or **504** choice in §Validation precedence row 6.
+- Query parameter **`max_wait_ms`** (optional, ≥ 1): wall-clock wait for the subprocess to finish; defaults to `Settings.run_complete_default_max_wait_ms` (1 hour). Values are clamped to `Settings.run_complete_absolute_max_wait_ms`.
+- When exceeded: **504** per §Validation precedence row 6 (no 202 poll handoff in v1).
 
 **APMCP-RUN-6 — Idempotency**
 
@@ -201,7 +202,7 @@ Starting a run is **not idempotent** (side effects: exports, registry sync). Re-
 | MCP tool name | Purpose | HTTP method + path | Required parameters | Optional parameters | Success shape (summary) | Error / notes | Idempotency |
 |---------------|---------|--------------------|----------------------|----------------------|-------------------------|---------------|-------------|
 | `blobert_asset_pipeline_health` | Verify API up | GET `/api/health` | none | none | `{ "status": "ok" }` | Connection errors from MCP | Safe / repeatable |
-| `blobert_asset_pipeline_run_complete` | Run pipeline to completion | GET `/api/run/complete` | `cmd` | `enemy`, `count`, `description`, `difficulty`, `finish`, `hex_color`, `build_options`, `output_draft`, `max_wait_ms` (if ticket `02` adds it) | APMCP-RUN-3 body | 409/429 single-flight; 504/202 timeout policy | **Not** idempotent |
+| `blobert_asset_pipeline_run_complete` | Run pipeline to completion | GET `/api/run/complete` | `cmd` | `enemy`, `count`, `description`, `difficulty`, `finish`, `hex_color`, `build_options`, `output_draft`, `max_wait_ms` | APMCP-RUN-3 body | **409** if run already active; **504** + `timed_out` if `max_wait_ms` exceeded; **400** unknown `cmd` | **Not** idempotent |
 | `blobert_asset_pipeline_run_status` | Poll run state | GET `/api/run/status` | none | none | `{ is_running, run_id }` | n/a | Read-only |
 | `blobert_asset_pipeline_run_kill` | Stop current run | POST `/api/run/kill` | none | none | `{ killed, message }` | n/a | Side effect |
 | `blobert_asset_pipeline_registry_get` | Read full manifest | GET `/api/registry/model` | none | none | Registry JSON | 500 parse errors | Read-only |

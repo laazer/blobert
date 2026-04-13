@@ -3336,6 +3336,24 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: Failing tests without `xfail` through TEST_BREAK when implementation follows immediately.
   reason: Preserves a clear red stage before green for the pipeline.
 
+## [02_backend_blocking_or_polled_run_endpoint] — GET /api/run/complete
+*Completed: 2026-04-13*
+
+### Learnings
+- category: asyncio
+  insight: `asyncio.wait_for` on an `async for` over subprocess stdout must use `asyncio.shield` on the drain task when returning **504** early so the drain keeps running and avoids PIPE buffer deadlock; partial logs are returned from a shared `list` filled before timeout.
+  impact: Without shield + background completion, a timed-out `/complete` could stall the child on a full stdout buffer.
+  prevention: Document “background drain until exit” in the normative spec whenever max-wait is shorter than worst-case subprocess runtime.
+  severity: medium
+- category: testing
+  insight: Backend router integration tests can avoid Blender by stubbing `routers.run.process_manager` with a tiny fake that implements `start` / `stream_output` / `is_running` / `exit_code` / `run_id`.
+  impact: CI stays fast while still covering HTTP status codes and JSON bodies.
+  prevention: Keep stubs in `test_run_complete_router.py` aligned with `ProcessManager` public surface.
+
+### Keep / Reinforce
+- practice: Share `_prepare_run_environment` between SSE and completion endpoints.
+  reason: Prevents env/start_index drift between M21 UI and agents.
+
 ## [01_spec_asset_pipeline_mcp_and_agent_http_api] — APMCP normative spec + contract tests
 *Completed: 2026-04-13*
 

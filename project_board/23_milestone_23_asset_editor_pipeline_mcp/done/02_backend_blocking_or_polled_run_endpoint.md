@@ -24,6 +24,66 @@ Reuse existing command-building and env var logic (`BLOBERT_EXPORT_START_INDEX`,
 
 - Ticket `01_spec_asset_pipeline_mcp_and_agent_http_api.md` (spec should merge first or in same PR with tight coordination)
 
-## Workflow State
+## Execution Plan
 
-Stage: BACKLOG
+1. Extract `_prepare_run_environment` from `_run_stream` so SSE and `/complete` share env/command/start_index logic.
+2. Implement `GET /api/run/complete` with `max_wait_ms`, bounded `log_text`, 400/409/504/200 shapes per APMCP; add `Settings` knobs.
+3. Add `tests/test_run_complete_router.py` (httpx AsyncClient + stub `process_manager`).
+4. Revise `project_board/specs/asset_pipeline_mcp_spec.md` to freeze 409, 504, log cap, `max_wait_ms`.
+5. Extend APMCP contract tests under `asset_generation/python/tests/specs/`.
+
+## Specification
+
+- **APMCP:** `project_board/specs/asset_pipeline_mcp_spec.md` (APMCP-RUN, §Validation precedence)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+6
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: Passing — `uv run --project asset_generation/python --extra dev python -m pytest asset_generation/web/backend/tests/test_run_complete_router.py -q` (5 passed); full `asset_generation/web/backend/tests/` 123 passed; APMCP contract tests 27 passed.
+- Static QA: Passing — `python ci/scripts/spec_completeness_check.py project_board/specs/asset_pipeline_mcp_spec.md --type api` (exit 0)
+- Integration: Manual — APMCP-RUN-4 documents operator smoke of M21 SSE + `animated` after backend changes; not automated in this ticket.
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Status
+
+Proceed
+
+## Reason
+
+`/api/run/complete` implemented; ticket `03` can wire MCP `blobert_asset_pipeline_run_complete`.
