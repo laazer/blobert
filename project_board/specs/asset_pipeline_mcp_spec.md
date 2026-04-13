@@ -5,7 +5,7 @@
 **Spec path (stable):** `project_board/specs/asset_pipeline_mcp_spec.md`  
 **Spec ID prefix:** APMCP  
 **Date:** 2026-04-13  
-**Last Updated By:** Implementation (ticket `02` — `/api/run/complete` freeze)
+**Last Updated By:** Spec revision (FastMCP stack for ticket `03`)
 
 ---
 
@@ -21,6 +21,10 @@ This document is the **normative contract** for how **coding agents** interact w
 - **Completion-oriented** responses: one JSON object with `exit_code`, bounded log text, and `output_file` hint when successful — no mandatory SSE parsing for agents.
 - **Parity** with the editor: same validation, allowlists, path jail, and `process_manager` single-flight rules as today’s routers.
 - **Frozen tool names** for downstream tickets `02`–`04`, `06` (MCP implementation, docs, agent skill).
+
+**MCP server implementation (ticket `03`)**
+
+When the in-repo server is implemented in **Python**, it **MUST** use **[FastMCP](https://github.com/PrefectHQ/fastmcp)** (`fastmcp` on PyPI): stdio transport (default), `@mcp.tool` functions that call `httpx` (or equivalent) against `BLOBERT_ASSET_API_BASE`, and no shell tools. This matches the repo’s **`uv`** workflow, avoids hand-rolled JSON-RPC, and keeps tool schemas aligned with type hints. A TypeScript MCP server remains **out of scope** for milestone 23 unless a future ticket explicitly revises ADR-APMCP-003.
 
 **Related specifications**
 
@@ -242,7 +246,7 @@ Starting a run is **not idempotent** (side effects: exports, registry sync). Re-
 | Ticket | Responsibility |
 |--------|----------------|
 | `02_backend_blocking_or_polled_run_endpoint.md` | Implement `/api/run/complete` per APMCP-RUN; pytest coverage; OpenAPI |
-| `03_mcp_stdio_server_wrapping_asset_editor_api.md` | Implement tools in §MCP tool catalog |
+| `03_mcp_stdio_server_wrapping_asset_editor_api.md` | Implement tools in §MCP tool catalog using **FastMCP** (Python + stdio) |
 | `04_documentation_cursor_and_claude_mcp_setup.md` | Operator docs + MCP config examples |
 | `05_backlog_optional_glb_validation_or_preview_hooks.md` | Stretch — optional tools |
 | `06_agent_skill_blobert_asset_pipeline_mcp.md` | Skill references **frozen tool names** in this spec |
@@ -260,6 +264,12 @@ Starting a run is **not idempotent** (side effects: exports, registry sync). Re-
 
 - **Decision:** Agents use `/api/run/complete`; humans keep `/api/run/stream`.
 - **Rationale:** SSE is awkward for LLM clients; completion JSON is testable and log-friendly.
+
+### ADR-APMCP-003 — FastMCP for the stdio MCP process
+
+- **Decision:** The asset-pipeline MCP server (ticket `03`) is implemented in Python with **FastMCP**, dependencies managed via **`uv`** (same ecosystem as `asset_generation/python`), stdio transport for Cursor/Claude.
+- **Rationale:** Less protocol boilerplate than raw MCP SDK usage; async-friendly tools with `httpx`; widely documented; keeps one language for HTTP client + MCP wrapper.
+- **Rejected alternative:** Ad-hoc stdio JSON-RPC or a separate Node MCP package — higher maintenance and duplicated HTTP client patterns for this repo.
 
 ---
 

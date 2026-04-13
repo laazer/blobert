@@ -51,6 +51,12 @@ def test_spec_banner_and_id() -> None:
     assert "asset_pipeline_mcp_spec.md" in text
 
 
+def test_spec_requires_fastmcp_for_python_mcp() -> None:
+    text = _spec_text()
+    assert "FastMCP" in text
+    assert "ADR-APMCP-003" in text
+
+
 @pytest.mark.parametrize("heading", _REQUIRED_HEADINGS)
 def test_spec_required_headings(heading: str) -> None:
     assert heading in _spec_text()

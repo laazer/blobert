@@ -17,7 +17,7 @@ Add a **small MCP server package** in-repo (path chosen during implementation; e
   - **Assets** (optional) — list or fetch metadata if needed for iteration; align with `routers/assets.py`
 - **No** arbitrary shell execution tools. **No** direct filesystem access outside HTTP API semantics.
 
-Implementation language: **TypeScript (Node)** or **Python** — match repo maintainability; if Python, align with `uv` project layout or document standalone `pip install -e` for the MCP package.
+**Implementation stack:** **Python** with **[FastMCP](https://github.com/PrefectHQ/fastmcp)** (`pip install fastmcp` / `uv add fastmcp`), **stdio** transport (FastMCP default), tools implemented as async functions using **`httpx.AsyncClient`** against `BLOBERT_ASSET_API_BASE`. Add the package under e.g. `asset_generation/python/` (new optional dependency group or sibling package) or `asset_generation/mcp/` per `project_board/specs/asset_pipeline_mcp_spec.md` ADR-APMCP-003. **TypeScript/Node MCP is out of scope** for this ticket unless the spec is revised.
 
 ## Acceptance Criteria
 
