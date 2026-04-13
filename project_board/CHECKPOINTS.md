@@ -180,3 +180,13 @@ Log: `project_board/checkpoints/04-mcp-docs/run-2026-04-13-autopilot.md`
 ### [05_backlog_optional_glb_validation_or_preview_hooks] — OUTCOME: COMPLETE
 Stretch ticket disposition: no M23 AC; future-work § in `asset_generation/mcp/README.md`; milestone table updated; ticket `COMPLETE` in `done/`.
 Log: `project_board/checkpoints/05-backlog-optional-glb-validation/run-2026-04-13-autopilot.md`
+
+## Run: 2026-04-13T20-30-00Z-autopilot-single-m23-06
+- Queue mode: single ticket
+- Queue scope: `project_board/23_milestone_23_asset_editor_pipeline_mcp/backlog/06_agent_skill_blobert_asset_pipeline_mcp.md` (moved to `done/`)
+- Lean: no
+- Log root: `project_board/checkpoints/06-agent-skill-asset-pipeline-mcp/`
+
+### [06_agent_skill_blobert_asset_pipeline_mcp] — OUTCOME: COMPLETE
+Skill `asset_generation/resources/agent_skills/blobert-asset-pipeline-mcp/SKILL.md` + resources README; `mcp/README.md` + `CLAUDE.md` cross-links; pytest contract vs `mcp.list_tools()`.
+Log: `project_board/checkpoints/06-agent-skill-asset-pipeline-mcp/run-2026-04-13-autopilot.md`

@@ -3406,4 +3406,19 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   prevention: Keep dependencies (e.g. tickets `01`–`04`, `06`, product direction) explicit in the deferred section and in the ticket body.
   severity: low
 
+## [06_agent_skill_blobert_asset_pipeline_mcp] — Bundled skill + contract vs FastMCP registry
+*Completed: 2026-04-13*
+
+### Learnings
+- category: testing
+  insight: Asserting `SKILL.md` contains every name from `await mcp.list_tools()` ties procedural docs to the live FastMCP registration and catches catalog/skill drift without maintaining a second hard-coded tool list in tests (beyond the server as source of truth).
+  impact: Adding a new `@mcp.tool` without updating the skill fails CI immediately.
+  prevention: Keep a dedicated “Frozen MCP tool names” section in the skill with backtick-wrapped names matching `list_tools()`.
+  severity: low
+- category: tooling
+  insight: `diff_cover_preflight.sh` measures coverage for the whole diff vs `origin/main`; a ticket that only adds markdown + thin tests can still fail the gate if other hunks on the branch leave MCP package lines under-covered — document in validation or fix coverage in a scoped chore.
+  impact: Orchestrator should not assume a doc-only ticket will pass an aggregate diff-cover bar.
+  prevention: Run preflight before merge; split PRs or add MCP integration tests when the gate blocks.
+  severity: low
+
 ---

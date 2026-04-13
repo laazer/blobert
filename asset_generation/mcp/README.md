@@ -110,11 +110,11 @@ Alternative: **`blobert_asset_pipeline_files_read`** with a real path under the 
 
 ## Agent skill (ticket `06`)
 
-Procedural guidance for agents (when added) lives under:
+Procedural guidance for agents lives under:
 
 `asset_generation/resources/agent_skills/blobert-asset-pipeline-mcp/SKILL.md`
 
-Install by symlinking or copying into your client’s skills directory (e.g. `.cursor/skills/` or your Claude Code skills path). Until ticket `06` merges, rely on this README + APMCP spec for tool names.
+Bundled skills index: `asset_generation/resources/README.md`. Install by symlinking or copying the skill folder into your client’s skills directory (e.g. `.cursor/skills/` or your Claude Code skills path). Contract tests keep SKILL.md aligned with registered MCP tool names (`tests/specs/test_blobert_asset_pipeline_skill_contract.py`).
 
 ## Future work — GLB validation / preview (optional, M23-05)
 

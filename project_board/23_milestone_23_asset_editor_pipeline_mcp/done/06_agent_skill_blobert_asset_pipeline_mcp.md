@@ -31,6 +31,61 @@ Create `asset_generation/resources/` and the chosen subdirs if they do not exist
 - Ticket `03_mcp_stdio_server_wrapping_asset_editor_api.md` (implemented tools)
 - Ticket `04_documentation_cursor_and_claude_mcp_setup.md` (cross-link from docs to skill)
 
-## Workflow State
+## Execution Plan
 
-Stage: BACKLOG
+1. Add `asset_generation/resources/agent_skills/blobert-asset-pipeline-mcp/SKILL.md` (frontmatter + procedural body + frozen tool list matching APMCP catalog).
+2. Add `asset_generation/resources/README.md` index for symlink/copy install.
+3. Cross-link from `asset_generation/mcp/README.md`, root `CLAUDE.md`, and pytest contract `tests/specs/test_blobert_asset_pipeline_skill_contract.py` (frontmatter + every registered MCP tool name + spec/README pointers).
+
+## Specification
+
+- **APMCP:** `project_board/specs/asset_pipeline_mcp_spec.md` (§MCP tool catalog, APMCP-1.1)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+2
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: `uv run pytest tests/specs/test_blobert_asset_pipeline_skill_contract.py -v` (5 passed); `uv run pytest tests/specs/ tests/blobert_asset_pipeline_mcp/ -q` (62 passed)
+- Static QA: Skill frontmatter `name` / `description`; procedural tone (no full HTTP duplication beyond pointers)
+- Diff-cover preflight: **Below repo threshold vs `origin/main` aggregate diff** (includes earlier MCP package hunks on branch — not introduced solely by this ticket). New contract test module is fully exercised by pytest collection/run.
+- Integration: Manual — symlink skill per `asset_generation/resources/README.md` + `asset_generation/mcp/README.md`
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Notes
+
+- Push branch when ready; if CI enforces diff-cover on the full MCP tree, add coverage in a follow-up chore or merge after upstream tests land.

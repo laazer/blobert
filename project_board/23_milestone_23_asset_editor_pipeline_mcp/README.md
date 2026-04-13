@@ -44,4 +44,4 @@ With the asset editor stack running locally, an agent using the new MCP can: (1)
 | 3 | `03_mcp_stdio_server_wrapping_asset_editor_api.md` | Implement MCP tools calling FastAPI |
 | 4 | `04_documentation_cursor_and_claude_mcp_setup.md` | Operator docs + example config |
 | 5 | `05_backlog_optional_glb_validation_or_preview_hooks.md` | Stretch — deferred (see ticket + `asset_generation/mcp/README.md` §Future work) |
-| 6 | `06_agent_skill_blobert_asset_pipeline_mcp.md` | Agent skill under `asset_generation/resources/` |
+| 6 | `06_agent_skill_blobert_asset_pipeline_mcp.md` | Agent skill — `asset_generation/resources/agent_skills/blobert-asset-pipeline-mcp/SKILL.md` |
