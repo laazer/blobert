@@ -35,6 +35,12 @@ describe("ExtrasPane", () => {
     expect(screen.getByText(/Zone: body/i)).toBeInTheDocument();
   });
 
+  it("renders float extras in parameter/value/unit/note tables", () => {
+    render(<ExtrasPane />);
+    expect(screen.getAllByRole("columnheader", { name: /^Parameter$/i }).length).toBeGreaterThan(0);
+    expect(document.querySelector('input[type="range"]')).toBeNull();
+  });
+
   it("updates store when extra kind changes", () => {
     render(<ExtrasPane />);
     const select = screen.getByLabelText("body extra kind");

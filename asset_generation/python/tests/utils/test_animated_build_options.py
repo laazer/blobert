@@ -71,6 +71,32 @@ def test_api_controls_have_known_slugs() -> None:
     assert any(c["key"] == "BODY_BASE" and c["type"] == "float" for c in ctrl["spider"])
 
 
+def test_mesh_float_defs_include_editor_unit_and_hint() -> None:
+    ctrl = animated_build_controls_for_api()
+    body = next(c for c in ctrl["spider"] if c["key"] == "BODY_BASE")
+    assert body.get("unit")
+    assert body.get("hint")
+    rig = next(c for c in ctrl["imp"] if c["key"].startswith("RIG_"))
+    assert rig.get("unit")
+    assert rig.get("hint")
+
+
+def test_zone_extra_float_defs_include_unit_and_hint() -> None:
+    defs = abo._zone_extra_control_defs("slug")
+    spike = next(d for d in defs if d["key"].endswith("_spike_size"))
+    assert spike["unit"] == "× zone"
+    assert len(str(spike.get("hint", ""))) > 5
+    off = next(d for d in defs if d["key"].endswith("_offset_z"))
+    assert off.get("unit") == "Blender units"
+
+
+def test_spider_eye_clustering_has_editor_meta() -> None:
+    ctrl = animated_build_controls_for_api()
+    cl = next(c for c in ctrl["spider"] if c["key"] == "eye_clustering")
+    assert cl.get("unit") == "0–1"
+    assert "random" in str(cl.get("hint", "")).lower()
+
+
 def test_mesh_override_nested() -> None:
     o = options_for_enemy("spider", {"spider": {"mesh": {"BODY_BASE": 1.5}}})
     assert o["mesh"]["BODY_BASE"] == 1.5

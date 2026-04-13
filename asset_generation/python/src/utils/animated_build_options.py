@@ -165,6 +165,8 @@ def _spider_eye_control_defs() -> list[dict[str, Any]]:
             "max": _PLACEMENT_CLUSTERING_MAX,
             "step": 0.05,
             "default": _DEFAULT_PLACEMENT_CLUSTERING,
+            "unit": "0–1",
+            "hint": "How tightly grouped vs spread eyes are when placement is random (multi-eye only).",
         },
     ]
 
@@ -529,6 +531,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _SPIKE_SIZE_MAX,
                 "step": 0.05,
                 "default": 1.0,
+                "unit": "× zone",
+                "hint": "Scales spike or horn geometry relative to the zone mesh size.",
             }
         )
         defs.append(
@@ -550,6 +554,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _BULB_SIZE_MAX,
                 "step": 0.05,
                 "default": 1.0,
+                "unit": "× zone",
+                "hint": "Scales bulb geometry relative to the zone mesh size.",
             }
         )
         defs.append(
@@ -561,6 +567,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _SHELL_SCALE_MAX,
                 "step": 0.01,
                 "default": _DEFAULT_SHELL_SCALE,
+                "unit": "× volume",
+                "hint": "Expands the shell slightly beyond the enclosed body (must stay > 1).",
             }
         )
         defs.append(
@@ -572,6 +580,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _PLACEMENT_CLUSTERING_MAX,
                 "step": 0.05,
                 "default": _DEFAULT_PLACEMENT_CLUSTERING,
+                "unit": "0–1",
+                "hint": "For uniform placement, how tightly extras cluster on the zone surface.",
             }
         )
         defs.append(
@@ -635,6 +645,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _OFFSET_XYZ_MAX,
                 "step": _OFFSET_XYZ_STEP,
                 "default": 0.0,
+                "unit": "Blender units",
+                "hint": "World-space shift along +X (front) after the extra is attached.",
             }
         )
         defs.append(
@@ -646,6 +658,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _OFFSET_XYZ_MAX,
                 "step": _OFFSET_XYZ_STEP,
                 "default": 0.0,
+                "unit": "Blender units",
+                "hint": "World-space shift along +Y (right) after the extra is attached.",
             }
         )
         defs.append(
@@ -657,6 +671,8 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "max": _OFFSET_XYZ_MAX,
                 "step": _OFFSET_XYZ_STEP,
                 "default": 0.0,
+                "unit": "Blender units",
+                "hint": "World-space shift along +Z (up) after the extra is attached.",
             }
         )
     return defs

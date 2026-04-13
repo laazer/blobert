@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { AnimatedBuildControlDef } from "../../types";
 import { readHexFromClipboard } from "../../utils/clipboardHex";
+
+export const floatHintStyle = {
+  fontSize: 10,
+  color: "#858585",
+  lineHeight: 1.35,
+  maxWidth: 420,
+} as const;
+
+const floatTableRowBorder = { borderBottom: "1px solid #2a2a2a" } as const;
+
+export const floatUnitStyle = { fontSize: 10, color: "#858585" } as const;
 
 export const rowStyles = {
   label: { color: "#9d9d9d", fontSize: 11 } as const,
@@ -242,6 +253,159 @@ export function ControlRow({
   return null;
 }
 
+/** One data row for Build tab Rig/Mesh float tables (must sit inside ``<tbody>``). */
+export function FloatTableRow({
+  def,
+  value,
+  onChange,
+  disabled,
+}: {
+  def: Extract<AnimatedBuildControlDef, { type: "float" }>;
+  value: unknown;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}) {
+  const rs = rowStyles;
+  const n = typeof value === "number" ? value : def.default;
+  const unit = def.unit?.trim();
+  return (
+    <tr
+      style={{
+        opacity: disabled ? 0.42 : 1,
+        pointerEvents: disabled ? "none" : undefined,
+      }}
+    >
+      <td
+        style={{
+          ...floatTableRowBorder,
+          ...rs.label,
+          padding: "6px 10px 6px 0",
+          verticalAlign: "top",
+          minWidth: 100,
+        }}
+        title={def.key}
+      >
+        {def.label}
+      </td>
+      <td
+        style={{
+          ...floatTableRowBorder,
+          padding: "6px 12px 6px 0",
+          verticalAlign: "top",
+          width: 1,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <input
+          style={rs.inputFloat}
+          type="number"
+          step={def.step}
+          min={def.min}
+          max={def.max}
+          value={n}
+          disabled={disabled}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={def.label}
+        />
+      </td>
+      <td
+        style={{
+          ...floatTableRowBorder,
+          ...floatUnitStyle,
+          padding: "6px 12px 6px 0",
+          verticalAlign: "top",
+          width: 1,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {unit || ""}
+      </td>
+      <td
+        style={{
+          ...floatTableRowBorder,
+          fontSize: floatHintStyle.fontSize,
+          color: floatHintStyle.color,
+          lineHeight: floatHintStyle.lineHeight,
+          padding: "6px 0 6px 0",
+          verticalAlign: "top",
+          wordBreak: "break-word",
+        }}
+      >
+        {def.hint ?? ""}
+      </td>
+    </tr>
+  );
+}
+
+/** Shared table chrome for Build Rig/Mesh and Extras zone float blocks. */
+export const floatTableFrameStyle = {
+  table: {
+    width: "100%",
+    borderCollapse: "collapse" as const,
+    fontSize: 11,
+  },
+  th: {
+    borderBottom: "1px solid #3c3c3c",
+    color: "#858585",
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "4px 10px 8px 0",
+    textAlign: "left" as const,
+    verticalAlign: "bottom" as const,
+  },
+} as const;
+
+export function FloatControlsTable({
+  defs,
+  values,
+  onFloatChange,
+  isRowDisabled,
+  scrollWrapStyle,
+}: {
+  defs: Extract<AnimatedBuildControlDef, { type: "float" }>[];
+  values: Readonly<Record<string, unknown>>;
+  onFloatChange: (key: string, v: number) => void;
+  isRowDisabled: (key: string) => boolean;
+  /** When omitted, only horizontal overflow is clipped (e.g. Extras in-page scroll). */
+  scrollWrapStyle?: CSSProperties;
+}) {
+  if (defs.length === 0) return null;
+  const th = floatTableFrameStyle.th;
+  return (
+    <div style={scrollWrapStyle ?? { overflowX: "auto" }}>
+      <table style={floatTableFrameStyle.table}>
+        <thead>
+          <tr>
+            <th scope="col" style={{ ...th, minWidth: 100 }}>
+              Parameter
+            </th>
+            <th scope="col" style={{ ...th, width: 1, whiteSpace: "nowrap", paddingRight: 12 }}>
+              Value
+            </th>
+            <th scope="col" style={{ ...th, width: 1, whiteSpace: "nowrap", paddingRight: 12 }}>
+              Unit
+            </th>
+            <th scope="col" style={th}>
+              Note
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {defs.map((def) => (
+            <FloatTableRow
+              key={def.key}
+              def={def}
+              value={values[def.key]}
+              disabled={isRowDisabled(def.key)}
+              onChange={(v) => onFloatChange(def.key, v)}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function FloatRow({
   def,
   value,
@@ -253,38 +417,45 @@ function FloatRow({
 }) {
   const rs = rowStyles;
   const n = typeof value === "number" ? value : def.default;
+  const unit = def.unit?.trim();
   return (
-    <label
+    <div
       style={{
         display: "flex",
-        gap: 6,
-        alignItems: "center",
-        flexWrap: "wrap",
+        flexDirection: "column",
+        gap: 4,
+        alignItems: "flex-start",
+        minWidth: 0,
         maxWidth: "100%",
       }}
     >
-      <span style={rs.label} title={def.key}>
-        {def.label}
-      </span>
-      <input
-        type="range"
-        min={def.min}
-        max={def.max}
-        step={def.step}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-label={def.label}
-        style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 160 }}
-      />
-      <input
-        style={rs.inputFloat}
-        type="number"
-        step={def.step}
-        min={def.min}
-        max={def.max}
-        value={n}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-    </label>
+      <label
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+          width: "100%",
+        }}
+      >
+        <span style={rs.label} title={def.key}>
+          {def.label}
+        </span>
+        <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+          <input
+            style={rs.inputFloat}
+            type="number"
+            step={def.step}
+            min={def.min}
+            max={def.max}
+            value={n}
+            onChange={(e) => onChange(Number(e.target.value))}
+            aria-label={def.label}
+          />
+          {unit ? <span style={floatUnitStyle}>{unit}</span> : null}
+        </span>
+      </label>
+      {def.hint ? <span style={floatHintStyle}>{def.hint}</span> : null}
+    </div>
   );
 }

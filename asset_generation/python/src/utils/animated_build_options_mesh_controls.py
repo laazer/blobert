@@ -49,6 +49,70 @@ def _humanize_mesh_control_label(key: str) -> str:
     return key.replace("_", " ").title()
 
 
+def _mesh_float_editor_meta(key: str) -> dict[str, str]:
+    """Short unit label + one-line hint for the web build UI (optional JSON fields)."""
+    if key.startswith("RIG_"):
+        return {
+            "unit": "× body scale",
+            "hint": "Bone endpoint position as a fraction of body height or body scale (see HumanoidSimpleRig / quadruped layout).",
+        }
+    ku = key.upper()
+    kl = key.lower()
+    if kl.endswith("_variance"):
+        return {
+            "unit": "± spread",
+            "hint": "Random deviation applied around the paired base value when the mesh is built.",
+        }
+    if "SEGMENTS" in ku:
+        return {
+            "unit": "segments",
+            "hint": "Cylinder subdivisions along the limb; prefer whole values 1–8 for clean topology.",
+        }
+    if ku == "LIMB_JOINT_BALL_SCALE":
+        return {
+            "unit": "× joint",
+            "hint": "Scales the visible joint spheres between limb segments.",
+        }
+    if "RADIUS" in ku or "THICKNESS" in ku:
+        return {
+            "unit": "Blender units",
+            "hint": "Absolute radius or thickness in Blender scene units (same scale as body meshes).",
+        }
+    if (
+        "RATIO" in ku
+        or "_REL" in ku
+        or "_ALONG_" in ku
+        or "_SPREAD_" in ku
+        or "_ABOVE_" in ku
+        or "_HALF_" in ku
+        or "OUTWARD" in ku
+    ):
+        return {
+            "unit": "ratio",
+            "hint": "Unitless proportion relative to another mesh dimension (width, height, or limb length).",
+        }
+    if "_BASE" in ku:
+        return {
+            "unit": "× nominal",
+            "hint": "Central magnitude before variance; drives size along this axis during generation.",
+        }
+    if (
+        "FLATTEN" in ku
+        or "CENTER_Z" in ku
+        or "SCALE_Y" in ku
+        or "SCALE_Z" in ku
+        or "OFFSET" in ku
+    ):
+        return {
+            "unit": "blend",
+            "hint": "Shape or placement factor blended into procedural dimensions for this part.",
+        }
+    return {
+        "unit": "tuning",
+        "hint": "Procedural mesh scalar for this enemy class.",
+    }
+
+
 def _mesh_float_control_defs(slug: str) -> list[dict[str, Any]]:
     defaults = _mesh_numeric_defaults(slug)
     out: list[dict[str, Any]] = []
@@ -59,15 +123,15 @@ def _mesh_float_control_defs(slug: str) -> list[dict[str, Any]]:
         else:
             lo = max(0.01, min(vf * 0.05, vf * 0.5))
             hi = max(5.0, vf * 5.0)
-        out.append(
-            {
-                "key": key,
-                "label": _humanize_mesh_control_label(key),
-                "type": "float",
-                "min": lo,
-                "max": hi,
-                "step": 0.05,
-                "default": vf,
-            }
-        )
+        row: dict[str, Any] = {
+            "key": key,
+            "label": _humanize_mesh_control_label(key),
+            "type": "float",
+            "min": lo,
+            "max": hi,
+            "step": 0.05,
+            "default": vf,
+        }
+        row.update(_mesh_float_editor_meta(key))
+        out.append(row)
     return out

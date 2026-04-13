@@ -1,6 +1,7 @@
+import type { ReactNode } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
-import { ControlRow, rowStyles } from "./BuildControlRow";
+import { ControlRow, FloatControlsTable, rowStyles } from "./BuildControlRow";
 import {
   kindOptionsForZone,
   partitionZoneExtraDefs,
@@ -10,6 +11,8 @@ const EMPTY_DEFS: readonly AnimatedBuildControlDef[] = [];
 const EMPTY_VALUES: Readonly<Record<string, unknown>> = {};
 
 const titleStyle = rowStyles.label;
+
+type FloatDef = Extract<AnimatedBuildControlDef, { type: "float" }>;
 
 type Props = {
   slug: string;
@@ -124,25 +127,49 @@ export function ZoneExtraControls({ slug, showEmptyHint }: Props) {
                   ) : null}
                 </label>
               ) : null}
-              {zdefs.map((def) => {
-                if (def.key === kindKey) return null;
-                const dis = rowDisabled(kind, def.key, distribution);
-                return (
-                  <div
-                    key={def.key}
-                    style={{
-                      opacity: dis ? 0.42 : 1,
-                      pointerEvents: dis ? "none" : undefined,
-                    }}
-                  >
-                    <ControlRow
-                      def={def}
-                      value={values[def.key]}
-                      onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
-                    />
-                  </div>
-                );
-              })}
+              {(() => {
+                const blocks: ReactNode[] = [];
+                const floatRun: FloatDef[] = [];
+                const flushFloats = () => {
+                  if (floatRun.length === 0) return;
+                  const run = floatRun.splice(0, floatRun.length);
+                  blocks.push(
+                    <FloatControlsTable
+                      key={`${zone}-float-${run[0].key}`}
+                      defs={run}
+                      values={values}
+                      onFloatChange={(key, v) => setAnimatedBuildOption(slug, key, v)}
+                      isRowDisabled={(key) => rowDisabled(kind, key, distribution)}
+                    />,
+                  );
+                };
+                for (const def of zdefs) {
+                  if (def.key === kindKey) continue;
+                  if (def.type === "float") {
+                    floatRun.push(def);
+                  } else {
+                    flushFloats();
+                    const dis = rowDisabled(kind, def.key, distribution);
+                    blocks.push(
+                      <div
+                        key={def.key}
+                        style={{
+                          opacity: dis ? 0.42 : 1,
+                          pointerEvents: dis ? "none" : undefined,
+                        }}
+                      >
+                        <ControlRow
+                          def={def}
+                          value={values[def.key]}
+                          onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
+                        />
+                      </div>,
+                    );
+                  }
+                }
+                flushFloats();
+                return blocks;
+              })()}
             </div>
           </details>
         );

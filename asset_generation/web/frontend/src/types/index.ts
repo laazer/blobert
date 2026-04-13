@@ -50,6 +50,10 @@ export type AnimatedBuildControlDef =
       max: number;
       step: number;
       default: number;
+      /** Short label next to the numeric field (from API / canonical defs). */
+      unit?: string;
+      /** One-line editor hint (same tone as Extras tab). */
+      hint?: string;
     }
   | {
       key: string;

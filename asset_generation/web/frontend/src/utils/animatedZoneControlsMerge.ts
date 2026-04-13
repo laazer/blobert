@@ -83,6 +83,8 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       max: 3,
       step: 0.05,
       default: 1,
+      unit: "× zone",
+      hint: "Scales spike or horn geometry relative to the zone mesh size.",
     });
     out.push({
       key: `extra_zone_${zone}_bulb_count`,
@@ -100,6 +102,8 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       max: 3,
       step: 0.05,
       default: 1,
+      unit: "× zone",
+      hint: "Scales bulb geometry relative to the zone mesh size.",
     });
     out.push({
       key: `extra_zone_${zone}_clustering`,
@@ -109,6 +113,8 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       max: 1,
       step: 0.05,
       default: 0.5,
+      unit: "0–1",
+      hint: "For uniform placement, how tightly extras cluster on the zone surface.",
     });
     out.push({
       key: `extra_zone_${zone}_distribution`,
