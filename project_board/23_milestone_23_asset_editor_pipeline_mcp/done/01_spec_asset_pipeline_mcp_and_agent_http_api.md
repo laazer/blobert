@@ -26,6 +26,66 @@ Include a **tool catalog** table: tool name, purpose, HTTP method/path (or inter
 - M21 — existing routes: `routers/run.py`, `routers/registry.py`, `routers/files.py`, `routers/assets.py`
 - MRVC spec — `project_board/specs/model_registry_draft_versions_spec.md`
 
-## Workflow State
+## Execution Plan
 
-Stage: BACKLOG
+1. Inventory FastAPI routes in `routers/run.py`, `registry.py`, `files.py`, `assets.py`, `meta.py` for endpoint freeze and MCP mapping.
+2. Author normative spec `project_board/specs/asset_pipeline_mcp_spec.md` (APMCP): threat model, MRVC alignment, endpoint freeze, validation precedence, failure taxonomy, APMCP-RUN completion API, frozen MCP tool catalog, downstream ticket table.
+3. Run `python ci/scripts/spec_completeness_check.py … --type api`.
+4. Add contract tests under `asset_generation/python/tests/specs/` mirroring MRVC spec contract pattern; run `uv run pytest` on new files.
+
+## Specification
+
+- **Path:** `project_board/specs/asset_pipeline_mcp_spec.md`
+- **Spec ID:** APMCP
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+5
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: Passing — `uv run pytest tests/specs/test_asset_pipeline_mcp_spec_contract.py tests/specs/test_asset_pipeline_mcp_spec_contract_adversarial.py` (26 passed)
+- Static QA: Passing — `python ci/scripts/spec_completeness_check.py project_board/specs/asset_pipeline_mcp_spec.md --type api` (exit 0)
+- Integration: N/A (documentation + contract tests only)
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Status
+
+Proceed
+
+## Reason
+
+Normative APMCP spec and contract tests merged; ticket `02` implements `/api/run/complete` per APMCP-RUN.

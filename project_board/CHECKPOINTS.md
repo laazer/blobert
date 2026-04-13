@@ -130,3 +130,13 @@ Log: `project_board/checkpoints/17_zone_extras_offset_xyz_controls/run-2026-04-1
 - Next Agent: Test Breaker Agent
 - Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/2026-04-11T00-00-00Z-test-design.md`
 - Outcome: 11 attach tests (9 red / 2 green pre-implementation) + 27 options tests (25 red / 2 green pre-implementation) written; blender stub check clean; all failures confirmed against current code.
+
+## Run: 2026-04-13T00-00-00Z-autopilot-single-m23-01
+- Queue mode: single ticket
+- Queue scope: `project_board/23_milestone_23_asset_editor_pipeline_mcp/backlog/01_spec_asset_pipeline_mcp_and_agent_http_api.md`
+- Lean: no
+- Log root: `project_board/checkpoints/01-spec-asset-pipeline-mcp/`
+
+### [01_spec_asset_pipeline_mcp_and_agent_http_api] — OUTCOME: COMPLETE
+APMCP normative spec at `project_board/specs/asset_pipeline_mcp_spec.md`, API spec completeness PASS, 26 pytest contract tests green; ticket in milestone `done/`.
+Log: `project_board/checkpoints/01-spec-asset-pipeline-mcp/run-2026-04-13-autopilot.md`
