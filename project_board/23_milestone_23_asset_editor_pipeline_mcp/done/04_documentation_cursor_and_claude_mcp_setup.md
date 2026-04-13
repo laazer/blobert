@@ -25,6 +25,64 @@ Document end-to-end setup so agents and humans can enable the MCP:
 
 - Ticket `03_mcp_stdio_server_wrapping_asset_editor_api.md` (MCP package runnable)
 
-## Workflow State
+## Execution Plan
 
-Stage: BACKLOG
+1. Add canonical operator doc `asset_generation/mcp/README.md` (prereqs, env, Cursor + Claude JSON fragments, first tool call, troubleshooting, security).
+2. Single cross-link under **Common Workflows** in root `CLAUDE.md` → that README + APMCP spec.
+3. Point package README at `asset_generation/mcp/README.md`; document ticket `06` skill path under `asset_generation/resources/`.
+
+## Specification
+
+- **APMCP:** `project_board/specs/asset_pipeline_mcp_spec.md`
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+
+COMPLETE
+
+## Revision
+
+4
+
+## Last Updated By
+
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+
+- Tests: N/A (documentation only)
+- Static QA: Markdown link targets verified (`asset_generation/mcp/README.md`, `CLAUDE.md` section present)
+- Integration: Manual — contributor follows `asset_generation/mcp/README.md` with `task editor` + Cursor/Claude MCP enabled; invoke `blobert_asset_pipeline_health`
+
+## Blocking Issues
+
+- None
+
+## Escalation Notes
+
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+
+Human
+
+## Required Input Schema
+
+```json
+{}
+```
+
+## Status
+
+Proceed
+
+## Reason
+
+Ticket `06` adds the skill file under `asset_generation/resources/`; operators symlink per `asset_generation/mcp/README.md`.

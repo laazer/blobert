@@ -160,3 +160,13 @@ Log: `project_board/checkpoints/02-backend-run-complete/run-2026-04-13-autopilot
 ### [03_mcp_stdio_server_wrapping_asset_editor_api] — OUTCOME: COMPLETE
 FastMCP stdio server `blobert_asset_pipeline_mcp` under `asset_generation/python/src/`; optional `mcp` extra; README + 7 pytest; APMCP tool names registered.
 Log: `project_board/checkpoints/03-mcp-stdio-server/run-2026-04-13-autopilot.md`
+
+## Run: 2026-04-13T16-00-00Z-autopilot-single-m23-04
+- Queue mode: single ticket
+- Queue scope: `project_board/23_milestone_23_asset_editor_pipeline_mcp/backlog/04_documentation_cursor_and_claude_mcp_setup.md`
+- Lean: no
+- Log root: `project_board/checkpoints/04-mcp-docs/`
+
+### [04_documentation_cursor_and_claude_mcp_setup] — OUTCOME: COMPLETE
+Operator guide `asset_generation/mcp/README.md`; `CLAUDE.md` MCP subsection; package README link; ticket `06` skill path documented.
+Log: `project_board/checkpoints/04-mcp-docs/run-2026-04-13-autopilot.md`

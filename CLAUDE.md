@@ -113,6 +113,10 @@ bash asset_generation/web/start.sh
 godot project.godot
 ```
 
+### Asset Pipeline MCP (Cursor / Claude Code)
+
+Coding agents can use a **local stdio MCP** (FastMCP) that proxies the asset editor HTTP API on **:8000**. Setup, `mcp.json` fragments, troubleshooting, and security notes: **`asset_generation/mcp/README.md`**. Normative tool names and routes: **`project_board/specs/asset_pipeline_mcp_spec.md`** (APMCP).
+
 ### Tests
 
 ```bash

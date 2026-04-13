@@ -3336,6 +3336,16 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: Failing tests without `xfail` through TEST_BREAK when implementation follows immediately.
   reason: Preserves a clear red stage before green for the pipeline.
 
+## [04_documentation_cursor_and_claude_mcp_setup] — MCP operator docs
+*Completed: 2026-04-13*
+
+### Learnings
+- category: docs
+  insight: Keep MCP JSON fragments in **one** canonical README (`asset_generation/mcp/README.md`) and a **single** `CLAUDE.md` pointer so Cursor/Claude config churn does not fork across web/python readmes.
+  impact: Contributors merge fragments into local or project MCP config; `${workspaceFolder}` may need replacing with absolute `cwd` on some clients.
+  prevention: Troubleshooting table documents `cwd` + `PYTHONPATH` mistakes explicitly.
+  severity: low
+
 ## [03_mcp_stdio_server_wrapping_asset_editor_api] — FastMCP stdio MCP
 *Completed: 2026-04-13*
 

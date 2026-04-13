@@ -29,7 +29,7 @@ PYTHONPATH=src uv run --extra mcp python -m blobert_asset_pipeline_mcp
 
 ## Cursor / Claude
 
-Point your MCP config `command` at `uv` and `args` at `run`, `--extra`, `mcp`, `python`, `-m`, `blobert_asset_pipeline_mcp` with `cwd` = `asset_generation/python` and `env.PYTHONPATH` = `src` (see ticket `04` for full fragments).
+**Operator guide (copy-paste config + troubleshooting):** [`asset_generation/mcp/README.md`](../../../mcp/README.md) (repo-relative from here: `../../../mcp/README.md`).
 
 ## Tools
 
