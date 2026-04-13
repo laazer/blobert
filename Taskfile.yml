@@ -86,3 +86,13 @@ tasks:
     desc: Godot script organization checks for staged files (project .venv or uv run)
     cmds:
       - bash ci/scripts/asset_python.sh .lefthook/scripts/gd_organization_check.py {{.CLI_ARGS}}
+
+  claude:sync-from-agent-context:
+    desc: Install .claude/skills and .claude/agents from agent_context (see scripts/sync_claude_agent_context.sh)
+    cmds:
+      - bash scripts/sync_claude_agent_context.sh install {{.CLI_ARGS}}
+
+  claude:export-to-agent-context:
+    desc: Copy .claude/skills and .claude/agents back to agent_context for backup or iCloud sync
+    cmds:
+      - bash scripts/sync_claude_agent_context.sh export {{.CLI_ARGS}}
