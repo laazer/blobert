@@ -4,6 +4,8 @@
 
 A cozy 2.5D experimental platformer about biological mutation, physical experimentation, and elastic game feel.
 
+**Devlog:** [Blobert development journey](https://laazer.github.io/series.html?series=blobert-devlogs) — posts chronicling how the game and repo evolve.
+
 ![Concept art — player slime and crystal mutations](docs/images/inspirational.png)
 
 ---
