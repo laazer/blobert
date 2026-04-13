@@ -116,6 +116,12 @@ Procedural guidance for agents (when added) lives under:
 
 Install by symlinking or copying into your client’s skills directory (e.g. `.cursor/skills/` or your Claude Code skills path). Until ticket `06` merges, rely on this README + APMCP spec for tool names.
 
+## Future work — GLB validation / preview (optional, M23-05)
+
+**Not** part of M23 core closure. Possible follow-ups: run a **glTF validator** on an allowlisted export path and return structured issues; optional **single-frame render** or screenshot (Blender batch or headless Godot) if cost is acceptable. Dependencies: core MCP iteration complete (`01`–`04`, `06`), plus art/tech direction on pixels-in-the-loop.
+
+Ticket: `project_board/23_milestone_23_asset_editor_pipeline_mcp/done/05_backlog_optional_glb_validation_or_preview_hooks.md`
+
 ## See also
 
 - `asset_generation/python/src/blobert_asset_pipeline_mcp/README.md` — developer-focused package notes  

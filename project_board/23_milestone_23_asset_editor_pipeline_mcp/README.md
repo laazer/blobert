@@ -43,5 +43,5 @@ With the asset editor stack running locally, an agent using the new MCP can: (1)
 | 2 | `02_backend_blocking_or_polled_run_endpoint.md` | Agent-friendly run completion + pytest coverage |
 | 3 | `03_mcp_stdio_server_wrapping_asset_editor_api.md` | Implement MCP tools calling FastAPI |
 | 4 | `04_documentation_cursor_and_claude_mcp_setup.md` | Operator docs + example config |
-| 5 | `05_backlog_optional_glb_validation_or_preview_hooks.md` | Stretch: validators / future pixels |
+| 5 | `05_backlog_optional_glb_validation_or_preview_hooks.md` | Stretch — deferred (see ticket + `asset_generation/mcp/README.md` §Future work) |
 | 6 | `06_agent_skill_blobert_asset_pipeline_mcp.md` | Agent skill under `asset_generation/resources/` |

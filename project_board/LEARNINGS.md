@@ -3396,4 +3396,14 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - practice: Frozen MCP tool names in a single catalog table referenced by skill ticket `06`.
   reason: Prevents string drift between MCP server and agent skill.
 
+## [05_backlog_optional_glb_validation_or_preview_hooks] — Optional stretch (documented deferral)
+*Completed: 2026-04-13*
+
+### Learnings
+- category: process
+  insight: When a ticket’s acceptance criteria explicitly require **no implementation** for milestone closure, completing it with **operator-visible future-work text** plus a `COMPLETE` validation block (citing N/A tests) avoids leaving perpetual backlog noise while preserving scope for a later spike.
+  impact: Reduces false “open work” in board scans without inventing MCP tools prematurely.
+  prevention: Keep dependencies (e.g. tickets `01`–`04`, `06`, product direction) explicit in the deferred section and in the ticket body.
+  severity: low
+
 ---
