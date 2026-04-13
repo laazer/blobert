@@ -391,6 +391,21 @@ An agent can run a scripted playtest sequence via MCP tools and get structured f
 
 ------------------------------------------------------------
 
+Milestone 23 – Asset Editor Pipeline MCP (Agent Model Iteration)
+Goal: Agents iterate on procedural GLBs via tool calls to the existing asset editor API — edit source, run exports, read logs, update registry — without ad-hoc shell.
+
+Includes:
+- Spec for MCP tool catalog and agent-oriented HTTP completion API (alongside SSE)
+- FastAPI endpoint(s) for bounded run-to-completion with structured JSON result
+- stdio MCP server calling localhost `:8000` only (no shell tools)
+- Documentation for Cursor / Claude MCP setup
+- Agent skill under `asset_generation/resources/` for procedural use of the MCP tools
+
+Exit Criteria:
+With `task editor` running, an agent can use the MCP to read/write jailed pipeline `.py` files, trigger a generation job and receive exit code + output path hints, perform allowed registry operations per MRVC, and follow the repo-local skill path for consistent tool usage.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:
