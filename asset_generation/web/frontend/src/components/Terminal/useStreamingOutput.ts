@@ -14,6 +14,8 @@ interface RunOptions {
   buildOptionsJson?: string;
   /** When true, GLBs write under `animated_exports/draft`, `player_exports/draft`, or `level_exports/draft`. */
   outputDraft?: boolean;
+  /** When set, `BLOBERT_EXPORT_START_INDEX` pins to this variant (overwrite) instead of next free index. */
+  replaceVariantIndex?: number;
 }
 
 export function useStreamingOutput() {
@@ -40,6 +42,12 @@ export function useStreamingOutput() {
     if (options.hexColor) params.set("hex_color", options.hexColor);
     if (options.buildOptionsJson) params.set("build_options", options.buildOptionsJson);
     if (options.outputDraft) params.set("output_draft", "true");
+    if (
+      options.replaceVariantIndex != null &&
+      Number.isFinite(options.replaceVariantIndex)
+    ) {
+      params.set("replace_variant_index", String(Math.floor(options.replaceVariantIndex)));
+    }
 
     const url = `${endpoint}?${params.toString()}`;
     const es = new EventSource(url);

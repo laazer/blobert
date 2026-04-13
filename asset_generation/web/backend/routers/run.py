@@ -104,6 +104,7 @@ def _prepare_run_environment(
     hex_color: Optional[str],
     build_options: Optional[str],
     output_draft: bool,
+    replace_variant_index: Optional[int] = None,
 ) -> tuple[list[str], dict[str, str], int]:
     """Shared command/env/start_index setup for SSE and completion endpoints."""
     command = _build_command(cmd, enemy, count, description, difficulty, finish, hex_color)
@@ -120,7 +121,15 @@ def _prepare_run_environment(
         env["BLOBERT_EXPORT_USE_DRAFT_SUBDIR"] = "1"
 
     start_index = 0
-    if cmd == "animated" and enemy and enemy != "all":
+    use_fixed_index = (
+        replace_variant_index is not None
+        and cmd in ("animated", "player", "level")
+    )
+    if use_fixed_index:
+        assert replace_variant_index is not None
+        start_index = replace_variant_index
+        env[_EXPORT_START_INDEX_ENV] = str(start_index)
+    elif cmd == "animated" and enemy and enemy != "all":
         draft_subdir = "draft" if output_draft else ""
         export_dir = settings.python_root / "animated_exports" / draft_subdir if draft_subdir else settings.python_root / "animated_exports"
         start_index = _next_start_index(export_dir, f"{enemy}_animated")
@@ -159,6 +168,7 @@ async def _run_stream(
     hex_color: Optional[str],
     build_options: Optional[str],
     output_draft: bool = False,
+    replace_variant_index: Optional[int] = None,
 ):
     if cmd not in _ALLOWED_CMDS:
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": f"Unknown command: {cmd}"})}
@@ -169,7 +179,16 @@ async def _run_stream(
         return
 
     command, env, start_index = _prepare_run_environment(
-        cmd, enemy, count, description, difficulty, finish, hex_color, build_options, output_draft,
+        cmd,
+        enemy,
+        count,
+        description,
+        difficulty,
+        finish,
+        hex_color,
+        build_options,
+        output_draft,
+        replace_variant_index=replace_variant_index,
     )
 
     try:
@@ -203,6 +222,7 @@ async def run_stream(
     hex_color: Optional[str] = Query(None),
     build_options: Optional[str] = Query(None),
     output_draft: bool = Query(False),
+    replace_variant_index: Optional[int] = Query(None, ge=0, le=99),
 ):
     return EventSourceResponse(
         _run_stream(
@@ -215,6 +235,7 @@ async def run_stream(
             hex_color,
             build_options,
             output_draft=output_draft,
+            replace_variant_index=replace_variant_index,
         )
     )
 
@@ -230,6 +251,7 @@ async def run_complete(
     hex_color: Optional[str] = Query(None),
     build_options: Optional[str] = Query(None),
     output_draft: bool = Query(False),
+    replace_variant_index: Optional[int] = Query(None, ge=0, le=99),
     max_wait_ms: Optional[int] = Query(
         None,
         ge=1,
@@ -253,7 +275,16 @@ async def run_complete(
         )
 
     command, env, start_index = _prepare_run_environment(
-        cmd, enemy, count, description, difficulty, finish, hex_color, build_options, output_draft,
+        cmd,
+        enemy,
+        count,
+        description,
+        difficulty,
+        finish,
+        hex_color,
+        build_options,
+        output_draft,
+        replace_variant_index=replace_variant_index,
     )
 
     try:

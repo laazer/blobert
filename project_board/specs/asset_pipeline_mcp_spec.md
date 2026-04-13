@@ -168,6 +168,7 @@ Registry and files endpoints keep their **existing** FastAPI validation order (p
 - `hex_color` (optional)
 - `build_options` (optional string; forwarded as `BLOBERT_BUILD_OPTIONS_JSON` in subprocess env)
 - `output_draft` (optional bool; forwarded as draft export subdir semantics)
+- `replace_variant_index` (optional int 0–99; pins `BLOBERT_EXPORT_START_INDEX` so the run overwrites that variant instead of allocating the next free index — UI “Regenerate”)
 
 **No deliberate subset** unless a revision of this spec documents rationale and updates contract tests.
 

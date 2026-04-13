@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.level.level_object_builder import LevelObjectBuilder
-from src.utils.export_subdir import level_export_directory
+from src.utils.export_subdir import level_export_directory, variant_start_index
 
 
 def setup_scene():
@@ -43,7 +43,9 @@ def generate_level_object(
     if seed is not None:
         random.seed(seed)
 
-    for variant_index in range(count):
+    start = variant_start_index()
+    for offset in range(count):
+        variant_index = start + offset
         print(f"Generating {object_type} #{variant_index:02d}...")
 
         clear_scene()

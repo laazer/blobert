@@ -1,11 +1,11 @@
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.modules.setdefault("fastapi", MagicMock())
 sys.modules.setdefault("fastapi.responses", MagicMock())
 sys.modules.setdefault("sse_starlette.sse", MagicMock())
 
-from routers.run import _build_command, _guess_output_file
+from routers.run import _build_command, _guess_output_file, _prepare_run_environment
 
 
 def test_build_command_includes_player_finish_and_hex_color():
@@ -58,6 +58,51 @@ def test_guess_output_file_draft_subdir_when_requested():
         _guess_output_file("level", "spike_trap", 4, output_draft=True)
         == "level_exports/draft/spike_trap_03.glb"
     )
+
+
+@patch("routers.run.settings")
+def test_prepare_run_replace_variant_pins_start_index(settings_mock, tmp_path):
+    settings_mock.python_root = tmp_path
+    ad = tmp_path / "animated_exports"
+    ad.mkdir(parents=True)
+    (ad / "spider_animated_00.glb").write_bytes(b"x")
+    (ad / "spider_animated_01.glb").write_bytes(b"x")
+    _cmd, env, start = _prepare_run_environment(
+        "animated",
+        "spider",
+        1,
+        None,
+        None,
+        None,
+        None,
+        None,
+        False,
+        replace_variant_index=0,
+    )
+    assert start == 0
+    assert env["BLOBERT_EXPORT_START_INDEX"] == "0"
+
+
+@patch("routers.run.settings")
+def test_prepare_run_without_replace_uses_next_free_index(settings_mock, tmp_path):
+    settings_mock.python_root = tmp_path
+    ad = tmp_path / "animated_exports"
+    ad.mkdir(parents=True)
+    (ad / "spider_animated_00.glb").write_bytes(b"x")
+    (ad / "spider_animated_01.glb").write_bytes(b"x")
+    _cmd, env, start = _prepare_run_environment(
+        "animated",
+        "spider",
+        1,
+        None,
+        None,
+        None,
+        None,
+        None,
+        False,
+    )
+    assert start == 2
+    assert env["BLOBERT_EXPORT_START_INDEX"] == "2"
 
 
 def test_build_command_does_not_add_finish_flags_for_level():

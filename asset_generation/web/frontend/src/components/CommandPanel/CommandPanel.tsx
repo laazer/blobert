@@ -6,6 +6,7 @@ import { RunCmd } from "../../types";
 import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
+import { regeneratePreviewParams } from "../../utils/regeneratePreviewParams";
 import {
   ALL_CMDS,
   CMD_CONFIG,
@@ -185,9 +186,7 @@ export function CommandPanel() {
     return null;
   })();
 
-  async function handleRun() {
-    if (isDirty) await saveFile();
-    if (runValidationError) return;
+  function buildRunOptions(regenerate: boolean) {
     const singleOutputCmd = cmd === "animated" || cmd === "player" || cmd === "level";
     let buildOptionsJson: string | undefined;
     if (cmd === "animated" && enemy && enemy !== "all") {
@@ -199,13 +198,16 @@ export function CommandPanel() {
         buildOptionsJson = JSON.stringify({ [slug]: top });
       }
     }
+    const regen = regenerate ? regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) : null;
     const previewRel = previewPathFromAssetsUrl(activeGlbUrl);
     const outputDraft =
-      (cmd === "animated" || cmd === "player" || cmd === "level") &&
-      previewRel != null &&
-      previewRel.includes("/draft/");
+      regen != null
+        ? regen.outputDraft
+        : (cmd === "animated" || cmd === "player" || cmd === "level") &&
+          previewRel != null &&
+          previewRel.includes("/draft/");
 
-    start({
+    return {
       cmd,
       enemy: showEnemy ? enemy : undefined,
       count: singleOutputCmd ? 1 : undefined,
@@ -215,7 +217,21 @@ export function CommandPanel() {
       hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined,
       buildOptionsJson,
       outputDraft,
-    });
+      replaceVariantIndex: regen?.replaceVariantIndex,
+    };
+  }
+
+  async function handleRun() {
+    if (isDirty) await saveFile();
+    if (runValidationError) return;
+    start(buildRunOptions(false));
+  }
+
+  async function handleRegenerate() {
+    if (isDirty) await saveFile();
+    if (runValidationError) return;
+    if (!regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl)) return;
+    start(buildRunOptions(true));
   }
 
   async function handleKill() {
@@ -226,6 +242,11 @@ export function CommandPanel() {
     cmd === "animated" && enemy && enemy !== "all" ? normalizeAnimatedSlug(enemy) : null;
 
   const saveModelVariantIndex = animatedVariantIndexFromPreviewGlb(saveModelFamily, activeGlbUrl);
+
+  const canRegenerate =
+    (cmd === "animated" || cmd === "player" || cmd === "level") &&
+    !runValidationError &&
+    regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) != null;
 
   return (
     <div style={s.panel}>
@@ -360,6 +381,19 @@ export function CommandPanel() {
         </button>
         <button style={{ ...s.btn, opacity: isRunning ? 0.5 : 1 }} onClick={handleRun} disabled={isRunning}>
           Run
+        </button>
+        <button
+          type="button"
+          style={{ ...s.btn, background: "#6c4a1e", opacity: isRunning || !canRegenerate ? 0.5 : 1 }}
+          onClick={handleRegenerate}
+          disabled={isRunning || !canRegenerate}
+          title={
+            canRegenerate
+              ? "Re-export into the GLB currently shown in the 3D preview (same path and variant index)."
+              : "Select cmd/enemy to match the preview export path (animated_exports / player_exports / level_exports GLB)."
+          }
+        >
+          Regenerate
         </button>
         {isRunning && (
           <button style={s.killBtn} onClick={handleKill}>Kill</button>
