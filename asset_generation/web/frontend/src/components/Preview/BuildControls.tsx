@@ -3,12 +3,13 @@ import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { animatedExportRelativePath } from "../../utils/glbVariants";
+import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import {
   getMeshPartTree,
   type MeshPartTreeControlHints,
   type PartTreeNode,
 } from "./quickSourceNav";
-import { ControlRow } from "./BuildControlRow";
+import { ControlRow, FloatControlsTable } from "./BuildControlRow";
 
 const s = {
   bar: {
@@ -48,31 +49,33 @@ const s = {
     fontSize: 11,
     width: 64,
   },
-  /** Rig float controls — fixed cap so Mesh can take remaining column height. */
-  rigScroll: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    flexWrap: "wrap",
-    maxHeight: 220,
+  /** Rig float table — fixed height; scrolls when many rows. */
+  rigFloatScrollWrap: {
+    maxHeight: 280,
     overflowY: "auto" as const,
+    overflowX: "auto" as const,
     flex: "0 1 auto",
     minWidth: 0,
     maxWidth: "100%",
+    paddingTop: 2,
   },
-  /** Mesh float controls — grows with the build panel; scrolls inside. */
-  meshScrollGrow: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    flexWrap: "wrap",
-    alignContent: "flex-start",
+  /** Mesh float table — fills panel height; scrolls when many rows. */
+  meshFloatScrollWrap: {
     flex: 1,
     minHeight: 0,
     overflowY: "auto" as const,
+    overflowX: "auto" as const,
     minWidth: 0,
     maxWidth: "100%",
+    paddingTop: 2,
   },
+  sectionHeaderRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  sectionTitle: { color: "#9d9d9d", fontSize: 11, fontWeight: 600 } as const,
   filterInput: {
     background: "#2d2d2d",
     color: "#d4d4d4",
@@ -190,7 +193,10 @@ export function BuildControls() {
 
   useEffect(() => {
     if (!isAnimatedEnemy) return;
-    selectAssetByPath(animatedExportRelativePath(slug, 0));
+    const desired = animatedExportRelativePath(slug, 0);
+    const current = previewPathFromAssetsUrl(useAppStore.getState().activeGlbUrl);
+    if (current === desired) return;
+    selectAssetByPath(desired);
   }, [isAnimatedEnemy, slug, selectAssetByPath]);
 
   const meshPartTreeBlock = (
@@ -332,56 +338,54 @@ export function BuildControls() {
     setFilter: (v: string) => void,
     filterPlaceholder: string,
     filterAria: string,
-    scrollStyle: typeof s.rigScroll | typeof s.meshScrollGrow,
+    scrollWrapStyle: typeof s.rigFloatScrollWrap | typeof s.meshFloatScrollWrap,
     flexGrow: boolean,
   ) {
     if (sectionFloats.length === 0) return null;
     const body = (
       <>
-        <span style={s.label}>{label}</span>
-        <input
-          type="search"
-          placeholder={filterPlaceholder}
-          aria-label={filterAria}
-          value={filterValue}
-          onChange={(e) => setFilter(e.target.value)}
-          style={s.filterInput}
-        />
-        <div style={scrollStyle}>
-          {filtered.map((def) => {
-            const dis = buildControlDisabled(slug, def.key, values);
-            return (
-              <div
-                key={def.key}
-                style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}
-              >
-                <ControlRow
-                  def={def}
-                  value={values[def.key]}
-                  onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
-                />
-              </div>
-            );
-          })}
+        <div style={s.sectionHeaderRow}>
+          <span style={s.sectionTitle}>{label}</span>
+          <input
+            type="search"
+            placeholder={filterPlaceholder}
+            aria-label={filterAria}
+            value={filterValue}
+            onChange={(e) => setFilter(e.target.value)}
+            style={s.filterInput}
+          />
         </div>
+        <FloatControlsTable
+          defs={filtered}
+          values={values}
+          scrollWrapStyle={scrollWrapStyle}
+          onFloatChange={(key, v) => setAnimatedBuildOption(slug, key, v)}
+          isRowDisabled={(key) => buildControlDisabled(slug, key, values)}
+        />
       </>
     );
-    if (flexGrow) {
-      return (
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
-          {body}
-        </div>
-      );
-    }
-    return body;
+    return (
+      <div
+        style={
+          flexGrow
+            ? {
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }
+            : {
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                marginTop: 6,
+              }
+        }
+      >
+        {body}
+      </div>
+    );
   }
 
   return (
@@ -390,6 +394,7 @@ export function BuildControls() {
         ...s.bar,
         flexDirection: "column",
         alignItems: "stretch",
+        gap: 10,
         flex: 1,
         minHeight: 0,
         flexShrink: 1,
@@ -398,7 +403,7 @@ export function BuildControls() {
       {meshPartTreeBlock}
       {buildDefs.length === 0 && defs.length > 0 ? (
         <span style={{ color: "#9d9d9d", fontSize: 11 }}>
-          No mesh or rig sliders here for this enemy — per-part finishes and hex colors are on the{" "}
+          No mesh or rig numeric fields here for this enemy — per-part finishes and hex colors are on the{" "}
           <strong style={{ color: "#bbb" }}>Colors</strong> tab.
         </span>
       ) : null}
@@ -425,7 +430,7 @@ export function BuildControls() {
         setRigFilter,
         "Filter rig…",
         "Filter rig (bone layout) parameters",
-        s.rigScroll,
+        s.rigFloatScrollWrap,
         false,
       )}
       {floatSection(
@@ -436,7 +441,7 @@ export function BuildControls() {
         setMeshFilter,
         "Filter mesh…",
         "Filter mesh parameters",
-        s.meshScrollGrow,
+        s.meshFloatScrollWrap,
         true,
       )}
     </div>
