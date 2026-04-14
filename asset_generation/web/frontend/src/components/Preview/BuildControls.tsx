@@ -199,6 +199,25 @@ export function BuildControls() {
 
   const isPlayerSlimeBuild = cmd === "player" && PLAYER_COLORS.includes(playerColor);
 
+  const defs = animatedBuildControls[slug] ?? [];
+  /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras. */
+  const buildDefs = defs.filter(
+    (d) => !d.key.startsWith("feat_") && !d.key.startsWith("extra_zone_"),
+  );
+  const controlSlugs = Object.keys(animatedBuildControls);
+
+  useEffect(() => {
+    if (defs.length > 0 || enemyMetaStatus !== "idle") return;
+    if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
+    void loadAnimatedEnemyMeta();
+  }, [
+    defs.length,
+    enemyMetaStatus,
+    loadAnimatedEnemyMeta,
+    isAnimatedEnemy,
+    isPlayerSlimeBuild,
+  ]);
+
   useEffect(() => {
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
     const desired = isPlayerSlimeBuild
@@ -249,17 +268,10 @@ export function BuildControls() {
     );
   }
 
-  const defs = animatedBuildControls[slug] ?? [];
-  /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras. */
-  const buildDefs = defs.filter(
-    (d) => !d.key.startsWith("feat_") && !d.key.startsWith("extra_zone_"),
-  );
-  const controlSlugs = Object.keys(animatedBuildControls);
-
   if (defs.length === 0) {
-    const busy = enemyMetaStatus === "loading" || enemyMetaStatus === "idle";
+    const busy = enemyMetaStatus === "loading";
     let detail: ReactNode = null;
-    if (!busy && enemyMetaStatus === "ok") {
+    if (enemyMetaStatus === "ok") {
       if (metaBackend === "fallback") {
         detail = (
           <span style={s.warnText}>
@@ -286,10 +298,25 @@ export function BuildControls() {
           <span style={{ color: "#9d9d9d", fontSize: 11 }}>No build controls for this enemy (unexpected empty list).</span>
         );
       }
+    } else if (enemyMetaStatus === "idle") {
+      detail = (
+        <span style={{ color: "#9d9d9d", fontSize: 11 }}>
+          Waiting for enemy metadata…
+        </span>
+      );
     }
 
     return (
-      <div style={{ ...s.bar, flexDirection: "column", alignItems: "stretch", flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          ...s.bar,
+          flexDirection: "column",
+          alignItems: "stretch",
+          flex: 1,
+          minHeight: 0,
+          flexShrink: 1,
+        }}
+      >
         {meshPartTreeBlock}
         {busy ? (
           <span style={{ color: "#9d9d9d", fontSize: 11 }}>Loading build controls…</span>
