@@ -1,5 +1,26 @@
 # Checkpoint Index
 
+## Run: 2026-04-14T20-00-00Z-test-design-m25-esps
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/M25-ESPS/run-2026-04-14T20-00-00Z-test-design.md`
+- Outcome: Wrote 3 test files covering ESPS-1..8: `tests/utils/test_eye_shape_pupil_controls.py` (controls, coercion, serialization, defaults, controls-only slugs), `tests/enemies/test_eye_shape_pupil_geometry.py` (eye shape and pupil geometry dispatch via patched blender_utils), `src/components/Preview/BuildControls.eyeShape.test.tsx` (conditional disabling DOM behavior). All tests RED until implementation.
+
+## Run: 2026-04-14T19-00-00Z-spec-m25-esps
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-ESPS/run-2026-04-14T19-00-00Z-spec.md`
+- Outcome: Spec authored at `project_board/specs/eye_shape_and_pupil_system_spec.md`; 9 requirements (ESPS-1..9) covering control declarations, coercion, eye shape geometry, pupil mesh, serialization, per-slug defaults, controls-only slugs, frontend disabling, types freeze; constant inventory and slug coverage matrix fully enumerated.
+
+## Run: 2026-04-14T18-00-00Z-planner-m25-01
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
+- Stage: PLANNING → SPECIFICATION
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/M25-ESPS/run-2026-04-14T18-00-00Z-planning.md`
+- Outcome: Decomposed eye shape + pupil system into 7 tasks (Python controls, Python geometry builder, serialization/validation, frontend controls, frontend conditional disabling, Python tests, frontend tests); assumptions logged on enemy scope, geometry approach, pupil mesh strategy.
+
 ## Run: 2026-04-14-procedural-enemy-attack-test-design
 - Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
 - Stage: TEST_DESIGN → TEST_BREAK
@@ -21,6 +42,12 @@
 ### [extras-shell-visible-spikes-on-top] — OUTCOME: COMPLETE
 Visible shell via `create_sphere` + `shell_scale`; spike tip factor 1.0; 55 focused pytest + full `run_tests.sh` green; spec updated for shell/spike semantics.
 Log: `project_board/checkpoints/extras-shell-visible-spikes-on-top/run-2026-04-11-autopilot.md`
+
+## Run: 2026-04-14T-eye-shape-pupil-system
+- Queue mode: single ticket
+- Queue scope: project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md
+- Lean: no
+- Log root: project_board/checkpoints/
 
 This file is intentionally small and acts as an index only.
 Full checkpoint bodies live under `project_board/checkpoints/`.
@@ -185,7 +212,7 @@ Log: `project_board/checkpoints/04-mcp-docs/run-2026-04-13-autopilot.md`
 - Log root: `project_board/checkpoints/05-backlog-optional-glb-validation/`
 
 ### [05_backlog_optional_glb_validation_or_preview_hooks] — OUTCOME: COMPLETE
-Stretch ticket disposition: no M23 AC; future-work § in `asset_generation/mcp/README.md`; milestone table updated; ticket `COMPLETE` in `done/`.
+Stretch ticket disposition: no M25 AC; future-work § in `asset_generation/mcp/README.md`; milestone table updated; ticket `COMPLETE` in `done/`.
 Log: `project_board/checkpoints/05-backlog-optional-glb-validation/run-2026-04-13-autopilot.md`
 
 ## Run: 2026-04-13T20-30-00Z-autopilot-single-m23-06
@@ -321,3 +348,10 @@ Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-
 - Next Agent: Test Designer Agent
 - Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
 - Outcome: `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` authored; ADRs for M8 host parity, ESM dead gating, optional JSON timing, mutation_drop parity; checkpoint entries appended.
+
+## Run: 2026-04-14T19-25-00Z-test-break-m10-03
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
+- Stage: `TEST_BREAK` -> `IMPLEMENTATION_GENERALIST`
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
+- Outcome: Runtime adversarial contract expanded with unknown-family fail-closed, no-player/out-of-range stress, anti-burst checkpoint assertion, and duplicate-wiring mutation guard (`PEAR-T-17..21`).
