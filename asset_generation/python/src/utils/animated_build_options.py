@@ -858,81 +858,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
 
 
 def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
-    out = dict(merged)
-    static_defs: list[dict[str, Any]] = (
-        list(_spider_eye_control_defs()) if enemy_type == "spider" else list(_ANIMATED_BUILD_CONTROLS.get(enemy_type, []))
-    )
-    static_defs.extend(_eye_shape_pupil_control_defs())
-    static_defs.append(_placement_seed_def())
-    for c in static_defs:
-        key = c["key"]
-        if key not in out:
-            continue
-        t = c["type"]
-        if t == "int":
-            lo = int(c["min"])
-            hi = int(c["max"])
-            try:
-                v = int(out[key])
-            except (TypeError, ValueError):
-                dv = c.get("default", lo)
-                try:
-                    v = int(dv)
-                except (TypeError, ValueError):
-                    v = lo
-            out[key] = max(lo, min(hi, v))
-        elif t == "float":
-            lo = float(c["min"])
-            hi = float(c["max"])
-            try:
-                v = float(out[key])
-            except (TypeError, ValueError):
-                dv = c.get("default", lo)
-                try:
-                    v = float(dv)
-                except (TypeError, ValueError):
-                    v = lo
-            out[key] = max(lo, min(hi, v))
-        elif t == "select":
-            opts = c["options"]
-            if out[key] not in opts:
-                out[key] = c.get("default", opts[0])
-        elif t == "select_str":
-            opts = tuple(c.get("options", ()))
-            raw_s = str(out[key]).strip().lower()
-            if raw_s not in opts:
-                d = c.get("default")
-                out[key] = d if isinstance(d, str) and d in opts else (opts[0] if opts else raw_s)
-            else:
-                out[key] = raw_s
-        elif t == "bool":
-            out[key] = _coerce_boolish(out[key], default=bool(c.get("default", False)))
+    from .animated_build_options_validate import coerce_validate_enemy_build_options
 
-    mesh_in = dict(out.get("mesh") or {})
-    mesh_out: dict[str, Any] = {}
-    defaults = _mesh_numeric_defaults(enemy_type)
-    for c in _mesh_float_control_defs(enemy_type):
-        key = c["key"]
-        base_v = defaults[key]
-        raw_v = mesh_in.get(key, base_v)
-        try:
-            v = float(raw_v)
-        except (TypeError, ValueError):
-            v = float(base_v)
-        lo = float(c["min"])
-        hi = float(c["max"])
-        v = max(lo, min(hi, v))
-        if isinstance(base_v, int) and type(base_v) is not bool:
-            mesh_out[key] = int(round(v))
-        else:
-            mesh_out[key] = v
-
-    out["mesh"] = mesh_out
-    zg = out.get("zone_geometry_extras")
-    if not isinstance(zg, dict):
-        zg = _default_zone_geometry_extras(enemy_type)
-    out["zone_geometry_extras"] = _sanitize_zone_geometry_extras(enemy_type, zg)
-    return out
+    return coerce_validate_enemy_build_options(enemy_type, merged)
 
 
 def parse_build_options_json(raw: str | None) -> dict[str, Any]:
