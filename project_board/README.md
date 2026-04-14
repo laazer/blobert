@@ -406,6 +406,23 @@ With `task editor` running, an agent can use the MCP to read/write jailed pipeli
 
 ------------------------------------------------------------
 
+Milestone 24 – Keyboard Orbital Aim System
+Goal: Keyboard-driven orbital aim — single normalized angle θ, snap and rotation inputs, optional assist, and readable visuals — integrated with 3D player gameplay.
+
+Includes:
+- Core θ representation, normalization, and unit direction for gameplay consumers
+- IJKL cardinal + dual-key diagonal snap with simultaneous window and multi-key policy
+- U/O tap vs hold rotation with acceleration curve, min/max speed, precision modifier
+- Snap-over-rotation precedence, angle wrap, opposite rotation cancel
+- Optional soft aim assist (toggle/configurable)
+- Aim ring and direction indicator (optional cardinal highlights and tick marks)
+- Full tuning surface (exported) for feel iteration
+
+Exit Criteria:
+All milestone ACs satisfied in-engine; edge cases covered; design validation playtest notes for responsiveness and non-stickiness.
+
+------------------------------------------------------------
+
 Task Writing Standard
 
 Each task must include:
