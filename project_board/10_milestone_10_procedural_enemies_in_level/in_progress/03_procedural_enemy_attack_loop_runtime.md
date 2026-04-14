@@ -20,3 +20,17 @@ If per-enemy `.attacks.json` (or equivalent) exists next to exports, use it for 
 - `02_wire_generated_enemies_combat_rooms`
 - M7 — animation clips on spawned instances
 - M8 — attack systems and telegraphs
+
+## WORKFLOW STATE
+
+Stage: SPECIFICATION
+Revision: 2
+Last Updated By: Planner Agent
+Next Responsible Agent: Spec Agent
+Status: Proceed
+Validation Status: Not yet validated.
+Blocking Issues: None.
+
+## NEXT ACTION
+
+Spec Agent: author `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` (or extend M10-01 spec with additive §) tracing M10-01 R4/R5 onto procedural-spawned instances: family attack script attachment/`mutation_drop` parity, `EnemyAnimationController` + existing telegraph/hitbox paths, `GeneratedEnemyEsmStub` vs real `EnemyStateMachine` decision, `.attacks.json` authority vs clip/script timing, and headless hooks for “more than one attack” + run-assembled vs isolated scene parity. Reference scoped log for planner assumptions.

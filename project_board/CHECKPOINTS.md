@@ -190,3 +190,120 @@ Log: `project_board/checkpoints/05-backlog-optional-glb-validation/run-2026-04-1
 ### [06_agent_skill_blobert_asset_pipeline_mcp] — OUTCOME: COMPLETE
 Skill `asset_generation/resources/agent_skills/blobert-asset-pipeline-mcp/SKILL.md` + resources README; `mcp/README.md` + `CLAUDE.md` cross-links; pytest contract vs `mcp.list_tools()`.
 Log: `project_board/checkpoints/06-agent-skill-asset-pipeline-mcp/run-2026-04-13-autopilot.md`
+
+## Run: 2026-04-14T13-14-09Z-autopilot-single-m10-01
+- Queue mode: single ticket
+- Queue scope: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/01_spec_procedural_enemy_spawn_attack_loop.md` -> `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/01_spec_procedural_enemy_spawn_attack_loop.md`
+- Lean: no
+- Log root: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/`
+- Stage: `PLANNING`
+- Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+
+### [01_spec_procedural_enemy_spawn_attack_loop] — OUTCOME: COMPLETE
+Spec + contract suite finalized for procedural enemy spawn/attack loop; room metadata and assembler seams aligned; ticket moved to milestone `done/` with AC gate closure.
+Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+
+## Run: 2026-04-14T13-46-33Z-autopilot-single-m10-02
+- Queue mode: single ticket
+- Queue scope: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/02_wire_generated_enemies_combat_rooms.md` -> `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Lean: no
+- Log root: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/`
+- Stage: `PLANNING`
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+
+### [02_wire_generated_enemies_combat_rooms] — OUTCOME: BLOCKED
+Generated-enemy wiring implementation is complete for contract suites, but full run is blocked by contradictory legacy room-template tests that require embedded `EnemyCombat01` while procedural contracts forbid it.
+Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+
+## Resume: 2026-04-14T13-46-33Z-autopilot-m10-02-arbitrated
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/done/02_wire_generated_enemies_combat_rooms.md`
+- Resuming at Stage: `BLOCKED` (after human arbitration) -> `COMPLETE`
+- Next Agent: Planner -> Test Designer -> Test Breaker -> Engine Integration -> AC Gatekeeper
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+
+### [02_wire_generated_enemies_combat_rooms] — OUTCOME: COMPLETE
+Arbitration applied (procedural canonical, embedded removal, strict `PESAL-T-05`, `enemy_family`-only); legacy room-template contracts reconciled; `timeout 300 godot --headless -s tests/run_tests.gd` and `timeout 300 ci/scripts/run_tests.sh` both exit 0.
+Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+
+## Run: 2026-04-14T13-46-33Z-planner-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `PLANNING` -> `SPECIFICATION`
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+- Outcome: Planner decomposed generated-enemy combat-room wiring into spec-ready tasks; assumptions logged in scoped checkpoint.
+
+## Run: 2026-04-14T13-14-09Z-spec-m10-01
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/01_spec_procedural_enemy_spawn_attack_loop.md`
+- Stage: `SPECIFICATION` -> `TEST_DESIGN`
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+- Outcome: Authored `project_board/specs/procedural_enemy_spawn_attack_loop_spec.md` with ADR decisions, spawn/anchor/runtime ownership contract, attack-loop contract, and headless validation hooks.
+
+## Run: 2026-04-14T13-14-09Z-test-design-m10-01
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/01_spec_procedural_enemy_spawn_attack_loop.md`
+- Stage: `TEST_DESIGN` -> `TEST_BREAK`
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+- Outcome: Added primary behavioral contract suite `tests/system/test_procedural_enemy_spawn_attack_loop_contract.gd` covering R1-R6 with deterministic headless checks and strict checkpointed declaration assumption.
+
+## Run: 2026-04-14T13-14-09Z-test-break-m10-01
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/01_spec_procedural_enemy_spawn_attack_loop.md`
+- Stage: `TEST_BREAK` -> `IMPLEMENTATION_GENERALIST`
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+- Outcome: Extended adversarial coverage with mutation/corrupt-manifest/schema/stress tests (PESAL-T-23..26); full headless run remains red on deterministic contract gaps (missing room declaration metadata, legacy embedded enemies, assembler spawn seams).
+
+## Run: 2026-04-14T14-35-00Z-engine-integration-m10-01
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/01_spec_procedural_enemy_spawn_attack_loop.md`
+- Stage: `IMPLEMENTATION_GENERALIST` -> `IMPLEMENTATION_GENERALIST`
+- Next Agent: Acceptance Criteria Gatekeeper Agent
+- Log: `project_board/checkpoints/01-spec-procedural-enemy-spawn-attack-loop/run-2026-04-14T13-14-09Z-autopilot.md`
+- Outcome: Implemented R1/R2/R3/R6 spawn contract seams (room declarations, legacy enemy removal, assembler anchor/fallback/generated-path validation helpers); PESAL contract suite green.
+
+## Run: 2026-04-14T13-46-33Z-spec-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `SPECIFICATION` -> `TEST_DESIGN`
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+- Outcome: Authored complete functional/non-functional generated-enemy wiring spec (R1-R5), resolved ambiguities via checkpoint assumptions, and advanced ticket workflow state for deterministic test design.
+
+## Run: 2026-04-14T13-46-33Z-test-design-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `TEST_DESIGN`
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+
+## Run: 2026-04-14T13-46-33Z-test-design-handoff-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `TEST_DESIGN` -> `TEST_BREAK`
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+- Outcome: Added primary behavioral suite `tests/system/test_wire_generated_enemies_combat_rooms_contract.gd` (R1-R5 traceability) with strict declaration/runtime contract assertions; full headless run captured expected red-phase failures for the new ticket contract.
+
+## Run: 2026-04-14T13-46-33Z-test-break-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `TEST_BREAK` -> `IMPLEMENTATION_GENERALIST`
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+- Outcome: Extended adversarial suite with corrupt-manifest/type-mutation/stress determinism checks (`WGER-T-19..23`), checkpointed strict malformed-family assumption, and validated with headless run showing implementation gaps remain in declaration/schema/spawn wiring.
+
+## Run: 2026-04-14T15-20-00Z-engine-integration-m10-02
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/02_wire_generated_enemies_combat_rooms.md`
+- Stage: `IMPLEMENTATION_GENERALIST` -> `BLOCKED`
+- Next Agent: Planner Agent
+- Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-04-14T13-46-33Z-autopilot.md`
+- Outcome: Implemented generated-enemy room declarations/anchors/runtime spawn wiring and passed M10 procedural contracts; full suite remains unsatisfiable due legacy room-template tests still requiring embedded `EnemyCombat01` nodes, so ticket blocked for contract reconciliation.
+
+## Run: 2026-04-14T16-37-02Z-autopilot-single-m10-03
+- Queue mode: single ticket
+- Queue scope: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/03_procedural_enemy_attack_loop_runtime.md` -> `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
+- Lean: no
+- Log root: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/`
+- Stage: `PLANNING`
+- Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
+
+## Run: 2026-04-14T18-05-00Z-planner-m10-03
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
+- Stage: `PLANNING` → `SPECIFICATION`
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
+- Outcome: Planner decomposition for R4/R5 runtime attack-loop validation; checkpoint assumptions appended (ESM stub vs real ESM, `.attacks.json` vs clip/script authority).
