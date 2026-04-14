@@ -5,6 +5,24 @@ import { previewPathFromAssetsUrl } from "./previewPathFromAssetsUrl";
 /** Matches ``ExportConfig.ANIMATED_DIR`` in Python. */
 export const ANIMATED_EXPORT_DIR = "animated_exports";
 
+/** Matches ``PlayerExportConfig.PLAYER_DIR`` in Python. */
+export const PLAYER_EXPORT_DIR = "player_exports";
+
+/**
+ * Relative path for a procedural player slime GLB (``player_slime_{color}_{NN}.glb``).
+ */
+export function playerExportRelativePath(
+  color: string,
+  variantIndex: number,
+  draft: boolean = false,
+): string {
+  const c = color.trim().toLowerCase();
+  const v = Math.max(0, Math.min(99, Math.floor(variantIndex)));
+  const stem = `player_slime_${c}_${String(v).padStart(2, "0")}`;
+  const mid = draft ? `${PLAYER_EXPORT_DIR}/draft` : PLAYER_EXPORT_DIR;
+  return `${mid}/${stem}.glb`;
+}
+
 /**
  * Relative path under the asset server root for a procedural animated export
  * (same stem as Python ``export_naming.animated_export_stem``; no prefab segment).

@@ -49,6 +49,8 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
     "claw_crawler": ("body", "head", "limbs", "extra"),
     "spitter": ("body", "head", "limbs"),
     "slug": ("body", "head", "extra"),
+    # Procedural player slime: body blob + face region (same attach path as animated enemies: body/head only).
+    "player_slime": ("body", "head"),
 }
 
 _FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex)$")
@@ -713,7 +715,11 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
     except ImportError:
         from src.enemies.animated.registry import AnimatedEnemyBuilder
 
-    slugs = set(AnimatedEnemyBuilder.ENEMY_CLASSES.keys()) | set(_ANIMATED_BUILD_CONTROLS.keys()) | {"spider"}
+    slugs = (
+        set(AnimatedEnemyBuilder.ENEMY_CLASSES.keys())
+        | set(_ANIMATED_BUILD_CONTROLS.keys())
+        | {"spider", "player_slime"}
+    )
     out: dict[str, list[dict[str, Any]]] = {}
     for slug in sorted(slugs):
         static = list(_ANIMATED_BUILD_CONTROLS.get(slug, []))

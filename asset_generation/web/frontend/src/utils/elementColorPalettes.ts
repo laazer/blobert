@@ -46,6 +46,7 @@ export const ANIMATED_SLUG_DEFAULT_ELEMENT: Readonly<Record<string, ElementId>> 
   spitter: "acid",
   claw_crawler: "forest",
   carapace_husk: "earth",
+  player_slime: "water",
 };
 
 export const DEFAULT_ELEMENT_PALETTES: Record<ElementId, ElementPalette> = {

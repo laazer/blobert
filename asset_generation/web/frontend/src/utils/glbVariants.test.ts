@@ -5,6 +5,7 @@ import {
   animatedVariantIndexFromPreviewGlb,
   parseAnimatedEnemyExportFilename,
   parseVariantFilename,
+  playerExportRelativePath,
   preferredAnimatedVersionIdFromPreview,
 } from "./glbVariants";
 
@@ -27,6 +28,14 @@ describe("animatedExportRelativePath", () => {
   it("clamps variant index to 0–99", () => {
     expect(animatedExportRelativePath("slug", -1)).toBe("animated_exports/slug_animated_00.glb");
     expect(animatedExportRelativePath("slug", 100)).toBe("animated_exports/slug_animated_99.glb");
+  });
+});
+
+describe("playerExportRelativePath", () => {
+  it("matches procedural player slime stem", () => {
+    expect(playerExportRelativePath("blue", 0)).toBe("player_exports/player_slime_blue_00.glb");
+    expect(playerExportRelativePath("Pink", 2)).toBe("player_exports/player_slime_pink_02.glb");
+    expect(playerExportRelativePath("blue", 1, true)).toBe("player_exports/draft/player_slime_blue_01.glb");
   });
 });
 

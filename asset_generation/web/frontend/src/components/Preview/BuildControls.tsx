@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
-import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
-import { animatedExportRelativePath } from "../../utils/glbVariants";
+import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { animatedExportRelativePath, playerExportRelativePath } from "../../utils/glbVariants";
+import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import {
   getMeshPartTree,
@@ -169,8 +170,12 @@ export function BuildControls() {
   const [partsOpen, setPartsOpen] = useState(false);
 
   const { cmd, enemy } = commandContext;
-  const slug = normalizeAnimatedSlug(enemy);
-  const buildOpts = animatedBuildOptionValues[normalizeAnimatedSlug(enemy)] ?? {};
+  const playerColor = (enemy || "").trim().toLowerCase();
+  const slug =
+    cmd === "player" && PLAYER_COLORS.includes(playerColor)
+      ? PLAYER_PROCEDURAL_BUILD_SLUG
+      : normalizeAnimatedSlug(enemy);
+  const buildOpts = animatedBuildOptionValues[slug] ?? {};
   const spiderEyeDef = animatedBuildControls["spider"]?.find(
     (d) => d.type === "select" && d.key === "eye_count",
   ) as { options?: number[]; default?: number } | undefined;
@@ -191,13 +196,17 @@ export function BuildControls() {
     slug !== "all" &&
     animatedEnemyMeta.some((m) => m.slug === slug);
 
+  const isPlayerSlimeBuild = cmd === "player" && PLAYER_COLORS.includes(playerColor);
+
   useEffect(() => {
-    if (!isAnimatedEnemy) return;
-    const desired = animatedExportRelativePath(slug, 0);
+    if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
+    const desired = isPlayerSlimeBuild
+      ? playerExportRelativePath(playerColor, 0)
+      : animatedExportRelativePath(slug, 0);
     const current = previewPathFromAssetsUrl(useAppStore.getState().activeGlbUrl);
     if (current === desired) return;
     selectAssetByPath(desired);
-  }, [isAnimatedEnemy, slug, selectAssetByPath]);
+  }, [isAnimatedEnemy, isPlayerSlimeBuild, playerColor, slug, selectAssetByPath]);
 
   const meshPartTreeBlock = (
     <>
@@ -214,7 +223,7 @@ export function BuildControls() {
     </>
   );
 
-  if (!isAnimatedEnemy) {
+  if (!isAnimatedEnemy && !isPlayerSlimeBuild) {
     return (
       <div
         style={{
@@ -232,8 +241,8 @@ export function BuildControls() {
       >
         {meshPartTreeBlock}
         <div style={{ padding: "4px 4px 0" }}>
-          Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> and pick an
-          enemy (not &quot;all&quot;) to use build controls.
+          Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
+          &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to use build controls.
         </div>
       </div>
     );

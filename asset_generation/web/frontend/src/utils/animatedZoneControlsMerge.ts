@@ -10,6 +10,7 @@ export const FEATURE_ZONES_BY_SLUG: Readonly<Record<string, readonly string[]>> 
   claw_crawler: ["body", "head", "limbs", "extra"],
   spitter: ["body", "head", "limbs"],
   slug: ["body", "head", "extra"],
+  player_slime: ["body", "head"],
 };
 
 /** Aligned with ``_FINISH_OPTIONS_ORDER`` in animated_build_options.py. */

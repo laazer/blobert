@@ -1,5 +1,8 @@
 import type { AnimatedEnemyMeta, RunCmd } from "../types";
 
+/** Procedural player slime build/extras keys in ``animated_build_controls`` / run JSON (not a color name). */
+export const PLAYER_PROCEDURAL_BUILD_SLUG = "player_slime";
+
 /** Default slug order when /api/meta/enemies has not loaded (labels are mechanical until then). */
 export const DEFAULT_ANIMATED_ENEMY_SLUGS = [
   "spider",

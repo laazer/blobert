@@ -10,7 +10,7 @@ interface RunOptions {
   difficulty?: string;
   finish?: string;
   hexColor?: string;
-  /** JSON string for `BLOBERT_BUILD_OPTIONS_JSON` (animated only). */
+  /** JSON string for `BLOBERT_BUILD_OPTIONS_JSON` (animated + procedural player slime). */
   buildOptionsJson?: string;
   /** When true, GLBs write under `animated_exports/draft`, `player_exports/draft`, or `level_exports/draft`. */
   outputDraft?: boolean;

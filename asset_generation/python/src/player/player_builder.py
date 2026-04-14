@@ -28,6 +28,7 @@ class PlayerSlimeBuilder:
         prefab_mesh=None,
         finish: str = "glossy",
         custom_color_hex: str = "",
+        build_options: dict | None = None,
     ):
         """Construct the complete player slime and return (armature, mesh).
 
@@ -59,6 +60,7 @@ class PlayerSlimeBuilder:
                 rng=rng,
                 finish=finish,
                 custom_color_hex=custom_color_hex,
+                build_options=build_options,
             )
             mesh = body_builder.build()
 

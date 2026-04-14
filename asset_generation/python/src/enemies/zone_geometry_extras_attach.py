@@ -638,3 +638,79 @@ def _append_head_ellipsoid_extras(
                 apply_material_to_object(bulb, mat)
                 model.parts.append(bulb)
                 placed += 1
+
+
+def append_player_slime_zone_extras(builder: Any) -> None:
+    """Attach body/head ``zone_geometry_extras`` for procedural player slime before mesh join."""
+    opts = getattr(builder, "build_options", None)
+    if not isinstance(opts, dict):
+        return
+    raw = opts.get("zone_geometry_extras")
+    if not isinstance(raw, dict):
+        return
+
+    try:
+        from ..player.player_materials import create_slime_body_material
+    except ImportError:
+        from src.player.player_materials import create_slime_body_material
+
+    color = getattr(builder, "color", "blue")
+    finish = getattr(builder, "_resolved_body_finish", getattr(builder, "finish", "glossy"))
+    custom_hex = str(
+        getattr(builder, "_resolved_body_custom_hex", getattr(builder, "custom_color_hex", "") or "")
+    )
+    body_mat = create_slime_body_material(color, finish=finish, custom_color_hex=custom_hex)
+    slot_mats: dict[str, bpy.types.Material | None] = {
+        "body": body_mat,
+        "head": body_mat,
+        "limbs": body_mat,
+        "joints": body_mat,
+        "extra": body_mat,
+    }
+    features = opts.get("features")
+    feat_dict = features if isinstance(features, dict) else None
+
+    extras = getattr(builder, "_zone_extra_parts", None)
+    if not isinstance(extras, list):
+        return
+
+    brx = float(getattr(builder, "BODY_RADIUS_XY", 1.0))
+    brz = float(getattr(builder, "BODY_RADIUS_Z", 0.8))
+    bcx, bcy, bcz = 0.0, 0.0, brz
+
+    ey = float(getattr(builder, "EYE_OFFSET_Y", 0.84))
+    ez = float(getattr(builder, "EYE_OFFSET_Z", 1.05))
+    sx, sy, sz = getattr(builder, "SCLERA_SCALE", (0.22, 0.12, 0.22))
+    hx, hy, hz = 0.0, ey, ez
+    ax = float(sx) * 1.25
+    ay = float(sy) * 1.25
+    az = float(sz) * 1.25
+
+    class _PlayerSlimeZoneExtrasModel:
+        __slots__ = ("parts", "build_options", "rng")
+
+        def __init__(self, parts: list, build_options: dict[str, Any], rng: Any) -> None:
+            self.parts = parts
+            self.build_options = build_options
+            self.rng = rng
+
+    model = _PlayerSlimeZoneExtrasModel(extras, opts, getattr(builder, "rng", None))
+
+    body_spec = raw.get("body")
+    if isinstance(body_spec, dict):
+        _append_body_ellipsoid_extras(
+            model,
+            body_spec,
+            slot_mats,
+            feat_dict,
+            bcx,
+            bcy,
+            bcz,
+            brx,
+            brx,
+            brz,
+        )
+
+    head_spec = raw.get("head")
+    if isinstance(head_spec, dict) and max(ax, ay, az) > 1e-8:
+        _append_head_ellipsoid_extras(model, head_spec, slot_mats, feat_dict, hx, hy, hz, ax, ay, az)

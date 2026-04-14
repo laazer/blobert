@@ -17,12 +17,16 @@ import {
   mergeBuildOptionValues,
 } from "../api/client";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../utils/animatedZoneControlsMerge";
-import { DEFAULT_ANIMATED_ENEMY_META, DEFAULT_ANIMATED_ENEMY_SLUGS } from "../utils/enemyDisplay";
+import {
+  DEFAULT_ANIMATED_ENEMY_META,
+  DEFAULT_ANIMATED_ENEMY_SLUGS,
+  PLAYER_PROCEDURAL_BUILD_SLUG,
+} from "../utils/enemyDisplay";
 
 /** Zone + defaults before / after /api/meta — keeps Colors usable if the API is down or still loading. */
 const OFFLINE_SEEDED_BUILD_CONTROLS = mergeCanonicalZoneControlsForAllSlugs(
   {},
-  [...DEFAULT_ANIMATED_ENEMY_SLUGS],
+  [...DEFAULT_ANIMATED_ENEMY_SLUGS, PLAYER_PROCEDURAL_BUILD_SLUG],
 );
 
 export type CommandPanelContext = {
@@ -162,10 +166,12 @@ export const useAppStore = create<AppState>()(
       });
       try {
         const meta = await fetchEnemyPreviewMeta();
-        const slugList =
-          meta.enemies.length > 0
+        const slugList = [
+          ...(meta.enemies.length > 0
             ? meta.enemies.map((e) => e.slug)
-            : [...DEFAULT_ANIMATED_ENEMY_SLUGS];
+            : [...DEFAULT_ANIMATED_ENEMY_SLUGS]),
+          PLAYER_PROCEDURAL_BUILD_SLUG,
+        ];
         const buildControls = mergeCanonicalZoneControlsForAllSlugs(
           meta.animatedBuildControls,
           slugList,

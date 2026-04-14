@@ -12,6 +12,7 @@ Anatomy:
 """
 
 from ..core.blender_utils import apply_smooth_shading, create_sphere, join_objects
+from ..enemies.zone_geometry_extras_attach import append_player_slime_zone_extras
 from ..materials.material_system import apply_material_to_object
 from .player_materials import (
     SLIME_COLORS,
@@ -21,6 +22,26 @@ from .player_materials import (
     create_sclera_material,
     create_slime_body_material,
 )
+
+
+def _player_zone_finish_hex(features: object, zone: str) -> tuple[str, str]:
+    """``(finish, hex_raw)`` from ``build_options['features'][zone]`` (``default`` / empty when absent)."""
+    if not isinstance(features, dict):
+        return "default", ""
+    z = features.get(zone)
+    if not isinstance(z, dict):
+        return "default", ""
+    fin = str(z.get("finish", "default")).strip().lower()
+    hx = str(z.get("hex", "")).strip()
+    return fin, hx
+
+
+def _normalize_optional_hex(raw: str) -> str:
+    """Return ``#RRGGBB`` or ``\"\"`` if invalid / empty."""
+    hx = raw.strip().lstrip("#")
+    if len(hx) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in hx):
+        return ""
+    return f"#{hx}"
 
 
 class PlayerSlimeBody:
@@ -51,11 +72,21 @@ class PlayerSlimeBody:
     ARM_OFFSET_Z = 0.85
     ARM_SCALE = (0.22, 0.18, 0.18)
 
-    def __init__(self, color: str = "blue", rng=None, finish: str = "glossy", custom_color_hex: str = ""):
+    def __init__(
+        self,
+        color: str = "blue",
+        rng=None,
+        finish: str = "glossy",
+        custom_color_hex: str = "",
+        build_options: dict | None = None,
+    ):
         self.color = color if color in SLIME_COLORS else "blue"
         self.rng = rng
         self.finish = finish
         self.custom_color_hex = custom_color_hex
+        self.build_options = dict(build_options or {})
+        self._zone_extra_parts: list = []
+        self._apply_mesh_overrides()
 
         self._body_parts: list = []
         self._sclera_parts: list = []
@@ -63,6 +94,26 @@ class PlayerSlimeBody:
         self._highlight_parts: list = []
         self._cheek_parts: list = []
         self._arm_parts: list = []
+
+    def _apply_mesh_overrides(self) -> None:
+        mesh = self.build_options.get("mesh")
+        if not isinstance(mesh, dict):
+            return
+        for name, raw in mesh.items():
+            if not isinstance(name, str) or name.startswith("_"):
+                continue
+            if not hasattr(type(self), name):
+                continue
+            cur = getattr(type(self), name)
+            if isinstance(cur, bool):
+                continue
+            try:
+                if isinstance(cur, int):
+                    setattr(self, name, int(round(float(raw))))
+                elif isinstance(cur, float):
+                    setattr(self, name, float(raw))
+            except (TypeError, ValueError):
+                pass
 
     # ------------------------------------------------------------------
     # Geometry creation
@@ -104,11 +155,28 @@ class PlayerSlimeBody:
 
     def apply_materials(self):
         """Apply themed materials to all parts."""
-        body_mat      = create_slime_body_material(self.color, finish=self.finish, custom_color_hex=self.custom_color_hex)
-        sclera_mat    = create_sclera_material()
-        pupil_mat     = create_pupil_material()
+        features = self.build_options.get("features")
+        body_f, body_hx_raw = _player_zone_finish_hex(features, "body")
+        head_f, head_hx_raw = _player_zone_finish_hex(features, "head")
+
+        body_finish = self.finish if body_f == "default" else body_f
+        body_custom = _normalize_optional_hex(body_hx_raw)
+        if not body_custom:
+            cli = (self.custom_color_hex or "").strip()
+            if cli:
+                body_custom = cli if cli.startswith("#") else f"#{cli.lstrip('#')}"
+
+        body_mat = create_slime_body_material(self.color, finish=body_finish, custom_color_hex=body_custom)
+        self._resolved_body_finish = body_finish
+        self._resolved_body_custom_hex = body_custom
+
+        cheek_finish = "matte" if head_f == "default" else head_f
+        cheek_custom = _normalize_optional_hex(head_hx_raw)
+
+        sclera_mat = create_sclera_material()
+        pupil_mat = create_pupil_material()
         highlight_mat = create_highlight_material()
-        cheek_mat     = create_cheek_material()
+        cheek_mat = create_cheek_material(finish=cheek_finish, custom_color_hex=cheek_custom)
 
         for part in self._body_parts:
             apply_material_to_object(part, body_mat)
@@ -132,6 +200,7 @@ class PlayerSlimeBody:
             + self._highlight_parts
             + self._cheek_parts
             + self._arm_parts
+            + self._zone_extra_parts
         )
         mesh = join_objects(all_parts)
         apply_smooth_shading(mesh)
@@ -143,6 +212,7 @@ class PlayerSlimeBody:
         self.create_face()
         self.create_arms()
         self.apply_materials()
+        append_player_slime_zone_extras(self)
         return self.finalize()
 
     # ------------------------------------------------------------------

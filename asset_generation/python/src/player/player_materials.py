@@ -156,9 +156,18 @@ def create_highlight_material() -> bpy.types.Material:
     return material
 
 
-def create_cheek_material() -> bpy.types.Material:
-    """Soft, matte rose-pink for the blush marks."""
-    material = bpy.data.materials.new(name="slime_cheek")
+def create_cheek_material(
+    finish: str = "matte",
+    custom_color_hex: str = "",
+) -> bpy.types.Material:
+    """Soft blush for cheek marks — optional finish / hex from Colors tab (``feat_head_*``)."""
+    base_color = _parse_hex_color(custom_color_hex) if custom_color_hex else CHEEK_PINK
+    roughness, metallic, transmission = SLIME_FINISHES.get(finish, SLIME_FINISHES["matte"])
+
+    suffix = finish
+    if custom_color_hex:
+        suffix = f"{finish}_{custom_color_hex.strip().lstrip('#')}"
+    material = bpy.data.materials.new(name=f"slime_cheek_{suffix}")
     material.use_nodes = True
     nodes = material.node_tree.nodes
     nodes.clear()
@@ -166,7 +175,13 @@ def create_cheek_material() -> bpy.types.Material:
     principled = nodes.new(type='ShaderNodeBsdfPrincipled')
     _apply_principled_inputs(
         principled,
-        **{"Base Color": CHEEK_PINK, "Roughness": 0.55},
+        **{
+            "Base Color": base_color,
+            "Roughness": roughness,
+            "Metallic": metallic,
+            "Transmission Weight": transmission,
+            "Transmission": transmission,
+        },
     )
 
     output = nodes.new(type='ShaderNodeOutputMaterial')

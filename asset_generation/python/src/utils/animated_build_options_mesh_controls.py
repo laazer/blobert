@@ -21,14 +21,22 @@ def _is_mesh_tune_name(name: str) -> bool:
 
 def _mesh_numeric_defaults(slug: str) -> dict[str, int | float]:
     ensure_blender_stubs()
-    try:
-        from enemies.animated.registry import AnimatedEnemyBuilder
-    except ImportError:
-        from src.enemies.animated.registry import AnimatedEnemyBuilder
+    if slug == "player_slime":
+        try:
+            from player.player_slime_body import PlayerSlimeBody
+        except ImportError:
+            from src.player.player_slime_body import PlayerSlimeBody
 
-    cls = AnimatedEnemyBuilder.ENEMY_CLASSES.get(slug)
-    if cls is None:
-        return {}
+        cls = PlayerSlimeBody
+    else:
+        try:
+            from enemies.animated.registry import AnimatedEnemyBuilder
+        except ImportError:
+            from src.enemies.animated.registry import AnimatedEnemyBuilder
+
+        cls = AnimatedEnemyBuilder.ENEMY_CLASSES.get(slug)
+        if cls is None:
+            return {}
     out: dict[str, int | float] = {}
     for name in dir(cls):
         if not _is_mesh_tune_name(name):

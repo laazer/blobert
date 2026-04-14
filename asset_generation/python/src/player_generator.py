@@ -6,6 +6,7 @@ Usage (via main.py):
     blender --background --python src/player_generator.py -- [color] [count] [seed]
 """
 
+import json
 import os
 import random
 import sys
@@ -18,6 +19,7 @@ from src.core.blender_utils import clear_scene
 from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
+from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
 from src.utils.constants import PlayerExportConfig
 from src.utils.export_subdir import player_export_directory, variant_start_index
 
@@ -41,6 +43,7 @@ def generate_player_slime(
     prefab_name: str = None,
     finish: str = "glossy",
     custom_color_hex: str = "",
+    build_options: dict | None = None,
 ):
     """Generate player slime variants.
 
@@ -76,6 +79,7 @@ def generate_player_slime(
                 prefab_mesh=prefab_mesh,
                 finish=finish,
                 custom_color_hex=custom_color_hex,
+                build_options=build_options,
             )
 
             filename = PlayerExportConfig.FILENAME_PATTERN.format(
@@ -118,6 +122,16 @@ def main():
     prefab_name = _parse_prefab_arg(args)
     finish = _parse_flag_arg(args, "--finish") or "glossy"
     custom_color_hex = _parse_flag_arg(args, "--hex-color") or ""
+    build_json = _parse_flag_arg(args, "--build-json")
+    raw_opts = parse_build_options_json(os.environ.get("BLOBERT_BUILD_OPTIONS_JSON"))
+    if build_json:
+        try:
+            parsed = json.loads(build_json)
+        except json.JSONDecodeError:
+            parsed = {}
+        if isinstance(parsed, dict):
+            raw_opts = {**raw_opts, **parsed}
+    merged_player_opts = options_for_enemy("player_slime", raw_opts)
 
     available_colors = PlayerSlimeBuilder.get_available_colors()
     if color not in available_colors:
@@ -137,6 +151,7 @@ def main():
         prefab_name=prefab_name,
         finish=finish,
         custom_color_hex=custom_color_hex,
+        build_options=merged_player_opts,
     )
     print("✅ Done!")
 

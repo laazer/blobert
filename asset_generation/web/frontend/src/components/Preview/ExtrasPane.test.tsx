@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
+import { PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
 import { ExtrasPane } from "./ExtrasPane";
 
 afterEach(() => {
@@ -46,5 +47,21 @@ describe("ExtrasPane", () => {
     const select = screen.getByLabelText("body extra kind");
     fireEvent.change(select, { target: { value: "spikes" } });
     expect(useAppStore.getState().animatedBuildOptionValues.slug?.extra_zone_body_kind).toBe("spikes");
+  });
+
+  it("renders zone extras for player cmd using player_slime build controls", () => {
+    const controls = mergeCanonicalZoneControlsForAllSlugs({}, [PLAYER_PROCEDURAL_BUILD_SLUG]);
+    useAppStore.setState({
+      commandContext: { cmd: "player", enemy: "blue" },
+      animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
+      animatedBuildControls: controls,
+      animatedBuildOptionValues: {
+        [PLAYER_PROCEDURAL_BUILD_SLUG]: { extra_zone_body_kind: "none", extra_zone_body_spike_count: 8 },
+      },
+      centerPanel: "extras",
+    });
+    render(<ExtrasPane />);
+    expect(screen.getByText(/Geometry extras \(per zone\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zone: body/i)).toBeInTheDocument();
   });
 });

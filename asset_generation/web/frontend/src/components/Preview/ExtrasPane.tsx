@@ -1,5 +1,6 @@
 import { useAppStore } from "../../store/useAppStore";
-import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
+import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { ZoneExtraControls } from "./ZoneExtraControls";
 
 /**
@@ -9,14 +10,17 @@ export function ExtrasPane() {
   const commandContext = useAppStore((s) => s.commandContext);
   const animatedEnemyMeta = useAppStore((s) => s.animatedEnemyMeta);
   const { cmd, enemy } = commandContext;
-  const slug = normalizeAnimatedSlug(enemy);
+  const playerColor = (enemy || "").trim().toLowerCase();
+  const animatedSlug = normalizeAnimatedSlug(enemy);
   const isAnimatedEnemy =
     cmd === "animated" &&
-    Boolean(slug) &&
-    slug !== "all" &&
-    animatedEnemyMeta.some((m) => m.slug === slug);
+    Boolean(animatedSlug) &&
+    animatedSlug !== "all" &&
+    animatedEnemyMeta.some((m) => m.slug === animatedSlug);
+  const isPlayerSlimeExtras = cmd === "player" && PLAYER_COLORS.includes(playerColor);
+  const slug = isPlayerSlimeExtras ? PLAYER_PROCEDURAL_BUILD_SLUG : animatedSlug;
 
-  if (!isAnimatedEnemy) {
+  if (!isAnimatedEnemy && !isPlayerSlimeExtras) {
     return (
       <div
         style={{
@@ -27,8 +31,9 @@ export function ExtrasPane() {
           flexShrink: 0,
         }}
       >
-        Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> and pick an
-        enemy (not &quot;all&quot;) to edit spikes, bulbs, horns, and related geometry extras.
+        Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
+        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit spikes, bulbs, horns, and related
+        geometry extras.
       </div>
     );
   }

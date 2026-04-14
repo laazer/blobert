@@ -49,6 +49,12 @@ async def test_meta_enemies_returns_full_build_controls_for_spider(monkeypatch: 
     assert place_top["type"] == "bool"
     assert place_top["default"] is True
 
+    player = data["animated_build_controls"].get("player_slime")
+    assert player is not None
+    pkeys = {c["key"] for c in player}
+    assert "BODY_RADIUS_XY" in pkeys
+    assert "extra_zone_body_kind" in pkeys
+
 
 @pytest.mark.asyncio
 async def test_meta_enemies_fallback_on_import_error(

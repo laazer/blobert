@@ -1,5 +1,6 @@
 import { useAppStore } from "../../store/useAppStore";
-import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
+import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { ElementPalettesSection } from "./ElementPalettesSection";
 import { FeatureMaterialControls } from "./FeatureMaterialControls";
 
@@ -10,14 +11,17 @@ export function ColorsPane() {
   const commandContext = useAppStore((s) => s.commandContext);
   const animatedEnemyMeta = useAppStore((s) => s.animatedEnemyMeta);
   const { cmd, enemy } = commandContext;
-  const slug = normalizeAnimatedSlug(enemy);
+  const playerColor = (enemy || "").trim().toLowerCase();
+  const animatedSlug = normalizeAnimatedSlug(enemy);
   const isAnimatedEnemy =
     cmd === "animated" &&
-    Boolean(slug) &&
-    slug !== "all" &&
-    animatedEnemyMeta.some((m) => m.slug === slug);
+    Boolean(animatedSlug) &&
+    animatedSlug !== "all" &&
+    animatedEnemyMeta.some((m) => m.slug === animatedSlug);
+  const isPlayerSlimeColors = cmd === "player" && PLAYER_COLORS.includes(playerColor);
+  const slug = isPlayerSlimeColors ? PLAYER_PROCEDURAL_BUILD_SLUG : animatedSlug;
 
-  if (!isAnimatedEnemy) {
+  if (!isAnimatedEnemy && !isPlayerSlimeColors) {
     return (
       <div
         style={{
@@ -28,8 +32,8 @@ export function ColorsPane() {
           flexShrink: 0,
         }}
       >
-        Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> and pick an
-        enemy (not &quot;all&quot;) to edit per-part colors and finishes.
+        Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
+        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit per-zone finishes and hex colors.
       </div>
     );
   }
@@ -46,10 +50,21 @@ export function ColorsPane() {
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Each coarse zone has <strong style={{ color: "#bbb" }}>finish</strong> + <strong style={{ color: "#bbb" }}>hex</strong>{" "}
-        (body, head, limbs, joints, extra on spider). Click a palette swatch to copy <code style={{ color: "#ccc" }}>#RRGGBB</code>;
-        use <strong style={{ color: "#bbb" }}>Paste color</strong> on any hex row (including limb / joint overrides). Global export
-        tint stays in the command bar.
+        Each coarse zone has <strong style={{ color: "#bbb" }}>finish</strong> + <strong style={{ color: "#bbb" }}>hex</strong>
+        {isPlayerSlimeColors ? (
+          <>
+            . For <strong style={{ color: "#bbb" }}>player</strong>, <strong style={{ color: "#bbb" }}>body</strong> is the main
+            slime + arms; <strong style={{ color: "#bbb" }}>head</strong> is the cheek blush (eyes stay sclera / pupil / highlight).
+            Global tint stays in the command bar.
+          </>
+        ) : (
+          <>
+            {" "}
+            (body, head, limbs, joints, extra on spider). Click a palette swatch to copy{" "}
+            <code style={{ color: "#ccc" }}>#RRGGBB</code>; use <strong style={{ color: "#bbb" }}>Paste color</strong> on any hex
+            row (including limb / joint overrides). Global export tint stays in the command bar.
+          </>
+        )}
       </p>
       <ElementPalettesSection slug={slug} />
       <FeatureMaterialControls slug={slug} showEmptyHint />

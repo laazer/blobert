@@ -3,7 +3,7 @@ import { killProcess } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
-import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
+import { enemySelectOptionLabel, normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
 import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import { regeneratePreviewParams } from "../../utils/regeneratePreviewParams";
@@ -196,6 +196,14 @@ export function CommandPanel() {
         const defs = animatedBuildControls[slug] ?? [];
         const top = partitionAnimatedBuildOptionsForJson(opts, defs);
         buildOptionsJson = JSON.stringify({ [slug]: top });
+      }
+    }
+    if (cmd === "player" && enemy && PLAYER_COLORS.includes(enemy.trim().toLowerCase())) {
+      const opts = animatedBuildOptionValues[PLAYER_PROCEDURAL_BUILD_SLUG];
+      if (opts && Object.keys(opts).length > 0) {
+        const defs = animatedBuildControls[PLAYER_PROCEDURAL_BUILD_SLUG] ?? [];
+        const top = partitionAnimatedBuildOptionsForJson(opts, defs);
+        buildOptionsJson = JSON.stringify({ [PLAYER_PROCEDURAL_BUILD_SLUG]: top });
       }
     }
     const regen = regenerate ? regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) : null;
