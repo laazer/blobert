@@ -27,7 +27,7 @@ describe("ColorsPane", () => {
   it("shows empty-state when not animated enemy or player", () => {
     useAppStore.setState({ commandContext: { cmd: "level", enemy: "x" } });
     render(<ColorsPane />);
-    expect(screen.getByText(/animated.*player/i)).toBeInTheDocument();
+    expect(screen.getByText(/per-zone finishes/i)).toBeInTheDocument();
   });
 
   it("renders feature controls for player cmd using player_slime slug", () => {

@@ -27,7 +27,7 @@ describe("ExtrasPane", () => {
   it("shows empty-state copy when not on animated enemy", () => {
     useAppStore.setState({ commandContext: { cmd: "animated", enemy: "all" } });
     render(<ExtrasPane />);
-    expect(screen.getByText(/pick an enemy/i)).toBeInTheDocument();
+    expect(screen.getByText(/geometry extras/i)).toBeInTheDocument();
   });
 
   it("renders Extras tab content with zone sections for slug", () => {

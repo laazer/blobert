@@ -129,6 +129,7 @@ function buildControlDisabled(
   defKey: string,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
+  if (defKey === "pupil_shape" && !values["pupil_enabled"]) return true;
   return slug === "spider" && spiderPlacementRowDisabled(defKey, values);
 }
 
