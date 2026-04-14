@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-14T21-00-00Z-test-break-m25-esps
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/M25-ESPS/run-2026-04-14T21-00-00Z-test-break.md`
+- Outcome: Adversarial Python controls suite (`test_eye_shape_pupil_controls_adversarial.py`): mutation guard, idempotency, dynamic slug coverage, None/whitespace coercion, no server-side pupil_shape suppression, fresh-list-per-call guard, combinatorial boundary. Adversarial Python geometry suite (`test_eye_shape_pupil_geometry_adversarial.py`): shared-mutable-state guard, stress eye_count=99, triangle fallback → sphere not box, pupil location differs from eye location, non-uniform oval/slit scale, pupil primitive dispatch exclusivity, claw_crawler max-peripheral boundary, determinism. Adversarial frontend suite (`BuildControls.eyeShape.adversarial.test.tsx`): reactive toggle false→true, toggle round-trip, unknown key isolation, claw_crawler slug-agnostic rule, integer 0/1 falsy/truthy coercion, no bleed-over to other controls. Ticket advanced to IMPLEMENTATION_GENERALIST; note appended that this is a Python/frontend ticket routed under generalist path.
+
 ## Run: 2026-04-14T20-00-00Z-test-design-m25-esps
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
 - Stage: TEST_DESIGN → TEST_BREAK

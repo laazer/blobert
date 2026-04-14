@@ -46,8 +46,9 @@ Scope Notes:
 
 ## WORKFLOW STATE
 
-- **Stage:** TEST_BREAK
-- **Revision:** 4
-- **Last Updated By:** Test Designer Agent
-- **Next Responsible Agent:** Test Breaker Agent
+- **Stage:** IMPLEMENTATION_GENERALIST
+- **Revision:** 5
+- **Last Updated By:** Test Breaker Agent
+- **Next Responsible Agent:** Engine Integration Agent
 - **Status:** Proceed
+- **Domain Note:** This is a Python asset pipeline + web frontend ticket. There is no Engine Integration or Core Simulation agent for this domain. Engine Integration Agent is the closest available agent per the routing table and handles the generalist implementation path for Python/frontend work.
