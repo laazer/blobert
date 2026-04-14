@@ -25,3 +25,7 @@ func set_base_state(state: State) -> void:
 
 func get_base_state() -> State:
 	return current_state
+
+
+func get_esm() -> Node:
+	return get_node_or_null("EnemyAnimationController/GeneratedEnemyEsmStub")

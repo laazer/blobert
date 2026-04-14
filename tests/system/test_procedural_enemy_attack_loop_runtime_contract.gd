@@ -112,7 +112,7 @@ func _count_acid_projectiles_under(node: Node) -> int:
 	if node == null:
 		return 0
 	for c in node.get_children():
-		if str(c.get_class()) == "AcidProjectile3D":
+		if c is AcidProjectile3D:
 			n += 1
 		n += _count_acid_projectiles_under(c)
 	return n
@@ -139,10 +139,10 @@ func _pump_acid_attack_integration(
 	var iters: int = 0
 	while _count_acid_projectiles_under(room) < until_projectiles_at_least and iters < _PUMP_MAX_ITERS:
 		atk._physics_process(_PHYSICS_STEP)
-		if ctrl != null:
-			ctrl._physics_process(_PHYSICS_STEP)
 		if ap != null:
 			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
 		iters += 1
 	return iters
 
@@ -333,8 +333,8 @@ func test_pear_t_08_procedural_acid_completes_two_attack_cycles_headless() -> vo
 	var player := Node3D.new()
 	player.name = "TestPlayerPear08"
 	player.add_to_group("player")
-	player.global_position = enemy.global_position + Vector3(2.0, 0.0, 0.0)
 	room.add_child(player)
+	player.position = enemy.position + Vector3(2.0, 0.0, 0.0)
 	var iters: int = _pump_acid_attack_integration(room, enemy, atk, 2)
 	_assert_true(iters < _PUMP_MAX_ITERS, "PEAR-T-08_ac_r2_1_two_cycles_within_cap", "exceeded pump cap — telegraph/cooldown loop stuck?")
 	var proj: int = _count_acid_projectiles_under(room)
@@ -365,18 +365,18 @@ func test_pear_t_09_cooldown_separates_active_phases_acid() -> void:
 	atk._ready()
 	var player := Node3D.new()
 	player.add_to_group("player")
-	player.global_position = enemy.global_position + Vector3(2.0, 0.0, 0.0)
 	room.add_child(player)
+	player.position = enemy.position + Vector3(2.0, 0.0, 0.0)
 	var ctrl: EnemyAnimationController = enemy.get_node_or_null("EnemyAnimationController") as EnemyAnimationController
 	var ap: AnimationPlayer = enemy.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	var sim_time: float = 0.0
 	var iters_first: int = 0
 	while _count_acid_projectiles_under(room) < 1 and iters_first < _PUMP_MAX_ITERS:
 		atk._physics_process(_PHYSICS_STEP)
-		if ctrl != null:
-			ctrl._physics_process(_PHYSICS_STEP)
 		if ap != null:
 			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
 		sim_time += _PHYSICS_STEP
 		iters_first += 1
 	_assert_true(iters_first < _PUMP_MAX_ITERS, "PEAR-T-09_first_cycle_finishes")
@@ -384,10 +384,10 @@ func test_pear_t_09_cooldown_separates_active_phases_acid() -> void:
 	var iters_second: int = 0
 	while _count_acid_projectiles_under(room) < 2 and iters_second < _PUMP_MAX_ITERS:
 		atk._physics_process(_PHYSICS_STEP)
-		if ctrl != null:
-			ctrl._physics_process(_PHYSICS_STEP)
 		if ap != null:
 			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
 		sim_time += _PHYSICS_STEP
 		iters_second += 1
 	_assert_true(iters_second < _PUMP_MAX_ITERS, "PEAR-T-09_second_cycle_finishes")
@@ -489,8 +489,8 @@ func test_pear_t_12_dead_host_suppresses_further_acid_cycles() -> void:
 	atk._ready()
 	var player := Node3D.new()
 	player.add_to_group("player")
-	player.global_position = enemy.global_position + Vector3(2.0, 0.0, 0.0)
 	room.add_child(player)
+	player.position = enemy.position + Vector3(2.0, 0.0, 0.0)
 	var _it: int = _pump_acid_attack_integration(room, enemy, atk, 1)
 	var count_after_one: int = _count_acid_projectiles_under(room)
 	(esm as EnemyStateMachine).apply_death_event()
@@ -498,10 +498,10 @@ func test_pear_t_12_dead_host_suppresses_further_acid_cycles() -> void:
 	var ap: AnimationPlayer = enemy.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	for _i in range(8000):
 		atk._physics_process(_PHYSICS_STEP)
-		if ctrl != null:
-			ctrl._physics_process(_PHYSICS_STEP)
 		if ap != null:
 			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
 	_assert_eq_int(count_after_one, _count_acid_projectiles_under(room), "PEAR-T-12_ac_r4_2_projectile_count_stable_after_death")
 	_detach_and_free(room)
 
@@ -559,6 +559,144 @@ func test_pear_t_16_suite_traceability_lists_spec_path() -> void:
 	_assert_true(body.find(SPEC_REF) >= 0, "PEAR-T-16_spec_path_in_header")
 
 
+func test_pear_t_17_unknown_family_declaration_fails_closed_without_spawn() -> void:
+	var decl: Array = [{"enemy_family": "unknown_family", "min_count": 1, "max_count": 1}]
+	var tree: SceneTree = _tree()
+	var room: Node3D = _setup_room_with_decl_and_spawn(decl, tree.root, ROOM_COMBAT_01_PATH)
+	if room == null:
+		_fail("PEAR-T-17_room_setup", "room instantiate failed")
+		return
+	var enemies: Array[Node3D] = _list_procedural_enemy_roots(room)
+	_assert_eq_int(0, enemies.size(), "PEAR-T-17_unknown_family_no_runtime_enemy_spawned")
+	_detach_and_free(room)
+
+
+func test_pear_t_18_acid_no_player_no_projectiles_under_stress() -> void:
+	var decl: Array = [{"enemy_family": "acid_spitter", "min_count": 1, "max_count": 1}]
+	var tree: SceneTree = _tree()
+	var room: Node3D = _setup_room_with_decl_and_spawn(decl, tree.root, ROOM_COMBAT_01_PATH)
+	if room == null:
+		_fail("PEAR-T-18_room_setup", "room instantiate failed")
+		return
+	var enemies: Array[Node3D] = _list_procedural_enemy_roots(room)
+	if enemies.is_empty() or not (enemies[0] is EnemyInfection3D):
+		_fail("PEAR-T-18_host_missing", "EnemyInfection3D host required")
+		_detach_and_free(room)
+		return
+	var enemy: EnemyInfection3D = enemies[0] as EnemyInfection3D
+	_prepare_infection_host(enemy)
+	var atk: AcidSpitterRangedAttack = enemy.get_node_or_null("AcidSpitterRangedAttack") as AcidSpitterRangedAttack
+	if atk == null:
+		_fail("PEAR-T-18_attack_missing", "acid attack not wired")
+		_detach_and_free(room)
+		return
+	atk._ready()
+	var ctrl: EnemyAnimationController = enemy.get_node_or_null("EnemyAnimationController") as EnemyAnimationController
+	var ap: AnimationPlayer = enemy.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	for _i in range(5000):
+		atk._physics_process(_PHYSICS_STEP)
+		if ap != null:
+			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
+	_assert_eq_int(0, _count_acid_projectiles_under(room), "PEAR-T-18_no_player_no_projectiles")
+	_detach_and_free(room)
+
+
+func test_pear_t_19_out_of_range_player_does_not_trigger_acid_attack() -> void:
+	var decl: Array = [{"enemy_family": "acid_spitter", "min_count": 1, "max_count": 1}]
+	var tree: SceneTree = _tree()
+	var room: Node3D = _setup_room_with_decl_and_spawn(decl, tree.root, ROOM_COMBAT_01_PATH)
+	if room == null:
+		_fail("PEAR-T-19_room_setup", "room instantiate failed")
+		return
+	var enemies: Array[Node3D] = _list_procedural_enemy_roots(room)
+	if enemies.is_empty() or not (enemies[0] is EnemyInfection3D):
+		_fail("PEAR-T-19_host_missing", "EnemyInfection3D host required")
+		_detach_and_free(room)
+		return
+	var enemy: EnemyInfection3D = enemies[0] as EnemyInfection3D
+	_prepare_infection_host(enemy)
+	var atk: AcidSpitterRangedAttack = enemy.get_node_or_null("AcidSpitterRangedAttack") as AcidSpitterRangedAttack
+	if atk == null:
+		_fail("PEAR-T-19_attack_missing", "acid attack not wired")
+		_detach_and_free(room)
+		return
+	atk._ready()
+	var far_player := Node3D.new()
+	far_player.name = "TestPlayerPear19Far"
+	far_player.add_to_group("player")
+	room.add_child(far_player)
+	far_player.position = enemy.position + Vector3(200.0, 0.0, 0.0)
+	var ctrl: EnemyAnimationController = enemy.get_node_or_null("EnemyAnimationController") as EnemyAnimationController
+	var ap: AnimationPlayer = enemy.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	for _i in range(5000):
+		atk._physics_process(_PHYSICS_STEP)
+		if ap != null:
+			ap.advance(_PHYSICS_STEP)
+		if ctrl != null:
+			ctrl._physics_process(_PHYSICS_STEP)
+	_assert_eq_int(0, _count_acid_projectiles_under(room), "PEAR-T-19_far_player_no_projectiles")
+	_detach_and_free(room)
+
+
+func test_pear_t_20_three_cycles_do_not_burst_fire_same_frame() -> void:
+	# CHECKPOINT conservative assumption: each cycle emits exactly one projectile, so three cycles produce exactly three.
+	var decl: Array = [{"enemy_family": "acid_spitter", "min_count": 1, "max_count": 1}]
+	var tree: SceneTree = _tree()
+	var room: Node3D = _setup_room_with_decl_and_spawn(decl, tree.root, ROOM_COMBAT_01_PATH)
+	if room == null:
+		_fail("PEAR-T-20_room_setup", "room instantiate failed")
+		return
+	var enemies: Array[Node3D] = _list_procedural_enemy_roots(room)
+	if enemies.is_empty() or not (enemies[0] is EnemyInfection3D):
+		_fail("PEAR-T-20_host_missing", "EnemyInfection3D host required")
+		_detach_and_free(room)
+		return
+	var enemy: EnemyInfection3D = enemies[0] as EnemyInfection3D
+	_prepare_infection_host(enemy)
+	var atk: AcidSpitterRangedAttack = enemy.get_node_or_null("AcidSpitterRangedAttack") as AcidSpitterRangedAttack
+	if atk == null:
+		_fail("PEAR-T-20_attack_missing", "acid attack not wired")
+		_detach_and_free(room)
+		return
+	atk._ready()
+	var player := Node3D.new()
+	player.name = "TestPlayerPear20"
+	player.add_to_group("player")
+	room.add_child(player)
+	player.position = enemy.position + Vector3(2.0, 0.0, 0.0)
+	var iters: int = _pump_acid_attack_integration(room, enemy, atk, 3)
+	_assert_true(iters < _PUMP_MAX_ITERS, "PEAR-T-20_three_cycles_within_pump_cap")
+	_assert_eq_int(3, _count_acid_projectiles_under(room), "PEAR-T-20_three_cycles_exact_three_projectiles")
+	_detach_and_free(room)
+
+
+func test_pear_t_21_repeat_spawn_calls_do_not_duplicate_attack_nodes() -> void:
+	var decl: Array = [{"enemy_family": "acid_spitter", "min_count": 1, "max_count": 1}]
+	var tree: SceneTree = _tree()
+	var room: Node3D = _instantiate_scene(ROOM_COMBAT_01_PATH) as Node3D
+	if room == null:
+		_fail("PEAR-T-21_room_setup", "room instantiate failed")
+		return
+	_set_combat_declarations(room, decl)
+	tree.root.add_child(room)
+	var assembler: Object = _make_assembler_for_spawn_only()
+	_spawn_via_assembler(room, ROOM_COMBAT_01_PATH, assembler)
+	_spawn_via_assembler(room, ROOM_COMBAT_01_PATH, assembler)
+	_free_assembler_instance(assembler)
+	var enemies: Array[Node3D] = _list_procedural_enemy_roots(room)
+	_assert_true(not enemies.is_empty(), "PEAR-T-21_spawned_enemy_present")
+	if enemies.is_empty():
+		_detach_and_free(room)
+		return
+	_prepare_infection_host(enemies[0])
+	var acid_script: GDScript = load("res://scripts/enemy/acid_spitter_ranged_attack.gd") as GDScript
+	var count: int = _count_attack_type_under(enemies[0], acid_script)
+	_assert_eq_int(1, count, "PEAR-T-21_repeat_spawn_no_duplicate_attack_nodes")
+	_detach_and_free(room)
+
+
 func run_all() -> int:
 	print("--- test_procedural_enemy_attack_loop_runtime_contract.gd ---")
 	_pass_count = 0
@@ -580,6 +718,11 @@ func run_all() -> int:
 	test_pear_t_14_attack_scripts_use_o1_player_lookup_only()
 	test_pear_t_15_no_duplicate_family_attack_siblings()
 	test_pear_t_16_suite_traceability_lists_spec_path()
+	test_pear_t_17_unknown_family_declaration_fails_closed_without_spawn()
+	test_pear_t_18_acid_no_player_no_projectiles_under_stress()
+	test_pear_t_19_out_of_range_player_does_not_trigger_acid_attack()
+	test_pear_t_20_three_cycles_do_not_burst_fire_same_frame()
+	test_pear_t_21_repeat_spawn_calls_do_not_duplicate_attack_nodes()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

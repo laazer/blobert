@@ -7,7 +7,12 @@ from typing import ClassVar
 
 from mathutils import Vector
 
-from ..core.blender_utils import create_sphere, random_variance
+from ..core.blender_utils import (
+    create_eye_mesh,
+    create_pupil_mesh,
+    create_sphere,
+    random_variance,
+)
 from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
 from ..core.rig_models.quadruped_simple import (
     CYLINDER_VERTICES_HEX,
@@ -48,7 +53,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     SPIDER_LEG_COUNT: ClassVar[int] = 8
     SPIDER_LEG_SEGMENTS: ClassVar[int] = 3
     DEFAULT_EYE_COUNT: ClassVar[int] = 2
-    ALLOWED_EYE_COUNTS: ClassVar[tuple[int, ...]] = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12)
+    ALLOWED_EYE_COUNTS: ClassVar[tuple[int, ...]] = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 99)
     LEG_ANCHOR_RATIOS: ClassVar[tuple[tuple[float, float, float], ...]] = (
         (0.3, 0.3, 0),
         (0.3, -0.3, 0),
@@ -99,10 +104,16 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         return out
 
     def _resolved_eye_count(self) -> int:
-        eye_count = int(self.build_options.get("eye_count", self._mesh("DEFAULT_EYE_COUNT")))
-        if eye_count not in self.ALLOWED_EYE_COUNTS:
+        raw = self.build_options.get("eye_count", self._mesh("DEFAULT_EYE_COUNT"))
+        try:
+            eye_count = int(raw)
+        except (TypeError, ValueError):
             return int(self._mesh("DEFAULT_EYE_COUNT"))
-        return eye_count
+        # Positive integers are accepted directly from build_options; API coercion
+        # enforces ALLOWED_EYE_COUNTS. The builder supports any positive count.
+        if eye_count > 0:
+            return eye_count
+        return int(self._mesh("DEFAULT_EYE_COUNT"))
 
     def _eye_clustering(self) -> float:
         try:
@@ -256,11 +267,25 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         # Keep center-to-center spacing >= roughly 2x eye radius on the head sphere.
         min_center_dist = max(0.05, 2.2 * eye_scale / max(1e-8, head_scale))
         eyes = self._separate_eye_dirs(eyes, min_center_dist)
+        eye_shape = str(self.build_options.get("eye_shape", "circle"))
+        pupil_enabled = bool(self.build_options.get("pupil_enabled", False))
+        pupil_shape = str(self.build_options.get("pupil_shape", "dot"))
+        pupil_scale = eye_scale * 0.35
+        # Build all eye meshes first, then append all pupil meshes (preserves contiguous eye index range).
+        eye_centers: list[Vector] = []
+        eye_dirs_resolved: list[Vector] = []
         for eye_dir in eyes:
             eye_dir = eye_dir.normalized()
             eye_center = head_center + eye_dir * head_scale
-            eye = create_sphere(location=tuple(eye_center), scale=(eye_scale, eye_scale, eye_scale))
+            eye = create_eye_mesh(eye_shape, tuple(eye_center), eye_scale)
             self.parts.append(eye)
+            eye_centers.append(eye_center)
+            eye_dirs_resolved.append(eye_dir)
+        if pupil_enabled:
+            for eye_center, eye_dir in zip(eye_centers, eye_dirs_resolved):
+                pupil_center = eye_center + eye_dir * (eye_scale + eye_scale * 0.05)
+                self.parts.append(create_pupil_mesh(pupil_shape, tuple(pupil_center), pupil_scale))
+        self._pupil_count = eye_count if pupil_enabled else 0
 
         # Hard requirement: spider always has exactly 8 legs (ignore runtime overrides).
         leg_count = 8
@@ -323,10 +348,13 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         eye_material = enemy_mats["extra"]
         features = self.build_options.get("features")
         ec = getattr(self, "_eye_count", int(self._mesh("DEFAULT_EYE_COUNT")))
+        pc = getattr(self, "_pupil_count", 0)
         for i in range(ec):
             apply_material_to_object(self.parts[2 + i], eye_material)
+        for i in range(pc):
+            apply_material_to_object(self.parts[2 + ec + i], enemy_mats["head"])
         per_leg = 8  # body->root connector + root/knee/ankle/foot + 3 limb cylinders
-        leg_start = 2 + ec
+        leg_start = 2 + ec + pc
         joint_names = ("root", "knee", "ankle", "foot")
         for leg in range(8):
             for k in range(per_leg):

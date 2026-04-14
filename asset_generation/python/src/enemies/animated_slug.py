@@ -4,7 +4,13 @@ from typing import ClassVar
 
 from mathutils import Vector
 
-from ..core.blender_utils import create_cylinder, create_sphere, random_variance
+from ..core.blender_utils import (
+    create_cylinder,
+    create_eye_mesh,
+    create_pupil_mesh,
+    create_sphere,
+    random_variance,
+)
 from ..core.rig_models.blob_simple import (
     CYLINDER_VERTICES_HEX,
     MESH_BODY_CENTER_Z_FACTOR,
@@ -69,11 +75,18 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         )
         self.parts.append(head)
 
+        eye_shape = str(self.build_options.get("eye_shape", "circle"))
+        pupil_enabled = bool(self.build_options.get("pupil_enabled", False))
+        pupil_shape = str(self.build_options.get("pupil_shape", "dot"))
+        eye_radius = float(self._mesh("EYE_RADIUS"))
+        pupil_scale = eye_radius * 0.35
         for side in [-1, 1]:
+            stalk_x = self.length * self._mesh("STALK_X_RATIO")
+            stalk_y = side * self.width * self._mesh("STALK_Y_SPREAD")
             stalk = create_cylinder(
                 location=(
-                    self.length * self._mesh("STALK_X_RATIO"),
-                    side * self.width * self._mesh("STALK_Y_SPREAD"),
+                    stalk_x,
+                    stalk_y,
                     self.height + self._mesh("STALK_Z_BASE"),
                 ),
                 scale=(self._mesh("STALK_RADIUS"), self._mesh("STALK_RADIUS"), self._mesh("STALK_LENGTH")),
@@ -81,15 +94,16 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             )
             self.parts.append(stalk)
 
-            eye = create_sphere(
-                location=(
-                    self.length * self._mesh("STALK_X_RATIO"),
-                    side * self.width * self._mesh("STALK_Y_SPREAD"),
-                    self.height + self._mesh("EYE_Z_OFFSET"),
-                ),
-                scale=(self._mesh("EYE_RADIUS"), self._mesh("EYE_RADIUS"), self._mesh("EYE_RADIUS")),
-            )
+            eye_z = self.height + float(self._mesh("EYE_Z_OFFSET"))
+            eye_loc = (stalk_x, stalk_y, eye_z)
+            eye = create_eye_mesh(eye_shape, eye_loc, eye_radius)
             self.parts.append(eye)
+
+            if pupil_enabled:
+                pupil_center = (stalk_x, stalk_y, eye_z + eye_radius + eye_radius * 0.05)
+                self.parts.append(create_pupil_mesh(pupil_shape, pupil_center, pupil_scale))
+
+        self._pupil_enabled = pupil_enabled
 
     def apply_themed_materials(self):
         enemy_mats = get_enemy_materials("slug", self.materials, self.rng)
@@ -97,11 +111,25 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         apply_material_to_object(self.parts[1], enemy_mats["head"])
         stalk_material = enemy_mats["limbs"]
         eye_material = enemy_mats["extra"]
-        for i, part in enumerate(self.parts[2:]):
-            if i % 2 == 0:
-                apply_material_to_object(part, stalk_material)
-            else:
-                apply_material_to_object(part, eye_material)
+        head_material = enemy_mats["head"]
+        pupil_enabled = getattr(self, "_pupil_enabled", False)
+        if pupil_enabled:
+            # Part pattern per side: stalk (0), eye (1), pupil (2) → repeat every 3.
+            for i, part in enumerate(self.parts[2:]):
+                r = i % 3
+                if r == 0:
+                    apply_material_to_object(part, stalk_material)
+                elif r == 1:
+                    apply_material_to_object(part, eye_material)
+                else:
+                    apply_material_to_object(part, head_material)
+        else:
+            # Original pattern: stalk (even), eye (odd).
+            for i, part in enumerate(self.parts[2:]):
+                if i % 2 == 0:
+                    apply_material_to_object(part, stalk_material)
+                else:
+                    apply_material_to_object(part, eye_material)
 
         append_animated_enemy_zone_extras(self)
 

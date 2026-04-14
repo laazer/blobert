@@ -436,10 +436,10 @@ func test_rts_adv_10_marker_z_is_zero_all_rooms() -> void:
 		var room_label: String = scene_path.get_file()
 		var entry: Node = root.get_node_or_null("Entry")
 		var exit_node: Node = root.get_node_or_null("Exit")
-		var room_ok: bool = true
+		var _room_ok: bool = true
 		if entry == null:
 			_fail_test("RTS-ADV-10_" + room_label + "_entry_missing", "Entry node not found")
-			room_ok = false
+			_room_ok = false
 			all_pass = false
 		else:
 			var ez: float = (entry as Node3D).position.z
@@ -448,11 +448,11 @@ func test_rts_adv_10_marker_z_is_zero_all_rooms() -> void:
 			else:
 				_fail_test("RTS-ADV-10_" + room_label + "_entry_z",
 					"Entry.position.z = " + str(ez) + ", expected 0.0 ±" + str(POS_TOL))
-				room_ok = false
+				_room_ok = false
 				all_pass = false
 		if exit_node == null:
 			_fail_test("RTS-ADV-10_" + room_label + "_exit_missing", "Exit node not found")
-			room_ok = false
+			_room_ok = false
 			all_pass = false
 		else:
 			var xz: float = (exit_node as Node3D).position.z
@@ -461,7 +461,7 @@ func test_rts_adv_10_marker_z_is_zero_all_rooms() -> void:
 			else:
 				_fail_test("RTS-ADV-10_" + room_label + "_exit_z",
 					"Exit.position.z = " + str(xz) + ", expected 0.0 ±" + str(POS_TOL))
-				room_ok = false
+				_room_ok = false
 				all_pass = false
 		root.free()
 	if all_pass:
@@ -604,20 +604,36 @@ func test_rts_adv_14_enemy_physics_interpolation_mode_all_rooms() -> void:
 			all_pass = false
 			continue
 		var room_label: String = scene_path.get_file()
-		var enemy: Node = root.get_node_or_null(enemy_name)
-		if enemy == null:
-			_fail_test("RTS-ADV-14_" + room_label + "_" + enemy_name + "_missing",
-				enemy_name + " not found as direct child of " + root.name)
-			all_pass = false
+		if scene_path == SCENE_COMBAT_01 or scene_path == SCENE_COMBAT_02:
+			for anchor_name in ["EnemySpawn_1", "EnemySpawn_2"]:
+				var anchor: Node = root.get_node_or_null(anchor_name)
+				if anchor == null:
+					_fail_test("RTS-ADV-14_" + room_label + "_" + anchor_name + "_missing",
+						anchor_name + " not found as direct child of " + root.name)
+					all_pass = false
+					continue
+				var anchor_mode: int = (anchor as Node3D).physics_interpolation_mode
+				if anchor_mode == 1 or anchor_mode == 0:
+					_pass_test("RTS-ADV-14_" + room_label + "_" + anchor_name + "_interp_mode_1")
+				else:
+					_fail_test("RTS-ADV-14_" + room_label + "_" + anchor_name,
+						anchor_name + " physics_interpolation_mode = " + str(anchor_mode) + ", expected 0 (inherit) or 1")
+					all_pass = false
 		else:
-			# physics_interpolation_mode is an int property: 0=inherit, 1=on, 2=off
-			var mode: int = (enemy as Node3D).physics_interpolation_mode
-			if mode == 1:
-				_pass_test("RTS-ADV-14_" + room_label + "_" + enemy_name + "_interp_mode_1")
-			else:
-				_fail_test("RTS-ADV-14_" + room_label + "_" + enemy_name,
-					enemy_name + " physics_interpolation_mode = " + str(mode) + ", expected 1")
+			var enemy: Node = root.get_node_or_null(enemy_name)
+			if enemy == null:
+				_fail_test("RTS-ADV-14_" + room_label + "_" + enemy_name + "_missing",
+					enemy_name + " not found as direct child of " + root.name)
 				all_pass = false
+			else:
+				# physics_interpolation_mode is an int property: 0=inherit, 1=on, 2=off
+				var mode: int = (enemy as Node3D).physics_interpolation_mode
+				if mode == 1:
+					_pass_test("RTS-ADV-14_" + room_label + "_" + enemy_name + "_interp_mode_1")
+				else:
+					_fail_test("RTS-ADV-14_" + room_label + "_" + enemy_name,
+						enemy_name + " physics_interpolation_mode = " + str(mode) + ", expected 1")
+					all_pass = false
 		root.free()
 	if all_pass:
 		_pass_test("RTS-ADV-14_all_enemy_rooms_physics_interp_mode_1")
@@ -642,19 +658,34 @@ func test_rts_adv_15_enemy_z_is_zero_all_rooms() -> void:
 			all_pass = false
 			continue
 		var room_label: String = scene_path.get_file()
-		var enemy: Node = root.get_node_or_null(enemy_name)
-		if enemy == null:
-			_fail_test("RTS-ADV-15_" + room_label + "_" + enemy_name + "_missing",
-				enemy_name + " not found")
-			all_pass = false
+		if scene_path == SCENE_COMBAT_01 or scene_path == SCENE_COMBAT_02:
+			for anchor_name in ["EnemySpawn_1", "EnemySpawn_2"]:
+				var anchor: Node = root.get_node_or_null(anchor_name)
+				if anchor == null:
+					_fail_test("RTS-ADV-15_" + room_label + "_" + anchor_name + "_missing", anchor_name + " not found")
+					all_pass = false
+					continue
+				var anchor_z: float = (anchor as Node3D).position.z
+				if _near(anchor_z, 0.0, POS_TOL):
+					_pass_test("RTS-ADV-15_" + room_label + "_" + anchor_name + "_z_zero (z=" + str(anchor_z) + ")")
+				else:
+					_fail_test("RTS-ADV-15_" + room_label + "_" + anchor_name,
+						anchor_name + " position.z = " + str(anchor_z) + ", expected 0.0 ±" + str(POS_TOL))
+					all_pass = false
 		else:
-			var z: float = (enemy as Node3D).position.z
-			if _near(z, 0.0, POS_TOL):
-				_pass_test("RTS-ADV-15_" + room_label + "_" + enemy_name + "_z_zero (z=" + str(z) + ")")
-			else:
-				_fail_test("RTS-ADV-15_" + room_label + "_" + enemy_name,
-					enemy_name + " position.z = " + str(z) + ", expected 0.0 ±" + str(POS_TOL))
+			var enemy: Node = root.get_node_or_null(enemy_name)
+			if enemy == null:
+				_fail_test("RTS-ADV-15_" + room_label + "_" + enemy_name + "_missing",
+					enemy_name + " not found")
 				all_pass = false
+			else:
+				var z: float = (enemy as Node3D).position.z
+				if _near(z, 0.0, POS_TOL):
+					_pass_test("RTS-ADV-15_" + room_label + "_" + enemy_name + "_z_zero (z=" + str(z) + ")")
+				else:
+					_fail_test("RTS-ADV-15_" + room_label + "_" + enemy_name,
+						enemy_name + " position.z = " + str(z) + ", expected 0.0 ±" + str(POS_TOL))
+					all_pass = false
 		root.free()
 	if all_pass:
 		_pass_test("RTS-ADV-15_all_enemies_z_zero")
@@ -669,7 +700,7 @@ func test_rts_adv_15_enemy_z_is_zero_all_rooms() -> void:
 # existing tests. The layout system and difficulty balance depend on the exact enemy
 # count being 1 per room as specified.
 # ---------------------------------------------------------------------------
-func test_rts_adv_16_exactly_one_enemy_in_single_enemy_rooms() -> void:
+func test_rts_adv_16_enemy_authoring_contract_per_room() -> void:
 	var single_enemy_scenes: Array = [
 		SCENE_COMBAT_01,
 		SCENE_COMBAT_02,
@@ -683,22 +714,32 @@ func test_rts_adv_16_exactly_one_enemy_in_single_enemy_rooms() -> void:
 			all_pass = false
 			continue
 		var room_label: String = scene_path.get_file()
-		# Count only DIRECT children of the room root with "Enemy" in their name.
-		# Recursive search is incorrect: enemy_infection_3d.tscn has a child
-		# "EnemyVisual" which would inflate the count to 2.
-		var enemy_count: int = 0
+		var enemy_named_count: int = 0
+		var enemy_spawn_anchor_count: int = 0
 		for i in range(root.get_child_count()):
-			if "Enemy" in root.get_child(i).name:
-				enemy_count += 1
-		if enemy_count == 1:
+			var child_name: String = str(root.get_child(i).name)
+			if "EnemySpawn_" in child_name:
+				enemy_spawn_anchor_count += 1
+			elif "Enemy" in child_name:
+				enemy_named_count += 1
+		if scene_path == SCENE_COMBAT_01 or scene_path == SCENE_COMBAT_02:
+			if enemy_spawn_anchor_count >= 1 and enemy_named_count == 0:
+				_pass_test("RTS-ADV-16_" + room_label + "_procedural_anchor_only_contract")
+			else:
+				_fail_test(
+					"RTS-ADV-16_" + room_label,
+					"Expected procedural anchor-only contract (>=1 EnemySpawn_*, 0 embedded Enemy*), got EnemySpawn_*=" + str(enemy_spawn_anchor_count) + ", Enemy*=" + str(enemy_named_count)
+				)
+				all_pass = false
+		elif enemy_named_count == 1:
 			_pass_test("RTS-ADV-16_" + room_label + "_exactly_one_enemy")
 		else:
 			_fail_test("RTS-ADV-16_" + room_label,
-				"Expected exactly 1 node with 'Enemy' in name, found " + str(enemy_count))
+				"Expected exactly 1 embedded Enemy* node, found " + str(enemy_named_count))
 			all_pass = false
 		root.free()
 	if all_pass:
-		_pass_test("RTS-ADV-16_all_single_enemy_rooms_have_exactly_1_enemy")
+		_pass_test("RTS-ADV-16_room_enemy_authoring_contract_holds")
 
 
 # ---------------------------------------------------------------------------
@@ -978,8 +1019,8 @@ func test_rts_adv_23_tscn_references_correct_enemy_scene_count() -> void:
 	# The ext_resource section declares it once; node sections reference it by id.
 	# We count occurrences of the full canonical path string.
 	var checks: Array = [
-		[SCENE_COMBAT_01,         1],
-		[SCENE_COMBAT_02,         1],
+		[SCENE_COMBAT_01,         0],
+		[SCENE_COMBAT_02,         0],
 		[SCENE_MUTATION_TEASE_01, 1],
 		[SCENE_BOSS_01,           1],
 	]
@@ -1008,11 +1049,11 @@ func test_rts_adv_23_tscn_references_correct_enemy_scene_count() -> void:
 				break
 			count += 1
 			search_start = idx + canonical.length()
-		if count >= expected_count:
+		if count == expected_count:
 			_pass_test("RTS-ADV-23_" + room_label + "_canonical_enemy_ref_count (found=" + str(count) + ")")
 		else:
 			_fail_test("RTS-ADV-23_" + room_label,
-				"Expected >=" + str(expected_count) + " reference(s) to '" + canonical +
+				"Expected exactly " + str(expected_count) + " reference(s) to '" + canonical +
 				"' in tscn text, found " + str(count))
 			all_pass = false
 	if all_pass:
@@ -1097,7 +1138,7 @@ func run_all() -> int:
 	test_rts_adv_13_env_and_light_present_all_rooms()
 	test_rts_adv_14_enemy_physics_interpolation_mode_all_rooms()
 	test_rts_adv_15_enemy_z_is_zero_all_rooms()
-	test_rts_adv_16_exactly_one_enemy_in_single_enemy_rooms()
+	test_rts_adv_16_enemy_authoring_contract_per_room()
 	test_rts_adv_17_intro_room_child_count_bounded()
 	test_rts_adv_18_floor_nodes_have_mesh_instance_all_rooms()
 	test_rts_adv_19_floor_node_position_x_correct()

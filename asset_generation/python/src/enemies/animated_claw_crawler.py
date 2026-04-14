@@ -6,7 +6,13 @@ from typing import ClassVar
 
 from mathutils import Vector
 
-from ..core.blender_utils import create_cylinder, create_sphere, random_variance
+from ..core.blender_utils import (
+    create_cylinder,
+    create_eye_mesh,
+    create_pupil_mesh,
+    create_sphere,
+    random_variance,
+)
 from ..core.rig_models.quadruped_simple import (
     CYLINDER_VERTICES_HEX,
     QUADRUPED_LEG_THICKNESS,
@@ -104,6 +110,10 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         pe = int(self.build_options.get("peripheral_eyes", 0))
         self._peripheral_eyes = max(0, min(int(self._mesh("PERIPHERAL_EYES_MAX")), pe))
         eye_scale = self.head_scale * self._mesh("EYE_SCALE_HEAD_RATIO")
+        eye_shape = str(self.build_options.get("eye_shape", "circle"))
+        pupil_enabled = bool(self.build_options.get("pupil_enabled", False))
+        pupil_shape = str(self.build_options.get("pupil_shape", "dot"))
+        pupil_scale = eye_scale * 0.35
         for i in range(self._peripheral_eyes):
             if self._peripheral_eyes == 1:
                 dy, dz = self._mesh("EYE_ONE_DY"), self._mesh("EYE_ONE_DZ")
@@ -116,11 +126,17 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 dz = self._mesh("EYE_RING_DZ_BASE") + self._mesh("EYE_RING_DZ_SIN_SCALE") * math.sin(
                     ang + self._mesh("EYE_RING_ANGLE_OFFSET")
                 )
-            eye = create_sphere(
-                location=(-self.body_scale * self._mesh("EYE_BACK_X"), dy, self._mesh("EYE_BASE_Z") + dz),
-                scale=(eye_scale, eye_scale, eye_scale),
-            )
+            eye_loc_x = float(-self.body_scale * self._mesh("EYE_BACK_X"))
+            eye_loc_y = float(dy)
+            eye_loc_z = float(self._mesh("EYE_BASE_Z") + dz)
+            eye_location = (eye_loc_x, eye_loc_y, eye_loc_z)
+            eye = create_eye_mesh(eye_shape, eye_location, eye_scale)
             self.parts.append(eye)
+            if pupil_enabled:
+                pupil_center = (eye_loc_x + eye_scale + eye_scale * 0.05, eye_loc_y, eye_loc_z)
+                self.parts.append(create_pupil_mesh(pupil_shape, pupil_center, pupil_scale))
+
+        self._pupil_enabled = pupil_enabled
 
         for side in [-1, 1]:
             claw_length = random_variance(self._mesh("CLAW_LENGTH_BASE"), self._mesh("CLAW_LENGTH_VARIANCE"), self.rng)
@@ -154,10 +170,14 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         eye_mat = enemy_mats["extra"]
         claw_material = enemy_mats["extra"]
         limb_material = enemy_mats["limbs"]
+        pupil_enabled = getattr(self, "_pupil_enabled", False)
         part_index = 2
         for _ in range(self._peripheral_eyes):
             apply_material_to_object(self.parts[part_index], eye_mat)
             part_index += 1
+            if pupil_enabled:
+                apply_material_to_object(self.parts[part_index], enemy_mats["head"])
+                part_index += 1
         for _ in range(int(self._mesh("CLAW_COUNT"))):
             apply_material_to_object(self.parts[part_index], claw_material)
             part_index += 1

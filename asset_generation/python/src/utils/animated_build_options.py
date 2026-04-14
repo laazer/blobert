@@ -129,6 +129,38 @@ def _placement_seed_def() -> dict[str, Any]:
     }
 
 
+_EYE_SHAPE_OPTIONS: tuple[str, ...] = ("circle", "oval", "slit", "square")
+_PUPIL_SHAPE_OPTIONS: tuple[str, ...] = ("dot", "slit", "diamond")
+_DEFAULT_EYE_SHAPE = "circle"
+_DEFAULT_PUPIL_SHAPE = "dot"
+
+
+def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
+    """Return the three eye-shape + pupil control defs shared by every animated slug."""
+    return [
+        {
+            "key": "eye_shape",
+            "label": "Eye shape",
+            "type": "select_str",
+            "options": list(_EYE_SHAPE_OPTIONS),
+            "default": _DEFAULT_EYE_SHAPE,
+        },
+        {
+            "key": "pupil_enabled",
+            "label": "Pupil",
+            "type": "bool",
+            "default": False,
+        },
+        {
+            "key": "pupil_shape",
+            "label": "Pupil shape",
+            "type": "select_str",
+            "options": list(_PUPIL_SHAPE_OPTIONS),
+            "default": _DEFAULT_PUPIL_SHAPE,
+        },
+    ]
+
+
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
     ensure_blender_stubs()
     try:
@@ -725,8 +757,15 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
         static = list(_ANIMATED_BUILD_CONTROLS.get(slug, []))
         if slug == "spider":
             static = _spider_eye_control_defs()
+        # eye_shape / pupil_enabled / pupil_shape are non-float controls that must
+        # appear before any float-type entry (ESPS-1-AC-6).  Split static into its
+        # non-float prefix and float suffix so the new controls slot in correctly.
+        static_non_float = [c for c in static if c.get("type") != "float"]
+        static_float = [c for c in static if c.get("type") == "float"]
         merged = (
-            static
+            static_non_float
+            + _eye_shape_pupil_control_defs()
+            + static_float
             + _mesh_float_control_defs(slug)
             + _feature_control_defs(slug)
             + _part_feature_control_defs(slug)
@@ -745,6 +784,8 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     else:
         for c in _ANIMATED_BUILD_CONTROLS.get(slug, []):
             out[c["key"]] = c.get("default")
+    for c in _eye_shape_pupil_control_defs():
+        out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
     out["features"] = _default_features_dict(slug)
@@ -769,6 +810,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
         allowed_non_mesh = {c["key"] for c in _spider_eye_control_defs()}
     else:
         allowed_non_mesh = {c["key"] for c in _ANIMATED_BUILD_CONTROLS.get(enemy_type, [])}
+    allowed_non_mesh |= {c["key"] for c in _eye_shape_pupil_control_defs()}
     allowed_non_mesh |= {"placement_seed"}
 
     if isinstance(src.get("mesh"), dict):
@@ -820,6 +862,7 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
     static_defs: list[dict[str, Any]] = (
         list(_spider_eye_control_defs()) if enemy_type == "spider" else list(_ANIMATED_BUILD_CONTROLS.get(enemy_type, []))
     )
+    static_defs.extend(_eye_shape_pupil_control_defs())
     static_defs.append(_placement_seed_def())
     for c in static_defs:
         key = c["key"]
@@ -862,6 +905,8 @@ def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, A
                 out[key] = d if isinstance(d, str) and d in opts else (opts[0] if opts else raw_s)
             else:
                 out[key] = raw_s
+        elif t == "bool":
+            out[key] = _coerce_boolish(out[key], default=bool(c.get("default", False)))
 
     mesh_in = dict(out.get("mesh") or {})
     mesh_out: dict[str, Any] = {}

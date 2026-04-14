@@ -362,3 +362,7 @@ Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-
 - Next Agent: Engine Integration Agent
 - Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
 - Outcome: Runtime adversarial contract expanded with unknown-family fail-closed, no-player/out-of-range stress, anti-burst checkpoint assertion, and duplicate-wiring mutation guard (`PEAR-T-17..21`).
+
+### [03_procedural_enemy_attack_loop_runtime] — OUTCOME: COMPLETE
+M10-03 attack loop for procedural spawns: runtime spec + `PEAR-T-*` contract suite; acid/M8 wiring + assembler placement fixes; full `godot` + `ci/scripts/run_tests.sh` green (incl. diff-cover and eye-shape test coverage follow-ups).
+Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`

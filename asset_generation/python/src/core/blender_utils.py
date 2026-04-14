@@ -64,6 +64,88 @@ def create_box(location=(0, 0, 0), scale=(1, 1, 1)):
     return bpy.context.active_object
 
 
+# ---------------------------------------------------------------------------
+# Eye and pupil mesh helpers (ESPS-3, ESPS-4)
+# ---------------------------------------------------------------------------
+
+# Eye shape scale constants (non-trivial tuning values must be named).
+_EYE_OVAL_SCALE_X: float = 1.4   # elongate along X (forward-facing axis)
+_EYE_OVAL_SCALE_Z: float = 0.85  # compress along Z slightly
+_EYE_SLIT_SCALE_Y: float = 0.35  # narrow along Y for vertical-slit silhouette
+
+# Pupil scale constants.
+_PUPIL_EYE_SCALE_RATIO: float = 0.35   # pupil radius relative to eye radius
+_PUPIL_DOT_Z_RATIO: float = 0.3        # Z squish for flat disc dot pupil
+_PUPIL_SLIT_X_RATIO: float = 0.25      # X width for slit pupil cylinder
+_PUPIL_SLIT_Z_RATIO: float = 0.05      # Z depth (thin coin)
+_PUPIL_DIAMOND_X_RATIO: float = 0.6    # X width for diamond box
+_PUPIL_DIAMOND_Y_RATIO: float = 0.25   # Y depth for diamond box
+_PUPIL_DIAMOND_Z_RATIO: float = 0.9    # Z height for diamond box
+
+
+def create_eye_mesh(shape: str, location: tuple, eye_scale: float):
+    """Create an eye mesh primitive dispatched by shape.
+
+    Args:
+        shape:      One of 'circle', 'oval', 'slit', 'square'. Unknown values
+                    fall back to 'circle' behaviour.
+        location:   World-space (x, y, z) tuple for the eye centre.
+        eye_scale:  Scalar radius / half-extent for the eye.
+
+    Returns:
+        The Blender object created.
+    """
+    if shape == "square":
+        return create_box(location=location, scale=(eye_scale, eye_scale, eye_scale))
+    if shape == "oval":
+        return create_sphere(
+            location=location,
+            scale=(eye_scale * _EYE_OVAL_SCALE_X, eye_scale, eye_scale * _EYE_OVAL_SCALE_Z),
+        )
+    if shape == "slit":
+        return create_sphere(
+            location=location,
+            scale=(eye_scale, eye_scale * _EYE_SLIT_SCALE_Y, eye_scale),
+        )
+    # Default: 'circle' (uniform sphere) — also the fallback for unknown shapes.
+    return create_sphere(location=location, scale=(eye_scale, eye_scale, eye_scale))
+
+
+def create_pupil_mesh(shape: str, location: tuple, pupil_scale: float):
+    """Create a pupil mesh primitive dispatched by shape.
+
+    Args:
+        shape:        One of 'dot', 'slit', 'diamond'. Unknown values fall
+                      back to 'dot' behaviour.
+        location:     World-space (x, y, z) tuple for the pupil centre.
+        pupil_scale:  Scalar radius / half-extent for the pupil.
+
+    Returns:
+        The Blender object created.
+    """
+    if shape == "slit":
+        return create_cylinder(
+            location=location,
+            scale=(pupil_scale * _PUPIL_SLIT_X_RATIO, pupil_scale, pupil_scale * _PUPIL_SLIT_Z_RATIO),
+            vertices=8,
+            depth=2.0,
+        )
+    if shape == "diamond":
+        return create_box(
+            location=location,
+            scale=(
+                pupil_scale * _PUPIL_DIAMOND_X_RATIO,
+                pupil_scale * _PUPIL_DIAMOND_Y_RATIO,
+                pupil_scale * _PUPIL_DIAMOND_Z_RATIO,
+            ),
+        )
+    # Default: 'dot' (flat disc sphere) — also the fallback for unknown shapes.
+    return create_sphere(
+        location=location,
+        scale=(pupil_scale, pupil_scale, pupil_scale * _PUPIL_DOT_Z_RATIO),
+    )
+
+
 def detect_body_scale_from_mesh(mesh) -> float:
     """Estimate a body_scale value from an imported mesh's bounding box.
 

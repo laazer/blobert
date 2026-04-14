@@ -4,6 +4,68 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [02_wire_generated_enemies_combat_rooms] — Arbitration-to-closure requires explicit evidence contracts
+*Completed: 2026-04-14*
+
+### Learnings
+- category: process
+  insight: A `BLOCKED` ticket should not return to execution until arbitration output is transformed into an explicit closure contract (authority model, schema keys, test ownership, and stage order), not just a narrative decision.
+  impact: Without converting arbitration into enforceable closure constraints, blocked tickets can re-enter with unresolved ambiguity and loop back into gate failures.
+  prevention: Require a standardized `Arbitration Closure Contract` artifact in ticket state before any stage transition from `BLOCKED` to active execution.
+  severity: high
+
+- category: testing
+  insight: Arbitration quality is only reusable when it names exact test groups to rewrite/remove and preserves strict assertions that stay canonical.
+  impact: The unblock-to-complete transition succeeded because arbitration explicitly retained strict procedural assertions and targeted legacy tests for rewrite/removal.
+  prevention: Treat "which tests are authoritative now" as mandatory arbitration output, with test IDs or suite names captured in the ticket workflow state.
+  severity: high
+
+- category: process
+  insight: Completion claims after arbitration must include objective closure evidence (full-suite pass, subsystem pass, and stage-folder alignment) to avoid false-complete outcomes.
+  impact: Ticket closure became defensible only after documented exits for `godot --headless -s tests/run_tests.gd`, `ci/scripts/run_tests.sh`, and done-folder/stage consistency.
+  prevention: Add a completion checklist template that rejects `COMPLETE` without command-level exit evidence and workflow-location consistency.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating arbitration as advisory commentary instead of a binding migration contract.
+  detection_signal: Ticket exits `BLOCKED` without an explicit list of canonical authority decisions and dependent test migration actions.
+  prevention: Require a gatekeeper-validated arbitration memo with mandatory fields before unblocking.
+
+- description: Declaring `COMPLETE` using only local implementation success while skipping workflow-state integrity checks.
+  detection_signal: Tests pass but ticket stage, folder location, or NEXT ACTION metadata still imply non-terminal state.
+  prevention: Enforce stage/folder/NEXT ACTION consistency checks as part of completion validation.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "When a ticket enters `BLOCKED` due to contract conflict, do not reopen execution until an `Arbitration Closure Contract` is logged with: canonical authority model, required test migrations, strict assertions retained, and mandated stage execution order."
+  reason: Converts arbitration outcomes into enforceable execution constraints instead of informal guidance.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "For `BLOCKED` -> `COMPLETE` recoveries, require closure evidence bundle: (1) arbitration decisions mapped to concrete test-suite actions, (2) command-level pass evidence for subsystem and full regression gates, and (3) stage/folder/NEXT ACTION consistency."
+  reason: Prevents premature closure and makes recovery path auditable.
+
+- agent: Test Designer Agent
+  change: "After arbitration on conflicting contracts, annotate each affected test group as `retain-strict`, `rewrite`, or `remove`, and link each label to the authoritative runtime model in the ticket."
+  reason: Reduces ambiguity during post-arbitration test cleanup and protects canonical assertions.
+
+### Workflow Improvements
+- issue: Unblock criteria from arbitration were implicit and spread across notes.
+  improvement: Introduce a structured `BLOCKED Recovery Checklist` template in workflow state fields.
+  expected_benefit: Speeds recovery while keeping unblock decisions deterministic and reviewable.
+
+- issue: Completion validation mixed technical and process checks informally.
+  improvement: Split gatekeeper validation into two explicit sub-gates: `Behavioral Evidence` and `Workflow Integrity Evidence`.
+  expected_benefit: Makes final closure criteria clearer and reduces reopen risk from metadata drift.
+
+### Keep / Reinforce
+- practice: Human arbitration captured explicit canonical decisions (authority model, schema key strictness, deterministic fallback policy, and stage order).
+  reason: The explicit decision set made downstream completion verifiable rather than interpretive.
+
+- practice: Gatekeeper required full command evidence plus workflow consistency before declaring terminal completion.
+  reason: Preserved high-confidence closure after a previously blocked state.
+
+---
+
 ## [18_registry_subtabs_by_pipeline_cmd] + [19_model_viewer_fullscreen_button] — Registry RunCmd tabs and GLB fullscreen
 *Completed: 2026-04-11*
 
@@ -42,6 +104,82 @@ Structured insights extracted after each completed ticket.
 ### Keep / Reinforce
 - practice: Extract shared center-panel tab styles (`centerPanelTabBtnStyle`) instead of duplicating literals when adding a second tab strip inside a pane.
   reason: Keeps Registry sub-tabs visually aligned with Code/Build/Registry with a single source of truth.
+
+---
+
+## [01_spec_procedural_enemy_spawn_attack_loop] — Convert medium-confidence assumptions into explicit schema fixtures before adversarial tests
+*Completed: 2026-04-14*
+
+### Learnings
+- category: process
+  insight: When acceptance criteria reference stale paths, spec work must resolve canonical ownership immediately and propagate that canonical path into downstream test contracts.
+  impact: A path mismatch (`scripts/level/...` vs `scripts/system/...`) created avoidable ambiguity during spec and test authoring.
+  prevention: Add a mandatory "canonical path reconciliation" subsection in spec tickets before TEST_DESIGN, listing stale references and the chosen source-of-truth path.
+  severity: medium
+
+- category: testing
+  insight: Medium-confidence assumptions about serialization shape should be codified as explicit schema examples in the spec before TEST_DESIGN writes strict assertions.
+  impact: Tests enforced `enemy_spawn_declarations` metadata on room roots, then adversarial runs exposed deterministic gaps in room declaration metadata and legacy room seams that required implementation rework.
+  prevention: For each contract key introduced in spec, include one valid and one invalid fixture snippet so test and implementation agents inherit identical structure expectations.
+  severity: high
+
+- category: architecture
+  insight: Compatibility seams (legacy embedded enemies, missing spawn anchors, generated-scene path validity) must be treated as first-class contract requirements, not implementation details.
+  impact: The first red cycle in TEST_BREAK clustered around backward-compatibility behavior rather than new happy-path logic, extending the implementation loop.
+  prevention: Add a dedicated compatibility matrix in spec tickets that maps each legacy state to required runtime behavior and fallback.
+  severity: high
+
+- category: process
+  insight: Workflow closure state must be validated as part of acceptance completion, including folder placement and stage value coherence.
+  impact: Ticket validation was blocked by folder/state mismatch (`in_progress/` while functionally complete), creating non-product rework.
+  prevention: Add a pre-close checklist item in gatekeeper handoff: verify milestone folder location and WORKFLOW STATE transition are both complete before declaring terminal status.
+  severity: medium
+
+### Anti-Patterns
+- description: Writing strict contract tests from underspecified data-shape assumptions.
+  detection_signal: TEST_DESIGN introduces exact metadata keys while spec has no fixture examples or explicit serialization schema.
+  prevention: Require spec fixture blocks for every asserted metadata key before tests can move to TEST_BREAK.
+
+- description: Treating legacy compatibility as an implementation afterthought.
+  detection_signal: Initial failing tests center on fallback/legacy room behavior instead of new declared contract paths.
+  prevention: Add compatibility requirements as numbered contract clauses with dedicated adversarial tests.
+
+- description: Declaring completion without workflow-state hygiene.
+  detection_signal: AC evidence is green but ticket still sits in `in_progress/` or stage is not terminal.
+  prevention: Gatekeeper must check ticket path/state coherence as a hard close condition.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every new contract key, include one canonical valid fixture and one invalid fixture snippet in the spec; do not leave serialization shape implicit when downstream tests will assert exact keys."
+  reason: Prevents medium-confidence assumptions from becoming red-cycle rework in TEST_BREAK/implementation.
+
+- agent: Test Designer Agent
+  change: "Before writing strict schema assertions, verify the spec contains explicit fixture examples for each asserted key; if absent, block and request spec clarification instead of inferring shape."
+  reason: Reduces false certainty and avoids enforcing guessed metadata structures.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "When AC evidence is complete, also validate closure hygiene: ticket file is in the correct milestone `done/` folder and WORKFLOW STATE is terminal; if either is missing, return a closure action instead of terminal pass."
+  reason: Eliminates avoidable final-step rework unrelated to product behavior.
+
+### Workflow Improvements
+- issue: Assumption capture exists in checkpoints but is not converted into explicit schema artifacts before tests.
+  improvement: Add a micro-gate between SPECIFICATION and TEST_DESIGN: convert all medium-confidence assumptions into either spec fixture examples or explicit unresolved questions.
+  expected_benefit: Fewer deterministic red cycles caused by inferred data contracts.
+
+- issue: Compatibility behavior is discovered reactively in TEST_BREAK.
+  improvement: Add a required "legacy compatibility matrix" section for runtime-spec tickets that touch existing scenes or generated assets.
+  expected_benefit: Earlier detection of fallback requirements and less implementation churn.
+
+- issue: Ticket completion can stall on administrative state mismatch after technical AC success.
+  improvement: Add an automated close checklist step in gatekeeper flow covering folder path, stage transition, and next-agent nulling.
+  expected_benefit: Faster, cleaner ticket closure with fewer human cleanup passes.
+
+### Keep / Reinforce
+- practice: Scoped checkpoints captured `Would have asked` / `Assumption made` / `Confidence` at each stage.
+  reason: Enabled precise extraction of root-cause uncertainty instead of relying on hindsight narratives.
+
+- practice: Adversarial contract expansion (mutation/corrupt-manifest/schema/stress) surfaced hidden compatibility seams early.
+  reason: Produced actionable failures tied directly to contract boundaries and improved implementation targeting.
 
 ---
 
@@ -3420,5 +3558,175 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   impact: Orchestrator should not assume a doc-only ticket will pass an aggregate diff-cover bar.
   prevention: Run preflight before merge; split PRs or add MCP integration tests when the gate blocks.
   severity: low
+
+---
+
+## [02_wire_generated_enemies_combat_rooms] — Resolve cross-ticket contract conflicts before implementation
+*Completed: 2026-04-14*
+
+### Learnings
+- category: process
+  insight: A ticket that depends on a prior ticket's behavioral contract must inherit the same authority model (authoritative spawn source vs embedded fixtures) before test design starts; otherwise downstream tests can encode mutually exclusive truths.
+  impact: This ticket reached `BLOCKED` after implementation/tests because legacy `RTS-ENC-*` expectations (embedded enemies) and procedural `PESAL-T-05` expectations (no embedded enemies) were both treated as active acceptance evidence.
+  prevention: Add a pre-test "contract inheritance check" that compares dependency tests and current ticket ACs for direct contradictions, and require planner arbitration before writing new tests if a conflict exists.
+  severity: high
+
+- category: testing
+  insight: Cross-suite acceptance validation is fragile when old fixture-shape assertions remain normative after introducing runtime-driven generation contracts.
+  impact: AC-R4.5 and AC-R5.5 could not be defensibly validated because passing one suite implied violating the other suite.
+  prevention: When a runtime authority shift happens, explicitly mark legacy fixture assertions as deprecated, migrated, or scoped to non-authoritative compatibility tests.
+  severity: high
+
+- category: process
+  insight: Medium/low-confidence assumptions about architecture boundaries (direct scene embedding vs runtime helper wiring) create avoidable rework when they are not resolved by ownership at planning time.
+  impact: The implementation stage executed under a low-confidence assumption and then encountered gate failure that required planner-level arbitration anyway.
+  prevention: Treat any assumption that changes canonical data authority as "must-resolve" in planning, not implementation.
+  severity: medium
+
+### Anti-Patterns
+- description: Writing or keeping tests from two paradigms active at once without declaring which one is authoritative.
+  detection_signal: Test names/fixtures assert opposite invariants for the same object lifecycle (for example "embedded child required" and "embedded child forbidden").
+  prevention: Require a single "authority statement" in the ticket and test files before accepting new contract tests.
+
+- description: Letting implementation proceed when checkpoints record low confidence on core contract assumptions.
+  detection_signal: Checkpoint has `Confidence: Low` on an assumption that affects acceptance semantics (not just naming or formatting).
+  prevention: Auto-escalate to planner/gatekeeper before implementation whenever low-confidence assumptions touch canonical behavior.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "Before advancing a ticket with test dependencies to TEST_DESIGN, run a contradiction scan across referenced dependency tests and current acceptance criteria; if any pair asserts mutually exclusive behavior for the same runtime object, set Stage to `BLOCKED`, record both test IDs, and require an explicit canonical authority decision plus deprecation plan."
+  reason: Prevents parallel test contracts from surviving long enough to block AC validation late in the pipeline.
+
+- agent: Test Designer Agent
+  change: "When introducing contract tests that replace a legacy fixture model, include a `Legacy Contract Disposition` note naming legacy test groups to deprecate, adapt, or keep as compatibility-only; do not leave both groups normative by default."
+  reason: Forces explicit migration of old assertions instead of accidental dual-authority enforcement.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If acceptance evidence references two suites with opposite invariants, fail fast with `BLOCKED` and emit a required remediation checklist: canonical authority decision, specific tests to retire/update, and reassigned owners."
+  reason: Moves contradiction discovery earlier and standardizes unblock steps.
+
+### Workflow Improvements
+- issue: Contract contradictions were discovered at AC gate after substantial downstream work.
+  improvement: Insert a pre-implementation `Contract Consistency Gate` after TEST_BREAK for tickets that change runtime authority models.
+  expected_benefit: Detects incompatible assertions before implementation churn and reduces blocked end states.
+
+- issue: Checkpoint assumption metadata was informative but not enforceable.
+  improvement: Add a workflow rule: low-confidence assumptions on canonical behavior automatically block stage progression until planner arbitration.
+  expected_benefit: Converts passive checkpoint notes into active risk control.
+
+### Keep / Reinforce
+- practice: Scoped checkpoints captured `Would have asked` / `Assumption made` / `Confidence` at each stage.
+  reason: The contradiction root cause and escalation boundary were reconstructable without re-running the full pipeline.
+
+- practice: Acceptance gate refused to force closure under contradictory evidence.
+  reason: Preserved integrity of completion criteria and prevented a false `COMPLETE` state.
+
+---
+
+## [03_procedural_enemy_attack_loop_runtime] — Headless PEAR pumps, CI diff-cover coupling, and acid attack off-tree semantics
+*Completed: 2026-04-14*
+
+### Learnings
+- category: testing
+  insight: Continuous attack-loop behavior under `tests/run_tests.gd` synchronous `run_all()` should be asserted with a deterministic bounded loop that calls `AcidSpitterRangedAttack._physics_process`, `AnimationPlayer.advance`, and `EnemyAnimationController._physics_process` together—not `SceneTree` idle/timer-driven advancement, which is unreliable in that harness.
+  impact: Async assumptions would flake or never complete telegraphs; checkpoint TEST_DESIGN explicitly chose sync pumping aligned with existing attack telegraph integration tests.
+  prevention: For headless “multi-cycle” contracts, default to the project’s established sync integration pattern and document the pump ordering in the test file header.
+  severity: high
+
+- category: testing
+  insight: If production hosts defer wiring (`call_deferred` for animation/controller setup), contract tests must mirror that wiring synchronously in a helper (e.g. invoke the same post-ready hook the runtime would) so the SUT matches production state without requiring idle frames.
+  impact: Without mirroring, pumps run against partially wired enemies and mis-attribute failures to attack logic.
+  prevention: Test harness must list which deferred production paths are explicitly invoked for headless equivalence.
+  severity: high
+
+- category: architecture
+  insight: Attack scripts that cast the parent to `EnemyInfection3D` in `_ready()` create a hard integration contract: “duck-typed” hosts are insufficient where M8 scripts assume that cast; tests should require the real host type when exercising those scripts.
+  impact: Avoids false confidence from simplified test doubles that cannot satisfy runtime attack attachment semantics.
+  prevention: When designing PEAR-style integration tests, align host type assertions with `_ready()` cast requirements in family attack scripts.
+  severity: medium
+
+- category: infra
+  insight: Full `ci/scripts/run_tests.sh` runs Godot plus `asset_generation/python` pytest with diff-cover on changed lines; touches to pipeline/registry/Blender helpers in the same delivery as Godot runtime work can fail CI on Python coverage even when Godot is green.
+  impact: Ticket closure evidence that cites only headless GDScript may miss a diff-cover failure from paired `.py` edits.
+  prevention: Treat any commit touching `asset_generation/python/` as subject to diff-cover until `py-tests.sh` passes on the diff hunks; plan tests or refactors so changed Python lines execute under pytest coverage.
+  severity: medium
+
+- category: testing
+  insight: Strict manual `_physics_process` pumps do not advance `SceneTree` timers or guarantee signal order with `AnimationPlayer` advance; ranged telegraph completion needs a production-side fallback (export timer and/or signal watchdog) when signals do not fire in the pumped order.
+  impact: Headless tests could not complete telegraphs reliably without runtime support for non-timer completion paths and without relaxing `is_inside_tree()` gating on pumped attack nodes.
+  prevention: When adding headless contract pumps, implement or extend attack scripts with explicit telegraph completion paths that do not depend solely on scene timers or tree membership.
+  severity: high
+
+### Anti-Patterns
+- description: Gating attack progression on `is_inside_tree()` or only on `SceneTree` timer completion in code paths exercised by manual physics pumps.
+  detection_signal: Headless PEAR tests hang under iteration cap or pass in-editor but fail headless with the same pump.
+  prevention: Support pumped execution explicitly (documented in attack script) and use telegraph fallbacks/watchdogs where signals and timers diverge from gameplay.
+
+- description: Treating “Godot suite green” as sufficient for ticket CI when the branch also modifies Python sources under diff-cover.
+  detection_signal: `run_tests.sh` fails at diff-cover while `godot --headless -s tests/run_tests.gd` passed locally.
+  prevention: Run full `ci/scripts/run_tests.sh` before closure when `asset_generation/python/` is in the diff.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For headless multi-frame combat contracts under `run_tests.gd`, specify a synchronous pump recipe (which nodes’ `_physics_process` run, `AnimationPlayer.advance` step, bounded `max_iters`) and require a harness helper that mirrors any production `call_deferred` wiring needed for equivalent ready-state; forbid relying on `await`/idle for timing-critical attack phases."
+  reason: Makes PEAR-style tests deterministic and aligned with existing integration tests.
+
+- agent: Engine Integration Agent (or Implementation Generalist for gameplay)
+  change: "When family attacks are covered by headless pumps, ensure telegraph completion has a non-SceneTree-timer path (signal watchdog and/or export fallback) and avoid `is_inside_tree()` guards that block pumped `_physics_process` on valid hosts."
+  reason: Matches strict manual pump semantics and prevents false-red headless contracts.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If Validation Status cites `ci/scripts/run_tests.sh` exit 0, confirm whether the diff touches `asset_generation/python/`; when yes, note diff-cover/pytest success explicitly alongside Godot evidence."
+  reason: Full CI is not Godot-only; closure text should reflect both gates.
+
+### Workflow Improvements
+- issue: Dual-runtime CI (Godot + Python diff-cover) is easy to under-specify in Godot-heavy tickets.
+  improvement: Add a gatekeeper checklist item: “Python diff touched → pytest+diff-cover evidence” whenever repo status includes `asset_generation/python/` changes.
+  expected_benefit: Fewer surprise red CI runs after local Godot-only validation.
+
+- issue: Deferred host wiring is invisible to tests unless explicitly mirrored.
+  improvement: Require spec or TEST_DESIGN note listing deferred hooks that the PEAR harness must invoke for parity.
+  expected_benefit: Less debugging of “works in play, fails in contract test” from ready-state skew.
+
+### Keep / Reinforce
+- practice: Map ticket ACs to trace IDs (`PEAR-T-08`/`PEAR-T-09` for multi-attack / cooldown separation) so “attacks more than once” has an objective headless substitute.
+  reason: Bridges human play ACs with automated bounded simulation evidence.
+
+- practice: Construct `RunSceneAssembler` via script instance + `_spawn_generated_enemies_for_room` without entering full run assembly, then free orphan instances.
+  reason: Tests the production spawn path without duplicating spawn logic or dragging unrelated run lifecycle.
+
+---
+
+## [03_procedural_enemy_attack_loop_runtime] — Addendum (checkpoints: anti-burst, ESM closure)
+*Completed: 2026-04-14*
+
+*Supplements the entry above; avoids repeating headless pump + diff-cover themes already captured there.*
+
+### Learnings
+- category: testing
+  insight: Aggregate “≥2 projectiles / ≥2 cycles” checks are not sufficient to define a clean attack loop; pairing them with per-cycle cardinality (e.g. PEAR-T-20: N completed cycles ⇒ exactly N projectiles for acid) catches burst-fire within one telegraph that inflates counts without real loop separation.
+  impact: Without per-cycle bounds, headless pumps can mask spam or multi-spawn as “multi-attack.”
+  prevention: For pumped ranged families, specify trace IDs for one-projectile-per-cycled-telegraph (or explicit salvo rules in spec) alongside multi-cycle engagement tests.
+  severity: medium
+
+- category: process
+  insight: Planner-stage uncertainty about whether a stub ESM is sufficient must be resolved in specification before implementation whenever later tests assert stateful behavior (e.g. death suppressing further cycles); a single integration test requiring a real `EnemyStateMachine` forces that closure.
+  impact: Medium-confidence planner assumptions on ESM fidelity risk rework when ACs imply statemachine-driven gating.
+  prevention: Spec and TEST_DESIGN must list which ESM behaviors are in scope (idle-only stub vs death/lifecycle) and map each to a contract ID before coding.
+  severity: medium
+
+### Anti-Patterns
+- description: Interpreting high projectile counts from a headless pump as proof of a disciplined attack loop without per-cycle separation.
+  detection_signal: PEAR-T-08 passes marginally while fire patterns cluster in single-pump windows or violate cooldown spacing in gameplay.
+  prevention: Add adversarial per-cycle assertions (anti-burst, cooldown delta) when TEST_BREAK reviews PEAR contracts.
+
+### Prompt Patches
+- agent: Test Breaker Agent
+  change: "When adversarial review targets headless pumped attack-loop contracts, question aggregate-only multi-attack tests: require or recommend per-cycle projectile cardinality or explicit salvo exceptions in the spec."
+  reason: Closes the burst loophole discussed in M10-03 TEST_BREAK (PEAR-T-20 rationale).
+
+### Keep / Reinforce
+- practice: `project_board/CHECKPOINTS.md` recorded PEAR landing RED until host/M8 wiring—contract-first integration failures were visible before closure.
+  reason: Makes RED→green progression auditable for cross-layer procedural spawn work.
 
 ---

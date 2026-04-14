@@ -578,3 +578,125 @@ class TestCreatePupilMeshHelper:
         assert scale[0] == pytest.approx(pupil_scale, rel=1e-3)
         assert scale[1] == pytest.approx(pupil_scale, rel=1e-3)
         assert scale[2] == pytest.approx(pupil_scale * 0.3, rel=0.01)
+
+
+# ---------------------------------------------------------------------------
+# ESPS-4-AC-8: apply_themed_materials with pupil parts
+# ---------------------------------------------------------------------------
+
+
+class TestApplyThemedMaterialsPupilCoverage:
+    """ESPS-4-AC-8: apply_themed_materials handles pupil parts correctly for each builder."""
+
+    def _fake_mats(self) -> dict:
+        from unittest.mock import MagicMock
+        m = MagicMock()
+        return {"body": m, "head": m, "extra": m, "limbs": m, "joints": m}
+
+    def test_spider_apply_themed_materials_with_pupil_enabled(self) -> None:
+        """Spider apply_themed_materials traverses pupil parts when pupil_enabled=True."""
+        from unittest.mock import patch
+
+        spider = _make_spider({"eye_count": 2, "pupil_enabled": True, "pupil_shape": "dot"})
+        with patch(_SPIDER_EYE_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+            with patch(_SPIDER_PUPIL_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+                spider.build_mesh_parts()
+        fake_mats = self._fake_mats()
+        spider._themed_slot_materials_for = lambda slug: fake_mats  # type: ignore[method-assign]
+        with patch("src.enemies.animated_spider.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_spider.append_animated_enemy_zone_extras"):
+                spider.apply_themed_materials()
+        assert mock_apply.call_count > 0
+
+    def test_slug_apply_themed_materials_with_pupil_enabled(self) -> None:
+        """Slug apply_themed_materials uses %3 pattern when pupil_enabled=True."""
+        from unittest.mock import patch
+
+        slug = _make_slug({"pupil_enabled": True, "pupil_shape": "dot"})
+        with patch(_SLUG_EYE_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+            with patch(_SLUG_PUPIL_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+                slug.build_mesh_parts()
+        fake_mats = self._fake_mats()
+        with patch("src.enemies.animated_slug.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_slug.get_enemy_materials", return_value=fake_mats):
+                with patch("src.enemies.animated_slug.append_animated_enemy_zone_extras"):
+                    slug.apply_themed_materials()
+        assert mock_apply.call_count > 0
+
+    def test_claw_crawler_apply_themed_materials_with_pupil_enabled(self) -> None:
+        """ClawCrawler apply_themed_materials applies head material to pupil parts."""
+        from unittest.mock import patch
+
+        claw = _make_claw({"peripheral_eyes": 1, "pupil_enabled": True, "pupil_shape": "dot"})
+        with patch(_CLAW_EYE_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+            with patch(_CLAW_PUPIL_PATCH, side_effect=lambda shape, loc, scale: _fake_mesh()):
+                claw.build_mesh_parts()
+        fake_mats = self._fake_mats()
+        claw._themed_slot_materials_for = lambda slug: fake_mats  # type: ignore[method-assign]
+        with patch("src.enemies.animated_claw_crawler.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_claw_crawler.append_animated_enemy_zone_extras"):
+                claw.apply_themed_materials()
+        assert mock_apply.call_count > 0
+
+
+# ---------------------------------------------------------------------------
+# Branch coverage: builder coercion + slug mod2 materials + multi peripheral pupils
+# ---------------------------------------------------------------------------
+
+
+class TestSpiderEyeCountCoercionAndMaterialBranches:
+    """Cover _resolved_eye_count fallbacks and multi-pupil themed application."""
+
+    def test_spider_non_numeric_eye_count_falls_back_to_default(self) -> None:
+        spider = _make_spider({"eye_count": "not_a_number"})
+        with patch(_SPIDER_EYE_PATCH, side_effect=lambda *a, **k: _fake_mesh()) as m_eye:
+            with patch(_SPIDER_PUPIL_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+                spider.build_mesh_parts()
+        assert m_eye.call_count == AnimatedSpider.DEFAULT_EYE_COUNT
+
+    def test_spider_non_positive_eye_count_falls_back_to_default(self) -> None:
+        for bad in (0, -1):
+            spider = _make_spider({"eye_count": bad})
+            with patch(_SPIDER_EYE_PATCH, side_effect=lambda *a, **k: _fake_mesh()) as m_eye:
+                with patch(_SPIDER_PUPIL_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+                    spider.build_mesh_parts()
+            assert m_eye.call_count == AnimatedSpider.DEFAULT_EYE_COUNT, bad
+
+    def test_slug_apply_themed_without_pupil_uses_mod2_branch(self) -> None:
+        slug = _make_slug({"pupil_enabled": False})
+        with patch(_SLUG_EYE_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+            slug.build_mesh_parts()
+        fake_mats = {"body": MagicMock(), "head": MagicMock(), "extra": MagicMock(), "limbs": MagicMock()}
+        with patch("src.enemies.animated_slug.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_slug.get_enemy_materials", return_value=fake_mats):
+                with patch("src.enemies.animated_slug.append_animated_enemy_zone_extras"):
+                    slug.apply_themed_materials()
+        assert mock_apply.call_count > 0
+
+    def test_spider_apply_themed_applies_head_material_to_pupil_parts(self) -> None:
+        spider = _make_spider({"eye_count": 2, "pupil_enabled": True, "pupil_shape": "dot"})
+        with patch(_SPIDER_EYE_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+            with patch(_SPIDER_PUPIL_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+                spider.build_mesh_parts()
+        fake_mats = {"body": MagicMock(), "head": MagicMock(), "extra": MagicMock(), "limbs": MagicMock(), "joints": MagicMock()}
+        spider._themed_slot_materials_for = lambda slug: fake_mats  # type: ignore[method-assign]
+        with patch("src.enemies.animated_spider.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_spider.material_for_zone_part", return_value=fake_mats["limbs"]):
+                with patch("src.enemies.animated_spider.append_animated_enemy_zone_extras"):
+                    spider.apply_themed_materials()
+        head = fake_mats["head"]
+        assert any(call.args[1] is head for call in mock_apply.call_args_list)
+
+    def test_claw_multiple_peripheral_pupils_apply_head_material_each(self) -> None:
+        claw = _make_claw({"peripheral_eyes": 3, "pupil_enabled": True, "pupil_shape": "dot"})
+        with patch(_CLAW_EYE_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+            with patch(_CLAW_PUPIL_PATCH, side_effect=lambda *a, **k: _fake_mesh()):
+                claw.build_mesh_parts()
+        fake_mats = {"body": MagicMock(), "head": MagicMock(), "extra": MagicMock(), "limbs": MagicMock()}
+        claw._themed_slot_materials_for = lambda slug: fake_mats  # type: ignore[method-assign]
+        with patch("src.enemies.animated_claw_crawler.apply_material_to_object") as mock_apply:
+            with patch("src.enemies.animated_claw_crawler.append_animated_enemy_zone_extras"):
+                claw.apply_themed_materials()
+        head = fake_mats["head"]
+        assert mock_apply.call_count > 0
+        assert any(call.args[1] is head for call in mock_apply.call_args_list)

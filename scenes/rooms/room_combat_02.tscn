@@ -1,7 +1,5 @@
 [gd_scene format=3 uid="uid://room_combat_02"]
 
-[ext_resource type="PackedScene" uid="uid://bnenemy_infection_3d" path="res://scenes/enemy/enemy_infection_3d.tscn" id="1_enemy"]
-
 [sub_resource type="StandardMaterial3D" id="Material_floor"]
 albedo_color = Color(0.35, 0.4, 0.45, 1)
 
@@ -21,6 +19,17 @@ size = Vector3(4, 1, 6)
 size = Vector3(4, 1, 6)
 
 [node name="RoomCombat02" type="Node3D"]
+metadata/enemy_spawn_declarations = [{
+"enemy_family": "carapace_husk",
+"family": "carapace_husk",
+"max_count": 1,
+"min_count": 1
+}, {
+"enemy_family": "adhesion_bug",
+"family": "adhesion_bug",
+"max_count": 1,
+"min_count": 0
+}]
 
 [node name="CombatFloor" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
@@ -54,6 +63,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 [node name="Exit" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 1, 0)
 
-[node name="EnemyCombat01" parent="." instance=ExtResource("1_enemy")]
-physics_interpolation_mode = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.3, 0)
+[node name="EnemySpawn_1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+
+[node name="EnemySpawn_2" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1, 0)

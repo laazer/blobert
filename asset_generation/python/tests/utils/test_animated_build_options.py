@@ -35,7 +35,7 @@ def test_flat_keys_for_current_slug() -> None:
 
 
 def test_invalid_select_falls_back() -> None:
-    o = options_for_enemy("spider", {"eye_count": 99})
+    o = options_for_enemy("spider", {"eye_count": 200})
     assert o["eye_count"] == 2
 
 
@@ -44,7 +44,7 @@ def test_spider_eye_count_extended_options() -> None:
     assert o["eye_count"] == 10
     ctrl = animated_build_controls_for_api()
     eye = next(c for c in ctrl["spider"] if c["key"] == "eye_count")
-    assert eye["options"][-1] == 12
+    assert eye["options"][-1] == 99
     rig = next(c for c in ctrl["spider"] if c["key"].startswith("RIG_"))
     assert rig["label"].startswith("Rig ")
 

@@ -712,8 +712,8 @@ func test_rts_enc_1_intro_no_enemies() -> void:
 
 
 # ---------------------------------------------------------------------------
-# RTS-ENC-2: combat_01 has EnemyCombat01 as direct child at (15, 0.5, 0) ±0.1
-#             and scene references enemy_infection_3d.tscn
+# RTS-ENC-2: combat_01 has no embedded Enemy* runtime instance
+#             and scene does not authoritatively reference enemy_infection_3d.tscn
 # ---------------------------------------------------------------------------
 func test_rts_enc_2_combat_01() -> void:
 	var packed: PackedScene = _load_packed(SCENE_COMBAT_01, "RTS-ENC-2")
@@ -722,21 +722,21 @@ func test_rts_enc_2_combat_01() -> void:
 	var root: Node = _instantiate(packed, "RTS-ENC-2")
 	if root == null:
 		return
-	var enemy: Node = root.get_node_or_null("EnemyCombat01")
-	_assert_true(enemy != null, "RTS-ENC-2_enemy_combat01_exists",
-		"EnemyCombat01 not found as direct child of RoomCombat01")
-	if enemy != null:
-		_assert_vec3_near((enemy as Node3D).position, Vector3(15.0, 0.5, 0.0), ENEMY_POS_TOL,
-			"RTS-ENC-2_enemy_combat01_position")
+	for child in root.get_children():
+		var child_name: String = str(child.name)
+		var is_spawn_anchor: bool = child_name.begins_with("EnemySpawn_")
+		var is_entry_or_exit: bool = child_name == "Entry" or child_name == "Exit"
+		var is_embedded_enemy: bool = child_name.begins_with("Enemy") and not is_spawn_anchor and not is_entry_or_exit
+		_assert_false(is_embedded_enemy, "RTS-ENC-2_no_embedded_enemy_child_" + child_name,
+			"RoomCombat01 must not embed authoritative enemy nodes")
 	root.free()
-	# Verify .tscn references enemy_infection_3d.tscn via file text (headless-safe).
-	_assert_true(_room_tscn_references_enemy(SCENE_COMBAT_01), "RTS-ENC-2_enemy_scene_path_in_tscn",
-		"room_combat_01.tscn does not reference enemy_infection_3d.tscn")
+	_assert_false(_room_tscn_references_enemy(SCENE_COMBAT_01), "RTS-ENC-2_no_embedded_enemy_scene_path_in_tscn",
+		"room_combat_01.tscn should not authoritatively reference enemy_infection_3d.tscn")
 
 
 # ---------------------------------------------------------------------------
-# RTS-ENC-3: combat_02 has EnemyCombat01 as direct child at (15, 1.3, 0) ±0.1
-#             (on elevated platform, top Y=0.8)
+# RTS-ENC-3: combat_02 has no embedded Enemy* runtime instance
+#             and scene does not authoritatively reference enemy_infection_3d.tscn
 # ---------------------------------------------------------------------------
 func test_rts_enc_3_combat_02() -> void:
 	var packed: PackedScene = _load_packed(SCENE_COMBAT_02, "RTS-ENC-3")
@@ -745,15 +745,16 @@ func test_rts_enc_3_combat_02() -> void:
 	var root: Node = _instantiate(packed, "RTS-ENC-3")
 	if root == null:
 		return
-	var enemy: Node = root.get_node_or_null("EnemyCombat01")
-	_assert_true(enemy != null, "RTS-ENC-3_enemy_combat01_exists",
-		"EnemyCombat01 not found as direct child of RoomCombat02")
-	if enemy != null:
-		_assert_vec3_near((enemy as Node3D).position, Vector3(15.0, 1.3, 0.0), ENEMY_POS_TOL,
-			"RTS-ENC-3_enemy_combat01_position")
+	for child in root.get_children():
+		var child_name: String = str(child.name)
+		var is_spawn_anchor: bool = child_name.begins_with("EnemySpawn_")
+		var is_entry_or_exit: bool = child_name == "Entry" or child_name == "Exit"
+		var is_embedded_enemy: bool = child_name.begins_with("Enemy") and not is_spawn_anchor and not is_entry_or_exit
+		_assert_false(is_embedded_enemy, "RTS-ENC-3_no_embedded_enemy_child_" + child_name,
+			"RoomCombat02 must not embed authoritative enemy nodes")
 	root.free()
-	_assert_true(_room_tscn_references_enemy(SCENE_COMBAT_02), "RTS-ENC-3_enemy_scene_path_in_tscn",
-		"room_combat_02.tscn does not reference enemy_infection_3d.tscn")
+	_assert_false(_room_tscn_references_enemy(SCENE_COMBAT_02), "RTS-ENC-3_no_embedded_enemy_scene_path_in_tscn",
+		"room_combat_02.tscn should not authoritatively reference enemy_infection_3d.tscn")
 
 
 # ---------------------------------------------------------------------------
