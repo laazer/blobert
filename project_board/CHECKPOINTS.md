@@ -1,5 +1,9 @@
 # Checkpoint Index
 
+### [01_eye_shape_and_pupil_system] — OUTCOME: COMPLETE
+Python controls + geometry builders already in e4b3f85; 1-line frontend buildControlDisabled fix cleared 28 test failures; 2 stale empty-state assertions fixed. 1219 Python + 313 frontend tests green; diff-cover 92%.
+Log: project_board/checkpoints/M25-ESPS/
+
 ## Run: 2026-04-14T21-00-00Z-test-break-m25-esps
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST

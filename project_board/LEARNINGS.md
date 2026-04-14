@@ -3730,3 +3730,71 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Makes RED→green progression auditable for cross-layer procedural spawn work.
 
 ---
+
+## [M25-ESPS] — Cross-ticket implementation bundling, stale test selectors, and RTL text-node fragmentation
+*Completed: 2026-04-14*
+
+### Learnings
+- category: process
+  insight: When an implementation agent hits a rate limit before doing any work, prior commits from adjacent tickets may already contain the required implementation. The agent must audit recent commits before treating the feature as "not yet done."
+  impact: The Python eye-shape implementation (animated_build_options.py, blender_utils.py, spider/slug/claw_crawler builders) was delivered in commit e4b3f85 under a different ticket label. A naive agent would have re-implemented it, causing a duplicate or conflicting commit.
+  prevention: At the start of every implementation run, scan `git log --oneline -10` and `git diff HEAD~5..HEAD -- <relevant paths>` to detect whether the spec's target functions already exist before writing a single line.
+  severity: high
+
+- category: testing
+  insight: Frontend test selectors that use `getByText(/pattern/i)` on text split across inline child elements (e.g., `<code>` inside `<strong>` inside a paragraph) silently fail because RTL resolves `textContent` per node, not by joining siblings.
+  impact: `ColorsPane.test.tsx` used `/animated.*player/i` against text rendered as two separate inline nodes; the test had been green on a previous DOM structure but broke without any component code change.
+  prevention: When writing RTL selectors for text that spans multiple inline elements, use `getByRole` with `name` matcher, `getByTestId`, or `getAllByText` with exact match on the innermost text node. Never assume `getByText(/regex/)` will match across child-element boundaries.
+  severity: medium
+
+- category: testing
+  insight: Test selectors tied to exact component copy text (e.g., `/pick an enemy/i`) become stale when UI copy changes and produce false negatives that are invisible until the suite is run against the updated component.
+  impact: `ExtrasPane.test.tsx` used `/pick an enemy/i` but the component had been reworded to "geometry extras"; the test failed with no implementation change on this ticket.
+  prevention: Empty-state and placeholder assertions should use `data-testid` attributes or role-based selectors rather than copy-dependent regexes. When a test must match visible text, prefer the shortest stable fragment (one or two unique words) and add a comment flagging the fragility.
+  severity: low
+
+- category: process
+  insight: A missing agent slot in the routing table (no Python/frontend specialist registered) caused the orchestrator to fall through to "Engine Integration Agent" with a domain note, then correct itself to a generalist. The correction works but introduces an unnecessary routing indirection that appears in the workflow history.
+  impact: Minor — no rework occurred, but the checkpoint record shows an indirection that could confuse future audits of which agent owns Python/frontend work.
+  prevention: The routing table should include an explicit "Python/Frontend Implementation Agent" slot (or a "Generalist Implementation Agent" with explicit Python and frontend capability flags) so the orchestrator does not need to override with domain notes.
+  severity: low
+
+### Anti-Patterns
+- description: Assuming implementation is absent without checking git history when the prior agent was interrupted by a rate limit.
+  detection_signal: Workflow state shows a rate-limit interruption in the implementation stage; the next agent run begins writing files that the diff already contains.
+  prevention: Every implementation agent run must begin with a git log + diff check against the spec's target files before writing any code.
+
+- description: Binding RTL test assertions to user-visible copy text rendered across multiple inline DOM nodes.
+  detection_signal: `getByText(/regex/i)` throws "Unable to find an element" even though the text is visually present; DevTools shows the text split across `<code>`, `<strong>`, or `<span>` siblings.
+  prevention: Use `data-testid`, role matchers, or exact single-node text in RTL assertions for UI copy that may span elements.
+
+- description: Accumulating stale test selectors over copy-editing cycles because no test ties the selector to a living component snapshot.
+  detection_signal: A test fails only after a copy change, not after a code change; the selector worked for months.
+  prevention: Treat copy-dependent test failures as a signal to migrate that assertion to a structural selector; add a comment at time of fix so the next editor knows the selector is fragile.
+
+### Prompt Patches
+- agent: Implementation Frontend Agent
+  change: "Before writing any frontend implementation code, run `git log --oneline -10` and check whether the spec's target files already contain the required changes. If they do, skip implementation and proceed directly to running the test suite."
+  reason: Prevents duplicate or conflicting implementation when a prior commit (from an adjacent ticket or an interrupted run) already contains the work.
+
+- agent: Test Designer Agent
+  change: "When writing RTL assertions for empty-state or placeholder text, do not use `getByText(/copy text/i)` if the text may span inline child elements. Prefer `getByTestId`, `getByRole`, or exact single-node text matchers. Add a comment in the test if you must use a copy-dependent regex."
+  reason: Prevents the RTL text-node fragmentation failure pattern seen in ColorsPane.test.tsx and ExtrasPane.test.tsx.
+
+### Workflow Improvements
+- issue: The routing table has no dedicated Python/frontend agent slot, causing the orchestrator to emit a domain-note override and log an "Engine Integration Agent" step for work that is clearly Python/frontend.
+  improvement: Add an explicit "Python / Frontend Implementation Agent" row to the routing table with capability flags covering Python asset pipeline, FastAPI, and TypeScript/React frontend work.
+  expected_benefit: Cleaner workflow history; no override indirections; future auditors can immediately identify which agent was responsible for Python/frontend implementation steps.
+
+- issue: Stale test selectors tied to copy text are not caught until the full test suite is run against the updated component, often by a different agent in a later stage.
+  improvement: Add a pre-commit or CI lint rule (e.g., a custom eslint rule or grep gate) that flags `getByText(/[A-Za-z]{5,}/i)` patterns in test files as requiring a review comment justifying the copy dependency.
+  expected_benefit: Forces authors to consciously document copy-dependent selectors at write time, reducing silent staleness.
+
+### Keep / Reinforce
+- practice: The test-break stage wrote adversarial suites covering `None`, whitespace-only strings, integer truthy/falsy coercion, and list-typed values for the new controls before implementation existed.
+  reason: These adversarial edge cases (captured in test_eye_shape_pupil_controls_adversarial.py) exercised `_coerce_and_validate` paths that could silently corrupt serialized JSON. Writing them before implementation — and marking assumptions with `# CHECKPOINT` — keeps the contract honest.
+
+- practice: The frontend fix commit (1cb8e23) was a single-line change to BuildControls.tsx, with two additional stale-test fixes isolated in the same commit and fully described in the message.
+  reason: Minimal targeted fixes with explicit change descriptions make bisection and revert straightforward. This is the correct scope discipline for a "one missing rule" gap.
+
+---
