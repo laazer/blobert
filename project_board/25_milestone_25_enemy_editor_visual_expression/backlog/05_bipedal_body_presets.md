@@ -18,7 +18,26 @@ Scope Notes:
 - No blending or interpolation between body types
 - No-Leg Biped stubs are stylized primitives, not physics-simulated joints
 
+## Web Editor Implementation
+
+**Python (`asset_generation/python/src/utils/animated_build_options.py`)**
+- Add `body_type` as a `select_str` control (options: `default`, `standard_biped`, `no_leg_biped`; default: `default`) to all animated slugs via a shared `_body_type_control_def()` helper
+- `options_for_enemy()` must validate and coerce `body_type`; unknown values fall back to `default`
+- The Blender geometry builders for each affected slug must branch on `build_options["body_type"]` to select the correct skeleton/mesh layout (standard biped = full leg geometry; no_leg_biped = stub geometry)
+
+**Frontend (`asset_generation/web/frontend/src/`)**
+- No `BuildControls.tsx` structural changes required; `body_type` is a `select_str` and renders automatically via the existing `ControlRow` path
+- Because `body_type` changes the GLB geometry (requires Blender regeneration), the preview updates on the next "Run" command — not in real time; add a note in the control's `hint` field in Python: `"Preview updates after regeneration"`
+- No `buildControlDisabled()` changes needed for this ticket
+
+**Tests**
+- Python: `test_body_type_control.py` — all animated slugs expose `body_type`; `options_for_enemy(slug, {"body_type": "INVALID"})` returns `default`; `standard_biped` and `no_leg_biped` are valid options for all slugs
+- Frontend (Vitest): extend `BuildControls.meta_load.test.tsx` — `body_type` select_str row renders for an animated slug; selecting `no_leg_biped` calls `setAnimatedBuildOption` with the correct value
+
 ## WORKFLOW STATE
+
+- **Stage:** BACKLOG
+- **Revision:** 0
 
 - **Stage:** BACKLOG
 - **Revision:** 0
