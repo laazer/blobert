@@ -144,6 +144,7 @@ def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
             "type": "select_str",
             "options": list(_EYE_SHAPE_OPTIONS),
             "default": _DEFAULT_EYE_SHAPE,
+            "segmented": True,
         },
         {
             "key": "pupil_enabled",
@@ -157,6 +158,7 @@ def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
             "type": "select_str",
             "options": list(_PUPIL_SHAPE_OPTIONS),
             "default": _DEFAULT_PUPIL_SHAPE,
+            "segmented": True,
         },
     ]
 
