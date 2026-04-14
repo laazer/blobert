@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-14-procedural-enemy-attack-test-design
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T17-05-00Z-test-design.md`
+- Outcome: Added `tests/system/test_procedural_enemy_attack_loop_runtime_contract.gd` (PEAR-T-01..16); Godot suite reports 11 new failing assertions until `EnemyInfection3D` host + M8 wiring land for procedural spawns.
+
 ## Run: 2026-04-11-pipeline-18-19-complete
 - Tickets: `project_board/9_milestone_9_enemy_player_model_visual_polish/done/18_registry_subtabs_by_pipeline_cmd.md`, `.../done/19_model_viewer_fullscreen_button.md`
 - Stage: STATIC_QA → COMPLETE (AC Gatekeeper)

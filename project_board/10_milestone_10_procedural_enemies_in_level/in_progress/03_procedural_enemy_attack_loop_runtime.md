@@ -23,14 +23,14 @@ If per-enemy `.attacks.json` (or equivalent) exists next to exports, use it for 
 
 ## WORKFLOW STATE
 
-Stage: TEST_DESIGN
-Revision: 3
-Last Updated By: Spec Agent
-Next Responsible Agent: Test Designer Agent
+Stage: TEST_BREAK
+Revision: 4
+Last Updated By: Test Designer Agent
+Next Responsible Agent: Test Breaker Agent
 Status: Proceed
 Validation Status: Not yet validated.
 Blocking Issues: None.
 
 ## NEXT ACTION
 
-Test Designer Agent: author deterministic tests with trace IDs (`PEAR-T-##`) mapping to `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` AC-R1–R6; cover M8 attack attachment on procedural spawns, ≥2 attack cycles in range, dead-state suppression on procedural host, assembler spawn API parity (isolated room vs run path), and gate on `timeout 300 ci/scripts/run_tests.sh` exit 0. Hand off to Test Breaker Agent when suite is red where implementation is expected missing.
+Test Breaker Agent: stress `tests/system/test_procedural_enemy_attack_loop_runtime_contract.gd` (PEAR-T-01..16); adversarial cases for pump caps, teardown/leaks, and partial wiring. Expect red Godot suite until implementation satisfies ADR-M10-03-01 (`EnemyInfection3D` or cast-compatible host) and ADR-M10-03-02 (real `EnemyStateMachine` for dead gating). Target `timeout 300 ci/scripts/run_tests.sh` exit 0 after implementation lands.
