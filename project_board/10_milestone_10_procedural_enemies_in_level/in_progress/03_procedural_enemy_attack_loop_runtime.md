@@ -23,14 +23,14 @@ If per-enemy `.attacks.json` (or equivalent) exists next to exports, use it for 
 
 ## WORKFLOW STATE
 
-Stage: SPECIFICATION
-Revision: 2
-Last Updated By: Planner Agent
-Next Responsible Agent: Spec Agent
+Stage: TEST_DESIGN
+Revision: 3
+Last Updated By: Spec Agent
+Next Responsible Agent: Test Designer Agent
 Status: Proceed
 Validation Status: Not yet validated.
 Blocking Issues: None.
 
 ## NEXT ACTION
 
-Spec Agent: author `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` (or extend M10-01 spec with additive §) tracing M10-01 R4/R5 onto procedural-spawned instances: family attack script attachment/`mutation_drop` parity, `EnemyAnimationController` + existing telegraph/hitbox paths, `GeneratedEnemyEsmStub` vs real `EnemyStateMachine` decision, `.attacks.json` authority vs clip/script timing, and headless hooks for “more than one attack” + run-assembled vs isolated scene parity. Reference scoped log for planner assumptions.
+Test Designer Agent: author deterministic tests with trace IDs (`PEAR-T-##`) mapping to `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` AC-R1–R6; cover M8 attack attachment on procedural spawns, ≥2 attack cycles in range, dead-state suppression on procedural host, assembler spawn API parity (isolated room vs run path), and gate on `timeout 300 ci/scripts/run_tests.sh` exit 0. Hand off to Test Breaker Agent when suite is red where implementation is expected missing.

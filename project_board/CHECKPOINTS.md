@@ -307,3 +307,10 @@ Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-
 - Next Agent: Spec Agent
 - Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
 - Outcome: Planner decomposition for R4/R5 runtime attack-loop validation; checkpoint assumptions appended (ESM stub vs real ESM, `.attacks.json` vs clip/script authority).
+
+## Run: 2026-04-14T19-00-00Z-spec-m10-03
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/in_progress/03_procedural_enemy_attack_loop_runtime.md`
+- Stage: `SPECIFICATION` → `TEST_DESIGN`
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
+- Outcome: `project_board/specs/procedural_enemy_attack_loop_runtime_spec.md` authored; ADRs for M8 host parity, ESM dead gating, optional JSON timing, mutation_drop parity; checkpoint entries appended.
