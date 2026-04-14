@@ -46,9 +46,30 @@ Scope Notes:
 
 ## WORKFLOW STATE
 
-- **Stage:** IMPLEMENTATION_GENERALIST
-- **Revision:** 5
-- **Last Updated By:** Test Breaker Agent
-- **Next Responsible Agent:** Engine Integration Agent
+- **Stage:** COMPLETE
+- **Revision:** 7
+- **Last Updated By:** Acceptance Criteria Gatekeeper Agent
+- **Next Responsible Agent:** Human
 - **Status:** Proceed
-- **Domain Note:** This is a Python asset pipeline + web frontend ticket. There is no Engine Integration or Core Simulation agent for this domain. Engine Integration Agent is the closest available agent per the routing table and handles the generalist implementation path for Python/frontend work.
+- **Validation Status:**
+  - Tests (Python): All 1219 Python tests pass (`bash .lefthook/scripts/py-tests.sh` green). Includes primary suite `test_eye_shape_pupil_controls.py` (ESPS-1 through ESPS-7, all slugs) and adversarial suite `test_eye_shape_pupil_controls_adversarial.py` (mutation guard, idempotency, dynamic slug coverage, None/whitespace coercion, mutable-state guard). Geometry builder suites `test_eye_shape_pupil_geometry.py` and `test_eye_shape_pupil_geometry_adversarial.py` cover ESPS-3 and ESPS-4 (create_eye_mesh/create_pupil_mesh dispatch, part count invariants for spider/slug/claw_crawler).
+  - Tests (Frontend): All 313 frontend Vitest tests pass (`cd asset_generation/web/frontend && npm test` green). Includes `BuildControls.eyeShape.test.tsx` (ESPS-8-AC-1 through ESPS-8-AC-7) and `BuildControls.eyeShape.adversarial.test.tsx` (reactive toggle, slug-agnostic disabling, truthy/falsy coercion, overly-broad selector regression).
+  - Diff-cover: 92% (threshold 85%). Gate passed.
+  - Serialization: ESPS-5 JSON round-trip tests confirm `pupil_enabled` serializes as JSON boolean `false`/`true` (not integer). All 7 slugs covered.
+  - AC coverage summary:
+    - AC1 (4 eye shapes in UI): ESPS-1-AC-2 tests exact options list ["circle","oval","slit","square"] for all slugs; frontend fixture renders all 4 options.
+    - AC2 (pupil toggle, default off): ESPS-1-AC-3, ESPS-2-AC-6, ESPS-6-AC-2 confirm `pupil_enabled` type bool, default False, across all 7 slugs.
+    - AC3 (3 pupil shapes when enabled): ESPS-1-AC-4 tests exact options list ["dot","slit","diamond"]; geometry tests confirm create_pupil_mesh dispatches correctly.
+    - AC4 (changes reflected in 3D preview): Frontend controls render via existing setAnimatedBuildOption/preview regeneration mechanism (not new code); adversarial frontend tests confirm reactive store updates re-render controls correctly; 313 frontend tests green.
+    - AC5 (eye color unchanged): Negative constraint — no eye_color key added; regression tests (TestRegressionExistingControls) confirm existing controls unaffected; full 1219 Python test suite passes with no color control additions.
+    - AC6 (serialize to JSON): ESPS-5 serialization suite fully covers JSON round-trip for all three keys and all 7 slugs.
+- **Blocking Issues:** None.
+- **Escalation Notes:** None.
+- **Domain Note:** Python/frontend ticket; implemented via generalist path. Commits: e4b3f85 (Python eye controls + geometry builders), 1cb8e23 (frontend buildControlDisabled pupil_shape rule, stale test fixes).
+
+## NEXT ACTION
+
+- **Next Responsible Agent:** Human
+- **Required Input Schema:** N/A
+- **Status:** Proceed
+- **Reason:** All 6 ticket acceptance criteria have explicit test or integration coverage. Python primary + adversarial suites pass (1219 tests); frontend primary + adversarial suites pass (313 tests); diff-cover 92% exceeds 85% threshold. Ticket is COMPLETE. Human must run: `git rm project_board/25_milestone_25_enemy_editor_visual_expression/backlog/01_eye_shape_and_pupil_system.md` to remove the stale backlog copy (the canonical copy is now at done/01_eye_shape_and_pupil_system.md), then commit and push.
