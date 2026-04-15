@@ -1,5 +1,32 @@
 # Checkpoint Index
 
+## Run: 2026-04-15T04-00-00Z-test-break-m25-mte
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/06_mouth_and_tail_extras.md`
+- Stage: TEST_BREAK
+- Next Agent: Generalist Implementation Agent
+- Log: `project_board/checkpoints/M25-MTE/run-2026-04-15T04-00-00Z-test-break.md`
+- Outcome: Adversarially extended all three test files. 10 gaps exposed: location sign correctness (MTE-4), constant constraints (MTE-5-AC-5, MTE-6), import verification (MTE-7-AC-7), mouth_shape=None mutation guard, 6-slug baseline regression, player_slime isolation, tail_length 3.001 boundary, ordering (tail_length in float block), tail length scaling via blender_utils stub.
+
+## Run: 2026-04-15T15:45:00Z
+- Queue mode: single ticket (resume)
+- Queue scope: project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/06_mouth_and_tail_extras.md
+- Lean: no
+- Resuming at: TEST_BREAK → Implementation
+- Log root: project_board/checkpoints/
+
+## Run: 2026-04-15T01-00-00Z-spec-m25-mte
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/06_mouth_and_tail_extras.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-MTE/run-2026-04-15T01-00-00Z-spec.md`
+- Outcome: Authored `project_board/specs/mouth_and_tail_extras_spec.md`; 11 requirements (MTE-1..11) covering control declarations, coercion/validation, per-slug defaults, geometry placement formulas, `create_mouth_mesh`/`create_tail_mesh` signatures, per-slug wiring (all 6 animated slugs geometry-wired), non-breaking guarantee, serialization contract, frontend disabling, types freeze; constant inventory and slug coverage matrix fully enumerated.
+
+## Run: 2026-04-15T15:13:53Z
+- Queue mode: single ticket
+- Queue scope: project_board/25_milestone_25_enemy_editor_visual_expression/backlog/06_mouth_and_tail_extras.md
+- Lean: no
+- Log root: project_board/checkpoints/
+
 ### [01_eye_shape_and_pupil_system] — OUTCOME: COMPLETE
 Python controls + geometry builders already in e4b3f85; 1-line frontend buildControlDisabled fix cleared 28 test failures; 2 stale empty-state assertions fixed. 1219 Python + 313 frontend tests green; diff-cover 92%.
 Log: project_board/checkpoints/M25-ESPS/
@@ -406,3 +433,17 @@ Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026
 - Next Agent: Engine Integration Agent
 - Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
 - Outcome: Extended `tests/system/test_headless_procedural_combat_enemies_contract.gd` with adversarial malformed-shape, empty-list, unknown-family, invalid-bounds, and stress-entry tests (`HTPCE-T-08..12`), including a checkpointed conservative assumption; validated by `timeout 300 godot --headless -s tests/run_tests.gd` and `timeout 300 ci/scripts/run_tests.sh` (both exit 0).
+
+## Run: 2026-04-15T02-00-00Z-test-design-m25-mte
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/06_mouth_and_tail_extras.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent (adversarial review of Tasks 4, 5, 7 tests)
+- Log: `project_board/checkpoints/M25-MTE/run-2026-04-15T02-00-00Z-test-design.md`
+- Outcome: Wrote 3 test files covering MTE-1..MTE-11: `asset_generation/python/tests/utils/test_mouth_tail_controls.py` (control declarations, coercion/clamping, serialization, defaults), `asset_generation/python/tests/enemies/test_mouth_tail_geometry.py` (geometry dispatch for all 6 animated slugs via patched blender_utils), `asset_generation/web/frontend/src/components/Preview/BuildControls.mouthTail.test.tsx` (conditional disabling DOM behavior). All tests RED until implementation adds _mouth_control_defs(), _tail_control_defs(), create_mouth_mesh(), create_tail_mesh(), and buildControlDisabled rules.
+
+## Run: 2026-04-15T03-00-00Z-ap-continue-m25-mte
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/06_mouth_and_tail_extras.md`
+- Stage: TEST_DESIGN → TEST_BREAK (after Test Designer Agent completion)
+- Next Agent: Test Breaker Agent (adversarial review and extension of test suite)
+- Log: `project_board/checkpoints/M25-MTE/run-2026-04-15T03-00-00Z-ap-continue.md`
+- Outcome: Resumed from TEST_DESIGN; validated spec completeness check passed (PASS: all required sections present); advanced workflow state to TEST_BREAK with Test Breaker responsible for adversarial review before implementation.
