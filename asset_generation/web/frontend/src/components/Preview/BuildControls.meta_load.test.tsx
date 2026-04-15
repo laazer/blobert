@@ -77,7 +77,10 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
     expect(screen.getByRole("button", { name: "Retry" })).not.toBeDisabled();
   });
 
-  it("does not request meta when defs already exist for the slug (idle)", () => {
+  it("still requests meta when offline defs exist for the slug but status is idle (regression: offline defs should not suppress real fetch)", async () => {
+    // REGRESSION: offline seeded controls have non-empty defs per slug (zone finish/hex),
+    // but they lack controls that only come from the backend (e.g. eye_shape, pupil_enabled).
+    // The fetch must happen even when defs.length > 0 — only enemyMetaStatus guards re-fetches.
     const loadSpy = vi.fn(() => Promise.resolve());
     const controls = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
     useAppStore.setState({
@@ -89,7 +92,7 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
       loadAnimatedEnemyMeta: stubLoad(loadSpy),
     });
     render(<BuildControls />);
-    expect(loadSpy).not.toHaveBeenCalled();
+    await waitFor(() => expect(loadSpy).toHaveBeenCalledTimes(1));
   });
 
   it("shows fetch error message when status is error", () => {

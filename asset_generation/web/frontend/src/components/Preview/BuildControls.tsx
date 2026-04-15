@@ -207,11 +207,10 @@ export function BuildControls() {
   const controlSlugs = Object.keys(animatedBuildControls);
 
   useEffect(() => {
-    if (defs.length > 0 || enemyMetaStatus !== "idle") return;
+    if (enemyMetaStatus !== "idle") return;
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
     void loadAnimatedEnemyMeta();
   }, [
-    defs.length,
     enemyMetaStatus,
     loadAnimatedEnemyMeta,
     isAnimatedEnemy,
