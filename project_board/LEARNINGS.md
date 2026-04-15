@@ -4,6 +4,7 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+
 ## [02_wire_generated_enemies_combat_rooms] — Arbitration-to-closure requires explicit evidence contracts
 *Completed: 2026-04-14*
 
@@ -65,6 +66,7 @@ Structured insights extracted after each completed ticket.
   reason: Preserved high-confidence closure after a previously blocked state.
 
 ---
+
 
 ## [18_registry_subtabs_by_pipeline_cmd] + [19_model_viewer_fullscreen_button] — Registry RunCmd tabs and GLB fullscreen
 *Completed: 2026-04-11*
@@ -3796,5 +3798,70 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: The frontend fix commit (1cb8e23) was a single-line change to BuildControls.tsx, with two additional stale-test fixes isolated in the same commit and fully described in the message.
   reason: Minimal targeted fixes with explicit change descriptions make bisection and revert straightforward. This is the correct scope discipline for a "one missing rule" gap.
+
+---
+
+## [04_headless_tests_procedural_combat_enemies] — Headless contract scope clarity and fail-closed spawn semantics
+*Completed: 2026-04-15*
+
+### Learnings
+- category: process
+  insight: Ticket AC text that says "register in `tests/run_tests.gd`" can conflict with modern recursive runner discovery; the authoritative registration mechanism must be explicit in spec/test design to avoid unnecessary edits and false non-compliance.
+  impact: This ticket required an assumption to reconcile legacy wording with current discovery behavior, creating avoidable ambiguity during TEST_DESIGN.
+  prevention: Add a standing rule that test-registration ACs must declare whether explicit `run_tests.gd` entries are required or whether `tests/test_*.gd` discovery is sufficient.
+  severity: medium
+
+- category: architecture
+  insight: Malformed generated-enemy declarations should fail closed at entry granularity (skip bad entry, continue processing room) rather than aborting entire room assembly.
+  impact: The checkpoint captured medium-confidence uncertainty on invalid `res://` behavior; without explicit per-entry semantics, runtime behavior can diverge across agents.
+  prevention: Specs for spawn pipelines must include a malformed-input matrix that names blast radius per failure type (entry-level, room-level, run-level) and required diagnostics.
+  severity: high
+
+- category: performance
+  insight: Unknown `enemy_family` entries in repeated spawn evaluation loops should mark completion metadata after fail-closed handling to prevent deterministic retry storms.
+  impact: TEST_BREAK had to checkpoint this behavior explicitly; absent done-meta, bad declarations can repeatedly re-trigger work each call.
+  prevention: Include anti-retry assertions for malformed declarations in adversarial suites whenever spawn logic is frame- or call-driven.
+  severity: high
+
+- category: testing
+  insight: Headless combat-room validation is most stable when it tests loader/scene-path contracts with bounded frame pumping, instead of requiring full-physics playthrough semantics.
+  impact: The ticket achieved deterministic CI-safe coverage by asserting loadability and family/path contracts directly, avoiding harness limitations that can cause hangs.
+  prevention: For room-content verification tickets, default to bounded contract assertions first and treat full-physics behavior as a separate runtime/integration scope.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating legacy AC phrasing as implementation-mandatory when project infrastructure has shifted (manual test registration vs auto-discovery).
+  detection_signal: TEST_DESIGN checkpoint asks whether to edit `tests/run_tests.gd` despite passing discovery conventions in existing suites.
+  prevention: Require spec stage to resolve registration authority and cite the current runner contract before test files are authored.
+
+- description: Leaving malformed spawn behavior unspecified at the blast-radius level.
+  detection_signal: Checkpoints ask whether invalid paths/unknown families should fail one entry or the entire room.
+  prevention: Add explicit malformed-case outcome tables in spec (continue/abort, diagnostics required, metadata side effects).
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "When a ticket includes test-registration language, explicitly state the authoritative registration mechanism (manual `tests/run_tests.gd` entry vs recursive discovery) and map that decision to a requirement ID."
+  reason: Prevents avoidable ambiguity and unnecessary file churn during TEST_DESIGN.
+
+- agent: Test Breaker Agent
+  change: "For spawn/declaration adversarial tests, require one anti-retry case: malformed entries must fail closed and set completion metadata (or equivalent) so repeated calls do not reprocess the same invalid declaration."
+  reason: Catches retry-storm regressions that are not visible in single-call malformed tests.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If AC mentions test registration, verify closure evidence cites the active runner contract (discovery or manual list) rather than inferring from ticket wording alone."
+  reason: Keeps acceptance decisions aligned with current infrastructure instead of stale phrasing.
+
+### Workflow Improvements
+- issue: Legacy AC wording and evolving runner infrastructure create repeated interpretation checkpoints.
+  improvement: Add a reusable "test registration authority" checklist item to planning/spec templates for all test-only tickets.
+  expected_benefit: Fewer assumption logs and faster progression from SPECIFICATION to TEST_DESIGN.
+
+- issue: Malformed spawn semantics required medium-confidence assumptions in both SPECIFICATION and TEST_BREAK.
+  improvement: Add a standard spawn-failure taxonomy section to procedural enemy specs (invalid path, unknown family, empty list, shape/type mismatch) with mandatory blast-radius outcomes.
+  expected_benefit: Less agent drift and stronger cross-ticket consistency for fail-closed behavior.
+
+### Keep / Reinforce
+- practice: Enforcing bounded frame pumping with strict iteration caps for headless combat-room tests.
+  reason: Preserves deterministic CI behavior while still validating runtime-relevant contracts.
 
 ---
