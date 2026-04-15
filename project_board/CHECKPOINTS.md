@@ -370,3 +370,39 @@ Log: `project_board/checkpoints/02-wire-generated-enemies-combat-rooms/run-2026-
 ### [03_procedural_enemy_attack_loop_runtime] — OUTCOME: COMPLETE
 M10-03 attack loop for procedural spawns: runtime spec + `PEAR-T-*` contract suite; acid/M8 wiring + assembler placement fixes; full `godot` + `ci/scripts/run_tests.sh` green (incl. diff-cover and eye-shape test coverage follow-ups).
 Log: `project_board/checkpoints/03-procedural-enemy-attack-loop-runtime/run-2026-04-14T16-37-02Z-autopilot.md`
+
+## Run: 2026-04-15T10-49-32Z-autopilot-single-m10-04
+- Queue mode: single ticket
+- Queue scope: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/04_headless_tests_procedural_combat_enemies.md`
+- Lean: no
+- Log root: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/`
+- Stage: `PLANNING`
+- Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
+
+## Run: 2026-04-15T10-49-32Z-planner-m10-04
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/04_headless_tests_procedural_combat_enemies.md`
+- Stage: `PLANNING` -> `SPECIFICATION`
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
+- Outcome: Ticket normalized to active workflow template, planner decomposition added, and handoff prepared for specification authoring.
+
+## Run: 2026-04-15T10-49-32Z-spec-m10-04
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/04_headless_tests_procedural_combat_enemies.md`
+- Stage: `SPECIFICATION` -> `TEST_DESIGN`
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
+- Outcome: Authored `project_board/specs/headless_tests_procedural_combat_enemies_spec.md` with deterministic headless contracts (`HTPCE-R1..R6`), explicit skip policy, malformed-input behavior matrix, and AC trace mapping.
+
+## Run: 2026-04-15T10-49-32Z-test-design-m10-04
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/04_headless_tests_procedural_combat_enemies.md`
+- Stage: `TEST_DESIGN` -> `TEST_BREAK`
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
+- Outcome: Added primary suite `tests/system/test_headless_procedural_combat_enemies_contract.gd` (`HTPCE-T-01..07`) with ticket header, deterministic combat-room/generated-path assertions, and idempotent spawn guard; `timeout 300 ci/scripts/run_tests.sh` exit 0.
+
+## Run: 2026-04-15T10-49-32Z-test-break-m10-04
+- Ticket: `project_board/10_milestone_10_procedural_enemies_in_level/backlog/04_headless_tests_procedural_combat_enemies.md`
+- Stage: `TEST_BREAK` -> `IMPLEMENTATION_GENERALIST`
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/04-headless-tests-procedural-combat-enemies/run-2026-04-15T10-49-32Z-autopilot.md`
+- Outcome: Extended `tests/system/test_headless_procedural_combat_enemies_contract.gd` with adversarial malformed-shape, empty-list, unknown-family, invalid-bounds, and stress-entry tests (`HTPCE-T-08..12`), including a checkpointed conservative assumption; validated by `timeout 300 godot --headless -s tests/run_tests.gd` and `timeout 300 ci/scripts/run_tests.sh` (both exit 0).
