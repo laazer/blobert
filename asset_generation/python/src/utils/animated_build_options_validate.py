@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -18,6 +19,7 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
     static_defs.extend(m._eye_shape_pupil_control_defs())
     static_defs.extend(m._mouth_control_defs())
     static_defs.extend(m._tail_control_defs())
+    static_defs.extend(m._texture_control_defs())
     static_defs.append(m._placement_seed_def())
     for c in static_defs:
         key = c["key"]
@@ -42,6 +44,12 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
             try:
                 v = float(out[key])
             except (TypeError, ValueError):
+                dv = c.get("default", lo)
+                try:
+                    v = float(dv)
+                except (TypeError, ValueError):
+                    v = lo
+            if math.isnan(v):
                 dv = c.get("default", lo)
                 try:
                     v = float(dv)

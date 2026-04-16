@@ -10,8 +10,11 @@ import {
   GizmoHelper,
   GizmoViewport,
 } from "@react-three/drei";
+import * as THREE from "three";
 import { useAppStore } from "../../store/useAppStore";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
+import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 
 type CanvasErrorBoundaryProps = {
   children: React.ReactNode;
@@ -73,6 +76,118 @@ class CanvasErrorBoundary extends Component<CanvasErrorBoundaryProps, { error: s
   }
 }
 
+function parseHexColor(raw: unknown): THREE.Color {
+  if (typeof raw !== "string") return new THREE.Color(1, 1, 1);
+  const hex = raw.trim().toLowerCase();
+  if (!hex) return new THREE.Color(1, 1, 1);
+  try {
+    return new THREE.Color(`#${hex}`);
+  } catch {
+    return new THREE.Color(1, 1, 1);
+  }
+}
+
+function makeTextureShaderMaterial(
+  mode: "gradient" | "spots" | "stripes",
+  params: {
+    gradA: THREE.Color;
+    gradB: THREE.Color;
+    gradDirection: "horizontal" | "vertical" | "radial";
+    spotColor: THREE.Color;
+    spotBgColor: THREE.Color;
+    spotDensity: number;
+    stripeColor: THREE.Color;
+    stripeBgColor: THREE.Color;
+    stripeWidth: number;
+  },
+): THREE.ShaderMaterial {
+  const uniforms = {
+    uMode: { value: mode === "gradient" ? 0 : mode === "spots" ? 1 : 2 },
+    uGradA: { value: params.gradA },
+    uGradB: { value: params.gradB },
+    uGradDirection: {
+      value: params.gradDirection === "horizontal" ? 0 : params.gradDirection === "vertical" ? 1 : 2,
+    },
+    uSpotColor: { value: params.spotColor },
+    uSpotBgColor: { value: params.spotBgColor },
+    uSpotDensity: { value: params.spotDensity },
+    uStripeColor: { value: params.stripeColor },
+    uStripeBgColor: { value: params.stripeBgColor },
+    uStripeWidth: { value: params.stripeWidth },
+  };
+
+  return new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: `
+varying vec2 vUv;
+varying vec3 vPos;
+void main() {
+  vUv = uv;
+  vPos = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+    `,
+    fragmentShader: `
+precision highp float;
+varying vec2 vUv;
+varying vec3 vPos;
+
+uniform int uMode; // 0 gradient, 1 spots, 2 stripes
+uniform vec3 uGradA;
+uniform vec3 uGradB;
+uniform int uGradDirection; // 0 horiz, 1 vert, 2 radial
+uniform vec3 uSpotColor;
+uniform vec3 uSpotBgColor;
+uniform float uSpotDensity;
+uniform vec3 uStripeColor;
+uniform vec3 uStripeBgColor;
+uniform float uStripeWidth;
+
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+
+void main() {
+  vec2 uv = vUv;
+  // UV fallback: if mesh has no UVs, vUv is (0,0) for all fragments. Use position-derived coords then.
+  if (uv.x == 0.0 && uv.y == 0.0) {
+    uv = vPos.xy * 0.25 + vec2(0.5);
+  }
+
+  vec3 color = vec3(1.0);
+  if (uMode == 0) {
+    float t = 0.0;
+    if (uGradDirection == 0) t = uv.x;
+    else if (uGradDirection == 1) t = uv.y;
+    else {
+      vec2 d = uv - vec2(0.5);
+      t = clamp(length(d) * 1.41421356, 0.0, 1.0);
+    }
+    color = mix(uGradA, uGradB, clamp(t, 0.0, 1.0));
+  } else if (uMode == 1) {
+    float density = max(0.001, uSpotDensity);
+    vec2 p = uv * density * 8.0;
+    vec2 cell = floor(p);
+    vec2 f = fract(p) - 0.5;
+    float r = 0.15 + 0.25 * hash21(cell);
+    float d = length(f);
+    float spot = smoothstep(r, r - 0.02, d);
+    color = mix(uSpotBgColor, uSpotColor, spot);
+  } else {
+    float w = max(0.001, uStripeWidth);
+    float x = uv.x / w;
+    float stripe = step(0.5, fract(x));
+    color = mix(uStripeBgColor, uStripeColor, stripe);
+  }
+
+  gl_FragColor = vec4(color, 1.0);
+}
+    `,
+  });
+}
+
 function Model({ url, animation }: { url: string; animation: string | null }) {
   const { scene, animations } = useGLTF(url);
   const { actions, names } = useAnimations(animations, scene);
@@ -82,6 +197,10 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   const setActiveAnimation = useAppStore((s) => s.setActiveAnimation);
   const isAnimationPaused = useAppStore((s) => s.isAnimationPaused);
   const prevUrl = useRef<string | null>(null);
+  const commandContext = useAppStore((s) => s.commandContext);
+  const animatedBuildOptionValues = useAppStore((s) => s.animatedBuildOptionValues);
+  const originalMaterialsRef = useRef<Map<string, THREE.Material | THREE.Material[]>>(new Map());
+  const appliedMaterialRef = useRef<THREE.ShaderMaterial | null>(null);
 
   useEffect(() => {
     // Stop all on url change
@@ -102,6 +221,10 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
 
   useEffect(() => {
     if (prevUrl.current !== url) {
+      // New model: clear captured materials and dispose any previous shader.
+      originalMaterialsRef.current.clear();
+      appliedMaterialRef.current?.dispose();
+      appliedMaterialRef.current = null;
       prevUrl.current = url;
       setAvailableClips(names);
       // Auto-select first clip on new model
@@ -110,6 +233,69 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
       }
     }
   }, [url, names, animation, setAvailableClips, setActiveAnimation]);
+
+  useEffect(() => {
+    const { cmd, enemy } = commandContext;
+    const playerColor = (enemy || "").trim().toLowerCase();
+    const slug =
+      cmd === "player" && PLAYER_COLORS.includes(playerColor)
+        ? PLAYER_PROCEDURAL_BUILD_SLUG
+        : normalizeAnimatedSlug(enemy);
+
+    const opts = animatedBuildOptionValues[slug] ?? {};
+    const rawMode = opts.texture_mode;
+    const modeStr = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
+    const mode =
+      modeStr === "gradient" || modeStr === "spots" || modeStr === "stripes" || modeStr === "none"
+        ? modeStr
+        : "none";
+
+    // Capture original materials once per url.
+    scene.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      if (!originalMaterialsRef.current.has(obj.uuid)) {
+        originalMaterialsRef.current.set(obj.uuid, obj.material);
+      }
+    });
+
+    if (mode === "none") {
+      // Restore.
+      scene.traverse((obj) => {
+        if (!(obj instanceof THREE.Mesh)) return;
+        const orig = originalMaterialsRef.current.get(obj.uuid);
+        if (orig) obj.material = orig;
+      });
+      appliedMaterialRef.current?.dispose();
+      appliedMaterialRef.current = null;
+      return;
+    }
+
+    const shader = makeTextureShaderMaterial(mode, {
+      gradA: parseHexColor(opts.texture_grad_color_a),
+      gradB: parseHexColor(opts.texture_grad_color_b),
+      gradDirection:
+        typeof opts.texture_grad_direction === "string" &&
+        (opts.texture_grad_direction === "horizontal" ||
+          opts.texture_grad_direction === "vertical" ||
+          opts.texture_grad_direction === "radial")
+          ? opts.texture_grad_direction
+          : "horizontal",
+      spotColor: parseHexColor(opts.texture_spot_color),
+      spotBgColor: parseHexColor(opts.texture_spot_bg_color),
+      spotDensity: typeof opts.texture_spot_density === "number" ? opts.texture_spot_density : 1.0,
+      stripeColor: parseHexColor(opts.texture_stripe_color),
+      stripeBgColor: parseHexColor(opts.texture_stripe_bg_color),
+      stripeWidth: typeof opts.texture_stripe_width === "number" ? opts.texture_stripe_width : 0.2,
+    });
+
+    appliedMaterialRef.current?.dispose();
+    appliedMaterialRef.current = shader;
+
+    scene.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      obj.material = shader;
+    });
+  }, [scene, commandContext, animatedBuildOptionValues, url]);
 
   return <primitive object={scene} />;
 }

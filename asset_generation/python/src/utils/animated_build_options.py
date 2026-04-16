@@ -19,6 +19,7 @@ from .animated_build_options_appendage_defs import (
     _eye_shape_pupil_control_defs,
     _mouth_control_defs,
     _tail_control_defs,
+    _texture_control_defs,
 )
 from .animated_build_options_mesh_controls import (
     _mesh_float_control_defs,
@@ -728,6 +729,8 @@ def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
     return defs
 
 
+# Import after constants to avoid an import cycle:
+# animated_build_options_part_feature_defs imports _FINISH_OPTIONS_ORDER from this module.
 from .animated_build_options_part_feature_defs import _part_feature_control_defs
 
 
@@ -766,6 +769,7 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
             + _feature_control_defs(slug)
             + _part_feature_control_defs(slug)
             + _zone_extra_control_defs(slug)
+            + _texture_control_defs()
             + [_placement_seed_def()]
         )
         out[slug] = merged
@@ -785,6 +789,8 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     for c in _mouth_control_defs():
         out[c["key"]] = c.get("default")
     for c in _tail_control_defs():
+        out[c["key"]] = c.get("default")
+    for c in _texture_control_defs():
         out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
@@ -815,6 +821,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     allowed_non_mesh |= {c["key"] for c in _eye_shape_pupil_control_defs()}
     allowed_non_mesh |= {c["key"] for c in _mouth_control_defs()}
     allowed_non_mesh |= {c["key"] for c in _tail_control_defs()}
+    allowed_non_mesh |= {c["key"] for c in _texture_control_defs()}
     allowed_non_mesh |= {"placement_seed"}
 
     if isinstance(src.get("mesh"), dict):
@@ -864,6 +871,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
 
 
 def _coerce_and_validate(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
+    # Import here to avoid an import cycle: animated_build_options_validate imports this module.
     from .animated_build_options_validate import coerce_validate_enemy_build_options
 
     return coerce_validate_enemy_build_options(enemy_type, merged)

@@ -129,6 +129,18 @@ function buildControlDisabled(
   defKey: string,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
+  const rawMode = values.texture_mode;
+  const textureMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
+  const mode =
+    textureMode === "gradient" || textureMode === "spots" || textureMode === "stripes" || textureMode === "none"
+      ? textureMode
+      : "none";
+
+  if (defKey === "texture_mode") return false;
+  if (defKey.startsWith("texture_grad_")) return mode !== "gradient";
+  if (defKey.startsWith("texture_spot_")) return mode !== "spots";
+  if (defKey.startsWith("texture_stripe_")) return mode !== "stripes";
+
   if (defKey === "pupil_shape" && !values["pupil_enabled"]) return true;
   if (defKey === "mouth_shape" && !values["mouth_enabled"]) return true;
   if ((defKey === "tail_shape" || defKey === "tail_length") && !values["tail_enabled"]) return true;

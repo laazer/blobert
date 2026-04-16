@@ -24,6 +24,19 @@ _TAIL_LENGTH_MAX = 3.0
 _TAIL_LENGTH_STEP = 0.05
 _TAIL_LENGTH_DEFAULT = 1.0
 
+_TEXTURE_MODE_OPTIONS: tuple[str, ...] = ("none", "gradient", "spots", "stripes")
+_GRAD_DIRECTION_OPTIONS: tuple[str, ...] = ("horizontal", "vertical", "radial")
+
+_TEXTURE_SPOT_DENSITY_MIN = 0.1
+_TEXTURE_SPOT_DENSITY_MAX = 5.0
+_TEXTURE_SPOT_DENSITY_STEP = 0.05
+_TEXTURE_SPOT_DENSITY_DEFAULT = 1.0
+
+_TEXTURE_STRIPE_WIDTH_MIN = 0.05
+_TEXTURE_STRIPE_WIDTH_MAX = 1.0
+_TEXTURE_STRIPE_WIDTH_STEP = 0.01
+_TEXTURE_STRIPE_WIDTH_DEFAULT = 0.2
+
 
 def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
     """Return the three eye-shape + pupil control defs shared by every animated slug."""
@@ -52,6 +65,79 @@ def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
         },
     ]
 
+
+def _texture_control_defs() -> list[dict[str, Any]]:
+    """Return the texture control defs shared by every animated slug."""
+    return [
+        {
+            "key": "texture_mode",
+            "label": "Texture mode",
+            "type": "select_str",
+            "options": list(_TEXTURE_MODE_OPTIONS),
+            "default": "none",
+        },
+        {
+            "key": "texture_grad_color_a",
+            "label": "Gradient color A",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_grad_color_b",
+            "label": "Gradient color B",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_grad_direction",
+            "label": "Gradient direction",
+            "type": "select_str",
+            "options": list(_GRAD_DIRECTION_OPTIONS),
+            "default": "horizontal",
+        },
+        {
+            "key": "texture_spot_color",
+            "label": "Spot color",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_spot_bg_color",
+            "label": "Spot background color",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_spot_density",
+            "label": "Spot density",
+            "type": "float",
+            "min": _TEXTURE_SPOT_DENSITY_MIN,
+            "max": _TEXTURE_SPOT_DENSITY_MAX,
+            "step": _TEXTURE_SPOT_DENSITY_STEP,
+            "default": _TEXTURE_SPOT_DENSITY_DEFAULT,
+        },
+        {
+            "key": "texture_stripe_color",
+            "label": "Stripe color",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_stripe_bg_color",
+            "label": "Stripe background color",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": "texture_stripe_width",
+            "label": "Stripe width",
+            "type": "float",
+            "min": _TEXTURE_STRIPE_WIDTH_MIN,
+            "max": _TEXTURE_STRIPE_WIDTH_MAX,
+            "step": _TEXTURE_STRIPE_WIDTH_STEP,
+            "default": _TEXTURE_STRIPE_WIDTH_DEFAULT,
+        },
+    ]
 
 def _mouth_control_defs() -> list[dict[str, Any]]:
     """Return the mouth control defs (MTE-1)."""

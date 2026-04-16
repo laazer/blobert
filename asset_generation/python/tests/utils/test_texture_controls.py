@@ -5,11 +5,6 @@ Spec requirements covered:
   PTP-2: Python Coercion and Validation
   PTP-3: Per-Slug Defaults and Serialization Contract
   PTP-6: Python Test Coverage
-
-These tests will be RED until the implementation adds _texture_control_defs() to
-animated_build_options_appendage_defs.py, wires it into animated_build_controls_for_api()
-and _defaults_for_slug(), and extends static_defs / allowed_non_mesh in the validate
-module — that is the intended TEST_BREAK state.
 """
 
 import json

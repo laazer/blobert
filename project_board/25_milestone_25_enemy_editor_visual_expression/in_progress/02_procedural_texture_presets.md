@@ -161,14 +161,14 @@ Scope Notes:
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_GENERALIST |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Generalist Implementation Agent |
+| Stage | STATIC_QA |
+| Revision | 6 |
+| Last Updated By | Generalist Implementation Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Status | Proceed |
-| Validation Status | — |
+| Validation Status | Implemented `_texture_control_defs()` + wiring into controls/defaults/coercion; frontend texture-mode disabling; GLB viewer shader overlay with material restore. Tests: `timeout 300 bash .lefthook/scripts/py-tests.sh` PASS (1939 passed; diff-cover 91%); `npm test` PASS (50 files, 450 tests). |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Generalist Implementation Agent: implement Tasks 1–4 per ticket/spec so the expanded Python + frontend test suites pass (texture control defs + wiring + coercion/validation; and `buildControlDisabled()` texture-mode rules). Then rerun focused pytest/vitest to confirm coercion edge cases (None/whitespace/NaN/±inf, numeric strings), invalid mode handling, and reactive store updates.
+Acceptance Criteria Gatekeeper Agent: verify each Acceptance Criterion is fully evidenced by implementation + tests (Python controls/coercion/serialization; frontend disabling; GLB viewer material override/restore and real-time updates), then route to fix-up if any AC lacks evidence.
