@@ -130,6 +130,8 @@ function buildControlDisabled(
   values: Readonly<Record<string, unknown>>,
 ): boolean {
   if (defKey === "pupil_shape" && !values["pupil_enabled"]) return true;
+  if (defKey === "mouth_shape" && !values["mouth_enabled"]) return true;
+  if ((defKey === "tail_shape" || defKey === "tail_length") && !values["tail_enabled"]) return true;
   return slug === "spider" && spiderPlacementRowDisabled(defKey, values);
 }
 

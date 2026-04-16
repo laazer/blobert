@@ -113,6 +113,7 @@ def test_build_mesh_parts_second_cylinder_is_carapace_plate(
     inst = AnimatedCarapaceHusk.__new__(AnimatedCarapaceHusk)
     inst.rng = MagicMock()
     inst.parts = []
+    inst.build_options = {}
 
     def _mesh_val(name: str):
         for cls in (AnimatedCarapaceHusk, HumanoidSimpleRig):

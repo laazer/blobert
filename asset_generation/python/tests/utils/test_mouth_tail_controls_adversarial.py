@@ -141,7 +141,7 @@ class TestDynamicSlugCoverage:
 
     def test_all_enemy_classes_declare_mouth_tail_controls(self) -> None:
         """All slugs in ENEMY_CLASSES must declare the 6 new controls."""
-        from src.core.animated_enemy_builder import AnimatedEnemyBuilder
+        from src.enemies.animated import AnimatedEnemyBuilder
 
         all_slugs = set(AnimatedEnemyBuilder.ENEMY_CLASSES)
         ctrl = animated_build_controls_for_api()
@@ -545,7 +545,7 @@ class TestPlayerSlimeControlsOnlyIsolation:
 
     def test_player_slime_not_in_enemy_classes(self) -> None:
         """player_slime must NOT be in ENEMY_CLASSES (geometry isolation guarantee)."""
-        from src.core.animated_enemy_builder import AnimatedEnemyBuilder
+        from src.enemies.animated import AnimatedEnemyBuilder
         assert "player_slime" not in AnimatedEnemyBuilder.ENEMY_CLASSES, (
             "player_slime must be absent from ENEMY_CLASSES so no geometry builder fires"
         )

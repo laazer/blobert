@@ -15,6 +15,11 @@ import math
 import re
 from typing import Any
 
+from .animated_build_options_appendage_defs import (
+    _eye_shape_pupil_control_defs,
+    _mouth_control_defs,
+    _tail_control_defs,
+)
 from .animated_build_options_mesh_controls import (
     _mesh_float_control_defs,
     _mesh_numeric_defaults,
@@ -37,8 +42,16 @@ _ANIMATED_BUILD_CONTROLS: dict[str, list[dict[str, Any]]] = {
 }
 
 # Material finish keys (keep aligned with materials.material_system.ENEMY_FINISH_PRESETS).
-_VALID_FINISHES: frozenset[str] = frozenset({"default", "glossy", "matte", "metallic", "gel"})
-_FINISH_OPTIONS_ORDER: tuple[str, ...] = ("default", "glossy", "matte", "metallic", "gel")
+_VALID_FINISHES: frozenset[str] = frozenset(
+    {"default", "glossy", "matte", "metallic", "gel"}
+)
+_FINISH_OPTIONS_ORDER: tuple[str, ...] = (
+    "default",
+    "glossy",
+    "matte",
+    "metallic",
+    "gel",
+)
 
 # Per-slug material feature slots merged into build_options["features"].
 # ``joints`` is used for hinge / ball meshes when the rig exposes them (humanoid joint balls, spider leg spheres).
@@ -129,40 +142,6 @@ def _placement_seed_def() -> dict[str, Any]:
     }
 
 
-_EYE_SHAPE_OPTIONS: tuple[str, ...] = ("circle", "oval", "slit", "square")
-_PUPIL_SHAPE_OPTIONS: tuple[str, ...] = ("dot", "slit", "diamond")
-_DEFAULT_EYE_SHAPE = "circle"
-_DEFAULT_PUPIL_SHAPE = "dot"
-
-
-def _eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
-    """Return the three eye-shape + pupil control defs shared by every animated slug."""
-    return [
-        {
-            "key": "eye_shape",
-            "label": "Eye shape",
-            "type": "select_str",
-            "options": list(_EYE_SHAPE_OPTIONS),
-            "default": _DEFAULT_EYE_SHAPE,
-            "segmented": True,
-        },
-        {
-            "key": "pupil_enabled",
-            "label": "Pupil",
-            "type": "bool",
-            "default": False,
-        },
-        {
-            "key": "pupil_shape",
-            "label": "Pupil shape",
-            "type": "select_str",
-            "options": list(_PUPIL_SHAPE_OPTIONS),
-            "default": _DEFAULT_PUPIL_SHAPE,
-            "segmented": True,
-        },
-    ]
-
-
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
     ensure_blender_stubs()
     try:
@@ -242,7 +221,9 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
 
 
 def _default_zone_geometry_extras(slug: str) -> dict[str, Any]:
-    return {z: dict(_default_zone_geometry_extras_payload()) for z in _feature_zones(slug)}
+    return {
+        z: dict(_default_zone_geometry_extras_payload()) for z in _feature_zones(slug)
+    }
 
 
 def _coerce_boolish(v: Any, default: bool = True) -> bool:
@@ -306,13 +287,18 @@ def _ensure_zone_parts(out: dict[str, Any], zone: str) -> dict[str, Any]:
     return parts
 
 
-def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str, Any]) -> dict[str, Any]:
+def _merge_features_for_slug(
+    slug: str, src: dict[str, Any], feat_base: dict[str, Any]
+) -> dict[str, Any]:
     zones = _feature_zones(slug)
     out: dict[str, Any] = {}
     for z in zones:
         b = feat_base.get(z)
         if isinstance(b, dict):
-            out[z] = {"finish": str(b.get("finish", "default")), "hex": str(b.get("hex", ""))}
+            out[z] = {
+                "finish": str(b.get("finish", "default")),
+                "hex": str(b.get("hex", "")),
+            }
             bp = b.get("parts")
             if isinstance(bp, dict):
                 parts: dict[str, dict[str, str]] = {}
@@ -373,7 +359,9 @@ def _merge_features_for_slug(slug: str, src: dict[str, Any], feat_base: dict[str
     return _validate_features_map(out)
 
 
-def _merge_zone_geometry_extras(slug: str, src: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
+def _merge_zone_geometry_extras(
+    slug: str, src: dict[str, Any], base: dict[str, Any]
+) -> dict[str, Any]:
     zones = _feature_zones(slug)
     out: dict[str, Any] = {}
     for z in zones:
@@ -491,7 +479,9 @@ def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, An
             _PLACEMENT_CLUSTERING_MIN, min(_PLACEMENT_CLUSTERING_MAX, cl)
         )
         dist = str(raw.get("distribution", entry["distribution"])).strip().lower()
-        entry["distribution"] = dist if dist in _DISTRIBUTION_MODES else _DEFAULT_DISTRIBUTION
+        entry["distribution"] = (
+            dist if dist in _DISTRIBUTION_MODES else _DEFAULT_DISTRIBUTION
+        )
         us = str(raw.get("uniform_shape", entry["uniform_shape"])).strip().lower()
         entry["uniform_shape"] = us if us in _UNIFORM_SHAPES else _DEFAULT_UNIFORM_SHAPE
         if kind == "horns":
@@ -764,9 +754,13 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
         # non-float prefix and float suffix so the new controls slot in correctly.
         static_non_float = [c for c in static if c.get("type") != "float"]
         static_float = [c for c in static if c.get("type") == "float"]
+        tail_defs = _tail_control_defs()
         merged = (
             static_non_float
             + _eye_shape_pupil_control_defs()
+            + _mouth_control_defs()
+            + tail_defs[:2]  # tail_enabled, tail_shape (non-float)
+            + [tail_defs[2]]  # tail_length (float) — before static_float and mesh floats
             + static_float
             + _mesh_float_control_defs(slug)
             + _feature_control_defs(slug)
@@ -787,6 +781,10 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
         for c in _ANIMATED_BUILD_CONTROLS.get(slug, []):
             out[c["key"]] = c.get("default")
     for c in _eye_shape_pupil_control_defs():
+        out[c["key"]] = c.get("default")
+    for c in _mouth_control_defs():
+        out[c["key"]] = c.get("default")
+    for c in _tail_control_defs():
         out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
@@ -811,8 +809,12 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     if enemy_type == "spider":
         allowed_non_mesh = {c["key"] for c in _spider_eye_control_defs()}
     else:
-        allowed_non_mesh = {c["key"] for c in _ANIMATED_BUILD_CONTROLS.get(enemy_type, [])}
+        allowed_non_mesh = {
+            c["key"] for c in _ANIMATED_BUILD_CONTROLS.get(enemy_type, [])
+        }
     allowed_non_mesh |= {c["key"] for c in _eye_shape_pupil_control_defs()}
+    allowed_non_mesh |= {c["key"] for c in _mouth_control_defs()}
+    allowed_non_mesh |= {c["key"] for c in _tail_control_defs()}
     allowed_non_mesh |= {"placement_seed"}
 
     if isinstance(src.get("mesh"), dict):
@@ -843,7 +845,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     zg_base = merged.get("zone_geometry_extras")
     if not isinstance(zg_base, dict):
         zg_base = _default_zone_geometry_extras(enemy_type)
-    merged["zone_geometry_extras"] = _merge_zone_geometry_extras(enemy_type, src, zg_base)
+    merged["zone_geometry_extras"] = _merge_zone_geometry_extras(
+        enemy_type, src, zg_base
+    )
     if raw:
         root_flat = {
             str(k): v

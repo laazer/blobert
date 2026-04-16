@@ -5,7 +5,13 @@ from typing import ClassVar
 
 from mathutils import Vector
 
-from ..core.blender_utils import create_cylinder, create_sphere, random_variance
+from ..core.blender_utils import (
+    create_cylinder,
+    create_mouth_mesh,
+    create_sphere,
+    create_tail_mesh,
+    random_variance,
+)
 from ..core.rig_models.humanoid_simple import (
     CYLINDER_VERTICES_HEX,
     CYLINDER_VERTICES_OCT,
@@ -146,6 +152,29 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 joint_ball_scale=ball_scale,
                 end_shape=leg_end,
                 end_scale=(arm_r, arm_r, arm_r),
+            )
+
+        # Mouth extra (MTE-7)
+        mouth_enabled = bool(self.build_options.get("mouth_enabled", False))
+        if mouth_enabled:
+            mouth_shape = str(self.build_options.get("mouth_shape") or "smile")
+            mouth_location = self._zone_geom_head_center + Vector(
+                (self._zone_geom_head_radii.x, 0.0, 0.0)
+            )
+            self.parts.append(
+                create_mouth_mesh(mouth_shape, tuple(mouth_location), self._zone_geom_head_radii.x)
+            )
+
+        # Tail extra (MTE-7)
+        tail_enabled = bool(self.build_options.get("tail_enabled", False))
+        if tail_enabled:
+            tail_shape = str(self.build_options.get("tail_shape") or "spike")
+            tail_length = float(self.build_options.get("tail_length", 1.0))
+            tail_location = self._zone_geom_body_center + Vector(
+                (-self._zone_geom_body_radii.x, 0.0, 0.0)
+            )
+            self.parts.append(
+                create_tail_mesh(tail_shape, tail_length, tuple(tail_location))
             )
 
     def apply_themed_materials(self):
