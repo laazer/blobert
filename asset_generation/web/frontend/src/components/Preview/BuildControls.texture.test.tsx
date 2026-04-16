@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { BuildControls } from "./BuildControls";
 import type { AnimatedBuildControlDef } from "../../types";
@@ -166,6 +166,22 @@ function isRowDisabled(labelText: string): boolean {
   return (
     wrapper.style.opacity === "0.42" || wrapper.style.pointerEvents === "none"
   );
+}
+
+function expectRowStrictlyDisabled(labelText: string) {
+  const wrapper = getControlRowWrapper(labelText);
+  expect(wrapper).toBeTruthy();
+  if (!wrapper) return;
+  expect(wrapper.style.opacity).toBe("0.42");
+  expect(wrapper.style.pointerEvents).toBe("none");
+}
+
+function expectRowStrictlyEnabled(labelText: string) {
+  const wrapper = getControlRowWrapper(labelText);
+  expect(wrapper).toBeTruthy();
+  if (!wrapper) return;
+  expect(wrapper.style.opacity).not.toBe("0.42");
+  expect(wrapper.style.pointerEvents).not.toBe("none");
 }
 
 // ---------------------------------------------------------------------------
@@ -484,6 +500,86 @@ describe("BuildControls texture — absent or non-string texture_mode treated as
     });
     render(<BuildControls />);
     expect(isRowDisabled("Gradient color A")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Adversarial: unknown texture_mode string treated as "none"
+// ---------------------------------------------------------------------------
+
+describe("BuildControls texture — invalid texture_mode string treated as none", () => {
+  it("invalid string disables all mode-specific params but does not disable texture_mode row", () => {
+    setupStore("slug", ALL_TEXTURE_CONTROLS, {
+      texture_mode: "invalid",
+      texture_grad_color_a: "ff0000",
+      texture_spot_color: "aabbcc",
+      texture_stripe_color: "112233",
+    });
+    render(<BuildControls />);
+
+    expectRowStrictlyDisabled("Gradient color A");
+    expectRowStrictlyDisabled("Spot color");
+    expectRowStrictlyDisabled("Stripe color");
+    expect(isRowDisabled("Texture mode")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Adversarial: reactive update hazards (store updates after initial render)
+// ---------------------------------------------------------------------------
+
+describe("BuildControls texture — reacts to texture_mode changes without remount", () => {
+  it("switching none -> gradient -> spots updates disabled rows deterministically", async () => {
+    setupStore("slug", ALL_TEXTURE_CONTROLS, {
+      texture_mode: "none",
+      texture_grad_color_a: "ff0000",
+      texture_spot_color: "aabbcc",
+      texture_stripe_color: "112233",
+    });
+
+    render(<BuildControls />);
+
+    expectRowStrictlyDisabled("Gradient color A");
+    expectRowStrictlyDisabled("Spot color");
+    expectRowStrictlyDisabled("Stripe color");
+
+    act(() => {
+      useAppStore.setState({
+        animatedBuildOptionValues: {
+          slug: {
+            texture_mode: "gradient",
+            texture_grad_color_a: "ff0000",
+            texture_grad_color_b: "0000ff",
+            texture_grad_direction: "horizontal",
+          },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expectRowStrictlyEnabled("Gradient color A");
+      expectRowStrictlyDisabled("Spot color");
+      expectRowStrictlyDisabled("Stripe color");
+    });
+
+    act(() => {
+      useAppStore.setState({
+        animatedBuildOptionValues: {
+          slug: {
+            texture_mode: "spots",
+            texture_spot_color: "aabbcc",
+            texture_spot_bg_color: "ffffff",
+            texture_spot_density: 2.0,
+          },
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expectRowStrictlyDisabled("Gradient color A");
+      expectRowStrictlyEnabled("Spot color");
+      expectRowStrictlyDisabled("Stripe color");
+    });
   });
 });
 

@@ -161,14 +161,14 @@ Scope Notes:
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_GENERALIST |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Generalist Implementation Agent |
 | Status | Proceed |
 | Validation Status | — |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Test Breaker Agent: adversarially review and extend `asset_generation/python/tests/utils/test_texture_controls.py` and `asset_generation/web/frontend/src/components/Preview/BuildControls.texture.test.tsx`. Expose gaps, boundary conditions, and implementation assumptions not yet exercised. All tests remain RED until Tasks 1–4 implementation completes.
+Generalist Implementation Agent: implement Tasks 1–4 per ticket/spec so the expanded Python + frontend test suites pass (texture control defs + wiring + coercion/validation; and `buildControlDisabled()` texture-mode rules). Then rerun focused pytest/vitest to confirm coercion edge cases (None/whitespace/NaN/±inf, numeric strings), invalid mode handling, and reactive store updates.

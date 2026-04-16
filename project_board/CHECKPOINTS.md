@@ -7,6 +7,13 @@
 - Log: `project_board/checkpoints/M25-PTP/run-2026-04-16T14-00-00Z-test-design.md`
 - Outcome: Authored `asset_generation/python/tests/utils/test_texture_controls.py` (PTP-6, 17 test classes, all 7 slugs, all 10 keys, coercion/clamping/defaults/idempotency/ordering) and `asset_generation/web/frontend/src/components/Preview/BuildControls.texture.test.tsx` (PTP-7, all mode disable/enable rules, no-bleed-over to pupil/mouth/tail, DOM opacity assertions). All tests RED until Tasks 1-4 implement `_texture_control_defs()`, wiring, and `buildControlDisabled()` extension.
 
+## Resume: 2026-04-16T16-00-00Z-ap-continue
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02_procedural_texture_presets.md`
+- Resuming at Stage: TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/M25-PTP/run-2026-04-16T16-00-00Z-test-break.md`
+- Outcome: Extended Python + frontend texture preset tests with adversarial coercion (None/whitespace/NaN/±inf, numeric strings), input-mutation guards, invalid `texture_mode` handling, and reactive store-update assertions. Tests remain RED pending implementation of Tasks 1–4.
+
 ## Run: 2026-04-16T12-00-00Z-spec-m25-ptp
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02_procedural_texture_presets.md`
 - Stage: SPECIFICATION → TEST_DESIGN
