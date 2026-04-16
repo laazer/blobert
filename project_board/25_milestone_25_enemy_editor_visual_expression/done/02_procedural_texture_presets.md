@@ -161,14 +161,14 @@ Scope Notes:
 
 | Field | Value |
 |---|---|
-| Stage | STATIC_QA |
-| Revision | 6 |
-| Last Updated By | Generalist Implementation Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
+| Stage | COMPLETE |
+| Revision | 9 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
 | Status | Proceed |
-| Validation Status | Implemented `_texture_control_defs()` + wiring into controls/defaults/coercion; frontend texture-mode disabling; GLB viewer shader overlay with material restore. Tests: `timeout 300 bash .lefthook/scripts/py-tests.sh` PASS (1939 passed; diff-cover 91%); `npm test` PASS (50 files, 450 tests). |
+| Validation Status | AC evidence: (1) Texture mode selector exists with options none/gradient/spots/stripes — proven by frontend test `asset_generation/web/frontend/src/components/Preview/BuildControls.texture.test.tsx` (select options + row presence). (2) Gradient params exposed (color A/B + direction) — same frontend test asserts rows present and enabled when `texture_mode=gradient`. (3) Spots params exposed (spot color/bg + density) — same frontend test asserts spot rows enabled when `texture_mode=spots`. (4) Stripes params exposed (stripe color/bg + width) — same frontend test asserts stripe rows enabled when `texture_mode=stripes`. (5) Serialize mode + params to enemy JSON — Python tests `asset_generation/python/tests/utils/test_texture_controls.py` + `test_texture_controls_adversarial.py` assert all 10 keys exist in `options_for_enemy()`, JSON round-trip preserves defaults, invalid mode coerces to `none`, and float clamps/coercions (including NaN/±inf). (6) Switching to None restores flat shading + (7) real-time preview updates + (8) applies uniformly to all body parts — implemented in `asset_generation/web/frontend/src/components/Preview/GlbViewer.tsx` `Model` effect: captures original materials per mesh UUID, applies shader to every `THREE.Mesh` child when mode is non-none, and restores originals when mode returns to `none`; effect depends on `animatedBuildOptionValues` so updates are reactive without GLB regeneration. Test runs: `timeout 300 bash .lefthook/scripts/py-tests.sh` PASS (1939 passed; diff-cover 91%); `npm test` PASS (50 files, 450 tests). |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Acceptance Criteria Gatekeeper Agent: verify each Acceptance Criterion is fully evidenced by implementation + tests (Python controls/coercion/serialization; frontend disabling; GLB viewer material override/restore and real-time updates), then route to fix-up if any AC lacks evidence.
+Human: ensure all relevant changes are committed/pushed for review/merge, then archive/close out any remaining milestone bookkeeping as needed.
