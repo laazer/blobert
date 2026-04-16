@@ -3865,3 +3865,89 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Preserves deterministic CI behavior while still validating runtime-relevant contracts.
 
 ---
+
+## [M25-06] — Wrong method placement, None coercion, and file-size org violations cause implementation rework
+*Completed: 2026-04-15*
+
+### Learnings
+- category: architecture
+  insight: When a geometry feature is added to a class with separate `build_mesh_parts()` and `apply_themed_materials()` methods, new mesh-creation calls belong exclusively in `build_mesh_parts()`. Placing them in `apply_themed_materials()` breaks any test harness that patches at module import level and calls only `build_mesh_parts()`, because the test never exercises the patched path.
+  impact: Four enemy files (spider, imp, claw_crawler, carapace_husk) had mouth/tail creation code in the wrong method; all four required rework after tests caught the mismatch.
+  prevention: Implementation agent prompts for anatomy-style enemy classes must state: "All new mesh object creation must occur in `build_mesh_parts()`. `apply_themed_materials()` must not create mesh objects."
+  severity: high
+
+- category: testing
+  insight: Using `str(dict.get(key))` to coerce an optional dict value to a string silently converts `None` to the literal string `"None"`, which is an unrecognized shape name. The correct guard is `str(dict.get(key) or default)`.
+  impact: A `mouth_shape=None` input (e.g. from a UI reset that clears the key) would be forwarded to geometry builders as the string `"None"`, causing an unknown-shape fallback silently — or a crash if no fallback existed. The Test Breaker identified this as a high-risk mutation case and added an explicit test; the coerce bug was then found during implementation.
+  prevention: Any string coercion of an optional dict key must use `or`-guarded default: `str(options.get(key) or fallback)`. Test designer prompts should include "test that `None` value for string-type options falls back to the default, not to the string 'None'."
+  severity: high
+
+- category: process
+  insight: Pre-commit file-size org hooks create a hard stop after implementation if new code is appended to already-large modules without proactive extraction. A module at 850 lines that grows to 969 after a ticket triggers a hook violation requiring a second extraction commit.
+  impact: `animated_build_options.py` exceeded the 900-line limit and `AnimatedSpider` exceeded the 350-line class limit; both required post-implementation extraction into new modules, adding a fixup commit cycle.
+  prevention: Implementation agent must check current module line counts before writing new code to existing files. If adding to a module already within 100 lines of the org limit, extract first. Prompt patch: "Before appending to any existing Python module, count its current lines. If current_lines + estimated_additions > 900, extract a helper module first."
+  severity: medium
+
+- category: architecture
+  insight: When a new float control (`tail_length`) is produced by the same helper that also produces non-float controls (`tail_enabled`, `tail_shape`), the caller's split-by-type assembly will only work correctly if the helper return list is filtered — not just appended whole — into the non-float and float blocks. Appending the entire helper output to `static_float` places the booleans in the wrong block; appending it to `static_non_float` places the float in the wrong block.
+  impact: `tail_length` was initially placed after `static_float` rather than interleaved before mesh floats, violating the control ordering invariant. Caught by ordering tests; fixed in `animated_build_controls_for_api()`.
+  prevention: Spec must explicitly state that mixed-type helpers (returning both float and non-float controls) must be split during assembly, not appended wholesale to either block. Spec Agent prompt patch: "If a new control helper returns controls of mixed types, the spec must specify how the caller filters and routes each type to the correct assembly block."
+  severity: medium
+
+- category: process
+  insight: diff-cover can block merge even after all unit tests pass, if new geometry functions are added to `blender_utils.py` but test files only exercise those functions indirectly through enemy builder mocks. Direct function-level tests on the utility module are required to meet line-coverage gates.
+  impact: `create_mouth_mesh` and `create_tail_mesh` in `blender_utils.py` had insufficient direct coverage; a separate `test_blender_utils_mouth_tail.py` file with 26 tests was required to bring diff-cover to 87%.
+  prevention: When implementation adds new utility-layer functions that callers mock in tests, the Test Designer must also produce at least one test file that calls those utility functions directly (via the blender stub environment). Prompt patch for Test Designer: "For every new function added to a shared utility module (e.g. `blender_utils.py`), include at least one test file that imports and calls that function directly — do not rely solely on enemy-builder tests that mock the utility."
+  severity: medium
+
+### Anti-Patterns
+- description: Placing mesh-creation logic in `apply_themed_materials()` instead of `build_mesh_parts()` in enemy builder classes.
+  detection_signal: Tests that patch `create_*_mesh` at the enemy module level and call `build_mesh_parts()` pass unconditionally (mock never asserted called), while tests that run the full pipeline show unexpected part counts.
+  prevention: Enforce a single-method rule in the implementation prompt: only `build_mesh_parts()` may create or attach new mesh objects.
+
+- description: Using `str(dict.get(key))` without an `or`-guarded default for optional string options.
+  detection_signal: Test Breaker adds a mutation case `key=None`; implementation passes it through to geometry builder as the string `"None"`.
+  prevention: Standardize the coercion idiom to `str(options.get(key) or default)` and add it to the implementation agent's coercion instruction list.
+
+- description: Adding substantial new code to a module already near the org line-count limit, deferring extraction until pre-commit blocks the commit.
+  detection_signal: Pre-commit hook fails with "file exceeds N lines" after implementation — the extraction that should have been done first becomes a fixup step.
+  prevention: Implementation agent checks module line count before starting; extraction is performed proactively if the estimate puts the module over the limit.
+
+### Prompt Patches
+- agent: Implementation Agent (Python)
+  change: "Before appending new code to any existing Python module, count its current line total. If current_lines + estimated_additions would exceed 900 lines, extract a new helper module for the new code first, then import from it. Do not wait for pre-commit hooks to surface this."
+  reason: Pre-commit org violations after implementation force a fixup extraction commit, adding unnecessary rework and delay.
+
+- agent: Implementation Agent (Python)
+  change: "In enemy builder classes that have both `build_mesh_parts()` and `apply_themed_materials()`, all new mesh object creation (calls to `create_*_mesh`, `bpy.ops.mesh.primitive_*`, or any function returning a `bpy.types.Object`) must be placed in `build_mesh_parts()`. The method `apply_themed_materials()` must not create mesh objects."
+  reason: Tests patch utility functions at module import level and call `build_mesh_parts()`. Code placed in `apply_themed_materials()` is invisible to those tests, causing false passes and missed bugs.
+
+- agent: Spec Agent
+  change: "When a new control helper returns controls of mixed types (e.g., both `bool`/`select_str` and `float`), the spec must explicitly state how the caller splits that helper's output during control assembly — specifying which types route to the non-float block and which route to the float block. Do not leave this as an implementation detail."
+  reason: Ambiguity about mixed-type helper assembly caused `tail_length` to be placed in the wrong block, requiring a fix after ordering tests failed.
+
+- agent: Test Designer Agent
+  change: "For every new function added to a shared utility module (e.g., `blender_utils.py`), include at least one test file that imports and calls that function directly using the blender stub environment. Do not rely solely on enemy-builder integration tests that mock the utility function — those tests cannot provide diff-cover for the utility module itself."
+  reason: Mocked utility calls do not produce line coverage on the utility module; this creates a diff-cover gap that blocks merge even after all unit tests pass.
+
+- agent: Test Breaker Agent
+  change: "For any new string-type option that is read from a build_options dict, add a mutation test case where the option value is explicitly `None`. Verify the output is the string default (e.g., `'smile'`), not the literal string `'None'`. Flag any implementation that uses `str(dict.get(key))` without an `or`-guarded fallback."
+  reason: `str(None)` produces `"None"`, a valid string but an unrecognized shape name, causing silent wrong-shape geometry that no standard option-validation test would catch.
+
+### Workflow Improvements
+- issue: Post-implementation org violations (file too long, class too long) forced a fixup extraction step after all tests passed, adding an extra commit and delaying ticket completion.
+  improvement: Add a pre-implementation checklist item to the Implementation Agent: verify current line counts on all target modules before writing. If any module is within 100 lines of the org limit, plan and execute extraction first.
+  expected_benefit: Eliminates the rework cycle of implement → pre-commit fail → extract → re-commit, which wastes a full round-trip and obscures the semantic commit boundary.
+
+- issue: The Test Breaker's adversarial mutation for `shape=None` (producing the string `"None"`) correctly flagged a coercion risk, but that insight was not systematically encoded as a standard adversarial case for string options.
+  improvement: Add "value=None mutation" as a standard adversarial test template for all `select_str` and `str`-typed options in the Test Breaker's procedure, not just when the agent happens to notice it.
+  expected_benefit: Consistent coverage of the `str(None) == "None"` failure mode across all future option-handling tickets without relying on agent initiative.
+
+### Keep / Reinforce
+- practice: The Test Breaker logging placement sign tests (mouth location X > 0, tail location X < 0) as a high-severity gap and adding them before implementation.
+  reason: Directional sign errors in geometry placement formulas (e.g., negating the head X offset) produce visually wrong but non-crashing output that no functional unit test would catch without explicit coordinate assertions.
+
+- practice: Requiring all 6 geometry-wired slugs in baseline part-count regression tests (not just a representative subset).
+  reason: Per-enemy implementation bugs (wrong method, missing import, off-by-one in part append) only appear on the affected enemy. Covering only a subset leaves regressions invisible until visual QA.
+
+---
