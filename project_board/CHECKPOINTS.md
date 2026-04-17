@@ -1,5 +1,27 @@
 # Checkpoint Index
 
+## Run: 2026-04-16T18-00-00Z-test-design-m25-03
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/M25-03/run-2026-04-16T18-00-00Z-test-design.md`
+- Outcome: Authored `asset_generation/web/frontend/src/components/Preview/BuildControls.textureUpload.test.tsx`; covers TUS-1..TUS-9: "custom" option in selector, file input render conditions/accept/aria-label, MIME rejection (gif/pdf/bmp), size rejection (3 MB, 2097153-byte boundary), exact-boundary acceptance (2097152 bytes), valid PNG/JPEG acceptance, error cleared on valid re-upload, Remove button render conditions and click behavior (revokeObjectURL + null store + mode reset), prev-URL revocation ordering, buildControlDisabled sub-controls disabled under "custom", no bleed-over to pupil/mouth rules, empty-file edge case. Tests RED until Tasks 2–3 implemented.
+
+## Run: 2026-04-16T15-00-00Z-spec-m25-03
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-03/run-2026-04-16T15-00-00Z-spec.md`
+- Outcome: Authored `project_board/specs/texture_upload_support_spec.md`; 10 requirements (TUS-1..10) covering "custom" option injection (client-side only, Python unchanged), file input UI (accept/.png/.jpg/.jpeg, aria-label="Upload texture"), validation rules (image/png|image/jpeg, 2097152 byte ceiling, exact error strings), blob URL lifecycle (BuildControls creates/revokes; GlbViewer disposes Texture only), Zustand store slice (customTextureUrl + setCustomTextureUrl), GlbViewer TextureLoader overlay (MeshStandardMaterial only, needsUpdate, customTextureRef, array-material handling, async-safety guard, "custom" as no-op in shader effect), Remove button (dual render condition, revoke+null+reset-to-none), Python comment (3-line exact text inside _texture_control_defs()), buildControlDisabled confirmation (sub-controls remain disabled under "custom"), non-breaking guarantee; 8 AC test coverage items for BuildControls.textureUpload.test.tsx enumerated; cross-requirement interaction table included.
+
+## Run: 2026-04-17T00-00-00Z-autopilot-single-m25-03
+- Queue mode: single ticket
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
+- Stage: PLANNING → SPECIFICATION
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/M25-03/run-2026-04-17T00-00-00Z-autopilot.md`
+- Outcome: Execution plan decomposed into 7 tasks (Python comment addition, Zustand store slice, BuildControls file input + validation + blob URL lifecycle, GlbViewer TextureLoader overlay + cleanup, Python tests n/a, frontend Vitest test suite, AC gate); 4 assumptions logged on URL storage ownership, Python doc style, spec type, and blob URL revocation boundary.
+
 ## Run: 2026-04-16T14-00-00Z-test-design-m25-ptp
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02_procedural_texture_presets.md`
 - Stage: TEST_DESIGN → TEST_BREAK
