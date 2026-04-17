@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-16T20-00-00Z-test-break-m25-03
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_WEB
+- Next Agent: Generalist Implementation Agent
+- Log: `project_board/checkpoints/M25-03/run-2026-04-16T20-00-00Z-test-break.md`
+- Outcome: Authored `asset_generation/web/frontend/src/components/Preview/BuildControls.textureUpload.adversarial.test.tsx`; 12 gap groups (GAP-1..12), 30+ adversarial test cases covering: image/jpg non-standard MIME rejection, Remove button type="button" attribute (TUS-7), reactive custom→none→custom mode-switch without remount (file input re-mounts, stale error state cleared), multiple-file FileList (only first processed), upload-while-in-error-state store verification, URL.createObjectURL throwing defensiveness (with CHECKPOINT annotations), empty filename MIME bypass attempt, zero-byte file acceptance (boundary 0<=2097152), 2097152-byte store-state verification, spy isolation, image/webp+bmp+svg+xml rejection, empty MIME type string rejection.
+
 ## Run: 2026-04-16T18-00-00Z-test-design-m25-03
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
 - Stage: TEST_DESIGN → TEST_BREAK

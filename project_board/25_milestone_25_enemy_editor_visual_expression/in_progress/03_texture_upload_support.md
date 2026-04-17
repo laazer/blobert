@@ -139,14 +139,14 @@ Use `vi.spyOn(URL, 'createObjectURL')` and `vi.spyOn(URL, 'revokeObjectURL')` fo
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_WEB |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Generalist Implementation Agent |
 | Status | Proceed |
 | Validation Status | — |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Test Breaker Agent: review `asset_generation/web/frontend/src/components/Preview/BuildControls.textureUpload.test.tsx` and adversarially extend it. Target gaps such as: double-upload race conditions, `image/jpg` (non-standard MIME) rejection, null-files vs zero-length-files distinction, Remove button `type="button"` attribute, store state after Remove does not contain stale blob URL, and reactive mode switch (custom → none → custom) correctly shows/hides file input without remount.
+Generalist Implementation Agent: implement Tasks 1–4 in execution order (Python comment, Zustand store slice, BuildControls.tsx file input + validation + blob URL lifecycle, GlbViewer.tsx TextureLoader overlay). All tests in `BuildControls.textureUpload.test.tsx` and `BuildControls.textureUpload.adversarial.test.tsx` must be GREEN after implementation. Run `cd asset_generation/web/frontend && npm test -- BuildControls.textureUpload` to verify. Then run `bash .lefthook/scripts/py-tests.sh` to confirm Python tests unaffected. Checkpoint log for adversarial tests: `project_board/checkpoints/M25-03/run-2026-04-16T20-00-00Z-test-break.md`.
