@@ -14,6 +14,10 @@
 - Log: `project_board/checkpoints/M25-PTP/run-2026-04-16T16-00-00Z-test-break.md`
 - Outcome: Extended Python + frontend texture preset tests with adversarial coercion (None/whitespace/NaN/±inf, numeric strings), input-mutation guards, invalid `texture_mode` handling, and reactive store-update assertions. Tests remain RED pending implementation of Tasks 1–4.
 
+### [M25-02] — OUTCOME: COMPLETE
+Procedural texture presets (gradient/spots/stripes) implemented across all animated enemy slugs; real-time Three.js shader overlay; 10 control defs serialized to enemy config JSON; all tests passing.
+Log: `project_board/checkpoints/M25-02/run-2026-04-15T12-00-00Z-autopilot.md`
+
 ## Run: 2026-04-16T12-00-00Z-spec-m25-ptp
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02_procedural_texture_presets.md`
 - Stage: SPECIFICATION → TEST_DESIGN
