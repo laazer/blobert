@@ -3951,3 +3951,65 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Per-enemy implementation bugs (wrong method, missing import, off-by-one in part append) only appear on the affected enemy. Covering only a subset leaves regressions invisible until visual QA.
 
 ---
+
+## [M25-PTP] — Defensive build-option coercion + preview overlay safety
+*Completed: 2026-04-16*
+
+### Learnings
+- category: testing
+  insight: When UI-controlled configs flow through a coercion/validation layer, adversarial tests must include non-finite floats (`NaN`, `±inf`), `None`, whitespace, and wrong-type inputs — not just out-of-range numbers and unknown enums.
+  impact: Without these cases, option validators can silently emit non-JSON values, crash on `float()` conversion, or pass `"None"`/whitespace through as apparently-valid strings, producing hard-to-debug preview behavior.
+  prevention: Make a standard mutation suite for every new control set: `None`, `""`, `"  value  "`, mixed case, list/dict types, `NaN`, `±inf`, plus min/max clamp checks for floats.
+  severity: high
+
+- category: architecture
+  insight: Unknown enum values should collapse to the safest “disable everything / no-op” state, while still keeping the selector/control itself usable.
+  impact: Treating unknown `mode` as partially-enabled can enable incompatible parameter rows and create confusing UI states; treating it as an error can lock users out of recovery.
+  prevention: Define a consistent policy: invalid enum → canonical `"none"` (or equivalent), and in the UI: all mode-specific rows disabled, but the mode row always enabled.
+  severity: medium
+
+- category: architecture
+  insight: Preview-only shader/material overlays must not assume UV availability; provide a deterministic coordinate fallback (object/world-space position) to keep procedural materials robust across generated meshes.
+  impact: Procedural assets or primitive-derived GLBs may omit UVs, leading to broken shaders or uniform patterns that look “flat” and trigger false bug reports.
+  prevention: In shader overlay patterns, explicitly support `uv` when present and fall back to position-derived coordinates when absent; treat this as a baseline requirement for procedural visualization features.
+  severity: medium
+
+### Anti-Patterns
+- description: Only testing “happy path” values for new build options (valid enums, normal floats) and skipping `None`/NaN/∞/wrong-type mutations.
+  detection_signal: Validators use `float(value)` / `str(value)` without guarding non-finite values and tests don’t mention `NaN` or `None`.
+  prevention: Require a minimal adversarial matrix for every new option family and block completion until it exists.
+
+- description: Letting unknown mode strings partially enable UI controls or disable the mode selector itself.
+  detection_signal: A bad `mode` value causes inconsistent disabled/enabled rows or makes it impossible to switch back to “none”.
+  prevention: Normalize invalid enums to `"none"` in validation and keep the mode selector always enabled in UI gating logic.
+
+- description: Writing procedural shader overlays that assume UVs exist on all meshes.
+  detection_signal: Shader code references `vUv` with no fallback path and preview regressions appear only on specific generated models.
+  prevention: Require UV-optional shader patterns and a fallback coordinate strategy in spec and code review.
+
+### Prompt Patches
+- agent: Test Breaker Agent
+  change: "For every new float option, add adversarial cases for `NaN`, `+inf`, `-inf`, and `None` and define the expected behavior (default vs clamp). For every new string/select option, include `None`, whitespace-padded, and mixed-case inputs; assert canonicalization."
+  reason: Prevents validators from emitting non-JSON values or silently accepting garbage that causes UI/preview drift.
+
+- agent: Spec Agent
+  change: "For any new `mode`/enum control, explicitly specify the invalid-value policy (normalize to `'none'` or equivalent) and the UI recovery requirement (mode selector never disabled; invalid behaves like 'none' for gating)."
+  reason: Avoids repeated assumption logs and prevents ambiguous UI states when configs contain unexpected values.
+
+### Workflow Improvements
+- issue: Adversarial mutation coverage for option coercion is often discovered late (during TEST_BREAK) instead of being a first-class part of test design.
+  improvement: Add an “Option coercion adversarial matrix” checklist item to TEST_DESIGN for tickets that add controls (floats + enums + strings).
+  expected_benefit: Earlier detection of coercion edge cases and fewer mid-implementation validator rewrites.
+
+- issue: Shader-based preview features can pass all unit tests while still failing on models lacking specific attributes (e.g., UVs).
+  improvement: Require the spec to declare required mesh attributes (uv/normals) and fallback behavior when absent for any preview-only material override feature.
+  expected_benefit: Fewer model-specific preview regressions and less reliance on manual visual QA.
+
+### Keep / Reinforce
+- practice: Treating `options_for_enemy()` inputs as immutable and asserting idempotency/non-mutation.
+  reason: UI stores frequently reuse config objects; mutation introduces state bleed and non-deterministic preview updates.
+
+- practice: Keeping color controls as plain strings (hex) with explicit parsing/fallback rules rather than inventing new control types mid-ticket.
+  reason: Prevents unnecessary frontend plumbing churn while still enabling consistent coercion and safe defaults.
+
+---
