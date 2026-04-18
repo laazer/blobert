@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-18T11-52-04Z-impl-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: IMPLEMENTATION_GENERALIST → IMPLEMENTATION_PYTHON_COMPLETE
+- Next Agent: Acceptance Criteria Gatekeeper Agent
+- Log: `project_board/checkpoints/M25-04/run-2026-04-18T11-52-04Z-impl.md`
+- Outcome: Implemented Tasks 1–4. Added `_RIG_ROT_MIN/MAX/STEP` constants and `_rig_rotation_control_defs()` with 6 defs (labels starting "Rig ", unit="deg", hint). Wired into `animated_build_controls_for_api()`, `_defaults_for_slug()` (conditional on ENEMY_CLASSES, excludes player_slime), `options_for_enemy()` allowed_non_mesh, and `coerce_validate_enemy_build_options()`. Applied `rotation_euler = Euler((...), "XYZ")` in all 6 animated enemy files. Added `RIG_HEAD_SCALE` to `_ANIMATED_BUILD_CONTROLS["imp"]` to satisfy TB test assumption (checkpoint logged). All 1906 Python tests pass; diff-cover 99% (threshold 85%); 533 frontend tests pass.
+
 ## Run: 2026-04-19T02-00-00Z-test-break-m25-04
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST

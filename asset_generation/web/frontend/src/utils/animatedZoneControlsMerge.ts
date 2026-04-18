@@ -1,5 +1,5 @@
 import type { AnimatedBuildControlDef } from "../types";
-import { ZONE_FINISH_HEX_RE } from "../components/Preview/featureMaterialPartition";
+import { ZONE_FINISH_HEX_RE, ZONE_TEXTURE_CONTROL_RE } from "../components/Preview/featureMaterialPartition";
 import { normalizeAnimatedSlug } from "./enemyDisplay";
 
 /** Aligned with ``asset_generation/python/src/utils/animated_build_options._FEATURE_ZONES_BY_SLUG``. */
@@ -44,6 +44,54 @@ export function syntheticZoneControl(zone: string, field: "finish" | "hex"): Ani
     type: "str",
     default: "",
   };
+}
+
+/** Mirrors Python ``_zone_texture_control_defs`` for a single zone (offline / partial meta). */
+export function syntheticZoneTextureDefs(zone: string): AnimatedBuildControlDef[] {
+  const zlabel = titleZone(zone);
+  const p = `feat_${zone}_texture_`;
+  return [
+    {
+      key: `${p}mode`,
+      label: `${zlabel} — texture mode`,
+      type: "select_str",
+      options: ["none", "gradient", "spots", "stripes"],
+      default: "none",
+    },
+    { key: `${p}grad_color_a`, label: `${zlabel} — gradient color A`, type: "str", default: "" },
+    { key: `${p}grad_color_b`, label: `${zlabel} — gradient color B`, type: "str", default: "" },
+    {
+      key: `${p}grad_direction`,
+      label: `${zlabel} — gradient direction`,
+      type: "select_str",
+      options: ["horizontal", "vertical", "radial"],
+      default: "horizontal",
+    },
+    { key: `${p}spot_color`, label: `${zlabel} — spot color`, type: "str", default: "" },
+    { key: `${p}spot_bg_color`, label: `${zlabel} — spot background color`, type: "str", default: "" },
+    {
+      key: `${p}spot_density`,
+      label: `${zlabel} — spot density`,
+      type: "float",
+      min: 0.1,
+      max: 5,
+      step: 0.05,
+      default: 1,
+      unit: "",
+    },
+    { key: `${p}stripe_color`, label: `${zlabel} — stripe color`, type: "str", default: "" },
+    { key: `${p}stripe_bg_color`, label: `${zlabel} — stripe background color`, type: "str", default: "" },
+    {
+      key: `${p}stripe_width`,
+      label: `${zlabel} — stripe width`,
+      type: "float",
+      min: 0.05,
+      max: 1,
+      step: 0.01,
+      default: 0.2,
+      unit: "",
+    },
+  ];
 }
 
 /** Mirrors Python ``_zone_extra_control_defs`` for offline / partial API responses. */
@@ -180,13 +228,18 @@ export function mergeCanonicalZoneControls(
   }
 
   const byKey = new Map(defs.map((d) => [d.key, d] as const));
-  const withoutZones = defs.filter((d) => !ZONE_FINISH_HEX_RE.test(d.key));
+  const withoutZones = defs.filter(
+    (d) => !ZONE_FINISH_HEX_RE.test(d.key) && !ZONE_TEXTURE_CONTROL_RE.test(d.key),
+  );
 
   const canonicalZoneDefs: AnimatedBuildControlDef[] = [];
   for (const z of zones) {
     for (const field of ["finish", "hex"] as const) {
       const key = `feat_${z}_${field}`;
       canonicalZoneDefs.push(byKey.get(key) ?? syntheticZoneControl(z, field));
+    }
+    for (const td of syntheticZoneTextureDefs(z)) {
+      canonicalZoneDefs.push(byKey.get(td.key) ?? td);
     }
   }
 

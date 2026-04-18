@@ -1,9 +1,10 @@
 """Animated ember imp enemy builder."""
 from __future__ import annotations
 
+import math
 from typing import ClassVar
 
-from mathutils import Vector
+from mathutils import Euler, Vector
 
 from ..core.blender_utils import create_mouth_mesh, create_tail_mesh, random_variance
 from ..core.rig_models.humanoid_simple import (
@@ -71,6 +72,10 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             scale=(body_width, body_width, body_height),
             vertices=CYLINDER_VERTICES_OCT,
         )
+        _brx = math.radians(float(self.build_options.get("RIG_BODY_ROT_X") or 0.0))
+        _bry = math.radians(float(self.build_options.get("RIG_BODY_ROT_Y") or 0.0))
+        _brz = math.radians(float(self.build_options.get("RIG_BODY_ROT_Z") or 0.0))
+        body.rotation_euler = Euler((_brx, _bry, _brz), "XYZ")
         self.parts.append(body)
         self.body_height = body_height
         self.body_width = body_width
@@ -88,6 +93,10 @@ class AnimatedImp(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             location=(0, 0, hz),
             scale=(head_scale, head_scale, head_scale),
         )
+        _hrx = math.radians(float(self.build_options.get("RIG_HEAD_ROT_X") or 0.0))
+        _hry = math.radians(float(self.build_options.get("RIG_HEAD_ROT_Y") or 0.0))
+        _hrz = math.radians(float(self.build_options.get("RIG_HEAD_ROT_Z") or 0.0))
+        head.rotation_euler = Euler((_hrx, _hry, _hrz), "XYZ")
         self.parts.append(head)
 
         arm_length = random_variance(self._mesh("ARM_LENGTH_BASE"), self._mesh("ARM_LENGTH_VARIANCE"), self.rng)

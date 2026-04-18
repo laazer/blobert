@@ -29,6 +29,12 @@ from src.utils.animated_build_options import (
     animated_build_controls_for_api,
     options_for_enemy,
 )
+from src.utils.animated_build_options_appendage_defs import (
+    _RIG_ROT_MAX,
+    _RIG_ROT_MIN,
+    _RIG_ROT_STEP,
+    _rig_rotation_control_defs,
+)
 
 # ---------------------------------------------------------------------------
 # Test data
@@ -59,20 +65,17 @@ ROTATION_KEYS = [
 
 def test_rig_rot_constants_exist_and_typed() -> None:
     """AC-1.1: _RIG_ROT_MIN, _RIG_ROT_MAX, _RIG_ROT_STEP exist, are float, correct values."""
-    assert hasattr(abo, "_RIG_ROT_MIN"), "_RIG_ROT_MIN must be defined on abo module"
-    assert hasattr(abo, "_RIG_ROT_MAX"), "_RIG_ROT_MAX must be defined on abo module"
-    assert hasattr(abo, "_RIG_ROT_STEP"), "_RIG_ROT_STEP must be defined on abo module"
-    assert isinstance(abo._RIG_ROT_MIN, float), "_RIG_ROT_MIN must be float"
-    assert isinstance(abo._RIG_ROT_MAX, float), "_RIG_ROT_MAX must be float"
-    assert isinstance(abo._RIG_ROT_STEP, float), "_RIG_ROT_STEP must be float"
-    assert abo._RIG_ROT_MIN == -180.0
-    assert abo._RIG_ROT_MAX == 180.0
-    assert abo._RIG_ROT_STEP == 1.0
+    assert isinstance(_RIG_ROT_MIN, float), "_RIG_ROT_MIN must be float"
+    assert isinstance(_RIG_ROT_MAX, float), "_RIG_ROT_MAX must be float"
+    assert isinstance(_RIG_ROT_STEP, float), "_RIG_ROT_STEP must be float"
+    assert _RIG_ROT_MIN == -180.0
+    assert _RIG_ROT_MAX == 180.0
+    assert _RIG_ROT_STEP == 1.0
 
 
 def test_rig_rotation_control_defs_returns_six_dicts() -> None:
     """AC-1.2: _rig_rotation_control_defs() returns a list of exactly 6 dicts."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     assert isinstance(defs, list), "return value must be a list"
     assert len(defs) == 6, f"expected 6 defs, got {len(defs)}"
     for d in defs:
@@ -81,7 +84,7 @@ def test_rig_rotation_control_defs_returns_six_dicts() -> None:
 
 def test_rig_rotation_control_defs_exact_keys() -> None:
     """AC-1.3: the 6 keys match the exact strings, in order."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     actual_keys = [d["key"] for d in defs]
     expected_keys = ROTATION_KEYS
     assert actual_keys == expected_keys, (
@@ -92,7 +95,7 @@ def test_rig_rotation_control_defs_exact_keys() -> None:
 
 def test_rig_rotation_control_defs_type_and_bounds() -> None:
     """AC-1.4: every def has type=float, min=-180.0, max=180.0, step=1.0, default=0.0."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         assert d.get("type") == "float", f"{key}: expected type='float'"
@@ -101,14 +104,14 @@ def test_rig_rotation_control_defs_type_and_bounds() -> None:
         assert d.get("step") == 1.0, f"{key}: expected step=1.0"
         assert d.get("default") == 0.0, f"{key}: expected default=0.0"
         # Constants must match
-        assert d["min"] == abo._RIG_ROT_MIN, f"{key}: min must equal _RIG_ROT_MIN"
-        assert d["max"] == abo._RIG_ROT_MAX, f"{key}: max must equal _RIG_ROT_MAX"
-        assert d["step"] == abo._RIG_ROT_STEP, f"{key}: step must equal _RIG_ROT_STEP"
+        assert d["min"] == _RIG_ROT_MIN, f"{key}: min must equal _RIG_ROT_MIN"
+        assert d["max"] == _RIG_ROT_MAX, f"{key}: max must equal _RIG_ROT_MAX"
+        assert d["step"] == _RIG_ROT_STEP, f"{key}: step must equal _RIG_ROT_STEP"
 
 
 def test_rig_rotation_control_defs_key_and_label_are_non_empty_strings() -> None:
     """AC-1.4/AC-1.6: 'key' and 'label' are present and non-empty strings."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     for d in defs:
         assert isinstance(d.get("key"), str) and d["key"], f"key must be a non-empty string: {d}"
         assert isinstance(d.get("label"), str) and d["label"], (
@@ -118,7 +121,7 @@ def test_rig_rotation_control_defs_key_and_label_are_non_empty_strings() -> None
 
 def test_rig_rotation_control_defs_label_contains_axis_and_part() -> None:
     """AC-1.6: each label contains the axis letter (X/Y/Z) and part name (head/body)."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     for d in defs:
         label_lower = d["label"].lower()
         key = d["key"]
@@ -140,7 +143,7 @@ def test_rig_rotation_control_defs_callable_without_blender() -> None:
     """AC-1.5: function is callable; no Blender import is required (test env has no live Blender)."""
     # The test environment runs without Blender; reaching this line means the import
     # and call succeeded without bpy/mathutils.
-    result = abo._rig_rotation_control_defs()
+    result = _rig_rotation_control_defs()
     assert result is not None
 
 
@@ -504,9 +507,9 @@ def test_defaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None
 
 def test_rig_rotation_control_defs_returns_fresh_list_each_call() -> None:
     """PRC-1 mutation guard: mutating the returned list must not affect subsequent calls."""
-    first = abo._rig_rotation_control_defs()
+    first = _rig_rotation_control_defs()
     first.clear()  # Destructive mutation
-    second = abo._rig_rotation_control_defs()
+    second = _rig_rotation_control_defs()
     assert len(second) == 6, (
         "_rig_rotation_control_defs() must return a fresh list each call; "
         "mutating the first result affected the second (shared mutable reference)"
@@ -515,10 +518,10 @@ def test_rig_rotation_control_defs_returns_fresh_list_each_call() -> None:
 
 def test_rig_rotation_control_defs_dict_mutation_does_not_affect_next_call() -> None:
     """PRC-1 mutation guard: mutating a dict inside the returned list must not affect the next call."""
-    first = abo._rig_rotation_control_defs()
+    first = _rig_rotation_control_defs()
     original_key = first[0]["key"]
     first[0]["key"] = "MUTATED_KEY"  # Mutate the first dict's key field
-    second = abo._rig_rotation_control_defs()
+    second = _rig_rotation_control_defs()
     assert second[0]["key"] == original_key, (
         "_rig_rotation_control_defs() returned the same dict object across calls; "
         "dicts must be independent copies, not shared references"
@@ -654,7 +657,7 @@ def test_options_for_enemy_does_not_mutate_input_dict_on_clamp() -> None:
 
 def test_rig_rotation_control_defs_type_is_exactly_float_string_not_int() -> None:
     """PRC-1 AC-1.4: type field is the string 'float', not the string 'int' or Python type float."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         t = d.get("type")
@@ -674,7 +677,7 @@ def test_rig_rotation_control_defs_type_is_exactly_float_string_not_int() -> Non
 
 def test_rig_rot_step_is_float_not_int() -> None:
     """PRC-1 AC-1.1: _RIG_ROT_STEP must be float 1.0, not integer 1."""
-    step = abo._RIG_ROT_STEP
+    step = _RIG_ROT_STEP
     assert isinstance(step, float), (
         f"_RIG_ROT_STEP must be float, got {type(step).__name__!r} with value {step!r}"
     )
@@ -686,7 +689,7 @@ def test_rig_rot_step_is_float_not_int() -> None:
 
 def test_rig_rotation_control_defs_step_field_is_float_not_int() -> None:
     """PRC-1 AC-1.4: the step field in every def is a float, not int."""
-    defs = abo._rig_rotation_control_defs()
+    defs = _rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         step = d.get("step")

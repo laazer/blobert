@@ -1,8 +1,38 @@
-"""Mouth, tail, and eye/pupil control defs (extracted for module size limits)."""
+"""Mouth, tail, eye/pupil, and rig rotation control defs (extracted for module size limits)."""
 
 from __future__ import annotations
 
 from typing import Any
+
+# Per-part rotation controls (M25-04).
+_RIG_ROT_MIN = -180.0
+_RIG_ROT_MAX = 180.0
+_RIG_ROT_STEP = 1.0
+
+
+def _rig_rotation_control_defs() -> list[dict[str, Any]]:
+    """Return 6 per-part rotation float controls (head X/Y/Z, body X/Y/Z) in degrees."""
+    _parts = (
+        ("HEAD", "Head"),
+        ("BODY", "Body"),
+    )
+    _axes = ("X", "Y", "Z")
+    return [
+        {
+            "key": f"RIG_{part}_ROT_{axis}",
+            "label": f"Rig {part_label.lower()} rotation {axis}",
+            "type": "float",
+            "min": _RIG_ROT_MIN,
+            "max": _RIG_ROT_MAX,
+            "step": _RIG_ROT_STEP,
+            "default": 0.0,
+            "unit": "deg",
+            "hint": f"Cosmetic rotation of the {part_label.lower()} mesh around the {axis}-axis (degrees).",
+        }
+        for part, part_label in _parts
+        for axis in _axes
+    ]
+
 
 # Eye / pupil shape options.
 _EYE_SHAPE_OPTIONS: tuple[str, ...] = ("circle", "oval", "slit", "square")
@@ -24,6 +54,10 @@ _TAIL_LENGTH_MAX = 3.0
 _TAIL_LENGTH_STEP = 0.05
 _TAIL_LENGTH_DEFAULT = 1.0
 
+# NOTE: "custom" is intentionally excluded from _TEXTURE_MODE_OPTIONS. It is a
+# client-side-only upload mode (blob URL via URL.createObjectURL) and is NOT a
+# valid Blender build option. The frontend injects "custom" into the texture_mode
+# selector without modifying this tuple. See ticket M25-03.
 _TEXTURE_MODE_OPTIONS: tuple[str, ...] = ("none", "gradient", "spots", "stripes")
 _GRAD_DIRECTION_OPTIONS: tuple[str, ...] = ("horizontal", "vertical", "radial")
 

@@ -19,7 +19,8 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
     static_defs.extend(m._eye_shape_pupil_control_defs())
     static_defs.extend(m._mouth_control_defs())
     static_defs.extend(m._tail_control_defs())
-    static_defs.extend(m._texture_control_defs())
+    static_defs.extend(m._rig_rotation_control_defs())
+    static_defs.extend(m._zone_texture_control_defs(enemy_type))
     static_defs.append(m._placement_seed_def())
     for c in static_defs:
         key = c["key"]

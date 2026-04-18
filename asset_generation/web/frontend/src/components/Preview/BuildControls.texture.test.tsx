@@ -6,9 +6,9 @@
  *   PTP-4: Frontend buildControlDisabled() Rules
  *   PTP-7: Frontend Test Coverage
  *
- * Tests verify observable DOM behavior: texture parameter control rows are rendered
- * with opacity 0.42 and pointer-events "none" when the corresponding texture_mode
- * is not active. The texture_mode select itself is never disabled.
+ * Tests verify observable DOM behavior: texture parameter rows for inactive modes are
+ * not rendered; only the active mode's color and float parameters appear. The texture_mode
+ * select is always shown and is never disabled.
  *
  * These tests will be RED until the implementation extends buildControlDisabled()
  * in BuildControls.tsx to include the texture mode conditional disabling rules.
@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { BuildControls } from "./BuildControls";
+import { TextureControlsSection } from "./TextureControlsSection";
 import type { AnimatedBuildControlDef } from "../../types";
 
 afterEach(() => {
@@ -29,7 +30,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 const TEXTURE_MODE_DEF: AnimatedBuildControlDef = {
-  key: "texture_mode",
+  key: "feat_body_texture_mode",
   label: "Texture mode",
   type: "select_str",
   options: ["none", "gradient", "spots", "stripes"],
@@ -37,21 +38,21 @@ const TEXTURE_MODE_DEF: AnimatedBuildControlDef = {
 };
 
 const TEXTURE_GRAD_COLOR_A_DEF: AnimatedBuildControlDef = {
-  key: "texture_grad_color_a",
+  key: "feat_body_texture_grad_color_a",
   label: "Gradient color A",
   type: "str",
   default: "",
 };
 
 const TEXTURE_GRAD_COLOR_B_DEF: AnimatedBuildControlDef = {
-  key: "texture_grad_color_b",
+  key: "feat_body_texture_grad_color_b",
   label: "Gradient color B",
   type: "str",
   default: "",
 };
 
 const TEXTURE_GRAD_DIRECTION_DEF: AnimatedBuildControlDef = {
-  key: "texture_grad_direction",
+  key: "feat_body_texture_grad_direction",
   label: "Gradient direction",
   type: "select_str",
   options: ["horizontal", "vertical", "radial"],
@@ -59,21 +60,21 @@ const TEXTURE_GRAD_DIRECTION_DEF: AnimatedBuildControlDef = {
 };
 
 const TEXTURE_SPOT_COLOR_DEF: AnimatedBuildControlDef = {
-  key: "texture_spot_color",
+  key: "feat_body_texture_spot_color",
   label: "Spot color",
   type: "str",
   default: "",
 };
 
 const TEXTURE_SPOT_BG_COLOR_DEF: AnimatedBuildControlDef = {
-  key: "texture_spot_bg_color",
+  key: "feat_body_texture_spot_bg_color",
   label: "Spot background color",
   type: "str",
   default: "",
 };
 
 const TEXTURE_SPOT_DENSITY_DEF: AnimatedBuildControlDef = {
-  key: "texture_spot_density",
+  key: "feat_body_texture_spot_density",
   label: "Spot density",
   type: "float",
   min: 0.1,
@@ -83,21 +84,21 @@ const TEXTURE_SPOT_DENSITY_DEF: AnimatedBuildControlDef = {
 };
 
 const TEXTURE_STRIPE_COLOR_DEF: AnimatedBuildControlDef = {
-  key: "texture_stripe_color",
+  key: "feat_body_texture_stripe_color",
   label: "Stripe color",
   type: "str",
   default: "",
 };
 
 const TEXTURE_STRIPE_BG_COLOR_DEF: AnimatedBuildControlDef = {
-  key: "texture_stripe_bg_color",
+  key: "feat_body_texture_stripe_bg_color",
   label: "Stripe background color",
   type: "str",
   default: "",
 };
 
 const TEXTURE_STRIPE_WIDTH_DEF: AnimatedBuildControlDef = {
-  key: "texture_stripe_width",
+  key: "feat_body_texture_stripe_width",
   label: "Stripe width",
   type: "float",
   min: 0.05,
@@ -119,6 +120,23 @@ const ALL_TEXTURE_CONTROLS: AnimatedBuildControlDef[] = [
   TEXTURE_STRIPE_BG_COLOR_DEF,
   TEXTURE_STRIPE_WIDTH_DEF,
 ];
+
+const BODY_FINISH_DEF: AnimatedBuildControlDef = {
+  key: "feat_body_finish",
+  label: "Body finish",
+  type: "select_str",
+  options: ["matte", "glossy"],
+  default: "matte",
+};
+
+const BODY_HEX_DEF: AnimatedBuildControlDef = {
+  key: "feat_body_hex",
+  label: "Body hex",
+  type: "str",
+  default: "ffffff",
+};
+
+const ALL_TEXTURE_WITH_FINISH_HEX: AnimatedBuildControlDef[] = [...ALL_TEXTURE_CONTROLS, BODY_FINISH_DEF, BODY_HEX_DEF];
 
 // ---------------------------------------------------------------------------
 // Helpers — identical pattern to BuildControls.mouthTail.test.tsx
@@ -168,215 +186,201 @@ function isRowDisabled(labelText: string): boolean {
   );
 }
 
-function expectRowStrictlyDisabled(labelText: string) {
-  const wrapper = getControlRowWrapper(labelText);
-  expect(wrapper).toBeTruthy();
-  if (!wrapper) return;
-  expect(wrapper.style.opacity).toBe("0.42");
-  expect(wrapper.style.pointerEvents).toBe("none");
+function expectTextureParamHidden(labelText: string) {
+  expect(screen.queryByText(labelText)).not.toBeInTheDocument();
 }
 
-function expectRowStrictlyEnabled(labelText: string) {
-  const wrapper = getControlRowWrapper(labelText);
-  expect(wrapper).toBeTruthy();
-  if (!wrapper) return;
-  expect(wrapper.style.opacity).not.toBe("0.42");
-  expect(wrapper.style.pointerEvents).not.toBe("none");
+function expectTextureParamVisible(labelText: string) {
+  expect(screen.getByText(labelText)).toBeInTheDocument();
 }
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-1: texture_grad_color_a disabled when texture_mode is "none"
+// PTP-7-AC-1: feat_body_texture_grad_color_a disabled when texture_mode is "none"
 // ---------------------------------------------------------------------------
 
-describe("BuildControls texture — texture_grad_color_a disabled when mode is none", () => {
+describe("BuildControls texture — feat_body_texture_grad_color_a disabled when mode is none", () => {
   beforeEach(() => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
   });
 
-  it("PTP-7-AC-1: texture_grad_color_a row has opacity 0.42 when texture_mode is none", () => {
-    render(<BuildControls />);
-    const wrapper = getControlRowWrapper("Gradient color A");
-    expect(wrapper).toBeTruthy();
-    if (wrapper) {
-      expect(wrapper.style.opacity).toBe("0.42");
-      expect(wrapper.style.pointerEvents).toBe("none");
-    }
+  it("PTP-7-AC-1: feat_body_texture_grad_color_a is not rendered when texture_mode is none", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 
-  it("PTP-4-AC-3: isRowDisabled returns true for texture_grad_color_a when mode is none", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+  it("PTP-4-AC-3: gradient color row is absent when mode is none", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-2: texture_grad_color_a enabled when texture_mode is "gradient"
+// PTP-7-AC-2: feat_body_texture_grad_color_a enabled when texture_mode is "gradient"
 // ---------------------------------------------------------------------------
 
-describe("BuildControls texture — texture_grad_color_a enabled when mode is gradient", () => {
+describe("BuildControls texture — feat_body_texture_grad_color_a enabled when mode is gradient", () => {
   beforeEach(() => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "gradient",
-      texture_grad_color_a: "ff0000",
-      texture_grad_color_b: "0000ff",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "gradient",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_grad_color_b: "0000ff",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
   });
 
-  it("PTP-7-AC-2: texture_grad_color_a row is NOT disabled when texture_mode is gradient", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(false);
+  it("PTP-7-AC-2: feat_body_texture_grad_color_a row is visible when texture_mode is gradient", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Gradient color A");
   });
 
-  it("PTP-4-AC-7: texture_grad_color_b is also not disabled when mode is gradient", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color B")).toBe(false);
+  it("PTP-4-AC-7: feat_body_texture_grad_color_b is visible when mode is gradient", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Gradient color B");
   });
 
-  it("PTP-4-AC-8: texture_grad_direction is not disabled when mode is gradient", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient direction")).toBe(false);
+  it("PTP-4-AC-8: feat_body_texture_grad_direction is visible when mode is gradient", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Gradient direction");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-3: texture_grad_color_a disabled when mode is "spots" (non-gradient non-none)
+// PTP-7-AC-3: feat_body_texture_grad_color_a disabled when mode is "spots" (non-gradient non-none)
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — gradient params disabled when mode is spots", () => {
   beforeEach(() => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "spots",
-      texture_grad_color_a: "ff0000",
-      texture_grad_color_b: "0000ff",
-      texture_grad_direction: "vertical",
-      texture_spot_color: "aabbcc",
-      texture_spot_bg_color: "ffffff",
-      texture_spot_density: 2.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "spots",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_grad_color_b: "0000ff",
+      feat_body_texture_grad_direction: "vertical",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_spot_bg_color: "ffffff",
+      feat_body_texture_spot_density: 2.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
   });
 
-  it("PTP-7-AC-3, PTP-4-AC-5: texture_grad_color_a is disabled when mode is spots", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+  it("PTP-7-AC-3, PTP-4-AC-5: feat_body_texture_grad_color_a is not rendered when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 
-  it("PTP-4-AC-9: texture_grad_direction is disabled when mode is spots (not gradient)", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient direction")).toBe(true);
+  it("PTP-4-AC-9: feat_body_texture_grad_direction is not rendered when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient direction");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-4: texture_stripe_color disabled when mode is "spots"
+// PTP-7-AC-4: feat_body_texture_stripe_color disabled when mode is "spots"
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — stripe params disabled when mode is spots", () => {
   beforeEach(() => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "spots",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "aabbcc",
-      texture_spot_bg_color: "ffffff",
-      texture_spot_density: 2.0,
-      texture_stripe_color: "112233",
-      texture_stripe_bg_color: "445566",
-      texture_stripe_width: 0.3,
+      feat_body_texture_mode: "spots",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_spot_bg_color: "ffffff",
+      feat_body_texture_spot_density: 2.0,
+      feat_body_texture_stripe_color: "112233",
+      feat_body_texture_stripe_bg_color: "445566",
+      feat_body_texture_stripe_width: 0.3,
     });
   });
 
-  it("PTP-7-AC-4, PTP-4-AC-17: texture_stripe_color row is disabled when mode is spots", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Stripe color")).toBe(true);
+  it("PTP-7-AC-4, PTP-4-AC-17: feat_body_texture_stripe_color is not rendered when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Stripe color");
   });
 
-  it("PTP-4-AC-15: texture_spot_density is NOT disabled when mode is spots", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot density")).toBe(false);
+  it("PTP-4-AC-15: feat_body_texture_spot_density is visible when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Spot density");
   });
 
-  it("PTP-4-AC-10: texture_spot_color is NOT disabled when mode is spots", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot color")).toBe(false);
+  it("PTP-4-AC-10: feat_body_texture_spot_color is visible when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Spot color");
   });
 
-  it("PTP-4-AC-13: texture_spot_bg_color is NOT disabled when mode is spots", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot background color")).toBe(false);
+  it("PTP-4-AC-13: feat_body_texture_spot_bg_color is visible when mode is spots", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Spot background color");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-5: texture_spot_color disabled when mode is "stripes"
+// PTP-7-AC-5: feat_body_texture_spot_color disabled when mode is "stripes"
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — spot params disabled when mode is stripes", () => {
   beforeEach(() => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "stripes",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "aabbcc",
-      texture_spot_bg_color: "ffffff",
-      texture_spot_density: 2.0,
-      texture_stripe_color: "112233",
-      texture_stripe_bg_color: "445566",
-      texture_stripe_width: 0.3,
+      feat_body_texture_mode: "stripes",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_spot_bg_color: "ffffff",
+      feat_body_texture_spot_density: 2.0,
+      feat_body_texture_stripe_color: "112233",
+      feat_body_texture_stripe_bg_color: "445566",
+      feat_body_texture_stripe_width: 0.3,
     });
   });
 
-  it("PTP-7-AC-5, PTP-4-AC-12: texture_spot_color row is disabled when mode is stripes", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot color")).toBe(true);
+  it("PTP-7-AC-5, PTP-4-AC-12: feat_body_texture_spot_color is not rendered when mode is stripes", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Spot color");
   });
 
-  it("PTP-4-AC-15 (stripes): texture_spot_density is disabled when mode is stripes", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot density")).toBe(true);
+  it("PTP-4-AC-15 (stripes): feat_body_texture_spot_density is not rendered when mode is stripes", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Spot density");
   });
 
-  it("PTP-4-AC-16: texture_stripe_color is NOT disabled when mode is stripes", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Stripe color")).toBe(false);
+  it("PTP-4-AC-16: feat_body_texture_stripe_color is visible when mode is stripes", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Stripe color");
   });
 
-  it("PTP-4-AC-19: texture_stripe_bg_color is NOT disabled when mode is stripes", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Stripe background color")).toBe(false);
+  it("PTP-4-AC-19: feat_body_texture_stripe_bg_color is visible when mode is stripes", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Stripe background color");
   });
 
-  it("PTP-4-AC-20: texture_stripe_width is NOT disabled when mode is stripes", () => {
-    render(<BuildControls />);
-    expect(isRowDisabled("Stripe width")).toBe(false);
+  it("PTP-4-AC-20: feat_body_texture_stripe_width is visible when mode is stripes", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Stripe width");
   });
 
-  it("PTP-4-AC-6, PTP-4-AC-21: texture_grad_color_a and texture_stripe_width crossed", () => {
-    render(<BuildControls />);
-    // gradient params disabled in stripes mode
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+  it("PTP-4-AC-6, PTP-4-AC-21: gradient params not rendered in stripes mode", () => {
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 });
 
@@ -387,80 +391,128 @@ describe("BuildControls texture — spot params disabled when mode is stripes", 
 describe("BuildControls texture — texture_mode control is never disabled", () => {
   it("PTP-4-AC-1, PTP-7-AC-6: texture_mode is not disabled when mode is none", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
-    render(<BuildControls />);
+    render(<TextureControlsSection slug="slug" />);
     expect(isRowDisabled("Texture mode")).toBe(false);
   });
 
   it("PTP-4-AC-2: texture_mode is not disabled when mode is gradient", () => {
-    setupStore("slug", ALL_TEXTURE_CONTROLS, { texture_mode: "gradient" });
-    render(<BuildControls />);
+    setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "gradient" });
+    render(<TextureControlsSection slug="slug" />);
     expect(isRowDisabled("Texture mode")).toBe(false);
   });
 
   it("PTP-7-AC-6: texture_mode is not disabled when mode is spots", () => {
-    setupStore("slug", ALL_TEXTURE_CONTROLS, { texture_mode: "spots" });
-    render(<BuildControls />);
+    setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "spots" });
+    render(<TextureControlsSection slug="slug" />);
     expect(isRowDisabled("Texture mode")).toBe(false);
   });
 
   it("PTP-7-AC-6: texture_mode is not disabled when mode is stripes", () => {
-    setupStore("slug", ALL_TEXTURE_CONTROLS, { texture_mode: "stripes" });
-    render(<BuildControls />);
+    setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "stripes" });
+    render(<TextureControlsSection slug="slug" />);
     expect(isRowDisabled("Texture mode")).toBe(false);
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-10: texture_spot_density disabled when mode is "none"
+// PTP-7-AC-10: feat_body_texture_spot_density disabled when mode is "none"
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — spot density disabled when mode is none", () => {
-  it("PTP-7-AC-10: texture_spot_density row is disabled when texture_mode is none", () => {
+  it("PTP-7-AC-10: feat_body_texture_spot_density is not rendered when texture_mode is none", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
-      texture_spot_density: 1.0,
+      feat_body_texture_mode: "none",
+      feat_body_texture_spot_density: 1.0,
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot density")).toBe(true);
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Spot density");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-11: texture_stripe_width disabled when mode is "gradient"
+// PTP-7-AC-11: feat_body_texture_stripe_width disabled when mode is "gradient"
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — stripe width disabled when mode is gradient", () => {
-  it("PTP-7-AC-11, PTP-4-AC-21: texture_stripe_width row is disabled when mode is gradient", () => {
+  it("PTP-7-AC-11, PTP-4-AC-21: feat_body_texture_stripe_width is not rendered when mode is gradient", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "gradient",
-      texture_stripe_width: 0.3,
+      feat_body_texture_mode: "gradient",
+      feat_body_texture_stripe_width: 0.3,
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Stripe width")).toBe(true);
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Stripe width");
   });
 });
 
 // ---------------------------------------------------------------------------
-// PTP-7-AC-9: texture_mode select renders all four options
+// Base hex: only when texture_mode is none; finish stays visible for pattern modes
 // ---------------------------------------------------------------------------
 
-describe("BuildControls texture — texture_mode select renders all four options", () => {
-  it("PTP-7-AC-9: none, gradient, spots, stripes options all present in select", () => {
-    setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
+describe("BuildControls texture — base hex vs pattern colors", () => {
+  it("shows body finish and body hex when mode is none", () => {
+    setupStore("slug", ALL_TEXTURE_WITH_FINISH_HEX, {
+      feat_body_texture_mode: "none",
+      feat_body_finish: "matte",
+      feat_body_hex: "aabbcc",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
-    render(<BuildControls />);
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Body finish");
+    expectTextureParamVisible("Body hex");
+    expectTextureParamHidden("Gradient color A");
+  });
+
+  it("hides body hex when mode is gradient; finish and gradient colors stay", () => {
+    setupStore("slug", ALL_TEXTURE_WITH_FINISH_HEX, {
+      feat_body_texture_mode: "gradient",
+      feat_body_finish: "matte",
+      feat_body_hex: "aabbcc",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_grad_color_b: "0000ff",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
+    });
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Body finish");
+    expectTextureParamHidden("Body hex");
+    expectTextureParamVisible("Gradient color A");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PTP-7-AC-9: texture_mode select renders built-in pattern modes (no client-only custom)
+// ---------------------------------------------------------------------------
+
+describe("BuildControls texture — texture_mode select renders pattern modes", () => {
+  it("PTP-7-AC-9: none, gradient, spots, stripes options all present; custom not offered in UI", () => {
+    setupStore("slug", ALL_TEXTURE_CONTROLS, {
+      feat_body_texture_mode: "none",
+    });
+    render(<TextureControlsSection slug="slug" />);
 
     // The label "Texture mode" must be in the DOM.
     expect(screen.getByText("Texture mode")).toBeInTheDocument();
@@ -473,9 +525,9 @@ describe("BuildControls texture — texture_mode select renders all four options
       expect(optionValues).toContain("gradient");
       expect(optionValues).toContain("spots");
       expect(optionValues).toContain("stripes");
+      expect(optionValues).not.toContain("custom");
     }
-    // Whether or not the label is linked via htmlFor, confirm text presence.
-    expect(screen.getByText("none") || screen.queryByText("none")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Texture mode" })).toBeInTheDocument();
   });
 });
 
@@ -484,22 +536,22 @@ describe("BuildControls texture — texture_mode select renders all four options
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — absent or non-string texture_mode treated as none", () => {
-  it("PTP-4-AC-22: texture_grad_color_a disabled when texture_mode is absent from values", () => {
+  it("PTP-4-AC-22: feat_body_texture_grad_color_a not rendered when texture_mode is absent (treated as none)", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
       // texture_mode intentionally absent
-      texture_grad_color_a: "ff0000",
+      feat_body_texture_grad_color_a: "ff0000",
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 
-  it("PTP-4-AC-23: texture_grad_color_a disabled when texture_mode is a number (42)", () => {
+  it("PTP-4-AC-23: feat_body_texture_grad_color_a not rendered when texture_mode is invalid type", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: 42,
-      texture_grad_color_a: "ff0000",
+      feat_body_texture_mode: 42,
+      feat_body_texture_grad_color_a: "ff0000",
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 });
 
@@ -508,18 +560,18 @@ describe("BuildControls texture — absent or non-string texture_mode treated as
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — invalid texture_mode string treated as none", () => {
-  it("invalid string disables all mode-specific params but does not disable texture_mode row", () => {
+  it("invalid mode treats as none: pattern params hidden; texture_mode row stays enabled", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "invalid",
-      texture_grad_color_a: "ff0000",
-      texture_spot_color: "aabbcc",
-      texture_stripe_color: "112233",
+      feat_body_texture_mode: "invalid",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_stripe_color: "112233",
     });
-    render(<BuildControls />);
+    render(<TextureControlsSection slug="slug" />);
 
-    expectRowStrictlyDisabled("Gradient color A");
-    expectRowStrictlyDisabled("Spot color");
-    expectRowStrictlyDisabled("Stripe color");
+    expectTextureParamHidden("Gradient color A");
+    expectTextureParamHidden("Spot color");
+    expectTextureParamHidden("Stripe color");
     expect(isRowDisabled("Texture mode")).toBe(false);
   });
 });
@@ -531,54 +583,54 @@ describe("BuildControls texture — invalid texture_mode string treated as none"
 describe("BuildControls texture — reacts to texture_mode changes without remount", () => {
   it("switching none -> gradient -> spots updates disabled rows deterministically", async () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
-      texture_grad_color_a: "ff0000",
-      texture_spot_color: "aabbcc",
-      texture_stripe_color: "112233",
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_stripe_color: "112233",
     });
 
-    render(<BuildControls />);
+    render(<TextureControlsSection slug="slug" />);
 
-    expectRowStrictlyDisabled("Gradient color A");
-    expectRowStrictlyDisabled("Spot color");
-    expectRowStrictlyDisabled("Stripe color");
+    expectTextureParamHidden("Gradient color A");
+    expectTextureParamHidden("Spot color");
+    expectTextureParamHidden("Stripe color");
 
     act(() => {
       useAppStore.setState({
         animatedBuildOptionValues: {
           slug: {
-            texture_mode: "gradient",
-            texture_grad_color_a: "ff0000",
-            texture_grad_color_b: "0000ff",
-            texture_grad_direction: "horizontal",
+            feat_body_texture_mode: "gradient",
+            feat_body_texture_grad_color_a: "ff0000",
+            feat_body_texture_grad_color_b: "0000ff",
+            feat_body_texture_grad_direction: "horizontal",
           },
         },
       });
     });
 
     await waitFor(() => {
-      expectRowStrictlyEnabled("Gradient color A");
-      expectRowStrictlyDisabled("Spot color");
-      expectRowStrictlyDisabled("Stripe color");
+      expectTextureParamVisible("Gradient color A");
+      expectTextureParamHidden("Spot color");
+      expectTextureParamHidden("Stripe color");
     });
 
     act(() => {
       useAppStore.setState({
         animatedBuildOptionValues: {
           slug: {
-            texture_mode: "spots",
-            texture_spot_color: "aabbcc",
-            texture_spot_bg_color: "ffffff",
-            texture_spot_density: 2.0,
+            feat_body_texture_mode: "spots",
+            feat_body_texture_spot_color: "aabbcc",
+            feat_body_texture_spot_bg_color: "ffffff",
+            feat_body_texture_spot_density: 2.0,
           },
         },
       });
     });
 
     await waitFor(() => {
-      expectRowStrictlyDisabled("Gradient color A");
-      expectRowStrictlyEnabled("Spot color");
-      expectRowStrictlyDisabled("Stripe color");
+      expectTextureParamHidden("Gradient color A");
+      expectTextureParamVisible("Spot color");
+      expectTextureParamHidden("Stripe color");
     });
   });
 });
@@ -629,21 +681,22 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
       pupil_shape: "dot",
       mouth_enabled: true,
       mouth_shape: "fang",
-      texture_mode: "gradient",
-      texture_grad_color_a: "ff0000",
-      texture_grad_color_b: "0000ff",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "gradient",
+      feat_body_texture_grad_color_a: "ff0000",
+      feat_body_texture_grad_color_b: "0000ff",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
-    render(<BuildControls />);
+    const { unmount } = render(<BuildControls />);
     expect(isRowDisabled("Pupil shape")).toBe(true);
-    // Texture grad controls should be enabled
-    expect(isRowDisabled("Gradient color A")).toBe(false);
+    unmount();
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Gradient color A");
   });
 
   it("PTP-7-AC-8: mouth_shape still disabled by mouth_enabled=false, unaffected by texture_mode=spots", () => {
@@ -652,21 +705,22 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
       pupil_shape: "slit",
       mouth_enabled: false,
       mouth_shape: "smile",
-      texture_mode: "spots",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "aabbcc",
-      texture_spot_bg_color: "ffffff",
-      texture_spot_density: 2.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "spots",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "aabbcc",
+      feat_body_texture_spot_bg_color: "ffffff",
+      feat_body_texture_spot_density: 2.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
-    render(<BuildControls />);
+    const { unmount } = render(<BuildControls />);
     expect(isRowDisabled("Mouth shape")).toBe(true);
-    // Spot controls should be enabled
-    expect(isRowDisabled("Spot color")).toBe(false);
+    unmount();
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Spot color");
   });
 
   it("PTP-4-AC-24: pupil_shape disabled rule unchanged when texture controls are added", () => {
@@ -675,16 +729,16 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
       pupil_shape: "dot",
       mouth_enabled: true,
       mouth_shape: "smile",
-      texture_mode: "none",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
     render(<BuildControls />);
     expect(isRowDisabled("Pupil shape")).toBe(true);
@@ -696,16 +750,16 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
       pupil_shape: "slit",
       mouth_enabled: false,
       mouth_shape: "smile",
-      texture_mode: "none",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "",
-      texture_stripe_bg_color: "",
-      texture_stripe_width: 0.2,
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "",
+      feat_body_texture_stripe_bg_color: "",
+      feat_body_texture_stripe_width: 0.2,
     });
     render(<BuildControls />);
     expect(isRowDisabled("Mouth shape")).toBe(true);
@@ -717,26 +771,26 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
       pupil_shape: "diamond",
       mouth_enabled: true,
       mouth_shape: "fang",
-      texture_mode: "stripes",
-      texture_grad_color_a: "",
-      texture_grad_color_b: "",
-      texture_grad_direction: "horizontal",
-      texture_spot_color: "",
-      texture_spot_bg_color: "",
-      texture_spot_density: 1.0,
-      texture_stripe_color: "aabbcc",
-      texture_stripe_bg_color: "ffffff",
-      texture_stripe_width: 0.4,
+      feat_body_texture_mode: "stripes",
+      feat_body_texture_grad_color_a: "",
+      feat_body_texture_grad_color_b: "",
+      feat_body_texture_grad_direction: "horizontal",
+      feat_body_texture_spot_color: "",
+      feat_body_texture_spot_bg_color: "",
+      feat_body_texture_spot_density: 1.0,
+      feat_body_texture_stripe_color: "aabbcc",
+      feat_body_texture_stripe_bg_color: "ffffff",
+      feat_body_texture_stripe_width: 0.4,
     });
-    render(<BuildControls />);
+    const { unmount } = render(<BuildControls />);
     // pupil_shape should be enabled (pupil_enabled=true)
     expect(isRowDisabled("Pupil shape")).toBe(false);
     // mouth_shape should be enabled (mouth_enabled=true)
     expect(isRowDisabled("Mouth shape")).toBe(false);
-    // stripe controls should be enabled (texture_mode=stripes)
-    expect(isRowDisabled("Stripe color")).toBe(false);
-    // spot controls should be disabled (texture_mode=stripes)
-    expect(isRowDisabled("Spot color")).toBe(true);
+    unmount();
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Stripe color");
+    expectTextureParamHidden("Spot color");
   });
 });
 
@@ -745,90 +799,71 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
 // ---------------------------------------------------------------------------
 
 describe("BuildControls texture — texture rules apply across slugs", () => {
-  it("PTP-4-AC-28: texture_grad_color_a is disabled for spider slug when mode is none", () => {
+  it("PTP-4-AC-28: feat_body_texture_grad_color_a not rendered for spider slug when mode is none", () => {
     setupStore("spider", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
+      feat_body_texture_mode: "none",
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
+    render(<TextureControlsSection slug="spider" />);
+    expectTextureParamHidden("Gradient color A");
   });
 
-  it("texture_grad_color_a is enabled for spider slug when mode is gradient", () => {
+  it("feat_body_texture_grad_color_a visible for spider slug when mode is gradient", () => {
     setupStore("spider", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "gradient",
+      feat_body_texture_mode: "gradient",
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Gradient color A")).toBe(false);
+    render(<TextureControlsSection slug="spider" />);
+    expectTextureParamVisible("Gradient color A");
   });
 
   it("texture rules apply to imp slug", () => {
     setupStore("imp", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "spots",
+      feat_body_texture_mode: "spots",
     });
-    render(<BuildControls />);
-    expect(isRowDisabled("Spot color")).toBe(false);
-    expect(isRowDisabled("Gradient color A")).toBe(true);
-    expect(isRowDisabled("Stripe color")).toBe(true);
+    render(<TextureControlsSection slug="imp" />);
+    expectTextureParamVisible("Spot color");
+    expectTextureParamHidden("Gradient color A");
+    expectTextureParamHidden("Stripe color");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Visual disabled state: explicit opacity/pointerEvents assertions
+// Visual: inactive mode params are not in the DOM
 // ---------------------------------------------------------------------------
 
-describe("BuildControls texture — visual disabled state in DOM", () => {
-  it("PTP-7-AC-1 (DOM): Gradient color A wrapper has opacity 0.42 and pointerEvents none when mode is none", () => {
+describe("BuildControls texture — inactive mode params not rendered", () => {
+  it("PTP-7-AC-1 (DOM): Gradient color A absent when mode is none", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "none",
-      texture_grad_color_a: "",
+      feat_body_texture_mode: "none",
+      feat_body_texture_grad_color_a: "",
     });
-    render(<BuildControls />);
-    const wrapper = getControlRowWrapper("Gradient color A");
-    expect(wrapper).toBeTruthy();
-    if (wrapper) {
-      expect(wrapper.style.opacity).toBe("0.42");
-      expect(wrapper.style.pointerEvents).toBe("none");
-    }
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Gradient color A");
   });
 
-  it("Stripe color wrapper has opacity 0.42 when mode is spots", () => {
+  it("Stripe color absent when mode is spots", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "spots",
-      texture_stripe_color: "aabbcc",
+      feat_body_texture_mode: "spots",
+      feat_body_texture_stripe_color: "aabbcc",
     });
-    render(<BuildControls />);
-    const wrapper = getControlRowWrapper("Stripe color");
-    expect(wrapper).toBeTruthy();
-    if (wrapper) {
-      expect(wrapper.style.opacity).toBe("0.42");
-      expect(wrapper.style.pointerEvents).toBe("none");
-    }
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Stripe color");
   });
 
-  it("Spot color wrapper has opacity 0.42 when mode is stripes", () => {
+  it("Spot color absent when mode is stripes", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "stripes",
-      texture_spot_color: "ff0000",
+      feat_body_texture_mode: "stripes",
+      feat_body_texture_spot_color: "ff0000",
     });
-    render(<BuildControls />);
-    const wrapper = getControlRowWrapper("Spot color");
-    expect(wrapper).toBeTruthy();
-    if (wrapper) {
-      expect(wrapper.style.opacity).toBe("0.42");
-      expect(wrapper.style.pointerEvents).toBe("none");
-    }
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamHidden("Spot color");
   });
 
-  it("Gradient color A wrapper has no disabled opacity when mode is gradient", () => {
+  it("Gradient color A present when mode is gradient", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, {
-      texture_mode: "gradient",
-      texture_grad_color_a: "ff0000",
+      feat_body_texture_mode: "gradient",
+      feat_body_texture_grad_color_a: "ff0000",
     });
-    render(<BuildControls />);
-    const wrapper = getControlRowWrapper("Gradient color A");
-    expect(wrapper).toBeTruthy();
-    if (wrapper) {
-      expect(wrapper.style.opacity).not.toBe("0.42");
-    }
+    render(<TextureControlsSection slug="slug" />);
+    expectTextureParamVisible("Gradient color A");
   });
 });

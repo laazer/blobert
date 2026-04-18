@@ -8,6 +8,22 @@ afterEach(() => {
   cleanup();
 });
 
+describe("ControlRow str — texture color keys use hex picker + Paste", () => {
+  const def: Extract<AnimatedBuildControlDef, { type: "str" }> = {
+    key: "feat_body_texture_grad_color_a",
+    label: "Gradient color A",
+    type: "str",
+    default: "",
+  };
+
+  it("renders color input, hex field, and Paste color like feat_*_hex", () => {
+    render(<ControlRow def={def} value="ff0000" onChange={() => {}} />);
+    expect(screen.getByTitle("Pick color (fills hex field)")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("RRGGBB")).toHaveValue("ff0000");
+    expect(screen.getByRole("button", { name: "Paste color" })).toBeInTheDocument();
+  });
+});
+
 describe("ControlRow float", () => {
   const def: Extract<AnimatedBuildControlDef, { type: "float" }> = {
     key: "BODY_BASE",

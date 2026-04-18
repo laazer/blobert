@@ -18,13 +18,23 @@ from typing import Any
 from .animated_build_options_appendage_defs import (
     _eye_shape_pupil_control_defs,
     _mouth_control_defs,
+    _rig_rotation_control_defs,
     _tail_control_defs,
-    _texture_control_defs,
 )
+from .enemy_slug_registry import ANIMATED_SLUGS
+
+_ANIMATED_ENEMY_SLUGS: frozenset[str] = frozenset(ANIMATED_SLUGS)
 from .animated_build_options_mesh_controls import (
     _mesh_float_control_defs,
     _mesh_numeric_defaults,
 )
+from .animated_build_options_spider_eye import (
+    placement_seed_def as _placement_seed_def_impl,
+)
+from .animated_build_options_spider_eye import (
+    spider_eye_control_defs as _spider_eye_control_defs_impl,
+)
+from .animated_build_options_zone_texture import zone_texture_control_defs
 from .blender_stubs import ensure_blender_stubs
 
 # Declarative controls for GET /api/meta (and validation). Spider eye_count comes from
@@ -38,6 +48,19 @@ _ANIMATED_BUILD_CONTROLS: dict[str, list[dict[str, Any]]] = {
             "min": 0,
             "max": 3,
             "default": 0,
+        },
+    ],
+    "imp": [
+        {
+            "key": "RIG_HEAD_SCALE",
+            "label": "Rig head scale",
+            "type": "float",
+            "min": 0.1,
+            "max": 3.0,
+            "step": 0.05,
+            "default": 1.0,
+            "unit": "× body width",
+            "hint": "Multiplier applied to the head mesh scale relative to the body width ratio.",
         },
     ],
 }
@@ -133,62 +156,25 @@ _ZONE_GEOM_EXTRA_FIELDS: frozenset[str] = frozenset(
 
 
 def _placement_seed_def() -> dict[str, Any]:
-    return {
-        "key": "placement_seed",
-        "label": "Placement seed (random distribution)",
-        "type": "int",
-        "min": 0,
-        "max": _PLACEMENT_SEED_MAX,
-        "default": 0,
-    }
+    return _placement_seed_def_impl(_PLACEMENT_SEED_MAX)
 
 
 def _spider_eye_control_defs() -> list[dict[str, Any]]:
-    ensure_blender_stubs()
-    try:
-        from enemies.animated_spider import AnimatedSpider
-    except ImportError:
-        from src.enemies.animated_spider import AnimatedSpider
-
-    return [
-        {
-            "key": "eye_count",
-            "label": "Eyes",
-            "type": "select",
-            "options": list(AnimatedSpider.ALLOWED_EYE_COUNTS),
-            "default": AnimatedSpider.DEFAULT_EYE_COUNT,
-        },
-        {
-            "key": "eye_distribution",
-            "label": "Eye placement",
-            "type": "select_str",
-            "options": list(_DISTRIBUTION_MODES),
-            "default": _DEFAULT_DISTRIBUTION,
-            "segmented": True,
-        },
-        {
-            "key": "eye_uniform_shape",
-            "label": "Eye uniform pattern",
-            "type": "select_str",
-            "options": ["arc"],
-            "default": "arc",
-        },
-        {
-            "key": "eye_clustering",
-            "label": "Eye clustering (multi-eye)",
-            "type": "float",
-            "min": _PLACEMENT_CLUSTERING_MIN,
-            "max": _PLACEMENT_CLUSTERING_MAX,
-            "step": 0.05,
-            "default": _DEFAULT_PLACEMENT_CLUSTERING,
-            "unit": "0–1",
-            "hint": "How tightly grouped vs spread eyes are when placement is random (multi-eye only).",
-        },
-    ]
+    return _spider_eye_control_defs_impl(
+        placement_clustering_min=_PLACEMENT_CLUSTERING_MIN,
+        placement_clustering_max=_PLACEMENT_CLUSTERING_MAX,
+        default_placement_clustering=_DEFAULT_PLACEMENT_CLUSTERING,
+        distribution_modes=_DISTRIBUTION_MODES,
+        default_distribution=_DEFAULT_DISTRIBUTION,
+    )
 
 
 def _feature_zones(slug: str) -> tuple[str, ...]:
     return _FEATURE_ZONES_BY_SLUG.get(slug, ("body",))
+
+
+def _zone_texture_control_defs(slug: str) -> list[dict[str, Any]]:
+    return zone_texture_control_defs(_feature_zones(slug))
 
 
 def _default_features_dict(slug: str) -> dict[str, dict[str, str]]:
@@ -758,6 +744,11 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
         static_non_float = [c for c in static if c.get("type") != "float"]
         static_float = [c for c in static if c.get("type") == "float"]
         tail_defs = _tail_control_defs()
+        rig_rot_defs = (
+            _rig_rotation_control_defs()
+            if slug in _ANIMATED_ENEMY_SLUGS
+            else []
+        )
         merged = (
             static_non_float
             + _eye_shape_pupil_control_defs()
@@ -765,11 +756,12 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
             + tail_defs[:2]  # tail_enabled, tail_shape (non-float)
             + [tail_defs[2]]  # tail_length (float) — before static_float and mesh floats
             + static_float
+            + rig_rot_defs
             + _mesh_float_control_defs(slug)
             + _feature_control_defs(slug)
             + _part_feature_control_defs(slug)
             + _zone_extra_control_defs(slug)
-            + _texture_control_defs()
+            + _zone_texture_control_defs(slug)
             + [_placement_seed_def()]
         )
         out[slug] = merged
@@ -790,7 +782,10 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
         out[c["key"]] = c.get("default")
     for c in _tail_control_defs():
         out[c["key"]] = c.get("default")
-    for c in _texture_control_defs():
+    if slug in _ANIMATED_ENEMY_SLUGS:
+        for c in _rig_rotation_control_defs():
+            out[c["key"]] = c.get("default")
+    for c in _zone_texture_control_defs(slug):
         out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
     out["mesh"] = dict(mesh)
@@ -821,7 +816,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     allowed_non_mesh |= {c["key"] for c in _eye_shape_pupil_control_defs()}
     allowed_non_mesh |= {c["key"] for c in _mouth_control_defs()}
     allowed_non_mesh |= {c["key"] for c in _tail_control_defs()}
-    allowed_non_mesh |= {c["key"] for c in _texture_control_defs()}
+    if enemy_type in _ANIMATED_ENEMY_SLUGS:
+        allowed_non_mesh |= {c["key"] for c in _rig_rotation_control_defs()}
+    allowed_non_mesh |= {c["key"] for c in _zone_texture_control_defs(enemy_type)}
     allowed_non_mesh |= {"placement_seed"}
 
     if isinstance(src.get("mesh"), dict):

@@ -127,14 +127,14 @@ bash ci/scripts/diff_cover_preflight.sh
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_GENERALIST |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Generalist Implementation Agent |
+| Stage | IMPLEMENTATION_PYTHON_COMPLETE |
+| Revision | 6 |
+| Last Updated By | Generalist Implementation Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Status | Proceed |
-| Validation Status | Test file hardened with 34 adversarial tests (10 categories: ordering-by-index, player_slime defaults, mutation guard, None coercion, zero boundary identity, 6×6 clamp matrix, idempotency, type string guard, step float-not-int, slug isolation). Total test count: 80+ tests, all RED until implementation. Checkpoint log at `project_board/checkpoints/M25-04/run-2026-04-19T02-00-00Z-test-break.md`. |
+| Validation Status | All 1906 Python tests pass (including all 80+ in test_part_rotation_controls.py). Diff-cover 99% (threshold 85%). 533 frontend tests pass. Checkpoint logged at `project_board/checkpoints/M25-04/run-2026-04-18T11-52-04Z-impl.md` for `RIG_HEAD_SCALE` TB-test assumption (TB-test assumed a pre-existing key that didn't exist; resolved by adding `RIG_HEAD_SCALE` to `_ANIMATED_BUILD_CONTROLS["imp"]` as a legitimate rig-level float). |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Generalist Implementation Agent: implement Tasks 1–6 in `animated_build_options.py`, `animated_build_options_validate.py`, and the 6 animated enemy slug files. All tests in `asset_generation/python/tests/utils/test_part_rotation_controls.py` must be GREEN. Run `bash .lefthook/scripts/py-tests.sh` and `bash ci/scripts/diff_cover_preflight.sh` as Task 7 gate. Note TB-2 (player_slime defaults) and TB-4 (None coercion) have CHECKPOINT comments — read them before deciding on implementation strategy for those two edge cases.
+Acceptance Criteria Gatekeeper Agent: verify all AC from the ticket description are met by the implementation. Python test suite at `asset_generation/python/tests/utils/test_part_rotation_controls.py` is green. Frontend Rig section filter `d.key.startsWith("RIG_")` in `BuildControls.tsx:353` already covers the new rotation keys by naming convention (no code change needed). If all AC pass, advance Stage to COMPLETE and move ticket to `done/`.

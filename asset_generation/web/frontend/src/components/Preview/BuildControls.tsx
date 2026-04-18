@@ -129,18 +129,6 @@ function buildControlDisabled(
   defKey: string,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
-  const rawMode = values.texture_mode;
-  const textureMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
-  const mode =
-    textureMode === "gradient" || textureMode === "spots" || textureMode === "stripes" || textureMode === "none"
-      ? textureMode
-      : "none";
-
-  if (defKey === "texture_mode") return false;
-  if (defKey.startsWith("texture_grad_")) return mode !== "gradient";
-  if (defKey.startsWith("texture_spot_")) return mode !== "spots";
-  if (defKey.startsWith("texture_stripe_")) return mode !== "stripes";
-
   if (defKey === "pupil_shape" && !values["pupil_enabled"]) return true;
   if (defKey === "mouth_shape" && !values["mouth_enabled"]) return true;
   if ((defKey === "tail_shape" || defKey === "tail_length") && !values["tail_enabled"]) return true;
@@ -167,6 +155,7 @@ function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }
 
 /**
  * Procedural build options for the selected animated enemy (preview always uses variant index 00).
+ * Finish, base color, and pattern build options live on the Colors tab (`TextureControlsSection`).
  */
 export function BuildControls() {
   const commandContext = useAppStore((st) => st.commandContext);
@@ -191,6 +180,7 @@ export function BuildControls() {
       ? PLAYER_PROCEDURAL_BUILD_SLUG
       : normalizeAnimatedSlug(enemy);
   const buildOpts = animatedBuildOptionValues[slug] ?? {};
+
   const spiderEyeDef = animatedBuildControls["spider"]?.find(
     (d) => d.type === "select" && d.key === "eye_count",
   ) as { options?: number[]; default?: number } | undefined;
@@ -214,9 +204,12 @@ export function BuildControls() {
   const isPlayerSlimeBuild = cmd === "player" && PLAYER_COLORS.includes(playerColor);
 
   const defs = animatedBuildControls[slug] ?? [];
-  /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras. */
+  /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras; surface texture on Colors. */
   const buildDefs = defs.filter(
-    (d) => !d.key.startsWith("feat_") && !d.key.startsWith("extra_zone_"),
+    (d) =>
+      !d.key.startsWith("feat_") &&
+      !d.key.startsWith("extra_zone_") &&
+      !d.key.startsWith("texture_"),
   );
   const controlSlugs = Object.keys(animatedBuildControls);
 
@@ -460,15 +453,14 @@ export function BuildControls() {
       {nonFloat.map((def) => {
         const dis = buildControlDisabled(slug, def.key, values);
         return (
-          <div
-            key={def.key}
-            style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}
-          >
-            <ControlRow
-              def={def}
-              value={values[def.key]}
-              onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
-            />
+          <div key={def.key}>
+            <div style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}>
+              <ControlRow
+                def={def}
+                value={values[def.key]}
+                onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
+              />
+            </div>
           </div>
         );
       })}

@@ -5,7 +5,7 @@ import { ElementPalettesSection } from "./ElementPalettesSection";
 import { FeatureMaterialControls } from "./FeatureMaterialControls";
 
 /**
- * Center column tab: per-slot finish + hex (feat_* build options).
+ * Center column tab: per-zone finish, hex, and surface pattern (feat_* build options).
  */
 export function ColorsPane() {
   const commandContext = useAppStore((s) => s.commandContext);
@@ -33,7 +33,7 @@ export function ColorsPane() {
         }}
       >
         Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
-        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit per-zone finishes and hex colors.
+        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit per-zone finishes, hex colors, and surface patterns.
       </div>
     );
   }
@@ -50,7 +50,8 @@ export function ColorsPane() {
       }}
     >
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Each coarse zone has <strong style={{ color: "#bbb" }}>finish</strong> + <strong style={{ color: "#bbb" }}>hex</strong>
+        Each coarse zone groups <strong style={{ color: "#bbb" }}>finish</strong>, <strong style={{ color: "#bbb" }}>base color</strong>, and{" "}
+        <strong style={{ color: "#bbb" }}>pattern</strong> build options (GLB preview shows the last export)
         {isPlayerSlimeColors ? (
           <>
             . For <strong style={{ color: "#bbb" }}>player</strong>, <strong style={{ color: "#bbb" }}>body</strong> is the main

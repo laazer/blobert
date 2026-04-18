@@ -8,6 +8,9 @@ const ZONE_ORDER = ["body", "head", "limbs", "joints", "extra"] as const;
 /** Matches coarse zone finish/hex rows (not ``feat_limb_*`` / ``feat_joint_*``). */
 export const ZONE_FINISH_HEX_RE = /^feat_(body|head|limbs|joints|extra)_(finish|hex)$/;
 
+/** Per-zone surface texture preview controls (``feat_{zone}_texture_*``). */
+export const ZONE_TEXTURE_CONTROL_RE = /^feat_(body|head|limbs|joints|extra)_texture_/;
+
 export function zoneRowRank(key: string): number {
   const m = /^feat_(\w+)_(finish|hex)$/.exec(key);
   if (!m) return 99;

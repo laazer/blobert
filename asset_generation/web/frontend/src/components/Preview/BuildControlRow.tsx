@@ -233,7 +233,10 @@ export function ControlRow({
     );
   }
   if (def.type === "str") {
-    if (def.key.endsWith("_hex")) {
+    if (
+      def.key.endsWith("_hex") ||
+      (def.key.includes("_texture_") && def.key.includes("color"))
+    ) {
       return <HexStrControlRow def={def} value={value} onChange={onChange} />;
     }
     const strVal = typeof value === "string" ? value : String(def.default ?? "");

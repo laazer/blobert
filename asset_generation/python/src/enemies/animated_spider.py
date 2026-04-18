@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import ClassVar
 
-from mathutils import Vector
+from mathutils import Euler, Vector
 
 from ..core.blender_utils import (
     create_eye_mesh,
@@ -31,6 +31,15 @@ from .animated_spider_eye_helpers import (
     separate_eye_dirs,
 )
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
+
+_SPIDER_LEG_ANCHOR_RATIOS: tuple[tuple[float, float, float], ...] = (
+    (0.3, 0.3, 0),
+    (0.3, -0.3, 0),
+    (0, 0.4, 0),
+    (0, -0.4, 0),
+    (-0.2, 0.3, 0),
+    (-0.2, -0.3, 0),
+)
 
 
 class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -61,14 +70,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     SPIDER_LEG_SEGMENTS: ClassVar[int] = 3
     DEFAULT_EYE_COUNT: ClassVar[int] = 2
     ALLOWED_EYE_COUNTS: ClassVar[tuple[int, ...]] = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 99)
-    LEG_ANCHOR_RATIOS: ClassVar[tuple[tuple[float, float, float], ...]] = (
-        (0.3, 0.3, 0),
-        (0.3, -0.3, 0),
-        (0, 0.4, 0),
-        (0, -0.4, 0),
-        (-0.2, 0.3, 0),
-        (-0.2, -0.3, 0),
-    )
+    LEG_ANCHOR_RATIOS: ClassVar[tuple[tuple[float, float, float], ...]] = _SPIDER_LEG_ANCHOR_RATIOS
 
     def _resolved_eye_count(self) -> int:
         raw = self.build_options.get("eye_count", self._mesh("DEFAULT_EYE_COUNT"))
@@ -191,6 +193,10 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             location=tuple(body_center),
             scale=tuple(body_radii),
         )
+        _brx = math.radians(float(self.build_options.get("RIG_BODY_ROT_X") or 0.0))
+        _bry = math.radians(float(self.build_options.get("RIG_BODY_ROT_Y") or 0.0))
+        _brz = math.radians(float(self.build_options.get("RIG_BODY_ROT_Z") or 0.0))
+        body.rotation_euler = Euler((_brx, _bry, _brz), "XYZ")
         self.parts.append(body)
         self.body_scale = body_scale
         self._zone_geom_body_center = body_center
@@ -205,6 +211,10 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
             location=tuple(head_center),
             scale=(head_scale, head_scale, head_scale),
         )
+        _hrx = math.radians(float(self.build_options.get("RIG_HEAD_ROT_X") or 0.0))
+        _hry = math.radians(float(self.build_options.get("RIG_HEAD_ROT_Y") or 0.0))
+        _hrz = math.radians(float(self.build_options.get("RIG_HEAD_ROT_Z") or 0.0))
+        head.rotation_euler = Euler((_hrx, _hry, _hrz), "XYZ")
         self.parts.append(head)
         self.head_scale = head_scale
         self._zone_geom_head_center = head_center

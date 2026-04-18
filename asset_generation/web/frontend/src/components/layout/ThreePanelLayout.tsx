@@ -136,7 +136,7 @@ function CenterSwitchBar() {
         type="button"
         style={centerPanelTabBtnStyle(centerPanel === "colors")}
         onClick={() => setCenterPanel("colors")}
-        title="Per-zone materials (feat_* slots) for the selected animated enemy or player slime"
+        title="Surface texture + per-zone materials (feat_* slots) for the selected animated enemy or player slime"
       >
         Colors
       </button>

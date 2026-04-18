@@ -8,6 +8,7 @@ import {
   ModelRegistryPayload,
 } from "../types";
 import { normalizeAnimatedSlug, titleCaseSnake } from "../utils/enemyDisplay";
+import { FEATURE_ZONES_BY_SLUG } from "../utils/animatedZoneControlsMerge";
 
 const BASE = "/api";
 
@@ -71,6 +72,54 @@ function defaultValuesForDefs(defs: AnimatedBuildControlDef[]): Record<string, u
   return row;
 }
 
+const LEGACY_GLOBAL_TEXTURE_KEYS = [
+  "texture_mode",
+  "texture_grad_color_a",
+  "texture_grad_color_b",
+  "texture_grad_direction",
+  "texture_spot_color",
+  "texture_spot_bg_color",
+  "texture_spot_density",
+  "texture_stripe_color",
+  "texture_stripe_bg_color",
+  "texture_stripe_width",
+] as const;
+
+const LEGACY_TEXTURE_TO_SUFFIX: Record<(typeof LEGACY_GLOBAL_TEXTURE_KEYS)[number], string> = {
+  texture_mode: "mode",
+  texture_grad_color_a: "grad_color_a",
+  texture_grad_color_b: "grad_color_b",
+  texture_grad_direction: "grad_direction",
+  texture_spot_color: "spot_color",
+  texture_spot_bg_color: "spot_bg_color",
+  texture_spot_density: "spot_density",
+  texture_stripe_color: "stripe_color",
+  texture_stripe_bg_color: "stripe_bg_color",
+  texture_stripe_width: "stripe_width",
+};
+
+/** Copy legacy global ``texture_*`` keys into ``feat_{zone}_texture_*`` once, then drop globals. */
+function migrateLegacyGlobalTextureToZones(slug: string, merged: Record<string, unknown>): void {
+  const hasLegacy = LEGACY_GLOBAL_TEXTURE_KEYS.some((k) => merged[k] !== undefined);
+  if (!hasLegacy) return;
+  if (merged.feat_body_texture_mode !== undefined) return;
+
+  const zones = FEATURE_ZONES_BY_SLUG[normalizeAnimatedSlug(slug)];
+  if (!zones?.length) return;
+
+  for (const z of zones) {
+    for (const legacy of LEGACY_GLOBAL_TEXTURE_KEYS) {
+      const v = merged[legacy];
+      if (v === undefined) continue;
+      const suf = LEGACY_TEXTURE_TO_SUFFIX[legacy];
+      merged[`feat_${z}_texture_${suf}`] = v;
+    }
+  }
+  for (const k of LEGACY_GLOBAL_TEXTURE_KEYS) {
+    delete merged[k];
+  }
+}
+
 /** GET /api/meta/enemies — enemies list + procedural build controls per slug. */
 export async function fetchEnemyPreviewMeta(): Promise<EnemyPreviewMeta> {
   const res = await fetch(`${BASE}/meta/enemies`);
@@ -111,6 +160,7 @@ export function mergeBuildOptionValues(
     const defaults = defaultValuesForDefs(defs);
     const existing = next[slug] ?? {};
     next[slug] = { ...defaults, ...existing };
+    migrateLegacyGlobalTextureToZones(slug, next[slug]);
     for (const d of defs) {
       if (next[slug][d.key] === undefined) {
         next[slug][d.key] = d.default;

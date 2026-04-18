@@ -139,14 +139,14 @@ Use `vi.spyOn(URL, 'createObjectURL')` and `vi.spyOn(URL, 'revokeObjectURL')` fo
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_WEB |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Generalist Implementation Agent |
+| Stage | BLOCKED |
+| Revision | 9 |
+| Last Updated By | Autopilot Orchestrator |
+| Next Responsible Agent | Human |
 | Status | Proceed |
-| Validation Status | — |
-| Blocking Issues | — |
+| Validation Status | Automated evidence remains strong for AC1/AC2/AC3/AC4/AC6/AC7: targeted suite `npm test -- BuildControls.textureUpload` passed (2 files, 74 tests), full frontend suite `npm test` passed (52 files, 524 tests), static QA `npm run build` passed (`tsc && vite build`), and Python regression `bash .lefthook/scripts/py-tests.sh` passed (1939 tests + Ruff checks). AC5 still requires explicit live preview timing evidence (valid upload -> textured model visible in <=2s). Attempted autonomous browser integration run, but browser-use execution was blocked by environment usage limit before smoke steps could be completed. |
+| Blocking Issues | Environment blocker: autonomous browser smoke verification for AC5 could not run because browser-use reported usage cap (`out of usage`). AC5 manual/integration evidence is still required to close ticket. |
 
 ## NEXT ACTION
 
-Generalist Implementation Agent: implement Tasks 1–4 in execution order (Python comment, Zustand store slice, BuildControls.tsx file input + validation + blob URL lifecycle, GlbViewer.tsx TextureLoader overlay). All tests in `BuildControls.textureUpload.test.tsx` and `BuildControls.textureUpload.adversarial.test.tsx` must be GREEN after implementation. Run `cd asset_generation/web/frontend && npm test -- BuildControls.textureUpload` to verify. Then run `bash .lefthook/scripts/py-tests.sh` to confirm Python tests unaffected. Checkpoint log for adversarial tests: `project_board/checkpoints/M25-03/run-2026-04-16T20-00-00Z-test-break.md`.
+Human: run one live editor smoke check for AC5 (`task editor` -> open `http://localhost:5173` -> set texture mode `custom` -> upload `assets/Textures/coin.png` -> confirm textured enemy appears within <=2s), then append the observed timing/result to `Validation Status` and re-run Acceptance Criteria Gatekeeper. All non-AC5 evidence is already present and passing.
