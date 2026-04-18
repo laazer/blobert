@@ -186,9 +186,17 @@ export function GlbViewer() {
         </div>
       ) : (
         <CanvasErrorBoundary key={glbViewerSceneKey(activeGlbUrl)} onClearPreview={onClearPreview}>
-          <Canvas camera={{ position: [0, 1.5, 3], fov: 50 }} style={{ height: "100%" }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[5, 10, 5]} intensity={1} />
+          <Canvas
+            camera={{ position: [0, 1.5, 3], fov: 50 }}
+            style={{ height: "100%" }}
+            onCreated={({ scene }) => {
+              // Default (1) + studio IBL reads as blown-out / flat white on baked baseColor textures.
+              // Gradient textures need higher intensity to be visible (0.38 is too dark).
+              scene.environmentIntensity = 0.8;
+            }}
+          >
+            <ambientLight intensity={0.35} />
+            <directionalLight position={[5, 10, 5]} intensity={0.85} />
             <Suspense fallback={null}>
               <Model key={activeGlbUrl} url={activeGlbUrl} animation={activeAnimation} />
               <Environment preset="studio" />
