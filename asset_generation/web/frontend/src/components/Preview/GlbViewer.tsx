@@ -1,6 +1,6 @@
 import { Component, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
   Grid,
@@ -150,72 +150,6 @@ const expandBtnStyle: CSSProperties = {
   cursor: "pointer",
 };
 
-const debugPanelStyle: CSSProperties = {
-  position: "absolute",
-  bottom: 8,
-  left: 8,
-  zIndex: 10,
-  padding: 12,
-  fontSize: 11,
-  border: "1px solid #555",
-  borderRadius: 3,
-  background: "#1a1a1a",
-  color: "#d4d4d4",
-  maxWidth: 200,
-};
-
-const sliderStyle: CSSProperties = {
-  display: "block",
-  width: "100%",
-  marginTop: 4,
-};
-
-function SceneDebugControls() {
-  const { scene } = useThree();
-  const [envIntensity, setEnvIntensity] = useState(0.8);
-  const [ambientIntensity, setAmbientIntensity] = useState(0.35);
-
-  return (
-    <div style={debugPanelStyle}>
-      <div style={{ marginBottom: 8 }}>Lighting Debug</div>
-      <label style={{ fontSize: 10 }}>
-        Env Intensity: {envIntensity.toFixed(2)}
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.1"
-          value={envIntensity}
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            setEnvIntensity(val);
-            scene.environmentIntensity = val;
-          }}
-          style={sliderStyle}
-        />
-      </label>
-      <label style={{ fontSize: 10 }}>
-        Ambient: {ambientIntensity.toFixed(2)}
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={ambientIntensity}
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            setAmbientIntensity(val);
-            const light = scene.children.find(
-              (c: any) => c.type === "AmbientLight"
-            ) as any;
-            if (light) light.intensity = val;
-          }}
-          style={sliderStyle}
-        />
-      </label>
-    </div>
-  );
-}
 
 export function GlbViewer() {
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
@@ -285,7 +219,6 @@ export function GlbViewer() {
             </Suspense>
             <Grid args={[10, 10]} cellSize={0.5} cellColor="#444" sectionColor="#666" />
             <OrbitControls makeDefault />
-            <SceneDebugControls />
             <GizmoHelper alignment="bottom-right" margin={[GIZMO_MARGIN_X, GIZMO_MARGIN_Y]}>
               <GizmoViewport
                 hideNegativeAxes
