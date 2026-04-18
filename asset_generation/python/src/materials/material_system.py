@@ -16,7 +16,6 @@ from ..utils.materials import (
     MaterialNames,
     MaterialThemes,
 )
-from ..utils.texture_asset_loader import get_texture_asset_filepath
 
 TextureHandler = Callable[..., None]
 
@@ -593,6 +592,7 @@ def _material_for_asset_zone(
     instance_suffix: str = "asset",
 ) -> bpy.types.Material:
     """Create material with image texture applied from asset."""
+    from ..utils.texture_asset_loader import get_texture_asset_filepath
     mat = base_material.copy()
     mat.name = f"{base_material.name}_{instance_suffix}"
 
