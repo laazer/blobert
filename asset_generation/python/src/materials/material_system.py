@@ -1,8 +1,11 @@
 """
 Material creation system with procedural textures
 """
+
 from __future__ import annotations
 
+import math
+import re
 from typing import Any, Callable, Mapping
 
 import bpy
@@ -13,6 +16,7 @@ from ..utils.materials import (
     MaterialNames,
     MaterialThemes,
 )
+from ..utils.texture_asset_loader import get_texture_asset_filepath
 
 TextureHandler = Callable[..., None]
 
@@ -78,9 +82,9 @@ def create_material(
 
     nodes.clear()
 
-    bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
-    output = nodes.new(type='ShaderNodeOutputMaterial')
-    links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+    bsdf = nodes.new(type="ShaderNodeBsdfPrincipled")
+    output = nodes.new(type="ShaderNodeOutputMaterial")
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
 
     bsdf.location = (0, 0)
     output.location = (300, 0)
@@ -96,7 +100,7 @@ def create_material(
         bsdf.inputs["Transmission"].default_value = transmission
 
     if alpha < 1.0:
-        mat.blend_method = 'BLEND'
+        mat.blend_method = "BLEND"
         if "Alpha" in bsdf.inputs:
             bsdf.inputs["Alpha"].default_value = alpha
 
@@ -120,20 +124,20 @@ def create_material(
 
 def add_organic_texture(mat, nodes, links, bsdf, base_color):
     """Add organic/biological texture details"""
-    noise = nodes.new(type='ShaderNodeTexNoise')
+    noise = nodes.new(type="ShaderNodeTexNoise")
     noise.location = (-600, 200)
     noise.inputs["Scale"].default_value = 15.0
     noise.inputs["Detail"].default_value = 8.0
     noise.inputs["Roughness"].default_value = 0.6
 
-    ramp = nodes.new(type='ShaderNodeValToRGB')
+    ramp = nodes.new(type="ShaderNodeValToRGB")
     ramp.location = (-400, 200)
     ramp.color_ramp.elements[0].position = 0.3
     ramp.color_ramp.elements[1].position = 0.7
 
-    mix = nodes.new(type='ShaderNodeMixRGB')
+    mix = nodes.new(type="ShaderNodeMixRGB")
     mix.location = (-200, 0)
-    mix.blend_type = 'MULTIPLY'
+    mix.blend_type = "MULTIPLY"
     mix.inputs["Fac"].default_value = _ORGANIC_BASE_COLOR_DETAIL_FAC
     mix.inputs["Color1"].default_value = base_color
 
@@ -149,14 +153,14 @@ def add_metallic_texture(_mat, _nodes, _links, bsdf, _base_color):
 
 def add_emissive_texture(mat, nodes, links, bsdf, base_color):
     """Add glowing/emissive texture"""
-    emission = nodes.new(type='ShaderNodeEmission')
+    emission = nodes.new(type="ShaderNodeEmission")
     emission.location = (0, -200)
     dim_color = (base_color[0] * 0.5, base_color[1] * 0.5, base_color[2] * 0.5, 1.0)
     emission.inputs["Color"].default_value = dim_color
     emission.inputs["Strength"].default_value = 1.5
 
     try:
-        mix_shader = nodes.new(type='ShaderNodeMixShader')
+        mix_shader = nodes.new(type="ShaderNodeMixShader")
         mix_shader.location = (200, 0)
 
         factor_input = mix_shader.inputs.get("Fac") or mix_shader.inputs.get("Factor")
@@ -172,13 +176,13 @@ def add_emissive_texture(mat, nodes, links, bsdf, base_color):
         output = nodes.get("Material Output")
         links.new(emission.outputs["Emission"], output.inputs["Surface"])
 
-    noise = nodes.new(type='ShaderNodeTexNoise')
+    noise = nodes.new(type="ShaderNodeTexNoise")
     noise.location = (-400, -200)
     noise.inputs["Scale"].default_value = 25.0
 
-    math_node = nodes.new(type='ShaderNodeMath')
+    math_node = nodes.new(type="ShaderNodeMath")
     math_node.location = (-200, -200)
-    math_node.operation = 'MULTIPLY'
+    math_node.operation = "MULTIPLY"
     math_node.inputs[1].default_value = 0.5
 
     links.new(noise.outputs["Fac"], math_node.inputs[0])
@@ -187,24 +191,24 @@ def add_emissive_texture(mat, nodes, links, bsdf, base_color):
 
 def add_rocky_texture(mat, nodes, links, bsdf, base_color):
     """Add rocky/stone texture"""
-    noise_large = nodes.new(type='ShaderNodeTexNoise')
+    noise_large = nodes.new(type="ShaderNodeTexNoise")
     noise_large.location = (-600, 100)
     noise_large.inputs["Scale"].default_value = 8.0
     noise_large.inputs["Detail"].default_value = 6.0
 
-    noise_detail = nodes.new(type='ShaderNodeTexNoise')
+    noise_detail = nodes.new(type="ShaderNodeTexNoise")
     noise_detail.location = (-600, -100)
     noise_detail.inputs["Scale"].default_value = 30.0
     noise_detail.inputs["Detail"].default_value = 12.0
 
-    mix = nodes.new(type='ShaderNodeMixRGB')
+    mix = nodes.new(type="ShaderNodeMixRGB")
     mix.location = (-400, 0)
-    mix.blend_type = 'MULTIPLY'
+    mix.blend_type = "MULTIPLY"
     mix.inputs["Fac"].default_value = 0.5
 
-    color_mix = nodes.new(type='ShaderNodeMixRGB')
+    color_mix = nodes.new(type="ShaderNodeMixRGB")
     color_mix.location = (-200, 0)
-    color_mix.blend_type = 'MULTIPLY'
+    color_mix.blend_type = "MULTIPLY"
     color_mix.inputs["Fac"].default_value = 0.4
     color_mix.inputs["Color1"].default_value = base_color
 
@@ -224,16 +228,16 @@ def add_crystalline_texture(mat, nodes, links, bsdf, base_color):
         bsdf.inputs["IOR"].default_value = 1.31
     elif "Alpha" in bsdf.inputs:
         bsdf.inputs["Alpha"].default_value = 0.7
-        mat.blend_method = 'BLEND'
+        mat.blend_method = "BLEND"
 
-    noise = nodes.new(type='ShaderNodeTexNoise')
+    noise = nodes.new(type="ShaderNodeTexNoise")
     noise.location = (-400, 0)
     noise.inputs["Scale"].default_value = 20.0
     noise.inputs["Detail"].default_value = 4.0
 
-    mix = nodes.new(type='ShaderNodeMixRGB')
+    mix = nodes.new(type="ShaderNodeMixRGB")
     mix.location = (-200, 0)
-    mix.blend_type = 'MIX'
+    mix.blend_type = "MIX"
     mix.inputs["Fac"].default_value = 0.1
     mix.inputs["Color1"].default_value = base_color
 
@@ -243,11 +247,11 @@ def add_crystalline_texture(mat, nodes, links, bsdf, base_color):
 
 # Register handlers after all functions are defined
 _TEXTURE_HANDLERS = {
-    'organic': add_organic_texture,
-    'metallic': add_metallic_texture,
-    'emissive': add_emissive_texture,
-    'rocky': add_rocky_texture,
-    'crystalline': add_crystalline_texture,
+    "organic": add_organic_texture,
+    "metallic": add_metallic_texture,
+    "emissive": add_emissive_texture,
+    "rocky": add_rocky_texture,
+    "crystalline": add_crystalline_texture,
 }
 
 
@@ -373,6 +377,320 @@ def apply_feature_slot_overrides(
     return out
 
 
+def _rgba_from_hex_or_fallback(
+    hex_str: str, fallback_rgba: tuple[float, float, float, float]
+) -> tuple[float, float, float, float]:
+    h = _sanitize_hex_input(hex_str)
+    if len(h) != 6:
+        return fallback_rgba
+    try:
+        return _parse_hex_color(h)
+    except ValueError:
+        return fallback_rgba
+
+
+def _rgba_from_hex_or_default(
+    hex_str: str, default_rgba: tuple[float, float, float, float]
+) -> tuple[float, float, float, float]:
+    """Like _rgba_from_hex_or_fallback but returns a sensible default when empty."""
+    h = _sanitize_hex_input(hex_str)
+    if len(h) != 6:
+        return default_rgba
+    try:
+        return _parse_hex_color(h)
+    except ValueError:
+        return default_rgba
+
+
+def _lerp_rgba(
+    color_a: tuple[float, float, float, float],
+    color_b: tuple[float, float, float, float],
+    t: float,
+) -> tuple[float, float, float, float]:
+    u = max(0.0, min(1.0, float(t)))
+    return (
+        color_a[0] + (color_b[0] - color_a[0]) * u,
+        color_a[1] + (color_b[1] - color_a[1]) * u,
+        color_a[2] + (color_b[2] - color_a[2]) * u,
+        color_a[3] + (color_b[3] - color_a[3]) * u,
+    )
+
+
+def _gradient_image_pixel_buffer(
+    w: int,
+    h: int,
+    color_a: tuple[float, float, float, float],
+    color_b: tuple[float, float, float, float],
+    direction: str,
+) -> list[float]:
+    """RGBA for ``Image.pixels`` — bottom row first (Blender layout)."""
+    buf = [0.0] * (w * h * 4)
+    d = str(direction or "horizontal").strip().lower()
+    for y in range(h):
+        for x in range(w):
+            if d == "vertical":
+                t = (y + 0.5) / h if h > 0 else 0.5
+            elif d == "radial":
+                u = (x + 0.5) / w
+                v = (y + 0.5) / h
+                du, dv = u - 0.5, v - 0.5
+                t = min(1.0, math.sqrt(du * du + dv * dv) * 1.4142135623730951)
+            else:
+                t = (x + 0.5) / w if w > 0 else 0.5
+            rgba = _lerp_rgba(color_a, color_b, t)
+            # Blender ``Image.pixels`` is row-major from bottom-left: row y=0 is the bottom line
+            # (UV v→0). Do not flip y — a previous flip broke vertical/radial ramps vs UV sampling.
+            idx = (y * w + x) * 4
+            buf[idx] = rgba[0]
+            buf[idx + 1] = rgba[1]
+            buf[idx + 2] = rgba[2]
+            buf[idx + 3] = rgba[3]
+    return buf
+
+
+def _sanitize_image_label(label: str) -> str:
+    raw = re.sub(r"[^a-zA-Z0-9_]+", "_", str(label or "gradient").strip())
+    return (raw[:48] or "gradient").lstrip("_") or "gradient"
+
+
+def _find_principled_bsdf(nodes) -> object | None:
+    """Locate Principled BSDF across Blender versions (``type`` vs ``bl_idname``)."""
+    for n in nodes:
+        if getattr(n, "type", None) == "BSDF_PRINCIPLED":
+            return n
+        if getattr(n, "bl_idname", "") == "ShaderNodeBsdfPrincipled":
+            return n
+    return None
+
+
+def _principled_base_color_socket(bsdf) -> object | None:
+    """English ``Base Color``; some builds expose ``Color`` on Principled."""
+    inp = bsdf.inputs.get("Base Color")
+    if inp is None:
+        inp = bsdf.inputs.get("Color")
+    return inp
+
+
+def _add_uv_gradient_to_principled(
+    mat: bpy.types.Material,
+    color_a: tuple[float, float, float, float],
+    color_b: tuple[float, float, float, float],
+    direction: str,
+    *,
+    image_label: str = "gradient",
+) -> None:
+    """Use a packed ``ShaderNodeTexImage`` so glTF exports ``baseColorTexture`` reliably.
+
+    Procedural shader graphs are often ignored or approximated by ``export_scene.gltf``.
+    """
+    nt = mat.node_tree
+    if nt is None:
+        return
+    nodes = nt.nodes
+    links = nt.links
+    bsdf = _find_principled_bsdf(nodes)
+    if bsdf is None:
+        return
+    bc_in = _principled_base_color_socket(bsdf)
+    if bc_in is None:
+        return
+    for lk in list(bc_in.links):
+        links.remove(lk)
+
+    d = str(direction or "horizontal").strip().lower()
+    if d == "vertical":
+        gw, gh = 4, 256
+    elif d == "radial":
+        gw, gh = 128, 128
+    else:
+        gw, gh = 256, 4
+
+    safe = _sanitize_image_label(image_label)
+    img_name = f"BlobertTexGrad_{safe}"
+    buf = _gradient_image_pixel_buffer(gw, gh, color_a, color_b, d)
+    # Byte buffer (default) matches glTF PNG export more reliably than float_buffer on some Blender builds.
+    img = bpy.data.images.new(name=img_name, width=gw, height=gh, alpha=True)
+    img.pixels = buf
+    try:
+        img.colorspace_settings.name = "sRGB"
+    except (TypeError, AttributeError):
+        pass
+    upd = getattr(img, "update", None)
+    if callable(upd):
+        upd()
+    img.pack()
+
+    tex = nodes.new(type="ShaderNodeTexImage")
+    tex.location = (-450, 200)
+    tex.image = img
+    tex.interpolation = "Linear"
+    tex.extension = "REPEAT"
+
+    uv = nodes.new(type="ShaderNodeUVMap")
+    uv.location = (-800, 200)
+    links.new(uv.outputs["UV"], tex.inputs["Vector"])
+    links.new(tex.outputs["Color"], bc_in)
+
+
+def _material_for_gradient_zone(
+    *,
+    base_palette_name: str,
+    finish: str,
+    grad_a_hex: str,
+    grad_b_hex: str,
+    direction: str,
+    zone_hex_fallback: str,
+    instance_suffix: str,
+) -> bpy.types.Material:
+    """Solid base material (no organic noise) with UV gradient between two hex colors."""
+    all_colors = MaterialColors.get_all()
+    palette_base = all_colors.get(base_palette_name)
+    if palette_base is None:
+        palette_base = (0.6, 0.5, 0.5, 1.0)
+    h_zone = _sanitize_hex_input(zone_hex_fallback)
+    zone_rgba = _parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+
+    # Use sensible defaults: color_a from hex or zone, color_b from hex or white for contrast
+    default_for_b = (1.0, 1.0, 1.0, 1.0)
+    color_a = _rgba_from_hex_or_fallback(grad_a_hex, zone_rgba)
+    color_b = _rgba_from_hex_or_fallback(grad_b_hex, default_for_b)
+
+    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = finish != "default"
+    # UV gradients are diffuse-first: high metallic + Principled reads as blown-out white in
+    # glTF/Three.js; keep metal response off so exported baseColor shows the blend.
+    metallic = 0.0
+    roughness = 0.75
+    if finish_roughness is not None:
+        roughness = finish_roughness
+    transmission = finish_transmission if finish_transmission is not None else 0.0
+    alpha = color_a[3] if len(color_a) > 3 else 1.0
+    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    mat = create_material(
+        new_name,
+        color_a,
+        metallic,
+        roughness,
+        alpha,
+        transmission,
+        add_texture=False,
+        force_surface=force_surface,
+        force_base_color=False,
+    )
+    _add_uv_gradient_to_principled(
+        mat, color_a, color_b, direction, image_label=instance_suffix
+    )
+    return mat
+
+
+def _material_for_asset_zone(
+    base_material: bpy.types.Material,
+    asset_id: str,
+    tile_repeat: float = 1.0,
+    instance_suffix: str = "asset",
+) -> bpy.types.Material:
+    """Create material with image texture applied from asset."""
+    mat = base_material.copy()
+    mat.name = f"{base_material.name}_{instance_suffix}"
+
+    if not mat.use_nodes:
+        mat.use_nodes = True
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    principled = None
+    for node in nodes:
+        if node.type == "BSDF" and isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
+            principled = node
+            break
+
+    if not principled:
+        return mat
+
+    try:
+        asset_path = get_texture_asset_filepath(asset_id)
+        image = bpy.data.images.load(str(asset_path))
+        image.pack()
+
+        tex_node = nodes.new(type="ShaderNodeTexImage")
+        tex_node.image = image
+
+        if tile_repeat != 1.0:
+            mapping_node = nodes.new(type="ShaderNodeMapping")
+            mapping_node.inputs["Scale"].default_value = (tile_repeat, tile_repeat, 1.0)
+
+            coord_node = nodes.new(type="ShaderNodeTexCoord")
+            links.new(coord_node.outputs["UV"], mapping_node.inputs["Vector"])
+            links.new(mapping_node.outputs["Vector"], tex_node.inputs["Vector"])
+        else:
+            coord_node = nodes.new(type="ShaderNodeTexCoord")
+            links.new(coord_node.outputs["UV"], tex_node.inputs["Vector"])
+
+        links.new(tex_node.outputs["Color"], principled.inputs["Base Color"])
+
+    except (ValueError, IOError, Exception) as e:
+        print(f"Warning: failed to load asset texture {asset_id}: {e}")
+
+    return mat
+
+
+def apply_zone_texture_pattern_overrides(
+    slot_materials: dict[str, bpy.types.Material | None],
+    build_options: Mapping[str, Any] | None,
+) -> dict[str, bpy.types.Material | None]:
+    """Apply ``feat_{zone}_texture_*`` flat keys (gradient / …) after feature finish/hex overrides."""
+    if not build_options:
+        return slot_materials
+
+    out: dict[str, bpy.types.Material | None] = dict(slot_materials)
+    features = build_options.get("features")
+    feat_dict: dict[str, Any] = features if isinstance(features, dict) else {}
+
+    for zone, mat in list(out.items()):
+        if mat is None:
+            continue
+        mode = (
+            str(build_options.get(f"feat_{zone}_texture_mode", "none")).strip().lower()
+        )
+        if mode == "gradient":
+            base_palette_name = _palette_base_name_from_material(mat)
+            zf = feat_dict.get(zone)
+            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
+
+            grad_a = str(build_options.get(f"feat_{zone}_texture_grad_color_a", "") or "")
+            grad_b = str(build_options.get(f"feat_{zone}_texture_grad_color_b", "") or "")
+            direction = str(
+                build_options.get(f"feat_{zone}_texture_grad_direction", "horizontal")
+                or "horizontal"
+            )
+
+            out[zone] = _material_for_gradient_zone(
+                base_palette_name=base_palette_name,
+                finish=finish,
+                grad_a_hex=grad_a,
+                grad_b_hex=grad_b,
+                direction=direction,
+                zone_hex_fallback=zone_hex,
+                instance_suffix=f"{zone}_tex_grad",
+            )
+        elif mode == "assets":
+            asset_id = str(build_options.get(f"feat_{zone}_texture_asset_id", "") or "").strip()
+            if asset_id:
+                tile_repeat = float(build_options.get(f"feat_{zone}_texture_asset_tile_repeat", 1.0) or 1.0)
+                out[zone] = _material_for_asset_zone(
+                    base_material=mat,
+                    asset_id=asset_id,
+                    tile_repeat=tile_repeat,
+                    instance_suffix=f"{zone}_tex_asset",
+                )
+    return out
+
+
 def material_for_zone_part(
     zone: str,
     part_id: str | None,
@@ -444,7 +762,7 @@ def material_for_zone_geometry_extra(
 
 def apply_material_to_object(obj, material) -> None:
     """Apply material to a mesh object"""
-    if obj and obj.type == 'MESH' and material:
+    if obj and obj.type == "MESH" and material:
         if len(obj.data.materials) == 0:
             obj.data.materials.append(material)
         else:
@@ -460,27 +778,27 @@ def _build_body_part_material_map(
     if count >= 3:
         limb_mat = available_mats[2]
         return {
-            'body': available_mats[0],
-            'head': available_mats[1],
-            'limbs': limb_mat,
-            'joints': limb_mat,
-            'extra': rng.choice(available_mats),
+            "body": available_mats[0],
+            "head": available_mats[1],
+            "limbs": limb_mat,
+            "joints": limb_mat,
+            "extra": rng.choice(available_mats),
         }
     if count == 2:
         return {
-            'body': available_mats[0],
-            'head': available_mats[1],
-            'limbs': available_mats[0],
-            'joints': available_mats[0],
-            'extra': available_mats[1],
+            "body": available_mats[0],
+            "head": available_mats[1],
+            "limbs": available_mats[0],
+            "joints": available_mats[0],
+            "extra": available_mats[1],
         }
     fallback = available_mats[0]
     return {
-        'body': fallback,
-        'head': fallback,
-        'limbs': fallback,
-        'joints': fallback,
-        'extra': fallback,
+        "body": fallback,
+        "head": fallback,
+        "limbs": fallback,
+        "joints": fallback,
+        "extra": fallback,
     }
 
 
@@ -491,11 +809,11 @@ def get_enemy_materials(
 ) -> dict[str, bpy.types.Material | None]:
     """Return a body-part → material mapping for the given enemy type"""
     default_fallback = {
-        'body': materials.get(MaterialNames.ORGANIC_BROWN),
-        'head': materials.get(MaterialNames.FLESH_PINK),
-        'limbs': materials.get(MaterialNames.BONE_WHITE),
-        'joints': materials.get(MaterialNames.BONE_WHITE),
-        'extra': materials.get(MaterialNames.ORGANIC_BROWN),
+        "body": materials.get(MaterialNames.ORGANIC_BROWN),
+        "head": materials.get(MaterialNames.FLESH_PINK),
+        "limbs": materials.get(MaterialNames.BONE_WHITE),
+        "joints": materials.get(MaterialNames.BONE_WHITE),
+        "extra": materials.get(MaterialNames.ORGANIC_BROWN),
     }
 
     if not MaterialThemes.has_theme(enemy_name):
