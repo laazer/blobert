@@ -89,10 +89,8 @@ def create_material(
     output.location = (300, 0)
 
     bsdf.inputs["Base Color"].default_value = color
-    if "Metallic" in bsdf.inputs:
-        bsdf.inputs["Metallic"].default_value = metallic
-    if "Roughness" in bsdf.inputs:
-        bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = metallic
+    bsdf.inputs["Roughness"].default_value = roughness
     if "Transmission Weight" in bsdf.inputs:
         bsdf.inputs["Transmission Weight"].default_value = transmission
     if "Transmission" in bsdf.inputs:
