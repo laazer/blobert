@@ -1,5 +1,11 @@
 # Checkpoint Index
 
+## Run: 2026-04-18T12-00-00Z-ac-scope-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: AC-GATEKEEPER pre-gate scope resolution
+- Log: `project_board/checkpoints/M25-04/ac4-scope-reduction-2026-04-18.md`
+- Outcome: Logged AC-4 scope reduction (Reset Rotation button descoped to re-generate defaults; Planner decision, Medium confidence) and AC-5 verification (re-generate pipeline satisfies "immediately"; High confidence). Added RIG_ naming convention comment to BuildControls.meta_load.test.tsx documenting Task 6 gap.
+
 ## Run: 2026-04-18T11-52-04Z-impl-m25-04
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
 - Stage: IMPLEMENTATION_GENERALIST → IMPLEMENTATION_PYTHON_COMPLETE

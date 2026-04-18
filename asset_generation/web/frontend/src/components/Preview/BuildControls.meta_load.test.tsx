@@ -5,6 +5,19 @@ import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
 import { BuildControls } from "./BuildControls";
 
+// M25-04 — RIG_ naming convention is sufficient for rotation controls to appear in the Rig section.
+//
+// BuildControls.tsx line ~359 filters float controls with `d.key.startsWith("RIG_")`:
+//   const rigFloats = allFloats.filter((d) => d.key.startsWith("RIG_"));
+//
+// The backend serves the following rotation controls for per-part rotation (M25-04):
+//   RIG_HEAD_ROT_X, RIG_HEAD_ROT_Y, RIG_HEAD_ROT_Z
+//   RIG_BODY_ROT_X, RIG_BODY_ROT_Y, RIG_BODY_ROT_Z
+//
+// Because these keys begin with "RIG_", they are automatically routed into the Rig section
+// by the existing filter — no code change was needed to BuildControls.tsx for M25-04.
+// The naming convention alone is sufficient; the pre-existing filter handles placement.
+
 const noopLoad = vi.fn(() => Promise.resolve());
 
 function stubLoad(fn: typeof noopLoad) {
