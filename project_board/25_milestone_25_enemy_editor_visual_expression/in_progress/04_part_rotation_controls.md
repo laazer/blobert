@@ -127,14 +127,14 @@ bash ci/scripts/diff_cover_preflight.sh
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_GENERALIST |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Generalist Implementation Agent |
 | Status | Proceed |
-| Validation Status | Test file authored at `asset_generation/python/tests/utils/test_part_rotation_controls.py`; 46 tests confirmed RED (all new tests fail, all 1766 pre-existing tests pass). Checkpoint log at `project_board/checkpoints/M25-04/run-2026-04-19T01-00-00Z-test-design.md`. |
+| Validation Status | Test file hardened with 34 adversarial tests (10 categories: ordering-by-index, player_slime defaults, mutation guard, None coercion, zero boundary identity, 6×6 clamp matrix, idempotency, type string guard, step float-not-int, slug isolation). Total test count: 80+ tests, all RED until implementation. Checkpoint log at `project_board/checkpoints/M25-04/run-2026-04-19T02-00-00Z-test-break.md`. |
 | Blocking Issues | — |
 
 ## NEXT ACTION
 
-Test Breaker Agent: adversarially harden `asset_generation/python/tests/utils/test_part_rotation_controls.py`. Attempt to find any spec gaps, missing edge cases, or assertions that could pass with a wrong implementation. All 46 tests are currently RED. Read the spec at `project_board/specs/part_rotation_controls_spec.md` (PRC-1 through PRC-10) and the test file before acting. Do not modify the implementation. After hardening, advance Stage to IMPLEMENTATION_GENERALIST.
+Generalist Implementation Agent: implement Tasks 1–6 in `animated_build_options.py`, `animated_build_options_validate.py`, and the 6 animated enemy slug files. All tests in `asset_generation/python/tests/utils/test_part_rotation_controls.py` must be GREEN. Run `bash .lefthook/scripts/py-tests.sh` and `bash ci/scripts/diff_cover_preflight.sh` as Task 7 gate. Note TB-2 (player_slime defaults) and TB-4 (None coercion) have CHECKPOINT comments — read them before deciding on implementation strategy for those two edge cases.

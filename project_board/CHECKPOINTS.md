@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T02-00-00Z-test-break-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Next Agent: Generalist Implementation Agent
+- Log: `project_board/checkpoints/M25-04/run-2026-04-19T02-00-00Z-test-break.md`
+- Outcome: Extended `asset_generation/python/tests/utils/test_part_rotation_controls.py` with 34 adversarial tests covering ordering-by-index (TB-1), player_slime defaults exclusion (TB-2), mutation guard list+dict (TB-3), None coercion (TB-4), zero boundary +0.0 identity (TB-5), all 6 slugs × all 6 keys clamp matrix (TB-6, 72 new parametrized cases), idempotency + no-input-mutation (TB-7), type string guard (TB-8), step float-not-int guard (TB-9), slug isolation / shared-state guard (TB-10); 4 CHECKPOINT assumptions logged.
+
 ## Run: 2026-04-19T01-00-00Z-test-design-m25-04
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
 - Stage: TEST_DESIGN → TEST_BREAK

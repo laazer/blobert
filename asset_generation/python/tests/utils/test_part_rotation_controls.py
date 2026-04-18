@@ -367,3 +367,361 @@ def test_options_for_enemy_no_crash_on_empty_raw_all_animated_slugs() -> None:
     for slug in ANIMATED_SLUGS:
         result = options_for_enemy(slug, {})
         assert isinstance(result, dict), f"slug {slug!r}: expected dict result"
+
+
+# ===========================================================================
+# ADVERSARIAL HARDENING — Test Breaker Agent additions
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# [TB-1] Ordering guarantee: rotation defs appear after static_float and
+#         before _mesh_float_control_defs in animated_build_controls_for_api()
+#         (PRC-2 AC-2.3 / AC-2.4) — asserted by index position, not just presence
+# ---------------------------------------------------------------------------
+
+# Keys that always come from _mesh_float_control_defs (examples observed in imp).
+# We do not hard-code the full list; instead we detect mesh-float keys as any
+# key that does NOT appear in the non-mesh known-set.  The safer approach:
+# We assert that the FIRST rotation key appears BEFORE the first mesh-float key
+# and AFTER the last static_float key.  We identify static_float vs mesh-float
+# by position relative to the rotation block.
+#
+# CHECKPOINT: The spec states the ordering must be:
+#   static_float → rotation_defs → _mesh_float_control_defs
+# We use the known RIG_HEAD_ROT_X (first rotation def) and the heuristic that
+# mesh float keys are those that appear AFTER all 6 rotation keys have been seen.
+# This is Medium confidence; if the implementer inserts rotation defs elsewhere
+# this test will catch it.  # CHECKPOINT
+
+
+def _extract_key_list(slug: str) -> list[str]:
+    """Return the ordered list of 'key' values from animated_build_controls_for_api() for slug."""
+    ctrl = animated_build_controls_for_api()
+    return [c["key"] for c in ctrl[slug]]
+
+
+def test_rotation_defs_appear_after_tail_length_and_before_mesh_float_for_imp() -> None:
+    """PRC-2 AC-2.3/AC-2.4: rotation defs are inserted after static_float and before mesh floats.
+
+    Strategy: tail_length is the last non-mesh float before static_float in the current
+    build (it is explicitly placed before static_float per the merged list comment).
+    _mesh_float_control_defs returns keys whose names include BODY_ prefixed mesh keys
+    (e.g. BODY_RADIUS, HEAD_RADIUS).  We assert index(RIG_HEAD_ROT_X) > index(tail_length)
+    and index(RIG_HEAD_ROT_X) < index of any key starting with BODY_ that is NOT a ROT key.
+    """  # CHECKPOINT — assumes tail_length is before static_float per the existing merged list
+    keys = _extract_key_list("imp")
+
+    assert "RIG_HEAD_ROT_X" in keys, "RIG_HEAD_ROT_X must be present in imp API controls"
+    rot_x_idx = keys.index("RIG_HEAD_ROT_X")
+
+    # tail_length is the last pre-rotation float (placed explicitly before static_float).
+    assert "tail_length" in keys, "tail_length must be present (pre-existing control)"
+    tail_length_idx = keys.index("tail_length")
+    assert rot_x_idx > tail_length_idx, (
+        f"RIG_HEAD_ROT_X (idx={rot_x_idx}) must appear AFTER tail_length (idx={tail_length_idx})"
+    )
+
+    # The first mesh float key is one that starts with BODY_ or HEAD_ but is NOT a ROT key.
+    mesh_float_candidates = [
+        k for k in keys
+        if (k.startswith("BODY_") or k.startswith("HEAD_")) and "ROT" not in k
+    ]
+    assert mesh_float_candidates, (
+        "Expected at least one BODY_*/HEAD_* (non-ROT) mesh float key for imp"
+    )
+    first_mesh_float_idx = keys.index(mesh_float_candidates[0])
+    assert rot_x_idx < first_mesh_float_idx, (
+        f"RIG_HEAD_ROT_X (idx={rot_x_idx}) must appear BEFORE first mesh float key "
+        f"{mesh_float_candidates[0]!r} (idx={first_mesh_float_idx})"
+    )
+
+
+def test_all_six_rotation_defs_appear_consecutively_in_api_output() -> None:
+    """PRC-2: all 6 rotation keys are contiguous (no interleaving with mesh or other keys)."""
+    keys = _extract_key_list("imp")
+    rot_indices = [keys.index(k) for k in ROTATION_KEYS if k in keys]
+    assert len(rot_indices) == 6, "All 6 rotation keys must be present"
+    # Indices must be strictly consecutive (no gaps)
+    for i in range(1, len(rot_indices)):
+        assert rot_indices[i] == rot_indices[i - 1] + 1, (
+            f"Rotation keys must be consecutive; gap between index {rot_indices[i-1]} "
+            f"and {rot_indices[i]} (keys: {keys[rot_indices[i-1]]!r}, {keys[rot_indices[i]]!r})"
+        )
+
+
+@pytest.mark.parametrize("slug", ANIMATED_SLUGS)
+def test_rotation_defs_ordering_for_all_animated_slugs(slug: str) -> None:
+    """PRC-2 AC-2.3: for every animated slug, RIG_HEAD_ROT_X appears before any mesh-float key."""
+    keys = _extract_key_list(slug)
+    assert "RIG_HEAD_ROT_X" in keys, f"{slug!r}: RIG_HEAD_ROT_X must be present"
+    rot_x_idx = keys.index("RIG_HEAD_ROT_X")
+    mesh_float_candidates = [
+        k for k in keys
+        if (k.startswith("BODY_") or k.startswith("HEAD_")) and "ROT" not in k
+    ]
+    if mesh_float_candidates:
+        first_mesh_float_idx = keys.index(mesh_float_candidates[0])
+        assert rot_x_idx < first_mesh_float_idx, (
+            f"slug {slug!r}: RIG_HEAD_ROT_X (idx={rot_x_idx}) must appear BEFORE "
+            f"first mesh float {mesh_float_candidates[0]!r} (idx={first_mesh_float_idx})"
+        )
+
+
+# ---------------------------------------------------------------------------
+# [TB-2] player_slime defaults: spec PRC-3 says defaults may be unconditional.
+#         The API exclusion is the authoritative gate, but if _defaults_for_slug
+#         also adds rotation keys to player_slime it is a latent hazard.
+#         We document the conservative expectation: player_slime defaults must
+#         NOT contain RIG_*_ROT_* keys (matching the API exclusion intent).
+#         Mark CHECKPOINT because PRC-3 Risk explicitly says this is an open question.
+# ---------------------------------------------------------------------------
+
+
+def test_defaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None:
+    """PRC-3 (conservative): _defaults_for_slug('player_slime') must not expose rotation keys.
+
+    The spec PRC-3 Risk section acknowledges that _defaults_for_slug() may be
+    unconditional and that player_slime would then receive rotation keys in its
+    defaults dict.  The spec calls this 'harmless for the defaults function'.
+    However, from an API boundary perspective, if player_slime defaults contain
+    rotation keys, those keys may leak into API responses or coerce_validate paths.
+    Conservative assumption: the 6 animated slugs are the only ones that should
+    expose rotation keys anywhere in the pipeline.
+    """  # CHECKPOINT — PRC-3 Risk says this is ambiguous; we enforce the stricter variant
+    defaults = abo._defaults_for_slug("player_slime")
+    for rot_key in ROTATION_KEYS:
+        assert rot_key not in defaults, (
+            f"player_slime _defaults_for_slug() must not contain {rot_key!r}; "
+            "rotation keys are exclusive to the 6 animated enemy slugs"
+        )
+
+
+# ---------------------------------------------------------------------------
+# [TB-3] Mutation guard: _rig_rotation_control_defs() must return a fresh list
+#         each call — mutating the first result must not affect the second call.
+# ---------------------------------------------------------------------------
+
+
+def test_rig_rotation_control_defs_returns_fresh_list_each_call() -> None:
+    """PRC-1 mutation guard: mutating the returned list must not affect subsequent calls."""
+    first = abo._rig_rotation_control_defs()
+    first.clear()  # Destructive mutation
+    second = abo._rig_rotation_control_defs()
+    assert len(second) == 6, (
+        "_rig_rotation_control_defs() must return a fresh list each call; "
+        "mutating the first result affected the second (shared mutable reference)"
+    )
+
+
+def test_rig_rotation_control_defs_dict_mutation_does_not_affect_next_call() -> None:
+    """PRC-1 mutation guard: mutating a dict inside the returned list must not affect the next call."""
+    first = abo._rig_rotation_control_defs()
+    original_key = first[0]["key"]
+    first[0]["key"] = "MUTATED_KEY"  # Mutate the first dict's key field
+    second = abo._rig_rotation_control_defs()
+    assert second[0]["key"] == original_key, (
+        "_rig_rotation_control_defs() returned the same dict object across calls; "
+        "dicts must be independent copies, not shared references"
+    )
+
+
+# ---------------------------------------------------------------------------
+# [TB-4] None input coercion — PRC-5 says NaN → 0.0; None is a separate case.
+#         The existing validate loop uses float(out[key]) which raises TypeError
+#         for None.  Conservative assumption: None should revert to default 0.0,
+#         same as non-parseable string and NaN.
+# ---------------------------------------------------------------------------
+
+
+def test_options_for_enemy_rotation_none_reverts_to_default() -> None:
+    """PRC-5 (extended): None input for a rotation key should coerce to default 0.0.
+
+    PRC-5 explicitly covers NaN, inf, and non-parseable string.  None is not
+    mentioned.  The validate loop calls float(out[key]); float(None) raises
+    TypeError, which would be an unhandled exception if None is admitted through
+    allowed_non_mesh.  Conservative expectation: either None is treated like a
+    non-parseable value (default 0.0) or it raises cleanly.  We assert the safe
+    outcome (0.0) to surface any unhandled TypeError in the coerce path.
+    """  # CHECKPOINT — None coercion is not in the spec; this tests implicit behavior
+    result = options_for_enemy("imp", {"RIG_HEAD_ROT_X": None})
+    assert result["RIG_HEAD_ROT_X"] == 0.0, (
+        "None input for RIG_HEAD_ROT_X must coerce to default 0.0, not raise or produce None"
+    )
+    assert result["RIG_HEAD_ROT_X"] is not None
+
+
+# ---------------------------------------------------------------------------
+# [TB-5] Zero boundary identity: 0.0 is returned as exactly 0.0 (not -0.0, nan)
+# ---------------------------------------------------------------------------
+
+
+def test_options_for_enemy_rotation_zero_is_positive_zero() -> None:
+    """PRC-5 boundary: 0.0 input returns exactly positive 0.0, not -0.0 or NaN."""
+    result = options_for_enemy("imp", {"RIG_BODY_ROT_Y": 0.0})
+    val = result["RIG_BODY_ROT_Y"]
+    assert val == 0.0, f"Expected 0.0, got {val!r}"
+    assert not math.isnan(val), "0.0 must not become NaN"
+    # Distinguish +0.0 from -0.0 using the sign bit
+    import struct
+    packed = struct.pack("d", val)
+    sign_bit = (packed[-1] & 0x80) >> 7
+    assert sign_bit == 0, (
+        "0.0 must be positive zero (+0.0), not negative zero (-0.0); "
+        f"got value with sign_bit={sign_bit}"
+    )
+
+
+def test_options_for_enemy_rotation_zero_absent_key_is_positive_zero() -> None:
+    """PRC-5 boundary: default 0.0 (key absent from input) is positive zero, not -0.0 or NaN."""
+    result = options_for_enemy("imp", {})
+    val = result["RIG_BODY_ROT_Y"]
+    assert val == 0.0
+    assert not math.isnan(val)
+    import struct
+    packed = struct.pack("d", val)
+    sign_bit = (packed[-1] & 0x80) >> 7
+    assert sign_bit == 0, f"Default 0.0 must be +0.0, not -0.0; sign_bit={sign_bit}"
+
+
+# ---------------------------------------------------------------------------
+# [TB-6] All 6 slugs × all 6 keys clamping — full combinatorial coverage.
+#         The existing tests only exercise RIG_BODY_ROT_Z for upper/lower clamp.
+#         A broken clamp on RIG_HEAD_ROT_X for a specific slug would go undetected.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("slug", ANIMATED_SLUGS)
+@pytest.mark.parametrize("rot_key", ROTATION_KEYS)
+def test_options_for_enemy_upper_clamp_all_slugs_all_keys(slug: str, rot_key: str) -> None:
+    """PRC-5 AC-5.10: every slug × every rotation key clamps 200.0 → 180.0."""
+    result = options_for_enemy(slug, {rot_key: 200.0})
+    assert result[rot_key] == 180.0, (
+        f"slug={slug!r}, key={rot_key!r}: 200.0 must clamp to 180.0, got {result[rot_key]!r}"
+    )
+
+
+@pytest.mark.parametrize("slug", ANIMATED_SLUGS)
+@pytest.mark.parametrize("rot_key", ROTATION_KEYS)
+def test_options_for_enemy_lower_clamp_all_slugs_all_keys(slug: str, rot_key: str) -> None:
+    """PRC-5 AC-5.10: every slug × every rotation key clamps -200.0 → -180.0."""
+    result = options_for_enemy(slug, {rot_key: -200.0})
+    assert result[rot_key] == -180.0, (
+        f"slug={slug!r}, key={rot_key!r}: -200.0 must clamp to -180.0, got {result[rot_key]!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# [TB-7] options_for_enemy idempotency: same input → same output, no input mutation
+# ---------------------------------------------------------------------------
+
+
+def test_options_for_enemy_idempotent_output() -> None:
+    """PRC-4: calling options_for_enemy twice with identical input returns identical output."""
+    raw = {"RIG_HEAD_ROT_X": 45.0, "RIG_BODY_ROT_Z": -90.0}
+    result1 = options_for_enemy("imp", raw)
+    result2 = options_for_enemy("imp", raw)
+    for rot_key in ROTATION_KEYS:
+        assert result1[rot_key] == result2[rot_key], (
+            f"options_for_enemy is not idempotent for {rot_key!r}: "
+            f"first={result1[rot_key]!r}, second={result2[rot_key]!r}"
+        )
+
+
+def test_options_for_enemy_does_not_mutate_input_dict() -> None:
+    """PRC-4: options_for_enemy must not mutate the caller's input dict."""
+    raw: dict = {"RIG_HEAD_ROT_X": 45.0}
+    raw_copy = dict(raw)
+    options_for_enemy("imp", raw)
+    assert raw == raw_copy, (
+        f"options_for_enemy mutated the input dict; before={raw_copy!r}, after={raw!r}"
+    )
+
+
+def test_options_for_enemy_does_not_mutate_input_dict_on_clamp() -> None:
+    """PRC-4/PRC-5: clamping must not mutate the caller's input dict (200.0 stays 200.0 in raw)."""
+    raw: dict = {"RIG_HEAD_ROT_X": 200.0}
+    options_for_enemy("imp", raw)
+    assert raw["RIG_HEAD_ROT_X"] == 200.0, (
+        "options_for_enemy clamped the value in the input dict (mutated caller's dict); "
+        "the input dict must be unchanged, with clamp applied only in the returned copy"
+    )
+
+
+# ---------------------------------------------------------------------------
+# [TB-8] Type check: all 6 defs have type exactly "float" (not "int" or other)
+# ---------------------------------------------------------------------------
+
+
+def test_rig_rotation_control_defs_type_is_exactly_float_string_not_int() -> None:
+    """PRC-1 AC-1.4: type field is the string 'float', not the string 'int' or Python type float."""
+    defs = abo._rig_rotation_control_defs()
+    for d in defs:
+        key = d["key"]
+        t = d.get("type")
+        assert t == "float", f"{key}: type must be exactly string 'float', got {t!r}"
+        assert t != "int", f"{key}: type must not be 'int'"
+        assert not isinstance(t, type), (
+            f"{key}: type field must be the string 'float', not the Python type object {t!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# [TB-9] Step value type: _RIG_ROT_STEP is float 1.0, not int 1
+#         (already tested in test_rig_rot_constants_exist_and_typed, but we add
+#          a dedicated assertion to guard against `1` being used instead of `1.0`)
+# ---------------------------------------------------------------------------
+
+
+def test_rig_rot_step_is_float_not_int() -> None:
+    """PRC-1 AC-1.1: _RIG_ROT_STEP must be float 1.0, not integer 1."""
+    step = abo._RIG_ROT_STEP
+    assert isinstance(step, float), (
+        f"_RIG_ROT_STEP must be float, got {type(step).__name__!r} with value {step!r}"
+    )
+    assert step == 1.0
+    # Explicit int check: `isinstance(True, int)` is True in Python, so also guard booleans
+    assert not isinstance(step, bool), "_RIG_ROT_STEP must not be a boolean"
+    assert not isinstance(step, int), "_RIG_ROT_STEP must not be int (even if value equals 1)"
+
+
+def test_rig_rotation_control_defs_step_field_is_float_not_int() -> None:
+    """PRC-1 AC-1.4: the step field in every def is a float, not int."""
+    defs = abo._rig_rotation_control_defs()
+    for d in defs:
+        key = d["key"]
+        step = d.get("step")
+        assert isinstance(step, float), (
+            f"{key}: step must be float 1.0, got {type(step).__name__!r} with value {step!r}"
+        )
+        assert not isinstance(step, bool), f"{key}: step must not be a boolean"
+
+
+# ---------------------------------------------------------------------------
+# [TB-10] Dict type isolation: options_for_enemy for one slug does not affect another
+# ---------------------------------------------------------------------------
+
+
+def test_options_for_enemy_slug_isolation_no_shared_mutable_state() -> None:
+    """PRC-4: results for two different slugs are independent (no shared mutable defaults)."""
+    result_imp = options_for_enemy("imp", {"RIG_HEAD_ROT_X": 90.0})
+    result_slug = options_for_enemy("slug", {})
+
+    # imp result has the supplied value
+    assert result_imp["RIG_HEAD_ROT_X"] == 90.0, "imp: RIG_HEAD_ROT_X should be 90.0"
+    # slug result has the default (not contaminated by imp call)
+    assert result_slug["RIG_HEAD_ROT_X"] == 0.0, (
+        "slug: RIG_HEAD_ROT_X should be 0.0 (default); "
+        "was contaminated by previous options_for_enemy('imp', ...) call"
+    )
+
+
+def test_options_for_enemy_repeated_calls_same_slug_no_accumulation() -> None:
+    """PRC-4: calling options_for_enemy multiple times for the same slug with different values
+    does not accumulate state; each call starts from the canonical defaults."""
+    first = options_for_enemy("imp", {"RIG_HEAD_ROT_X": 90.0})
+    second = options_for_enemy("imp", {})
+    assert first["RIG_HEAD_ROT_X"] == 90.0
+    assert second["RIG_HEAD_ROT_X"] == 0.0, (
+        "Second call with empty raw should return default 0.0; "
+        "previous call with 90.0 must not have mutated shared state"
+    )
