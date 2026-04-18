@@ -1,5 +1,9 @@
 # Checkpoint Index
 
+### [M25-04] — OUTCOME: COMPLETE
+Per-part rotation controls (RIG_HEAD/BODY_ROT_X/Y/Z) implemented and AC-gated. All 1906 Python + 455 frontend tests pass. AC-4 scope reduction (Reset button descoped) and AC-5 (re-generate preview) resolved via checkpoints.
+Log: project_board/checkpoints/M25-04/ac4-scope-reduction-2026-04-18.md
+
 ## Run: 2026-04-18T12-00-00Z-ac-scope-m25-04
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
 - Stage: AC-GATEKEEPER pre-gate scope resolution

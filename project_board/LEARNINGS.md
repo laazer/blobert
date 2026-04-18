@@ -4013,3 +4013,75 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Prevents unnecessary frontend plumbing churn while still enabling consistent coercion and safe defaults.
 
 ---
+
+## [M25-04] — AC/Execution Plan divergence, phantom test keys, and under-evidenced visual AC
+*Completed: 2026-04-18*
+
+### Learnings
+- category: process
+  insight: When the Planner descopes an AC item, the descoped AC text must be cross-struck or replaced in the ticket — not just noted in the Execution Plan. AC text and Execution Plan must be in agreement at the start of implementation, not resolved at the AC gate.
+  impact: AC-4 ("A 'Reset Rotation' button restores the part to 0/0/0") was descoped in the Execution Plan but the AC text was left unchanged. This forced the AC Gatekeeper to resolve the conflict under uncertainty (Confidence: Medium), creating a checkpoint and delaying closure rather than catching the mismatch before the pipeline began.
+  prevention: The Planner must annotate or overwrite any AC item it intends to descope at planning time; the Spec Agent should fail immediately if AC text conflicts with the Execution Plan on a non-trivial feature.
+  severity: high
+
+- category: process
+  insight: Visual/runtime AC items that use the word "immediately" require an explicit evidence strategy defined in the spec, not resolved by assumption at the AC gate.
+  impact: AC-5 ("Rotation changes reflect immediately in the 3D preview") required a checkpoint assumption that "immediately" means "upon next generate". This is defensible but not self-evident — it took a Medium-to-High confidence judgment call by the AC Gatekeeper rather than a deterministic check.
+  prevention: Any AC item describing real-time or immediate visual feedback must specify in the spec or Execution Plan: the exact triggering action ("after clicking Regenerate" vs. "on slider release") and what automated evidence covers it (e.g., a unit test on the pipeline path, a screenshot, or explicit acceptance that manual smoke test is the gate).
+  severity: medium
+
+- category: testing
+  insight: Test Breaker agents can introduce phantom keys — control keys that do not yet exist in the codebase — as "backward-compat" guard tests. When the Implementation Agent is not permitted to modify test files, it must add the phantom key to the implementation as dead/cosmetic code to pass the test, introducing scope creep silently.
+  impact: The Test Breaker wrote a test for `RIG_HEAD_SCALE` which was not defined anywhere. The Implementation Agent added it to `allowed_non_mesh` and defaults without applying it in `build_mesh_parts`, creating a no-op key that appears in API responses. This is a scope mutation that bypassed review.
+  prevention: Test Breaker agents must only add tests for keys/behaviors that are (a) explicitly described in the spec, or (b) logical variants of spec-described behavior. Any test that references a named constant, key, or symbol not present in the spec must be flagged in the checkpoint and escalated rather than silently causing the implementation to invent new surface area.
+  severity: high
+
+- category: process
+  insight: When an Execution Plan task calls for verifying or documenting behavior in a test file ("add a code comment" or "extend existing test file"), but specifies no concrete assertion, it is frequently delivered as only a comment — not a test. This constitutes a coverage gap even when it is technically compliant with the task wording.
+  impact: Task 6 ("Verify frontend Rig section renders RIG_HEAD_ROT_X") was delivered as a code comment in `BuildControls.meta_load.test.tsx` rather than an assertion. The Execution Plan wording permitted this ("if the existing filter already covers this by convention, document that no new test case is needed and add a code comment"), but the result is zero automated evidence that the Rig section filter works for rotation keys.
+  prevention: Any Execution Plan task that touches a test file must produce either (a) a passing assertion or (b) an explicit human-acknowledged waiver. "Add a comment" should not be an acceptable substitute for test coverage when the test file is already open and a simple assertion is feasible.
+  severity: medium
+
+### Anti-Patterns
+- description: Leaving AC text unchanged after the Planner descopes a feature in the Execution Plan, allowing the two sources of truth to diverge until the AC gate.
+  detection_signal: Execution Plan contains "out of scope" or "not implemented" for something named in the AC checklist; no strikethrough or revision marker exists in the AC section.
+  prevention: Require the Planner to annotate or replace any AC item it descopes; the Spec Agent validates consistency between AC and Execution Plan before proceeding.
+
+- description: Test Breaker introducing keys/symbols not defined in the spec as phantom backward-compat tests, forcing the Implementation Agent to invent new surface area.
+  detection_signal: An Implementation Agent checkpoint logs adding a key to `allowed_non_mesh`/defaults for a symbol not present in the Execution Plan or spec; Confidence is marked Low.
+  prevention: Test Breaker must cross-reference every symbol it names in a test against the spec; phantom keys must be logged as a spec gap and escalated, not silently added.
+
+- description: Treating a code comment in a test file as equivalent to a test assertion when verifying filtering/rendering behavior.
+  detection_signal: A task's "Success Criteria" is met by a comment rather than a `expect`/`assert` call; `npm test` shows no new test cases for the touched file.
+  prevention: Distinguish "document coverage" tasks (comment only acceptable) from "verify behavior" tasks (assertion required); Execution Plan language must be unambiguous about which category applies.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "If an AC item is descoped or modified by the Execution Plan, you MUST annotate it directly in the AC section using a strikethrough or bracketed note such as `[DESCOPED: see Execution Plan Task N]`. The Execution Plan may not silently override AC text. The Spec Agent will fail if AC and Execution Plan are inconsistent on any non-trivial item."
+  reason: Prevents the AC Gatekeeper from needing to resolve conflicts under uncertainty; eliminates Medium-confidence checkpoint assumptions on descoped features.
+
+- agent: Test Breaker Agent
+  change: "You may only write tests that reference keys, symbols, or behaviors explicitly described in the current ticket's spec or Execution Plan. If you believe a backward-compat guard is needed for a key not present in those documents, log it as a checkpoint with Confidence: Low and do NOT add a failing test for it — instead, flag it as a spec gap for human review."
+  reason: Prevents phantom keys from forcing the Implementation Agent to invent new surface area (dead no-op controls) to pass tests that were never part of the ticket scope.
+
+- agent: Spec Agent
+  change: "For any AC item that uses the words 'immediately', 'real-time', or 'live', define the exact triggering action and the automated evidence strategy. State explicitly: (a) the user action that triggers the visual update, (b) whether this is covered by a unit test on the pipeline, a manual smoke test, or an explicit waiver, and (c) whether 'immediately' means on-input-change or on-generate. Leave nothing to be resolved at the AC gate."
+  reason: Removes ambiguity that leads to Medium-confidence AC gate assumptions on visual/runtime acceptance criteria.
+
+### Workflow Improvements
+- issue: The AC Gatekeeper is the first agent to detect AC-vs-Execution-Plan divergence, but by that point the full implementation has already been delivered under the wrong scope. Resolving it requires a checkpoint and a judgment call rather than a deterministic pass/fail.
+  improvement: Add an explicit "AC-vs-Execution-Plan consistency check" step to the Spec Agent's output gate: list each AC item and map it to the Execution Plan task that covers it; flag any AC item with no task and any task that reduces AC scope as an issue requiring resolution before the spec advances.
+  expected_benefit: AC descopes are caught before implementation begins, eliminating end-of-pipeline scope-conflict checkpoints.
+
+- issue: Task 6 pattern ("verify by convention, add comment if no change needed") consistently produces comment-only deliverables that provide no automated regression protection. The same risk recurred on M25-03 and M25-04.
+  improvement: Replace "extend or comment" language in Execution Plan tasks with a binary: either a concrete `describe`/`it` block with one assertion that fails if the filter breaks, or a documented waiver signed off in the checkpoint log. The verification task success criterion must name the specific assertion.
+  expected_benefit: Frontend filter and routing logic gains at least one regression test per ticket that touches it; "comment only" coverage gaps are eliminated.
+
+### Keep / Reinforce
+- practice: Parametrizing clamp/boundary tests across all affected slugs rather than the minimum required set.
+  reason: A parametrized test over all 6 slugs catches slug-specific wiring omissions that a single-slug test would miss; the cost is near-zero and the signal is high.
+
+- practice: Using dedicated module-level functions (`_rig_rotation_control_defs()`) for new control families rather than ClassVar promotion or ad-hoc dict literals.
+  reason: ClassVar introspection with dynamic bounds breaks for default=0.0 (generates wrong range); explicit defs give exact step/min/max and are the established pattern for tail/mouth controls. Keeps control definitions co-located, testable independently, and easy to audit.
+
+---
