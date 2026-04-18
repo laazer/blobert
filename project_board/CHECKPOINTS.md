@@ -1,5 +1,35 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T01-00-00Z-test-design-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/M25-04/run-2026-04-19T01-00-00Z-test-design.md`
+- Outcome: Authored `asset_generation/python/tests/utils/test_part_rotation_controls.py`; 46 tests covering PRC-1..PRC-5, PRC-7, PRC-10; all 46 RED, 1766 pre-existing tests green; 3 checkpoint assumptions logged (ensure_blender_stubs pattern, _defaults_for_slug scope, parametrize coverage).
+
+## Run: 2026-04-19T00-00-00Z-spec-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-04/run-2026-04-19T00-00-00Z-spec.md`
+- Outcome: Authored `project_board/specs/part_rotation_controls_spec.md`; 10 requirements (PRC-1..10) covering module-level constants and `_rig_rotation_control_defs()` (exact key names, types, bounds, step, defaults), insertion position in `animated_build_controls_for_api()` (conditional on ENEMY_CLASSES, after static_float, before mesh floats), `_defaults_for_slug()` wiring, `allowed_non_mesh` wiring, coerce/validate extend pattern (NaN→default, inf→clamp), Blender rotation application (`Euler((rx,ry,rz),'XYZ')` per slug), slug coverage matrix (all 6 animated enemies; player_slime excluded), Python test file spec, frontend comment-only verification, non-breaking guarantee; serialization contract and 4 checkpoint assumptions logged.
+
+## Run: 2026-04-16T00-00-00Z-planning-m25-04
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/04_part_rotation_controls.md`
+- Stage: PLANNING → SPECIFICATION
+- Next Agent: Spec Agent
+- Log: `project_board/checkpoints/M25-04/run-2026-04-16T00-00-00Z-planning.md`
+- Outcome: Execution plan decomposed into 7 tasks (Python control defs, validation wiring, Blender rotation application per-slug, defaults/serialization, Python test suite, frontend verification note, AC gate); 5 assumptions logged on slug coverage, control def placement strategy, Blender rotation API, options_for_enemy wiring, and spec completeness type.
+
+## Run: 2026-04-18T00-00-00Z-autopilot-single-m25-04
+- Queue mode: single ticket
+- Queue scope: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/04_part_rotation_controls.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M25-04/`
+- Stage: `PLANNING`
+- Log: `project_board/checkpoints/M25-04/run-2026-04-18T00-00-00Z-autopilot.md`
+- Note: M25-03 is BLOCKED on AC5 (manual visual smoke test); M25-04 proceeds per human instruction
+
 ## Run: 2026-04-16T20-00-00Z-test-break-m25-03
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/03_texture_upload_support.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_WEB
