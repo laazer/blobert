@@ -51,6 +51,11 @@ interface AppState {
   commandContext: CommandPanelContext;
   setCommandContext: (ctx: CommandPanelContext) => void;
 
+  /** Command bar `--finish` / `--hex-color` for animated + player (CommandPanel syncs here; Colors tab hydrates feat_*). */
+  commandExportFinish: string;
+  commandExportHexColor: string;
+  setCommandExport: (patch: { finish?: string; hexColor?: string }) => void;
+
   /** Animated enemy slug + label from GET /api/meta/enemies (fallback: enemyDisplay.DEFAULT_ANIMATED_ENEMY_META). */
   animatedEnemyMeta: AnimatedEnemyMeta[];
   /** Procedural build control definitions per slug (from meta API). */
@@ -136,6 +141,18 @@ export const useAppStore = create<AppState>()(
     setCommandContext(ctx) {
       set((s) => {
         s.commandContext = ctx;
+      });
+    },
+    commandExportFinish: "glossy",
+    commandExportHexColor: "",
+    setCommandExport(patch) {
+      set((s) => {
+        if (patch.finish !== undefined) {
+          s.commandExportFinish = patch.finish;
+        }
+        if (patch.hexColor !== undefined) {
+          s.commandExportHexColor = patch.hexColor;
+        }
       });
     },
     animatedEnemyMeta: DEFAULT_ANIMATED_ENEMY_META,

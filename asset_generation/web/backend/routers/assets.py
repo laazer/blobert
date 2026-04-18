@@ -1,9 +1,13 @@
+import sys
 from pathlib import Path
 
 from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict
+
+sys.path.insert(0, str(settings.python_root))
+from src.utils.texture_asset_loader import get_available_assets
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -77,3 +81,29 @@ async def serve_asset(asset_path: str) -> FileResponse:
 
     media_type = _MIME.get(resolved.suffix, "application/octet-stream")
     return FileResponse(str(resolved), media_type=media_type)
+
+
+class TextureAssetMetadata(BaseModel):
+    """Metadata for a pre-supplied texture asset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    filename: str
+    display_name: str
+    description: str
+    layout: str
+    width: int
+    height: int
+    tiling_supported: bool
+
+
+@router.get("/textures")
+async def get_texture_assets() -> JSONResponse:
+    """Return list of available pre-supplied texture assets."""
+    try:
+        assets = get_available_assets()
+        assets_list = [TextureAssetMetadata(**asset).model_dump() for asset in assets]
+        return JSONResponse({"textures": assets_list})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load texture assets: {str(e)}")

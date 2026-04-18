@@ -87,6 +87,9 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
       if (node.material) {
         const matName = node.material.name || "unnamed";
         const hasMap = !!node.material.map;
+        if (node.material.metallic === undefined) {
+          node.material.metallic = 0.0;
+        }
         console.log(`[GLB Material] ${matName}:`, {
           type: node.material.type,
           hasTexture: hasMap,
@@ -208,7 +211,7 @@ export function GlbViewer() {
             onCreated={({ scene }) => {
               // Default (1) + studio IBL reads as blown-out / flat white on baked baseColor textures.
               // Gradient textures need higher intensity to be visible (0.38 is too dark).
-              scene.environmentIntensity = 0.8;
+              scene.environmentIntensity = 2.5;
             }}
           >
             <ambientLight intensity={0.35} />

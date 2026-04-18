@@ -64,7 +64,8 @@ function parseBuildControls(raw: unknown): Record<string, AnimatedBuildControlDe
   return raw as Record<string, AnimatedBuildControlDef[]>;
 }
 
-function defaultValuesForDefs(defs: AnimatedBuildControlDef[]): Record<string, unknown> {
+/** Defaults for one slug's control defs (used by merge + run JSON pruning). */
+export function defaultValuesForDefs(defs: readonly AnimatedBuildControlDef[]): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (const d of defs) {
     row[d.key] = d.default;
@@ -372,4 +373,22 @@ export async function killProcess(): Promise<void> {
 export function assetUrl(path: string, bust?: boolean): string {
   const url = `${BASE}/assets/${path}`;
   return bust ? `${url}?t=${Date.now()}` : url;
+}
+
+export interface TextureAsset {
+  id: string;
+  filename: string;
+  display_name: string;
+  description: string;
+  layout: string;
+  width: number;
+  height: number;
+  tiling_supported: boolean;
+}
+
+export async function fetchTextureAssets(): Promise<TextureAsset[]> {
+  const res = await fetch(`${BASE}/assets/textures`);
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return data.textures;
 }

@@ -15,6 +15,7 @@ from ..core.blender_utils import (
 from ..materials.material_system import (
     apply_feature_slot_overrides,
     apply_material_to_object,
+    apply_zone_texture_pattern_overrides,
     get_enemy_materials,
 )
 
@@ -95,7 +96,8 @@ class BaseAnimatedModel(ABC):
     def _themed_slot_materials_for(self, theme_name: str) -> dict:
         """Theme palette slots with optional per-slot finish/color from ``build_options['features']``."""
         raw = get_enemy_materials(theme_name, self.materials, self.rng)
-        return apply_feature_slot_overrides(raw, self.build_options.get("features"))
+        with_feats = apply_feature_slot_overrides(raw, self.build_options.get("features"))
+        return apply_zone_texture_pattern_overrides(with_feats, self.build_options)
 
     def apply_themed_materials(self) -> None:
         enemy_mats = self._themed_slot_materials_for(self.name)

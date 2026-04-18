@@ -139,6 +139,48 @@
           "id": "spider_animated_02",
           "in_use": false,
           "path": "animated_exports/spider_animated_02.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_03",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_03.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_04",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_04.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_05",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_05.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_06",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_06.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_07",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_07.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_08",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_08.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_09",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_09.glb"
         }
       ]
     },

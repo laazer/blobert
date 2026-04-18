@@ -4,8 +4,6 @@ Material creation system with procedural textures
 
 from __future__ import annotations
 
-import math
-import re
 from typing import Any, Callable, Mapping
 
 import bpy
@@ -15,6 +13,11 @@ from ..utils.materials import (
     MaterialColors,
     MaterialNames,
     MaterialThemes,
+)
+from .gradient_generator import (
+    _gradient_image_pixel_buffer,
+    _sanitize_image_label,
+    create_gradient_png_and_load,
 )
 
 TextureHandler = Callable[..., None]
@@ -399,57 +402,6 @@ def _rgba_from_hex_or_default(
         return default_rgba
 
 
-def _lerp_rgba(
-    color_a: tuple[float, float, float, float],
-    color_b: tuple[float, float, float, float],
-    t: float,
-) -> tuple[float, float, float, float]:
-    u = max(0.0, min(1.0, float(t)))
-    return (
-        color_a[0] + (color_b[0] - color_a[0]) * u,
-        color_a[1] + (color_b[1] - color_a[1]) * u,
-        color_a[2] + (color_b[2] - color_a[2]) * u,
-        color_a[3] + (color_b[3] - color_a[3]) * u,
-    )
-
-
-def _gradient_image_pixel_buffer(
-    w: int,
-    h: int,
-    color_a: tuple[float, float, float, float],
-    color_b: tuple[float, float, float, float],
-    direction: str,
-) -> list[float]:
-    """RGBA for ``Image.pixels`` — bottom row first (Blender layout)."""
-    buf = [0.0] * (w * h * 4)
-    d = str(direction or "horizontal").strip().lower()
-    for y in range(h):
-        for x in range(w):
-            if d == "vertical":
-                t = (y + 0.5) / h if h > 0 else 0.5
-            elif d == "radial":
-                u = (x + 0.5) / w
-                v = (y + 0.5) / h
-                du, dv = u - 0.5, v - 0.5
-                t = min(1.0, math.sqrt(du * du + dv * dv) * 1.4142135623730951)
-            else:
-                t = (x + 0.5) / w if w > 0 else 0.5
-            rgba = _lerp_rgba(color_a, color_b, t)
-            # Blender ``Image.pixels`` is row-major from bottom-left: row y=0 is the bottom line
-            # (UV v→0). Do not flip y — a previous flip broke vertical/radial ramps vs UV sampling.
-            idx = (y * w + x) * 4
-            buf[idx] = rgba[0]
-            buf[idx + 1] = rgba[1]
-            buf[idx + 2] = rgba[2]
-            buf[idx + 3] = rgba[3]
-    return buf
-
-
-def _sanitize_image_label(label: str) -> str:
-    raw = re.sub(r"[^a-zA-Z0-9_]+", "_", str(label or "gradient").strip())
-    return (raw[:48] or "gradient").lstrip("_") or "gradient"
-
-
 def _find_principled_bsdf(nodes) -> object | None:
     """Locate Principled BSDF across Blender versions (``type`` vs ``bl_idname``)."""
     for n in nodes:
@@ -505,23 +457,18 @@ def _add_uv_gradient_to_principled(
     safe = _sanitize_image_label(image_label)
     img_name = f"BlobertTexGrad_{safe}"
     buf = _gradient_image_pixel_buffer(gw, gh, color_a, color_b, d)
-    # Byte buffer (default) matches glTF PNG export more reliably than float_buffer on some Blender builds.
-    img = bpy.data.images.new(name=img_name, width=gw, height=gh, alpha=True)
-    img.pixels = buf
-    try:
-        img.colorspace_settings.name = "sRGB"
-    except (TypeError, AttributeError):
-        pass
-    upd = getattr(img, "update", None)
-    if callable(upd):
-        upd()
-    img.pack()
+
+    img = create_gradient_png_and_load(gw, gh, buf, img_name)
 
     tex = nodes.new(type="ShaderNodeTexImage")
     tex.location = (-450, 200)
     tex.image = img
     tex.interpolation = "Linear"
     tex.extension = "REPEAT"
+
+    with open("/tmp/gradient_debug.log", "a") as f:
+        f.write(f"[_add_uv_gradient_to_principled] Texture node created, image.name={img.name}, image.source={img.source}\n")
+        f.write("[_add_uv_gradient_to_principled] Texture node connected to BaseColor input\n")
 
     uv = nodes.new(type="ShaderNodeUVMap")
     uv.location = (-800, 200)
@@ -540,6 +487,8 @@ def _material_for_gradient_zone(
     instance_suffix: str,
 ) -> bpy.types.Material:
     """Solid base material (no organic noise) with UV gradient between two hex colors."""
+    with open("/tmp/gradient_debug.log", "a") as f:
+        f.write(f"[_material_for_gradient_zone] Called with grad_a_hex={grad_a_hex!r}, grad_b_hex={grad_b_hex!r}\n")
     all_colors = MaterialColors.get_all()
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
@@ -580,6 +529,10 @@ def _material_for_gradient_zone(
     _add_uv_gradient_to_principled(
         mat, color_a, color_b, direction, image_label=instance_suffix
     )
+    with open("/tmp/gradient_debug.log", "a") as f:
+        f.write(f"[_material_for_gradient_zone] Material created: {mat.name}\n")
+        node_count = sum(1 for _ in mat.node_tree.nodes)
+        f.write(f"[_material_for_gradient_zone] Material has {node_count} nodes\n")
     return mat
 
 
@@ -666,6 +619,8 @@ def apply_zone_texture_pattern_overrides(
                 build_options.get(f"feat_{zone}_texture_grad_direction", "horizontal")
                 or "horizontal"
             )
+            with open("/tmp/gradient_debug.log", "a") as f:
+                f.write(f"[apply_zone_texture_pattern_overrides] Gradient for {zone}: a={grad_a!r}, b={grad_b!r}, direction={direction!r}\n")
 
             out[zone] = _material_for_gradient_zone(
                 base_palette_name=base_palette_name,

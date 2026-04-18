@@ -12,6 +12,7 @@ from ..core.blender_utils import create_cone, create_sphere
 from ..materials.material_system import (
     apply_feature_slot_overrides,
     apply_material_to_object,
+    apply_zone_texture_pattern_overrides,
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
@@ -177,6 +178,7 @@ def append_animated_enemy_zone_extras(model: Any) -> None:
     feat_dict = features if isinstance(features, dict) else None
     enemy_mats = get_enemy_materials(theme, model.materials, model.rng)
     slot_mats = apply_feature_slot_overrides(enemy_mats, feat_dict)
+    slot_mats = apply_zone_texture_pattern_overrides(slot_mats, model.build_options)
 
     body_spec = raw.get("body")
     if bc is not None and br is not None and isinstance(body_spec, dict):

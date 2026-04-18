@@ -34,7 +34,25 @@ export async function readHexFromClipboard(): Promise<string | null> {
   try {
     if (typeof navigator === "undefined" || !navigator.clipboard?.readText) return null;
     const text = await navigator.clipboard.readText();
-    return normalizeHexForBuildOption(text);
+    
+    // Try strict parsing first
+    const result = normalizeHexForBuildOption(text);
+    if (result !== null) return result;
+    
+    // If that fails, try to find a hex pattern in the clipboard content
+    const hexMatch = text.match(/#([0-9a-fA-F]{6})/i);
+    if (hexMatch && hexMatch[1]) {
+      return hexMatch[1].toLowerCase();
+    }
+    
+    // If still nothing, try extracting any 6 hex digits from the text
+    const body = text.startsWith("#") ? text.slice(1) : text;
+    const digits = body.replace(/[^0-9a-fA-F]/g, "");
+    if (digits.length === 6 && SIX_HEX.test(digits)) {
+      return digits.toLowerCase();
+    }
+    
+    return null;
   } catch {
     return null;
   }

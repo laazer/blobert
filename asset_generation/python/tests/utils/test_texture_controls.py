@@ -41,6 +41,8 @@ _TEXTURE_DEFAULTS = {
     "texture_stripe_color": "",
     "texture_stripe_bg_color": "",
     "texture_stripe_width": 0.2,
+    "texture_asset_id": "",
+    "texture_asset_tile_repeat": 1.0,
 }
 
 
@@ -61,11 +63,11 @@ def _body_prefix(slug: str) -> str:
 
 
 class TestTextureTemplateDefs:
-    """Base template (_texture_control_defs) remains 10 entries for _zone_texture_control_defs."""
+    """Base template (_texture_control_defs) includes gradient, spots, stripes, and asset texture controls."""
 
-    def test_texture_control_defs_returns_10_entries(self) -> None:
+    def test_texture_control_defs_returns_12_entries(self) -> None:
         result = _texture_control_defs()
-        assert len(result) == 10
+        assert len(result) == 12
         assert [c["key"] for c in result] == [
             "texture_mode",
             "texture_grad_color_a",
@@ -77,22 +79,24 @@ class TestTextureTemplateDefs:
             "texture_stripe_color",
             "texture_stripe_bg_color",
             "texture_stripe_width",
+            "texture_asset_id",
+            "texture_asset_tile_repeat",
         ]
 
 
 class TestZoneTextureControlDefs:
-    def test_zone_texture_count_matches_zones_times_10(self) -> None:
+    def test_zone_texture_count_matches_zones_times_12(self) -> None:
         for slug in _ALL_SLUGS:
             zones = _feature_zones(slug)
             defs = _zone_texture_control_defs(slug)
-            assert len(defs) == len(zones) * 10
+            assert len(defs) == len(zones) * 12
 
     def test_spider_body_texture_mode_shape(self) -> None:
         defs = _zone_texture_control_defs("spider")
         entry = next(d for d in defs if d["key"] == "feat_body_texture_mode")
         assert entry["label"].startswith("Body")
         assert entry["type"] == "select_str"
-        assert entry["options"] == ["none", "gradient", "spots", "stripes"]
+        assert entry["options"] == ["none", "gradient", "spots", "stripes", "assets"]
 
 
 @pytest.mark.parametrize("slug", _ALL_SLUGS)

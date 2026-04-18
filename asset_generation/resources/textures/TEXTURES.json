@@ -1,0 +1,47 @@
+{
+  "demo_textures3": {
+    "filename": "demo textures3.png",
+    "display_name": "Demo Textures 3",
+    "description": "Colorful demo texture pattern",
+    "layout": "single",
+    "width": 1536,
+    "height": 1024,
+    "tiling_supported": true
+  },
+  "demo_textures34": {
+    "filename": "demo textures34.png",
+    "display_name": "Demo Textures 34",
+    "description": "Colorful demo texture variation",
+    "layout": "single",
+    "width": 1536,
+    "height": 1024,
+    "tiling_supported": true
+  },
+  "hash_texture": {
+    "filename": "f4f1cb2269ba444797c0bf3af83f17490c4dfb1039246d1d001803075e82fb40.png",
+    "display_name": "Hash Texture",
+    "description": "Procedurally generated hash texture",
+    "layout": "single",
+    "width": 1536,
+    "height": 1024,
+    "tiling_supported": true
+  },
+  "tilesheet_1": {
+    "filename": "tilesheet 1.png",
+    "display_name": "Tilesheet 1",
+    "description": "Tiled texture grid",
+    "layout": "single",
+    "width": 1536,
+    "height": 1024,
+    "tiling_supported": true
+  },
+  "tilesheet_2": {
+    "filename": "tilesheet 2.png",
+    "display_name": "Tilesheet 2",
+    "description": "Tiled texture grid variation",
+    "layout": "single",
+    "width": 1536,
+    "height": 1024,
+    "tiling_supported": true
+  }
+}

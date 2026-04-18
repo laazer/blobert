@@ -1,3 +1,4 @@
+import { defaultValuesForDefs } from "../../api/client";
 import type { AnimatedBuildControlDef } from "../../types";
 import type { RunCmd } from "../../types";
 
@@ -23,6 +24,61 @@ export function partitionAnimatedBuildOptionsForJson(
   }
   if (Object.keys(mesh).length > 0) top.mesh = mesh;
   return top;
+}
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== typeof b) return false;
+  if (a !== null && b !== null && typeof a === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+    const ao = a as Record<string, unknown>;
+    const bo = b as Record<string, unknown>;
+    const keys = new Set([...Object.keys(ao), ...Object.keys(bo)]);
+    for (const k of keys) {
+      if (!valuesEqual(ao[k], bo[k])) return false;
+    }
+    return true;
+  }
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => valuesEqual(v, b[i]));
+  }
+  return false;
+}
+
+/**
+ * Drop keys that still match control defaults so the run query string stays short.
+ * EventSource only supports GET; oversized `build_options` can truncate and break JSON on the server.
+ */
+export function prunePartitionedBuildOptionsForRun(
+  partitioned: Record<string, unknown>,
+  defs: readonly AnimatedBuildControlDef[],
+): Record<string, unknown> {
+  const defaults = defaultValuesForDefs(defs);
+  const meshKeys = new Set(
+    defs.filter((d) => d.type === "float" && MESH_FLOAT_CONTROL_KEY_RE.test(d.key)).map((d) => d.key),
+  );
+  const meshDefaults: Record<string, unknown> = {};
+  for (const k of meshKeys) {
+    if (k in defaults) meshDefaults[k] = defaults[k];
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(partitioned)) {
+    if (k === "mesh") {
+      if (!v || typeof v !== "object" || Array.isArray(v)) continue;
+      const mesh = v as Record<string, unknown>;
+      const meshOut: Record<string, unknown> = {};
+      for (const [mk, mv] of Object.entries(mesh)) {
+        if (meshDefaults[mk] !== undefined && valuesEqual(mv, meshDefaults[mk])) continue;
+        meshOut[mk] = mv;
+      }
+      if (Object.keys(meshOut).length > 0) out.mesh = meshOut;
+      continue;
+    }
+    if (defaults[k] !== undefined && valuesEqual(v, defaults[k])) continue;
+    out[k] = v;
+  }
+  return out;
 }
 
 export const ALL_CMDS: RunCmd[] = ["animated", "player", "level"];

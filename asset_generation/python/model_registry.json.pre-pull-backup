@@ -1,0 +1,92 @@
+{
+  "enemies": {
+    "carapace_husk": {
+      "slots": [
+        "carapace_husk_animated_00"
+      ],
+      "versions": [
+        {
+          "draft": false,
+          "id": "carapace_husk_animated_00",
+          "in_use": true,
+          "path": "animated_exports/carapace_husk_animated_00.glb"
+        }
+      ]
+    },
+    "claw_crawler": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "claw_crawler_animated_00",
+          "in_use": true,
+          "path": "animated_exports/claw_crawler_animated_00.glb"
+        }
+      ]
+    },
+    "imp": {
+      "versions": [
+        {
+          "draft": true,
+          "id": "imp_animated_00",
+          "in_use": false,
+          "path": "animated_exports/imp_animated_00.glb"
+        }
+      ]
+    },
+    "slug": {
+      "versions": [
+        {
+          "draft": false,
+          "id": "slug_animated_00",
+          "in_use": true,
+          "path": "animated_exports/slug_animated_00.glb"
+        }
+      ]
+    },
+    "spider": {
+      "slots": [
+        "spider_animated_00"
+      ],
+      "versions": [
+        {
+          "draft": true,
+          "id": "spider_animated_00",
+          "in_use": false,
+          "name": "poison_spider_02",
+          "path": "animated_exports/draft/spider_animated_00.glb"
+        }
+      ]
+    },
+    "spitter": {
+      "slots": [
+        "spitter_animated_00"
+      ],
+      "versions": [
+        {
+          "draft": false,
+          "id": "spitter_animated_00",
+          "in_use": true,
+          "path": "animated_exports/spitter_animated_00.glb"
+        }
+      ]
+    }
+  },
+  "player": {
+    "slots": [
+      "player_slime_pink_00"
+    ],
+    "versions": [
+      {
+        "draft": false,
+        "id": "player_slime_pink_00",
+        "in_use": true,
+        "path": "player_exports/player_slime_pink_00.glb"
+      }
+    ]
+  },
+  "player_active_visual": {
+    "draft": false,
+    "path": "player_exports/player_slime_pink_00.glb"
+  },
+  "schema_version": 1
+}

@@ -805,6 +805,10 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     nested = raw.get(enemy_type)
     src: dict[str, Any] = nested if isinstance(nested, dict) else dict(raw)
 
+    grad_keys = {k: v for k, v in src.items() if "grad" in k}
+    with open("/tmp/gradient_debug.log", "a") as f:
+        f.write(f"[options_for_enemy] Gradient keys in src: {grad_keys}\n")
+
     merged = dict(base)
     mesh = dict(base["mesh"])
     if enemy_type == "spider":
@@ -864,6 +868,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
                 root_flat,
                 merged["zone_geometry_extras"],
             )
+    grad_keys_final = {k: v for k, v in merged.items() if "grad" in k}
+    if grad_keys_final:
+        print(f"[DEBUG] options_for_enemy({enemy_type}): gradient keys in merged: {grad_keys_final}")
     return _coerce_and_validate(enemy_type, merged)
 
 

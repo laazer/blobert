@@ -24,8 +24,15 @@ from src.utils.export_subdir import animated_export_directory, variant_start_ind
 
 
 def _build_options_for_current_enemy(enemy_type: str) -> dict:
-    raw = parse_build_options_json(os.environ.get("BLOBERT_BUILD_OPTIONS_JSON"))
-    return options_for_enemy(enemy_type, raw)
+    raw_json = os.environ.get("BLOBERT_BUILD_OPTIONS_JSON")
+    raw = parse_build_options_json(raw_json)
+    opts = options_for_enemy(enemy_type, raw)
+    gradient_keys = {k: v for k, v in opts.items() if "grad" in k}
+    with open("/tmp/gradient_debug.log", "a") as f:
+        f.write(f"\n[_build_options_for_current_enemy] enemy={enemy_type}\n")
+        f.write(f"  raw_json: {raw_json}\n")
+        f.write(f"  gradient_keys in opts: {gradient_keys}\n")
+    return opts
 
 
 def setup_scene():

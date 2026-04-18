@@ -6,6 +6,7 @@ import {
   normalizeEnemyForCmd,
   parseCommandPreview,
   partitionAnimatedBuildOptionsForJson,
+  prunePartitionedBuildOptionsForRun,
   PLAYER_COLORS,
 } from "./commandLogic";
 
@@ -122,5 +123,52 @@ describe("partitionAnimatedBuildOptionsForJson", () => {
     const out = partitionAnimatedBuildOptionsForJson({ extra_zone_body_spike_size: 1.8 }, defs);
     expect(out.mesh).toBeUndefined();
     expect(out.extra_zone_body_spike_size).toBe(1.8);
+  });
+});
+
+describe("prunePartitionedBuildOptionsForRun", () => {
+  const defs: AnimatedBuildControlDef[] = [
+    { key: "BODY_BASE", label: "Body", type: "float", min: 0.5, max: 2, step: 0.05, default: 1 },
+    {
+      key: "feat_body_texture_mode",
+      label: "Mode",
+      type: "select_str",
+      options: ["none", "gradient"],
+      default: "none",
+    },
+    {
+      key: "feat_body_texture_grad_color_a",
+      label: "A",
+      type: "str",
+      default: "",
+    },
+  ];
+
+  it("drops flat keys that still match defaults", () => {
+    const partitioned = partitionAnimatedBuildOptionsForJson(
+      {
+        BODY_BASE: 1,
+        feat_body_texture_mode: "none",
+        feat_body_texture_grad_color_a: "",
+      },
+      defs,
+    );
+    const pruned = prunePartitionedBuildOptionsForRun(partitioned, defs);
+    expect(pruned).toEqual({});
+  });
+
+  it("keeps non-default mesh keys and texture overrides", () => {
+    const partitioned = partitionAnimatedBuildOptionsForJson(
+      {
+        BODY_BASE: 1.5,
+        feat_body_texture_mode: "gradient",
+        feat_body_texture_grad_color_a: "ff0000",
+      },
+      defs,
+    );
+    const pruned = prunePartitionedBuildOptionsForRun(partitioned, defs);
+    expect(pruned.mesh).toEqual({ BODY_BASE: 1.5 });
+    expect(pruned.feat_body_texture_mode).toBe("gradient");
+    expect(pruned.feat_body_texture_grad_color_a).toBe("ff0000");
   });
 });

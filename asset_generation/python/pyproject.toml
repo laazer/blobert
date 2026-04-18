@@ -4,9 +4,10 @@ version = "0.1.0"
 description = "Procedural 3D enemy generation pipeline for Blender"
 requires-python = ">=3.11"
 
-# No pip-installable runtime dependencies.
-# All pipeline code runs inside Blender, which bundles bpy, mathutils, and bmesh.
-dependencies = []
+# Runtime dependencies for texture asset loading (used by backend + Blender pipeline)
+dependencies = [
+    "Pillow>=10.0",
+]
 
 [project.optional-dependencies]
 dev = [

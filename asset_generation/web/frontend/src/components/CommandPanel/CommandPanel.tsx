@@ -16,6 +16,7 @@ import {
   normalizeEnemyForCmd,
   parseCommandPreview,
   partitionAnimatedBuildOptionsForJson,
+  prunePartitionedBuildOptionsForRun,
   PLAYER_COLORS,
   PLAYER_FINISHES,
 } from "./commandLogic";
@@ -105,7 +106,13 @@ export function CommandPanel() {
   const [saveScriptModalOpen, setSaveScriptModalOpen] = useState(false);
   const [saveModelModalOpen, setSaveModelModalOpen] = useState(false);
 
+  const setCommandExport = useAppStore((s) => s.setCommandExport);
   const { start } = useStreamingOutput();
+
+  function pushCommandExport(nextFinish: string, nextHex: string) {
+    if (cmd !== "animated" && cmd !== "player") return;
+    setCommandExport({ finish: nextFinish, hexColor: nextHex });
+  }
 
   const cfg = CMD_CONFIG[cmd];
   const showEnemy = cfg.showEnemy;
@@ -118,6 +125,11 @@ export function CommandPanel() {
   useEffect(() => {
     setCommandContext({ cmd, enemy: showEnemy ? enemy : "" });
   }, [cmd, enemy, showEnemy, setCommandContext]);
+
+  useEffect(() => {
+    if (cmd !== "animated" && cmd !== "player") return;
+    setCommandExport({ finish, hexColor });
+  }, [cmd, finish, hexColor, setCommandExport]);
 
   useEffect(() => {
     const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemySlugsForCmd);
@@ -158,8 +170,13 @@ export function CommandPanel() {
     setEnemy(next.enemy ?? "");
     setDescription(next.description ?? "");
     setDifficulty(next.difficulty ?? "normal");
-    setFinish(next.finish ?? "glossy");
-    setHexColor(next.hexColor ?? "");
+    const nf = next.finish ?? "glossy";
+    const nh = next.hexColor ?? "";
+    setFinish(nf);
+    setHexColor(nh);
+    if (next.cmd === "animated" || next.cmd === "player") {
+      setCommandExport({ finish: nf, hexColor: nh });
+    }
     setCommandPreviewDirty(false);
     setCommandPreviewError(null);
     setCmdTransitionHint(null);
@@ -195,7 +212,15 @@ export function CommandPanel() {
       if (opts && Object.keys(opts).length > 0) {
         const defs = animatedBuildControls[slug] ?? [];
         const top = partitionAnimatedBuildOptionsForJson(opts, defs);
-        buildOptionsJson = JSON.stringify({ [slug]: top });
+        const pruned = prunePartitionedBuildOptionsForRun(top, defs);
+        buildOptionsJson =
+          Object.keys(pruned).length > 0 ? JSON.stringify({ [slug]: pruned }) : undefined;
+        console.log("[CommandPanel] Animated gradient colors:", {
+          slug,
+          opts: opts,
+          pruned: pruned,
+          buildOptionsJson: buildOptionsJson,
+        });
       }
     }
     if (cmd === "player" && enemy && PLAYER_COLORS.includes(enemy.trim().toLowerCase())) {
@@ -203,7 +228,11 @@ export function CommandPanel() {
       if (opts && Object.keys(opts).length > 0) {
         const defs = animatedBuildControls[PLAYER_PROCEDURAL_BUILD_SLUG] ?? [];
         const top = partitionAnimatedBuildOptionsForJson(opts, defs);
-        buildOptionsJson = JSON.stringify({ [PLAYER_PROCEDURAL_BUILD_SLUG]: top });
+        const pruned = prunePartitionedBuildOptionsForRun(top, defs);
+        buildOptionsJson =
+          Object.keys(pruned).length > 0
+            ? JSON.stringify({ [PLAYER_PROCEDURAL_BUILD_SLUG]: pruned })
+            : undefined;
       }
     }
     const regen = regenerate ? regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) : null;
@@ -329,7 +358,15 @@ export function CommandPanel() {
       {(cmd === "player" || cmd === "animated") && (
         <div style={s.row}>
           <span style={s.label}>finish</span>
-          <select style={s.select} value={finish} onChange={(e) => setFinish(e.target.value)}>
+          <select
+            style={s.select}
+            value={finish}
+            onChange={(e) => {
+              const v = e.target.value;
+              setFinish(v);
+              pushCommandExport(v, hexColor);
+            }}
+          >
             {(cmd === "player" ? PLAYER_FINISHES : ENEMY_FINISHES).map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
           <span style={s.label}>hex</span>
@@ -337,15 +374,30 @@ export function CommandPanel() {
             style={{ ...s.select, width: 34, padding: 0, height: 24 }}
             type="color"
             value={/^#[0-9a-fA-F]{6}$/.test(hexColor) ? hexColor : "#7ab8ff"}
-            onChange={(e) => setHexColor(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setHexColor(v);
+              pushCommandExport(finish, v);
+            }}
           />
           <input
             style={{ ...s.textInput, maxWidth: 120 }}
             value={hexColor}
-            onChange={(e) => setHexColor(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setHexColor(v);
+              pushCommandExport(finish, v);
+            }}
             placeholder="#66ccff"
           />
-          <button style={{ ...s.btn, background: "#555" }} type="button" onClick={() => setHexColor("")}>
+          <button
+            style={{ ...s.btn, background: "#555" }}
+            type="button"
+            onClick={() => {
+              setHexColor("");
+              pushCommandExport(finish, "");
+            }}
+          >
             Use palette color
           </button>
         </div>

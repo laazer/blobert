@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
+import { fetchTextureAssets, type TextureAsset } from "../../api/client";
 
 const meshFloatScrollWrap = {
   flex: 1,
@@ -45,7 +46,7 @@ export function zonePartDisplayName(zone: string): string {
 function normalizedTextureMode(
   zone: string,
   values: Readonly<Record<string, unknown>>,
-): "none" | "gradient" | "spots" | "stripes" {
+): "none" | "gradient" | "spots" | "stripes" | "assets" {
   const modeKey = `feat_${zone}_texture_mode`;
   const rawMode = values[modeKey];
   const textureMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
@@ -53,6 +54,7 @@ function normalizedTextureMode(
     textureMode === "gradient" ||
     textureMode === "spots" ||
     textureMode === "stripes" ||
+    textureMode === "assets" ||
     textureMode === "none"
   ) {
     return textureMode;
@@ -72,6 +74,7 @@ function shouldShowTextureParam(
   if (defKey.includes("_texture_grad_")) return mode === "gradient";
   if (defKey.includes("_texture_spot_")) return mode === "spots";
   if (defKey.includes("_texture_stripe_")) return mode === "stripes";
+  if (defKey.includes("_texture_asset_")) return mode === "assets";
   return false;
 }
 
@@ -92,6 +95,13 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
 
   const [textureFloatFilter, setTextureFloatFilter] = useState("");
+  const [textureAssets, setTextureAssets] = useState<TextureAsset[]>([]);
+
+  useEffect(() => {
+    fetchTextureAssets()
+      .then(setTextureAssets)
+      .catch((err) => console.error("Failed to fetch texture assets:", err));
+  }, []);
 
   if (defs.length === 0 && finishHexDefs.length === 0) return null;
 
@@ -177,6 +187,57 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
           onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
         />
       ))}
+      {mode === "assets" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div>
+            <label style={{ display: "block", fontSize: 11, color: "#9d9d9d", marginBottom: 4 }}>
+              Asset texture
+            </label>
+            <select
+              value={String(values[`feat_${zone}_texture_asset_id`] ?? "")}
+              onChange={(e) => setAnimatedBuildOption(slug, `feat_${zone}_texture_asset_id`, e.target.value)}
+              style={{
+                width: "100%",
+                padding: "4px 6px",
+                backgroundColor: "#2d2d2d",
+                color: "#d4d4d4",
+                border: "1px solid #555",
+                borderRadius: 3,
+                fontSize: 11,
+              }}
+            >
+              <option value="">Select a texture...</option>
+              {textureAssets.map((asset) => (
+                <option key={asset.id} value={asset.id}>
+                  {asset.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 11, color: "#9d9d9d", marginBottom: 4 }}>
+              Tile repeat
+            </label>
+            <input
+              type="number"
+              min="0.5"
+              max="8.0"
+              step="0.5"
+              value={Number(values[`feat_${zone}_texture_asset_tile_repeat`] ?? 1.0)}
+              onChange={(e) => setAnimatedBuildOption(slug, `feat_${zone}_texture_asset_tile_repeat`, parseFloat(e.target.value))}
+              style={{
+                width: "100%",
+                padding: "4px 6px",
+                backgroundColor: "#2d2d2d",
+                color: "#d4d4d4",
+                border: "1px solid #555",
+                borderRadius: 3,
+                fontSize: 11,
+              }}
+            />
+          </div>
+        </div>
+      )}
       {textureFloatsVisible.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 2, flex: 1, minHeight: 0 }}>
           <div style={sectionHeaderRow}>
