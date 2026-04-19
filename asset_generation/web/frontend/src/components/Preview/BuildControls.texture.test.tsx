@@ -194,6 +194,17 @@ function expectTextureParamVisible(labelText: string) {
   expect(screen.getByText(labelText)).toBeInTheDocument();
 }
 
+/** Gradient A/B/direction are rendered as one {@link ColorPickerUniversal} (gradient lock mode). */
+function expectGradientBundleHidden() {
+  expect(screen.queryByText("From Color")).not.toBeInTheDocument();
+}
+
+function expectGradientBundleVisible() {
+  expect(screen.getByText("From Color")).toBeInTheDocument();
+  expect(screen.getByText("To Color")).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Gradient direction" })).toBeInTheDocument();
+}
+
 // ---------------------------------------------------------------------------
 // PTP-7-AC-1: feat_body_texture_grad_color_a disabled when texture_mode is "none"
 // ---------------------------------------------------------------------------
@@ -216,12 +227,12 @@ describe("BuildControls texture — feat_body_texture_grad_color_a disabled when
 
   it("PTP-7-AC-1: feat_body_texture_grad_color_a is not rendered when texture_mode is none", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("PTP-4-AC-3: gradient color row is absent when mode is none", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 });
 
@@ -245,19 +256,9 @@ describe("BuildControls texture — feat_body_texture_grad_color_a enabled when 
     });
   });
 
-  it("PTP-7-AC-2: feat_body_texture_grad_color_a row is visible when texture_mode is gradient", () => {
+  it("PTP-7-AC-2, PTP-4-AC-7, PTP-4-AC-8: gradient bundle visible when texture_mode is gradient", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamVisible("Gradient color A");
-  });
-
-  it("PTP-4-AC-7: feat_body_texture_grad_color_b is visible when mode is gradient", () => {
-    render(<TextureControlsSection slug="slug" />);
-    expectTextureParamVisible("Gradient color B");
-  });
-
-  it("PTP-4-AC-8: feat_body_texture_grad_direction is visible when mode is gradient", () => {
-    render(<TextureControlsSection slug="slug" />);
-    expectTextureParamVisible("Gradient direction");
+    expectGradientBundleVisible();
   });
 });
 
@@ -283,12 +284,12 @@ describe("BuildControls texture — gradient params disabled when mode is spots"
 
   it("PTP-7-AC-3, PTP-4-AC-5: feat_body_texture_grad_color_a is not rendered when mode is spots", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("PTP-4-AC-9: feat_body_texture_grad_direction is not rendered when mode is spots", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient direction");
+    expectGradientBundleHidden();
   });
 });
 
@@ -380,7 +381,7 @@ describe("BuildControls texture — spot params disabled when mode is stripes", 
 
   it("PTP-4-AC-6, PTP-4-AC-21: gradient params not rendered in stripes mode", () => {
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 });
 
@@ -478,7 +479,7 @@ describe("BuildControls texture — base hex vs pattern colors", () => {
     render(<TextureControlsSection slug="slug" />);
     expectTextureParamVisible("Body finish");
     expectTextureParamVisible("Body hex");
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("hides body hex when mode is gradient; finish and gradient colors stay", () => {
@@ -499,7 +500,7 @@ describe("BuildControls texture — base hex vs pattern colors", () => {
     render(<TextureControlsSection slug="slug" />);
     expectTextureParamVisible("Body finish");
     expectTextureParamHidden("Body hex");
-    expectTextureParamVisible("Gradient color A");
+    expectGradientBundleVisible();
   });
 });
 
@@ -542,7 +543,7 @@ describe("BuildControls texture — absent or non-string texture_mode treated as
       feat_body_texture_grad_color_a: "ff0000",
     });
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("PTP-4-AC-23: feat_body_texture_grad_color_a not rendered when texture_mode is invalid type", () => {
@@ -551,7 +552,7 @@ describe("BuildControls texture — absent or non-string texture_mode treated as
       feat_body_texture_grad_color_a: "ff0000",
     });
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 });
 
@@ -569,7 +570,7 @@ describe("BuildControls texture — invalid texture_mode string treated as none"
     });
     render(<TextureControlsSection slug="slug" />);
 
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
     expectTextureParamHidden("Spot color");
     expectTextureParamHidden("Stripe color");
     expect(isRowDisabled("Texture mode")).toBe(false);
@@ -591,7 +592,7 @@ describe("BuildControls texture — reacts to texture_mode changes without remou
 
     render(<TextureControlsSection slug="slug" />);
 
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
     expectTextureParamHidden("Spot color");
     expectTextureParamHidden("Stripe color");
 
@@ -609,7 +610,7 @@ describe("BuildControls texture — reacts to texture_mode changes without remou
     });
 
     await waitFor(() => {
-      expectTextureParamVisible("Gradient color A");
+      expectGradientBundleVisible();
       expectTextureParamHidden("Spot color");
       expectTextureParamHidden("Stripe color");
     });
@@ -628,7 +629,7 @@ describe("BuildControls texture — reacts to texture_mode changes without remou
     });
 
     await waitFor(() => {
-      expectTextureParamHidden("Gradient color A");
+      expectGradientBundleHidden();
       expectTextureParamVisible("Spot color");
       expectTextureParamHidden("Stripe color");
     });
@@ -696,7 +697,7 @@ describe("BuildControls texture — no bleed-over to existing pupil/mouth/tail r
     expect(isRowDisabled("Pupil shape")).toBe(true);
     unmount();
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamVisible("Gradient color A");
+    expectGradientBundleVisible();
   });
 
   it("PTP-7-AC-8: mouth_shape still disabled by mouth_enabled=false, unaffected by texture_mode=spots", () => {
@@ -804,7 +805,7 @@ describe("BuildControls texture — texture rules apply across slugs", () => {
       feat_body_texture_mode: "none",
     });
     render(<TextureControlsSection slug="spider" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("feat_body_texture_grad_color_a visible for spider slug when mode is gradient", () => {
@@ -812,7 +813,7 @@ describe("BuildControls texture — texture rules apply across slugs", () => {
       feat_body_texture_mode: "gradient",
     });
     render(<TextureControlsSection slug="spider" />);
-    expectTextureParamVisible("Gradient color A");
+    expectGradientBundleVisible();
   });
 
   it("texture rules apply to imp slug", () => {
@@ -821,7 +822,7 @@ describe("BuildControls texture — texture rules apply across slugs", () => {
     });
     render(<TextureControlsSection slug="imp" />);
     expectTextureParamVisible("Spot color");
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
     expectTextureParamHidden("Stripe color");
   });
 });
@@ -837,7 +838,7 @@ describe("BuildControls texture — inactive mode params not rendered", () => {
       feat_body_texture_grad_color_a: "",
     });
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamHidden("Gradient color A");
+    expectGradientBundleHidden();
   });
 
   it("Stripe color absent when mode is spots", () => {
@@ -864,6 +865,6 @@ describe("BuildControls texture — inactive mode params not rendered", () => {
       feat_body_texture_grad_color_a: "ff0000",
     });
     render(<TextureControlsSection slug="slug" />);
-    expectTextureParamVisible("Gradient color A");
+    expectGradientBundleVisible();
   });
 });

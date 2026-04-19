@@ -1,5 +1,17 @@
 # Checkpoint Index
 
+## Run: 2026-04-18T12-00-00Z-autopilot-single-m25-02b
+- Queue mode: single ticket
+- Queue scope: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/02b_integrate_universal_color_picker.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M25-02b/`
+- Outcome: `ColorPickerUniversal` `lockMode`; `BuildControlRow` hex rows + `ZoneTextureBlock` gradient bundle; texture + ControlRow tests updated; full frontend Vitest green.
+- Log: `project_board/checkpoints/M25-02b/run-2026-04-18-autopilot-integrate-universal-picker.md`
+
+### [M25-02b] — OUTCOME: COMPLETE
+Universal color picker integrated into `BuildControlRow` (single) and `ZoneTextureBlock` (gradient); checkpoint notes image/upload row N/A until M25-03.
+Log: `project_board/checkpoints/M25-02b/run-2026-04-18-autopilot-integrate-universal-picker.md`
+
 ## Resume: 2026-04-19T20-55-00Z-ap-continue-m25-02a
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/done/02a_color_picker_component.md`
 - Stage: backlog without WORKFLOW STATE → AC Gatekeeper → COMPLETE

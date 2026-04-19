@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import type { AnimatedBuildControlDef } from "../../types";
 import { readHexFromClipboard } from "../../utils/clipboardHex";
+import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
 
 export const floatHintStyle = {
   fontSize: 10,
@@ -43,12 +44,6 @@ export const rowStyles = {
   } as const,
 };
 
-function hexForColorInput(raw: string): string {
-  const h = (raw || "").replace(/^#/, "").trim();
-  if (/^[0-9a-fA-F]{6}$/.test(h)) return `#${h.toLowerCase()}`;
-  return "#6b6b6b";
-}
-
 const pasteBtnStyle = {
   padding: "2px 8px",
   fontSize: 10,
@@ -68,11 +63,9 @@ function HexStrControlRow({
   value: unknown;
   onChange: (v: string) => void;
 }) {
-  const rs = rowStyles;
   const strVal = typeof value === "string" ? value : String(def.default ?? "");
   const [pasteHint, setPasteHint] = useState<string | null>(null);
-  const sanitizeHex = (raw: string) =>
-    raw.replace(/^#/, "").replace(/[^0-9a-fA-F]/g, "").slice(0, 6).toLowerCase();
+  const pickerValue: ColorPickerValue = { type: "single", color: strVal };
 
   async function pasteColor() {
     const parsed = await readHexFromClipboard();
@@ -86,29 +79,31 @@ function HexStrControlRow({
   }
 
   return (
-    <label style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", maxWidth: "100%" }}>
-      <span style={rs.label}>{def.label}</span>
-      <input
-        style={{ ...rs.select, width: 28, height: 22, padding: 0, cursor: "pointer" }}
-        type="color"
-        value={hexForColorInput(strVal)}
-        title="Pick color (fills hex field)"
-        onChange={(e) => onChange(e.target.value.replace(/^#/, "").toLowerCase())}
-      />
-      <input
-        style={{ ...rs.input, width: 80, flex: "1 1 72px" }}
-        type="text"
-        placeholder="RRGGBB"
-        value={strVal}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={(e) => {
-          const v = e.target.value;
-          const t = sanitizeHex(v);
-          if (t !== v) onChange(t);
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        alignItems: "flex-start",
+        maxWidth: "100%",
+      }}
+    >
+      <ColorPickerUniversal
+        lockMode="single"
+        mode="single"
+        label={def.label}
+        value={pickerValue}
+        onChange={(v) => {
+          if (v.type === "single") onChange(v.color);
         }}
-        spellCheck={false}
+        onModeChange={() => {}}
       />
-      <button type="button" style={pasteBtnStyle} title="Paste #RRGGBB or RRGGBB from clipboard" onClick={() => void pasteColor()}>
+      <button
+        type="button"
+        style={pasteBtnStyle}
+        title="Paste #RRGGBB or RRGGBB from clipboard"
+        onClick={() => void pasteColor()}
+      >
         Paste color
       </button>
       {pasteHint ? (
@@ -116,7 +111,7 @@ function HexStrControlRow({
           {pasteHint}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 

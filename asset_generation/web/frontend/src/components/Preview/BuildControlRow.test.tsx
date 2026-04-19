@@ -16,9 +16,9 @@ describe("ControlRow str — texture color keys use hex picker + Paste", () => {
     default: "",
   };
 
-  it("renders color input, hex field, and Paste color like feat_*_hex", () => {
+  it("renders ColorPickerUniversal single mode (hex) + Paste color like feat_*_hex", () => {
     render(<ControlRow def={def} value="ff0000" onChange={() => {}} />);
-    expect(screen.getByTitle("Pick color (fills hex field)")).toBeInTheDocument();
+    expect(screen.getByTitle("Pick color")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("RRGGBB")).toHaveValue("ff0000");
     expect(screen.getByRole("button", { name: "Paste color" })).toBeInTheDocument();
   });

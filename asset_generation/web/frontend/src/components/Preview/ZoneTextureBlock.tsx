@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
+import type { GradientDirection } from "../ColorPicker/common/DirectionSelector";
+import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
 import { fetchTextureAssets, type TextureAsset } from "../../api/client";
 
@@ -41,6 +43,12 @@ export function zonePartDisplayName(zone: string): string {
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
+}
+
+function gradientDirectionFromStore(raw: unknown): GradientDirection {
+  const s = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  if (s === "vertical" || s === "radial" || s === "horizontal") return s;
+  return "horizontal";
 }
 
 function normalizedTextureMode(
@@ -115,6 +123,27 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
   const nonFloat = defs.filter((d) => d.type !== "float" && d.key !== modeKey);
   const visibleNonFloat = nonFloat.filter((d) => shouldShowTextureParam(zone, d.key, values));
 
+  const gradColorAKey = `feat_${zone}_texture_grad_color_a`;
+  const gradColorBKey = `feat_${zone}_texture_grad_color_b`;
+  const gradDirKey = `feat_${zone}_texture_grad_direction`;
+  const isGradientBundleKey = (k: string) =>
+    k === gradColorAKey || k === gradColorBKey || k === gradDirKey;
+
+  const visibleNonFloatRows =
+    mode === "gradient"
+      ? visibleNonFloat.filter((d) => !isGradientBundleKey(d.key))
+      : visibleNonFloat;
+
+  const gradientPickerValue: ColorPickerValue | null =
+    mode === "gradient"
+      ? {
+          type: "gradient",
+          colorA: typeof values[gradColorAKey] === "string" ? values[gradColorAKey] : "",
+          colorB: typeof values[gradColorBKey] === "string" ? values[gradColorBKey] : "",
+          direction: gradientDirectionFromStore(values[gradDirKey]),
+        }
+      : null;
+
   const finishDefsOrdered = finishHexDefs.filter((d) => d.key === finishKey);
   const hexDefsOrdered = finishHexDefs.filter((d) => d.key === hexKey);
   const orphanFinishHex = finishHexDefs.filter((d) => d.key !== finishKey && d.key !== hexKey);
@@ -179,7 +208,22 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
           {orphanFinishHex.map(row)}
         </>
       ) : null}
-      {visibleNonFloat.map((def) => (
+      {gradientPickerValue ? (
+        <ColorPickerUniversal
+          lockMode="gradient"
+          mode="gradient"
+          label={`Gradient — ${partTitle}`}
+          value={gradientPickerValue}
+          onModeChange={() => {}}
+          onChange={(v) => {
+            if (v.type !== "gradient") return;
+            setAnimatedBuildOption(slug, gradColorAKey, v.colorA);
+            setAnimatedBuildOption(slug, gradColorBKey, v.colorB);
+            setAnimatedBuildOption(slug, gradDirKey, v.direction);
+          }}
+        />
+      ) : null}
+      {visibleNonFloatRows.map((def) => (
         <ControlRow
           key={def.key}
           def={def}

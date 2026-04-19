@@ -21,6 +21,8 @@ export interface ColorPickerUniversalProps {
   onChange: (value: ColorPickerValue) => void;
   disabled?: boolean;
   label?: string;
+  /** When set, mode tabs are hidden and this mode is fixed (e.g. embedded in BuildControls rows). */
+  lockMode?: "single" | "gradient" | "image";
 }
 
 /**
@@ -39,34 +41,39 @@ export function ColorPickerUniversal({
   onChange,
   disabled = false,
   label,
+  lockMode,
 }: ColorPickerUniversalProps) {
+  const activeMode = lockMode ?? mode;
+
   return (
     <div style={colorPickerStyles.container}>
       {label && <div style={colorPickerStyles.hexLabel}>{label}</div>}
 
       {/* Mode tab selector */}
-      <div style={colorPickerStyles.tabRow} role="group" aria-label="Color picker mode">
-        {["single", "gradient", "image"].map((m) => (
-          <button
-            key={m}
-            disabled={disabled}
-            aria-pressed={mode === m}
-            style={{
-              ...colorPickerStyles.tabButton(mode === m),
-              opacity: disabled ? 0.5 : 1,
-              pointerEvents: disabled ? "none" : "auto",
-            }}
-            onClick={() => onModeChange(m as "single" | "gradient" | "image")}
-          >
-            {m === "single" ? "Color" : m === "gradient" ? "Gradient" : "Image"}
-          </button>
-        ))}
-      </div>
+      {!lockMode ? (
+        <div style={colorPickerStyles.tabRow} role="group" aria-label="Color picker mode">
+          {["single", "gradient", "image"].map((m) => (
+            <button
+              key={m}
+              disabled={disabled}
+              aria-pressed={mode === m}
+              style={{
+                ...colorPickerStyles.tabButton(mode === m),
+                opacity: disabled ? 0.5 : 1,
+                pointerEvents: disabled ? "none" : "auto",
+              }}
+              onClick={() => onModeChange(m as "single" | "gradient" | "image")}
+            >
+              {m === "single" ? "Color" : m === "gradient" ? "Gradient" : "Image"}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Mode content */}
       <div style={colorPickerStyles.modeContent}>
         {/* Single color mode */}
-        {mode === "single" && value.type === "single" && (
+        {activeMode === "single" && value.type === "single" && (
           <SingleColorMode
             color={value.color}
             onChange={(color) => onChange({ type: "single", color })}
@@ -75,7 +82,7 @@ export function ColorPickerUniversal({
         )}
 
         {/* Gradient mode */}
-        {mode === "gradient" && value.type === "gradient" && (
+        {activeMode === "gradient" && value.type === "gradient" && (
           <GradientMode
             colorA={value.colorA}
             colorB={value.colorB}
@@ -109,7 +116,7 @@ export function ColorPickerUniversal({
         )}
 
         {/* Image mode */}
-        {mode === "image" && value.type === "image" && (
+        {activeMode === "image" && value.type === "image" && (
           <ImageMode
             file={value.file}
             preview={value.preview}

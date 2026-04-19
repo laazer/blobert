@@ -4,6 +4,22 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M25-02b_integrate_universal_color_picker] — lockMode for embedded universal picker rows
+*Completed: 2026-04-18*
+
+### Learnings
+- category: frontend
+  insight: A tabbed `ColorPickerUniversal` must support `lockMode` when embedded in per-def `ControlRow`s so mode switching does not fight `feat_*_texture_mode` or duplicate UI; gradient A/B/direction collapse cleanly into one locked gradient block wired to three store keys.
+  impact: Preserves spec tests that reason about visibility of gradient parameters without three duplicate labels.
+  prevention: When reusing a multi-mode component inside forms with external mode selectors, add an explicit embed/single-mode API up front.
+  severity: medium
+
+### Anti-Patterns
+- description: Expecting legacy test strings like `"Gradient color A"` after consolidating controls; update assertions to stable sublabels (`From Color`, `aria-label` on direction group).
+  detection_signal: Tests pass only on old row-per-def layout.
+  prevention: Prefer role/name queries aligned with the universal subcomponents.
+
+---
 
 ## [M25-02a_color_picker_component] — Pipeline reconciliation when code lands before ticket state
 *Completed: 2026-04-19*

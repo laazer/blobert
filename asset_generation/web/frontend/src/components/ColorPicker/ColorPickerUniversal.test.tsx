@@ -93,6 +93,21 @@ describe("ColorPickerUniversal", () => {
     expect(onModeChange).toHaveBeenCalledWith("gradient");
   });
 
+  it("hides mode tabs when lockMode is set", () => {
+    const value: ColorPickerValue = { type: "single", color: "ff0000" };
+    render(
+      <ColorPickerUniversal
+        lockMode="single"
+        mode="single"
+        value={value}
+        onChange={() => {}}
+        onModeChange={() => {}}
+      />
+    );
+    expect(screen.queryByRole("group", { name: /color picker mode/i })).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("RRGGBB")).toBeInTheDocument();
+  });
+
   it("disables mode buttons when disabled prop is true", () => {
     const value: ColorPickerValue = { type: "single", color: "ff0000" };
     render(
