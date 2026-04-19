@@ -40,13 +40,83 @@ After comprehensive codebase survey, the planner identified:
 
 | Field | Value |
 |-------|-------|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_GENERALIST |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Engine Integration Agent |
 | Status | Proceed |
-| Validation Status | Test suite designed and committed; ready for break phase |
+| Validation Status | Adversarial test suite created; 5 new test files covering type mutations, pattern matching, edge cases, concurrency, and spec gaps |
 | Blocking Issues | None |
+
+---
+
+## Test Break Phase Summary
+
+### Adversarial Test Suite Created
+
+The Test Breaker Agent extended the Test Designer's test suite with 5 new comprehensive test files and 1 shell script mutation tester, covering:
+
+1. **Type Mutation Testing** (`ColorPickerUniversal.adversarial.test.tsx`)
+   - Missing/null/wrong discriminator fields in ColorPickerValue union
+   - Graceful handling of malformed payloads
+   - Consumer type narrowing enforcement
+   - Exhaustiveness checks on union members
+
+2. **Pattern Matching Robustness** (`BuildControlRow.pattern.test.tsx`)
+   - Case sensitivity of `_hex` and `_texture_color` patterns
+   - Substring false positives (e.g., `_hex` alone matches)
+   - Real-world key variations for gradient, spot, stripe modes
+   - Non-matching keys correctly excluded
+
+3. **Hex Value Parsing Edge Cases** (`clipboardHex.adversarial.test.ts`)
+   - Empty/null/whitespace input handling
+   - Too-short/too-long hex validation
+   - Clipboard API failures (permission denied, missing API, timeout)
+   - Concurrent clipboard reads/writes
+   - Very large input stress testing (1MB+)
+
+4. **Direction Normalization & Mode Routing** (`ZoneTextureBlock.adversarial.test.tsx`)
+   - Direction default fallback to "horizontal" for invalid values
+   - Mode string case-insensitivity and whitespace trimming
+   - Conditional parameter visibility per texture mode
+   - Zone-aware key construction and matching
+   - CamelCase unsupported in zone naming
+
+5. **Concurrency & Timing** (`BuildControlRow.concurrency.test.tsx`)
+   - Hint auto-clear timeout (2 seconds) and restart behavior
+   - Multiple rapid pastes without crashes
+   - Component unmount during pending clipboard operations (cleanup)
+   - Concurrent color picker changes and race conditions
+   - Clipboard API error recovery and retry
+
+6. **Legacy Picker Scan Mutations** (`test_02c_legacy_picker_grep_mutations.sh`)
+   - Case sensitivity enforcement in keyword matching
+   - Substring vs. exact word boundary matching
+   - Comment filtering and test file handling
+   - Typos and variant keyword detection
+   - Real-world frontend validation
+
+### Key Vulnerabilities Exposed
+
+1. **Type Safety:** Consumers must manually narrow on `ColorPickerValue.type` before accessing mode-specific fields; no runtime validation catches violations
+2. **Pattern Permissiveness:** `includes('_texture_') && includes('_color')` matches without mode prefix (e.g., `feat_body_texture_color` valid but unusual)
+3. **Grep Pattern Case Sensitivity:** Uppercase variants of legacy keywords (`HEX`, `LEGACY`) would NOT be detected by original scan
+4. **Timeout Cleanup:** Test verifies hint timeout is properly cleared on unmount (no memory leak, but assert confirms)
+5. **Concurrent Paste:** No built-in debounce; all concurrent pastes resolve independently (last wins, but both are processed)
+6. **Direction Fallback:** Default to "horizontal" silently; could hide data corruption if store contains invalid direction
+
+### Implementation Readiness
+
+**Status:** Ready for cleanup/verification implementation.
+
+**Scope:** Ticket is verification-only cleanup. No new features or breaking changes. Tests expose edge cases but spec does not require fixing them (they are acceptable as-is).
+
+**Next Step:** Engine Integration Agent will verify:
+- Legacy scan script passes
+- All tests compile and run
+- No orphaned imports or dead code
+- Build and test suite pass
+- TypeScript strict mode compliance
 
 ---
 

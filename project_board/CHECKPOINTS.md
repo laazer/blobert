@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T14-30-00Z-test-break-m25-02c
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02c_remove_old_color_pickers.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST
+- Next Agent: Engine Integration Agent
+- Log: `project_board/checkpoints/02c/2026-04-19T14-30-00Z-test_break.md`
+- Outcome: Created 5 adversarial test files + 1 shell mutation tester covering: type mutations (discriminated union narrowing), pattern matching (hex key detection), hex parsing edge cases (clipboard failures, large inputs), direction normalization and mode routing, concurrency/timing (hint cleanup, rapid pastes, unmount safety), legacy keyword grep mutations. Exposed 7 key vulnerabilities: type safety gaps, pattern permissiveness, case sensitivity in grep, concurrent paste handling, direction fallback silencing data issues. All tests deterministic, 2760 lines of test code created. Ticket advanced to cleanup/verification phase.
+
 ## Run: 2026-04-19T00-00-00Z-spec-m25-02c
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02c_remove_old_color_pickers.md`
 - Stage: SPECIFICATION → TEST_DESIGN
