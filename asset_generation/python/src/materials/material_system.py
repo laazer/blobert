@@ -734,6 +734,28 @@ def apply_zone_texture_pattern_overrides(
                 zone_hex_fallback=zone_hex,
                 instance_suffix=f"{zone}_tex_spot",
             )
+        elif mode == "stripes":
+            from .material_stripes_zone import _material_for_stripes_zone
+
+            base_palette_name = _palette_base_name_from_material(mat)
+            zf = feat_dict.get(zone)
+            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
+
+            stripe_color = str(build_options.get(f"feat_{zone}_texture_stripe_color", "") or "")
+            bg_color = str(build_options.get(f"feat_{zone}_texture_stripe_bg_color", "") or "")
+            stripe_w = float(build_options.get(f"feat_{zone}_texture_stripe_width", 0.2) or 0.2)
+            stripe_w = max(0.05, min(1.0, stripe_w))
+
+            out[zone] = _material_for_stripes_zone(
+                base_palette_name=base_palette_name,
+                finish=finish,
+                stripe_hex=stripe_color,
+                bg_hex=bg_color,
+                stripe_width=stripe_w,
+                zone_hex_fallback=zone_hex,
+                instance_suffix=f"{zone}_tex_stripe",
+            )
     return out
 
 

@@ -4,6 +4,22 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M25-02e_implement_stripes_texture] — Mirror proven texture modes; preview store vs feat keys
+*Completed: 2026-04-19*
+
+### Learnings
+- category: architecture
+  insight: Stripes reused spots’ PNG + material factory shape with a single algorithmic swap (1D `fract` period vs 2D distance field). Documenting the **UV period** semantics (0.05–1.0, 50/50 duty) in the ticket spec avoided the “stripe width” naming ambiguity between thickness-only and full-period models.
+  impact: One coherent formula for Python pixel loop, Blender bake, and Three.js shader.
+  severity: medium
+
+- category: frontend
+  insight: `GlbViewer` mixed **legacy** global `texture_*` keys (used by tests) with **live** `feat_body_texture_*` from `animatedBuildOptionValues`. Resolving mode/colors by “legacy defined → legacy wins, else feat” keeps tests stable while the Colors UI drives feat keys.
+  impact: Exporting `normalizedTextureMode` from `ZoneTextureBlock` lets the viewer share the same mode normalization as controls without duplicating strings.
+  severity: medium
+
+---
+
 ## [M25-02d_implement_spots_texture] — PNG generation, test validation clarity, and adversarial test design
 *Completed: 2026-04-19*
 

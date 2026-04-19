@@ -51,7 +51,7 @@ function gradientDirectionFromStore(raw: unknown): GradientDirection {
   return "horizontal";
 }
 
-function normalizedTextureMode(
+export function normalizedTextureMode(
   zone: string,
   values: Readonly<Record<string, unknown>>,
 ): "none" | "gradient" | "spots" | "stripes" | "assets" {

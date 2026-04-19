@@ -13,6 +13,7 @@ import {
 import * as THREE from "three";
 import { useAppStore } from "../../store/useAppStore";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
+import { normalizedTextureMode } from "./ZoneTextureBlock";
 
 type CanvasErrorBoundaryProps = {
   children: React.ReactNode;
@@ -138,6 +139,45 @@ function createSpotsMaterial(spotColor: THREE.Vector3, bgColor: THREE.Vector3, d
   });
 }
 
+/** Horizontal stripes: period ``uStripeWidth`` in UV space; 50/50 stripe vs gap per period. */
+function createStripesMaterial(
+  stripeColor: THREE.Vector3,
+  bgColor: THREE.Vector3,
+  stripeWidth: number,
+): THREE.ShaderMaterial {
+  const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    varying vec2 vUv;
+    uniform vec3 uStripeColor;
+    uniform vec3 uBgColor;
+    uniform float uStripeWidth;
+
+    void main() {
+      float w = max(0.05, min(1.0, uStripeWidth));
+      float t = fract(vUv.x * (1.0 / w));
+      vec3 color = t < 0.5 ? uStripeColor : uBgColor;
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uStripeColor: { value: stripeColor },
+      uBgColor: { value: bgColor },
+      uStripeWidth: { value: stripeWidth },
+    },
+    vertexShader,
+    fragmentShader,
+  });
+}
+
 function Model({ url, animation }: { url: string; animation: string | null }) {
   const { scene, animations } = useGLTF(url);
   const { actions, names } = useAnimations(animations, scene);
@@ -145,10 +185,50 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   const setAvailableClips = useAppStore((s) => s.setAvailableClips);
   const setActiveAnimation = useAppStore((s) => s.setActiveAnimation);
   const isAnimationPaused = useAppStore((s) => s.isAnimationPaused);
-  const textureMode = useAppStore((s) => s.texture_mode);
-  const spotColor = useAppStore((s) => s.texture_spot_color);
-  const bgColor = useAppStore((s) => s.texture_spot_bg_color);
-  const density = useAppStore((s) => s.texture_spot_density);
+  const enemy = useAppStore((s) => s.commandContext.enemy);
+  const featVals = useAppStore((s) => s.animatedBuildOptionValues[enemy] ?? {});
+  const legacyMode = useAppStore((s) => s.texture_mode);
+  const legacySpot = useAppStore((s) => s.texture_spot_color);
+  const legacySpotBg = useAppStore((s) => s.texture_spot_bg_color);
+  const legacyDensity = useAppStore((s) => s.texture_spot_density);
+  const legacyStripe = useAppStore((s) => s.texture_stripe_color);
+  const legacyStripeBg = useAppStore((s) => s.texture_stripe_bg_color);
+  const legacyStripeW = useAppStore((s) => s.texture_stripe_width);
+
+  const textureMode =
+    legacyMode !== undefined && legacyMode !== null
+      ? String(legacyMode).trim().toLowerCase()
+      : normalizedTextureMode("body", featVals);
+
+  const spotColor =
+    legacySpot !== undefined && legacySpot !== null
+      ? String(legacySpot)
+      : String(featVals.feat_body_texture_spot_color ?? "");
+  const bgColor =
+    legacySpotBg !== undefined && legacySpotBg !== null
+      ? String(legacySpotBg)
+      : String(featVals.feat_body_texture_spot_bg_color ?? "");
+  const density =
+    legacyDensity !== undefined && legacyDensity !== null
+      ? Number(legacyDensity)
+      : Number(featVals.feat_body_texture_spot_density ?? 1.0);
+
+  const stripeColor =
+    legacyStripe !== undefined && legacyStripe !== null
+      ? String(legacyStripe)
+      : String(featVals.feat_body_texture_stripe_color ?? "");
+  const stripeBgColor =
+    legacyStripeBg !== undefined && legacyStripeBg !== null
+      ? String(legacyStripeBg)
+      : String(featVals.feat_body_texture_stripe_bg_color ?? "");
+  const stripeWidthRaw =
+    legacyStripeW !== undefined && legacyStripeW !== null
+      ? Number(legacyStripeW)
+      : Number(featVals.feat_body_texture_stripe_width ?? 0.2);
+  const stripeWidth = Math.max(
+    0.05,
+    Math.min(1.0, Number.isFinite(stripeWidthRaw) ? stripeWidthRaw : 0.2),
+  );
 
   const prevUrl = useRef<string | null>(null);
   // Store original materials per mesh for restoration
@@ -169,44 +249,76 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   // Handle texture mode switching and uniform updates
   useEffect(() => {
     if (textureMode === "spots" && spotColor !== undefined && bgColor !== undefined && density !== undefined) {
-      // Apply spots shader
       const spotColorVec = parseHexToVector3(spotColor, new THREE.Vector3(0, 0, 0));
       const bgColorVec = parseHexToVector3(bgColor, new THREE.Vector3(1, 1, 1));
 
       scene.traverse((node: any) => {
         if (node.isMesh && node.material) {
-          // Save original material if not already saved
           if (!originalMaterialsRef.current.has(node)) {
             originalMaterialsRef.current.set(node, node.material);
           }
 
-          // Create or update shader material
           let shaderMat = shaderMaterialsRef.current.get(node);
-          if (!shaderMat) {
+          const needsSpots = !shaderMat || shaderMat.uniforms.uDensity === undefined;
+          if (needsSpots) {
+            if (shaderMat) shaderMat.dispose();
             shaderMat = createSpotsMaterial(spotColorVec, bgColorVec, density);
             shaderMaterialsRef.current.set(node, shaderMat);
             node.material = shaderMat;
-          } else {
-            // Update uniforms
+          } else if (shaderMat) {
             shaderMat.uniforms.uSpotColor.value.copy(spotColorVec);
             shaderMat.uniforms.uBgColor.value.copy(bgColorVec);
             shaderMat.uniforms.uDensity.value = density;
           }
         }
       });
-    } else if (textureMode !== "spots") {
-      // Restore original materials
+    } else if (textureMode === "stripes") {
+      const stripeColorVec = parseHexToVector3(stripeColor, new THREE.Vector3(0, 0, 0));
+      const bgColorVec = parseHexToVector3(stripeBgColor, new THREE.Vector3(1, 1, 1));
+
+      scene.traverse((node: any) => {
+        if (node.isMesh && node.material) {
+          if (!originalMaterialsRef.current.has(node)) {
+            originalMaterialsRef.current.set(node, node.material);
+          }
+
+          let shaderMat = shaderMaterialsRef.current.get(node);
+          const needsStripes = !shaderMat || shaderMat.uniforms.uStripeWidth === undefined;
+          if (needsStripes) {
+            if (shaderMat) shaderMat.dispose();
+            shaderMat = createStripesMaterial(stripeColorVec, bgColorVec, stripeWidth);
+            shaderMaterialsRef.current.set(node, shaderMat);
+            node.material = shaderMat;
+          } else if (shaderMat) {
+            shaderMat.uniforms.uStripeColor.value.copy(stripeColorVec);
+            shaderMat.uniforms.uBgColor.value.copy(bgColorVec);
+            shaderMat.uniforms.uStripeWidth.value = stripeWidth;
+          }
+        }
+      });
+    } else {
       scene.traverse((node: any) => {
         if (node.isMesh) {
           const originalMat = originalMaterialsRef.current.get(node);
           if (originalMat) {
             node.material = originalMat;
           }
+          const sm = shaderMaterialsRef.current.get(node);
+          if (sm) sm.dispose();
           shaderMaterialsRef.current.delete(node);
         }
       });
     }
-  }, [scene, textureMode, spotColor, bgColor, density]);
+  }, [
+    scene,
+    textureMode,
+    spotColor,
+    bgColor,
+    density,
+    stripeColor,
+    stripeBgColor,
+    stripeWidth,
+  ]);
 
   useEffect(() => {
     Object.values(actions).forEach((a) => a?.stop());

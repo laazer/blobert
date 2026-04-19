@@ -134,6 +134,95 @@ def create_gradient_png_and_load(
     return img
 
 
+def _stripes_texture_generator(
+    width: int,
+    height: int,
+    stripe_color_hex: str,
+    bg_color_hex: str,
+    stripe_width: float,
+) -> bytes:
+    """Generate PNG with horizontal stripe pattern (stripe / gap along U).
+
+    ``stripe_width`` is the period in normalized UV space (0.05–1.0): larger values
+    produce fewer repeats across U. Half the period is stripe color, half background.
+    """
+    def _hex_to_rgba(
+        hex_str: str,
+        default_rgba: tuple[float, float, float, float],
+        allow_invalid: bool = False,
+    ) -> tuple[float, float, float, float]:
+        h = (hex_str or "").strip().lstrip("#").lower()
+        if not h:
+            return default_rgba
+        if len(h) != 6:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError(f"hex color must be 6 characters (RRGGBB), got {h!r}")
+        try:
+            r = int(h[0:2], 16) / 255.0
+            g = int(h[2:4], 16) / 255.0
+            b = int(h[4:6], 16) / 255.0
+            return (r, g, b, 1.0)
+        except ValueError as e:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError("hex color must be valid hexadecimal") from e
+
+    stripe_rgba = _hex_to_rgba(stripe_color_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False)
+    bg_rgba = _hex_to_rgba(bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
+
+    period = max(0.05, min(1.0, float(stripe_width)))
+
+    buf = [0.0] * (width * height * 4)
+    for y in range(height):
+        for x in range(width):
+            u = (x + 0.5) / width if width > 0 else 0.5
+            edge = u * (1.0 / period)
+            t = edge - math.floor(edge)
+            rgba = stripe_rgba if t < 0.5 else bg_rgba
+            idx = (y * width + x) * 4
+            buf[idx] = rgba[0]
+            buf[idx + 1] = rgba[1]
+            buf[idx + 2] = rgba[2]
+            buf[idx + 3] = rgba[3]
+
+    return _create_png(width, height, buf)
+
+
+def create_stripes_png_and_load(
+    width: int,
+    height: int,
+    stripe_color_hex: str,
+    bg_color_hex: str,
+    stripe_width: float,
+    img_name: str,
+) -> bpy.types.Image:
+    """Create stripes PNG texture, save to disk, and load into Blender."""
+    png_data = _stripes_texture_generator(
+        width, height, stripe_color_hex, bg_color_hex, stripe_width
+    )
+    stripes_dir = Path(__file__).parent.parent.parent / "animated_exports" / "stripes"
+    stripes_dir.mkdir(parents=True, exist_ok=True)
+    tmp_png = stripes_dir / f"{img_name}.png"
+    tmp_png.write_bytes(png_data)
+
+    img_path = str(tmp_png.absolute())
+    img = bpy.data.images.load(filepath=img_path)
+    img.name = img_name
+
+    try:
+        img.colorspace_settings.name = "sRGB"
+    except (TypeError, AttributeError):  # pragma: no cover
+        pass
+
+    try:
+        img.pack()
+    except Exception:  # pragma: no cover
+        pass
+
+    return img
+
+
 def _spots_texture_generator(
     width: int,
     height: int,
