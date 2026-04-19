@@ -1,5 +1,19 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T22-00-00Z-test-design-m25-02d
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
+- Stage: TEST_DESIGN → TEST_BREAK
+- Next Agent: Test Breaker Agent
+- Log: `project_board/checkpoints/M25-02d/test_design.md`
+- Outcome: Authored 3 test files: `test_spots_texture_generation.py` (22 unit tests for PNG generator + wrapper), `test_spots_material_integration.py` (17 integration tests for material factory + system hooks), `GlbViewer.spots.test.tsx` (20 behavioral tests for shader + mode switching). 53 total tests covering all 9 requirements (R1–R9). Tests use mocking for true externals (bpy, Three.js Canvas), no internal mocks. All tests RED until implementation.
+
+## Run: 2026-04-19T20-00-00Z-spec-m25-02d
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-02d/2026-04-19T20-00-00Z-specification.md`
+- Outcome: Specification complete. 9 requirements: backend PNG generator, Blender wrapper, material factory, material system integration, backend unit tests, frontend shader, frontend integration, integration tests, error handling. All dependencies (02c, 02b, 02a) complete. Control defs already in place. Reuses gradient generator infrastructure. No ambiguities (conservative assumptions logged). Ready for Test Designer.
+
 ## Run: 2026-04-19T21-00-00Z-ac-gatekeeper-m25-02c
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02c_remove_old_color_pickers.md`
 - Stage: IMPLEMENTATION_GENERALIST → TEST_BREAK (routed back)
