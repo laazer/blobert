@@ -5,6 +5,9 @@ const SIX_HEX = /^[0-9a-fA-F]{6}$/;
  * Falls back to a neutral gray when the value is incomplete or invalid.
  */
 export function hexForColorInput(raw: string): string {
+  if (typeof raw !== "string") {
+    return "#6b6b6b";
+  }
   const h = (raw || "").replace(/^#/, "").trim();
   if (SIX_HEX.test(h)) return `#${h.toLowerCase()}`;
   return "#6b6b6b";
@@ -24,13 +27,23 @@ export function sanitizeHex(raw: string): string {
 /**
  * Parse clipboard / pasted text into 6 lowercase hex digits (no ``#``), matching
  * how the color picker path stores ``feat_*_hex`` values in the editor.
+ * Rejects strings with malformed hex (non-hex characters interspersed, wrong prefixes, etc).
  */
 export function normalizeHexForBuildOption(raw: string): string | null {
+  if (typeof raw !== "string") return null;
   const t = raw.trim();
-  const body = t.startsWith("#") ? t.slice(1) : t;
-  const digits = body.replace(/[^0-9a-fA-F]/g, "");
-  if (digits.length !== 6 || !SIX_HEX.test(digits)) return null;
-  return digits.toLowerCase();
+
+  // Try exact match first: #RRGGBB or RRGGBB
+  if (t.startsWith("#")) {
+    const body = t.slice(1);
+    if (body.length === 6 && SIX_HEX.test(body)) {
+      return body.toLowerCase();
+    }
+  } else if (t.length === 6 && SIX_HEX.test(t)) {
+    return t.toLowerCase();
+  }
+
+  return null;
 }
 
 /** Write ``#RRGGBB`` to the clipboard (common interchange format). */

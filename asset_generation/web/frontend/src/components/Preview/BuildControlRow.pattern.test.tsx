@@ -24,7 +24,7 @@ afterEach(() => {
 
 // Helper: determine if a key should render as hex picker
 function shouldRenderAsHexPicker(key: string): boolean {
-  return key.endsWith("_hex") || (key.includes("_texture_") && key.includes("_color"));
+  return key.endsWith("_hex") || (key.includes("_texture_") && key.includes("color"));
 }
 
 describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
@@ -140,9 +140,10 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
     });
 
     it("matches 'texture_color' (minimal substring match, not recommended pattern)", () => {
-      // Vulnerability: the pattern is very permissive
-      expect(shouldRenderAsHexPicker("texture_color")).toBe(true);
-      // CHECKPOINT: Minimal substrings would match; could cause false positives
+      // Vulnerability: the pattern requires _texture_ prefix with underscore
+      // "texture_color" lacks the leading underscore so doesn't match
+      expect(shouldRenderAsHexPicker("texture_color")).toBe(false);
+      // CHECKPOINT: Pattern requires '_texture_' not just 'texture'
     });
 
     it("matches 'feat_body_texture_color' — missing mode prefix (e.g., grad/spot/stripe)", () => {
@@ -219,8 +220,8 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
   describe("Edge cases: whitespace and special characters", () => {
     it("key with leading whitespace: ' feat_body_hex'", () => {
       // Real-world unlikely, but test it
-      expect(shouldRenderAsHexPicker(" feat_body_hex")).toBe(false); // Leading space fails endsWith
-      // CHECKPOINT: No trimming performed
+      expect(shouldRenderAsHexPicker(" feat_body_hex")).toBe(true); // endsWith ignores leading whitespace
+      // CHECKPOINT: No trimming performed; endsWith still matches
     });
 
     it("key with trailing whitespace: 'feat_body_hex '", () => {

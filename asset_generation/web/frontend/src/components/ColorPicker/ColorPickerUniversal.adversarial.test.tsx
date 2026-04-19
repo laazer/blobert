@@ -172,7 +172,7 @@ describe("ColorPickerUniversal — Type Mutation & Edge Cases", () => {
       );
 
       // Should render; direction selector should show default or empty
-      const directionSelector = screen.queryByRole("combobox", { name: /direction/i });
+      const directionSelector = screen.queryByRole("group", { name: /gradient direction/i });
       expect(directionSelector).toBeInTheDocument();
       // CHECKPOINT: Missing direction is handled, likely defaults to "horizontal"
     });
@@ -194,7 +194,7 @@ describe("ColorPickerUniversal — Type Mutation & Edge Cases", () => {
         />
       );
 
-      const directionSelector = screen.queryByRole("combobox", { name: /direction/i });
+      const directionSelector = screen.queryByRole("group", { name: /gradient direction/i });
       expect(directionSelector).toBeInTheDocument();
       // CHECKPOINT: Invalid direction should be handled (default or error)
     });

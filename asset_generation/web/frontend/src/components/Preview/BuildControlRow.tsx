@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { AnimatedBuildControlDef } from "../../types";
 import { readHexFromClipboard } from "../../utils/clipboardHex";
 import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
@@ -67,6 +67,13 @@ function HexStrControlRow({
   const [pasteHint, setPasteHint] = useState<string | null>(null);
   const pickerValue: ColorPickerValue = { type: "single", color: strVal };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    if (!pasteHint) return;
+    const timeoutId = window.setTimeout(() => setPasteHint(null), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [pasteHint]);
+
   async function pasteColor() {
     const parsed = await readHexFromClipboard();
     if (parsed) {
@@ -74,7 +81,6 @@ function HexStrControlRow({
       setPasteHint(null);
     } else {
       setPasteHint("No #RRGGBB in clipboard");
-      window.setTimeout(() => setPasteHint(null), 2000);
     }
   }
 

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
+import type { AnimatedBuildControlDef } from "../../types";
 import { BuildControls } from "./BuildControls";
 
 // M25-04 — RIG_ naming convention is sufficient for rotation controls to appear in the Rig section.
@@ -119,5 +120,29 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
     expect(screen.getByText(/Network down/)).toBeInTheDocument();
     expect(screen.queryByText("Loading build controls…")).not.toBeInTheDocument();
     expect(screen.queryByText("Waiting for enemy metadata…")).not.toBeInTheDocument();
+  });
+
+  it("body_type select_str calls setAnimatedBuildOption with no_leg_biped", () => {
+    const setSpy = vi.fn();
+    const bodyTypeDef: AnimatedBuildControlDef = {
+      key: "body_type",
+      label: "Body Type",
+      type: "select_str",
+      options: ["default", "standard_biped", "no_leg_biped"],
+      default: "default",
+    };
+    useAppStore.setState({
+      commandContext: { cmd: "animated", enemy: "imp" },
+      animatedEnemyMeta: [{ slug: "imp", label: "Imp" }],
+      animatedBuildControls: { imp: [bodyTypeDef] },
+      animatedBuildOptionValues: { imp: { body_type: "default" } },
+      enemyMetaStatus: "ok",
+      setAnimatedBuildOption: setSpy,
+    });
+    render(<BuildControls />);
+    fireEvent.change(screen.getByDisplayValue("default"), {
+      target: { value: "no_leg_biped" },
+    });
+    expect(setSpy).toHaveBeenCalledWith("imp", "body_type", "no_leg_biped");
   });
 });

@@ -42,9 +42,10 @@ function normalizedTextureMode(
 
 function shouldShowTextureParam(
   zone: string,
-  defKey: string,
+  defKey: string | null | undefined,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
+  if (!defKey) return false;
   const modeKey = `feat_${zone}_texture_mode`;
   if (defKey === modeKey) return true;
   const mode = normalizedTextureMode(zone, values);
@@ -431,9 +432,9 @@ describe("shouldShowTextureParam — Conditional Rendering Logic", () => {
 
     it("does not show param with key 'texture_grad_' (missing underscore prefix)", () => {
       const values = { feat_body_texture_mode: "gradient" };
-      // Key includes '_texture_grad_' substring
-      expect(shouldShowTextureParam("body", "texture_grad_color_a", values)).toBe(true);
-      // CHECKPOINT: Very permissive substring matching
+      // Key is "texture_grad_color_a" which lacks the required '_texture_grad_' prefix
+      expect(shouldShowTextureParam("body", "texture_grad_color_a", values)).toBe(false);
+      // CHECKPOINT: Pattern requires leading underscore; bare texture_grad_ doesn't match
     });
 
     it("does not show param with empty key", () => {

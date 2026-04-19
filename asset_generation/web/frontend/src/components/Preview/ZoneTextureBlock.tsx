@@ -73,9 +73,10 @@ function normalizedTextureMode(
 /** Whether a ``feat_*_texture_*`` param applies to the current mode (non-mode keys only). */
 function shouldShowTextureParam(
   zone: string,
-  defKey: string,
+  defKey: string | null | undefined,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
+  if (!defKey) return false;
   const modeKey = `feat_${zone}_texture_mode`;
   if (defKey === modeKey) return true;
   const mode = normalizedTextureMode(zone, values);

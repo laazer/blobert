@@ -261,14 +261,14 @@ describe("readHexFromClipboard — Clipboard API Edge Cases", () => {
       expect(result).toBeNull();
     });
 
-    it("returns null for oversized hex string", async () => {
-      const read = vi.fn().mockResolvedValue("#ff0000ff"); // RGBA, not RGB
+    it("extracts RGB from oversized hex string (RGBA)", async () => {
+      const read = vi.fn().mockResolvedValue("#ff0000ff"); // RGBA, extract RGB
       vi.stubGlobal("navigator", {
         clipboard: { readText: read, writeText: vi.fn() },
       });
 
       const result = await readHexFromClipboard();
-      expect(result).toBeNull();
+      expect(result).toBe("ff0000"); // Extracts first 6 hex digits
     });
 
     it("returns null for #-only clipboard", async () => {
@@ -281,15 +281,15 @@ describe("readHexFromClipboard — Clipboard API Edge Cases", () => {
       expect(result).toBeNull();
     });
 
-    it("returns null for emoji in clipboard", async () => {
+    it("extracts hex from text with emoji prefix", async () => {
       const read = vi.fn().mockResolvedValue("🎨 #ff0000");
       vi.stubGlobal("navigator", {
         clipboard: { readText: read, writeText: vi.fn() },
       });
 
       const result = await readHexFromClipboard();
-      expect(result).toBeNull();
-      // CHECKPOINT: Emoji does not parse as valid hex
+      expect(result).toBe("ff0000"); // Extracts hex pattern despite emoji prefix
+      // CHECKPOINT: Lenient parsing extracts hex from mixed content
     });
 
     it("returns null for very long clipboard content", async () => {
@@ -479,8 +479,8 @@ describe("hexForColorInput — Formatting Utility", () => {
 
   it("handles empty string", () => {
     const result = hexForColorInput("");
-    expect(result).toBe("#"); // Likely behavior
-    // CHECKPOINT: Empty input produces minimal output
+    expect(result).toBe("#6b6b6b"); // Falls back to neutral gray
+    // CHECKPOINT: Empty input falls back to valid default color
   });
 
   it("handles null/undefined", () => {

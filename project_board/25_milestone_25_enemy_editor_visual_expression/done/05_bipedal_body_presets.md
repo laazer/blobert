@@ -34,10 +34,28 @@ Scope Notes:
 - Python: `test_body_type_control.py` — all animated slugs expose `body_type`; `options_for_enemy(slug, {"body_type": "INVALID"})` returns `default`; `standard_biped` and `no_leg_biped` are valid options for all slugs
 - Frontend (Vitest): extend `BuildControls.meta_load.test.tsx` — `body_type` select_str row renders for an animated slug; selecting `no_leg_biped` calls `setAnimatedBuildOption` with the correct value
 
+## Specification
+
+- `project_board/specs/bipedal_body_presets_spec.md`
+
 ## WORKFLOW STATE
 
-- **Stage:** BACKLOG
-- **Revision:** 0
+- **Stage:** COMPLETE
+- **Revision:** 8
 
-- **Stage:** BACKLOG
-- **Revision:** 0
+- **Last Updated By:** Acceptance Criteria Gatekeeper Agent
+
+- **Validation Status:**
+  - Tests: Passing — `uv run pytest tests/` (1963 passed); Vitest `BuildControls.meta_load.test.tsx` (7 tests)
+  - Static QA: Ruff clean on touched Python
+  - Integration: N/A (API control surface covered by Python tests)
+
+- **Blocking Issues:** None
+
+## NEXT ACTION
+
+- **Next Responsible Agent:** Human
+
+- **Status:** Proceed
+
+- **Reason:** Implementation merged; commit recorded. Push when ready.
