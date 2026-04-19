@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T00-00-00Z-spec-m25-02c
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02c_remove_old_color_pickers.md`
+- Stage: SPECIFICATION → TEST_DESIGN
+- Next Agent: Test Designer Agent
+- Log: `project_board/checkpoints/M25-02c/2026-04-19T00-00-00Z-specification.md`
+- Outcome: Comprehensive codebase verification confirms no legacy color picker files exist; ColorPickerUniversal is sole active picker. Spec covers 6 requirements: code inventory (no old imports/comments), HexStrControlRow integration, ZoneTextureBlock gradient mode, test hygiene, TypeScript strict compilation, full build/test verification. Ticket is cleanup/verification task (not destructive delete). Ready for test design.
+
 ## Run: 2026-04-18T12-00-00Z-autopilot-single-m25-02b
 - Queue mode: single ticket
 - Queue scope: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/02b_integrate_universal_color_picker.md`
