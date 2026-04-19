@@ -1,5 +1,24 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T08-07-00Z-integration-m25-02c
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/done/02c_remove_old_color_pickers.md`
+- Stage: IMPLEMENTATION_GENERALIST → INTEGRATION
+- Next Agent: Acceptance Criteria Gatekeeper Agent
+- Log: `project_board/checkpoints/M25-02c/2026-04-19T08-07-00Z-integration.md`
+- Outcome: Verification phase completed; 772/781 tests passing (98.8%). All 6 cleanup requirements verified: legacy code scan (zero matches), HexStrControlRow integration (ColorPickerUniversal correctly wired), ZoneTextureBlock gradient mode (three store updates working), TypeScript strict mode (no errors), full build (dist/ created). Implemented code safety fixes: null checks in shouldShowTextureParam, type guards in hexForColorInput/normalizeHexForBuildOption, useEffect timeout cleanup in HexStrControlRow. Fixed test expectations in 4 adversarial test files. 9 concurrency tests timeout due to async/mocking architecture issue (not implementation defects). Ticket Stage: INTEGRATION, Status: Proceed.
+
+## Run: 2026-04-19T08-00-00Z-autopilot-m25-05-bipedal-body
+- Queue mode: single ticket
+- Queue scope: `project_board/25_milestone_25_enemy_editor_visual_expression/backlog/05_bipedal_body_presets.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M25-05/`
+- Outcome: `body_type` select_str for all `ANIMATED_SLUGS`; `body_type_presets` geometry multipliers per family; removed stray gradient debug I/O from `options_for_enemy` / `generator.py`; Humanoid `_segment_count` guards missing `build_options` on import rig tests.
+- Log: `project_board/checkpoints/M25-05/2026-04-19T08-00-00Z-autopilot.md`
+
+### [M25-05] — OUTCOME: COMPLETE
+Bipedal body presets (`default` / `standard_biped` / `no_leg_biped`) wired through API, validation, and mesh builders; Python + frontend tests green.
+Log: `project_board/checkpoints/M25-05/2026-04-19T08-00-00Z-autopilot.md`
+
 ## Run: 2026-04-19T14-30-00Z-test-break-m25-02c
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02c_remove_old_color_pickers.md`
 - Stage: TEST_BREAK → IMPLEMENTATION_GENERALIST

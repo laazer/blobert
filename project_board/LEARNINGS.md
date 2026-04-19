@@ -4,6 +4,18 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M25-05_bipedal_body_presets] — rig tests without full enemy `build_options`
+*Completed: 2026-04-19*
+
+### Learnings
+- category: python / rig
+  insight: `HumanoidSimpleRig._segment_count` runs in lightweight import-rig tests on `_ImportHumanoidRig` instances that do not set `build_options`. Any preset hook that reads `self.build_options` must use `getattr(self, "build_options", None)` and tolerate missing dicts.
+  impact: Prevents `AttributeError` in `tests/core/test_rig_ratios.py` and `test_humanoid_rig_segments.py` when adding body-type-aware leg segment logic.
+  prevention: When extending `SimpleRigModel` subclasses used in bare rig tests, guard optional runtime state the same way as optional mesh overrides.
+  severity: medium
+
+---
+
 ## [M25-02b_integrate_universal_color_picker] — lockMode for embedded universal picker rows
 *Completed: 2026-04-18*
 
