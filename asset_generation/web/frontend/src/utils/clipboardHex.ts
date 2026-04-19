@@ -1,6 +1,27 @@
 const SIX_HEX = /^[0-9a-fA-F]{6}$/;
 
 /**
+ * Format stored 6-char hex (no ``#``) for ``<input type="color">``, which requires ``#RRGGBB``.
+ * Falls back to a neutral gray when the value is incomplete or invalid.
+ */
+export function hexForColorInput(raw: string): string {
+  const h = (raw || "").replace(/^#/, "").trim();
+  if (SIX_HEX.test(h)) return `#${h.toLowerCase()}`;
+  return "#6b6b6b";
+}
+
+/**
+ * Strip ``#`` and non-hex characters; keep at most 6 hex digits, lowercase.
+ * On blur, only a full 6-digit value is kept; partial or corrupted input clears
+ * so the parent does not persist invalid hex.
+ */
+export function sanitizeHex(raw: string): string {
+  const t = raw.replace(/^#/, "").replace(/[^0-9a-fA-F]/g, "").slice(0, 6).toLowerCase();
+  if (t.length === 6) return t;
+  return "";
+}
+
+/**
  * Parse clipboard / pasted text into 6 lowercase hex digits (no ``#``), matching
  * how the color picker path stores ``feat_*_hex`` values in the editor.
  */

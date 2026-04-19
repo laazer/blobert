@@ -5,6 +5,39 @@ Structured insights extracted after each completed ticket.
 ---
 
 
+## [M25-02a_color_picker_component] — Pipeline reconciliation when code lands before ticket state
+*Completed: 2026-04-19*
+
+### Learnings
+- category: process
+  insight: A backlog ticket without `WORKFLOW STATE` but with substantial implementation in `main` requires a reconciliation pass: treat as verify-and-close, not restart from PLANNING, unless ACs are unmet.
+  impact: Avoids duplicate specs and re-implementation; focuses effort on tests, shared utilities, and AC evidence.
+  prevention: On `ap-continue`, if filesystem shows the feature exists, run targeted tests first and only backfill pipeline artifacts (workflow table, `done/` move) after green.
+  severity: medium
+
+- category: testing
+  insight: Importing helpers that were never exported (`hexForColorInput` from `clipboardHex`) fails at runtime in the browser but is easy to miss until Vitest executes the component tree.
+  impact: 33 ColorPicker tests failed until shared helpers were added and aligned with blur semantics.
+  prevention: After extracting shared UI, run the narrowest Vitest directory (`src/components/ColorPicker`) before full-suite claims.
+  severity: medium
+
+### Anti-Patterns
+- description: Assuming file inputs expose `role="button"` in jsdom; tests must use `aria-label` + `getByLabelText` or `querySelector('input[type=file]')`.
+  detection_signal: Accessibility query failures for upload controls in RTL.
+  prevention: Add `aria-label` on file inputs and query by label in tests.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For shared hex/color inputs, assert imports resolve to real exports in `clipboardHex.ts` (or chosen util module); add a smoke test that mounts the component under Vitest."
+  reason: Catches missing exports before merge.
+
+### Workflow Improvements
+- issue: Tickets in `backlog/` without workflow blocks cannot resume unambiguously.
+  improvement: On first enqueue, write minimal `WORKFLOW STATE` with Stage `PLANNING` even if work is speculative.
+  expected_benefit: `ap-continue` can branch on stage without heuristics.
+
+---
+
 ## [02_wire_generated_enemies_combat_rooms] — Arbitration-to-closure requires explicit evidence contracts
 *Completed: 2026-04-14*
 

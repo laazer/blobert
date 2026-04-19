@@ -1,0 +1,113 @@
+// Color picker component styling constants using inline CSSProperties
+// Reuses VS Code dark theme colors from existing project components
+
+export const colorPickerStyles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    padding: "8px 0",
+  } as const,
+  tabRow: {
+    display: "flex",
+    gap: 4,
+    marginBottom: 8,
+  } as const,
+  tabButton: (active: boolean) => ({
+    background: active ? "#0e639c" : "#3c3c3c",
+    color: active ? "#ffffff" : "#d4d4d4",
+    border: "1px solid #555555",
+    borderRadius: 3,
+    padding: "4px 8px",
+    fontSize: 11,
+    cursor: "pointer",
+    transition: "background 0.15s ease-in-out",
+  } as const),
+  modeContent: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  } as const,
+  hexInputRow: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+  } as const,
+  hexInput: {
+    background: "#3c3c3c",
+    color: "#d4d4d4",
+    border: "1px solid #555555",
+    borderRadius: 3,
+    padding: "2px 6px",
+    fontSize: 11,
+    flex: "1 1 80px",
+    fontFamily: "monospace",
+  } as const,
+  hexLabel: {
+    color: "#9d9d9d",
+    fontSize: 11,
+    minWidth: 32,
+  } as const,
+  colorSwatch: {
+    width: 28,
+    height: 22,
+    borderRadius: 2,
+    border: "1px solid #555555",
+    cursor: "pointer",
+    flex: "0 0 auto",
+  } as const,
+  directionRow: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+  } as const,
+  directionButtonGroup: {
+    display: "flex",
+    gap: 0,
+  } as const,
+  directionButton: (active: boolean, position: "left" | "middle" | "right") => ({
+    background: active ? "#0e639c" : "#3c3c3c",
+    color: active ? "#ffffff" : "#d4d4d4",
+    border: "1px solid #555555",
+    borderLeft: position === "left" ? "1px solid #555555" : "none",
+    borderRight: position === "right" ? "1px solid #555555" : "none",
+    borderRadius: position === "left" ? "3px 0 0 3px" : position === "right" ? "0 3px 3px 0" : "0",
+    marginLeft: position === "left" ? 0 : -1,
+    padding: "4px 8px",
+    fontSize: 11,
+    cursor: "pointer",
+    flex: "1",
+  } as const),
+  fileInputLabel: {
+    color: "#9d9d9d",
+    fontSize: 11,
+    marginBottom: 4,
+  } as const,
+  fileInputWrapper: {
+    display: "flex",
+    gap: 6,
+    alignItems: "flex-start",
+  } as const,
+  fileInput: {
+    flex: "1 1 auto",
+    fontSize: 11,
+  } as const,
+  previewContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "6px",
+    background: "#252526",
+    borderRadius: 2,
+    border: "1px solid #3c3c3c",
+  } as const,
+  previewImage: {
+    maxWidth: "100%",
+    maxHeight: 120,
+    borderRadius: 2,
+  } as const,
+  previewText: {
+    color: "#8f8f8f",
+    fontSize: 10,
+  } as const,
+} as const;

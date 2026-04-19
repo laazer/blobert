@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Resume: 2026-04-19T20-55-00Z-ap-continue-m25-02a
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/done/02a_color_picker_component.md`
+- Stage: backlog without WORKFLOW STATE → AC Gatekeeper → COMPLETE
+- Next Agent: Human
+- Log: `project_board/checkpoints/M25-02a/run-2026-04-19-ap-continue.md`
+- Outcome: Added `hexForColorInput` / `sanitizeHex` to `clipboardHex.ts`; image file input `aria-label`; fixed Hex/Image tests; extended `ColorPickerUniversal` tests; full frontend Vitest green (525).
+
 ### [M25-04] — OUTCOME: COMPLETE
 Per-part rotation controls (RIG_HEAD/BODY_ROT_X/Y/Z) implemented and AC-gated. All 1906 Python + 455 frontend tests pass. AC-4 scope reduction (Reset button descoped) and AC-5 (re-generate preview) resolved via checkpoints.
 Log: project_board/checkpoints/M25-04/ac4-scope-reduction-2026-04-18.md
