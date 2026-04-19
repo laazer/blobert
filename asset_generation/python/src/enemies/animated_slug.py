@@ -20,6 +20,7 @@ from ..core.rig_models.blob_simple import (
     BlobSimpleRig,
 )
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
+from ..utils.body_type_presets import blob_body_type_scales
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
@@ -57,6 +58,10 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         height = random_variance(
             self._mesh("HEIGHT_BASE"), self._mesh("HEIGHT_VARIANCE"), self.rng
         )
+        sx, sy, sz = blob_body_type_scales(self.build_options)
+        length *= sx
+        width *= sy
+        height *= sz
 
         body = create_sphere(
             location=(0, 0, height * MESH_BODY_CENTER_Z_FACTOR),

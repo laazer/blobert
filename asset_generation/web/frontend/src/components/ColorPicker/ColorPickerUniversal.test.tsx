@@ -172,7 +172,7 @@ describe("ColorPickerUniversal", () => {
       const [gradient, setGradient] = useState({
         colorA: "111111",
         colorB: "222222",
-        direction: "vertical" as const,
+        direction: "vertical" as "horizontal" | "vertical" | "radial",
       });
       const [image, setImage] = useState<{ file: File | null; preview?: string }>({
         file: null,

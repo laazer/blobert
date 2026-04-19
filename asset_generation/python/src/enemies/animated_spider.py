@@ -22,6 +22,7 @@ from ..core.rig_models.quadruped_simple import (
     QuadrupedSimpleRig,
 )
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
+from ..utils.body_type_presets import spider_body_type_scales
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .animated_spider_eye_helpers import (
@@ -40,6 +41,25 @@ _SPIDER_LEG_ANCHOR_RATIOS: tuple[tuple[float, float, float], ...] = (
     (-0.2, 0.3, 0),
     (-0.2, -0.3, 0),
 )
+
+
+def _spider_body_radii_and_leg_nominal(
+    body_scale: float,
+    mesh_scale_y: float,
+    mesh_scale_z: float,
+    leg_nominal: float,
+    build_options: dict,
+) -> tuple[Vector, float]:
+    rx, ry, rz, leg_m = spider_body_type_scales(build_options)
+    leg_nominal *= leg_m
+    body_radii = Vector(
+        (
+            body_scale * rx,
+            body_scale * mesh_scale_y * ry,
+            body_scale * mesh_scale_z * rz,
+        )
+    )
+    return body_radii, leg_nominal
 
 
 class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
@@ -179,15 +199,15 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         leg_nominal = random_variance(
             self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng
         )
+        body_radii, leg_nominal = _spider_body_radii_and_leg_nominal(
+            body_scale,
+            float(self._mesh("BODY_SCALE_Y")),
+            float(self._mesh("BODY_SCALE_Z")),
+            leg_nominal,
+            self.build_options,
+        )
         body_center = Vector(
             (0.0, 0.0, max(float(self._mesh("BODY_CENTER_Z")), leg_nominal * 1.1))
-        )
-        body_radii = Vector(
-            (
-                body_scale,
-                body_scale * self._mesh("BODY_SCALE_Y"),
-                body_scale * self._mesh("BODY_SCALE_Z"),
-            )
         )
         body = create_sphere(
             location=tuple(body_center),

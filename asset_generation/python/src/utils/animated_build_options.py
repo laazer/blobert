@@ -36,6 +36,7 @@ from .animated_build_options_spider_eye import (
 )
 from .animated_build_options_zone_texture import zone_texture_control_defs
 from .blender_stubs import ensure_blender_stubs
+from .body_type_presets import body_type_control_def
 
 # Declarative controls for GET /api/meta (and validation). Spider eye_count comes from
 # ``AnimatedSpider`` (single source of truth) — see ``_spider_eye_control_defs``.
@@ -749,8 +750,12 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
             if slug in _ANIMATED_ENEMY_SLUGS
             else []
         )
+        body_row = (
+            [body_type_control_def()] if slug in _ANIMATED_ENEMY_SLUGS else []
+        )
         merged = (
             static_non_float
+            + body_row
             + _eye_shape_pupil_control_defs()
             + _mouth_control_defs()
             + tail_defs[:2]  # tail_enabled, tail_shape (non-float)
@@ -770,6 +775,8 @@ def animated_build_controls_for_api() -> dict[str, list[dict[str, Any]]]:
 
 def _defaults_for_slug(slug: str) -> dict[str, Any]:
     out: dict[str, Any] = {}
+    if slug in _ANIMATED_ENEMY_SLUGS:
+        out["body_type"] = "default"
     if slug == "spider":
         for c in _spider_eye_control_defs():
             out[c["key"]] = c.get("default")
@@ -805,10 +812,6 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     nested = raw.get(enemy_type)
     src: dict[str, Any] = nested if isinstance(nested, dict) else dict(raw)
 
-    grad_keys = {k: v for k, v in src.items() if "grad" in k}
-    with open("/tmp/gradient_debug.log", "a") as f:
-        f.write(f"[options_for_enemy] Gradient keys in src: {grad_keys}\n")
-
     merged = dict(base)
     mesh = dict(base["mesh"])
     if enemy_type == "spider":
@@ -822,6 +825,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
     allowed_non_mesh |= {c["key"] for c in _tail_control_defs()}
     if enemy_type in _ANIMATED_ENEMY_SLUGS:
         allowed_non_mesh |= {c["key"] for c in _rig_rotation_control_defs()}
+        allowed_non_mesh.add("body_type")
     allowed_non_mesh |= {c["key"] for c in _zone_texture_control_defs(enemy_type)}
     allowed_non_mesh |= {"placement_seed"}
 
@@ -868,9 +872,6 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
                 root_flat,
                 merged["zone_geometry_extras"],
             )
-    grad_keys_final = {k: v for k, v in merged.items() if "grad" in k}
-    if grad_keys_final:
-        print(f"[DEBUG] options_for_enemy({enemy_type}): gradient keys in merged: {grad_keys_final}")
     return _coerce_and_validate(enemy_type, merged)
 
 

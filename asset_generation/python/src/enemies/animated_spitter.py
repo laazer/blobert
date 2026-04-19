@@ -19,6 +19,7 @@ from ..core.rig_models.blob_simple import (
     BlobSimpleRig,
 )
 from ..materials.material_system import apply_material_to_object
+from ..utils.body_type_presets import blob_body_type_scales
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
@@ -47,6 +48,10 @@ class AnimatedSpitter(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         height = random_variance(self._mesh("HEIGHT_BASE"), self._mesh("HEIGHT_VARIANCE"), self.rng)
         width_j = random_variance(1.0, self._mesh("WIDTH_JITTER_VARIANCE"), self.rng)
+        sx, sy, sz = blob_body_type_scales(self.build_options)
+        body_scale *= sx
+        width_j *= sy
+        height *= sz
         bz = float(height * MESH_BODY_CENTER_Z_FACTOR)
         self._zone_geom_body_center = Vector((0.0, 0.0, bz))
         self._zone_geom_body_radii = Vector((body_scale, body_scale * width_j, height))

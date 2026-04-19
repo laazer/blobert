@@ -21,6 +21,7 @@ from ..core.rig_models.humanoid_simple import (
 )
 from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
+from ..utils.body_type_presets import humanoid_torso_leg_multipliers
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
@@ -71,8 +72,9 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     CARAPACE_Z_ABOVE_CENTER: ClassVar[float] = 0.42
 
     def build_mesh_parts(self):
-        body_height = random_variance(self._mesh("BODY_HEIGHT_BASE"), self._mesh("BODY_HEIGHT_VARIANCE"), self.rng)
-        body_width = random_variance(self._mesh("BODY_WIDTH_BASE"), self._mesh("BODY_WIDTH_VARIANCE"), self.rng)
+        hm, wm, lm = humanoid_torso_leg_multipliers(self.build_options)
+        body_height = random_variance(self._mesh("BODY_HEIGHT_BASE"), self._mesh("BODY_HEIGHT_VARIANCE"), self.rng) * hm
+        body_width = random_variance(self._mesh("BODY_WIDTH_BASE"), self._mesh("BODY_WIDTH_VARIANCE"), self.rng) * wm
         body = create_cylinder(
             location=(0, 0, body_height * MESH_BODY_CENTER_Z_FACTOR),
             scale=(body_width, body_width, body_height),
@@ -120,7 +122,7 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
 
         arm_length = random_variance(self._mesh("ARM_LENGTH_BASE"), self._mesh("ARM_LENGTH_VARIANCE"), self.rng)
         n_arm = max(1, min(8, int(self._mesh("ARM_SEGMENTS"))))
-        n_leg = max(1, min(8, int(self._mesh("LEG_SEGMENTS"))))
+        n_leg = self._segment_count("LEG_SEGMENTS")
         joint_vis = bool(self._mesh("LIMB_JOINT_VISUAL"))
         ball_scale = float(self._mesh("LIMB_JOINT_BALL_SCALE"))
         arm_end = self._mesh_str("ARM_END_SHAPE")
@@ -145,7 +147,9 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 end_scale=(end_r, end_r, end_r),
             )
 
-        leg_length = random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng)
+        leg_length = (
+            random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng) * lm
+        )
         for side in [-1, 1]:
             lx = side * self.body_width * self._mesh("LEG_X_SPREAD_RATIO")
             leg_top = Vector((lx, 0.0, leg_length))
@@ -195,7 +199,7 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         features = self.build_options.get("features")
 
         n_arm = max(1, min(8, int(self._mesh("ARM_SEGMENTS"))))
-        n_leg = max(1, min(8, int(self._mesh("LEG_SEGMENTS"))))
+        n_leg = self._segment_count("LEG_SEGMENTS")
         joint_vis = bool(self._mesh("LIMB_JOINT_VISUAL"))
         arm_end = self._mesh_str("ARM_END_SHAPE")
         leg_end = self._mesh_str("LEG_END_SHAPE")

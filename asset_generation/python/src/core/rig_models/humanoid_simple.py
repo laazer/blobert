@@ -59,7 +59,14 @@ class HumanoidSimpleRig(SimpleRigModel):
             v = int(round(float(mesh_fn(key))))
         else:
             v = int(getattr(type(self), key, 1))
-        return max(1, min(8, v))
+        v = max(1, min(8, v))
+        if key == "LEG_SEGMENTS":
+            from ...utils.body_type_presets import humanoid_leg_segment_count
+
+            raw_opts = getattr(self, "build_options", None)
+            opts = raw_opts if isinstance(raw_opts, dict) else None
+            return humanoid_leg_segment_count(v, opts)
+        return v
 
     def rig_definition(self) -> RigDefinition:
         h = self.body_height

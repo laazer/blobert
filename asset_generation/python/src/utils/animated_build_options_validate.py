@@ -9,6 +9,7 @@ from typing import Any
 def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
     """Apply control defs and mesh/zone sanitization. Lazy-imports parent to avoid import cycles."""
     from . import animated_build_options as m
+    from .body_type_presets import body_type_control_def
 
     out = dict(merged)
     static_defs: list[dict[str, Any]] = (
@@ -16,6 +17,8 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
         if enemy_type == "spider"
         else list(m._ANIMATED_BUILD_CONTROLS.get(enemy_type, []))
     )
+    if enemy_type in m._ANIMATED_ENEMY_SLUGS:
+        static_defs.insert(0, body_type_control_def())
     static_defs.extend(m._eye_shape_pupil_control_defs())
     static_defs.extend(m._mouth_control_defs())
     static_defs.extend(m._tail_control_defs())

@@ -10,8 +10,8 @@ afterEach(() => {
 describe("ImageMode", () => {
   beforeEach(() => {
     // Mock URL.createObjectURL
-    global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
-    global.URL.revokeObjectURL = vi.fn();
+    window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    window.URL.revokeObjectURL = vi.fn();
   });
 
   it("renders file input", () => {

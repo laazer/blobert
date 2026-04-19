@@ -21,6 +21,7 @@ from ..core.rig_models.quadruped_simple import (
     QuadrupedSimpleRig,
 )
 from ..materials.material_system import apply_material_to_object
+from ..utils.body_type_presets import claw_crawler_body_type_scales
 from ..utils.constants import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
@@ -76,6 +77,9 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     def build_mesh_parts(self):
         body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         flatten_y = random_variance(self._mesh("BODY_FLATTEN_Y_BASE"), self._mesh("BODY_FLATTEN_Y_VARIANCE"), self.rng)
+        bs_m, fy_m, leg_m = claw_crawler_body_type_scales(self.build_options)
+        body_scale *= bs_m
+        flatten_y *= fy_m
         bz = float(self._mesh("BODY_CENTER_Z"))
         self._zone_geom_body_center = Vector((0.0, 0.0, bz))
         self._zone_geom_body_radii = Vector(
@@ -165,7 +169,10 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             lx = self.body_scale * leg_x
             ly = self.body_scale * leg_y
             lz = leg_z
-            leg_length = random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng)
+            leg_length = (
+                random_variance(self._mesh("LEG_LENGTH_BASE"), self._mesh("LEG_LENGTH_VARIANCE"), self.rng)
+                * leg_m
+            )
             leg = create_cylinder(
                 location=(lx, ly, lz),
                 scale=(QUADRUPED_LEG_THICKNESS, QUADRUPED_LEG_THICKNESS, leg_length),
