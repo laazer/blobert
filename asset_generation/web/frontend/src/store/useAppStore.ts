@@ -97,15 +97,6 @@ interface AppState {
   registryReloadSeq: number;
   bumpRegistryReload: () => void;
 
-  /** Legacy global keys for GlbViewer shader preview (tests); live UI uses ``feat_body_texture_*`` via {@link mergeBuildOptionValues}. */
-  texture_mode?: string;
-  texture_spot_color?: string;
-  texture_spot_bg_color?: string;
-  texture_spot_density?: number;
-  texture_stripe_color?: string;
-  texture_stripe_bg_color?: string;
-  texture_stripe_width?: number;
-
   // Assets
   assets: Asset[];
   activeGlbUrl: string | null;
