@@ -467,10 +467,6 @@ def _add_uv_gradient_to_principled(
     tex.interpolation = "Linear"
     tex.extension = "REPEAT"
 
-    with open("/tmp/gradient_debug.log", "a") as f:
-        f.write(f"[_add_uv_gradient_to_principled] Texture node created, image.name={img.name}, image.source={img.source}\n")
-        f.write("[_add_uv_gradient_to_principled] Texture node connected to BaseColor input\n")
-
     uv = nodes.new(type="ShaderNodeUVMap")
     uv.location = (-800, 200)
     links.new(uv.outputs["UV"], tex.inputs["Vector"])
@@ -488,8 +484,6 @@ def _material_for_gradient_zone(
     instance_suffix: str,
 ) -> bpy.types.Material:
     """Solid base material (no organic noise) with UV gradient between two hex colors."""
-    with open("/tmp/gradient_debug.log", "a") as f:
-        f.write(f"[_material_for_gradient_zone] Called with grad_a_hex={grad_a_hex!r}, grad_b_hex={grad_b_hex!r}\n")
     all_colors = MaterialColors.get_all()
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
@@ -530,10 +524,6 @@ def _material_for_gradient_zone(
     _add_uv_gradient_to_principled(
         mat, color_a, color_b, direction, image_label=instance_suffix
     )
-    with open("/tmp/gradient_debug.log", "a") as f:
-        f.write(f"[_material_for_gradient_zone] Material created: {mat.name}\n")
-        node_count = sum(1 for _ in mat.node_tree.nodes)
-        f.write(f"[_material_for_gradient_zone] Material has {node_count} nodes\n")
     return mat
 
 
@@ -704,9 +694,6 @@ def apply_zone_texture_pattern_overrides(
                 build_options.get(f"feat_{zone}_texture_grad_direction", "horizontal")
                 or "horizontal"
             )
-            with open("/tmp/gradient_debug.log", "a") as f:
-                f.write(f"[apply_zone_texture_pattern_overrides] Gradient for {zone}: a={grad_a!r}, b={grad_b!r}, direction={direction!r}\n")
-
             out[zone] = _material_for_gradient_zone(
                 base_palette_name=base_palette_name,
                 finish=finish,
