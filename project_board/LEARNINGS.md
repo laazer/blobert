@@ -4,6 +4,74 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M25-02d_implement_spots_texture] — PNG generation, test validation clarity, and adversarial test design
+*Completed: 2026-04-19*
+
+### Learnings
+- category: testing
+  insight: Specification test bugs (incorrect byte offsets, malformed color assumptions) are only detectable when tests are executed against a reference implementation or validated independently. A test that looks correct on paper may fail due to subtle format assumptions (PNG chunk layout, RGB color channel separability).
+  impact: 4 spec-required tests failed (CRC-32 offset calculation, density pattern color counting) requiring rework to fix the test suite itself, not the implementation. AC Gatekeeper had to distinguish between implementation bugs and test suite bugs using independent validation (PNG format spec, color math).
+  prevention: When writing specification tests for binary formats (PNG, JPEG, protocol buffers), include a validation reference (external decoder/encoder library, format specification citation, or fixed golden bytes) so test bugs are caught during TEST_DESIGN review, not after implementation.
+  severity: high
+
+- category: architecture
+  insight: Procedural texture backends (PNG generator) benefit from a layered validation model where generator functions accept broad inputs (no dimension/density validation) and upstream callers enforce bounds. This mirrors gradient_generator.py pattern and reduces defensive code duplication.
+  impact: Specification ambiguity about "who validates density bounds" (generator vs caller) required CHECKPOINT assumptions and would have caused integration bugs if split incorrectly. Material system layer (apply_zone_texture_pattern_overrides) owns density clamping [0.1, 5.0]; generator accepts any float.
+  prevention: When designing texture generation pipelines, explicitly document input validation scope in spec: (a) which layer owns dimension validation, (b) which layer owns parameter clamping, (c) generator function docstring examples showing valid input ranges. Place validation closest to the source of invalid input (upstream API/form).
+  severity: medium
+
+- category: frontend / testing
+  insight: Frontend test suites labeled "smoke tests" without explicit AC mapping can hide coverage gaps. Requirement 6 & 7 specified 30 detailed ACs (AC6.1–6.15, AC7.1–7.15) but implementation reported "19 smoke tests passing" without mapping tests to individual ACs.
+  impact: AC Gatekeeper could not verify whether all 30 ACs were covered by tests. Required checkpoint annotation and clarification before advancement to COMPLETE.
+  prevention: In TEST_DESIGN phase, Test Designer must map each test to at least one AC by ID. Create an AC→Test traceability matrix in the test file docstring or as a separate mapping artifact. Reject "smoke tests" labels that lack explicit AC enumeration.
+  severity: medium
+
+- category: code quality
+  insight: Legacy debug logging (e.g., `/tmp/gradient_debug.log` writes in gradient_generator.py lines 469–491, 490–491) should not be carried forward into new similar features. When reusing patterns, audit for debug I/O before copying.
+  impact: Spots implementation correctly had no debug logging, but gradient predecessor left logging in place that could interfere with production builds or expose I/O race conditions.
+  prevention: When a specification says "no debug logging" (AC1.14), check reference implementations (gradient) and add a cleanup task if they violate the same constraint. Flag debug I/O in pattern reviews before code duplication.
+  severity: low
+
+### Anti-Patterns
+- description: Assuming test failures are implementation bugs without validating against an independent reference (format spec, known-good encoder, external decoder).
+  detection_signal: Multiple failing tests in same category (CRC-32, pixel counting) with same root cause, and implementation looks correct.
+  prevention: For binary format tests, include a reference validator (e.g., PIL.Image, zlib, or format spec) and use it in at least one test to validate correct behavior independently of the test code itself.
+
+- description: Labeling frontend test coverage as "smoke tests" without explicit acceptance criteria mapping.
+  detection_signal: Spec has 20+ ACs but test report says "19 smoke tests passing" with no per-AC enumeration.
+  prevention: Require every test file to include an AC→Test traceability header. Reject test reports without explicit AC coverage claims.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For binary format generation (PNG, JPEG, protocol buffers), include at least one independent validation test that uses a reference library (PIL.Image, zlib, etc.) to verify the output is correctly formed, independent of the generator's internal logic. Document this validation reference in the test suite docstring."
+  reason: Catches test bugs early and prevents spec test failures from masking implementation issues.
+
+- agent: Spec Agent
+  change: "When specifying texture or binary generation, explicitly state which layer validates inputs: (a) generator function (no validation), (b) wrapper function (format validation), (c) caller (business logic bounds). Document with examples. For generated binary formats, cite the normative specification (e.g., PNG RFC or ISO standard) that test code will reference."
+  reason: Eliminates ambiguity about validation scope and gives test designers concrete references to validate against.
+
+- agent: Test Designer Agent
+  change: "For frontend test suites exceeding 10 tests, create an AC→Test traceability matrix in the test file header or as a separate COVERAGE.md artifact. Reject coverage reports that use vague labels ('smoke tests', 'integration tests') without mapping to specific requirement IDs (AC6.1, AC7.3, etc.)."
+  reason: Prevents coverage gaps and makes AC Gatekeeper validation deterministic instead of narrative.
+
+### Workflow Improvements
+- issue: AC Gatekeeper had to resolve test status discrepancies by reading checkpoint notes and implementation summaries, requiring manual interpretation of contradictory statements.
+  improvement: Require Implementation Agent to run full test suite before declaring readiness and document results in a structured TEST_RESULTS table: test file, passing count, failing count, failure category (spec bug / adversarial / regression), and citations to fixes.
+  expected_benefit: Gatekeeper has objective data instead of narrative claims, reducing ambiguity and rework cycles.
+
+- issue: Spec test bugs (CRC-32 offset, color counting logic) were caught only after implementation, not during TEST_DESIGN.
+  improvement: Add a "Format Validation Review" gate before TEST_BREAK: independent reviewer checks spec tests against normative format documentation (PNG RFC 2083, JPEG ISO 10918, etc.) and validates test assumptions via reference implementations.
+  expected_benefit: Binary format test bugs caught during TEST_DESIGN, not after implementation and 4 test fixes.
+
+### Keep / Reinforce
+- practice: Specification clearly documented density as linear grid scaling (density=1 baseline, density=2 creates 2× more spots), which matched implementation model and avoided algorithm ambiguity.
+  reason: Clear density semantics prevented backend rework and enabled simple test validation (count spots at two densities and verify direction of change).
+
+- practice: Case-insensitive mode comparison (using `.strip().lower()` pattern) was established in gradient and reused consistently in spots, and specification explicitly required it.
+  reason: Pattern consistency reduced implementation decisions and made adversarial tests deterministic.
+
+---
+
 ## [M25-05_bipedal_body_presets] — rig tests without full enemy `build_options`
 *Completed: 2026-04-19*
 

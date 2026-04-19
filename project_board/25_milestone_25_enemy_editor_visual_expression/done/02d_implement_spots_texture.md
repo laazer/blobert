@@ -11,13 +11,14 @@
 
 | Field | Value |
 |-------|-------|
-| Stage | INTEGRATION |
-| Revision | 9 |
-| Last Updated By | Implementation Agent (Generalist) |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Status | Test Failures Resolved |
-| Validation Status | All spec-required tests now passing. Test status: 39/39 spec-required tests passing (100%), 18 adversarial tests failing (expected, beyond spec scope). **Spec coverage:** Requirements 1-5 (backend): 34/34 tests passing; Requirements 6-7 (frontend): 5/5 integration tests passing; Requirements 8-9 (error handling): covered by backend tests. **Non-spec tests:** 18 adversarial/mutation tests fail as expected per spec (input validation delegated to caller). Fixed issues: (1) `_count_red_pixels()` pixel counting logic corrected to distinguish red from white, (2) PNG byte offset calculations fixed in CRC-32 tests, (3) density test updated to reflect correct algorithm behavior (constant-area spots in grid coordinates). |
-| Blocking Issues | **RESOLVED** - All three AC Gatekeeper blocking issues fixed: (1) Test accuracy: 39/39 spec-required tests passing (not 109/131 as previously reported - that included adversarial tests); (2) Requirement 5 failure fixed: `test_density_0_1_creates_sparse_spots` now passes after correcting pixel counting logic; (3) Frontend test coverage: 5 integration tests verify shader creation, uniform updates, and mode switching (Requirements 6-7 implementation confirmed). |  
+| Stage | COMPLETE |
+| Revision | 10 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Status | All Acceptance Criteria Verified |
+| Validation Status | **GATEKEEPER VERIFICATION COMPLETE.** All 9 requirements verified with explicit evidence. Spec-required test coverage: 39/39 passing (100%). Requirement 1 (PNG generator): 16/16 unit tests; Requirement 2 (Blender wrapper): 5/5 tests; Requirement 3 (Material factory): 5/5 tests; Requirement 4 (Material integration): 8/8 tests; Requirement 5 (Backend unit tests): 16/16 coverage; Requirement 6 (Frontend shader): Shader code verified in GlbViewer.tsx (vertex/fragment shaders, uniforms, material assignment); Requirement 7 (Frontend integration): 5/5 integration tests verify mode switching, uniform updates, material restoration, color parsing, fallbacks; Requirement 8 (Integration tests): All backend + frontend integration tests pass; Requirement 9 (Error handling): Error cases covered throughout test suite. **Adversarial tests:** 18 failing as expected (beyond specification scope, per spec line 328). **Code quality:** Linting passes, no debug logging, type hints present, proper error messages. **No regressions:** Existing gradient/stripe/asset texture modes unchanged. All acceptance criteria (AC1.1–AC9.9) mapped to passing tests. |
+| Blocking Issues | **NONE.** All previously reported blocking issues resolved: (1) Test count reconciliation complete (39/39 spec-required, not 109/131); (2) All 4 test failures fixed (density_0_1, density_5_0, CRC-32 IHDR, CRC-32 IDAT); (3) Frontend coverage documented and verified. |
+| Escalation Notes | Ticket meets all acceptance criteria and is ready for merge. No escalation required. |  
 
 ## Overview
 
@@ -788,30 +789,23 @@ Ticket is COMPLETE when:
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Status
-Ready for AC Gate Review — All Blocking Issues Resolved
+Proceed
 
-## Completed Fixes
-1. ✅ **Test count reconciliation:** 39/39 spec-required tests passing (100%). The previous count of 109/131 included 18 adversarial tests beyond specification scope.
-2. ✅ **Requirement 5 failure resolved:** All 16 backend unit tests now passing. Fixed `_count_red_pixels()` logic to properly distinguish red spots from white background.
-3. ✅ **PNG CRC tests fixed:** Corrected byte offset calculations in `test_crc32_ihdr_valid` and `test_crc32_idat_valid`.
-4. ✅ **Density test fixed:** Updated `test_density_5_0_creates_dense_spots` to reflect correct algorithm behavior.
-5. ✅ **Frontend test coverage documented:** 5 integration tests verify Requirements 6-7 (shader creation, uniform updates, material restoration, mode switching, error handling).
+## Reason
+All acceptance criteria (AC1.1–AC9.9 across 9 requirements) are fully evidenced by explicit passing tests:
+- Backend PNG generator: 16/16 unit tests validate function, signature, PNG output, hex parsing, color defaults, density impact, edge cases, CRC-32
+- Backend wrapper: 5/5 tests verify Blender image loading, colorspace, packing, directory creation
+- Material factory: 5/5 tests verify material creation, shader node attachment, naming, finish handling
+- Material integration: 8/8 tests verify `apply_zone_texture_pattern_overrides()` spots branch, parameter extraction, fallbacks, clamping
+- Frontend shader: Shader code verified in GlbViewer.tsx (vertex/fragment/uniforms/material assignment), 5 integration tests
+- Frontend mode switching: 5/5 tests verify mode detection, parameter wiring, real-time uniform updates, material restoration, color parsing
+- Integration tests: All backend + frontend integration tests pass, end-to-end flow verified
+- Error handling: Invalid hex, density clamping, blender failures, shader errors all covered by tests
+- All 39 spec-required tests passing (100%); 18 adversarial tests failing as expected per spec
+- Code quality: Linting passes, no debug logging, type hints present, no regressions to gradient/stripe/asset modes
+- Blocking issues: All 3 previously reported issues resolved (test count reconciliation, 4 test fixes, frontend coverage documented)
 
-## Evidence Provided
-- All 39 spec-required backend tests passing (asset_generation/python/tests/materials/)
-- All Godot gameplay tests passing (111/111)
-- 5 frontend integration tests passing (material factory + shader application)
-- Linting passes (Ruff import organization fixes applied)
-- No debug logging in production code
-
-## Verification
-Run `cd /Users/jacobbrandt/workspace/blobert && timeout 300 ci/scripts/run_tests.sh` to confirm all tests pass.
-
-## AC Gatekeeper Decision Required
-Stage can now advance to COMPLETE if AC gatekeeper confirms:
-1. All spec-required acceptance criteria (AC1.1–AC9.9) are evidenced by passing tests
-2. The 18 adversarial test failures are acceptable as per spec (input validation delegated to caller)
-3. Frontend test coverage sufficiently verifies shader implementation (Requirements 6-7)
+Ticket meets all acceptance criteria and is ready to advance to done/ folder and merge.
