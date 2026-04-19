@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T14-30-00Z-test-break-m25-02d
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
+- Stage: TEST_BREAK → IMPLEMENTATION_BACKEND
+- Next Agent: Implementation Agent (Backend + Material System)
+- Log: `project_board/checkpoints/M25-02d/2026-04-19T14-30-00Z-test-break.md`
+- Outcome: Authored 3 adversarial test files (157 total tests) covering 10 mutation categories: backend PNG generator (68 tests: boundary, type, hex, combinatorial, determinism, concurrency, error handling, mutation), material system integration (26 tests: parameter extraction, feature dict handling, material naming, mode switching, multiple zones, error propagation), frontend shader integration (63 tests: density boundaries, type violations, invalid hex, concurrency, combinatorial, determinism, memory cleanup, error handling, mutation, integration seams). All CHECKPOINT assumptions logged (hex #-stripping, density clamping layer, material ref lifecycle, shader precision, feature dict defaults). Ready for implementation.
+
 ## Run: 2026-04-19T22-00-00Z-test-design-m25-02d
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
 - Stage: TEST_DESIGN → TEST_BREAK
