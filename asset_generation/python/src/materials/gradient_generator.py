@@ -132,3 +132,146 @@ def create_gradient_png_and_load(
         pass
 
     return img
+
+
+def _spots_texture_generator(
+    width: int,
+    height: int,
+    spot_color_hex: str,
+    bg_color_hex: str,
+    density: float,
+) -> bytes:
+    """Generate PNG with procedural spot pattern.
+
+    Args:
+        width: PNG width in pixels
+        height: PNG height in pixels
+        spot_color_hex: Hex color string for spots (e.g., "ff0000"). Empty defaults to black.
+        bg_color_hex: Hex color string for background (e.g., "ffffff"). Empty defaults to white.
+        density: Frequency of spots, range 0.1–5.0. Higher = more spots, smaller size.
+
+    Returns:
+        PNG-encoded bytes with correct CRC-32 checksums.
+
+    Raises:
+        ValueError: If spot_color_hex is non-empty and invalid.
+    """
+    def _hex_to_rgba(hex_str: str, default_rgba: tuple[float, float, float, float], allow_invalid: bool = False) -> tuple[float, float, float, float]:
+        """Parse 6-char hex string to RGBA or return default.
+
+        Args:
+            hex_str: Hex color string
+            default_rgba: Fallback color if string is empty
+            allow_invalid: If False, raise ValueError for invalid non-empty strings
+
+        Returns:
+            RGBA tuple
+        """
+        h = (hex_str or "").strip().lstrip("#").lower()
+        if not h:
+            return default_rgba
+        if len(h) != 6:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError(f"hex color must be 6 characters (RRGGBB), got {h!r}")
+        try:
+            r = int(h[0:2], 16) / 255.0
+            g = int(h[2:4], 16) / 255.0
+            b = int(h[4:6], 16) / 255.0
+            return (r, g, b, 1.0)
+        except ValueError as e:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError("hex color must be valid hexadecimal") from e
+
+    # Parse colors - spot color can raise ValueError if non-empty and invalid
+    spot_rgba = _hex_to_rgba(spot_color_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False)
+    # Background color defaults to white if invalid
+    bg_rgba = _hex_to_rgba(bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
+
+    # Build pixel buffer (bottom-row-first, Blender convention)
+    buf = [0.0] * (width * height * 4)
+
+    # Linear grid scaling: density controls number of spot grid divisions per unit
+    # density=0.1: 0.1 divisions (1 huge spot)
+    # density=1.0: 1 division (1 baseline spot)
+    # density=5.0: 5 divisions (5x5 = 25 spots)
+    # For fractional densities < 1, we still get sparse spots by making them bigger
+    grid_scale = max(0.1, float(density))  # Allow fractional divisions
+    spot_radius = 0.35  # In normalized UV space per grid cell
+
+    for y in range(height):
+        for x in range(width):
+            # Normalized UV coordinates
+            u = (x + 0.5) / width if width > 0 else 0.5
+            v = (y + 0.5) / height if height > 0 else 0.5
+
+            # Scale by density and get fractional part (position within grid cell)
+            u_scaled = u * grid_scale
+            v_scaled = v * grid_scale
+            u_fract = u_scaled - math.floor(u_scaled)
+            v_fract = v_scaled - math.floor(v_scaled)
+
+            # Distance from cell center (0.5, 0.5)
+            du = u_fract - 0.5
+            dv = v_fract - 0.5
+            distance = math.sqrt(du * du + dv * dv)
+
+            # Choose spot or background color
+            if distance < spot_radius:
+                rgba = spot_rgba
+            else:
+                rgba = bg_rgba
+
+            # Store in buffer
+            idx = (y * width + x) * 4
+            buf[idx] = rgba[0]
+            buf[idx + 1] = rgba[1]
+            buf[idx + 2] = rgba[2]
+            buf[idx + 3] = rgba[3]
+
+    return _create_png(width, height, buf)
+
+
+def create_spots_png_and_load(
+    width: int,
+    height: int,
+    spot_color_hex: str,
+    bg_color_hex: str,
+    density: float,
+    img_name: str,
+) -> bpy.types.Image:
+    """Create spots PNG texture, save to disk, and load into Blender.
+
+    Args:
+        width: PNG width
+        height: PNG height
+        spot_color_hex: Hex color for spots
+        bg_color_hex: Hex color for background
+        density: Spot frequency (0.1–5.0)
+        img_name: Image name (will be sanitized and prefixed)
+
+    Returns:
+        Loaded Blender Image object.
+    """
+    png_data = _spots_texture_generator(width, height, spot_color_hex, bg_color_hex, density)
+    spots_dir = Path(__file__).parent.parent.parent / "animated_exports" / "spots"
+    spots_dir.mkdir(parents=True, exist_ok=True)
+    tmp_png = spots_dir / f"{img_name}.png"
+    tmp_png.write_bytes(png_data)
+
+    img_path = str(tmp_png.absolute())
+    img = bpy.data.images.load(filepath=img_path)
+    img.name = img_name
+
+    try:
+        img.colorspace_settings.name = "sRGB"
+    except (TypeError, AttributeError):  # pragma: no cover
+        pass
+
+    try:
+        img.pack()
+    except Exception:  # pragma: no cover
+        pass
+
+    return img

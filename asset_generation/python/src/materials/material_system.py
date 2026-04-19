@@ -18,6 +18,7 @@ from .gradient_generator import (
     _gradient_image_pixel_buffer,
     _sanitize_image_label,
     create_gradient_png_and_load,
+    create_spots_png_and_load,
 )
 
 TextureHandler = Callable[..., None]
@@ -536,6 +537,90 @@ def _material_for_gradient_zone(
     return mat
 
 
+def _material_for_spots_zone(
+    *,
+    base_palette_name: str,
+    finish: str,
+    spot_hex: str,
+    bg_hex: str,
+    density: float,
+    zone_hex_fallback: str,
+    instance_suffix: str,
+) -> bpy.types.Material:
+    """Solid base material with baked spots texture.
+
+    Analogous to _material_for_gradient_zone, but for polka-dot patterns.
+    """
+    all_colors = MaterialColors.get_all()
+    palette_base = all_colors.get(base_palette_name)
+    if palette_base is None:
+        palette_base = (0.6, 0.5, 0.5, 1.0)
+    h_zone = _sanitize_hex_input(zone_hex_fallback)
+    zone_rgba = _parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+
+    # Spots color from hex or fallback to zone color
+    spot_color = _rgba_from_hex_or_fallback(spot_hex, zone_rgba)
+
+    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = finish != "default"
+    metallic = 0.0
+    roughness = 0.75
+    if finish_roughness is not None:
+        roughness = finish_roughness
+    transmission = finish_transmission if finish_transmission is not None else 0.0
+    alpha = spot_color[3] if len(spot_color) > 3 else 1.0
+
+    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    mat = create_material(
+        name=new_name,
+        color=spot_color,
+        metallic=metallic,
+        roughness=roughness,
+        alpha=alpha,
+        transmission=transmission,
+        add_texture=False,
+        force_surface=force_surface,
+        force_base_color=False,
+    )
+
+    # Generate and apply spots texture
+    safe = _sanitize_image_label(instance_suffix)
+    img_name = f"BlobertTexSpot_{safe}"
+    img = create_spots_png_and_load(
+        width=128,
+        height=128,
+        spot_color_hex=_sanitize_hex_input(spot_hex),
+        bg_color_hex=_sanitize_hex_input(bg_hex),
+        density=density,
+        img_name=img_name,
+    )
+
+    # Attach to material via UV-mapped texture node
+    nt = mat.node_tree
+    if nt is not None:
+        nodes = nt.nodes
+        links = nt.links
+        bsdf = _find_principled_bsdf(nodes)
+        if bsdf is not None:
+            bc_in = _principled_base_color_socket(bsdf)
+            if bc_in is not None:
+                tex = nodes.new(type="ShaderNodeTexImage")
+                tex.location = (-450, 200)
+                tex.image = img
+                tex.interpolation = "Linear"
+                tex.extension = "REPEAT"
+
+                uv = nodes.new(type="ShaderNodeUVMap")
+                uv.location = (-800, 200)
+                links.new(uv.outputs["UV"], tex.inputs["Vector"])
+                links.new(tex.outputs["Color"], bc_in)
+
+    return mat
+
+
 def _material_for_asset_zone(  # pragma: no cover
     base_material: bpy.types.Material,
     asset_id: str,
@@ -641,6 +726,27 @@ def apply_zone_texture_pattern_overrides(
                     tile_repeat=tile_repeat,
                     instance_suffix=f"{zone}_tex_asset",
                 )
+        elif mode == "spots":
+            base_palette_name = _palette_base_name_from_material(mat)
+            zf = feat_dict.get(zone)
+            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
+
+            spot_color = str(build_options.get(f"feat_{zone}_texture_spot_color", "") or "")
+            bg_color = str(build_options.get(f"feat_{zone}_texture_spot_bg_color", "") or "")
+            density = float(build_options.get(f"feat_{zone}_texture_spot_density", 1.0) or 1.0)
+            # Clamp density to valid range [0.1, 5.0]
+            density = max(0.1, min(5.0, density))
+
+            out[zone] = _material_for_spots_zone(
+                base_palette_name=base_palette_name,
+                finish=finish,
+                spot_hex=spot_color,
+                bg_hex=bg_color,
+                density=density,
+                zone_hex_fallback=zone_hex,
+                instance_suffix=f"{zone}_tex_spot",
+            )
     return out
 
 
