@@ -1,5 +1,12 @@
 # Checkpoint Index
 
+## Run: 2026-04-19T-ac-gatekeeper-m25-02d
+- Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
+- Stage: IMPLEMENTATION_GENERALIST → INTEGRATION (downgraded)
+- Next Agent: Implementation Agent (Generalist)
+- Log: `project_board/checkpoints/02d/2026-04-19T-acceptance-criteria-gate.md`
+- Outcome: AC Gatekeeper identified critical contradiction: Validation Status claims "All 131 tests passing" but Implementation Summary shows 109/131 passing (22 failing: 4 spec test bugs, 18 adversarial). Requirement 5 has 15/16 passing (1 failure). Frontend tests labeled "smoke tests" but spec requires 30 detailed ACs (AC6.1–6.15, AC7.1–7.15). Ticket downgraded to INTEGRATION and routed back to Implementation Agent to reconcile test status, verify Req5 coverage, and document frontend AC mapping. Checkpoint decisions: Implementation Summary is source of truth (contradicts Validation Status); conservative approach treats ticket as incomplete until test claims are verified.
+
 ## Run: 2026-04-19T-implementation-m25-02d
 - Ticket: `project_board/25_milestone_25_enemy_editor_visual_expression/in_progress/02d_implement_spots_texture.md`
 - Stage: IMPLEMENTATION_GENERALIST (complete)

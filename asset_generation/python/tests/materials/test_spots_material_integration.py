@@ -22,7 +22,9 @@ class TestMaterialForSpotsZone:
     def test_function_exists(self) -> None:
         """AC3.1: Function exists in material_system.py."""
         try:
-            from src.materials.material_system import _material_for_spots_zone  # noqa: E402, F401
+            from src.materials.material_system import (
+                _material_for_spots_zone,  # noqa: E402, F401
+            )
         except ImportError:
             pytest.skip("_material_for_spots_zone not yet implemented")
 
@@ -169,7 +171,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
         """AC4.1: Function contains an elif mode == 'spots': branch."""
         import inspect
 
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402, F401
+        )
 
         source = inspect.getsource(apply_zone_texture_pattern_overrides)
         assert 'spots' in source, "Function should handle 'spots' mode"
@@ -178,7 +182,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_extracts_spot_color_parameter(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.2: Extracts feat_{zone}_texture_spot_color with fallback to ''."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -211,7 +217,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_extracts_bg_color_parameter(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.3: Extracts feat_{zone}_texture_spot_bg_color with fallback to ''."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -243,7 +251,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_extracts_density_with_fallback_and_clamping(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.4: Extracts density with fallback to 1.0, clamped to [0.1, 5.0]."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -280,7 +290,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_retrieves_base_palette_name(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.5: Retrieves base_palette_name from material."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -312,7 +324,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_retrieves_zone_finish(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.6: Retrieves zone finish from features[zone]['finish']."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -344,7 +358,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_retrieves_zone_hex(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.7: Retrieves zone hex from features[zone]['hex']."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -376,7 +392,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_calls_spots_material_factory(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.8: Calls _material_for_spots_zone with correct args."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
@@ -407,7 +425,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
     @patch("src.materials.material_system.bpy")
     def test_assigns_returned_material_to_output(self, mock_bpy) -> None:  # noqa: ARG002
         """AC4.9: Assigns returned material to out[zone]."""
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402
+        )
 
         mock_mat_orig = MagicMock()
         mock_mat_new = MagicMock()
@@ -443,7 +463,9 @@ class TestApplyZoneTexturePatternOverridesSpots:
         """AC4.10: Gradient and assets branches remain unchanged."""
         import inspect
 
-        from src.materials.material_system import apply_zone_texture_pattern_overrides  # noqa: E402
+        from src.materials.material_system import (
+            apply_zone_texture_pattern_overrides,  # noqa: E402, F401
+        )
 
         source = inspect.getsource(apply_zone_texture_pattern_overrides)
         # Verify gradient handling is still present
