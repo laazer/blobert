@@ -85,17 +85,9 @@ function Model({ url, animation }: { url: string; animation: string | null }) {
   useEffect(() => {
     scene.traverse((node: any) => {
       if (node.material) {
-        const matName = node.material.name || "unnamed";
-        const hasMap = !!node.material.map;
         if (node.material.metallic === undefined) {
           node.material.metallic = 0.0;
         }
-        console.log(`[GLB Material] ${matName}:`, {
-          type: node.material.type,
-          hasTexture: hasMap,
-          metallic: node.material.metallic,
-          roughness: node.material.roughness,
-        });
       }
     });
   }, [scene]);

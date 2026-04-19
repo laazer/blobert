@@ -215,12 +215,6 @@ export function CommandPanel() {
         const pruned = prunePartitionedBuildOptionsForRun(top, defs);
         buildOptionsJson =
           Object.keys(pruned).length > 0 ? JSON.stringify({ [slug]: pruned }) : undefined;
-        console.log("[CommandPanel] Animated gradient colors:", {
-          slug,
-          opts: opts,
-          pruned: pruned,
-          buildOptionsJson: buildOptionsJson,
-        });
       }
     }
     if (cmd === "player" && enemy && PLAYER_COLORS.includes(enemy.trim().toLowerCase())) {

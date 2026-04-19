@@ -50,10 +50,6 @@ export function useStreamingOutput() {
     }
 
     const url = `${endpoint}?${params.toString()}`;
-    console.log("[useStreamingOutput] Request URL:", url);
-    if (options.buildOptionsJson) {
-      console.log("[useStreamingOutput] build_options param:", options.buildOptionsJson);
-    }
     const es = new EventSource(url);
     esRef.current = es;
     setIsRunning(true);
