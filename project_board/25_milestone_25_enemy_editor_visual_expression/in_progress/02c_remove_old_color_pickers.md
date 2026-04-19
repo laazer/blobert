@@ -40,12 +40,12 @@ After comprehensive codebase survey, the planner identified:
 
 | Field | Value |
 |-------|-------|
-| Stage | TEST_DESIGN |
-| Revision | 3 |
-| Last Updated By | Spec Agent |
-| Next Responsible Agent | Test Designer Agent |
+| Stage | TEST_BREAK |
+| Revision | 4 |
+| Last Updated By | Test Designer Agent |
+| Next Responsible Agent | Test Breaker Agent |
 | Status | Proceed |
-| Validation Status | Specification complete; ready for test design |
+| Validation Status | Test suite designed and committed; ready for break phase |
 | Blocking Issues | None |
 
 ---
