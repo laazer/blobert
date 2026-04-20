@@ -66,6 +66,18 @@ _TEXTURE_SPOT_DENSITY_MAX = 5.0
 _TEXTURE_SPOT_DENSITY_STEP = 0.05
 _TEXTURE_SPOT_DENSITY_DEFAULT = 1.0
 
+_TEXTURE_SPOT_PATTERN_OPTIONS: tuple[str, ...] = ("grid", "hex")
+_DEFAULT_TEXTURE_SPOT_PATTERN = "grid"
+
+# Visual presets for stripe phase axis (orthogonal + diagonal); names are UX labels.
+_TEXTURE_STRIPE_PRESET_OPTIONS: tuple[str, ...] = ("beachball", "doplar", "swirl")
+_DEFAULT_TEXTURE_STRIPE_PRESET = "beachball"
+
+_TEXTURE_STRIPE_ROT_DEG_MIN = -360.0
+_TEXTURE_STRIPE_ROT_DEG_MAX = 360.0
+_TEXTURE_STRIPE_ROT_DEG_STEP = 1.0
+_DEFAULT_TEXTURE_STRIPE_ROT_DEG = 0.0
+
 _TEXTURE_STRIPE_WIDTH_MIN = 0.05
 _TEXTURE_STRIPE_WIDTH_MAX = 1.0
 _TEXTURE_STRIPE_WIDTH_STEP = 0.01
@@ -147,6 +159,14 @@ def _texture_control_defs() -> list[dict[str, Any]]:
             "default": "",
         },
         {
+            "key": "texture_spot_pattern",
+            "label": "Spot layout",
+            "type": "select_str",
+            "options": list(_TEXTURE_SPOT_PATTERN_OPTIONS),
+            "default": _DEFAULT_TEXTURE_SPOT_PATTERN,
+            "segmented": True,
+        },
+        {
             "key": "texture_spot_density",
             "label": "Spot density",
             "type": "float",
@@ -175,6 +195,34 @@ def _texture_control_defs() -> list[dict[str, Any]]:
             "max": _TEXTURE_STRIPE_WIDTH_MAX,
             "step": _TEXTURE_STRIPE_WIDTH_STEP,
             "default": _TEXTURE_STRIPE_WIDTH_DEFAULT,
+        },
+        {
+            "key": "texture_stripe_direction",
+            "label": "Stripe preset",
+            "type": "select_str",
+            "options": list(_TEXTURE_STRIPE_PRESET_OPTIONS),
+            "default": _DEFAULT_TEXTURE_STRIPE_PRESET,
+            "segmented": True,
+        },
+        {
+            "key": "texture_stripe_rot_yaw",
+            "label": "Stripe yaw",
+            "type": "float",
+            "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
+            "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
+            "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
+            "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
+            "unit": "deg",
+        },
+        {
+            "key": "texture_stripe_rot_pitch",
+            "label": "Stripe pitch",
+            "type": "float",
+            "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
+            "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
+            "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
+            "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
+            "unit": "deg",
         },
         {
             "key": "texture_asset_id",

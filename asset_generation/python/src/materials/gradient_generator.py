@@ -118,7 +118,7 @@ def create_gradient_png_and_load(
     tmp_png.write_bytes(png_data)
 
     img_path = str(tmp_png.absolute())
-    img = bpy.data.images.load(filepath=img_path)
+    img = bpy.data.images.load(filepath=img_path, check_existing=False)
     img.name = img_name
 
     try:
@@ -134,17 +134,66 @@ def create_gradient_png_and_load(
     return img
 
 
+def _normalize_stripe_preset(raw: str) -> str:
+    """Map API / legacy values to ``beachball`` / ``doplar`` / ``swirl``."""
+    a = str(raw or "beachball").strip().lower()
+    if a in ("x", "beachball", "vertical"):
+        return "beachball"
+    if a in ("y", "doplar", "horizontal"):
+        return "doplar"
+    if a in ("z", "swirl"):
+        return "swirl"
+    if a in ("beachball", "doplar", "swirl"):
+        return a
+    return "beachball"
+
+
+def _euler_rotate_uv_xy(
+    u: float, v: float, rot_x_deg: float, rot_y_deg: float, rot_z_deg: float
+) -> tuple[float, float]:
+    """Apply ``Rz * Ry * Rx`` to centered UV (third component 0), return new UV in [0,1]²."""
+    px = u - 0.5
+    py = v - 0.5
+    pz = 0.0
+    rx = math.radians(float(rot_x_deg))
+    ry = math.radians(float(rot_y_deg))
+    rz = math.radians(float(rot_z_deg))
+    cx, sx = math.cos(rx), math.sin(rx)
+    cy, sy = math.cos(ry), math.sin(ry)
+    cz, sz = math.cos(rz), math.sin(rz)
+    x1, y1, z1 = px, py * cx - pz * sx, py * sx + pz * cx
+    x2, y2 = x1 * cy + z1 * sy, y1
+    x3, y3 = x2 * cz - y2 * sz, x2 * sz + y2 * cz
+    return x3 + 0.5, y3 + 0.5
+
+
+def _stripe_uv_coord_for_preset(u: float, v: float, preset: str) -> float:
+    """Phase coordinate for stripe bands: beachball / doplar / swirl base angles in UV."""
+    p = _normalize_stripe_preset(preset)
+    if p == "beachball":
+        theta = 0.0
+    elif p == "doplar":
+        theta = math.pi / 2.0
+    else:
+        theta = math.pi / 4.0
+    return u * math.cos(theta) + v * math.sin(theta)
+
+
 def _stripes_texture_generator(
     width: int,
     height: int,
     stripe_color_hex: str,
     bg_color_hex: str,
     stripe_width: float,
+    stripe_preset: str = "beachball",
+    rot_x_deg: float = 0.0,
+    rot_y_deg: float = 0.0,
+    rot_z_deg: float = 0.0,
 ) -> bytes:
-    """Generate PNG with horizontal stripe pattern (stripe / gap along U).
+    """Generate PNG with stripe pattern (half period stripe, half gap).
 
-    ``stripe_width`` is the period in normalized UV space (0.05–1.0): larger values
-    produce fewer repeats across U. Half the period is stripe color, half background.
+    ``stripe_width`` is the period in normalized UV space (0.05–1.0). ``stripe_preset``
+    picks beachball / doplar / swirl phase axes; Euler rotations (degrees) tilt UV first.
     """
     def _hex_to_rgba(
         hex_str: str,
@@ -172,12 +221,16 @@ def _stripes_texture_generator(
     bg_rgba = _hex_to_rgba(bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
 
     period = max(0.05, min(1.0, float(stripe_width)))
+    preset = _normalize_stripe_preset(stripe_preset)
 
     buf = [0.0] * (width * height * 4)
     for y in range(height):
         for x in range(width):
             u = (x + 0.5) / width if width > 0 else 0.5
-            edge = u * (1.0 / period)
+            v = (y + 0.5) / height if height > 0 else 0.5
+            u2, v2 = _euler_rotate_uv_xy(u, v, rot_x_deg, rot_y_deg, rot_z_deg)
+            coord = _stripe_uv_coord_for_preset(u2, v2, preset)
+            edge = coord * (1.0 / period)
             t = edge - math.floor(edge)
             rgba = stripe_rgba if t < 0.5 else bg_rgba
             idx = (y * width + x) * 4
@@ -196,10 +249,22 @@ def create_stripes_png_and_load(
     bg_color_hex: str,
     stripe_width: float,
     img_name: str,
+    stripe_preset: str = "beachball",
+    rot_x_deg: float = 0.0,
+    rot_y_deg: float = 0.0,
+    rot_z_deg: float = 0.0,
 ) -> bpy.types.Image:
     """Create stripes PNG texture, save to disk, and load into Blender."""
     png_data = _stripes_texture_generator(
-        width, height, stripe_color_hex, bg_color_hex, stripe_width
+        width,
+        height,
+        stripe_color_hex,
+        bg_color_hex,
+        stripe_width,
+        stripe_preset=stripe_preset,
+        rot_x_deg=rot_x_deg,
+        rot_y_deg=rot_y_deg,
+        rot_z_deg=rot_z_deg,
     )
     stripes_dir = Path(__file__).parent.parent.parent / "animated_exports" / "stripes"
     stripes_dir.mkdir(parents=True, exist_ok=True)
@@ -207,7 +272,7 @@ def create_stripes_png_and_load(
     tmp_png.write_bytes(png_data)
 
     img_path = str(tmp_png.absolute())
-    img = bpy.data.images.load(filepath=img_path)
+    img = bpy.data.images.load(filepath=img_path, check_existing=False)
     img.name = img_name
 
     try:
@@ -229,6 +294,7 @@ def _spots_texture_generator(
     spot_color_hex: str,
     bg_color_hex: str,
     density: float,
+    spot_pattern: str = "grid",
 ) -> bytes:
     """Generate PNG with procedural spot pattern.
 
@@ -288,6 +354,9 @@ def _spots_texture_generator(
     # For fractional densities < 1, we still get sparse spots by making them bigger
     grid_scale = max(0.1, float(density))  # Allow fractional divisions
     spot_radius = 0.35  # In normalized UV space per grid cell
+    pat = str(spot_pattern or "grid").strip().lower()
+    if pat not in ("grid", "hex"):
+        pat = "grid"
 
     for y in range(height):
         for x in range(width):
@@ -295,11 +364,17 @@ def _spots_texture_generator(
             u = (x + 0.5) / width if width > 0 else 0.5
             v = (y + 0.5) / height if height > 0 else 0.5
 
-            # Scale by density and get fractional part (position within grid cell)
-            u_scaled = u * grid_scale
+            # Scale by density; optional brick offset for hex-like staggered rows
             v_scaled = v * grid_scale
-            u_fract = u_scaled - math.floor(u_scaled)
-            v_fract = v_scaled - math.floor(v_scaled)
+            row = math.floor(v_scaled)
+            if pat == "hex":
+                u_scaled = u * grid_scale + (row % 2) * 0.5
+                u_fract = u_scaled - math.floor(u_scaled)
+                v_fract = v_scaled - row
+            else:
+                u_scaled = u * grid_scale
+                u_fract = u_scaled - math.floor(u_scaled)
+                v_fract = v_scaled - math.floor(v_scaled)
 
             # Distance from cell center (0.5, 0.5)
             du = u_fract - 0.5
@@ -329,6 +404,7 @@ def create_spots_png_and_load(
     bg_color_hex: str,
     density: float,
     img_name: str,
+    spot_pattern: str = "grid",
 ) -> bpy.types.Image:
     """Create spots PNG texture, save to disk, and load into Blender.
 
@@ -343,14 +419,16 @@ def create_spots_png_and_load(
     Returns:
         Loaded Blender Image object.
     """
-    png_data = _spots_texture_generator(width, height, spot_color_hex, bg_color_hex, density)
+    png_data = _spots_texture_generator(
+        width, height, spot_color_hex, bg_color_hex, density, spot_pattern=spot_pattern
+    )
     spots_dir = Path(__file__).parent.parent.parent / "animated_exports" / "spots"
     spots_dir.mkdir(parents=True, exist_ok=True)
     tmp_png = spots_dir / f"{img_name}.png"
     tmp_png.write_bytes(png_data)
 
     img_path = str(tmp_png.absolute())
-    img = bpy.data.images.load(filepath=img_path)
+    img = bpy.data.images.load(filepath=img_path, check_existing=False)
     img.name = img_name
 
     try:

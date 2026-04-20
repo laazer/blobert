@@ -51,6 +51,52 @@ function gradientDirectionFromStore(raw: unknown): GradientDirection {
   return "horizontal";
 }
 
+function textureColorEmpty(v: unknown): boolean {
+  if (v === undefined || v === null) return true;
+  return typeof v === "string" && v.trim() === "";
+}
+
+function firstNonEmptyString(...vals: unknown[]): string {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim() !== "") return v.trim();
+  }
+  return "";
+}
+
+/**
+ * When switching ``texture_mode``, copy palette colors into the new mode's fields if they are still empty
+ * so users do not lose work across gradient / spots / stripes.
+ */
+export function carryTexturePaletteOnModeChange(
+  zone: string,
+  prevMode: ReturnType<typeof normalizedTextureMode>,
+  nextMode: ReturnType<typeof normalizedTextureMode>,
+  values: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  if (prevMode === nextMode) return {};
+  const p = `feat_${zone}_texture_`;
+  const g = (k: string) => values[k];
+  const out: Record<string, unknown> = {};
+
+  const setIfEmpty = (key: string, ...candidates: unknown[]) => {
+    if (!textureColorEmpty(g(key))) return;
+    const s = firstNonEmptyString(...candidates);
+    if (s) out[key] = s;
+  };
+
+  if (nextMode === "gradient") {
+    setIfEmpty(`${p}grad_color_a`, g(`${p}spot_color`), g(`${p}stripe_color`));
+    setIfEmpty(`${p}grad_color_b`, g(`${p}spot_bg_color`), g(`${p}stripe_bg_color`));
+  } else if (nextMode === "spots") {
+    setIfEmpty(`${p}spot_color`, g(`${p}grad_color_a`), g(`${p}stripe_color`));
+    setIfEmpty(`${p}spot_bg_color`, g(`${p}grad_color_b`), g(`${p}stripe_bg_color`));
+  } else if (nextMode === "stripes") {
+    setIfEmpty(`${p}stripe_color`, g(`${p}grad_color_a`), g(`${p}spot_color`));
+    setIfEmpty(`${p}stripe_bg_color`, g(`${p}grad_color_b`), g(`${p}spot_bg_color`));
+  }
+  return out;
+}
+
 export function normalizedTextureMode(
   zone: string,
   values: Readonly<Record<string, unknown>>,
@@ -102,6 +148,7 @@ type Props = {
 export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props) {
   const animatedBuildOptionValues = useAppStore((st) => st.animatedBuildOptionValues);
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
+  const applyAnimatedBuildOptionsForSlug = useAppStore((st) => st.applyAnimatedBuildOptionsForSlug);
 
   const [textureFloatFilter, setTextureFloatFilter] = useState("");
   const [textureAssets, setTextureAssets] = useState<TextureAsset[]>([]);
@@ -199,7 +246,19 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
           key={modeKey}
           def={modeSelectDef}
           value={values[modeKey]}
-          onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, modeKey, v)}
+          onChange={(v: number | string | boolean) => {
+            if (typeof v !== "string") {
+              setAnimatedBuildOption(slug, modeKey, v);
+              return;
+            }
+            const nextMode = normalizedTextureMode(zone, { ...values, [modeKey]: v });
+            const carry = carryTexturePaletteOnModeChange(zone, mode, nextMode, values);
+            if (Object.keys(carry).length === 0) {
+              setAnimatedBuildOption(slug, modeKey, v);
+            } else {
+              applyAnimatedBuildOptionsForSlug(slug, { [modeKey]: v, ...carry });
+            }
+          }}
         />
       ) : null}
       {finishDefsOrdered.map(row)}

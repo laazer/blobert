@@ -4,6 +4,7 @@ Material creation system with procedural textures
 
 from __future__ import annotations
 
+import math
 from typing import Any, Callable, Mapping
 
 import bpy
@@ -746,6 +747,46 @@ def apply_zone_texture_pattern_overrides(
             bg_color = str(build_options.get(f"feat_{zone}_texture_stripe_bg_color", "") or "")
             stripe_w = float(build_options.get(f"feat_{zone}_texture_stripe_width", 0.2) or 0.2)
             stripe_w = max(0.05, min(1.0, stripe_w))
+            stripe_preset = str(
+                build_options.get(f"feat_{zone}_texture_stripe_direction", "beachball")
+                or "beachball"
+            ).strip().lower()
+            if stripe_preset == "horizontal":
+                stripe_preset = "doplar"
+            elif stripe_preset == "vertical":
+                stripe_preset = "beachball"
+            elif stripe_preset == "x":
+                stripe_preset = "beachball"
+            elif stripe_preset == "y":
+                stripe_preset = "doplar"
+            elif stripe_preset == "z":
+                stripe_preset = "swirl"
+            if stripe_preset not in ("beachball", "doplar", "swirl"):
+                stripe_preset = "beachball"
+
+            def _stripe_rot(key: str) -> float:
+                """Extract rotation value in degrees from build_options; clamp to ±360; filter NaN/Inf."""
+                try:
+                    v = float(build_options.get(key, 0.0) or 0.0)
+                except (TypeError, ValueError):
+                    v = 0.0
+                if math.isnan(v) or math.isinf(v):
+                    v = 0.0
+                return max(-360.0, min(360.0, v))
+
+            # Stripe rotation parameters (yaw, pitch) control UV rotation before pattern generation.
+            # Mapping: yaw → rot_y (horizontal rotation), pitch → rot_x (vertical rotation).
+            yaw_k = f"feat_{zone}_texture_stripe_rot_yaw"
+            pitch_k = f"feat_{zone}_texture_stripe_rot_pitch"
+            yaw = _stripe_rot(yaw_k)
+            pitch = _stripe_rot(pitch_k)
+            # Fallback to legacy keys if new ones not present.
+            lx = f"feat_{zone}_texture_stripe_rot_x"
+            ly = f"feat_{zone}_texture_stripe_rot_y"
+            if pitch_k not in build_options and lx in build_options:
+                pitch = _stripe_rot(lx)
+            if yaw_k not in build_options and ly in build_options:
+                yaw = _stripe_rot(ly)
 
             out[zone] = _material_for_stripes_zone(
                 base_palette_name=base_palette_name,
@@ -753,6 +794,9 @@ def apply_zone_texture_pattern_overrides(
                 stripe_hex=stripe_color,
                 bg_hex=bg_color,
                 stripe_width=stripe_w,
+                stripe_preset=stripe_preset,
+                rot_yaw_deg=yaw,
+                rot_pitch_deg=pitch,
                 zone_hex_fallback=zone_hex,
                 instance_suffix=f"{zone}_tex_stripe",
             )

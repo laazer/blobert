@@ -123,37 +123,6 @@
       "versions": [
         {
           "draft": true,
-          "id": "spider_animated_00",
-          "in_use": false,
-          "name": "spider a",
-          "path": "animated_exports/spider_animated_00.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_01",
-          "in_use": false,
-          "path": "animated_exports/spider_animated_01.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_02",
-          "in_use": false,
-          "path": "animated_exports/spider_animated_02.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_03",
-          "in_use": false,
-          "path": "animated_exports/spider_animated_03.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_04",
-          "in_use": false,
-          "path": "animated_exports/spider_animated_04.glb"
-        },
-        {
-          "draft": true,
           "id": "spider_animated_05",
           "in_use": false,
           "path": "animated_exports/spider_animated_05.glb"
@@ -181,6 +150,24 @@
           "id": "spider_animated_09",
           "in_use": false,
           "path": "animated_exports/spider_animated_09.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_10",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_10.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_00",
+          "in_use": false,
+          "path": "animated_exports/draft/spider_animated_00.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_01",
+          "in_use": false,
+          "path": "animated_exports/draft/spider_animated_01.glb"
         }
       ]
     },

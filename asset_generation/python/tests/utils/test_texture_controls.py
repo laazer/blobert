@@ -37,10 +37,14 @@ _TEXTURE_DEFAULTS = {
     "texture_grad_direction": "horizontal",
     "texture_spot_color": "",
     "texture_spot_bg_color": "",
+    "texture_spot_pattern": "grid",
     "texture_spot_density": 1.0,
     "texture_stripe_color": "",
     "texture_stripe_bg_color": "",
     "texture_stripe_width": 0.2,
+    "texture_stripe_direction": "beachball",
+    "texture_stripe_rot_yaw": 0.0,
+    "texture_stripe_rot_pitch": 0.0,
     "texture_asset_id": "",
     "texture_asset_tile_repeat": 1.0,
 }
@@ -65,9 +69,9 @@ def _body_prefix(slug: str) -> str:
 class TestTextureTemplateDefs:
     """Base template (_texture_control_defs) includes gradient, spots, stripes, and asset texture controls."""
 
-    def test_texture_control_defs_returns_12_entries(self) -> None:
+    def test_texture_control_defs_returns_16_entries(self) -> None:
         result = _texture_control_defs()
-        assert len(result) == 12
+        assert len(result) == 16
         assert [c["key"] for c in result] == [
             "texture_mode",
             "texture_grad_color_a",
@@ -75,21 +79,25 @@ class TestTextureTemplateDefs:
             "texture_grad_direction",
             "texture_spot_color",
             "texture_spot_bg_color",
+            "texture_spot_pattern",
             "texture_spot_density",
             "texture_stripe_color",
             "texture_stripe_bg_color",
             "texture_stripe_width",
+            "texture_stripe_direction",
+            "texture_stripe_rot_yaw",
+            "texture_stripe_rot_pitch",
             "texture_asset_id",
             "texture_asset_tile_repeat",
         ]
 
 
 class TestZoneTextureControlDefs:
-    def test_zone_texture_count_matches_zones_times_12(self) -> None:
+    def test_zone_texture_count_matches_zones_times_16(self) -> None:
         for slug in _ALL_SLUGS:
             zones = _feature_zones(slug)
             defs = _zone_texture_control_defs(slug)
-            assert len(defs) == len(zones) * 12
+            assert len(defs) == len(zones) * 16
 
     def test_spider_body_texture_mode_shape(self) -> None:
         defs = _zone_texture_control_defs("spider")
@@ -157,6 +165,33 @@ class TestCoercionBodyZone:
     def test_stripe_width_clamped(self) -> None:
         o = options_for_enemy("slug", {f"{self.BP}stripe_width": 99.0})
         assert o[f"{self.BP}stripe_width"] == 1.0
+
+    def test_legacy_stripe_horizontal_vertical_maps_to_presets(self) -> None:
+        o = options_for_enemy("slug", {f"{self.BP}stripe_direction": "horizontal"})
+        assert o[f"{self.BP}stripe_direction"] == "doplar"
+        o2 = options_for_enemy("slug", {f"{self.BP}stripe_direction": "vertical"})
+        assert o2[f"{self.BP}stripe_direction"] == "beachball"
+
+    def test_legacy_xyz_maps_to_presets(self) -> None:
+        o = options_for_enemy("slug", {f"{self.BP}stripe_direction": "x"})
+        assert o[f"{self.BP}stripe_direction"] == "beachball"
+        o2 = options_for_enemy("slug", {f"{self.BP}stripe_direction": "y"})
+        assert o2[f"{self.BP}stripe_direction"] == "doplar"
+        o3 = options_for_enemy("slug", {f"{self.BP}stripe_direction": "z"})
+        assert o3[f"{self.BP}stripe_direction"] == "swirl"
+
+    def test_legacy_stripe_rot_xyz_maps_to_yaw_pitch(self) -> None:
+        o = options_for_enemy(
+            "slug",
+            {
+                f"{self.BP}stripe_rot_x": 10.0,
+                f"{self.BP}stripe_rot_y": -5.0,
+                f"{self.BP}stripe_rot_z": 3.0,
+            },
+        )
+        assert o[f"{self.BP}stripe_rot_pitch"] == 10.0
+        assert o[f"{self.BP}stripe_rot_yaw"] == -5.0
+        assert f"{self.BP}stripe_rot_x" not in o
 
     def test_grad_color_passthrough(self) -> None:
         o = options_for_enemy("slug", {f"{self.BP}grad_color_a": "ff0000"})

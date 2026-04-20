@@ -107,7 +107,38 @@ const TEXTURE_STRIPE_WIDTH_DEF: AnimatedBuildControlDef = {
   default: 0.2,
 };
 
-/** All 10 texture controls. */
+const TEXTURE_STRIPE_DIRECTION_DEF: AnimatedBuildControlDef = {
+  key: "feat_body_texture_stripe_direction",
+  label: "Stripe preset",
+  type: "select_str",
+  options: ["beachball", "doplar", "swirl"],
+  default: "beachball",
+  segmented: true,
+};
+
+const TEXTURE_STRIPE_ROT_YAW_DEF: AnimatedBuildControlDef = {
+  key: "feat_body_texture_stripe_rot_yaw",
+  label: "Stripe yaw",
+  type: "float",
+  min: -360,
+  max: 360,
+  step: 1,
+  default: 0,
+  unit: "deg",
+};
+
+const TEXTURE_STRIPE_ROT_PITCH_DEF: AnimatedBuildControlDef = {
+  key: "feat_body_texture_stripe_rot_pitch",
+  label: "Stripe pitch",
+  type: "float",
+  min: -360,
+  max: 360,
+  step: 1,
+  default: 0,
+  unit: "deg",
+};
+
+/** Texture mode + pattern controls used by ZoneTextureBlock (subset of full meta). */
 const ALL_TEXTURE_CONTROLS: AnimatedBuildControlDef[] = [
   TEXTURE_MODE_DEF,
   TEXTURE_GRAD_COLOR_A_DEF,
@@ -119,6 +150,9 @@ const ALL_TEXTURE_CONTROLS: AnimatedBuildControlDef[] = [
   TEXTURE_STRIPE_COLOR_DEF,
   TEXTURE_STRIPE_BG_COLOR_DEF,
   TEXTURE_STRIPE_WIDTH_DEF,
+  TEXTURE_STRIPE_DIRECTION_DEF,
+  TEXTURE_STRIPE_ROT_YAW_DEF,
+  TEXTURE_STRIPE_ROT_PITCH_DEF,
 ];
 
 const BODY_FINISH_DEF: AnimatedBuildControlDef = {

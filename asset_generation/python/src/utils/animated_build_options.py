@@ -802,6 +802,25 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     return out
 
 
+def _migrate_legacy_stripe_rotation_keys(src: dict[str, Any]) -> None:
+    """Map ``feat_*_texture_stripe_rot_{x,y,z}`` to yaw/pitch (x→pitch, y→yaw; z dropped)."""
+    for k in list(src.keys()):
+        if not isinstance(k, str) or not k.endswith("_texture_stripe_rot_x"):
+            continue
+        base = k[: -len("texture_stripe_rot_x")]
+        xk = f"{base}texture_stripe_rot_x"
+        yk = f"{base}texture_stripe_rot_y"
+        zk = f"{base}texture_stripe_rot_z"
+        pitch_k = f"{base}texture_stripe_rot_pitch"
+        yaw_k = f"{base}texture_stripe_rot_yaw"
+        if pitch_k not in src and xk in src:
+            src[pitch_k] = src[xk]
+        if yaw_k not in src and yk in src:
+            src[yaw_k] = src[yk]
+        for old in (xk, yk, zk):
+            src.pop(old, None)
+
+
 def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, Any]:
     """Merge defaults with user JSON; mesh overrides live under ``mesh``."""
     base = _defaults_for_slug(enemy_type)
@@ -811,6 +830,7 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
 
     nested = raw.get(enemy_type)
     src: dict[str, Any] = nested if isinstance(nested, dict) else dict(raw)
+    _migrate_legacy_stripe_rotation_keys(src)
 
     merged = dict(base)
     mesh = dict(base["mesh"])

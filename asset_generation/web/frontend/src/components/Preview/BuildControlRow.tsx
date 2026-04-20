@@ -14,6 +14,16 @@ const floatTableRowBorder = { borderBottom: "1px solid #2a2a2a" } as const;
 
 export const floatUnitStyle = { fontSize: 10, color: "#858585" } as const;
 
+/** Match stored JSON / form values: accept finite numbers and numeric strings for float controls. */
+export function coerceFloatControlValue(value: unknown, defaultValue: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return defaultValue;
+}
+
 export const rowStyles = {
   label: { color: "#9d9d9d", fontSize: 11 } as const,
   select: {
@@ -270,7 +280,7 @@ export function FloatTableRow({
   disabled?: boolean;
 }) {
   const rs = rowStyles;
-  const n = typeof value === "number" ? value : def.default;
+  const n = coerceFloatControlValue(value, def.default);
   const unit = def.unit?.trim();
   return (
     <tr
@@ -420,7 +430,7 @@ function FloatRow({
   onChange: (v: number) => void;
 }) {
   const rs = rowStyles;
-  const n = typeof value === "number" ? value : def.default;
+  const n = coerceFloatControlValue(value, def.default);
   const unit = def.unit?.trim();
   return (
     <div

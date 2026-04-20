@@ -67,6 +67,17 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
         elif t == "select_str":
             opts = tuple(c.get("options", ()))
             raw_s = str(out[key]).strip().lower()
+            if key.endswith("_texture_stripe_direction"):
+                if raw_s == "horizontal":
+                    raw_s = "doplar"
+                elif raw_s == "vertical":
+                    raw_s = "beachball"
+                elif raw_s == "x":
+                    raw_s = "beachball"
+                elif raw_s == "y":
+                    raw_s = "doplar"
+                elif raw_s == "z":
+                    raw_s = "swirl"
             if raw_s not in opts:
                 d = c.get("default")
                 out[key] = d if isinstance(d, str) and d in opts else (opts[0] if opts else raw_s)

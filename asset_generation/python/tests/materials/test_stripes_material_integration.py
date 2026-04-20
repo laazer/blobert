@@ -23,13 +23,14 @@ class TestMaterialForStripesZone:
         mock_mat.use_nodes = True
         mock_mat.node_tree = MagicMock()
 
+        mock_img = MagicMock()
         with patch(
             "src.materials.material_stripes_zone.create_stripes_png_and_load"
         ) as mock_png:
+            mock_png.return_value = mock_img
             with patch(
                 "src.materials.material_system.create_material"
             ) as mock_create_mat:
-                mock_png.return_value = MagicMock()
                 mock_create_mat.return_value = mock_mat
 
                 _material_for_stripes_zone(
@@ -38,10 +39,17 @@ class TestMaterialForStripesZone:
                     stripe_hex="ff0000",
                     bg_hex="ffffff",
                     stripe_width=0.4,
+                    stripe_preset="beachball",
+                    rot_yaw_deg=-5.0,
+                    rot_pitch_deg=10.0,
                     zone_hex_fallback="cccccc",
                     instance_suffix="body_tex_stripe",
                 )
                 mock_png.assert_called_once()
+                kw = mock_png.call_args.kwargs
+                assert kw.get("rot_x_deg") == pytest.approx(10.0)
+                assert kw.get("rot_y_deg") == pytest.approx(-5.0)
+                assert kw.get("rot_z_deg") == pytest.approx(0.0)
 
 
 class TestApplyZoneTexturePatternOverridesStripes:
@@ -64,6 +72,9 @@ class TestApplyZoneTexturePatternOverridesStripes:
             "feat_body_texture_stripe_color": "ff0000",
             "feat_body_texture_stripe_bg_color": "ffffff",
             "feat_body_texture_stripe_width": 0.35,
+            "feat_body_texture_stripe_direction": "y",
+            "feat_body_texture_stripe_rot_pitch": 10.0,
+            "feat_body_texture_stripe_rot_yaw": -5.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
@@ -79,3 +90,6 @@ class TestApplyZoneTexturePatternOverridesStripes:
                 mock_factory.assert_called_once()
                 kw = mock_factory.call_args.kwargs
                 assert kw.get("stripe_width") == pytest.approx(0.35)
+                assert kw.get("stripe_preset") == "doplar"
+                assert kw.get("rot_pitch_deg") == pytest.approx(10.0)
+                assert kw.get("rot_yaw_deg") == pytest.approx(-5.0)

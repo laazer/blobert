@@ -81,9 +81,13 @@ const LEGACY_GLOBAL_TEXTURE_KEYS = [
   "texture_spot_color",
   "texture_spot_bg_color",
   "texture_spot_density",
+  "texture_spot_pattern",
   "texture_stripe_color",
   "texture_stripe_bg_color",
   "texture_stripe_width",
+  "texture_stripe_direction",
+  "texture_stripe_rot_yaw",
+  "texture_stripe_rot_pitch",
 ] as const;
 
 const LEGACY_TEXTURE_TO_SUFFIX: Record<(typeof LEGACY_GLOBAL_TEXTURE_KEYS)[number], string> = {
@@ -94,13 +98,35 @@ const LEGACY_TEXTURE_TO_SUFFIX: Record<(typeof LEGACY_GLOBAL_TEXTURE_KEYS)[numbe
   texture_spot_color: "spot_color",
   texture_spot_bg_color: "spot_bg_color",
   texture_spot_density: "spot_density",
+  texture_spot_pattern: "spot_pattern",
   texture_stripe_color: "stripe_color",
   texture_stripe_bg_color: "stripe_bg_color",
   texture_stripe_width: "stripe_width",
+  texture_stripe_direction: "stripe_direction",
+  texture_stripe_rot_yaw: "stripe_rot_yaw",
+  texture_stripe_rot_pitch: "stripe_rot_pitch",
 };
+
+/** Map old global ``texture_stripe_rot_{x,y,z}`` to yaw/pitch before zone copy. */
+function migrateLegacyGlobalStripeRotation(merged: Record<string, unknown>): void {
+  const x = merged.texture_stripe_rot_x;
+  const y = merged.texture_stripe_rot_y;
+  const z = merged.texture_stripe_rot_z;
+  if (x === undefined && y === undefined && z === undefined) return;
+  if (merged.texture_stripe_rot_pitch === undefined && x !== undefined) {
+    merged.texture_stripe_rot_pitch = x;
+  }
+  if (merged.texture_stripe_rot_yaw === undefined && y !== undefined) {
+    merged.texture_stripe_rot_yaw = y;
+  }
+  delete merged.texture_stripe_rot_x;
+  delete merged.texture_stripe_rot_y;
+  delete merged.texture_stripe_rot_z;
+}
 
 /** Copy legacy global ``texture_*`` keys into ``feat_{zone}_texture_*`` once, then drop globals. */
 function migrateLegacyGlobalTextureToZones(slug: string, merged: Record<string, unknown>): void {
+  migrateLegacyGlobalStripeRotation(merged);
   const hasLegacy = LEGACY_GLOBAL_TEXTURE_KEYS.some((k) => merged[k] !== undefined);
   if (!hasLegacy) return;
   if (merged.feat_body_texture_mode !== undefined) return;

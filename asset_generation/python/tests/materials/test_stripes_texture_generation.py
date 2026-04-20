@@ -54,6 +54,46 @@ class TestStripesTextureGenerator:
         )
         assert a != b
 
+    def test_presets_beachball_doplar_swirl_produce_distinct_output(self) -> None:
+        base = dict(
+            width=48,
+            height=48,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.25,
+        )
+        pb = _stripes_texture_generator(**base, stripe_preset="beachball")
+        pd = _stripes_texture_generator(**base, stripe_preset="doplar")
+        ps = _stripes_texture_generator(**base, stripe_preset="swirl")
+        assert pb != pd
+        assert pb != ps
+        assert pd != ps
+
+    def test_euler_rotation_changes_output(self) -> None:
+        base = dict(
+            width=32,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.4,
+            stripe_preset="beachball",
+        )
+        a = _stripes_texture_generator(**base, rot_z_deg=0.0)
+        b = _stripes_texture_generator(**base, rot_z_deg=30.0)
+        assert a != b
+
+    def test_legacy_horizontal_vertical_map_to_presets(self) -> None:
+        a = _stripes_texture_generator(
+            32, 32, "ff0000", "ffffff", 0.4, stripe_preset="horizontal"
+        )
+        b = _stripes_texture_generator(32, 32, "ff0000", "ffffff", 0.4, stripe_preset="doplar")
+        assert a == b
+        c = _stripes_texture_generator(
+            32, 32, "ff0000", "ffffff", 0.4, stripe_preset="vertical"
+        )
+        d = _stripes_texture_generator(32, 32, "ff0000", "ffffff", 0.4, stripe_preset="beachball")
+        assert c == d
+
     def test_crc32_ihdr_valid(self) -> None:
         png_data = _stripes_texture_generator(
             32, 32, "ff0000", "ffffff", 0.5

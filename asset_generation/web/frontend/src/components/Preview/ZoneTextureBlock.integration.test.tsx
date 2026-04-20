@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AnimatedBuildControlDef } from "../../types";
-import { zonePartDisplayName } from "./ZoneTextureBlock";
+import { carryTexturePaletteOnModeChange, zonePartDisplayName } from "./ZoneTextureBlock";
 
 // Note: ZoneTextureBlock integration tests are simplified to focus on structure
 // Full store interaction tests are covered by BuildControlRow integration tests
@@ -62,6 +62,30 @@ describe("Requirement 3: ZoneTextureBlock Gradient Mode Integration", () => {
       expect(zonePartDisplayName("body")).toBe("Body");
       expect(zonePartDisplayName("eye_left")).toBe("Eye Left");
       expect(zonePartDisplayName("mouth_tail")).toBe("Mouth Tail");
+    });
+  });
+
+  describe("carryTexturePaletteOnModeChange", () => {
+    it("fills empty stripe colors from gradient when switching to stripes", () => {
+      const v = {
+        feat_body_texture_grad_color_a: "ff0000",
+        feat_body_texture_grad_color_b: "00ff00",
+        feat_body_texture_stripe_color: "",
+        feat_body_texture_stripe_bg_color: "",
+      };
+      const out = carryTexturePaletteOnModeChange("body", "gradient", "stripes", v);
+      expect(out.feat_body_texture_stripe_color).toBe("ff0000");
+      expect(out.feat_body_texture_stripe_bg_color).toBe("00ff00");
+    });
+
+    it("does not overwrite existing stripe colors", () => {
+      const v = {
+        feat_body_texture_grad_color_a: "ff0000",
+        feat_body_texture_stripe_color: "aabbcc",
+        feat_body_texture_stripe_bg_color: "ddeeff",
+      };
+      const out = carryTexturePaletteOnModeChange("body", "gradient", "stripes", v);
+      expect(Object.keys(out).length).toBe(0);
     });
   });
 });
