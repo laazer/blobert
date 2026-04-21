@@ -4,6 +4,69 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M901-02-model-registry-layering] — Ambiguous layer contracts create avoidable assumption loops
+*Completed: 2026-04-21*
+
+### Learnings
+- category: architecture
+  insight: Ownership of cross-cutting constants used by both validation and migration logic must be explicitly defined at spec time to prevent dependency-direction guesswork.
+  impact: The pipeline required a checkpoint assumption for where `SCHEMA_VERSION` should live to avoid circular imports, introducing avoidable design uncertainty.
+  prevention: Require every layering spec to include a symbol ownership table for shared constants/functions and an import-direction statement for each module pair.
+  severity: medium
+
+- category: testing
+  insight: When specs define behavior but omit concrete API names for new modules, test design will invent naming contracts that may or may not match implementation intent.
+  impact: Test design had to assume exact store function names and formatting guarantees, creating medium-confidence drift risk between spec and tests.
+  prevention: Add a mandatory "public symbol list" section in specs for any new module so tests assert behavior and stable names intentionally, not by inference.
+  severity: medium
+
+- category: process
+  insight: Ambiguous acceptance-criteria language around "no modification" constraints causes repeated interpretation checkpoints even when behavioral intent is clear.
+  impact: Planning required an explicit assumption about whether router import-only edits were allowed, adding coordination overhead before implementation.
+  prevention: Normalize AC wording to distinguish "no behavior change" from "no file edits"; ban overloaded phrasing in refactor tickets.
+  severity: medium
+
+### Anti-Patterns
+- description: Defining module boundaries without explicitly assigning ownership of shared versioning symbols and dependency direction.
+  detection_signal: Checkpoints include "Would have asked" about where a shared constant belongs or how to avoid cycles between adjacent layers.
+  prevention: In spec review, block advancement until ownership and one-way import graph are explicit.
+
+- description: Writing test tickets that specify capability ("load/save") but not canonical public symbol names for new seam modules.
+  detection_signal: Test design logs medium-confidence assumptions about function names or persistence formatting details.
+  prevention: Require spec and test design to share a fixed exported-symbol contract before adversarial test expansion.
+
+- description: Using AC text that mixes contract stability intent with edit-prohibition language.
+  detection_signal: Planning logs interpretation assumptions for phrases like "works without modification."
+  prevention: Replace with explicit clauses: "HTTP behavior unchanged" and "import-path adjustments allowed/disallowed" as separate statements.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For any layering/refactor ticket, include a mandatory 'Shared Symbol Ownership' table (constant/function -> owning module) plus an explicit one-way import graph. Do not advance spec if any shared symbol ownership is implicit."
+  reason: Eliminates repeated dependency-direction assumptions and prevents cycle-prone designs from reaching implementation.
+
+- agent: Test Designer Agent
+  change: "When a ticket introduces a new module seam, require a 'Public Symbol Contract' subsection listing exact callable names and observable I/O guarantees. If absent, stop and request spec amendment before authoring tests."
+  reason: Prevents test/implementation drift caused by inferred naming contracts.
+
+- agent: Planner Agent
+  change: "Rewrite any AC phrase of the form 'X works without modification' into two explicit constraints: (1) behavior/contract invariants and (2) permitted edit scope (none/import-only/full), before handing off to spec."
+  reason: Reduces ambiguity-driven checkpoint assumptions and improves downstream execution speed.
+
+### Workflow Improvements
+- issue: Multiple medium-confidence assumptions were logged for semantics, symbol placement, and API naming before implementation could proceed.
+  improvement: Add an orchestrator pre-spec ambiguity gate that scans AC/spec drafts for overloaded terms ("without modification", "load/save only") and forces explicit rewrite before Stage SPECIFICATION completes.
+  expected_benefit: Fewer assumption checkpoints and less rework risk from hidden contract divergence.
+
+- issue: Test-break assumptions can target behaviors outside the ticket's explicit contract (e.g., extension-case handling) when normalization rules are not codified up front.
+  improvement: Add a test-break input checklist item that enumerates normalization policies (case sensitivity, format canonicalization) from spec; disallow introducing them by inference.
+  expected_benefit: Adversarial tests stay high-signal and reduce downstream disputes about intended behavior.
+
+### Keep / Reinforce
+- practice: Capturing unresolved ambiguities as explicit checkpoint assumptions with confidence levels.
+  reason: Preserves auditability and prevents silent scope mutation when deterministic clarification is unavailable.
+
+---
+
 ## [M9-02-mesh-material-audit] — Fail-closed assumptions prevented false pass, but revealed upstream ambiguity debt
 *Completed: 2026-04-21*
 
@@ -4294,5 +4357,197 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: Using dedicated module-level functions (`_rig_rotation_control_defs()`) for new control families rather than ClassVar promotion or ad-hoc dict literals.
   reason: ClassVar introspection with dynamic bounds breaks for default=0.0 (generates wrong range); explicit defs give exact step/min/max and are the established pattern for tail/mouth controls. Keeps control definitions co-located, testable independently, and easy to audit.
+
+---
+
+## [M901-01-import-standardization] — Import migration triggers org limits and diff-cover scope beyond “primary” files
+*Completed: 2026-04-21*
+
+### Learnings
+- category: process
+  insight: Repository organizational gates (for example line-count or module-size limits) treat import churn in large modules as structural change; a ticket scoped to imports can still force extraction or file splits before pre-commit passes.
+  impact: `material_system.py` exceeded the enforced line threshold after import edits, requiring a new companion module and test patch location updates.
+  prevention: Run org/size pre-commit or equivalent checks on the heaviest touched modules during implementation, not only at final handoff; plan extractions in the same deliverable when churn risks crossing thresholds.
+  severity: medium
+
+- category: testing
+  insight: Coverage tools keyed to branch diff against `main` fail when any changed file has uncovered executable lines, even when those lines pre-existed or were not the semantic focus of the ticket.
+  impact: Static QA initially reported diff-cover failure on `gradient_generator.py` despite the import ticket not targeting gradient behavior; closure required adding focused behavior tests until the diff hit the threshold.
+  prevention: For any file that appears in the coverage diff, either add minimal behavior tests for uncovered branches or record an explicit, ticket-linked coverage waiver before gating—not an open escalation with no default resolution path.
+  severity: medium
+
+- category: architecture
+  insight: Centralizing import bootstrap (`sys.path` / `PYTHONPATH` alignment) in the application entry layer keeps router and handler modules free of path-mutation patterns, which allows static AST checks to enforce the same contract as entrypoints.
+  impact: Backend routers remained eligible for “no `sys.path` mutation” CI rules while subprocess and package layout stayed consistent with `pyproject` conventions.
+  prevention: Prefer one sanctioned bootstrap point for path injection; avoid scattering compatibility hacks in modules that must stay lint-clean for static import contracts.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating import standardization as purely mechanical line edits while ignoring automated module-size or organization rules on high-churn files.
+  detection_signal: Implementation checkpoint notes a pre-commit failure solely from line count or structure after import edits, without a corresponding extraction task in the plan.
+  prevention: Include “verify org pre-commit on top-N touched modules” in implementation exit criteria for large refactor tickets.
+
+- description: Raising diff-cover failures as ambiguous blockers when uncovered lines sit in ancillary files appearing only because of merge-base or tangential edits.
+  detection_signal: Coverage report cites files the ticket did not name in its description, with no documented decision to test or waive.
+  prevention: Gatekeeper or Static QA checklist: for each uncovered file in the diff, choose “add behavior tests” or “document waiver + owner” before rerunning the gate.
+
+### Prompt Patches
+- agent: Implementation Generalist Agent
+  change: "For tickets that touch imports across large modules, run repository organization pre-commit (or equivalent line-count / structural checks) on those modules before declaring complete. If churn crosses a size threshold, extract submodules or split files in the same change set and update tests that patch symbols on moved objects."
+  reason: Prevents a separate rework cycle solely to satisfy org gates after import migration.
+
+- agent: Static QA Agent
+  change: "When diff-cover or coverage-on-diff fails, enumerate each file with uncovered lines in the branch diff. For each file, either (1) add minimal behavior tests covering those lines or (2) write an explicit coverage waiver tied to a follow-on ticket—do not leave the failure as an unresolved 'pre-existing' note without one of these closures."
+  reason: Makes coverage remediation deterministic and avoids indefinite gate retries.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If all ticket acceptance criteria have objective test evidence but Stage cannot advance to COMPLETE because the ticket file is still under `ready/` (milestone rule requires `done/`), set Stage to INTEGRATION (or the appropriate pre-complete stage), document the folder-move prerequisite in `NEXT ACTION`, and do not imply AC failure—distinguish 'AC satisfied' from 'workflow terminal state satisfied.'"
+  reason: Prevents false signals that work failed when only a filesystem handoff remains.
+
+### Workflow Improvements
+- issue: Revision and workflow metadata were missing on the ticket at pipeline start, forcing a baseline `Revision: 1` assumption in the orchestrator checkpoint.
+  improvement: Require new tickets to include initialized `WORKFLOW STATE` (Stage + Revision) or have the orchestrator seed them in a single first commit before spec work begins.
+  expected_benefit: Fewer Medium-confidence assumptions about revision history and cleaner audit trails.
+
+- issue: Terminal completion requires both AC evidence and physical move of the markdown file to `done/`, which can strand Learning/Blog agents that key off Stage `COMPLETE`.
+  improvement: Automate or script the `ready/` → `done/` move when the AC gate passes, or add an explicit pipeline trigger on `INTEGRATION` + AC-validated instead of only `COMPLETE`.
+  expected_benefit: Reduces human bottleneck and clarifies when downstream agents may run.
+
+### Keep / Reinforce
+- practice: Encoding the full import contract (entrypoints, backend routers, registry seams, package exports) in CI before the migration is finished, including subprocess and AST-based negative checks.
+  reason: Makes partial migration states detectable early and aligns implementation with R1–R4 without relying on manual review alone.
+
+- practice: Closing diff-cover gaps by adding behavior tests for the previously uncovered surfaces (`gradient_generator`, `get_enemy_materials` themes) rather than bypassing the gate.
+  reason: Strengthens regression protection for code that entered the diff scope and satisfies coverage policy with durable tests.
+
+---
+
+## [M901-03-type-hints-and-documentation] — Scope ambiguity and strict-type gating noise drove assumption-heavy execution
+*Completed: 2026-04-21*
+
+### Learnings
+- category: process
+  insight: If ticket scope terms like "all refactored modules" are not frozen to an explicit file inventory before test design, multiple downstream stages will independently re-interpret scope and accumulate Medium-confidence assumptions.
+  impact: Orchestrator, Test Designer, and Static QA each logged separate scope assumptions for AC enforcement and denominator boundaries, increasing coordination overhead and confidence risk despite eventual pass.
+  prevention: Require the spec to include a canonical scoped-file manifest and AC-to-file mapping that all later agents must reuse without reinterpretation.
+  severity: high
+
+- category: testing
+  insight: Type-gate acceptance criteria that require strict checking on scoped files need an explicit strategy for handling out-of-scope transitive imports.
+  impact: Initial raw strict run surfaced transitive failures outside ticket scope, requiring a later scoped `mypy --strict --follow-imports=skip` contract to recover deterministic gating.
+  prevention: Define the strict-type command contract in the spec (including import-follow policy) and make Test Designer/Static QA assert against that exact command from the start.
+  severity: medium
+
+- category: process
+  insight: AC items that can be legitimately N/A due to scoped-no-diff conditions must include objective evidence rules, not ad hoc interpretation at integration time.
+  impact: AC2 required a late explicit N/A proof path (`web/backend` no-diff evidence), which worked but consumed gatekeeper and static-QA decision bandwidth.
+  prevention: For each cross-layer AC, predefine N/A criteria and required evidence artifact (for example, path-scoped diff proof) in the spec.
+  severity: medium
+
+### Anti-Patterns
+- description: Repeated stage-by-stage scope interpretation instead of one frozen manifest reused across the pipeline.
+  detection_signal: Multiple checkpoints in the same ticket contain "Would have asked" entries about module-set boundaries with Medium confidence.
+  prevention: Block advancement from SPECIFICATION until a concrete file list and denominator policy are published.
+
+- description: Running an unconstrained strict type check first, then retrofitting a scoped command after transitive failures appear.
+  detection_signal: Checkpoints mention "initial raw strict run failed out-of-scope" followed by a different strict command used for final evidence.
+  prevention: Require strict-command freeze (targets + flags) before implementation and treat deviations as a spec/test-design defect.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For any AC that uses scoped language (e.g., 'all refactored modules'), you MUST produce a canonical file manifest and AC-to-file matrix in the spec. Downstream agents must treat this manifest as the only valid scope source and may not redefine scope in checkpoints."
+  reason: Eliminates repeated Medium-confidence scope assumptions and keeps evidence deterministic across stages.
+
+- agent: Test Designer Agent
+  change: "When a ticket includes a strict static-analysis AC (`mypy --strict`, lint gates, etc.), define and record the exact command (targets and flags) in tests/checkpoint notes. If transitive import behavior is excluded, explicitly encode that policy before implementation starts."
+  reason: Prevents rework from late command changes and avoids ambiguous pass/fail criteria at integration.
+
+- agent: Static QA Agent
+  change: "If an AC is satisfied via scoped N/A (for example, no touched files in a required layer), you must attach objective evidence using a path-scoped diff command and cite the governing spec clause in the checkpoint."
+  reason: Converts N/A decisions from subjective judgment into repeatable, auditable evidence.
+
+### Workflow Improvements
+- issue: Scope and denominator assumptions were rediscovered in three separate stages instead of resolved once upstream.
+  improvement: Add a required "Scope Lock" artifact in SPECIFICATION (file manifest + denominator definition + cross-layer N/A rules) and fail TEST_DESIGN entry if missing.
+  expected_benefit: Fewer checkpoint assumption loops, faster stage transitions, and higher-confidence AC validation.
+
+- issue: Strict type-check strategy was stabilized only after an initial failure mode exposed transitive-noise risk.
+  improvement: Introduce a pre-implementation static-gate dry-run in TEST_DESIGN that executes the exact strict command contract on the frozen scope.
+  expected_benefit: Surfaces command/flag defects earlier and removes integration-stage gate churn.
+
+### Keep / Reinforce
+- practice: Logging assumption checkpoints with explicit confidence and "Would have asked" framing when ambiguity cannot be resolved immediately.
+  reason: Preserves auditability and makes hidden uncertainty visible for future prompt/workflow hardening.
+
+- practice: Pairing contract-only checks with behavior regression suites before declaring documentation/type-hardening complete.
+  reason: Prevents non-functional tickets from masking runtime regressions while still enforcing strict typing/documentation outcomes.
+
+---
+
+## [M901-04-utility-file-consolidation] — Spec resolves AC literalism; contracts beat ticket filenames
+*Completed: 2026-04-21*
+
+### Learnings
+- category: architecture
+  insight: When a milestone ticket names a single file (e.g. `build_options.py`) but parallel work and collision avoidance favor a package facade, the approved spec must explicitly reconcile literal AC text with the chosen layout and record traceability to requirement IDs.
+  impact: Without that bridge, reviewers can treat package layout as AC failure even when behavior and imports are correct.
+  prevention: Freeze requirement IDs (e.g. R5) that define the canonical module shape and add a one-line AC mapping note in workflow validation, as done for `build_options/` vs. ticket wording.
+  severity: medium
+
+- category: process
+  insight: Arbitrary per-module LOC caps in ticket prose often conflict with existing large domains; the planner should force the spec to either exempt, split, or replace the guideline before implementation—not assume implementers will silently compress code.
+  impact: Medium-confidence planning assumptions arose for `build_options` size vs. "< 250 LOC" language; resolved only at spec time.
+  prevention: For refactor tickets, replace vague LOC rules with “per spec §X decomposition” or drop the cap when a dependent ticket owns the bulk of the lines.
+  severity: medium
+
+- category: architecture
+  insight: Path-validation helpers that mix “missing file” with “wrong shape” failures need an explicit exception taxonomy in the spec; choosing one catch-all type is a product decision for pipeline ergonomics.
+  impact: Spec assumed `ValueError` for all `validate_glb_path` rejections (medium confidence); a different choice would change caller `except` clauses.
+  prevention: Require a short “Exceptions” subsection for any new validation API: which errors use `FileNotFoundError` vs `ValueError` vs custom types.
+  severity: medium
+
+- category: testing
+  insight: Legacy-import AST gates that include `tests/` will stay red until the migration lands; that is expected and should be documented so implementers do not treat the suite as accidentally broken.
+  impact: Test design consciously scoped RED phase across src and tests; avoids false “tests are flaky” diagnosis.
+  prevention: In test-design checkpoints, state explicitly: “contract tests intentionally fail until task N.”
+  severity: low
+
+### Anti-Patterns
+- description: Deferring adversarial coverage for relative imports inside a package (`from .foo`) while only scanning absolute import forms in AST gates.
+  detection_signal: Test-break log notes “deferred” relative-import coverage with medium confidence.
+  prevention: Add one targeted negative test or lint rule for forbidden relative re-exports when a ticket removes duplicate local modules (e.g. `demo`).
+
+- description: Stating optional APIs in the ticket (“export_manifest_entry”) without a spec decision to implement, omit, or stub—leaving scope ambiguous until spec explicitly defers.
+  detection_signal: Spec checkpoint lists a function as optional/deferred because it does not exist in the codebase.
+  prevention: Mark optional AC lines in the ticket as “if duplication exists” or remove them; spec must record omit vs implement with requirement ID.
+
+### Prompt Patches
+- agent: Planner Agent
+  change: "When a ticket sets a per-file LOC target that conflicts with an existing or sibling-owned large module, do not proceed to SPECIFICATION until the ticket is amended or the spec template includes an explicit exemption or submodule decomposition table tied to requirement IDs."
+  reason: Prevents medium-confidence assumptions and reviewer confusion when consolidated modules cannot meet arbitrary line counts.
+
+- agent: Spec Agent
+  change: "For every new validation function that inspects paths or files, add an 'Exception contract' bullet: list each failure mode and the exact exception type raised; do not leave 'ValueError vs FileNotFoundError' implicit."
+  reason: Aligns pipeline exception handling with intentional semantics rather than implementer guesswork.
+
+- agent: Test Breaker Agent
+  change: "When R7-style 'no duplicate module name' rules apply, include at least one check for relative imports (`from .`) that could resurrect a shadow module without appearing in absolute-import AST scans, or document the gap as an accepted risk with owner sign-off."
+  reason: Closes a class of regressions that absolute-only gates can miss.
+
+### Workflow Improvements
+- issue: Ticket acceptance criteria used literal filenames while the coordinated design required a package directory.
+  improvement: Require milestone tickets that overlap another ticket’s namespace to include “canonical shape per spec §…” in ACs, not only filenames.
+  expected_benefit: Fewer false AC failures and less validation narrative in workflow state.
+
+- issue: Large mechanical import migrations can make RED contract tests look like environmental failure.
+  improvement: Orchestrator or test-design stage adds a one-line banner in the ticket or checkpoint: “Import contract tests are expected RED until implementation stage completes.”
+  expected_benefit: Reduces wasted triage on pre-implementation runs.
+
+### Keep / Reinforce
+- practice: Using a package `__init__.py` facade with `__all__` on the implementation module and star-import for stable public surface when replacing a flat module.
+  reason: Preserves attribute parity for `import pkg as alias` patterns and keeps re-export intent explicit for reviewers.
+
+- practice: Recording AC-to-spec traceability in validation status when ticket wording and spec shape diverge.
+  reason: Gives auditors a single place to justify layout decisions without reopening scope debates.
 
 ---

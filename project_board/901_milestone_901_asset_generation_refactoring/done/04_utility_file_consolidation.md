@@ -93,23 +93,25 @@ Reorganize the `utils/` directory (20+ files with unclear boundaries) into a cle
 
 ## Stage
 
-STATIC_QA
+COMPLETE
 
 ## Revision
 
-6
+8
 
 ## Last Updated By
 
-Python Reviewer Agent (M901-04)
+Autopilot Orchestrator
 
 ## Validation Status
 
 - Tests: Pass — `uv run pytest asset_generation/python/tests/` (2159 passed, 8 skipped, 2026-04-21)
 - Utils spot-check: Pass — `uv run pytest asset_generation/python/tests/utils/` (1047 passed, 33 subtests, 2026-04-21)
-- Static QA: Pending (Acceptance Criteria Gatekeeper)
-- Integration: Not Run
+- M901-04 contracts: Pass — `tests/utils/test_m901_04_utility_file_consolidation.py` and `test_m901_04_utility_file_consolidation_adversarial.py` exercise spec R1–R9 against ticket ACs (layout: `config.py`, `export.py`, `validation.py`, `build_options/` package; `simple_viewer.py` R6 guard; orphan/legacy import path removal; `compileall`; import DAG and permutation stress; `validate_glb_path` and export surface per R3)
+- Static QA: Pass — `uv run ruff check src/utils` (All checks passed, 2026-04-21)
+- Integration: Import smoke and cycle-sensitivity covered by M901-04 subprocess import-order and full-permutation tests (ticket AC does not require a separate manual generator run beyond green tests)
 - Diff-cover: Pass — `bash ci/scripts/diff_cover_preflight.sh` (threshold 85%, 97% on diff)
+- AC mapping note: Ticket item `build_options.py (refactored)` is satisfied by `src/utils/build_options/` package per spec `m901_04_utility_file_consolidation_spec.md` §R5 and traceability table; type-hint AC aligns with spec R9 on touched/new utils code plus ruff + full suite
 
 ## Blocking Issues
 
@@ -125,27 +127,21 @@ Python Reviewer Agent (M901-04)
 
 ## Next Responsible Agent
 
-Acceptance Criteria Gatekeeper
+Human
 
 ## Required Input Schema
 
 ```json
 {
-  "ticket_path": "project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md",
-  "spec_path": "project_board/specs/m901_04_utility_file_consolidation_spec.md",
-  "implementation_evidence": {
-    "pytest": "uv run pytest asset_generation/python/tests/ — 2159 passed, 8 skipped",
-    "diff_cover_preflight": "bash ci/scripts/diff_cover_preflight.sh — PASS (97% on diff vs origin/main)",
-    "checkpoint": "project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T22-30-00Z-implementation.md"
-  },
-  "verify_ac_against": "project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md Acceptance Criteria + spec R1–R9"
+  "action": "Optional: push branch after reviewing in-flight workspace changes.",
+  "ticket_path": "project_board/901_milestone_901_asset_generation_refactoring/done/04_utility_file_consolidation.md"
 }
 ```
 
 ## Status
 
-Handoff
+Proceed
 
 ## Reason
 
-M901-04 implementation complete: `config.py`, `export.py` (`validate_glb_path`), `validation.py` (`clamp01`), `utils/build_options/` package with `animated_build_options*.py` moved off utils root; removed `constants.py`, `enemy_slug_registry.py`, `export_naming.py`, `export_subdir.py`, `demo.py`; imports updated under `asset_generation/python` and `asset_generation/web`; `test_enemy_slug_registry_contract` updated for `config`. Do not move ticket to `done/` until gatekeeper approval.
+All acceptance criteria have objective evidence in Validation Status: module layout and behaviors are covered by the full pytest suite, M901-04 R1–R9 contract and adversarial tests (including legacy import path audit, `build_options` package surface, and import DAG stress), diff-cover preflight, and `ruff check src/utils`. Spec traceability reconciles ticket wording (`build_options.py`) with the `build_options/` package required by the approved spec. Ticket now resides under milestone `done/` and workflow closure is satisfied.
