@@ -69,7 +69,8 @@ class TestStripesTextureGenerator:
         assert pb != ps
         assert pd != ps
 
-    def test_euler_rotation_changes_output(self) -> None:
+    def test_discrete_yaw_rotations_produce_different_textures(self) -> None:
+        """Different 90° multiple rotations (0°, 90°, 180°, 270°) should produce different textures."""
         base = dict(
             width=32,
             height=32,
@@ -78,9 +79,38 @@ class TestStripesTextureGenerator:
             stripe_width=0.4,
             stripe_preset="beachball",
         )
-        a = _stripes_texture_generator(**base, rot_z_deg=0.0)
-        b = _stripes_texture_generator(**base, rot_z_deg=30.0)
-        assert a != b
+        tex_0 = _stripes_texture_generator(**base, rot_y_deg=0.0)
+        tex_90 = _stripes_texture_generator(**base, rot_y_deg=90.0)
+        tex_180 = _stripes_texture_generator(**base, rot_y_deg=180.0)
+        tex_270 = _stripes_texture_generator(**base, rot_y_deg=270.0)
+
+        # Each 90° multiple rotation should produce a different texture
+        assert tex_0 != tex_90, "0° and 90° should be different"
+        assert tex_90 != tex_180, "90° and 180° should be different"
+        assert tex_180 != tex_270, "180° and 270° should be different"
+        assert tex_270 != tex_0, "270° and 0° should be different"
+
+    def test_non_discrete_angles_round_to_nearest_90_multiple(self) -> None:
+        """Non-discrete angles should round to nearest 90° multiple."""
+        base = dict(
+            width=32,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.4,
+            stripe_preset="beachball",
+        )
+        # 30° and 45° should both round to 0°
+        tex_30 = _stripes_texture_generator(**base, rot_y_deg=30.0)
+        tex_45 = _stripes_texture_generator(**base, rot_y_deg=45.0)
+        # 50° and 60° should both round to 90°
+        tex_50 = _stripes_texture_generator(**base, rot_y_deg=50.0)
+        tex_60 = _stripes_texture_generator(**base, rot_y_deg=60.0)
+        tex_0 = _stripes_texture_generator(**base, rot_y_deg=0.0)
+        tex_90 = _stripes_texture_generator(**base, rot_y_deg=90.0)
+
+        assert tex_30 == tex_45 == tex_0, "30° and 45° should both round to 0°"
+        assert tex_50 == tex_60 == tex_90, "50° and 60° should both round to 90°"
 
     def test_legacy_horizontal_vertical_map_to_presets(self) -> None:
         a = _stripes_texture_generator(

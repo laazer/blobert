@@ -53,7 +53,12 @@ def _material_for_stripes_zone(
     transmission = finish_transmission if finish_transmission is not None else 0.0
     alpha = stripe_color[3] if len(stripe_color) > 3 else 1.0
 
-    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    sw = max(0.05, min(1.0, float(stripe_width)))
+    safe = _sanitize_image_label(instance_suffix)
+    # Include rotation angles and preset in names to avoid material/texture cache collisions.
+    rot_y_int = int(round(rot_yaw_deg)) % 360
+    rot_x_int = int(round(rot_pitch_deg)) % 360
+    new_name = f"{base_palette_name}__feat_{instance_suffix}_p{rot_x_int}_y{rot_y_int}"
     mat = ms.create_material(
         name=new_name,
         color=stripe_color,
@@ -66,9 +71,7 @@ def _material_for_stripes_zone(
         force_base_color=False,
     )
 
-    sw = max(0.05, min(1.0, float(stripe_width)))
-    safe = _sanitize_image_label(instance_suffix)
-    img_name = f"BlobertTexStripe_{safe}"
+    img_name = f"BlobertTexStripe_{safe}_p{rot_x_int}_y{rot_y_int}_{stripe_preset}"
     # Rotation mapping: pitch (x-axis rotation) + yaw (y-axis rotation); z always 0.
     img = create_stripes_png_and_load(
         width=256,
@@ -101,7 +104,11 @@ def _material_for_stripes_zone(
 
                 uv = nodes.new(type="ShaderNodeUVMap")
                 uv.location = (-800, 200)
+
+                # Rotation is applied during texture generation, not in shader
+                # Just apply UV coordinates directly to texture
                 links.new(uv.outputs["UV"], tex.inputs["Vector"])
+
                 links.new(tex.outputs["Color"], bc_in)
 
     return mat

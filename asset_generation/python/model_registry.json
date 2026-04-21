@@ -147,6 +147,12 @@
         },
         {
           "draft": true,
+          "id": "spider_animated_00",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_00.glb"
+        },
+        {
+          "draft": true,
           "id": "spider_animated_09",
           "in_use": false,
           "path": "animated_exports/spider_animated_09.glb"
@@ -156,18 +162,6 @@
           "id": "spider_animated_10",
           "in_use": false,
           "path": "animated_exports/spider_animated_10.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_00",
-          "in_use": false,
-          "path": "animated_exports/draft/spider_animated_00.glb"
-        },
-        {
-          "draft": true,
-          "id": "spider_animated_01",
-          "in_use": false,
-          "path": "animated_exports/draft/spider_animated_01.glb"
         }
       ]
     },
