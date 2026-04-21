@@ -93,15 +93,15 @@ Reorganize the `utils/` directory (20+ files with unclear boundaries) into a cle
 
 ## Stage
 
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
 
-2
+3
 
 ## Last Updated By
 
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 
@@ -123,7 +123,7 @@ Spec Agent
 
 ## Next Responsible Agent
 
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 
@@ -140,7 +140,7 @@ Test Designer Agent
     "note": "Public API is src.utils.build_options package; internal schema/validate split is M901-06 per spec Deferred Boundary."
   },
   "deliverables": [
-    "Behavior-first tests for R1–R9 (import DAG, config parity, export paths, validate_glb_path, clamp01 migration, build_options imports)"
+    "Adversarial pass on M901-04 tests: cycles, partial migration, rename regressions; strengthen negative/boundary cases per spec"
   ]
 }
 ```
@@ -151,4 +151,4 @@ Proceed
 
 ## Reason
 
-Specification complete at `project_board/specs/m901_04_utility_file_consolidation_spec.md`; `spec_completeness_check.py --type generic` passed; ready for test design against requirement IDs R1–R9.
+Primary behavioral tests for R1–R9 are in `asset_generation/python/tests/utils/test_m901_04_utility_file_consolidation.py` (helpers: `m901_04_paths.py`, `m901_04_import_ast.py`). The suite is expected to fail until the consolidation implementation lands; proceed to adversarial strengthening.
