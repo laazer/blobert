@@ -73,7 +73,7 @@ Implementation Generalist Agent
 ## Validation Status
 
 - Tests: Passed (`uv run pytest -q tests/model_registry` => 120 passed; `uv run pytest -q tests/ci/test_import_standardization_behavior.py` => 37 passed; `uv run pytest -q tests/test_registry_model_selection_router.py tests/test_registry_load_existing_allowlist_router.py tests/test_registry_atrad_cross_cutting.py tests/test_registry_delete_router.py` => 73 passed)
-- Static QA: Passed (`bash ci/scripts/diff_cover_preflight.sh` => PASS, 100% diff coverage)
+- Static QA: Passed (`bash ci/scripts/diff_cover_preflight.sh` => PASS, 93% diff coverage)
 - Integration: Not Run
 
 ## Blocking Issues
@@ -123,4 +123,4 @@ Proceed
 
 ## Reason
 
-Implemented conservative M901-02 layering compatibility fixes to satisfy runtime contracts: `store.py` now owns local registry filename constant without importing sibling layers, and `service.py` explicitly aliases ownership symbols (`registry_path`, `validate_manifest`, migration helpers, and default migration factory) to `store`/`schema`/`migrations` while preserving public API behavior. Validation evidence: model registry, CI import-standardization, backend registry router suites all pass; diff-cover preflight passes at 100%.
+Implemented conservative M901-02 layering compatibility fixes to satisfy runtime contracts: `store.py` now owns local registry filename constant without importing sibling layers, and `service.py` publishes the service-owned validation/migration helper callables through `schema`/`migrations` module symbols expected by layering contracts while preserving public API behavior. Validation evidence: model registry, CI import-standardization, backend registry router suites all pass; diff-cover preflight passes at 93%.
