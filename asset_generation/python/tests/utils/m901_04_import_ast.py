@@ -176,6 +176,43 @@ def assert_build_options_package_import_dag(path: Path) -> None:
                 raise AssertionError(f"{path}: forbidden relative ImportFrom module {mod!r}")
 
 
+def utils_demo_import_violations(path: Path) -> list[str]:
+    """R7: runtime-import surface must not reference ``src.utils.demo`` (orphan removal)."""
+    out: list[str] = []
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                name = alias.name
+                if name == "src.utils.demo" or name.startswith("src.utils.demo."):
+                    out.append(f"{path}: Import {name!r}")
+        elif isinstance(node, ast.ImportFrom):
+            if node.module == "src.utils.demo":
+                out.append(f"{path}: ImportFrom {node.module!r}")
+            mod = node.module
+            if mod == "src.utils":
+                for alias in node.names:
+                    if alias.name == "demo":
+                        out.append(f"{path}: from src.utils import demo")
+    return out
+
+
+def assert_build_options_package_no_star_from_src_utils(build_options_dir: Path) -> None:
+    """R5/R8: ``from src.utils import *`` inside ``build_options`` would couple surfaces unexpectedly."""
+    if not build_options_dir.is_dir():
+        return
+    for path in sorted(build_options_dir.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or node.module != "src.utils":
+                continue
+            for alias in node.names:
+                if alias.name == "*":
+                    raise AssertionError(f"{path}: forbidden star import from src.utils")
+
+
 def legacy_utils_import_violations(path: Path) -> list[str]:
     """Return human-readable violations for forbidden legacy ``src.utils.*`` import paths."""
     out: list[str] = []

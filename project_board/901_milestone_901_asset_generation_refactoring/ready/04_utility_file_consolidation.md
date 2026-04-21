@@ -93,15 +93,15 @@ Reorganize the `utils/` directory (20+ files with unclear boundaries) into a cle
 
 ## Stage
 
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
 
-3
+4
 
 ## Last Updated By
 
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
 
@@ -123,7 +123,7 @@ Test Designer Agent
 
 ## Next Responsible Agent
 
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Required Input Schema
 
@@ -140,7 +140,7 @@ Test Breaker Agent
     "note": "Public API is src.utils.build_options package; internal schema/validate split is M901-06 per spec Deferred Boundary."
   },
   "deliverables": [
-    "Adversarial pass on M901-04 tests: cycles, partial migration, rename regressions; strengthen negative/boundary cases per spec"
+    "Implement spec R1–R9: config/export/validation modules, build_options package, import updates, orphans; green pytest including `test_m901_04_utility_file_consolidation*.py`"
   ]
 }
 ```
@@ -151,4 +151,4 @@ Proceed
 
 ## Reason
 
-Primary behavioral tests for R1–R9 are in `asset_generation/python/tests/utils/test_m901_04_utility_file_consolidation.py` (helpers: `m901_04_paths.py`, `m901_04_import_ast.py`). The suite is expected to fail until the consolidation implementation lands; proceed to adversarial strengthening.
+Adversarial suite added in `test_m901_04_utility_file_consolidation_adversarial.py` (full DAG permutations, concurrent subprocess imports, GLB path edges, stem/bench JSON/clamp invariants, R7 `utils.demo` AST scan, build_options star-import guard). Checkpoint logged under `project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T23-30-00Z-test-break.md`. Hand off to implementation to land consolidation and turn RED tests green.
