@@ -10,6 +10,7 @@ from src.enemies import animated_imp as imp_mod
 from src.enemies.base_animated_model import BaseAnimatedModel
 from src.materials import material_system as ms
 from src.materials import material_system_enemy_themes as ms_enemy_themes
+from src.utils.materials import MaterialNames
 
 
 class _StubAnimatedModel(BaseAnimatedModel):
@@ -445,6 +446,43 @@ def test_get_enemy_materials_joint_slot_matches_limbs_for_three_theme_colors() -
         out = ms.get_enemy_materials("test_enemy", palette, rng)
     assert out["limbs"] is palette["M2"]
     assert out["joints"] is palette["M2"]
+
+
+def test_get_enemy_materials_unknown_enemy_uses_default_palette_slots() -> None:
+    """Enemy names with no registered theme map body/head/limbs/joints/extra from defaults."""
+    brown = MagicMock()
+    pink = MagicMock()
+    bone = MagicMock()
+    palette = {
+        MaterialNames.ORGANIC_BROWN: brown,
+        MaterialNames.FLESH_PINK: pink,
+        MaterialNames.BONE_WHITE: bone,
+    }
+    rng = MagicMock()
+    out = ms_enemy_themes.get_enemy_materials(
+        "enemy_with_no_theme_registry_entry_901", palette, rng
+    )
+    assert out["body"] is brown
+    assert out["head"] is pink
+    assert out["limbs"] is bone
+    assert out["joints"] is bone
+    assert out["extra"] is brown
+
+
+def test_get_enemy_materials_two_theme_materials_reuses_first_for_limbs_and_joints() -> None:
+    ma, mb = MagicMock(name="MA"), MagicMock(name="MB")
+    palette = {"MA": ma, "MB": mb}
+    rng = MagicMock()
+    with (
+        patch.object(ms_enemy_themes.MaterialThemes, "has_theme", return_value=True),
+        patch.object(ms_enemy_themes.MaterialThemes, "get_theme", return_value=("MA", "MB")),
+    ):
+        out = ms_enemy_themes.get_enemy_materials("two_slot_theme", palette, rng)
+    assert out["body"] is ma
+    assert out["head"] is mb
+    assert out["limbs"] is ma
+    assert out["joints"] is ma
+    assert out["extra"] is mb
 
 
 @pytest.mark.parametrize(

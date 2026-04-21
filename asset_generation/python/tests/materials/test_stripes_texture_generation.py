@@ -211,13 +211,68 @@ def test_create_stripes_png_and_load_exists() -> None:
     assert hasattr(gg, "create_stripes_png_and_load")
 
 
-def test_stripes_texture_generator_rejects_non_numeric_width() -> None:
-    # CHECKPOINT: conservative assumption is strict type safety for width coercion.
-    with pytest.raises((TypeError, ValueError)):
-        _stripes_texture_generator(  # type: ignore[arg-type]
+def test_stripes_texture_generator_rejects_non_numeric_stripe_width() -> None:
+    with pytest.raises(TypeError, match="stripe_width must be numeric"):
+        _stripes_texture_generator(
             width=32,
             height=32,
             stripe_color_hex="ff0000",
             bg_color_hex="ffffff",
-            stripe_width="0.2",
+            stripe_width="0.2",  # type: ignore[arg-type]
+        )
+
+
+def test_stripes_texture_generator_rejects_non_int_width_or_height() -> None:
+    with pytest.raises(TypeError, match="width must be an integer"):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            width=32.0,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.5,
+        )
+    with pytest.raises(TypeError, match="height must be an integer"):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            width=32,
+            height=32.0,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.5,
+        )
+
+
+def test_stripes_texture_generator_rejects_bool_width_or_height() -> None:
+    with pytest.raises(TypeError, match="width must be an integer"):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            width=True,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.5,
+        )
+
+
+def test_stripes_texture_generator_rejects_non_positive_dimensions() -> None:
+    with pytest.raises(ValueError, match="width and height must be positive"):
+        _stripes_texture_generator(0, 32, "ff0000", "ffffff", 0.5)
+    with pytest.raises(ValueError, match="width and height must be positive"):
+        _stripes_texture_generator(32, -1, "ff0000", "ffffff", 0.5)
+
+
+def test_stripes_texture_generator_rejects_non_string_hex_colors() -> None:
+    with pytest.raises(TypeError, match="stripe_color_hex must be a string"):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            32,
+            32,
+            stripe_color_hex=0xFF0000,  # type: ignore[arg-type]
+            bg_color_hex="ffffff",
+            stripe_width=0.5,
+        )
+    with pytest.raises(TypeError, match="bg_color_hex must be a string"):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            32,
+            32,
+            stripe_color_hex="ff0000",
+            bg_color_hex=b"ffffff",  # type: ignore[arg-type]
+            stripe_width=0.5,
         )

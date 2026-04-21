@@ -177,14 +177,14 @@ Standardize import patterns across the asset generation Python codebase. Remove 
 STATIC_QA
 
 ## Revision
-5
+6
 
 ## Last Updated By
 Implementation Generalist Agent
 
 ## Validation Status
-- Tests: `uv run python -m pytest tests/ -q` in `asset_generation/python` → 2082 passed, 7 skipped (2026-04-21). CI contract: `tests/ci/test_import_standardization_behavior.py` → 37 passed.
-- Static QA: diff-cover preflight (`ci/scripts/diff_cover_preflight.sh`) failed: 74% on diff vs `origin/main` (threshold 85%); uncovered lines reported under `src/materials/gradient_generator.py` in branch diff — not edited in this handoff; gatekeeper to reconcile vs branch policy.
+- Tests: `uv run python -m pytest tests/ -q` in `asset_generation/python` → 2093 passed, 7 skipped (2026-04-21). CI contract: `tests/ci/test_import_standardization_behavior.py` → 37 passed.
+- Static QA: diff-cover preflight (`ci/scripts/diff_cover_preflight.sh`) **PASS** — 100% on diff vs `origin/main` (73 lines, threshold 85%); `gradient_generator.py` and `material_system_enemy_themes.py` covered on diff.
 - Integration: Not Run
 
 ## Blocking Issues
@@ -212,9 +212,9 @@ Acceptance Criteria Gatekeeper Agent
     "backend_main": "asset_generation/web/backend/main.py"
   },
   "evidence": {
-    "pytest_asset_generation_python": "2082 passed, 7 skipped",
+    "pytest_asset_generation_python": "2093 passed, 7 skipped",
     "import_contract_ci": "tests/ci/test_import_standardization_behavior.py 37 passed",
-    "diff_cover_preflight": "failed 74% vs 85% — gradient_generator.py in branch diff"
+    "diff_cover_preflight": "PASS — 100% on diff vs origin/main (threshold 85%)"
   }
 }
 ```
@@ -223,4 +223,4 @@ Acceptance Criteria Gatekeeper Agent
 Proceed
 
 ## Reason
-Implementation removed `sys.path` hacks from scoped entry points and routers; added `main.py` bootstrap for `asset_generation/python` resolution; switched internal seams to `src.*` absolute imports and re-exported `ENEMY_FINISH_PRESETS` / `setup_materials` from `src.materials`. Full Python test suite green; hand off for AC verification and diff-cover policy on branch diff.
+Implementation removed `sys.path` hacks from scoped entry points and routers; added `main.py` bootstrap for `asset_generation/python` resolution; switched internal seams to `src.*` absolute imports and re-exported `ENEMY_FINISH_PRESETS` / `setup_materials` from `src.materials`. Added behavior tests for stripe/spots texture validation and enemy theme mapping so diff-cover preflight meets threshold. Full Python test suite green; hand off to Acceptance Criteria Gatekeeper for AC verification.
