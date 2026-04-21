@@ -60,15 +60,15 @@ Decompose `model_registry/service.py` (684 LOC) from a god object into 4 focused
 
 ## Stage
 
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
 
-2
+3
 
 ## Last Updated By
 
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 
@@ -90,7 +90,7 @@ Spec Agent
 
 ## Next Responsible Agent
 
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 
