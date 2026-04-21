@@ -13,8 +13,6 @@ import sys
 
 import bpy
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from src.core.blender_utils import clear_scene
 from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES

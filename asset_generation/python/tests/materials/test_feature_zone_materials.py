@@ -9,6 +9,7 @@ import pytest
 from src.enemies import animated_imp as imp_mod
 from src.enemies.base_animated_model import BaseAnimatedModel
 from src.materials import material_system as ms
+from src.materials import material_system_enemy_themes as ms_enemy_themes
 
 
 class _StubAnimatedModel(BaseAnimatedModel):
@@ -425,8 +426,8 @@ def test_get_enemy_materials_single_theme_color_fills_all_slots() -> None:
     palette = {"M0": m0}
     rng = MagicMock()
     with (
-        patch.object(ms.MaterialThemes, "has_theme", return_value=True),
-        patch.object(ms.MaterialThemes, "get_theme", return_value=("M0",)),
+        patch.object(ms_enemy_themes.MaterialThemes, "has_theme", return_value=True),
+        patch.object(ms_enemy_themes.MaterialThemes, "get_theme", return_value=("M0",)),
     ):
         out = ms.get_enemy_materials("solo_theme", palette, rng)
     assert out["joints"] is m0
@@ -438,8 +439,8 @@ def test_get_enemy_materials_joint_slot_matches_limbs_for_three_theme_colors() -
     rng = MagicMock()
     rng.choice = MagicMock(side_effect=lambda seq: seq[-1])
     with (
-        patch.object(ms.MaterialThemes, "has_theme", return_value=True),
-        patch.object(ms.MaterialThemes, "get_theme", return_value=("M0", "M1", "M2")),
+        patch.object(ms_enemy_themes.MaterialThemes, "has_theme", return_value=True),
+        patch.object(ms_enemy_themes.MaterialThemes, "get_theme", return_value=("M0", "M1", "M2")),
     ):
         out = ms.get_enemy_materials("test_enemy", palette, rng)
     assert out["limbs"] is palette["M2"]

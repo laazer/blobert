@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from core.config import settings
 from fastapi import APIRouter
@@ -35,20 +34,14 @@ def _fallback_enemies() -> list[dict[str, str]]:
 @router.get("/enemies")
 async def get_enemies() -> JSONResponse:
     """Enemy list + procedural build controls from ``asset_generation/python`` (introspects enemy ClassVars)."""
-    python_root = str(settings.python_root)
-    src_path = str(settings.python_root / "src")
-    for p in (python_root, src_path):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-
     try:
         # Stubs must load before any module that imports bpy/mathutils (e.g. blender_utils).
-        from utils.blender_stubs import ensure_blender_stubs
+        from src.utils.blender_stubs import ensure_blender_stubs
 
         ensure_blender_stubs()
 
-        from utils.animated_build_options import animated_build_controls_for_api
-        from utils.enemy_slug_registry import animated_enemies_for_api
+        from src.utils.animated_build_options import animated_build_controls_for_api
+        from src.utils.enemy_slug_registry import animated_enemies_for_api
 
         enemies = animated_enemies_for_api()
         build_controls = animated_build_controls_for_api()

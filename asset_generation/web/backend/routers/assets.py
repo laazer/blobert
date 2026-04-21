@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 from core.config import settings
@@ -6,7 +5,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-sys.path.insert(0, str(settings.python_root))
 from src.utils.texture_asset_loader import get_available_assets
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])

@@ -6,13 +6,10 @@ Usage (via main.py):
     blender --background --python src/level_generator.py -- <object_type> [count] [seed]
 """
 
-import os
 import random
 import sys
 
 import bpy
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.core.blender_utils import clear_scene
 from src.level.level_object_builder import LevelObjectBuilder

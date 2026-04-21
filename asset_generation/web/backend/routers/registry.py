@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
@@ -198,26 +197,22 @@ def _canonical_python_roots() -> tuple[Path, Path]:
 
 def _ensure_python_import_path() -> None:
     """
-    Import pipeline code from the repo's ``asset_generation/python`` tree.
+    Legacy hook: import paths are set in ``main.py`` before routers load.
 
     ``settings.python_root`` may point at an isolated tmp dir in tests; manifest
-    I/O uses that path, but ``utils`` / ``model_registry`` must resolve from the
-    canonical checkout.
+    I/O uses that path, but ``utils`` / ``model_registry`` resolve from the
+    canonical checkout via ``main._bootstrap_asset_generation_python_path``.
     """
-    py_root, src_path = _canonical_python_roots()
-    for p in (str(py_root), str(src_path)):
-        if p not in sys.path:
-            sys.path.insert(0, p)
+    return
 
 
 def _load_service():
-    _ensure_python_import_path()
     # Deferred imports are required because router module import happens before runtime path
     # injection; importing these modules at file import time can fail in test/app startup.
-    from utils.blender_stubs import ensure_blender_stubs
+    from src.utils.blender_stubs import ensure_blender_stubs
 
     ensure_blender_stubs()
-    from model_registry import service as reg
+    from src.model_registry import service as reg
 
     return reg
 

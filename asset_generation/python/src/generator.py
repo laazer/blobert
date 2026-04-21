@@ -8,10 +8,6 @@ import random
 import sys
 
 # Blender imports
-
-# Add src to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from src.core.blender_utils import clear_scene
 from src.enemies.animated import AnimatedEnemyBuilder
 from src.enemies.animated_pipeline import setup_blender_scene

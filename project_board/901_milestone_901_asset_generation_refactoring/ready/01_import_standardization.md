@@ -174,17 +174,17 @@ Standardize import patterns across the asset generation Python codebase. Remove 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Validation Status
-- Tests: Failing until import standardization implementation; adversarial suite in `asset_generation/python/tests/ci/test_import_standardization_behavior.py` (AST contract for entrypoints + `routers/`, subprocess isolation with `ensure_blender_stubs`, backend registry import seam, concurrency/reload stress, package `__all__` / no-star-export, CHECKPOINT re-exports)
-- Static QA: Not Run
+- Tests: `uv run python -m pytest tests/ -q` in `asset_generation/python` → 2082 passed, 7 skipped (2026-04-21). CI contract: `tests/ci/test_import_standardization_behavior.py` → 37 passed.
+- Static QA: diff-cover preflight (`ci/scripts/diff_cover_preflight.sh`) failed: 74% on diff vs `origin/main` (threshold 85%); uncovered lines reported under `src/materials/gradient_generator.py` in branch diff — not edited in this handoff; gatekeeper to reconcile vs branch policy.
 - Integration: Not Run
 
 ## Blocking Issues
@@ -198,17 +198,23 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md",
-  "target_stage": "IMPLEMENTATION_GENERALIST",
+  "target_stage": "STATIC_QA",
   "scope": {
     "entrypoints": ["asset_generation/python/src/generator.py", "asset_generation/python/src/player_generator.py", "asset_generation/python/src/level_generator.py"],
     "python_src": "asset_generation/python/src",
-    "backend_routers": "asset_generation/web/backend/routers"
+    "backend_routers": "asset_generation/web/backend/routers",
+    "backend_main": "asset_generation/web/backend/main.py"
+  },
+  "evidence": {
+    "pytest_asset_generation_python": "2082 passed, 7 skipped",
+    "import_contract_ci": "tests/ci/test_import_standardization_behavior.py 37 passed",
+    "diff_cover_preflight": "failed 74% vs 85% — gradient_generator.py in branch diff"
   }
 }
 ```
@@ -217,4 +223,4 @@ Implementation Generalist Agent
 Proceed
 
 ## Reason
-Test Breaker extended the import-contract suite (adversarial + checkpoint resolutions); Stage advances to implementation so code can satisfy R1–R5 and turn the suite green.
+Implementation removed `sys.path` hacks from scoped entry points and routers; added `main.py` bootstrap for `asset_generation/python` resolution; switched internal seams to `src.*` absolute imports and re-exported `ENEMY_FINISH_PRESETS` / `setup_materials` from `src.materials`. Full Python test suite green; hand off for AC verification and diff-cover policy on branch diff.
