@@ -60,15 +60,15 @@ Decompose `model_registry/service.py` (684 LOC) from a god object into 4 focused
 
 ## Stage
 
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
 
-1
+2
 
 ## Last Updated By
 
-Planner Agent
+Spec Agent
 
 ## Validation Status
 
@@ -90,13 +90,14 @@ Planner Agent
 
 ## Next Responsible Agent
 
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 
 ```json
 {
   "ticket_path": "string — path to this markdown file",
+  "spec_path": "project_board/specs/m901_02_model_registry_layering_spec.md",
   "primary_code": ["asset_generation/python/src/model_registry/service.py"],
   "consumers": [
     "asset_generation/python/src/model_registry/__init__.py",
@@ -122,4 +123,4 @@ Proceed
 
 ## Reason
 
-Planning complete: execution tasks are sequenced, M901-01 gating dependency is in `done/`, and the Spec Agent can freeze module boundaries, typing strategy, and API payload models before test design.
+Specification complete: functional/non-functional spec and HTTP freeze documented at `project_board/specs/m901_02_model_registry_layering_spec.md`; `ci/scripts/spec_completeness_check.py` PASS with `--type api`. Test Designer can author behavior-first tests against layer boundaries and frozen `service` surface.

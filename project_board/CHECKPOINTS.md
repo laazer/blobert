@@ -45,3 +45,4 @@ Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T15-05-0
 - Log root: project_board/checkpoints/
 - Run log: project_board/checkpoints/M901-02-model-registry-layering/2026-04-21T17-39-52Z-orchestrator.md
 - Run: 2026-04-21T19-45-00Z-planning.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/02_model_registry_layering.md | Stage: PLANNING | Log: project_board/checkpoints/M901-02-model-registry-layering/2026-04-21T17-39-52Z-orchestrator.md
+- Run: 2026-04-21T19-15-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/02_model_registry_layering.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-02-model-registry-layering/2026-04-21T19-15-00Z-specification.md | Outcome: spec written; `spec_completeness_check.py --type api` PASS
