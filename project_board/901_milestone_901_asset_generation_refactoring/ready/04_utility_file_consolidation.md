@@ -93,15 +93,15 @@ Reorganize the `utils/` directory (20+ files with unclear boundaries) into a cle
 
 ## Stage
 
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
 
-1
+2
 
 ## Last Updated By
 
-Planner Agent
+Spec Agent
 
 ## Validation Status
 
@@ -123,27 +123,24 @@ Planner Agent
 
 ## Next Responsible Agent
 
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 
 ```json
 {
   "ticket_path": "project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md",
+  "spec_path": "project_board/specs/m901_04_utility_file_consolidation_spec.md",
   "scope_roots": [
     "asset_generation/python/src/utils",
     "asset_generation/python/src"
   ],
   "peer_coordination": {
     "animated_build_options_ticket": "project_board/901_milestone_901_asset_generation_refactoring/ready/06_animated_build_options_consolidation.md",
-    "note": "Define utils/build_options.py public API and dependency direction vs. ticket 06 deliverables before TEST_DESIGN."
+    "note": "Public API is src.utils.build_options package; internal schema/validate split is M901-06 per spec Deferred Boundary."
   },
   "deliverables": [
-    "Requirement IDs mapping acceptance criteria",
-    "Per-file and per-symbol migration map (from → to)",
-    "Explicit public export lists for config, export, validation, build_options",
-    "Circular import and layering rules",
-    "Resolution of LOC guideline vs. large build_options module (split or exemption)"
+    "Behavior-first tests for R1–R9 (import DAG, config parity, export paths, validate_glb_path, clamp01 migration, build_options imports)"
   ]
 }
 ```
@@ -154,4 +151,4 @@ Proceed
 
 ## Reason
 
-Planning decomposed into spec-test-implementation path; dependency on M901-01 is satisfied; parallel work with ticket 06 is handled via spec boundary per checkpoint assumptions.
+Specification complete at `project_board/specs/m901_04_utility_file_consolidation_spec.md`; `spec_completeness_check.py --type generic` passed; ready for test design against requirement IDs R1–R9.

@@ -76,3 +76,4 @@ Log: project_board/checkpoints/M901-03-type-hints-and-documentation/2026-04-21T1
 - Log root: project_board/checkpoints/
 - Run log: project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T21-12-15Z-orchestrator.md
 - Run: 2026-04-21T21-18-00Z-planning.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md | Stage: PLANNING | Log: project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T21-18-00Z-planning.md
+- Run: 2026-04-21T22-30-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T22-30-00Z-specification.md | Outcome: spec `m901_04_utility_file_consolidation_spec.md`; `spec_completeness_check.py --type generic` PASS
