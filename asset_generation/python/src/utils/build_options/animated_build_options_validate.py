@@ -5,10 +5,15 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from ..body_type_presets import body_type_control_def
+
 
 def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
-    """Apply control defs and mesh/zone sanitization. Lazy-imports parent to avoid import cycles."""
-    from ..body_type_presets import body_type_control_def
+    """Apply control defs and mesh/zone sanitization.
+
+    Imports ``animated_build_options`` inside the function to avoid the import cycle with
+    ``animated_build_options._coerce_and_validate`` (which calls this module).
+    """
     from . import animated_build_options as m
 
     out = dict(merged)

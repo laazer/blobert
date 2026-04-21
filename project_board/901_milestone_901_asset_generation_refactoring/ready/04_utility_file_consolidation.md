@@ -97,15 +97,16 @@ STATIC_QA
 
 ## Revision
 
-5
+6
 
 ## Last Updated By
 
-Implementation Generalist Agent
+Python Reviewer Agent (M901-04)
 
 ## Validation Status
 
 - Tests: Pass — `uv run pytest asset_generation/python/tests/` (2159 passed, 8 skipped, 2026-04-21)
+- Utils spot-check: Pass — `uv run pytest asset_generation/python/tests/utils/` (1047 passed, 33 subtests, 2026-04-21)
 - Static QA: Pending (Acceptance Criteria Gatekeeper)
 - Integration: Not Run
 - Diff-cover: Pass — `bash ci/scripts/diff_cover_preflight.sh` (threshold 85%, 97% on diff)
