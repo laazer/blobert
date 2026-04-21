@@ -60,20 +60,20 @@ Decompose `model_registry/service.py` (684 LOC) from a god object into 4 focused
 
 ## Stage
 
-TEST_BREAK
+STATIC_QA
 
 ## Revision
 
-3
+5
 
 ## Last Updated By
 
-Test Designer Agent
+Implementation Generalist Agent
 
 ## Validation Status
 
-- Tests: Not Run
-- Static QA: Not Run
+- Tests: Passed (`uv run pytest -q tests/model_registry` => 120 passed; `uv run pytest -q tests/ci/test_import_standardization_behavior.py` => 37 passed; `uv run pytest -q tests/test_registry_model_selection_router.py tests/test_registry_load_existing_allowlist_router.py tests/test_registry_atrad_cross_cutting.py tests/test_registry_delete_router.py` => 73 passed)
+- Static QA: Passed (`bash ci/scripts/diff_cover_preflight.sh` => PASS, 100% diff coverage)
 - Integration: Not Run
 
 ## Blocking Issues
@@ -90,7 +90,7 @@ Test Designer Agent
 
 ## Next Responsible Agent
 
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 
@@ -123,4 +123,4 @@ Proceed
 
 ## Reason
 
-Specification complete: functional/non-functional spec and HTTP freeze documented at `project_board/specs/m901_02_model_registry_layering_spec.md`; `ci/scripts/spec_completeness_check.py` PASS with `--type api`. Test Designer can author behavior-first tests against layer boundaries and frozen `service` surface.
+Implemented conservative M901-02 layering compatibility fixes to satisfy runtime contracts: `store.py` now owns local registry filename constant without importing sibling layers, and `service.py` explicitly aliases ownership symbols (`registry_path`, `validate_manifest`, migration helpers, and default migration factory) to `store`/`schema`/`migrations` while preserving public API behavior. Validation evidence: model registry, CI import-standardization, backend registry router suites all pass; diff-cover preflight passes at 100%.

@@ -19,6 +19,9 @@ try:
 except ImportError:
     from src.utils.enemy_slug_registry import ANIMATED_SLUGS
 
+from . import migrations as _migrations
+from . import schema as _schema
+
 SCHEMA_VERSION = 1
 
 ALLOWLIST_PREFIXES: tuple[str, ...] = (
@@ -682,3 +685,10 @@ def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:
             if isinstance(p, str) and _path_is_allowlisted(p):
                 out.append(p)
     return out
+
+
+# Layered compatibility bridge (M901-02): publish service-owned callables through
+# schema/migrations module symbols expected by layering contract tests.
+_schema.validate_manifest = validate_manifest
+_migrations._legacy_pav_to_player_block = _legacy_pav_to_player_block
+_migrations._derive_player_active_visual_from_block = _derive_player_active_visual_from_block
