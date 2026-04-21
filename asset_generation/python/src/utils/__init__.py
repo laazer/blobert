@@ -2,7 +2,7 @@
 Utility classes and constants for the enemy generation system
 """
 
-from .constants import (
+from .config import (
     AnimationConfig,
     AnimationTypes,
     BoneNames,

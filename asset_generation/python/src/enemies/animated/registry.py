@@ -5,7 +5,7 @@ Central registry for animated enemy types: builder and class map (aligned with A
 from __future__ import annotations
 
 from ...core.rig_types import AnimatedBuildResult
-from ...utils.enemy_slug_registry import ANIMATED_SLUGS
+from ...utils.config import ANIMATED_SLUGS
 from ..animated_carapace_husk import AnimatedCarapaceHusk
 from ..animated_claw_crawler import AnimatedClawCrawler
 from ..animated_imp import AnimatedImp
@@ -26,7 +26,7 @@ ENEMY_CLASSES: dict[str, type] = dict(_ANIMATED_ENEMY_CLASSES)
 
 if tuple(ENEMY_CLASSES.keys()) != ANIMATED_SLUGS:
     raise RuntimeError(
-        "Animated enemy registry order/keys must match utils.enemy_slug_registry.ANIMATED_SLUGS exactly; "
+        "Animated enemy registry order/keys must match utils.config.ANIMATED_SLUGS exactly; "
         f"got {tuple(ENEMY_CLASSES.keys())!r} vs {ANIMATED_SLUGS!r}"
     )
 if set(ENEMY_CLASSES.keys()) != set(ANIMATED_SLUGS):

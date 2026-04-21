@@ -1,7 +1,7 @@
 """export_naming stems match generator output and ExportConfig.ANIMATED_PATTERN."""
 
-from src.utils.constants import ExportConfig
-from src.utils.export_naming import animated_export_stem
+from src.utils.config import ExportConfig
+from src.utils.export import animated_export_stem
 
 
 def test_animated_stem_matches_export_config_pattern() -> None:

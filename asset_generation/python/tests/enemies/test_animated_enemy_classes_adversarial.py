@@ -27,7 +27,7 @@ from src.enemies.animated import (
     AnimatedSpitter,
 )
 from src.enemies.animated_enemy import UsesSimpleRigMixin
-from src.utils.constants import EnemyTypes
+from src.utils.config import EnemyTypes
 from src.utils.materials import MaterialThemes
 
 

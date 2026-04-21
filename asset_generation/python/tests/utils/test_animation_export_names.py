@@ -32,7 +32,7 @@ from unittest.mock import MagicMock
 sys.modules.setdefault('bpy', MagicMock())
 sys.modules.setdefault('mathutils', MagicMock())
 
-from src.utils.constants import AnimationConfig, AnimationTypes
+from src.utils.config import AnimationConfig, AnimationTypes
 
 # ---------------------------------------------------------------------------
 # BAE-2: get_export_name classmethod
@@ -153,7 +153,7 @@ class TestAnimationTypesGetExportName(unittest.TestCase):
         # If get_export_name tried to access bpy at call time and bpy was removed,
         # it would raise AttributeError. The MagicMock ensures no real bpy is needed,
         # but the intent is to confirm constants.py has no bpy dependency.
-        import src.utils.constants as constants_module
+        import src.utils.config as constants_module
         # Verify no bpy attribute is accessed on AnimationTypes.get_export_name
         # by calling it with a fresh invocation under the mocked bpy.
         result = constants_module.AnimationTypes.get_export_name("idle")

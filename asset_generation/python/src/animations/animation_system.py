@@ -5,7 +5,7 @@ Core animation system for procedural enemies
 
 import bpy
 
-from ..utils.constants import AnimationConfig, AnimationTypes
+from ..utils.config import AnimationConfig, AnimationTypes
 from .body_types import BodyTypeFactory
 
 

@@ -6,7 +6,7 @@ from mathutils import Vector
 
 from ..animations.keyframe_system import create_simple_armature
 from ..core.rig_types import rig_from_bone_map
-from ..utils.constants import PlayerBoneNames
+from ..utils.config import PlayerBoneNames
 
 
 def create_player_slime_armature(name: str = "player_slime") -> object:

@@ -15,15 +15,16 @@ import math
 import re
 from typing import Any
 
+from src.utils.config import ANIMATED_SLUGS
+
+from ..blender_stubs import ensure_blender_stubs
+from ..body_type_presets import body_type_control_def
 from .animated_build_options_appendage_defs import (
     _eye_shape_pupil_control_defs,
     _mouth_control_defs,
     _rig_rotation_control_defs,
     _tail_control_defs,
 )
-from .enemy_slug_registry import ANIMATED_SLUGS
-
-_ANIMATED_ENEMY_SLUGS: frozenset[str] = frozenset(ANIMATED_SLUGS)
 from .animated_build_options_mesh_controls import (
     _mesh_float_control_defs,
     _mesh_numeric_defaults,
@@ -35,8 +36,8 @@ from .animated_build_options_spider_eye import (
     spider_eye_control_defs as _spider_eye_control_defs_impl,
 )
 from .animated_build_options_zone_texture import zone_texture_control_defs
-from .blender_stubs import ensure_blender_stubs
-from .body_type_presets import body_type_control_def
+
+_ANIMATED_ENEMY_SLUGS: frozenset[str] = frozenset(ANIMATED_SLUGS)
 
 # Declarative controls for GET /api/meta (and validation). Spider eye_count comes from
 # ``AnimatedSpider`` (single source of truth) — see ``_spider_eye_control_defs``.
@@ -910,3 +911,21 @@ def parse_build_options_json(raw: str | None) -> dict[str, Any]:
     except json.JSONDecodeError:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+_NOT_REEXPORT = frozenset(
+    {
+        "Any",
+        "annotations",
+        "body_type_control_def",
+        "ensure_blender_stubs",
+        "json",
+        "math",
+        "re",
+    }
+)
+__all__ = sorted(
+    k
+    for k in globals()
+    if not k.startswith("__") and k not in _NOT_REEXPORT
+)

@@ -22,7 +22,7 @@ from ..core.rig_models.humanoid_simple import (
 from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.body_type_presets import humanoid_torso_leg_multipliers
-from ..utils.constants import EnemyBodyTypes
+from ..utils.config import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 

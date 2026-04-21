@@ -23,7 +23,7 @@ from ..core.rig_models.quadruped_simple import (
 )
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.body_type_presets import spider_body_type_scales
-from ..utils.constants import EnemyBodyTypes
+from ..utils.config import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .animated_spider_eye_helpers import (
     eye_dirs_random,

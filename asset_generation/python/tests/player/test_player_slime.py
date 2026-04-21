@@ -20,7 +20,7 @@ sys.modules.setdefault('mathutils.Euler', MagicMock())
 import pytest
 
 from src.player.player_materials import SLIME_COLORS
-from src.utils.constants import (
+from src.utils.config import (
     PlayerAnimationConfig,
     PlayerAnimationTypes,
     PlayerBoneNames,

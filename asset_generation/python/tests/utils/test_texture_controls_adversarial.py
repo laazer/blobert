@@ -2,7 +2,7 @@
 
 import json
 
-from src.utils.animated_build_options import options_for_enemy
+from src.utils.build_options import options_for_enemy
 
 _B = "feat_body_texture_"
 

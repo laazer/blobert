@@ -16,7 +16,7 @@ from ..core.blender_utils import (
     ensure_mesh_integrity,
 )
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
-from ..utils.constants import ExportConfig
+from ..utils.config import ExportConfig
 
 
 class ExternalModelImporter:
@@ -228,7 +228,7 @@ class ExternalModelImporter:
         print(f"🎬 Generating {animation_set} animations for {body_type} model...")
         
         # Import body type enum
-        from ..utils.constants import EnemyBodyTypes
+        from ..utils.config import EnemyBodyTypes
         
         # Map string to enum
         body_type_map = {

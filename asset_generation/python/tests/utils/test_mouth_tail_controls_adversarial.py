@@ -18,7 +18,7 @@ from copy import deepcopy
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.build_options import (
     _defaults_for_slug,
     _mouth_control_defs,
     _tail_control_defs,

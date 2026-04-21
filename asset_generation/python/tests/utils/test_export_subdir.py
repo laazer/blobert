@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from src.utils.export_subdir import (
+from src.utils.export import (
     animated_export_directory,
     level_export_directory,
     player_export_directory,

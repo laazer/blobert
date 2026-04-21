@@ -6,7 +6,7 @@ import json
 import os
 
 from ..core.blender_utils import bind_mesh_to_armature, ensure_mesh_integrity
-from ..utils.constants import (
+from ..utils.config import (
     PlayerAnimationConfig,
     PlayerAnimationTypes,
     PlayerBoneNames,

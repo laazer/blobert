@@ -9,14 +9,16 @@ import json
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.build_options import (
     _defaults_for_slug,
     _feature_zones,
     _zone_texture_control_defs,
     animated_build_controls_for_api,
     options_for_enemy,
 )
-from src.utils.animated_build_options_appendage_defs import _texture_control_defs
+from src.utils.build_options.animated_build_options_appendage_defs import (
+    _texture_control_defs,
+)
 
 _ALL_SLUGS = [
     "spider",

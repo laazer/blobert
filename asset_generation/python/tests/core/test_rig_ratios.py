@@ -9,7 +9,7 @@ from mathutils import Vector
 from src.core.rig_models.humanoid_simple import HumanoidRigLayout, HumanoidSimpleRig
 from src.core.rig_models.import_rigs import imported_humanoid_rig
 from src.enemies.animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
-from src.utils.constants import EnemyBodyTypes
+from src.utils.config import EnemyBodyTypes
 
 
 class _TestHumanoidRig(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):

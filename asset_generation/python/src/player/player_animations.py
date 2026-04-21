@@ -15,7 +15,7 @@ import bpy
 
 from ..animations.animation_system import set_rest_pose_keyframe
 from ..animations.keyframe_system import set_bone_keyframe
-from ..utils.constants import (
+from ..utils.config import (
     PlayerAnimationConfig,
     PlayerAnimationTypes,
     PlayerBoneNames,

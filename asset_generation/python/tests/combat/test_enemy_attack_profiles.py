@@ -7,7 +7,7 @@ import unittest
 
 from src.combat.attack_data import AttackData, AttackType
 from src.combat.enemy_attack_profiles import _hit_frame, get_attack_profile
-from src.utils.constants import AnimationConfig, AnimationTypes
+from src.utils.config import AnimationConfig, AnimationTypes
 
 ANIMATED_ENEMY_TYPES = ['spider', 'slug', 'imp']
 

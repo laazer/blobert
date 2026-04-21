@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(_PROJECT_ROOT, 'bin'))
 
 from find_blender import resolve_blender_path
 
-from utils.constants import (
+from utils.config import (
     EnemyTypes,
     ExportConfig,
     LevelExportConfig,

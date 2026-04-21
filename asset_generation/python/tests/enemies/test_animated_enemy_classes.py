@@ -17,7 +17,7 @@ from src.enemies.animated import (
 )
 from src.enemies.animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from src.enemies.base_enemy import BaseEnemy
-from src.utils.constants import EnemyTypes
+from src.utils.config import EnemyTypes
 from src.utils.materials import MaterialThemes
 
 _ALL_ANIMATED = (

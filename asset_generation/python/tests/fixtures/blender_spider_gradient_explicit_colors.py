@@ -23,7 +23,7 @@ sys.path.insert(0, str(PYTHON_ROOT))
 from src.core.blender_utils import clear_scene
 from src.enemies.animated_spider import AnimatedSpider
 from src.materials.material_system import setup_materials
-from src.utils.animated_build_options import options_for_enemy
+from src.utils.build_options import options_for_enemy
 
 clear_scene()
 

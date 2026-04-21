@@ -53,14 +53,6 @@ class TestMaterialForStripesZone:
 
 
 class TestApplyZoneTexturePatternOverridesStripes:
-    def test_stripes_branch_in_source(self) -> None:
-        import inspect
-
-        from src.materials.material_system import apply_zone_texture_pattern_overrides
-
-        src = inspect.getsource(apply_zone_texture_pattern_overrides)
-        assert "stripes" in src
-
     @patch("src.materials.material_system.bpy")
     def test_stripes_mode_calls_factory(self, mock_bpy) -> None:  # noqa: ARG002
         from src.materials.material_system import apply_zone_texture_pattern_overrides

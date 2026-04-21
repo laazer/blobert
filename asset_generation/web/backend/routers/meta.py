@@ -40,8 +40,8 @@ async def get_enemies() -> JSONResponse:
 
         ensure_blender_stubs()
 
-        from src.utils.animated_build_options import animated_build_controls_for_api
-        from src.utils.enemy_slug_registry import animated_enemies_for_api
+        from src.utils.build_options import animated_build_controls_for_api
+        from src.utils.config import animated_enemies_for_api
 
         enemies = animated_enemies_for_api()
         build_controls = animated_build_controls_for_api()

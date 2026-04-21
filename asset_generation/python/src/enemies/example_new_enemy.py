@@ -22,7 +22,7 @@ from ..core.rig_models.quadruped_simple import CYLINDER_VERTICES_HEX as QUAD_CYL
 from ..core.rig_models.quadruped_simple import QuadrupedSimpleRig
 from ..core.rig_types import rig_from_bone_map
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
-from ..utils.constants import EnemyBodyTypes
+from ..utils.config import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 
 

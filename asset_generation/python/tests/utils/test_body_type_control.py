@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.body_type_presets import BODY_TYPE_OPTIONS
+from src.utils.build_options import (
     animated_build_controls_for_api,
     options_for_enemy,
 )
-from src.utils.body_type_presets import BODY_TYPE_OPTIONS
-from src.utils.enemy_slug_registry import ANIMATED_SLUGS
+from src.utils.config import ANIMATED_SLUGS
 
 
 @pytest.mark.parametrize("slug", list(ANIMATED_SLUGS))

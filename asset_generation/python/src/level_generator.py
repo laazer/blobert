@@ -13,7 +13,7 @@ import bpy
 
 from src.core.blender_utils import clear_scene
 from src.level.level_object_builder import LevelObjectBuilder
-from src.utils.export_subdir import level_export_directory, variant_start_index
+from src.utils.export import level_export_directory, variant_start_index
 
 
 def setup_scene():

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .blender_stubs import ensure_blender_stubs
+from ..blender_stubs import ensure_blender_stubs
 
 
 def placement_seed_def(placement_seed_max: int) -> dict[str, Any]:

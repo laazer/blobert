@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.build_options import (
     _defaults_for_slug,
     animated_build_controls_for_api,
     options_for_enemy,
@@ -251,7 +251,7 @@ class TestHelperReturnsFreshList:
     """
 
     def test_helper_returns_distinct_list_objects(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
         first = abo._eye_shape_pupil_control_defs()
         second = abo._eye_shape_pupil_control_defs()
         assert first is not second, (
@@ -260,7 +260,7 @@ class TestHelperReturnsFreshList:
         )
 
     def test_mutating_returned_list_does_not_affect_next_call(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
         first = abo._eye_shape_pupil_control_defs()
         first.clear()  # destroy the list contents
         second = abo._eye_shape_pupil_control_defs()
@@ -270,7 +270,7 @@ class TestHelperReturnsFreshList:
         )
 
     def test_mutating_returned_dict_entry_does_not_affect_next_call(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
         first = abo._eye_shape_pupil_control_defs()
         # Poison the eye_shape options list
         entry = next(d for d in first if d["key"] == "eye_shape")

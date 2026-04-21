@@ -4,7 +4,7 @@ Factory for building and exporting level objects
 
 from typing import Type
 
-from ..utils.constants import LevelExportConfig, LevelObjectTypes
+from ..utils.config import LevelExportConfig, LevelObjectTypes
 from .base_level_object import BaseLevelObject, export_level_object
 from .checkpoints import Checkpoint
 from .platforms import CrumblingPlatform, FlatPlatform, MovingPlatform

@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.build_options import (
     _defaults_for_slug,
     animated_build_controls_for_api,
     options_for_enemy,
@@ -149,7 +149,7 @@ class TestHelperFunctionDeclaration:
     """ESPS-1-AC-7: _eye_shape_pupil_control_defs helper exists and has correct signature."""
 
     def test_helper_exists_and_is_callable(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
         assert hasattr(abo, "_eye_shape_pupil_control_defs"), (
             "_eye_shape_pupil_control_defs must be defined in animated_build_options"
         )
@@ -157,7 +157,7 @@ class TestHelperFunctionDeclaration:
         assert callable(fn)
 
     def test_helper_returns_three_entries(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
         result = abo._eye_shape_pupil_control_defs()
         assert isinstance(result, list)
         assert len(result) == 3

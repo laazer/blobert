@@ -18,7 +18,7 @@ sys.modules.setdefault('mathutils', MagicMock())
 from src.body_families.motion_blob import BlobBodyType
 from src.body_families.motion_humanoid import HumanoidBodyType
 from src.body_families.motion_quadruped import QuadrupedBodyType
-from src.utils.constants import AnimationConfig, AnimationTypes, BoneNames
+from src.utils.config import AnimationConfig, AnimationTypes, BoneNames
 
 # ---------------------------------------------------------------------------
 # Helpers

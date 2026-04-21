@@ -22,7 +22,7 @@ import pytest
 
 from src.level.level_object_builder import LevelObjectBuilder
 from src.level.level_object_data import TrapType
-from src.utils.constants import LevelObjectTypes
+from src.utils.config import LevelObjectTypes
 
 # ------------------------------------------------------------------
 # Helpers

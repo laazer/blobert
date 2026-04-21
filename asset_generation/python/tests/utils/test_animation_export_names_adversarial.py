@@ -41,7 +41,7 @@ sys.modules.setdefault('bpy', MagicMock())
 sys.modules.setdefault('mathutils', MagicMock())
 sys.modules.setdefault('bmesh', MagicMock())
 
-from src.utils.constants import AnimationConfig, AnimationTypes
+from src.utils.config import AnimationConfig, AnimationTypes
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -11,17 +11,11 @@ import math
 import random
 from typing import Any, Protocol
 
+from .validation import clamp01
+
 
 class _RNG(Protocol):
     def random(self) -> float: ...
-
-
-def clamp01(value: Any, default: float = 0.5) -> float:
-    try:
-        x = float(value)
-    except (TypeError, ValueError):
-        x = default
-    return max(0.0, min(1.0, x))
 
 
 def clustered_ellipsoid_angles_bounded(

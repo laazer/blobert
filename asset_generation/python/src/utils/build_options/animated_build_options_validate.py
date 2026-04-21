@@ -8,8 +8,8 @@ from typing import Any
 
 def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any]) -> dict[str, Any]:
     """Apply control defs and mesh/zone sanitization. Lazy-imports parent to avoid import cycles."""
+    from ..body_type_presets import body_type_control_def
     from . import animated_build_options as m
-    from .body_type_presets import body_type_control_def
 
     out = dict(merged)
     static_defs: list[dict[str, Any]] = (

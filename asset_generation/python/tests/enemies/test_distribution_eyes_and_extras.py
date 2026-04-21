@@ -12,8 +12,8 @@ from src.enemies.zone_geometry_extras_attach import (
     _append_body_ellipsoid_extras,
     _append_head_ellipsoid_extras,
 )
-from src.utils import animated_build_options as abo
-from src.utils.animated_build_options import options_for_enemy
+from src.utils import build_options as abo
+from src.utils.build_options import options_for_enemy
 from src.utils.placement_clustering import uniform_arc_angles
 
 

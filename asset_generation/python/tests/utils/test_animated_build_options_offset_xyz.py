@@ -13,8 +13,8 @@ Covers:
   Req 10 — Backward compatibility (AC-10.2, AC-10.3)
 """
 
-from src.utils import animated_build_options as abo
-from src.utils.animated_build_options import (
+from src.utils import build_options as abo
+from src.utils.build_options import (
     animated_build_controls_for_api,
     options_for_enemy,
 )

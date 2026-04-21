@@ -8,7 +8,7 @@ with any future timing changes.
 
 from typing import Dict, List
 
-from ..utils.constants import AnimationConfig, AnimationTypes
+from ..utils.config import AnimationConfig, AnimationTypes
 from .attack_data import AttackData, AttackType
 
 

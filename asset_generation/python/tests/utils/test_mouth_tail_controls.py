@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from src.utils.animated_build_options import (
+from src.utils.build_options import (
     _defaults_for_slug,
     animated_build_controls_for_api,
     options_for_enemy,
@@ -243,7 +243,7 @@ class TestHelperFunctionDeclaration:
     """MTE-1-AC-7, MTE-1-AC-9, MTE-1-AC-10: _mouth_control_defs and _tail_control_defs helpers exist."""
 
     def test_mouth_control_defs_helper_exists_and_is_callable(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
 
         assert hasattr(abo, "_mouth_control_defs"), (
             "_mouth_control_defs must be defined in animated_build_options"
@@ -252,7 +252,7 @@ class TestHelperFunctionDeclaration:
         assert callable(fn)
 
     def test_mouth_control_defs_returns_two_entries(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
 
         result = abo._mouth_control_defs()
         assert isinstance(result, list)
@@ -261,7 +261,7 @@ class TestHelperFunctionDeclaration:
         assert keys == ["mouth_enabled", "mouth_shape"]
 
     def test_tail_control_defs_helper_exists_and_is_callable(self) -> None:
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
 
         assert hasattr(abo, "_tail_control_defs"), (
             "_tail_control_defs must be defined in animated_build_options"
@@ -271,7 +271,7 @@ class TestHelperFunctionDeclaration:
 
     def test_tail_control_defs_returns_three_entries_in_order(self) -> None:
         """MTE-1-AC-10: tail_enabled, tail_shape, tail_length order."""
-        import src.utils.animated_build_options as abo
+        import src.utils.build_options as abo
 
         result = abo._tail_control_defs()
         assert isinstance(result, list)

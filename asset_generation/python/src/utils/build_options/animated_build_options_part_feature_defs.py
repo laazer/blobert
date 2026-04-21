@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .blender_stubs import ensure_blender_stubs
+from ..blender_stubs import ensure_blender_stubs
 
 
 def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:

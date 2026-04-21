@@ -24,7 +24,7 @@ from mathutils import Vector  # noqa: E402
 from src.core.rig_models.humanoid_simple import HumanoidRigLayout, HumanoidSimpleRig  # noqa: E402
 from src.core.rig_types import BoneSpec, RigDefinition  # noqa: E402
 from src.enemies.animated_enemy import AnimatedEnemy, UsesSimpleRigMixin  # noqa: E402
-from src.utils.constants import EnemyBodyTypes  # noqa: E402
+from src.utils.config import EnemyBodyTypes  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

@@ -22,8 +22,8 @@ Round-trip via options_for_enemy:
 
 import math
 
-from src.utils import animated_build_options as abo
-from src.utils.animated_build_options import (
+from src.utils import build_options as abo
+from src.utils.build_options import (
     _merge_zone_geometry_extras,
     options_for_enemy,
 )
@@ -237,7 +237,7 @@ def test_zone_extra_control_defs_shell_scale_has_label() -> None:
 
 def test_animated_build_controls_for_api_includes_shell_scale_for_slug() -> None:
     """AC-SS8: animated_build_controls_for_api()['slug'] includes extra_zone_body_shell_scale."""
-    from src.utils.animated_build_options import animated_build_controls_for_api
+    from src.utils.build_options import animated_build_controls_for_api
     ctrl = animated_build_controls_for_api()
     assert "slug" in ctrl, "slug must appear in animated_build_controls_for_api() output"
     keys = {c["key"] for c in ctrl["slug"]}

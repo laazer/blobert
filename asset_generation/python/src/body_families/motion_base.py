@@ -10,9 +10,9 @@ try:
 except ImportError:
     from src.animations.keyframe_system import set_bone_keyframe
 try:
-    from utils.constants import AnimationConfig, AnimationTypes
+    from utils.config import AnimationConfig, AnimationTypes
 except ImportError:
-    from src.utils.constants import AnimationConfig, AnimationTypes
+    from src.utils.config import AnimationConfig, AnimationTypes
 
 from .bones import BoneNames
 

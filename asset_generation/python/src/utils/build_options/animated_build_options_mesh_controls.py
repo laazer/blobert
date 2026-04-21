@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .blender_stubs import ensure_blender_stubs
+from ..blender_stubs import ensure_blender_stubs
 
 _MESH_ATTR_NAME = re.compile(r"^[A-Z][A-Z0-9_]*$")
 

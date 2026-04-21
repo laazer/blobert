@@ -16,7 +16,7 @@ from ..materials.material_system import (
     get_enemy_materials,
     material_for_zone_geometry_extra,
 )
-from ..utils.animated_build_options import OFFSET_XYZ_MAX, OFFSET_XYZ_MIN
+from ..utils.build_options import OFFSET_XYZ_MAX, OFFSET_XYZ_MIN
 from ..utils.placement_clustering import (
     clamp01,
     clustered_ellipsoid_angles_bounded,

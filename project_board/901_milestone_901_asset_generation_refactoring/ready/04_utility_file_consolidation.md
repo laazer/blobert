@@ -93,21 +93,22 @@ Reorganize the `utils/` directory (20+ files with unclear boundaries) into a cle
 
 ## Stage
 
-IMPLEMENTATION_GENERALIST
+STATIC_QA
 
 ## Revision
 
-4
+5
 
 ## Last Updated By
 
-Test Breaker Agent
+Implementation Generalist Agent
 
 ## Validation Status
 
-- Tests: Not Run
-- Static QA: Not Run
+- Tests: Pass — `uv run pytest asset_generation/python/tests/` (2159 passed, 8 skipped, 2026-04-21)
+- Static QA: Pending (Acceptance Criteria Gatekeeper)
 - Integration: Not Run
+- Diff-cover: Pass — `bash ci/scripts/diff_cover_preflight.sh` (threshold 85%, 97% on diff)
 
 ## Blocking Issues
 
@@ -123,7 +124,7 @@ Test Breaker Agent
 
 ## Next Responsible Agent
 
-Implementation Generalist Agent
+Acceptance Criteria Gatekeeper
 
 ## Required Input Schema
 
@@ -131,24 +132,19 @@ Implementation Generalist Agent
 {
   "ticket_path": "project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md",
   "spec_path": "project_board/specs/m901_04_utility_file_consolidation_spec.md",
-  "scope_roots": [
-    "asset_generation/python/src/utils",
-    "asset_generation/python/src"
-  ],
-  "peer_coordination": {
-    "animated_build_options_ticket": "project_board/901_milestone_901_asset_generation_refactoring/ready/06_animated_build_options_consolidation.md",
-    "note": "Public API is src.utils.build_options package; internal schema/validate split is M901-06 per spec Deferred Boundary."
+  "implementation_evidence": {
+    "pytest": "uv run pytest asset_generation/python/tests/ — 2159 passed, 8 skipped",
+    "diff_cover_preflight": "bash ci/scripts/diff_cover_preflight.sh — PASS (97% on diff vs origin/main)",
+    "checkpoint": "project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T22-30-00Z-implementation.md"
   },
-  "deliverables": [
-    "Implement spec R1–R9: config/export/validation modules, build_options package, import updates, orphans; green pytest including `test_m901_04_utility_file_consolidation*.py`"
-  ]
+  "verify_ac_against": "project_board/901_milestone_901_asset_generation_refactoring/ready/04_utility_file_consolidation.md Acceptance Criteria + spec R1–R9"
 }
 ```
 
 ## Status
 
-Proceed
+Handoff
 
 ## Reason
 
-Adversarial suite added in `test_m901_04_utility_file_consolidation_adversarial.py` (full DAG permutations, concurrent subprocess imports, GLB path edges, stem/bench JSON/clamp invariants, R7 `utils.demo` AST scan, build_options star-import guard). Checkpoint logged under `project_board/checkpoints/M901-04-utility-file-consolidation/2026-04-21T23-30-00Z-test-break.md`. Hand off to implementation to land consolidation and turn RED tests green.
+M901-04 implementation complete: `config.py`, `export.py` (`validate_glb_path`), `validation.py` (`clamp01`), `utils/build_options/` package with `animated_build_options*.py` moved off utils root; removed `constants.py`, `enemy_slug_registry.py`, `export_naming.py`, `export_subdir.py`, `demo.py`; imports updated under `asset_generation/python` and `asset_generation/web`; `test_enemy_slug_registry_contract` updated for `config`. Do not move ticket to `done/` until gatekeeper approval.

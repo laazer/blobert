@@ -22,7 +22,7 @@ from ..core.rig_models.quadruped_simple import (
 )
 from ..materials.material_system import apply_material_to_object
 from ..utils.body_type_presets import claw_crawler_body_type_scales
-from ..utils.constants import EnemyBodyTypes
+from ..utils.config import EnemyBodyTypes
 from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 

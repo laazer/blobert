@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from ..body_families.keywords import get_body_type_keywords
-from ..utils.constants import EnemyBodyTypes, EnemyTypes
+from ..utils.config import EnemyBodyTypes, EnemyTypes
 
 
 @dataclass

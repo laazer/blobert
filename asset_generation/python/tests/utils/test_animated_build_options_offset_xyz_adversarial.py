@@ -30,8 +30,8 @@ import math
 
 import pytest
 
-from src.utils import animated_build_options as abo
-from src.utils.animated_build_options import (
+from src.utils import build_options as abo
+from src.utils.build_options import (
     options_for_enemy,
 )
 

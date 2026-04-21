@@ -17,9 +17,9 @@ from src.core.blender_utils import clear_scene
 from src.player.player_builder import PlayerSlimeBuilder, export_player_slime
 from src.player.player_materials import SLIME_FINISHES
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
-from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
-from src.utils.constants import PlayerExportConfig
-from src.utils.export_subdir import player_export_directory, variant_start_index
+from src.utils.build_options import options_for_enemy, parse_build_options_json
+from src.utils.config import PlayerExportConfig
+from src.utils.export import player_export_directory, variant_start_index
 
 
 def setup_scene():

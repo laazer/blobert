@@ -6,6 +6,8 @@ Organized enemy generator using the modular system
 import os
 import random
 import sys
+import traceback
+from typing import Any, cast
 
 # Blender imports
 from src.core.blender_utils import clear_scene
@@ -14,31 +16,35 @@ from src.enemies.animated_pipeline import setup_blender_scene
 from src.enemies.base_enemy import export_enemy
 from src.materials.material_system import ENEMY_FINISH_PRESETS, setup_materials
 from src.prefabs.prefab_loader import load_prefab_mesh_if_requested
-from src.utils.animated_build_options import options_for_enemy, parse_build_options_json
-from src.utils.export_naming import animated_export_stem
-from src.utils.export_subdir import animated_export_directory, variant_start_index
+from src.utils.build_options import options_for_enemy, parse_build_options_json
+from src.utils.export import (
+    animated_export_directory,
+    animated_export_stem,
+    variant_start_index,
+)
 
 
-def _build_options_for_current_enemy(enemy_type: str) -> dict:
+def _build_options_for_current_enemy(enemy_type: str) -> dict[str, Any]:
+    """Resolve build options for one enemy type from environment JSON."""
     raw_json = os.environ.get("BLOBERT_BUILD_OPTIONS_JSON")
     raw = parse_build_options_json(raw_json)
-    return options_for_enemy(enemy_type, raw)
+    return cast(dict[str, Any], options_for_enemy(enemy_type, raw))
 
 
-def setup_scene():
+def setup_scene() -> None:
     """Set up Blender scene for enemy generation."""
     setup_blender_scene()
 
 
 def generate_animated_enemy(
-    enemy_type,
+    enemy_type: str,
     count: int = 1,
-    seed: int = None,
+    seed: int | None = None,
     export_dir: str | None = None,
-    prefab_name: str = None,
+    prefab_name: str | None = None,
     finish: str = "default",
     hex_color: str = "",
-):
+) -> None:
     """Generate animated enemies using the organised system.
 
     Args:
@@ -94,11 +100,10 @@ def generate_animated_enemy(
 
         except Exception as e:
             print(f"❌ Error generating {enemy_type} #{i}: {e}")
-            import traceback
             traceback.print_exc()
 
 
-def _parse_prefab_arg(args) -> str:
+def _parse_prefab_arg(args: list[str]) -> str | None:
     """Extract --prefab <name> from a positional args list, or return None."""
     if '--prefab' in args:
         prefab_idx = args.index('--prefab')
@@ -107,7 +112,7 @@ def _parse_prefab_arg(args) -> str:
     return None
 
 
-def _parse_flag_arg(args, flag_name: str) -> str:
+def _parse_flag_arg(args: list[str], flag_name: str) -> str | None:
     if flag_name in args:
         flag_idx = args.index(flag_name)
         if flag_idx + 1 < len(args):
@@ -115,7 +120,7 @@ def _parse_flag_arg(args, flag_name: str) -> str:
     return None
 
 
-def main():
+def main() -> None:
     """Main entry point for the organised generator."""
     positional_args = []
     if "--" in sys.argv:
