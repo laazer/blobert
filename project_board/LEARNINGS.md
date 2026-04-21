@@ -4,6 +4,72 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M9-02-mesh-material-audit] — Fail-closed assumptions prevented false pass, but revealed upstream ambiguity debt
+*Completed: 2026-04-21*
+
+### Learnings
+- category: process
+  insight: When workflow state fields are enum-constrained, stage completion must be represented through handoff metadata (`Next Responsible Agent`, validation notes) rather than inventing pseudo-stages.
+  impact: Stage naming ambiguity at implementation handoff risked invalid workflow state transitions and required checkpoint clarification.
+  prevention: Treat stage enums as immutable contract surface; encode completion semantics in dedicated handoff fields and gate on enum validity in tests/review.
+  severity: medium
+
+- category: architecture
+  insight: For cross-ticket dependency decisions (like visual identity direction), missing authoritative guidance must default to non-pass classification with explicit ownership and follow-on linkage.
+  impact: Player readability could have been incorrectly marked pass without M13 directives; fail-closed deferral preserved traceability and prevented contradictory art direction.
+  prevention: Require an explicit "directive present vs absent" branch in spec for all external-dependency decisions; absent directive must force defer/fix-required path.
+  severity: high
+
+- category: testing
+  insight: Adversarial coercion tests should be promoted from opportunistic checks to mandatory baseline whenever option parsing uses numeric conversion.
+  impact: `stripe_width` type coercion and NaN/Inf rotation behavior required assumption-driven hardening during TEST_BREAK, signaling a recurring parser robustness gap.
+  prevention: Establish a default mutation matrix (`non-numeric`, `None`, `NaN`, `±inf`) for all numeric option inputs before implementation begins.
+  severity: medium
+
+### Anti-Patterns
+- description: Encoding completion with non-schema stage labels instead of using existing workflow handoff fields.
+  detection_signal: Checkpoints debating whether to set stage names like `<STAGE>_COMPLETE` despite enum-defined allowed values.
+  prevention: Enforce "enum-only stage values" as a hard rule and document completion only via validation + next-agent fields.
+
+- description: Treating absence of cross-milestone directive as implicit approval to pass.
+  detection_signal: A dependency field is unresolved (`no-directive-found`) while status remains `pass` or lacks follow-on owner.
+  prevention: Add a fail-closed guard: unresolved external direction prohibits `pass` and requires linked owner/ticket.
+
+- description: Leaving option sanitization policy implicit until TEST_BREAK introduces adversarial mutations.
+  detection_signal: Test-design checkpoints discuss contract-only tests while coercion behavior (`float()`, non-finite handling) is unspecified.
+  prevention: Make coercion policy explicit in spec and require adversarial parser tests during TEST_DESIGN, not only TEST_BREAK.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every decision that depends on external milestone guidance, include an explicit unresolved-guidance branch: if authoritative directive is missing or conflicting, status must be non-pass (`deferred` or `fix-required`) with required owner and follow-on link."
+  reason: Prevents speculative pass decisions and keeps cross-ticket alignment auditable.
+
+- agent: Implementation Generalist Agent
+  change: "Do not invent new Stage values to express completion. Keep Stage within the declared enum and encode completion in Validation Status plus `Next Responsible Agent`."
+  reason: Eliminates handoff ambiguity and preserves workflow schema integrity.
+
+- agent: Test Designer Agent
+  change: "When any input is parsed with numeric coercion (`float`, int-like normalization, angle normalization), include adversarial tests for non-numeric values, `None`, `NaN`, and `±inf`, and specify expected reject/sanitize behavior."
+  reason: Moves parser-hardening earlier and reduces assumption-driven rework in TEST_BREAK.
+
+### Workflow Improvements
+- issue: Checkpoint assumptions were needed to resolve stage-enum interpretation and external-directive absence during later stages.
+  improvement: Add a mandatory pre-implementation "assumption closure" pass that converts Medium-confidence assumptions into explicit ticket/spec statements or explicit risk waivers.
+  expected_benefit: Fewer late-stage interpretation debates and smoother acceptance gating.
+
+- issue: TEST_DESIGN intentionally scoped to spec-contract checks, leaving coercion resilience to later adversarial discovery.
+  improvement: Add a bifurcated test-design checklist: (1) contract/schema assertions and (2) input-sanitization adversarial cases for every parsed option.
+  expected_benefit: Earlier detection of numeric parsing gaps, reducing implementation churn.
+
+### Keep / Reinforce
+- practice: Using fail-closed status semantics (`no-directive-found` => deferred with owner/link) for contentious player-readability decisions.
+  reason: Preserves safety and traceability when external art-direction authority is unresolved.
+
+- practice: Capturing checkpoint logs with "would-have-asked / assumption / confidence" structure at each stage.
+  reason: Produces high-quality signals for systematic learning extraction and prompt improvements.
+
+---
+
 ## [M25-02e_implement_stripes_texture] — Mirror proven texture modes; preview store vs feat keys
 *Completed: 2026-04-19*
 

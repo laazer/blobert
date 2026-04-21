@@ -45,6 +45,17 @@ class TestStripesTextureGenerator:
                 stripe_width=0.5,
             )
 
+    def test_invalid_background_hex_falls_back_to_default(self) -> None:
+        """Invalid background hex should not raise (fallback to white)."""
+        png_data = _stripes_texture_generator(
+            width=16,
+            height=16,
+            stripe_color_hex="ff0000",
+            bg_color_hex="nothex",
+            stripe_width=0.5,
+        )
+        assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
+
     def test_two_periods_produce_different_output(self) -> None:
         a = _stripes_texture_generator(
             64, 8, "ff0000", "ffffff", 0.2
@@ -53,6 +64,18 @@ class TestStripesTextureGenerator:
             64, 8, "ff0000", "ffffff", 0.9
         )
         assert a != b
+
+    def test_stripe_width_clamps_at_minimum_boundary(self) -> None:
+        """Values below minimum should clamp to the same output as 0.05."""
+        a = _stripes_texture_generator(64, 16, "ff0000", "ffffff", 0.0)
+        b = _stripes_texture_generator(64, 16, "ff0000", "ffffff", 0.05)
+        assert a == b
+
+    def test_stripe_width_clamps_at_maximum_boundary(self) -> None:
+        """Values above maximum should clamp to the same output as 1.0."""
+        a = _stripes_texture_generator(64, 16, "ff0000", "ffffff", 9.0)
+        b = _stripes_texture_generator(64, 16, "ff0000", "ffffff", 1.0)
+        assert a == b
 
     def test_presets_beachball_doplar_swirl_produce_distinct_output(self) -> None:
         base = dict(
@@ -112,6 +135,37 @@ class TestStripesTextureGenerator:
         assert tex_30 == tex_45 == tex_0, "30° and 45° should both round to 0°"
         assert tex_50 == tex_60 == tex_90, "50° and 60° should both round to 90°"
 
+    def test_rotation_wrapping_normalizes_equivalent_angles(self) -> None:
+        """Equivalent rotations modulo 360 should generate identical textures."""
+        base = dict(
+            width=32,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width=0.4,
+            stripe_preset="doplar",
+        )
+        tex_neg_90 = _stripes_texture_generator(**base, rot_y_deg=-90.0)
+        tex_270 = _stripes_texture_generator(**base, rot_y_deg=270.0)
+        tex_630 = _stripes_texture_generator(**base, rot_y_deg=630.0)
+        assert tex_neg_90 == tex_270 == tex_630
+
+    def test_large_texture_stress_is_deterministic(self) -> None:
+        """Stress path: larger textures should remain deterministic."""
+        params = dict(
+            width=256,
+            height=256,
+            stripe_color_hex="00ff00",
+            bg_color_hex="0000ff",
+            stripe_width=0.17,
+            stripe_preset="swirl",
+            rot_y_deg=180.0,
+        )
+        tex_a = _stripes_texture_generator(**params)
+        tex_b = _stripes_texture_generator(**params)
+        assert tex_a == tex_b
+        assert tex_a[:8] == b"\x89PNG\r\n\x1a\n"
+
     def test_legacy_horizontal_vertical_map_to_presets(self) -> None:
         a = _stripes_texture_generator(
             32, 32, "ff0000", "ffffff", 0.4, stripe_preset="horizontal"
@@ -155,3 +209,15 @@ def test_create_stripes_png_and_load_exists() -> None:
     from src.materials import gradient_generator as gg
 
     assert hasattr(gg, "create_stripes_png_and_load")
+
+
+def test_stripes_texture_generator_rejects_non_numeric_width() -> None:
+    # CHECKPOINT: conservative assumption is strict type safety for width coercion.
+    with pytest.raises((TypeError, ValueError)):
+        _stripes_texture_generator(  # type: ignore[arg-type]
+            width=32,
+            height=32,
+            stripe_color_hex="ff0000",
+            bg_color_hex="ffffff",
+            stripe_width="0.2",
+        )

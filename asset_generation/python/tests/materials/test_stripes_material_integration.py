@@ -93,3 +93,48 @@ class TestApplyZoneTexturePatternOverridesStripes:
                 assert kw.get("stripe_preset") == "doplar"
                 assert kw.get("rot_pitch_deg") == pytest.approx(10.0)
                 assert kw.get("rot_yaw_deg") == pytest.approx(-5.0)
+
+    @patch("src.materials.material_system.bpy")
+    def test_stripes_width_clamped_in_apply_overrides(self, mock_bpy) -> None:  # noqa: ARG002
+        from src.materials.material_system import apply_zone_texture_pattern_overrides
+
+        mock_mat = MagicMock()
+        slot_materials = {"body": mock_mat}
+        build_options = {
+            "feat_body_texture_mode": "stripes",
+            "feat_body_texture_stripe_color": "ff0000",
+            "feat_body_texture_stripe_bg_color": "ffffff",
+            "feat_body_texture_stripe_width": -2.0,
+            "features": {"body": {"hex": "cccccc", "finish": "default"}},
+        }
+
+        with patch("src.materials.material_stripes_zone._material_for_stripes_zone") as mock_factory:
+            mock_factory.return_value = mock_mat
+            with patch("src.materials.material_system._palette_base_name_from_material"):
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                assert mock_factory.call_args.kwargs["stripe_width"] == pytest.approx(0.05)
+
+    @patch("src.materials.material_system.bpy")
+    def test_stripes_rotation_nan_inf_are_sanitized(self, mock_bpy) -> None:  # noqa: ARG002
+        from src.materials.material_system import apply_zone_texture_pattern_overrides
+
+        mock_mat = MagicMock()
+        slot_materials = {"body": mock_mat}
+        build_options = {
+            "feat_body_texture_mode": "stripes",
+            "feat_body_texture_stripe_color": "ff0000",
+            "feat_body_texture_stripe_bg_color": "ffffff",
+            "feat_body_texture_stripe_width": 0.3,
+            "feat_body_texture_stripe_rot_pitch": float("nan"),
+            "feat_body_texture_stripe_rot_yaw": float("inf"),
+            "features": {"body": {"hex": "cccccc", "finish": "default"}},
+        }
+
+        with patch("src.materials.material_stripes_zone._material_for_stripes_zone") as mock_factory:
+            mock_factory.return_value = mock_mat
+            with patch("src.materials.material_system._palette_base_name_from_material"):
+                # CHECKPOINT: conservative assumption is NaN/Inf rotations are coerced to 0.0.
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                kw = mock_factory.call_args.kwargs
+                assert kw["rot_pitch_deg"] == pytest.approx(0.0)
+                assert kw["rot_yaw_deg"] == pytest.approx(0.0)

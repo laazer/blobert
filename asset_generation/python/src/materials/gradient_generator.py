@@ -227,6 +227,19 @@ def _stripes_texture_generator(
                 return default_rgba
             raise ValueError("hex color must be valid hexadecimal") from e
 
+    if not isinstance(width, int) or isinstance(width, bool):
+        raise TypeError("width must be an integer")
+    if not isinstance(height, int) or isinstance(height, bool):
+        raise TypeError("height must be an integer")
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be positive")
+    if not isinstance(stripe_width, (int, float)) or isinstance(stripe_width, bool):
+        raise TypeError("stripe_width must be numeric")
+    if not isinstance(stripe_color_hex, str):
+        raise TypeError("stripe_color_hex must be a string")
+    if not isinstance(bg_color_hex, str):
+        raise TypeError("bg_color_hex must be a string")
+
     stripe_rgba = _hex_to_rgba(stripe_color_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False)
     bg_rgba = _hex_to_rgba(bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
 
@@ -324,6 +337,22 @@ def _spots_texture_generator(
     Raises:
         ValueError: If spot_color_hex is non-empty and invalid.
     """
+    if not isinstance(width, int) or isinstance(width, bool):
+        raise TypeError("width must be an integer")
+    if not isinstance(height, int) or isinstance(height, bool):
+        raise TypeError("height must be an integer")
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be positive")
+    if not isinstance(density, (int, float)) or isinstance(density, bool):
+        raise TypeError("density must be numeric")
+    density_f = float(density)
+    if density_f <= 0.0:
+        raise ValueError("density must be greater than 0")
+    if not isinstance(spot_color_hex, str):
+        raise TypeError("spot_color_hex must be a string")
+    if not isinstance(bg_color_hex, str):
+        raise TypeError("bg_color_hex must be a string")
+
     def _hex_to_rgba(hex_str: str, default_rgba: tuple[float, float, float, float], allow_invalid: bool = False) -> tuple[float, float, float, float]:
         """Parse 6-char hex string to RGBA or return default.
 
@@ -335,9 +364,19 @@ def _spots_texture_generator(
         Returns:
             RGBA tuple
         """
-        h = (hex_str or "").strip().lstrip("#").lower()
+        raw = (hex_str or "").strip()
+        h = raw.lstrip("#").lower()
         if not h:
             return default_rgba
+        if raw.startswith("#"):
+            if raw.count("#") > 1:
+                if allow_invalid:
+                    return default_rgba
+                raise ValueError("hex color must be valid hexadecimal")
+        elif any(ch not in "0123456789abcdefABCDEF" for ch in raw):
+            if allow_invalid:
+                return default_rgba
+            raise ValueError("hex color must be valid hexadecimal")
         if len(h) != 6:
             if allow_invalid:
                 return default_rgba
@@ -365,7 +404,7 @@ def _spots_texture_generator(
     # density=1.0: 1 division (1 baseline spot)
     # density=5.0: 5 divisions (5x5 = 25 spots)
     # For fractional densities < 1, we still get sparse spots by making them bigger
-    grid_scale = max(0.1, float(density))  # Allow fractional divisions
+    grid_scale = max(0.1, density_f)  # Allow fractional divisions
     spot_radius = 0.35  # In normalized UV space per grid cell
     pat = str(spot_pattern or "grid").strip().lower()
     if pat not in ("grid", "hex"):
