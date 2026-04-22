@@ -1,7 +1,7 @@
 # Backend Registry Service Extraction and Router Thinning
 
 **Epic:** Milestone 901 – Asset Generation Refactoring  
-**Status:** In progress
+**Status:** Complete
 
 ---
 
