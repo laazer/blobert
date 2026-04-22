@@ -4,6 +4,270 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M901-12-registry-mutation-service-boundary] — Make service error contracts explicit before router-delegation refactors
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Entering the pipeline without initialized workflow metadata creates avoidable planning-stage assumption debt before technical decisions begin.
+  impact: PLANNING required medium-confidence bootstrap assumptions for revision/state fields, adding non-technical ambiguity to checkpoint evidence.
+  prevention: Add a mandatory pre-planning metadata normalization step that seeds and validates `WORKFLOW STATE`/`NEXT ACTION` blocks for all `ready/` tickets.
+  severity: medium
+
+- category: architecture
+  insight: Service-owned mutation boundaries are safer when exception taxonomy is frozen as part of the service contract, not inferred during test design.
+  impact: TEST_DESIGN had to assume `RuntimeError` for conflict-class failures to preserve 409 router mapping, increasing drift risk if implementation chose a different domain signal.
+  prevention: Require spec-time declaration of service exception classes and router mapping expectations for each destructive failure class.
+  severity: high
+
+- category: process
+  insight: Generic spec-gate routing for backend-touching refactors is acceptable only when compensating controls are explicitly documented.
+  impact: The run skipped API-type completeness checks by assumption; confidence depended on downstream behavioral contract rigor rather than gate traceability.
+  prevention: Record gate-type selection with explicit residual-risk controls whenever backend endpoint behavior is in scope but gate type remains generic.
+  severity: medium
+
+- category: process
+  insight: Dependency statements in refactor tickets need stage-specific semantics to avoid inconsistent blocking behavior across agents.
+  impact: PLANNING required a medium-confidence interpretation that dependency constraints apply mainly to implementation ordering, not early-stage progression.
+  prevention: Standardize dependency annotations as `planning-blocking` vs `implementation-blocking` in ticket templates.
+  severity: medium
+
+### Anti-Patterns
+- description: Allowing test contracts to infer service exception semantics for router mapping in destructive mutation flows.
+  detection_signal: Test-design checkpoints include medium-confidence assumptions about exception type (for example conflict -> 409 mapping).
+  prevention: Freeze service error taxonomy in specification before RED tests are authored.
+
+- description: Treating workflow metadata initialization as ad hoc planner behavior instead of a required workflow precondition.
+  detection_signal: Early checkpoints discuss revision/stage default assumptions instead of domain behavior.
+  prevention: Enforce an explicit metadata normalization gate before PLANNING stage entry.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For service-boundary extraction tickets affecting HTTP endpoints, include a required 'Service Error Contract' subsection that names the exact exception taxonomy per failure class and the intended router status mapping."
+  reason: Eliminates assumption-driven conflict/error mapping and keeps service-router behavior deterministic.
+
+- agent: Test Designer Agent
+  change: "Do not finalize RED assertions for router status mapping until the spec explicitly freezes service exception taxonomy; if missing, emit a blocking clarification checkpoint."
+  reason: Prevents brittle tests that encode guessed error surfaces.
+
+- agent: Orchestrator Agent
+  change: "Before PLANNING, validate ticket workflow metadata (Stage, Revision, Last Updated By, NEXT ACTION). If missing, normalize these fields and checkpoint the normalization as a prerequisite."
+  reason: Removes repeated startup ambiguity and keeps checkpoints focused on engineering risk.
+
+### Workflow Improvements
+- issue: Gate classification (generic vs API) was handled by assumption even though backend endpoint behavior was impacted by delegation refactor risk.
+  improvement: Add a required orchestrator checkpoint line: `Gate type selected: <type>; compensating controls: <controls>`.
+  expected_benefit: Improves auditability and ensures validation depth is explicitly tied to risk.
+
+- issue: Dependency interpretation required agent judgment about whether progression should block prior to implementation.
+  improvement: Add template-level dependency qualifiers (`planning-blocking`, `spec-blocking`, `implementation-blocking`) in ticket task headers.
+  expected_benefit: Reduces cross-agent interpretation variance and avoids avoidable medium-confidence assumptions.
+
+### Keep / Reinforce
+- practice: Capturing "Would have asked" assumptions with confidence levels in planning and test-design checkpoints.
+  reason: Surfaces uncertainty early and creates concrete targets for prompt/workflow hardening.
+
+- practice: Closing boundary-refactor tickets with dual evidence suites (service contract tests plus router delegation/regression tests).
+  reason: Confirms business-rule centralization while preserving endpoint-observable behavior.
+
+---
+
+## [M901-09-zone-geometry-extras-decomposition] — Freeze decomposition contracts with executable structural evidence
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Refactor tickets that begin without `WORKFLOW STATE` metadata create avoidable orchestration assumptions and weaken audit continuity.
+  impact: The planner had to bootstrap revision/stage metadata before normal execution, adding non-product ambiguity to the run.
+  prevention: Require a pre-planning normalization step that seeds missing workflow metadata (`Stage`, `Revision`, `NEXT ACTION`) for every `ready/` ticket.
+  severity: medium
+
+- category: architecture
+  insight: In decomposition work, compatibility entrypoint retention must be frozen in spec before implementation to prevent import-surface regressions.
+  impact: Specification had to explicitly assume retaining `zone_geometry_extras_attach` as the public dispatcher surface while internals moved to new modules.
+  prevention: Mandate a Compatibility Boundary clause in spec for refactors, naming canonical external entrypoints and whether facade retention is required.
+  severity: high
+
+- category: testing
+  insight: Structural quality claims like "thin dispatcher" are more reliable when encoded as executable invariants rather than prose review statements.
+  impact: Acceptance closure depended on objective delegation/loop-absence contract tests, which made a subjective readability AC auditable.
+  prevention: For decomposition tickets, require at least one executable structural-contract test per non-functional architecture AC.
+  severity: medium
+
+- category: infra
+  insight: Local test-environment ambiguity at TEST_DESIGN stage causes false-negative execution signals and slows feedback.
+  impact: RED test authoring completed, but local `pytest` evidence was blocked by missing environment setup (`No module named pytest`).
+  prevention: Add a required environment handshake in TEST_DESIGN checkpoints that declares the exact runnable test command (or known local fallback constraints) before test execution attempts.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating algorithm-heavy decomposition tickets as implicitly "generic" without explicit rationale for gate classification.
+  detection_signal: Orchestrator logs include "Would have asked" about specialized spec gate usage despite proceeding with generic path.
+  prevention: Require gate-type justification plus residual-risk note when selecting generic classification for geometry/placement-sensitive refactors.
+
+- description: Allowing helper-name assumptions to drift between stages instead of explicitly testing semantic role contracts.
+  detection_signal: Test-design checkpoints mention uncertainty over strict helper-name freeze versus semantic callable behavior.
+  prevention: Prefer role-based contract tests for extracted helpers unless the spec explicitly freezes concrete helper symbol names.
+
+### Prompt Patches
+- agent: Orchestrator Agent
+  change: "When selecting `generic` gate classification for tickets with algorithmic geometry/placement logic, add one required line: `Gate rationale: <why generic is sufficient>; Residual risk review: <how risk is covered by tests/evidence>`."
+  reason: Makes gate-depth decisions auditable and prevents silent under-scoping.
+
+- agent: Spec Agent
+  change: "For any decomposition/refactor ticket, include a mandatory `Compatibility Boundary` subsection that states preserved public entrypoints, allowed import-path changes, and whether a compatibility dispatcher/facade is required."
+  reason: Prevents downstream import-surface regressions and removes implementation-stage ambiguity.
+
+- agent: Test Designer Agent
+  change: "For architecture ACs that use subjective terms (for example 'thin', 'readable', 'delegation-focused'), encode at least one executable structural invariant (delegation call path, banned loop constructs, or branch-count proxy) to produce objective pass/fail evidence."
+  reason: Converts subjective ACs into deterministic, reproducible validation.
+
+- agent: Test Designer Agent
+  change: "Before running local RED evidence, record the exact environment-qualified test command; if unavailable, checkpoint the blocker and downstream execution owner explicitly."
+  reason: Reduces wasted local retries and clarifies ownership for execution evidence.
+
+### Workflow Improvements
+- issue: Tickets entering autopilot without workflow metadata force bootstrap assumptions that are unrelated to product correctness.
+  improvement: Introduce an automatic ticket-header normalization step before PLANNING that injects missing workflow blocks in a standardized format.
+  expected_benefit: Cleaner stage transitions, fewer assumption logs, and stronger audit trace consistency.
+
+- issue: Subjective architecture ACs required custom post-hoc justification to satisfy final validation.
+  improvement: Add a "structural evidence required" checklist item in SPECIFICATION for any AC using adjectives like thin/readable/clean.
+  expected_benefit: Faster gatekeeper decisions and less integration-stage interpretation churn.
+
+### Keep / Reinforce
+- practice: Recording "Would have asked" assumptions with confidence levels at each stage.
+  reason: Exposes uncertainty early and creates actionable inputs for prompt/workflow hardening.
+
+- practice: Combining decomposition contract tests with broad legacy regression suites before closure.
+  reason: Preserves behavioral parity while validating the new module boundaries and architecture intent.
+
+---
+
+## [M901-08-blender-utilities-split] — Runtime seam contracts and environment evidence prevent split-refactor ambiguity
+*Completed: 2026-04-22*
+
+### Learnings
+- category: testing
+  insight: For module-split refactors, runtime seam contracts (importability, re-export identity, fallback behavior, and fail-safe flows) are a stronger primary gate than structural-only assertions.
+  impact: Test design froze behavior-sensitive seams early, which reduced ambiguity about whether the split preserved actual runtime expectations.
+  prevention: Require decomposition tickets to encode executable runtime contracts as first-class RED tests before implementation starts.
+  severity: medium
+
+- category: process
+  insight: When local execution tooling is unavailable, blocked commands must be checkpointed with exact failure evidence so downstream stages can execute in the configured environment without rewriting intent.
+  impact: Test design could proceed despite missing local `pytest`, while preserving deterministic handoff expectations instead of silently degrading coverage.
+  prevention: Standardize environment-blocker reporting in checkpoints with exact command, error text, and explicit downstream execution owner.
+  severity: medium
+
+- category: architecture
+  insight: Fixed-module-count acceptance criteria can force awkward ownership decisions; those decisions must be explicitly frozen in the spec to avoid late-stage scope churn.
+  impact: Utility ownership for `clear_scene` required a medium-confidence assumption because introducing a fourth module was out of scope.
+  prevention: Add a required "boundary exception rationale" clause whenever acceptance criteria constrain module count but a symbol spans responsibilities.
+  severity: low
+
+### Anti-Patterns
+- description: Using file-organization checks as the primary refactor validation while leaving behavior seams implicitly assumed.
+  detection_signal: Test plans focus on module presence/export lists but omit fallback dispatch, deterministic helpers, or fail-safe flow checks.
+  prevention: Treat structure checks as secondary and require at least one executable behavioral contract per critical responsibility bucket.
+
+- description: Logging environment blockers without a deterministic handoff contract.
+  detection_signal: Checkpoint notes mention missing tooling but do not specify the exact failed command and required execution environment.
+  prevention: Enforce a blocker template: failed command, exact error, expected runner (`uv`, CI, or container), and stage responsible for rerun.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For module decomposition tickets, include executable runtime seam tests (re-export identity, fallback behavior, deterministic helper behavior, and fail-safe paths) as mandatory primary contracts; do not rely on structural import assertions alone."
+  reason: Prevents false-green outcomes where module layout passes but runtime behavior drifts.
+
+- agent: Orchestrator Agent
+  change: "If a stage is blocked by local environment/tooling, record a deterministic blocker handoff with exact command, exact error output, required execution environment, and explicit downstream owner before advancing the ticket."
+  reason: Preserves test intent and avoids silent quality erosion when local runners are unavailable.
+
+- agent: Spec Agent
+  change: "When acceptance criteria constrain module count or fixed target files, add a required 'Boundary Exception Rationale' subsection for mixed-responsibility symbols and freeze ownership decisions before TEST_DESIGN."
+  reason: Reduces medium-confidence ownership assumptions and prevents implementation-stage scope debates.
+
+### Workflow Improvements
+- issue: Workflow bootstrap and boundary assumptions were re-stated across multiple stages for this ticket.
+  improvement: Add a pre-spec normalization step that records fixed constraints (module count, compatibility posture, gate type) into a reusable assumption block referenced by downstream stages.
+  expected_benefit: Fewer repeated assumptions, faster stage handoffs, and more consistent validation narratives.
+
+- issue: Environment blockers can let contract tests drift from executable reality if handoff is informal.
+  improvement: Require a formal "execution transfer" artifact whenever authored tests are not run in-stage due to missing tooling.
+  expected_benefit: Keeps coverage intent intact and improves first-pass success in static QA/integration.
+
+### Keep / Reinforce
+- practice: Capturing "Would have asked" assumptions with confidence levels in each stage checkpoint.
+  reason: Makes uncertainty explicit and creates a reliable feedstock for prompt hardening and workflow improvements.
+
+- practice: Pairing split-contract tests with broader regression suites and diff-cover/static evidence before ticket closure.
+  reason: Balances targeted refactor safety with overall system regression protection.
+
+---
+
+## [M901-07-enemy-builder-template] — Convert ambiguous quality targets and tool availability into explicit, testable gate contracts
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Acceptance criteria that include both hard requirements and advisory quality targets (for example LOC bands) require explicit "blocking vs non-blocking" classification before integration evidence is collected.
+  impact: Integration required a dedicated evidence-closure pass to restate that the 80-120 LOC band was guidance while deduplication/parity were the true gates.
+  prevention: Require specification freeze to label each AC metric as hard gate or quality guidance, and enforce that classification in validation templates.
+  severity: medium
+
+- category: testing
+  insight: Template-method refactors are safest when phase-order guarantees are validated through executable behavior probes rather than source-shape inspection.
+  impact: Runtime hook-order tests gave deterministic proof of `body -> limbs -> materials -> zone extras` sequencing and avoided brittle structural assertions.
+  prevention: Standardize probe-subclass event-trace tests for all template orchestration tickets and treat static/source checks as secondary evidence only.
+  severity: medium
+
+- category: infra
+  insight: Static-analysis acceptance checks are fragile when they depend on optional local binaries unless fallback evidence policy is defined up front.
+  impact: `mypy` executable unavailability forced medium-confidence assumptions and deferred closure to alternate evidence (scoped typing tests + AST checks).
+  prevention: Add a preflight tool-availability check in TEST_DESIGN and require a declared fallback hierarchy for each static gate command.
+  severity: high
+
+### Anti-Patterns
+- description: Deferring AC interpretation (hard vs guidance) until late integration validation.
+  detection_signal: Checkpoints mention objective metric reporting but also note "non-blocking quality target" only after implementation evidence is compiled.
+  prevention: Block implementation handoff unless AC semantics are explicitly typed as required, advisory, or informational.
+
+- description: Treating local toolchain gaps as ad hoc exceptions instead of planned gate behavior.
+  detection_signal: Integration logs include "Would have asked" entries about whether to block on missing static-analysis executables.
+  prevention: Require per-ticket static-gate fallback policy in the spec/test-design artifacts before code validation begins.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For every numeric or threshold-style acceptance criterion, add a one-line gate classification: `blocking` or `quality guidance`; include the required evidence command for blocking metrics and note non-blocking metrics as advisory in Validation Status format."
+  reason: Prevents late ambiguity during integration and reduces evidence-gap reruns.
+
+- agent: Test Designer Agent
+  change: "For template-method refactors, include at least one executable probe-subclass test that records phase events and asserts strict call order and single execution per phase; do not rely solely on source inspection for orchestration guarantees."
+  reason: Makes orchestration contracts robust to internal refactors while preserving behavioral intent.
+
+- agent: Orchestrator Agent
+  change: "Before entering IMPLEMENTATION, run a static-gate preflight checklist (`tool exists`, `command path`, `fallback evidence path`) for each required static-analysis gate and record the selected fallback policy in checkpoints."
+  reason: Converts tool availability surprises into deterministic workflow behavior.
+
+### Workflow Improvements
+- issue: Evidence closure required an additional integration checkpoint to reconcile advisory LOC targets with pass/fail ACs.
+  improvement: Add an "AC Semantics Matrix" section to the ticket workflow state (criterion, blocking status, evidence source) immediately after SPECIFICATION.
+  expected_benefit: Shorter integration cycles and fewer gatekeeper clarification loops.
+
+- issue: Static gate reliability depended on environment-specific binaries without guaranteed availability.
+  improvement: Introduce a shared static-validation adapter command (or documented fallback chain) used consistently across all tickets.
+  expected_benefit: More predictable CI/local parity and fewer medium-confidence assumption checkpoints.
+
+### Keep / Reinforce
+- practice: Recording "Would have asked" assumptions with confidence labels at each stage.
+  reason: Preserves uncertainty audit trails and creates direct input for prompt and workflow hardening.
+
+- practice: Pairing runtime behavioral contract tests with objective static evidence scans for refactor acceptance.
+  reason: Balances regression protection with maintainability proof without overfitting to file structure.
+
+---
+
 ## [M901-02-model-registry-layering] — Ambiguous layer contracts create avoidable assumption loops
 *Completed: 2026-04-21*
 
@@ -4549,5 +4813,273 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: Recording AC-to-spec traceability in validation status when ticket wording and spec shape diverge.
   reason: Gives auditors a single place to justify layout decisions without reopening scope debates.
+
+---
+
+## [M901-05-material-system-refactoring] — Freeze compatibility boundaries early when AC wording and legacy paths diverge
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Ticket wording that mixes conceptual module targets (for example `system.py`) with legacy import paths requires an explicit compatibility decision in the spec before test design.
+  impact: The specification had to make a Medium-confidence assumption to keep `material_system.py` as the compatibility entrypoint while treating `system.py` as the orchestration target, which could have caused import-path churn or backend regressions if interpreted differently downstream.
+  prevention: Add a mandatory "canonical runtime entrypoint vs conceptual module target" clause to refactor specs whenever acceptance criteria mention renamed or extracted modules.
+  severity: high
+
+- category: architecture
+  insight: Registry-family lists in acceptance criteria should be treated as minimum required coverage unless the spec explicitly marks them as exhaustive.
+  impact: Texture-handler scope required an explicit assumption to include existing modes beyond the listed families (`organic`, `gradient`, `stripes`, `spots`); without this, refactors can accidentally drop legacy behavior while still appearing AC-compliant.
+  prevention: In spec freeze, annotate each capability list as "minimum set" or "exclusive set" and require tests for retained legacy modes when marked as minimum.
+  severity: medium
+
+- category: testing
+  insight: For extraction refactors, encoding the target module contract as primary RED behavioral tests is a stronger anti-regression strategy than waiting for post-refactor parity checks.
+  impact: Test design established extracted-module contracts up front, which created deterministic failure signals for missing modules and reduced ambiguity about what implementation had to preserve.
+  prevention: Keep contract-first RED tests as the default pattern for decomposition tickets and explicitly prohibit prose-only or import-only assertions as the primary gate.
+  severity: medium
+
+### Anti-Patterns
+- description: Deferring module-boundary decisions (compatibility facade vs physical rename) until implementation while AC text and existing imports point to different filenames.
+  detection_signal: Specification checkpoints include "Would have asked" entries about whether to rename a core module path, with Medium confidence assumptions.
+  prevention: Block advancement from SPECIFICATION unless module naming, compatibility shim policy, and consumer import guarantees are explicitly frozen.
+
+- description: Treating listed feature families in AC text as an implicit exclusion set when legacy behavior already supports additional families.
+  detection_signal: Spec or implementation checkpoints ask whether non-listed legacy modes should be retained.
+  prevention: Require explicit "scope set semantics" (minimum vs exclusive) for every enumerated capability list.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "When acceptance criteria reference new module names but legacy import paths still exist, include a required Compatibility Boundary subsection that states: (1) canonical runtime entrypoint for this ticket, (2) whether a facade/shim is required, and (3) whether any caller import-path changes are allowed."
+  reason: Prevents Medium-confidence naming assumptions and keeps refactor behavior stable for downstream consumers.
+
+- agent: Test Designer Agent
+  change: "For decomposition/extraction tickets, write contract-first RED tests against the target extracted modules and orchestration surface before implementation; do not rely on import-presence checks as primary evidence."
+  reason: Produces deterministic failure signals and reduces late-stage ambiguity about extraction completeness.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "If a ticket is intentionally routed through the generic spec gate while touching compatibility-sensitive layers, require one explicit checkpoint line that justifies gate type selection and names the residual risk review method."
+  reason: Makes gate classification auditable and prevents silent under-scoping of validation rigor.
+
+### Workflow Improvements
+- issue: The ticket started without explicit `WORKFLOW STATE` / `NEXT ACTION`, forcing orchestrator assumptions at run start.
+  improvement: Add a pre-stage normalization step that seeds missing workflow metadata (Stage, Revision, Next Responsible Agent) before PLANNING for all ready tickets.
+  expected_benefit: Reduces assumption logging and improves audit continuity across stages.
+
+- issue: Spec gate-type selection can remain implicit when tickets are "mostly generic" but still include backend compatibility constraints.
+  improvement: Add a lightweight gate-classification checklist to orchestrator output that records why generic/API/destructive/randomness/load-open was selected.
+  expected_benefit: Improves traceability and prevents downstream disagreement on whether validation depth matched risk.
+
+### Keep / Reinforce
+- practice: Recording "Would have asked" assumptions with confidence levels in checkpoints.
+  reason: Surfaces uncertainty early and creates concrete input for prompt/workflow hardening rather than burying ambiguity in silent decisions.
+
+- practice: Verifying cross-layer non-modification claims with path-scoped diff evidence (for example backend router scope checks).
+  reason: Converts compatibility claims into objective evidence and lowers regression risk for non-target layers.
+
+---
+
+## [M901-06-animated-build-options-consolidation] — Preserve package-level helper compatibility during file retirement
+*Completed: 2026-04-22*
+
+### Learnings
+- category: architecture
+  insight: Deleting legacy modules in a consolidation ticket can still break consumers when package-level helper re-exports are treated as "internal" and dropped.
+  impact: A post-implementation regression fix was required to restore helper exports (`_mouth_control_defs`, `_tail_control_defs`, `_eye_shape_pupil_control_defs`) after adversarial contract tests failed.
+  prevention: Treat package `__init__` exports as part of the compatibility surface unless the spec explicitly deprecates them; require test coverage for symbol-level parity before legacy-file deletion is considered complete.
+  severity: high
+
+- category: testing
+  insight: Adversarial checks for mutable-default isolation and malformed envelope handling are high-leverage guards in schema/validation consolidations.
+  impact: Test-break contracts detected subtle behavior risks that import-only checks would miss, and provided deterministic regression signals during refactor churn.
+  prevention: For consolidation tickets, require at least one idempotence/mutable-default test and one malformed-input fail-closed test in the mandatory suite.
+  severity: medium
+
+- category: process
+  insight: Acceptance criteria that mix structural refactor goals with maintainability targets need objective proof artifacts, not narrative claims.
+  impact: Gate closure depended on scripted import-order/cycle evidence and deterministic `<150 LOC` touchpoint measurement rather than subjective "looks simpler" assertions.
+  prevention: Standardize evidence bundles for refactors: import graph proof, targeted behavioral suite, diff-cover preflight, and scripted maintainability metric when LOC-style ACs exist.
+  severity: medium
+
+### Anti-Patterns
+- description: Assuming named public APIs are the full compatibility contract while silently dropping package helper exports used by active tests/imports.
+  detection_signal: Consolidation passes core API tests but fails late with missing-symbol import errors from package boundaries.
+  prevention: Add an explicit "package export parity" checklist item and contract test set before deleting legacy modules.
+
+- description: Declaring maintainability ACs as satisfied without deterministic measurement criteria.
+  detection_signal: Checkpoints justify LOC/complexity targets with prose but no reproducible command output.
+  prevention: Require one scripted metric command per maintainability AC and store its output in validation status.
+
+### Prompt Patches
+- agent: Implementation Generalist Agent
+  change: "Before deleting legacy modules in a compatibility-sensitive refactor, enumerate and preserve package-level exports (including helper symbols used by tests/runtime imports). If any symbol is intentionally removed, require an explicit deprecation decision in the spec and matching test updates."
+  reason: Prevents late regression cycles caused by hidden import-surface dependencies.
+
+- agent: Test Breaker Agent
+  change: "For schema/validation consolidations, always add adversarial tests for (1) mutable-default isolation across repeated calls and (2) malformed envelope payloads that must fail closed without exceptions."
+  reason: Captures high-risk behavioral regressions that basic parity tests often miss.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "When maintainability ACs use numeric targets (for example '<150 LOC for new enemy onboarding'), require deterministic command-based evidence in Validation Status; reject narrative-only justification."
+  reason: Makes non-functional AC validation objective and reproducible.
+
+### Workflow Improvements
+- issue: Compatibility regressions were discovered after the initial implementation handoff, requiring a dedicated regression-fix iteration.
+  improvement: Add a mandatory pre-handoff "export compatibility smoke" step in IMPLEMENTATION for consolidation tickets that delete legacy modules.
+  expected_benefit: Reduces gatekeeper bounce-backs and shortens time-to-complete for refactor tickets.
+
+- issue: Maintainability acceptance evidence required an extra integration pass to formalize scripted proof.
+  improvement: Require maintainability evidence commands to be prepared during IMPLEMENTATION, not deferred to final integration evidence updates.
+  expected_benefit: Eliminates late-stage evidence churn and increases first-pass gate success.
+
+### Keep / Reinforce
+- practice: Recording assumption checkpoints with confidence levels and converting medium-confidence assumptions into explicit evidence reruns.
+  reason: Maintains auditability while preventing assumption drift from becoming silent acceptance-criteria debt.
+
+- practice: Re-running both targeted behavioral suites and diff-cover preflight after regression fixes.
+  reason: Confirms that compatibility patches close the immediate failure without weakening quality gates elsewhere.
+
+---
+
+## [M901-10-backend-python-import-adapter] — Contract freezing prevented import-boundary drift during backend adapter migration
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Infrastructure/refactor tickets that enter the pipeline without initialized workflow metadata (stage/revision) create avoidable assumption debt at PLANNING.
+  impact: The run required a Medium-confidence workflow-state initialization assumption before normal execution, adding non-functional ambiguity at ticket start.
+  prevention: Add a pre-planning normalization step that auto-seeds missing workflow metadata for all `ready/` tickets before agent execution begins.
+  severity: medium
+
+- category: architecture
+  insight: For import-boundary migrations, freezing adapter location and root-precedence policy in SPECIFICATION is necessary to keep downstream behavior deterministic.
+  impact: Explicitly locking a service-layer adapter seam and deterministic root-selection precedence prevented router-level divergence while preserving endpoint behavior.
+  prevention: Require spec-time "adapter boundary + precedence contract" for any migration that centralizes runtime import/bootstrap logic.
+  severity: high
+
+- category: testing
+  insight: Locking a minimal runtime adapter API surface during TEST_DESIGN yields stronger migration safety than abstract seam assertions.
+  impact: Fixing concrete adapter symbols enabled deterministic router-migration tests without fragile source-inspection gates.
+  prevention: For boundary-extraction tickets, require test design to declare the minimal callable API contract (symbol names + responsibilities) before implementation.
+  severity: medium
+
+### Anti-Patterns
+- description: Starting implementation pipelines from tickets with incomplete workflow-state scaffolding.
+  detection_signal: Early checkpoints include "Would have asked" entries about missing revision/stage initialization rather than technical behavior.
+  prevention: Block PLANNING entry when `WORKFLOW STATE` fields are absent or malformed; auto-repair first.
+
+- description: Deferring import-boundary policy decisions (adapter path, precedence, API names) until implementation.
+  detection_signal: Spec/test checkpoints contain medium-confidence assumptions about where the boundary lives or which symbols must exist.
+  prevention: Require SPECIFICATION and TEST_DESIGN gates to fail closed unless boundary location, precedence, and minimal API contract are explicitly frozen.
+
+### Prompt Patches
+- agent: Orchestrator Agent
+  change: "Before PLANNING, validate that the ticket contains a complete WORKFLOW STATE block (Stage, Revision, Last Updated By, NEXT ACTION). If missing, normalize these fields explicitly and record the normalization in the checkpoint before any stage advancement."
+  reason: Eliminates startup ambiguity and reduces repeated metadata assumptions across downstream agents.
+
+- agent: Spec Agent
+  change: "For any ticket that centralizes Python import/bootstrap behavior, you MUST include an 'Import Boundary Contract' subsection that freezes adapter module location, root-selection precedence, and failure-surface ownership (adapter vs caller) before handoff."
+  reason: Prevents implementation-time drift in infrastructure seams that can silently reintroduce duplication or non-determinism.
+
+- agent: Test Designer Agent
+  change: "When testing boundary-extraction refactors, define and lock a minimal runtime API surface (exact symbol names and responsibilities) for the new boundary module; do not rely on abstract seam language alone."
+  reason: Produces deterministic, behavior-first migration tests and reduces interpretation gaps during implementation.
+
+### Workflow Improvements
+- issue: Workflow-state incompleteness was handled as an ad hoc assumption instead of a standardized precondition check.
+  improvement: Introduce a mandatory ticket-normalization gate before PLANNING that seeds/validates workflow metadata.
+  expected_benefit: Cleaner audit trail and fewer non-technical assumption checkpoints.
+
+- issue: Generic gate selection can mask risk in compatibility-sensitive backend migrations unless contract details are explicitly frozen.
+  improvement: Add a gate-classification note requiring explicit residual-risk controls (boundary contract and deterministic failure taxonomy) when using generic routing for backend import refactors.
+  expected_benefit: Preserves lightweight workflow while keeping validation rigor proportional to integration risk.
+
+### Keep / Reinforce
+- practice: Defining deterministic root resolution and adapter-owned failure taxonomy before implementation.
+  reason: Keeps import behavior stable across routers and enables reproducible error-path testing.
+
+- practice: Using adapter-focused behavioral tests plus router regression suites as joint closure evidence.
+  reason: Validates both the extracted seam and unchanged public route behavior in one coherent gate package.
+
+---
+## [M901-11-registry-path-policy-unification] — Freeze security-path contract details early to avoid medium-confidence assumptions
+*Completed: 2026-04-22*
+
+### Learnings
+- category: process
+  insight: Security-sensitive backend tickets that start without fully initialized workflow metadata force avoidable non-technical assumptions before real planning begins.
+  impact: PLANNING had to make a medium-confidence initialization decision for revision/state scaffolding, adding audit noise and early ambiguity.
+  prevention: Require a pre-planning metadata normalization check that seeds missing workflow fields before stage advancement.
+  severity: medium
+
+- category: testing
+  insight: Path-policy contract tests are most stable when the service API symbol and rejection taxonomy are frozen explicitly before RED tests are authored.
+  impact: TEST_DESIGN needed a medium-confidence assumption to bind to one function signature and `ValueError` fail-closed behavior; this could have caused churn if implementation chose a different exception surface.
+  prevention: In spec freeze, mandate an explicit "API symbol + exception taxonomy" contract for all validation/canonicalization boundaries.
+  severity: high
+
+- category: architecture
+  insight: Generic spec-gate routing can still be appropriate for backend-integrated refactors if residual risk controls are explicitly documented.
+  impact: The run skipped API-type gate checks by assumption; correctness stayed intact only because the downstream contract remained behavior-focused and fail-closed.
+  prevention: When selecting generic gate for backend-touching security work, require a checkpoint note that names compensating controls (behavioral contract coverage plus deterministic rejection policy).
+  severity: medium
+
+### Anti-Patterns
+- description: Treating workflow-state initialization as an ad hoc planning assumption rather than a standardized prerequisite.
+  detection_signal: Early checkpoint logs contain "Would have asked" entries about revision/stage defaults instead of technical design tradeoffs.
+  prevention: Block PLANNING until workflow metadata is validated or auto-normalized.
+
+- description: Writing validation tests before freezing concrete error-contract semantics.
+  detection_signal: Test-design checkpoints include medium-confidence assumptions about exception types or callable symbols.
+  prevention: Add mandatory exception-taxonomy and API-surface bullets to spec templates for security/path policy tickets.
+
+### Prompt Patches
+- agent: Orchestrator Agent
+  change: "Before PLANNING on any ticket, validate that WORKFLOW STATE fields are present and coherent (Stage, Revision, Last Updated By, NEXT ACTION); if missing, normalize them first and record the normalization as a non-technical precondition step."
+  reason: Removes repeated initialization ambiguity and keeps checkpoint evidence focused on engineering risk.
+
+- agent: Spec Agent
+  change: "For path-validation or canonicalization requirements, add an explicit 'Error Contract' subsection that freezes function symbol(s), return shape, and exact exception taxonomy for invalid/malformed/forbidden classes."
+  reason: Prevents test and implementation drift on fail-closed behavior semantics.
+
+- agent: Test Designer Agent
+  change: "Do not author final RED contract assertions for security validation boundaries until the spec explicitly declares callable API symbol names and exception taxonomy; otherwise emit a blocking clarification checkpoint."
+  reason: Avoids brittle or assumption-driven tests that can mis-specify the intended boundary contract.
+
+### Workflow Improvements
+- issue: Gate-type choice (generic vs API) for backend-adjacent security tickets was justified only implicitly.
+  improvement: Add a required gate-classification line in orchestrator checkpoints that states chosen gate type plus compensating controls.
+  expected_benefit: Improves auditability and keeps validation rigor proportional to integration risk.
+
+- issue: Contract-critical details (symbol and exception semantics) were left to test-design assumptions.
+  improvement: Extend specification checklist with a required "runtime boundary contract" block for validation-heavy tickets.
+  expected_benefit: Reduces rework risk and keeps RED tests deterministic across agent handoffs.
+
+### Keep / Reinforce
+- practice: Freezing behavior-level policy outcomes independent of transitional module placement.
+  reason: Preserves migration flexibility without sacrificing deterministic security behavior.
+
+- practice: Requiring cross-layer command evidence (service contract suite plus router delegation/regression suites) for closure.
+  reason: Validates both centralized policy correctness and unchanged endpoint behavior in one acceptance pass.
+
+---
+
+## [M901-13-backend-registry-service-extraction-and-router-thinning]
+
+### Learnings
+- **FastAPI router modules bind imported function names as local attributes** (`from services.registry_query import safe_is_file_under_python_root`). Tests that patch `services.registry_query.safe_is_file_under_python_root` may not affect the router if the router calls the *local* binding. For transport-level behavioral tests, patch `routers.registry.<symbol>` (or re-import patterns) when exercising route bodies.
+- **“Thin router” refactors should separate policy (`src.model_registry.service`) from composition** (`services/registry_query.py` scanning `model_registry.json` and assembling candidate rows).
+
+### Anti-Patterns
+- **String-substring guard tests on router source** after introducing imports (false positives). Prefer AST-based checks for forbidden top-level function definitions.
+
+### Prompt Patches
+- **agent: Test Designer Agent** — "When a router uses `from package import fn`, require tests to state whether they are patching the defining module or the router’s bound name; default to patching the router for route-level behavior."
+- **agent: Implementation Backend Agent** — "When extracting helpers from routers, add a small AST contract test to prevent reintroducing extracted `def` names into the router module."
+
+### Workflow Improvements
+- Add a standard checklist item for FastAPI re-exports: "identify all `from import` names used in route functions and list their patch targets for tests."
+
+### Keep / Reinforce
+- **Mechanical module-boundary tests** (AST) for “router stays transport-only” without tying tests to milestone prose.
 
 ---
