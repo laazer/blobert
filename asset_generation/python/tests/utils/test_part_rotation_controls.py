@@ -29,7 +29,7 @@ from src.utils.build_options import (
     animated_build_controls_for_api,
     options_for_enemy,
 )
-from src.utils.build_options.animated_build_options_appendage_defs import (
+from src.utils.build_options.schema import (
     _RIG_ROT_MAX,
     _RIG_ROT_MIN,
     _RIG_ROT_STEP,

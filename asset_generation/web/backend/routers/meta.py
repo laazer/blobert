@@ -1,8 +1,8 @@
 import logging
 
-from core.config import settings
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+from services.python_bridge import import_asset_module
 
 logger = logging.getLogger(__name__)
 
@@ -35,16 +35,11 @@ def _fallback_enemies() -> list[dict[str, str]]:
 async def get_enemies() -> JSONResponse:
     """Enemy list + procedural build controls from ``asset_generation/python`` (introspects enemy ClassVars)."""
     try:
-        # Stubs must load before any module that imports bpy/mathutils (e.g. blender_utils).
-        from src.utils.blender_stubs import ensure_blender_stubs
+        build_options_module = import_asset_module("src.utils.build_options")
+        config_module = import_asset_module("src.utils.config")
 
-        ensure_blender_stubs()
-
-        from src.utils.build_options import animated_build_controls_for_api
-        from src.utils.config import animated_enemies_for_api
-
-        enemies = animated_enemies_for_api()
-        build_controls = animated_build_controls_for_api()
+        enemies = config_module.animated_enemies_for_api()
+        build_controls = build_options_module.animated_build_controls_for_api()
     except ImportError as e:
         logger.warning("meta/enemies: ImportError loading build controls — %s", e, exc_info=True)
         return JSONResponse(

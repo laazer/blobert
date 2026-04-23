@@ -4,9 +4,31 @@ from __future__ import annotations
 
 import bpy
 
-from ..utils.materials import MaterialColors
-from . import material_system as ms
 from .gradient_generator import _sanitize_image_label, create_stripes_png_and_load
+from .presets import (
+    ENEMY_FINISH_PRESETS,
+    MaterialColors,
+    parse_hex_color,
+    rgba_from_hex_or_fallback,
+    sanitize_hex_input,
+)
+from .texture_handlers import create_material
+
+
+def _find_principled_bsdf(nodes: object) -> object | None:
+    for node in nodes:
+        if getattr(node, "type", None) == "BSDF_PRINCIPLED":
+            return node
+        if getattr(node, "bl_idname", "") == "ShaderNodeBsdfPrincipled":
+            return node
+    return None
+
+
+def _principled_base_color_socket(bsdf: object) -> object | None:
+    socket = bsdf.inputs.get("Base Color")
+    if socket is None:
+        socket = bsdf.inputs.get("Color")
+    return socket
 
 
 def _rgba_to_rrggbb(rgba: tuple[float, ...]) -> str:
@@ -35,15 +57,15 @@ def _material_for_stripes_zone(
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
         palette_base = (0.6, 0.5, 0.5, 1.0)
-    h_zone = ms._sanitize_hex_input(zone_hex_fallback)
-    zone_rgba = ms._parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+    h_zone = sanitize_hex_input(zone_hex_fallback)
+    zone_rgba = parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
 
-    stripe_color = ms._rgba_from_hex_or_fallback(stripe_hex, zone_rgba)
-    bg_rgba = ms._rgba_from_hex_or_fallback(bg_hex, (1.0, 1.0, 1.0, 1.0))
+    stripe_color = rgba_from_hex_or_fallback(stripe_hex, zone_rgba)
+    bg_rgba = rgba_from_hex_or_fallback(bg_hex, (1.0, 1.0, 1.0, 1.0))
 
-    finish_roughness, _finish_metallic, finish_transmission = ms.ENEMY_FINISH_PRESETS.get(
+    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
         finish,
-        ms.ENEMY_FINISH_PRESETS["default"],
+        ENEMY_FINISH_PRESETS["default"],
     )
     force_surface = finish != "default"
     metallic = 0.0
@@ -59,7 +81,7 @@ def _material_for_stripes_zone(
     rot_y_int = int(round(rot_yaw_deg)) % 360
     rot_x_int = int(round(rot_pitch_deg)) % 360
     new_name = f"{base_palette_name}__feat_{instance_suffix}_p{rot_x_int}_y{rot_y_int}"
-    mat = ms.create_material(
+    mat = create_material(
         name=new_name,
         color=stripe_color,
         metallic=metallic,
@@ -90,9 +112,9 @@ def _material_for_stripes_zone(
     if nt is not None:
         nodes = nt.nodes
         links = nt.links
-        bsdf = ms._find_principled_bsdf(nodes)
+        bsdf = _find_principled_bsdf(nodes)
         if bsdf is not None:
-            bc_in = ms._principled_base_color_socket(bsdf)
+            bc_in = _principled_base_color_socket(bsdf)
             if bc_in is not None:
                 for lk in list(bc_in.links):
                     links.remove(lk)

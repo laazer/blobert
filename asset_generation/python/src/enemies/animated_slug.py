@@ -22,11 +22,12 @@ from ..core.rig_models.blob_simple import (
 from ..materials.material_system import apply_material_to_object, get_enemy_materials
 from ..utils.body_type_presets import blob_body_type_scales
 from ..utils.config import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .animated_enemy import UsesSimpleRigMixin
+from .builder_template import AnimatedEnemyBuilderBase
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
-class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
+class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemyBuilderBase):
     """Elongated slug with blob movement"""
 
     body_height = 1.0
@@ -48,7 +49,7 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
     EYE_Z_OFFSET: ClassVar[float] = 0.6
     EYE_RADIUS: ClassVar[float] = 0.1
 
-    def build_mesh_parts(self):
+    def _build_body_mesh(self) -> None:
         length = random_variance(
             self._mesh("LENGTH_BASE"), self._mesh("LENGTH_VARIANCE"), self.rng
         )
@@ -97,6 +98,7 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         head.rotation_euler = Euler((_hrx, _hry, _hrz), "XYZ")
         self.parts.append(head)
 
+    def _build_limbs(self) -> None:
         eye_shape = str(self.build_options.get("eye_shape", "circle"))
         pupil_enabled = bool(self.build_options.get("pupil_enabled", False))
         pupil_shape = str(self.build_options.get("pupil_shape", "dot"))
@@ -162,7 +164,7 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 create_tail_mesh(tail_shape, tail_length, tuple(tail_location))
             )
 
-    def apply_themed_materials(self):
+    def _apply_materials(self) -> None:
         enemy_mats = get_enemy_materials("slug", self.materials, self.rng)
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
@@ -188,7 +190,14 @@ class AnimatedSlug(BlobSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 else:
                     apply_material_to_object(part, eye_material)
 
+    def _add_zone_extras(self) -> None:
         append_animated_enemy_zone_extras(self)
 
-    def get_body_type(self):
+    def build_mesh_parts(self) -> None:
+        super().build_mesh_parts()
+
+    def apply_themed_materials(self) -> None:
+        super().apply_themed_materials()
+
+    def get_body_type(self) -> EnemyBodyTypes:
         return EnemyBodyTypes.BLOB

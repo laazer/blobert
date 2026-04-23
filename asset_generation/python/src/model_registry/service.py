@@ -7,57 +7,78 @@ Consumer: ``spawn_eligible_paths`` implements MRVC-4 default pool filtering
 
 from __future__ import annotations
 
-import json
 import os
-import tempfile
+import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
-# Dual entry: pytest imports ``src.model_registry``; FastAPI adds ``python/src`` only.
-try:
-    from utils.enemy_slug_registry import ANIMATED_SLUGS
-except ImportError:
-    from src.utils.enemy_slug_registry import ANIMATED_SLUGS
-
-from . import migrations as _migrations
-from . import schema as _schema
-
-SCHEMA_VERSION = 1
-
-ALLOWLIST_PREFIXES: tuple[str, ...] = (
-    "animated_exports/",
-    "exports/",
-    "player_exports/",
-    "level_exports/",
+from .migrations import (
+    default_migrated_manifest,
 )
+from .schema import _MAX_VERSION_NAME_LEN, _path_is_allowlisted, validate_manifest
+from .store import read_registry_object, write_registry_json_atomic
 
-REGISTRY_FILENAME = "model_registry.json"
-
-# Optional human-readable label in ``enemies[*].versions[*].name`` (editor / tooling).
-_MAX_VERSION_NAME_LEN = 128
-
-# Default variant index for MRVC-7 migration (matches editor ``glbVariants`` stem ``*_00``).
-_DEFAULT_VARIANT_INDEX = 0
+_MAX_URL_DECODE_PASSES = 3
+_WINDOWS_DRIVE_PATH_RE = re.compile(r"^[a-zA-Z]:[/\\]")
 
 
-def registry_path(python_root: Path) -> Path:
-    return python_root / REGISTRY_FILENAME
+def normalize_registry_relative_glb_path(
+    raw_path: str,
+    *,
+    allow_uppercase_extension: bool = False,
+) -> str:
+    """Canonicalize and validate untrusted registry-relative GLB paths."""
+    if any(ord(ch) < 32 for ch in raw_path):
+        raise ValueError("malformed target path class: control-character")
+    if "\\" in raw_path:
+        raise ValueError("malformed target path class: mixed-separator")
 
+    decoded = raw_path
+    for _ in range(_MAX_URL_DECODE_PASSES):
+        next_decoded = unquote(decoded)
+        if next_decoded == decoded:
+            break
+        decoded = next_decoded
 
-def _path_is_allowlisted(path: str) -> bool:
-    if not path or path.startswith("/") or ".." in path.split("/"):
-        return False
-    return any(path.startswith(p) for p in ALLOWLIST_PREFIXES)
+    if any(ord(ch) < 32 for ch in decoded):
+        raise ValueError("malformed target path class: control-character")
+    if "%" in decoded:
+        raise ValueError("malformed target path class: malformed-encoding")
 
+    cleaned = decoded.strip()
+    if not cleaned:
+        raise ValueError("malformed target path class: empty")
+    if cleaned.startswith("res://"):
+        raise ValueError("forbidden target path class: res-path")
+    if cleaned.startswith("/"):
+        raise ValueError("forbidden target path class: absolute-path")
+    if cleaned.startswith("//"):
+        raise ValueError("forbidden target path class: absolute-path")
+    if _WINDOWS_DRIVE_PATH_RE.match(cleaned):
+        raise ValueError("forbidden target path class: absolute-path")
 
-def _default_version_id_for_slug(slug: str) -> str:
-    stem = f"{slug}_animated_{_DEFAULT_VARIANT_INDEX:02d}"
-    return stem
+    canonical_parts: list[str] = []
+    for part in cleaned.split("/"):
+        if part in {"", "."}:
+            continue
+        if part == "..":
+            raise ValueError("malformed target path class: traversal")
+        canonical_parts.append(part)
 
+    if not canonical_parts:
+        raise ValueError("malformed target path class: empty")
 
-def _default_path_for_slug(slug: str) -> str:
-    stem = _default_version_id_for_slug(slug)
-    return f"animated_exports/{stem}.glb"
+    canonical = "/".join(canonical_parts)
+    if canonical.endswith(".glb"):
+        pass
+    elif allow_uppercase_extension and canonical.lower().endswith(".glb"):
+        canonical = f"{canonical[:-3]}glb"
+    else:
+        raise ValueError("malformed target path class: extension")
+    if not _path_is_allowlisted(canonical):
+        raise ValueError("forbidden target path class: allowlist-prefix")
+    return canonical
 
 
 def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
@@ -71,7 +92,6 @@ def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
 
 
 def _get_family_block(data: dict[str, Any], family: str) -> dict[str, Any]:
-    """Return the versions/slots dict for either an enemy family or the player."""
     if family == "player":
         return data["player"]
     fam = data["enemies"].get(family)
@@ -81,7 +101,6 @@ def _get_family_block(data: dict[str, Any], family: str) -> dict[str, Any]:
 
 
 def _evict_from_slots(fam_block: dict[str, Any], version_id: str) -> None:
-    """Replace any slot entry for version_id with an empty placeholder."""
     slots = fam_block.get("slots")
     if isinstance(slots, list):
         fam_block["slots"] = ["" if s == version_id else s for s in slots]
@@ -92,7 +111,6 @@ def _apply_version_patches(
     version_id: str,
     patches: dict[str, Any],
 ) -> None:
-    """Apply patches in-place, coerce flags, and evict from slots if the version becomes draft."""
     versions: list[dict[str, Any]] = fam_block["versions"]
     found = next((v for v in versions if v["id"] == version_id), None)
     if found is None:
@@ -128,240 +146,16 @@ def _apply_version_patches(
         _evict_from_slots(fam_block, version_id)
 
 
-def default_migrated_manifest() -> dict[str, Any]:
-    """MRVC-7 single-version migration shape (in-memory; not written until a save)."""
-    enemies: dict[str, Any] = {}
-    for slug in ANIMATED_SLUGS:
-        vid = _default_version_id_for_slug(slug)
-        enemies[slug] = {
-            "versions": [
-                {
-                    "id": vid,
-                    "path": _default_path_for_slug(slug),
-                    "draft": False,
-                    "in_use": True,
-                }
-            ]
-        }
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "enemies": enemies,
-        "player": {"versions": [], "slots": []},
-        "player_active_visual": None,
-    }
-
-
-def _legacy_pav_to_player_block(pav: dict[str, Any]) -> dict[str, Any]:
-    """Build a ``player`` family dict from legacy ``player_active_visual`` only."""
-    pp = pav["path"]
-    pd = bool(pav["draft"])
-    name = Path(pp).name
-    stem = name[:-4] if name.lower().endswith(".glb") else Path(pp).stem
-    if not stem or not stem.strip():
-        stem = "player_registry_00"
-    vid = stem
-    in_use = not pd
-    row: dict[str, Any] = {"id": vid, "path": pp, "draft": pd, "in_use": in_use}
-    slots: list[str] = [vid] if not pd else []
-    return {"versions": [row], "slots": slots}
-
-
-def _derive_player_active_visual_from_block(player_block: dict[str, Any]) -> dict[str, Any] | None:
-    """Legacy single-path view: first assigned slot row, or ``None`` when none."""
-    slots = player_block.get("slots")
-    if not isinstance(slots, list) or len(slots) == 0:
-        return None
-    versions = player_block.get("versions", [])
-    for vid0 in slots:
-        if not isinstance(vid0, str) or vid0 == "":
-            continue
-        row = next((r for r in versions if r.get("id") == vid0), None)
-        if row is None:
-            continue
-        return {"path": row["path"], "draft": bool(row.get("draft"))}
-    return None
-
-
-def _normalize_registry_family_block(context: str, fam_val: Any) -> dict[str, Any]:
-    """Validate ``versions`` + optional ``slots`` (same rules as one enemy family)."""
-    if not isinstance(fam_val, dict):
-        raise ValueError(f"{context} must be an object")
-    extra_family = set(fam_val.keys()) - {"versions", "slots"}
-    if extra_family:
-        raise ValueError(f"unexpected keys for {context}: {sorted(extra_family)}")
-    versions_raw = fam_val.get("versions")
-    if not isinstance(versions_raw, list):
-        raise ValueError(f"{context}.versions must be an array")
-
-    seen_ids: set[str] = set()
-    versions_out: list[dict[str, Any]] = []
-    for i, row in enumerate(versions_raw):
-        if not isinstance(row, dict):
-            raise ValueError(f"{context}.versions[{i}] must be an object")
-        allowed_keys = {"id", "path", "draft", "in_use", "name"}
-        extra = set(row.keys()) - allowed_keys
-        if extra:
-            raise ValueError(f"{context}.versions[{i}] unexpected keys: {sorted(extra)}")
-        for k in ("id", "path", "draft", "in_use"):
-            if k not in row:
-                raise ValueError(f"{context}.versions[{i}] missing {k!r}")
-        vid = row["id"]
-        path = row["path"]
-        draft = row["draft"]
-        in_use = row["in_use"]
-        if not isinstance(vid, str) or not vid.strip():
-            raise ValueError(f"{context}.versions[{i}].id invalid")
-        if vid in seen_ids:
-            raise ValueError(f"duplicate version id {vid!r} in {context}")
-        seen_ids.add(vid)
-        if not isinstance(path, str) or not _path_is_allowlisted(path):
-            raise ValueError(f"invalid path for {context} / {vid!r}: {path!r}")
-        if not isinstance(draft, bool) or not isinstance(in_use, bool):
-            raise ValueError(f"draft/in_use must be booleans for {context} / {vid!r}")
-        use = in_use
-        if draft and in_use:
-            use = False
-        if not draft and not use:
-            draft = True
-            use = False
-        out_row: dict[str, Any] = {"id": vid, "path": path, "draft": draft, "in_use": use}
-        if "name" in row and row["name"] is not None:
-            nraw = row["name"]
-            if not isinstance(nraw, str):
-                raise ValueError(f"{context}.versions[{i}].name must be a string")
-            nstrip = nraw.strip()
-            if len(nstrip) > _MAX_VERSION_NAME_LEN:
-                raise ValueError(
-                    f"{context}.versions[{i}].name exceeds max length {_MAX_VERSION_NAME_LEN}",
-                )
-            if nstrip:
-                out_row["name"] = nstrip
-        versions_out.append(out_row)
-
-    family_out: dict[str, Any] = {"versions": versions_out}
-    slots_raw = fam_val.get("slots")
-    if slots_raw is not None:
-        if not isinstance(slots_raw, list):
-            raise ValueError(f"{context}.slots must be an array")
-        seen_slot_ids: set[str] = set()
-        slots_out: list[str] = []
-        for i, version_id in enumerate(slots_raw):
-            if not isinstance(version_id, str):
-                raise ValueError(f"{context}.slots[{i}] invalid")
-            if version_id == "":
-                slots_out.append("")
-                continue
-            if not version_id.strip():
-                raise ValueError(f"{context}.slots[{i}] invalid")
-            if version_id in seen_slot_ids:
-                raise ValueError(f"duplicate slot version id {version_id!r} in {context}")
-            if version_id not in seen_ids:
-                raise ValueError(f"unknown slot version id {version_id!r} for {context}")
-            slot_row = next((r for r in versions_out if r["id"] == version_id), None)
-            if slot_row is not None and (slot_row.get("draft") or not slot_row.get("in_use")):
-                # Auto-repair: demoted or non-in-use version left in slots — replace with placeholder.
-                slots_out.append("")
-                continue
-            seen_slot_ids.add(version_id)
-            slots_out.append(version_id)
-        family_out["slots"] = slots_out
-    return family_out
-
-
-def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
-    """
-    Validate MRVC-1 / MRVC-2 / MRVC-3 / MRVC-8. Normalizes invalid draft+in_use for enemies
-    and player. ``player`` holds versioned rows + slots; ``player_active_visual`` is derived
-    from the first slot for backward compatibility.
-    """
-    if not isinstance(data, dict):
-        raise ValueError("manifest must be a JSON object")
-
-    extra_top = set(data.keys()) - {"schema_version", "enemies", "player", "player_active_visual"}
-    if extra_top:
-        raise ValueError(f"unexpected top-level keys: {sorted(extra_top)}")
-
-    sv = data.get("schema_version")
-    if sv != SCHEMA_VERSION:
-        raise ValueError(f"unsupported schema_version: {sv!r}")
-
-    enemies_raw = data.get("enemies")
-    if not isinstance(enemies_raw, dict):
-        raise ValueError("enemies must be an object")
-
-    enemies_out: dict[str, Any] = {}
-    for family, fam_val in enemies_raw.items():
-        if not isinstance(family, str) or not family.strip():
-            raise ValueError("enemy family keys must be non-empty strings")
-        enemies_out[family] = _normalize_registry_family_block(f"enemies[{family!r}]", fam_val)
-
-    pav_legacy = data.get("player_active_visual")
-    player_raw = data.get("player")
-
-    def _player_registry_nonempty(block: Any) -> bool:
-        if not isinstance(block, dict):
-            return False
-        return bool(block.get("versions")) or bool(block.get("slots"))
-
-    if isinstance(player_raw, dict) and _player_registry_nonempty(player_raw):
-        player_block_in = player_raw
-    elif pav_legacy is not None:
-        if not isinstance(pav_legacy, dict):
-            raise ValueError("player_active_visual must be null or an object")
-        if set(pav_legacy.keys()) != {"path", "draft"}:
-            raise ValueError("player_active_visual must have only path and draft")
-        pp = pav_legacy["path"]
-        pd = pav_legacy["draft"]
-        if not isinstance(pp, str) or not _path_is_allowlisted(pp):
-            raise ValueError(f"invalid player_active_visual.path: {pp!r}")
-        if not isinstance(pd, bool):
-            raise ValueError("player_active_visual.draft must be boolean")
-        player_block_in = _legacy_pav_to_player_block(pav_legacy)
-    elif isinstance(player_raw, dict):
-        player_block_in = player_raw
-    else:
-        player_block_in = {"versions": [], "slots": []}
-
-    player_normalized = _normalize_registry_family_block("player", player_block_in)
-    pav_derived = _derive_player_active_visual_from_block(player_normalized)
-
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "enemies": enemies_out,
-        "player": player_normalized,
-        "player_active_visual": pav_derived,
-    }
-
-
 def load_effective_manifest(python_root: Path) -> dict[str, Any]:
-    """Read ``model_registry.json`` or return the MRVC-7 default (not persisted)."""
-    path = registry_path(python_root)
-    if not path.is_file():
+    raw = read_registry_object(python_root)
+    if raw is None:
         return default_migrated_manifest()
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        raise ValueError(f"invalid JSON in {path}: {e}") from e
-    if not isinstance(raw, dict):
-        raise ValueError("registry file must contain a JSON object")
     return validate_manifest(raw)
 
 
 def save_manifest_atomic(python_root: Path, data: dict[str, Any]) -> None:
-    """Write validated manifest to ``python_root/model_registry.json``."""
     validated = validate_manifest(data)
-    path = registry_path(python_root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(validated, indent=2, sort_keys=True) + "\n"
-    fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix=".tmp_model_registry_", suffix=".json")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(payload)
-        os.replace(tmp_path, path)
-    except Exception:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-        raise
+    write_registry_json_atomic(python_root, validated, replace_fn=os.replace)
 
 
 def patch_enemy_version(
@@ -370,7 +164,6 @@ def patch_enemy_version(
     version_id: str,
     patches: dict[str, Any],
 ) -> dict[str, Any]:
-    """Update one enemy version row; ``patches`` keys: draft, in_use, name (JSON ``null`` clears name)."""
     if not patches:
         raise ValueError("at least one patch field is required")
     bad = set(patches) - frozenset({"draft", "in_use", "name"})
@@ -385,13 +178,138 @@ def patch_enemy_version(
     return validated
 
 
+def _require_delete_confirmation(confirm: bool) -> None:
+    if not confirm:
+        raise ValueError("delete requires explicit confirmation")
+
+
+def _find_enemy_version(
+    manifest: dict[str, Any],
+    family: str,
+    version_id: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    enemies = manifest.get("enemies")
+    if not isinstance(enemies, dict):
+        raise ValueError("malformed target payload: missing-enemies")
+    fam = enemies.get(family)
+    if not isinstance(fam, dict):
+        raise KeyError("unknown target")
+    versions = fam.get("versions")
+    if not isinstance(versions, list):
+        raise ValueError("malformed target payload: missing-versions")
+    for row in versions:
+        if isinstance(row, dict) and row.get("id") == version_id:
+            return fam, row
+    raise KeyError("unknown target")
+
+
+def _normalized_target_path_or_row_path(
+    row_path: str,
+    request_target_path: str | None,
+) -> str:
+    normalized_row_path = normalize_registry_relative_glb_path(row_path)
+    if request_target_path is None:
+        return normalized_row_path
+    normalized_target = normalize_registry_relative_glb_path(request_target_path)
+    if normalized_target != normalized_row_path:
+        raise ValueError("forbidden target path class: target-mismatch")
+    return normalized_target
+
+
+def _apply_enemy_version_delete(
+    manifest: dict[str, Any],
+    family: str,
+    version_id: str,
+) -> None:
+    fam, row = _find_enemy_version(manifest, family, version_id)
+    versions = fam["versions"]
+    versions[:] = [version for version in versions if version is not row]
+    _evict_from_slots(fam, version_id)
+
+
+def delete_enemy_version(
+    python_root: Path,
+    *,
+    family: str,
+    version_id: str,
+    confirm: bool,
+    confirm_text: str | None = None,
+    target_path: str | None = None,
+    delete_files: bool = False,
+) -> dict[str, Any]:
+    _require_delete_confirmation(confirm)
+
+    manifest = load_effective_manifest(python_root)
+    fam, row = _find_enemy_version(manifest, family, version_id)
+    row_path_raw = row.get("path")
+    if not isinstance(row_path_raw, str):
+        raise ValueError("malformed target payload: missing-path")
+    row_path = _normalized_target_path_or_row_path(row_path_raw, target_path)
+    is_draft = row.get("draft") is True
+    is_in_use = row.get("in_use") is True and not is_draft
+
+    if is_draft:
+        if confirm_text is not None:
+            expected = f"delete draft {family} {version_id}"
+            if confirm_text.strip() != expected:
+                raise ValueError("malformed confirmation text")
+    elif is_in_use:
+        expected = f"delete in-use {family} {version_id}"
+        if (confirm_text or "").strip() != expected:
+            raise ValueError("malformed confirmation text")
+        live_rows = [
+            candidate
+            for candidate in fam.get("versions", [])
+            if isinstance(candidate, dict)
+            and candidate.get("id") != version_id
+            and candidate.get("draft") is False
+            and candidate.get("in_use") is True
+        ]
+        if not live_rows:
+            raise RuntimeError("cannot delete sole in-use enemy version")
+    else:
+        raise ValueError("delete requires draft or in-use target")
+
+    _apply_enemy_version_delete(manifest, family, version_id)
+    validated = validate_manifest(manifest)
+    save_manifest_atomic(python_root, validated)
+    if delete_files:
+        target_file = python_root / row_path
+        if target_file.exists():
+            target_file.unlink()
+    return validated
+
+
+def delete_player_active_visual(
+    python_root: Path,
+    *,
+    confirm: bool,
+) -> dict[str, Any]:
+    _require_delete_confirmation(confirm)
+    manifest = load_effective_manifest(python_root)
+    if manifest.get("player_active_visual") is None:
+        raise KeyError("unknown target")
+    player = manifest["player"]
+    assigned_slots = [slot_id for slot_id in (player.get("slots") or []) if slot_id]
+    if len(assigned_slots) <= 1:
+        raise RuntimeError("cannot delete sole active player visual")
+    old_slots = list(player.get("slots") or [])
+    first_assigned = next((slot_id for slot_id in old_slots if slot_id), None)
+    player["slots"] = ["" if slot_id == first_assigned else slot_id for slot_id in old_slots]
+    manifest.pop("player_active_visual", None)
+    validated = validate_manifest(manifest)
+    validated.pop("player_active_visual", None)
+    write_registry_json_atomic(python_root, validated, replace_fn=os.replace)
+    return validated
+
+
 def patch_player_active_visual(
     python_root: Path,
     *,
     draft: bool | None = None,
     path: str | None = None,
 ) -> dict[str, Any]:
-    """Set the primary player model path (first slot). Creates version + slot rows as needed."""
+    """Set or initialize the active player visual via player versions/slots."""
     if draft is None and path is None:
         raise ValueError("at least one of draft or path must be set")
 
@@ -401,10 +319,14 @@ def patch_player_active_visual(
     slots: list[str] = list(player_block.get("slots") or [])
 
     if path is not None:
-        if not _path_is_allowlisted(path):
-            raise ValueError(f"invalid player path: {path!r}")
-        if not path.endswith(".glb"):
-            raise ValueError("player_active_visual.path must end with .glb")
+        if path != path.strip():
+            raise ValueError("player path must end with .glb")
+        try:
+            path = normalize_registry_relative_glb_path(path)
+        except ValueError as exc:
+            if "extension" in str(exc):
+                raise ValueError("player path must end with .glb") from exc
+            raise ValueError("invalid player path") from exc
         stem = Path(path).stem
         vid = stem if stem.strip() else "player_registry_00"
         row = next((v for v in versions if v["path"] == path), None)
@@ -446,18 +368,13 @@ def patch_player_active_visual(
 
 
 def _slots_payload(fam_block: dict[str, Any], family: str) -> dict[str, Any]:
-    """Build the slots response dict from an already-loaded family block."""
     version_ids = list(fam_block.get("slots") or [])
     paths_by_id = {row["id"]: row["path"] for row in fam_block["versions"]}
     resolved_paths = [paths_by_id[vid] for vid in version_ids if vid and vid in paths_by_id]
     return {"family": family, "version_ids": version_ids, "resolved_paths": resolved_paths}
 
 
-def get_enemy_slots(
-    python_root: Path,
-    family: str,
-) -> dict[str, Any]:
-    """Return currently configured slot IDs for a family."""
+def get_enemy_slots(python_root: Path, family: str) -> dict[str, Any]:
     data = load_effective_manifest(python_root)
     fam = _get_family_block(data, family)
     return _slots_payload(fam, family)
@@ -469,11 +386,6 @@ def _discovered_animated_export_rows(
     existing_ids: set[str],
     existing_paths: set[str],
 ) -> list[dict[str, Any]]:
-    """
-    Build new version dicts for ``animated_exports`` GLBs whose stem starts with
-    ``{family}_animated_`` (procedural or prefab stems), exist on disk, and are not
-    already represented by id or path in the manifest.
-    """
     out: list[dict[str, Any]] = []
     prefix = f"{family}_animated_"
     scan_dirs: tuple[tuple[Path, str], ...] = (
@@ -490,14 +402,19 @@ def _discovered_animated_export_rows(
             if not stem.startswith(prefix):
                 continue
             rel = f"{rel_prefix}/{path.name}"
-            if not _path_is_allowlisted(rel):
+            try:
+                canonical_rel = normalize_registry_relative_glb_path(
+                    rel,
+                    allow_uppercase_extension=True,
+                )
+            except ValueError:
                 continue
-            if stem in existing_ids or rel in existing_paths:
+            if stem in existing_ids or canonical_rel in existing_paths:
                 continue
             out.append(
                 {
                     "id": stem,
-                    "path": rel,
+                    "path": canonical_rel,
                     "draft": True,
                     "in_use": False,
                 },
@@ -506,13 +423,7 @@ def _discovered_animated_export_rows(
 
 
 def sync_discovered_animated_glb_versions(python_root: Path, family: str) -> dict[str, Any]:
-    """
-    Persist new ``versions`` rows for on-disk animated GLBs under ``animated_exports/`` that
-    match this family's export stem prefix but are absent from the manifest.
-
-    New rows default to ``draft: true`` so spawn pools are unchanged until the editor
-    promotes them to in pool (e.g. via Add slot).
-    """
+    """Append newly discovered family animated GLB exports as draft rows."""
     data = load_effective_manifest(python_root)
     fam = data["enemies"].get(family)
     if fam is None:
@@ -535,7 +446,6 @@ def patch_player_version(
     version_id: str,
     patches: dict[str, Any],
 ) -> dict[str, Any]:
-    """Update one player version row (same patch keys as ``patch_enemy_version``)."""
     if not patches:
         raise ValueError("at least one patch field is required")
     bad = set(patches) - frozenset({"draft", "in_use", "name"})
@@ -607,14 +517,19 @@ def _discovered_player_export_rows(
                 continue
             stem = path.stem
             rel = f"{rel_prefix}/{path.name}"
-            if not _path_is_allowlisted(rel):
+            try:
+                canonical_rel = normalize_registry_relative_glb_path(
+                    rel,
+                    allow_uppercase_extension=True,
+                )
+            except ValueError:
                 continue
-            if stem in existing_ids or rel in existing_paths:
+            if stem in existing_ids or canonical_rel in existing_paths:
                 continue
             out.append(
                 {
                     "id": stem,
-                    "path": rel,
+                    "path": canonical_rel,
                     "draft": True,
                     "in_use": False,
                 },
@@ -623,7 +538,6 @@ def _discovered_player_export_rows(
 
 
 def sync_discovered_player_glb_versions(python_root: Path) -> dict[str, Any]:
-    """Register ``player_exports/*.glb`` on disk that are missing from ``player.versions``."""
     data = load_effective_manifest(python_root)
     fam = data["player"]
     versions = fam["versions"]
@@ -645,7 +559,6 @@ def put_enemy_slots(
     family: str,
     version_ids: list[str],
 ) -> dict[str, Any]:
-    """Replace slot IDs for a family, validating draft/in_use and duplicates."""
     if not version_ids:
         raise ValueError("version_ids must not be empty")
     _assert_assigned_slot_ids_unique(version_ids)
@@ -672,9 +585,6 @@ def put_enemy_slots(
 
 
 def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:
-    """
-    MRVC-4 default pool: ``draft == false`` and ``in_use == true`` and valid path.
-    """
     fam = manifest.get("enemies", {}).get(family)
     if not fam:
         return []
@@ -685,10 +595,3 @@ def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:
             if isinstance(p, str) and _path_is_allowlisted(p):
                 out.append(p)
     return out
-
-
-# Layered compatibility bridge (M901-02): publish service-owned callables through
-# schema/migrations module symbols expected by layering contract tests.
-_schema.validate_manifest = validate_manifest
-_migrations._legacy_pav_to_player_block = _legacy_pav_to_player_block
-_migrations._derive_player_active_visual_from_block = _derive_player_active_visual_from_block

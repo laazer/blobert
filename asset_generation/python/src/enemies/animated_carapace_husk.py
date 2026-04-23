@@ -23,7 +23,8 @@ from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.body_type_presets import humanoid_torso_leg_multipliers
 from ..utils.config import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .animated_enemy import UsesSimpleRigMixin
+from .builder_template import AnimatedEnemyBuilderBase
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
@@ -43,7 +44,7 @@ def _humanoid_limb_part_kinds(
     return out
 
 
-class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
+class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemyBuilderBase):
     """Heavy wide humanoid with thick arms and short legs"""
 
     body_height = 1.0
@@ -71,7 +72,7 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
     CARAPACE_Z_SCALE: ClassVar[float] = 0.14
     CARAPACE_Z_ABOVE_CENTER: ClassVar[float] = 0.42
 
-    def build_mesh_parts(self):
+    def _build_body_mesh(self) -> None:
         hm, wm, lm = humanoid_torso_leg_multipliers(self.build_options)
         body_height = random_variance(self._mesh("BODY_HEIGHT_BASE"), self._mesh("BODY_HEIGHT_VARIANCE"), self.rng) * hm
         body_width = random_variance(self._mesh("BODY_WIDTH_BASE"), self._mesh("BODY_WIDTH_VARIANCE"), self.rng) * wm
@@ -120,6 +121,8 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         head.rotation_euler = Euler((_hrx, _hry, _hrz), "XYZ")
         self.parts.append(head)
 
+    def _build_limbs(self) -> None:
+        _, _, lm = humanoid_torso_leg_multipliers(self.build_options)
         arm_length = random_variance(self._mesh("ARM_LENGTH_BASE"), self._mesh("ARM_LENGTH_VARIANCE"), self.rng)
         n_arm = max(1, min(8, int(self._mesh("ARM_SEGMENTS"))))
         n_leg = self._segment_count("LEG_SEGMENTS")
@@ -190,7 +193,7 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 create_tail_mesh(tail_shape, tail_length, tuple(tail_location))
             )
 
-    def apply_themed_materials(self):
+    def _apply_materials(self) -> None:
         enemy_mats = self._themed_slot_materials_for("carapace_husk")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["limbs"])
@@ -239,7 +242,14 @@ class AnimatedCarapaceHusk(HumanoidSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 apply_material_to_object(self.parts[i + j], mat)
             i += cnt
 
+    def _add_zone_extras(self) -> None:
         append_animated_enemy_zone_extras(self)
 
-    def get_body_type(self):
+    def build_mesh_parts(self) -> None:
+        super().build_mesh_parts()
+
+    def apply_themed_materials(self) -> None:
+        super().apply_themed_materials()
+
+    def get_body_type(self) -> EnemyBodyTypes:
         return EnemyBodyTypes.HUMANOID

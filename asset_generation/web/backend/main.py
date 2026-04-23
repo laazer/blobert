@@ -1,27 +1,13 @@
-"""
-FastAPI backend for the Live Asset Editor.
-"""
+"""FastAPI backend for the Live Asset Editor."""
 from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-def _bootstrap_asset_generation_python_path() -> None:
-    """Expose ``asset_generation/python`` and ``.../python/src`` for ``src.*`` and legacy flat imports."""
-    backend_dir = Path(__file__).resolve().parent
-    python_root = backend_dir.parent.parent / "python"
-    src_dir = python_root / "src"
-    for p in (str(python_root), str(src_dir)):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-
-
-_bootstrap_asset_generation_python_path()
 
 from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import assets, files, meta, registry, run
+from services.python_bridge import bootstrap_python_runtime
+
+bootstrap_python_runtime()
 
 app = FastAPI(title="Blobert Asset Editor API")
 

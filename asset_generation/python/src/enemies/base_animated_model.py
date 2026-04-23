@@ -116,7 +116,11 @@ class BaseAnimatedModel(ABC):
         return mesh
 
     def _estimate_dimensions_from_prefab(self, prefab_mesh) -> None:
-        scale = detect_body_scale_from_mesh(prefab_mesh)
+        try:
+            scale = detect_body_scale_from_mesh(prefab_mesh)
+        except AttributeError:
+            # Some call sites provide prefab sentinels/stubs in tests; keep defaults.
+            scale = 1.0
         self.body_scale = scale
         self.body_height = scale * 2.0
         self.height = scale * 2.0

@@ -23,11 +23,12 @@ from ..core.rig_models.quadruped_simple import (
 from ..materials.material_system import apply_material_to_object
 from ..utils.body_type_presets import claw_crawler_body_type_scales
 from ..utils.config import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .animated_enemy import UsesSimpleRigMixin
+from .builder_template import AnimatedEnemyBuilderBase
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 
-class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
+class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemyBuilderBase):
     """Flat disc body with large front claws and quadruped movement"""
 
     body_height = 1.0
@@ -74,7 +75,7 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
         (-0.4, -0.4, 0),
     )
 
-    def build_mesh_parts(self):
+    def _build_body_mesh(self) -> None:
         body_scale = random_variance(self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng)
         flatten_y = random_variance(self._mesh("BODY_FLATTEN_Y_BASE"), self._mesh("BODY_FLATTEN_Y_VARIANCE"), self.rng)
         bs_m, fy_m, leg_m = claw_crawler_body_type_scales(self.build_options)
@@ -152,6 +153,8 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
 
         self._pupil_enabled = pupil_enabled
 
+    def _build_limbs(self) -> None:
+        _, _, leg_m = claw_crawler_body_type_scales(self.build_options)
         for side in [-1, 1]:
             claw_length = random_variance(self._mesh("CLAW_LENGTH_BASE"), self._mesh("CLAW_LENGTH_VARIANCE"), self.rng)
             claw = create_cylinder(
@@ -203,7 +206,7 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
                 create_tail_mesh(tail_shape, tail_length, tuple(tail_location))
             )
 
-    def apply_themed_materials(self):
+    def _apply_materials(self) -> None:
         enemy_mats = self._themed_slot_materials_for("claw_crawler")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
@@ -225,7 +228,14 @@ class AnimatedClawCrawler(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy)
             apply_material_to_object(self.parts[part_index], limb_material)
             part_index += 1
 
+    def _add_zone_extras(self) -> None:
         append_animated_enemy_zone_extras(self)
 
-    def get_body_type(self):
+    def build_mesh_parts(self) -> None:
+        super().build_mesh_parts()
+
+    def apply_themed_materials(self) -> None:
+        super().apply_themed_materials()
+
+    def get_body_type(self) -> EnemyBodyTypes:
         return EnemyBodyTypes.QUADRUPED

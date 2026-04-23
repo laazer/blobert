@@ -489,7 +489,7 @@ func set_remapping_mode(mode: int, param1: float = 1.0) -> void:
 - **Base texture format:** PNG (standard for blobert asset pipeline)
 - **Shader language:** GLSL (compatible with Three.js + Godot 4.x)
 - **UV convention:** [0, 1] × [0, 1], origin at bottom-left (standard in most graphics APIs)
-- **No prior changes required:** Implementation starts after Milestone 9 (asset_generation_refactoring)
+- **No prior changes required:** Implementation starts after Milestone 901 (asset generation refactoring; `project_board/901_milestone_901_asset_generation_refactoring/`)
 
 ---
 

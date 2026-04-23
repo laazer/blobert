@@ -197,6 +197,11 @@ Prefer `git mv` for renames/moves to preserve history.
 - Treat unexplained tuning/threshold literals as findings.
 - In `asset_generation/**`, avoid bare `dict` and untyped dicts: use `dict[str, T]`, `Mapping[str, T]` for read-only arguments, `TypedDict` for fixed key sets, and Pydantic models for FastAPI payloads. Reserve `dict[str, Any]` for validated JSON boundaries (e.g. registry/manifest parse → validate → serialize), not as a routine internal type.
 
+### Test files (all languages)
+
+- **File names** describe *behavior and location*, not backlog tickets. Use stable names like `test_registry_path_policy.py`, `test_python_import_bridge.py`, or `test_<package>_<concern>.py`. Do **not** embed milestone ids, ticket numbers, or `M901-*`-style slugs in filenames. Traceability (ticket path, spec section, or requirement id) belongs in a short module docstring or a comment on the test class, not the filename.
+- **Isolation:** Prefer `unittest.mock` (`patch`, `MagicMock`, `AsyncMock`, `PropertyMock` where needed) to replace callables, types, and imported collaborators so expectations stay explicit. Reserve `pytest`’s `monkeypatch` for cases that mocks handle poorly: `os.environ` / `sys.modules` hygiene, restoring singleton settings, or one-off attribute swaps where `patch` would be noisier than the test target. If you use `monkeypatch` for a replaceable dependency, add a one-line note explaining why a mock was not used.
+
 ### Pre-commit enforcement
 
 - GDScript checks: `task hooks:gd-review`

@@ -5,11 +5,12 @@ Gradient texture generation for animated enemies
 from __future__ import annotations
 
 import math
+import re
 import struct
 import zlib
 from pathlib import Path
 
-import bpy
+import bpy  # type: ignore[import-not-found]
 
 
 def _lerp_rgba(
@@ -58,7 +59,6 @@ def _gradient_image_pixel_buffer(
 
 
 def _sanitize_image_label(label: str) -> str:
-    import re
     raw = re.sub(r"[^a-zA-Z0-9_]+", "_", str(label or "gradient").strip())
     return (raw[:48] or "gradient").lstrip("_") or "gradient"
 
