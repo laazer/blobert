@@ -11,6 +11,8 @@ from core.config import settings
 from core.process_manager import process_manager
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
+from services.error_mapping import map_exception_to_http
+from services.python_bridge import bootstrap_python_runtime, import_asset_module
 from sse_starlette.sse import EventSourceResponse
 
 logger = logging.getLogger(__name__)
@@ -29,9 +31,8 @@ def _sync_registry_for_family(family: str) -> None:
     "Add slot → Scanning…" cycle.  Failures are non-fatal — logged and swallowed.
     """
     try:
-        from routers.registry import _ensure_python_import_path  # noqa: PLC0415
-        _ensure_python_import_path()
-        from model_registry import service as reg  # noqa: PLC0415
+        bootstrap_python_runtime()
+        reg = import_asset_module("src.model_registry.service")
         reg.sync_discovered_animated_glb_versions(settings.python_root, family)
     except Exception:
         logger.warning("post-run registry sync failed for family %r", family, exc_info=True)
@@ -290,15 +291,15 @@ async def run_complete(
     try:
         run_id = await process_manager.start(command, cwd=settings.python_root, env=env)
     except Exception as e:
+        mapped = map_exception_to_http(
+            e,
+            route="/api/run/complete",
+            logger=logger,
+            rules=(),
+        )
         return JSONResponse(
-            status_code=200,
-            content={
-                "exit_code": -1,
-                "log_text": "",
-                "output_file": None,
-                "run_id": None,
-                "message": str(e),
-            },
+            status_code=mapped.status_code,
+            content={"detail": mapped.detail},
         )
 
     log_lines: list[str] = []

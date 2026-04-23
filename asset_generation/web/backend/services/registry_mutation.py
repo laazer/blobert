@@ -6,8 +6,10 @@ This module exists as the explicit backend-side seam for transport code to impor
 """
 from __future__ import annotations
 
-from services.python_bridge import import_asset_module
+import importlib
 
 
 def load_model_registry_service():
-    return import_asset_module("src.model_registry.service")
+    # Import lazily so test seams can replace services.python_bridge at runtime.
+    bridge = importlib.import_module("services.python_bridge")
+    return bridge.import_asset_module("src.model_registry.service")

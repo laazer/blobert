@@ -219,3 +219,20 @@ Log: project_board/checkpoints/M901-12-registry-mutation-service-boundary/2026-0
 ### [M901-13-backend-registry-service-extraction-and-router-thinning] — OUTCOME: COMPLETE
 Extracted registry load-existing query helpers into `services/registry_query.py`, centralized model-registry import seam in `services/registry_mutation.py`, and kept `routers/registry.py` transport-oriented with updated contract tests.
 Log: project_board/checkpoints/M901-13-backend-registry-service-extraction-and-router-thinning/2026-04-22T22-58-59Z-orchestrator.md
+
+## Run: 2026-04-23T12:53:45Z
+- Queue mode: single ticket
+- Queue scope: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md
+- Lean: no
+- Log root: project_board/checkpoints/
+- Run log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md
+- Run: 2026-04-23T12-58-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-58-00Z-specification.md | Outcome: deterministic backend error-mapping unification specification frozen; conservative parity and fallback assumptions checkpointed; advanced to TEST_DESIGN
+- Run: 2026-04-23T12-59-10Z-spec-exit-gate.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: SPEC_EXIT_GATE | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: skipped (no standalone spec file found under project_board/specs; proceeding with in-ticket specification)
+- Run: 2026-04-23T12-57-31Z-test-design.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: TEST_DESIGN | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-57-31Z-test-design.md | Outcome: primary backend error-mapping behavioral contracts added for parity, fallback safety, and structured logging
+- Run: 2026-04-23T13-20-00Z-test-break.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: TEST_BREAK | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T13-20-00Z-test-break.md | Outcome: adversarial edge/mutation/stress tests added for precedence exactness, concurrent fallback redaction, and run-router unknown-start failure safety
+- Run: 2026-04-23T13-40-00Z-implementation.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: IMPLEMENTATION_BACKEND | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: shared `services/error_mapping.py` added, router exception handling unified, backend regression suites passing
+- Run: 2026-04-23T13-48-00Z-acceptance-criteria-gatekeeper.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/done/14_backend_error_mapping_unification.md | Stage: COMPLETE | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: AC1-AC5 evidenced and ticket closed in milestone `done/`
+
+### [M901-14-backend-error-mapping-unification] — OUTCOME: COMPLETE
+Centralized backend exception-to-HTTP mapping into shared service helpers, preserved status/payload semantics, and closed with behavior-first regression coverage.
+Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md

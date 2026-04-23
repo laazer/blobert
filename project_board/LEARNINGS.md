@@ -4,6 +4,68 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M901-14-backend-error-mapping-unification] — Centralized fallback contracts need cross-router proof and bootstrap-aware regressions
+*Completed: 2026-04-23*
+
+### Learnings
+- category: testing
+  insight: Error-mapping unification is incomplete unless unknown-exception fallback behavior is asserted across every in-scope router family, not just the first refactored path.
+  impact: Structured fallback logging and safe-generic response parity needed explicit coverage for `assets`, `registry`, and `run` to prove no observability regressions after consolidation.
+  prevention: Make cross-router fallback contract tests mandatory for all router families named in scope, including route context and exception-category logging fields.
+  severity: high
+
+- category: architecture
+  insight: Router-scope assumptions drift when "included in milestone" is treated as "requires mapper refactor" without proving whether the router actually performs domain-exception translation.
+  impact: The `files` route required explicit scope reasoning (transport/path-validation only) to avoid false AC gaps and scope creep during gate closure.
+  prevention: Add a required "router role classification" artifact before implementation: transport-only vs domain-delegating vs mixed, and tie refactor obligations to that classification.
+  severity: medium
+
+- category: process
+  insight: Boundary extractions that touch startup/import paths need companion compatibility tests for minimal-root environments, even when the ticket focus is HTTP error mapping.
+  impact: A bootstrap fallback compatibility fix in `python_bridge` was required to restabilize the backend import-adapter contract suite after refactor adjacency effects.
+  prevention: For backend service-boundary refactors, require one environment-minimal boot/import regression suite rerun as a hard quality gate before acceptance closure.
+  severity: high
+
+### Anti-Patterns
+- description: Treating shared error mapping as complete based on status-code parity alone while omitting structured-fallback observability assertions.
+  detection_signal: Contract tests pass mapped exception statuses but do not assert route context + exception type fields for unknown-exception logs.
+  prevention: Pair every fallback response assertion with a structured log-contract assertion for machine-parseable context keys.
+
+- description: Expanding router-refactor scope from milestone wording instead of behavior classification evidence.
+  detection_signal: Validation debates center on whether a router name appears in scope rather than whether it owns duplicated domain-exception translation logic.
+  prevention: Require pre-implementation classification and evidence for each scoped router’s error-handling responsibility.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For any backend error-mapping consolidation ticket, include at least one unknown-exception fallback test per in-scope router family and assert both safe client payload semantics and structured log context (`route`, `exception_type`)."
+  reason: Prevents silent observability and safety regressions that status-only tests cannot detect.
+
+- agent: Spec Agent
+  change: "Add a mandatory 'Router Responsibility Matrix' section listing each scoped router as transport-only, domain-delegating, or mixed; only domain-delegating/mixed routers require shared-mapper migration acceptance checks."
+  reason: Reduces scope ambiguity and prevents false acceptance failures or unnecessary refactor churn.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "When accepting backend boundary-refactor tickets, require evidence that adjacent import/bootstrap contract suites were rerun and stable in addition to targeted router tests."
+  reason: Catches cross-boundary regressions that appear outside the immediate ticket module but are introduced by the same refactor.
+
+### Workflow Improvements
+- issue: Ticket closure required late clarification about whether all named routers were expected to migrate or only those with duplicated domain translation.
+  improvement: Introduce an early scope-lock checkpoint requiring a per-router responsibility table before TEST_DESIGN handoff.
+  expected_benefit: Eliminates late-stage acceptance ambiguity and reduces unnecessary adversarial test churn.
+
+- issue: Adjacent import-boundary regressions surfaced after targeted suite stabilization.
+  improvement: Add a standard "adjacent boundary smoke pack" (import/bootstrap + targeted contracts) to implementation exit criteria for backend refactor tickets.
+  expected_benefit: Improves first-pass gate success by catching cross-cutting regressions earlier.
+
+### Keep / Reinforce
+- practice: Freezing fallback safety semantics (generic client detail + internal structured diagnostics) at specification time.
+  reason: Maintains secure external behavior while preserving debuggability as mapping logic centralizes.
+
+- practice: Evidence-first acceptance mapping from each AC to concrete test files and pass counts.
+  reason: Keeps gate decisions objective and reproducible under refactor-heavy milestone work.
+
+---
+
 ## [M901-12-registry-mutation-service-boundary] — Make service error contracts explicit before router-delegation refactors
 *Completed: 2026-04-22*
 

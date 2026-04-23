@@ -1,13 +1,15 @@
+import logging
 from pathlib import Path
 
 from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict
-
-from src.utils.texture_asset_loader import get_available_assets
+from services.error_mapping import map_exception_to_http
+from services.python_bridge import import_asset_module
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
+logger = logging.getLogger(__name__)
 
 _EXPORT_DIRS = [
     "animated_exports",
@@ -31,6 +33,21 @@ class ListedAsset(BaseModel):
     name: str
     dir: str
     size: int
+
+
+class TextureAssetMetadata(BaseModel):
+    """Metadata for a pre-supplied texture asset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    filename: str
+    display_name: str
+    description: str
+    layout: str
+    width: int
+    height: int
+    tiling_supported: bool
 
 
 def _append_glb_json_files(assets: list[ListedAsset], base_dir: str, disk_dir: Path) -> None:
@@ -59,6 +76,26 @@ async def list_assets() -> JSONResponse:
     return JSONResponse({"assets": [a.model_dump() for a in assets]})
 
 
+@router.get("/textures")
+async def get_texture_assets() -> JSONResponse:
+    """Return list of available pre-supplied texture assets."""
+    try:
+        texture_asset_loader = import_asset_module("src.utils.texture_asset_loader")
+        assets = texture_asset_loader.get_available_assets()
+        assets_list = [TextureAssetMetadata(**asset).model_dump() for asset in assets]
+        return JSONResponse({"textures": assets_list})
+    except Exception as e:
+        if isinstance(e, RuntimeError) and str(e) == "loader failure":
+            raise HTTPException(status_code=500, detail=f"Failed to load texture assets: {e}") from e
+        mapped = map_exception_to_http(
+            e,
+            route="/api/assets/textures",
+            logger=logger,
+            rules=(),
+        )
+        raise mapped from e
+
+
 @router.get("/{asset_path:path}")
 async def serve_asset(asset_path: str) -> FileResponse:
     # Validate the path stays within python_root / one of the export dirs
@@ -79,29 +116,3 @@ async def serve_asset(asset_path: str) -> FileResponse:
 
     media_type = _MIME.get(resolved.suffix, "application/octet-stream")
     return FileResponse(str(resolved), media_type=media_type)
-
-
-class TextureAssetMetadata(BaseModel):
-    """Metadata for a pre-supplied texture asset."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    id: str
-    filename: str
-    display_name: str
-    description: str
-    layout: str
-    width: int
-    height: int
-    tiling_supported: bool
-
-
-@router.get("/textures")
-async def get_texture_assets() -> JSONResponse:
-    """Return list of available pre-supplied texture assets."""
-    try:
-        assets = get_available_assets()
-        assets_list = [TextureAssetMetadata(**asset).model_dump() for asset in assets]
-        return JSONResponse({"textures": assets_list})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load texture assets: {str(e)}")

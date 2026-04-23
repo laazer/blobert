@@ -9,8 +9,9 @@ from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from services.error_mapping import ErrorMappingRule, map_exception_to_http
 from services.python_bridge import bootstrap_python_runtime
-from services.registry_mutation import load_model_registry_service
+from services import registry_mutation
 from services.registry_query import (
     load_existing_candidates_from_registry,
     normalize_registry_relative_glb_path_for_http,
@@ -22,6 +23,27 @@ from services.registry_query import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/registry", tags=["registry"])
+
+_REGISTRY_STANDARD_RULES = (
+    ErrorMappingRule(KeyError, 404, lambda err: str(err)),
+    ErrorMappingRule(ValueError, 400, lambda err: str(err)),
+    ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+)
+
+_REGISTRY_DELETE_RULES = (
+    ErrorMappingRule(KeyError, 404, lambda _err: "unknown target"),
+    ErrorMappingRule(RuntimeError, 409, lambda err: str(err)),
+    ErrorMappingRule(
+        ValueError,
+        400,
+        lambda err: (
+            str(err)
+            if not str(err).startswith("forbidden target path class:")
+            else str(err)
+        ),
+    ),
+    ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+)
 
 
 def _canonical_python_roots() -> tuple[Path, Path]:
@@ -37,7 +59,7 @@ def _ensure_python_import_path() -> Path:
 
 
 def _load_service():
-    return load_model_registry_service()
+    return registry_mutation.load_model_registry_service()
 
 
 class EnemyVersionPatch(BaseModel):
@@ -80,10 +102,13 @@ class LoadExistingOpenRequest(BaseModel):
 async def get_load_existing_candidates() -> JSONResponse:
     try:
         candidates = load_existing_candidates_from_registry(settings.python_root)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/load_existing/candidates",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse({"candidates": candidates})
 
 
@@ -127,14 +152,15 @@ async def open_load_existing(body: LoadExistingOpenRequest) -> JSONResponse:
                 raise HTTPException(status_code=404, detail="registry target file not found")
             return JSONResponse({"kind": "path", "path": canonical_path})
         raise HTTPException(status_code=400, detail="malformed target payload: unsupported-kind")
-    except HTTPException:
-        raise
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/load_existing/open",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
 
 
 @router.get("/model")
@@ -142,12 +168,18 @@ async def get_model_registry() -> JSONResponse:
     try:
         reg = _load_service()
         data = reg.load_effective_manifest(settings.python_root)
-    except ValueError as e:
-        logger.warning("registry get: validation error — %s", e)
-        raise HTTPException(status_code=500, detail=str(e)) from e
-    except ImportError as e:
-        logger.warning("registry get: ImportError — %s", e, exc_info=True)
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        if isinstance(e, ValueError):
+            logger.warning("registry get: validation error — %s", e)
+            raise HTTPException(status_code=500, detail=str(e)) from e
+        if isinstance(e, ImportError):
+            logger.warning("registry get: ImportError — %s", e, exc_info=True)
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model",
+            logger=logger,
+            rules=(ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),),
+        ) from e
     return JSONResponse(data)
 
 
@@ -164,12 +196,13 @@ async def patch_enemy_version_endpoint(
     try:
         reg = _load_service()
         updated = reg.patch_enemy_version(settings.python_root, family, version_id, patches)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/enemies/{family}/versions/{version_id}",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(updated)
 
 
@@ -185,12 +218,13 @@ async def patch_player_active_visual_endpoint(body: PlayerVisualPatch) -> JSONRe
             draft=body.draft,
             path=body.path,
         )
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/player_active_visual",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(updated)
 
 
@@ -199,12 +233,13 @@ async def get_enemy_slots_endpoint(family: str) -> JSONResponse:
     try:
         reg = _load_service()
         payload = reg.get_enemy_slots(settings.python_root, family)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/enemies/{family}/slots",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(payload)
 
 
@@ -214,12 +249,13 @@ async def post_sync_animated_exports_endpoint(family: str) -> JSONResponse:
     try:
         reg = _load_service()
         updated = reg.sync_discovered_animated_glb_versions(settings.python_root, family)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/enemies/{family}/sync_animated_exports",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(updated)
 
 
@@ -231,12 +267,13 @@ async def put_enemy_slots_endpoint(
     try:
         reg = _load_service()
         payload = reg.put_enemy_slots(settings.python_root, family, body.version_ids)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/enemies/{family}/slots",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(payload)
 
 
@@ -245,10 +282,16 @@ async def get_player_slots_endpoint() -> JSONResponse:
     try:
         reg = _load_service()
         payload = reg.get_player_slots(settings.python_root)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/player/slots",
+            logger=logger,
+            rules=(
+                ErrorMappingRule(ValueError, 400, lambda err: str(err)),
+                ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+            ),
+        ) from e
     return JSONResponse(payload)
 
 
@@ -257,12 +300,13 @@ async def put_player_slots_endpoint(body: EnemySlotsPut) -> JSONResponse:
     try:
         reg = _load_service()
         payload = reg.put_player_slots(settings.python_root, body.version_ids)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/player/slots",
+            logger=logger,
+            rules=_REGISTRY_STANDARD_RULES,
+        ) from e
     return JSONResponse(payload)
 
 
@@ -272,10 +316,16 @@ async def post_sync_player_exports_endpoint() -> JSONResponse:
     try:
         reg = _load_service()
         updated = reg.sync_discovered_player_glb_versions(settings.python_root)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/player/sync_player_exports",
+            logger=logger,
+            rules=(
+                ErrorMappingRule(ValueError, 400, lambda err: str(err)),
+                ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+            ),
+        ) from e
     return JSONResponse(updated)
 
 
@@ -286,10 +336,16 @@ async def get_spawn_eligible(family: str) -> JSONResponse:
         reg = _load_service()
         manifest = reg.load_effective_manifest(settings.python_root)
         paths = reg.spawn_eligible_paths(manifest, family)
-    except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/spawn_eligible/{family}",
+            logger=logger,
+            rules=(
+                ErrorMappingRule(ValueError, 500, lambda err: str(err)),
+                ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+            ),
+        ) from e
     payload: dict[str, Any] = {"family": family, "paths": paths}
     return JSONResponse(payload)
 
@@ -312,17 +368,15 @@ async def delete_enemy_version_endpoint(
             delete_files=body.delete_files,
         )
         return JSONResponse(updated)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="unknown target") from e
-    except RuntimeError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
-    except ValueError as e:
-        detail = str(e)
-        if detail.startswith("forbidden target path class:"):
-            raise HTTPException(status_code=403, detail=detail) from e
-        raise HTTPException(status_code=400, detail=detail) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        if isinstance(e, ValueError) and str(e).startswith("forbidden target path class:"):
+            raise HTTPException(status_code=403, detail=str(e)) from e
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/enemies/{family}/versions/{version_id}",
+            logger=logger,
+            rules=_REGISTRY_DELETE_RULES,
+        ) from e
 
 
 @router.delete("/model/player_active_visual")
@@ -334,11 +388,15 @@ async def delete_player_active_visual_endpoint(body: PlayerActiveVisualDeleteReq
             confirm=body.confirm,
         )
         return JSONResponse(updated)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="unknown target") from e
-    except RuntimeError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except ImportError as e:
-        raise HTTPException(status_code=503, detail=f"registry unavailable: {e}") from e
+    except Exception as e:
+        raise map_exception_to_http(
+            e,
+            route="/api/registry/model/player_active_visual",
+            logger=logger,
+            rules=(
+                ErrorMappingRule(KeyError, 404, lambda _err: "unknown target"),
+                ErrorMappingRule(RuntimeError, 409, lambda err: str(err)),
+                ErrorMappingRule(ValueError, 400, lambda err: str(err)),
+                ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),
+            ),
+        ) from e
