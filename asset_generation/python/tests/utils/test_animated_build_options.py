@@ -200,14 +200,14 @@ def test_unknown_slug_mesh_empty_features_body_only() -> None:
 
 
 def test_options_rebuilds_features_when_base_missing(monkeypatch) -> None:
-    real = abo._defaults_for_slug
+    real = abo.defaults_for_slug
 
     def without_features(slug: str):
         b = real(slug)
         del b["features"]
         return b
 
-    monkeypatch.setattr(abo, "_defaults_for_slug", without_features)
+    monkeypatch.setattr(abo, "defaults_for_slug", without_features)
     o = options_for_enemy("spider", {"eye_count": 2})
     assert o["features"]["body"]["finish"] == "default"
 
@@ -306,7 +306,7 @@ def test_nested_parts_round_trip() -> None:
 
 
 def test_coerce_skips_static_control_when_key_absent() -> None:
-    base = abo._defaults_for_slug("claw_crawler")
+    base = abo.defaults_for_slug("claw_crawler")
     del base["peripheral_eyes"]
     out = abo._coerce_and_validate("claw_crawler", base)
     assert "peripheral_eyes" not in out
@@ -609,21 +609,21 @@ def test_merge_flat_skips_zone_absent_from_slug() -> None:
 
 
 def test_options_recovers_zone_geometry_extras_when_defaults_omit_key(monkeypatch) -> None:
-    real = abo._defaults_for_slug
+    real = abo.defaults_for_slug
 
     def strip_zg(slug: str):
         d = real(slug)
         del d["zone_geometry_extras"]
         return d
 
-    monkeypatch.setattr(abo, "_defaults_for_slug", strip_zg)
+    monkeypatch.setattr(abo, "defaults_for_slug", strip_zg)
     o = options_for_enemy("slug", {})
     assert isinstance(o["zone_geometry_extras"], dict)
     assert o["zone_geometry_extras"]["body"]["kind"] == "none"
 
 
 def test_coerce_zone_geometry_extras_non_dict_reset() -> None:
-    base = abo._defaults_for_slug("slug")
+    base = abo.defaults_for_slug("slug")
     base["zone_geometry_extras"] = None
     out = abo._coerce_and_validate("slug", base)
     assert isinstance(out["zone_geometry_extras"], dict)

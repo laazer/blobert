@@ -6,8 +6,8 @@ Spec requirements covered:
   MTE-3: Per-Slug Defaults
   MTE-9: Serialization Contract
 
-These tests will be RED until the implementation adds _mouth_control_defs() and
-_tail_control_defs() helpers to animated_build_options.py and extends static_defs
+These tests will be RED until the implementation adds mouth_control_defs() and
+tail_control_defs() helpers to animated_build_options.py and extends static_defs
 in animated_build_options_validate.py — that is the intended TEST_BREAK state.
 """
 
@@ -16,8 +16,8 @@ import json
 import pytest
 
 from src.utils.build_options import (
-    _defaults_for_slug,
     animated_build_controls_for_api,
+    defaults_for_slug,
     options_for_enemy,
 )
 
@@ -240,40 +240,40 @@ class TestControlOrdering:
 
 
 class TestHelperFunctionDeclaration:
-    """MTE-1-AC-7, MTE-1-AC-9, MTE-1-AC-10: _mouth_control_defs and _tail_control_defs helpers exist."""
+    """MTE-1-AC-7, MTE-1-AC-9, MTE-1-AC-10: mouth_control_defs and tail_control_defs helpers exist."""
 
-    def test_mouth_control_defs_helper_exists_and_is_callable(self) -> None:
+    def testmouth_control_defs_helper_exists_and_is_callable(self) -> None:
         import src.utils.build_options as abo
 
-        assert hasattr(abo, "_mouth_control_defs"), (
-            "_mouth_control_defs must be defined in animated_build_options"
+        assert hasattr(abo, "mouth_control_defs"), (
+            "mouth_control_defs must be defined in animated_build_options"
         )
-        fn = abo._mouth_control_defs
+        fn = abo.mouth_control_defs
         assert callable(fn)
 
-    def test_mouth_control_defs_returns_two_entries(self) -> None:
+    def testmouth_control_defs_returns_two_entries(self) -> None:
         import src.utils.build_options as abo
 
-        result = abo._mouth_control_defs()
+        result = abo.mouth_control_defs()
         assert isinstance(result, list)
         assert len(result) == 2
         keys = [d["key"] for d in result]
         assert keys == ["mouth_enabled", "mouth_shape"]
 
-    def test_tail_control_defs_helper_exists_and_is_callable(self) -> None:
+    def testtail_control_defs_helper_exists_and_is_callable(self) -> None:
         import src.utils.build_options as abo
 
-        assert hasattr(abo, "_tail_control_defs"), (
-            "_tail_control_defs must be defined in animated_build_options"
+        assert hasattr(abo, "tail_control_defs"), (
+            "tail_control_defs must be defined in animated_build_options"
         )
-        fn = abo._tail_control_defs
+        fn = abo.tail_control_defs
         assert callable(fn)
 
-    def test_tail_control_defs_returns_three_entries_in_order(self) -> None:
+    def testtail_control_defs_returns_three_entries_in_order(self) -> None:
         """MTE-1-AC-10: tail_enabled, tail_shape, tail_length order."""
         import src.utils.build_options as abo
 
-        result = abo._tail_control_defs()
+        result = abo.tail_control_defs()
         assert isinstance(result, list)
         assert len(result) == 3
         keys = [d["key"] for d in result]
@@ -533,46 +533,46 @@ class TestSerializationContract:
 
 
 class TestPerSlugDefaults:
-    """MTE-3-AC-1..5: _defaults_for_slug returns correct defaults for all slugs."""
+    """MTE-3-AC-1..5: defaults_for_slug returns correct defaults for all slugs."""
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_mouth_enabled_is_python_false(self, slug: str) -> None:
         """MTE-3-AC-1."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["mouth_enabled"] is False
         assert type(d["mouth_enabled"]) is bool
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_mouth_shape_is_smile(self, slug: str) -> None:
         """MTE-3-AC-2."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["mouth_shape"] == "smile"
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_tail_enabled_is_python_false(self, slug: str) -> None:
         """MTE-3-AC-3."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["tail_enabled"] is False
         assert type(d["tail_enabled"]) is bool
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_tail_shape_is_spike(self, slug: str) -> None:
         """MTE-3-AC-4."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["tail_shape"] == "spike"
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_tail_length_is_10(self, slug: str) -> None:
         """MTE-3-AC-5."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["tail_length"] == 1.0
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
-    def test_options_for_enemy_defaults_match_defaults_for_slug(
+    def test_options_for_enemy_defaults_matchdefaults_for_slug(
         self, slug: str
     ) -> None:
         """MTE-3."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         o = options_for_enemy(slug, {})
         assert o["mouth_enabled"] == d["mouth_enabled"]
         assert o["mouth_shape"] == d["mouth_shape"]

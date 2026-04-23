@@ -116,3 +116,8 @@ def coerce_validate_enemy_build_options(enemy_type: str, merged: dict[str, Any])
         zg = m._default_zone_geometry_extras(enemy_type)
     out["zone_geometry_extras"] = m._sanitize_zone_geometry_extras(enemy_type, zg)
     return out
+
+
+def validate_build_options(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, Any]:
+    """Public wrapper for validating/coercing raw build options payloads."""
+    return coerce_validate_enemy_build_options(enemy_type, dict(raw or {}))

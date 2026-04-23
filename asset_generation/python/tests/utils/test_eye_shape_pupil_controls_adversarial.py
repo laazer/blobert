@@ -12,7 +12,7 @@ Gaps exposed vs. the Test Designer suite:
   - Whitespace-only strings for pupil_shape and eye_shape: must fall back to defaults
   - pupil_enabled=True does NOT suppress pupil_shape from options_for_enemy output
     (server-side disabling is a UI concern only — ESPS-8)
-  - _eye_shape_pupil_control_defs returns fresh list on each call (no shared mutable state)
+  - eye_shape_pupil_control_defs returns fresh list on each call (no shared mutable state)
   - options_for_enemy output is a new dict independent of the input
 """
 
@@ -21,8 +21,8 @@ import json
 import pytest
 
 from src.utils.build_options import (
-    _defaults_for_slug,
     animated_build_controls_for_api,
+    defaults_for_slug,
     options_for_enemy,
 )
 
@@ -103,7 +103,7 @@ class TestDynamicSlugCoverage:
     when the test was originally written.
 
     This guard catches the regression where a new slug is added to the pipeline but
-    _eye_shape_pupil_control_defs() is not wired for it.
+    eye_shape_pupil_control_defs() is not wired for it.
     """
 
     def test_every_api_slug_has_eye_shape_key(self) -> None:
@@ -112,7 +112,7 @@ class TestDynamicSlugCoverage:
             keys = {d["key"] for d in defs}
             assert "eye_shape" in keys, (
                 f"Slug '{slug}' (returned by animated_build_controls_for_api) "
-                f"is missing 'eye_shape'. Was a new slug added without wiring _eye_shape_pupil_control_defs?"
+                f"is missing 'eye_shape'. Was a new slug added without wiring eye_shape_pupil_control_defs?"
             )
 
     def test_every_api_slug_has_pupil_enabled_key(self) -> None:
@@ -132,13 +132,13 @@ class TestDynamicSlugCoverage:
             )
 
     def test_every_api_slug_defaults_contain_eye_controls(self) -> None:
-        """_defaults_for_slug must contain defaults for every slug the API knows about."""
+        """defaults_for_slug must contain defaults for every slug the API knows about."""
         ctrl = animated_build_controls_for_api()
         for slug in ctrl:
-            d = _defaults_for_slug(slug)
-            assert "eye_shape" in d, f"_defaults_for_slug('{slug}') missing 'eye_shape'"
-            assert "pupil_enabled" in d, f"_defaults_for_slug('{slug}') missing 'pupil_enabled'"
-            assert "pupil_shape" in d, f"_defaults_for_slug('{slug}') missing 'pupil_shape'"
+            d = defaults_for_slug(slug)
+            assert "eye_shape" in d, f"defaults_for_slug('{slug}') missing 'eye_shape'"
+            assert "pupil_enabled" in d, f"defaults_for_slug('{slug}') missing 'pupil_enabled'"
+            assert "pupil_shape" in d, f"defaults_for_slug('{slug}') missing 'pupil_shape'"
 
 
 # ---------------------------------------------------------------------------
@@ -241,7 +241,7 @@ class TestPupilShapeNotSuppressedServerSide:
 
 
 # ---------------------------------------------------------------------------
-# _eye_shape_pupil_control_defs returns fresh list each call (no shared mutable state)
+# eye_shape_pupil_control_defs returns fresh list each call (no shared mutable state)
 # ---------------------------------------------------------------------------
 
 
@@ -252,32 +252,32 @@ class TestHelperReturnsFreshList:
 
     def test_helper_returns_distinct_list_objects(self) -> None:
         import src.utils.build_options as abo
-        first = abo._eye_shape_pupil_control_defs()
-        second = abo._eye_shape_pupil_control_defs()
+        first = abo.eye_shape_pupil_control_defs()
+        second = abo.eye_shape_pupil_control_defs()
         assert first is not second, (
-            "_eye_shape_pupil_control_defs must return a new list each call, "
+            "eye_shape_pupil_control_defs must return a new list each call, "
             "not a module-level singleton"
         )
 
     def test_mutating_returned_list_does_not_affect_next_call(self) -> None:
         import src.utils.build_options as abo
-        first = abo._eye_shape_pupil_control_defs()
+        first = abo.eye_shape_pupil_control_defs()
         first.clear()  # destroy the list contents
-        second = abo._eye_shape_pupil_control_defs()
+        second = abo.eye_shape_pupil_control_defs()
         assert len(second) == 3, (
-            "Mutating the list returned by _eye_shape_pupil_control_defs must not "
+            "Mutating the list returned by eye_shape_pupil_control_defs must not "
             f"affect subsequent calls; expected 3 entries, got {len(second)}"
         )
 
     def test_mutating_returned_dict_entry_does_not_affect_next_call(self) -> None:
         import src.utils.build_options as abo
-        first = abo._eye_shape_pupil_control_defs()
+        first = abo.eye_shape_pupil_control_defs()
         # Poison the eye_shape options list
         entry = next(d for d in first if d["key"] == "eye_shape")
         original_options = list(entry["options"])
         entry["options"].clear()
         entry["options"].append("poisoned")
-        second = abo._eye_shape_pupil_control_defs()
+        second = abo.eye_shape_pupil_control_defs()
         eye_entry = next(d for d in second if d["key"] == "eye_shape")
         assert eye_entry["options"] == original_options, (
             "Mutating a dict entry in the returned list must not affect the next call. "

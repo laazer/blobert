@@ -13,8 +13,8 @@ import json
 import pytest
 
 from src.utils.build_options import (
-    _defaults_for_slug,
     animated_build_controls_for_api,
+    defaults_for_slug,
     options_for_enemy,
 )
 
@@ -146,19 +146,19 @@ class TestControlOrdering:
 
 
 class TestHelperFunctionDeclaration:
-    """ESPS-1-AC-7: _eye_shape_pupil_control_defs helper exists and has correct signature."""
+    """ESPS-1-AC-7: eye_shape_pupil_control_defs helper exists and has correct signature."""
 
     def test_helper_exists_and_is_callable(self) -> None:
         import src.utils.build_options as abo
-        assert hasattr(abo, "_eye_shape_pupil_control_defs"), (
-            "_eye_shape_pupil_control_defs must be defined in animated_build_options"
+        assert hasattr(abo, "eye_shape_pupil_control_defs"), (
+            "eye_shape_pupil_control_defs must be defined in animated_build_options"
         )
-        fn = abo._eye_shape_pupil_control_defs
+        fn = abo.eye_shape_pupil_control_defs
         assert callable(fn)
 
     def test_helper_returns_three_entries(self) -> None:
         import src.utils.build_options as abo
-        result = abo._eye_shape_pupil_control_defs()
+        result = abo.eye_shape_pupil_control_defs()
         assert isinstance(result, list)
         assert len(result) == 3
         keys = [d["key"] for d in result]
@@ -339,31 +339,31 @@ class TestSerializationContract:
 
 
 class TestPerSlugDefaults:
-    """ESPS-6-AC-1..3: _defaults_for_slug returns correct defaults for all slugs."""
+    """ESPS-6-AC-1..3: defaults_for_slug returns correct defaults for all slugs."""
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_eye_shape_is_circle(self, slug: str) -> None:
         """ESPS-6-AC-1."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["eye_shape"] == "circle", f"slug '{slug}': eye_shape default must be 'circle'"
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_pupil_enabled_is_python_false(self, slug: str) -> None:
         """ESPS-6-AC-2."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["pupil_enabled"] is False, f"slug '{slug}': pupil_enabled default must be False"
         assert type(d["pupil_enabled"]) is bool
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
     def test_defaults_pupil_shape_is_dot(self, slug: str) -> None:
         """ESPS-6-AC-3."""
-        d = _defaults_for_slug(slug)
+        d = defaults_for_slug(slug)
         assert d["pupil_shape"] == "dot", f"slug '{slug}': pupil_shape default must be 'dot'"
 
     @pytest.mark.parametrize("slug", _ALL_SLUGS)
-    def test_options_for_enemy_defaults_match_defaults_for_slug(self, slug: str) -> None:
-        """options_for_enemy with empty input returns same eye/pupil defaults as _defaults_for_slug."""
-        d = _defaults_for_slug(slug)
+    def test_options_for_enemy_defaults_matchdefaults_for_slug(self, slug: str) -> None:
+        """options_for_enemy with empty input returns same eye/pupil defaults as defaults_for_slug."""
+        d = defaults_for_slug(slug)
         o = options_for_enemy(slug, {})
         assert o["eye_shape"] == d["eye_shape"]
         assert o["pupil_enabled"] == d["pupil_enabled"]

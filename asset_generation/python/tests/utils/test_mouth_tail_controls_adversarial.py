@@ -19,11 +19,11 @@ from copy import deepcopy
 import pytest
 
 from src.utils.build_options import (
-    _defaults_for_slug,
-    _mouth_control_defs,
-    _tail_control_defs,
     animated_build_controls_for_api,
+    defaults_for_slug,
+    mouth_control_defs,
     options_for_enemy,
+    tail_control_defs,
 )
 
 # ---------------------------------------------------------------------------
@@ -34,26 +34,26 @@ from src.utils.build_options import (
 class TestMutationGuardsSharedMutableState:
     """Guard against shared mutable list/dict return values that break callers."""
 
-    def test_mouth_control_defs_returns_fresh_list_per_call(self) -> None:
-        """MTE-1-AC-9: _mouth_control_defs returns a new list each time, not reused."""
-        result1 = _mouth_control_defs()
-        result2 = _mouth_control_defs()
+    def testmouth_control_defs_returns_fresh_list_per_call(self) -> None:
+        """MTE-1-AC-9: mouth_control_defs returns a new list each time, not reused."""
+        result1 = mouth_control_defs()
+        result2 = mouth_control_defs()
         assert result1 is not result2, (
-            "_mouth_control_defs must return a fresh list per call"
+            "mouth_control_defs must return a fresh list per call"
         )
 
-    def test_tail_control_defs_returns_fresh_list_per_call(self) -> None:
-        """MTE-1-AC-10: _tail_control_defs returns a new list each time."""
-        result1 = _tail_control_defs()
-        result2 = _tail_control_defs()
+    def testtail_control_defs_returns_fresh_list_per_call(self) -> None:
+        """MTE-1-AC-10: tail_control_defs returns a new list each time."""
+        result1 = tail_control_defs()
+        result2 = tail_control_defs()
         assert result1 is not result2, (
-            "_tail_control_defs must return a fresh list per call"
+            "tail_control_defs must return a fresh list per call"
         )
 
-    def test_mouth_control_defs_entries_are_not_shared(self) -> None:
+    def testmouth_control_defs_entries_are_not_shared(self) -> None:
         """Modifying one entry's dict should not affect other calls."""
-        result1 = _mouth_control_defs()
-        result2 = _mouth_control_defs()
+        result1 = mouth_control_defs()
+        result2 = mouth_control_defs()
         # Mutate the first entry in result1
         result1[0]["label"] = "MUTATED"
         assert result2[0]["label"] == "Mouth", (
@@ -97,27 +97,27 @@ class TestMutationGuardsSharedMutableState:
 class TestIdempotencyMultipleCalls:
     """Guard against non-deterministic behavior across repeated calls."""
 
-    def test_mouth_control_defs_idempotent(self) -> None:
-        """_mouth_control_defs returns identical structure on repeated calls."""
+    def testmouth_control_defs_idempotent(self) -> None:
+        """mouth_control_defs returns identical structure on repeated calls."""
         for _ in range(10):
-            result = _mouth_control_defs()
+            result = mouth_control_defs()
             assert len(result) == 2
             assert result[0]["key"] == "mouth_enabled"
             assert result[1]["key"] == "mouth_shape"
 
-    def test_tail_control_defs_idempotent(self) -> None:
-        """_tail_control_defs returns identical structure on repeated calls."""
+    def testtail_control_defs_idempotent(self) -> None:
+        """tail_control_defs returns identical structure on repeated calls."""
         for _ in range(10):
-            result = _tail_control_defs()
+            result = tail_control_defs()
             assert len(result) == 3
             keys = [d["key"] for d in result]
             assert keys == ["tail_enabled", "tail_shape", "tail_length"]
 
     @pytest.mark.parametrize("slug", ["spider", "slug", "claw_crawler"])
-    def test_defaults_for_slug_idempotent(self, slug: str) -> None:
-        """_defaults_for_slug returns identical defaults on repeated calls."""
+    def testdefaults_for_slug_idempotent(self, slug: str) -> None:
+        """defaults_for_slug returns identical defaults on repeated calls."""
         for _ in range(10):
-            d = _defaults_for_slug(slug)
+            d = defaults_for_slug(slug)
             assert d["mouth_enabled"] is False
             assert d["tail_length"] == 1.0
 

@@ -212,9 +212,8 @@ def test_R3_legacy_export_modules_removed() -> None:
 
 # --------------------------------------------------------------------------- R4
 def test_R4_clamp01_single_canonical_definition() -> None:
-    from src.utils.validation import clamp01
-
     from src.utils import placement_clustering
+    from src.utils.validation import clamp01
 
     assert placement_clustering.clamp01 is clamp01
 
@@ -248,8 +247,8 @@ def test_R5_build_options_public_import_surface() -> None:
 def test_R5_build_options_module_attributes_match_prior_surface() -> None:
     import src.utils.build_options as abo
 
-    assert hasattr(abo, "_mouth_control_defs") and callable(abo._mouth_control_defs)
-    assert hasattr(abo, "_tail_control_defs") and callable(abo._tail_control_defs)
+    assert hasattr(abo, "mouth_control_defs") and callable(abo.mouth_control_defs)
+    assert hasattr(abo, "tail_control_defs") and callable(abo.tail_control_defs)
 
 
 def test_R5_no_animated_build_options_modules_at_utils_root() -> None:

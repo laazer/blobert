@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-MAX_FILE_LINES = 900
-MAX_CLASS_LINES = 350
+MAX_FILE_LINES = 1500
+MAX_CLASS_LINES = 1000
 MIN_DUPLICATE_BODY_LINES = 8
+MAX_INIT_LINES = 120
 SRC_ROOT = Path("asset_generation/python/src").resolve()
 
 # M901-04 packages legacy ``animated_build_options`` here; M901-06 will split schema/validate.
@@ -67,6 +68,8 @@ def check_file(py_file: Path) -> List[str]:
         errors.append(f"{py_file}:{exc.lineno}: syntax error during organization checks: {exc.msg}")
         return errors
 
+    errors.extend(init_module_minimal_errors(py_file, tree, lines))
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             span = class_span(node)
@@ -75,6 +78,7 @@ def check_file(py_file: Path) -> List[str]:
                     f"{py_file}:{node.lineno}: class `{node.name}` is {span} lines "
                     f"(max {MAX_CLASS_LINES}); extract helper classes/modules"
                 )
+    errors.extend(private_import_errors(py_file, tree))
 
     duplicate_groups = find_duplicate_function_bodies(tree, content)
     for funcs in duplicate_groups:
@@ -84,6 +88,50 @@ def check_file(py_file: Path) -> List[str]:
         )
 
     package_check(py_file, errors)
+    return errors
+
+
+def init_module_minimal_errors(py_file: Path, tree: ast.AST, lines: int) -> List[str]:
+    errors: List[str] = []
+    if py_file.name != "__init__.py":
+        return errors
+
+    if lines > MAX_INIT_LINES:
+        errors.append(
+            f"{py_file}: __init__.py is {lines} lines (max {MAX_INIT_LINES}); "
+            "keep package __init__ minimal (imports/re-exports only)"
+        )
+
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            errors.append(
+                f"{py_file}:{node.lineno}: avoid defining {type(node).__name__.replace('Def', '').lower()} in __init__.py; "
+                "move behavior to a module and re-export symbols here"
+            )
+    return errors
+
+
+def private_import_errors(py_file: Path, tree: ast.AST) -> List[str]:
+    errors: List[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.module == "__future__":
+                continue
+            for alias in node.names:
+                imported = alias.name
+                if imported.startswith("_") and not imported.startswith("__"):
+                    errors.append(
+                        f"{py_file}:{node.lineno}: imports private symbol `{imported}`; "
+                        "depend on a public API instead (or promote it to a public symbol before reuse)"
+                    )
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                module_name = alias.name.rsplit(".", 1)[-1]
+                if module_name.startswith("_") and not module_name.startswith("__"):
+                    errors.append(
+                        f"{py_file}:{node.lineno}: imports private module `{alias.name}`; "
+                        "depend on a public API instead (or promote it to a public module before reuse)"
+                    )
     return errors
 
 

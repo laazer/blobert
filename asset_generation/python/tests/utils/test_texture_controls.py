@@ -10,13 +10,13 @@ import json
 import pytest
 
 from src.utils.build_options import (
-    _defaults_for_slug,
-    _feature_zones,
-    _zone_texture_control_defs,
     animated_build_controls_for_api,
+    defaults_for_slug,
+    feature_zones,
     options_for_enemy,
+    texture_control_defs,
+    zone_texture_control_defs,
 )
-from src.utils.build_options.schema import _texture_control_defs
 
 _ALL_SLUGS = [
     "spider",
@@ -28,7 +28,7 @@ _ALL_SLUGS = [
     "player_slime",
 ]
 
-_TEXTURE_TEMPLATE_KEYS = [c["key"] for c in _texture_control_defs()]
+_TEXTURE_TEMPLATE_KEYS = [c["key"] for c in texture_control_defs()]
 
 _TEXTURE_DEFAULTS = {
     "texture_mode": "none",
@@ -51,7 +51,7 @@ _TEXTURE_DEFAULTS = {
 
 
 def _zone_texture_keys(slug: str) -> list[str]:
-    return [c["key"] for c in _zone_texture_control_defs(slug)]
+    return [c["key"] for c in zone_texture_control_defs(slug)]
 
 
 def _global_key_from_zone_texture_key(zone_key: str) -> str:
@@ -61,7 +61,7 @@ def _global_key_from_zone_texture_key(zone_key: str) -> str:
 
 
 def _body_prefix(slug: str) -> str:
-    zones = _feature_zones(slug)
+    zones = feature_zones(slug)
     assert "body" in zones
     return "feat_body_texture_"
 
@@ -70,7 +70,7 @@ class TestTextureTemplateDefs:
     """Base template (_texture_control_defs) includes gradient, spots, stripes, and asset texture controls."""
 
     def test_texture_control_defs_returns_16_entries(self) -> None:
-        result = _texture_control_defs()
+        result = texture_control_defs()
         assert len(result) == 16
         assert [c["key"] for c in result] == [
             "texture_mode",
@@ -95,12 +95,12 @@ class TestTextureTemplateDefs:
 class TestZoneTextureControlDefs:
     def test_zone_texture_count_matches_zones_times_16(self) -> None:
         for slug in _ALL_SLUGS:
-            zones = _feature_zones(slug)
-            defs = _zone_texture_control_defs(slug)
+            zones = feature_zones(slug)
+            defs = zone_texture_control_defs(slug)
             assert len(defs) == len(zones) * 16
 
     def test_spider_body_texture_mode_shape(self) -> None:
-        defs = _zone_texture_control_defs("spider")
+        defs = zone_texture_control_defs("spider")
         entry = next(d for d in defs if d["key"] == "feat_body_texture_mode")
         assert entry["label"].startswith("Body")
         assert entry["type"] == "select_str"
@@ -126,7 +126,7 @@ def test_placement_seed_after_last_zone_texture_key(slug: str) -> None:
 
 @pytest.mark.parametrize("slug", _ALL_SLUGS)
 def test_defaults_include_zone_texture_keys(slug: str) -> None:
-    d = _defaults_for_slug(slug)
+    d = defaults_for_slug(slug)
     for zk in _zone_texture_keys(slug):
         assert zk in d
         gk = _global_key_from_zone_texture_key(zk)
@@ -135,7 +135,7 @@ def test_defaults_include_zone_texture_keys(slug: str) -> None:
 
 @pytest.mark.parametrize("slug", _ALL_SLUGS)
 def test_options_for_enemy_defaults_match_texture_template(slug: str) -> None:
-    d = _defaults_for_slug(slug)
+    d = defaults_for_slug(slug)
     o = options_for_enemy(slug, {})
     for zk in _zone_texture_keys(slug):
         assert o[zk] == d[zk]

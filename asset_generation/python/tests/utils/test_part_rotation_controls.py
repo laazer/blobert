@@ -7,7 +7,7 @@ Ticket: 04_part_rotation_controls (M25-04)
 Covers:
   PRC-1  — Module-level constants and _rig_rotation_control_defs() (AC-1.1 to AC-1.6)
   PRC-2  — Insertion into animated_build_controls_for_api() (AC-2.1 to AC-2.2)
-  PRC-3  — Wiring into _defaults_for_slug() (AC-3.1 to AC-3.3)
+  PRC-3  — Wiring into defaults_for_slug() (AC-3.1 to AC-3.3)
   PRC-4  — Wiring into options_for_enemy() allowed_non_mesh (AC-4.1 to AC-4.5)
   PRC-5  — Validation and coercion (AC-5.1 to AC-5.10)
   PRC-7  — Slug coverage matrix (AC-7.1 to AC-7.3)
@@ -26,14 +26,12 @@ import pytest
 
 from src.utils import build_options as abo
 from src.utils.build_options import (
+    RIG_ROT_MAX,
+    RIG_ROT_MIN,
+    RIG_ROT_STEP,
     animated_build_controls_for_api,
     options_for_enemy,
-)
-from src.utils.build_options.schema import (
-    _RIG_ROT_MAX,
-    _RIG_ROT_MIN,
-    _RIG_ROT_STEP,
-    _rig_rotation_control_defs,
+    rig_rotation_control_defs,
 )
 
 # ---------------------------------------------------------------------------
@@ -65,17 +63,17 @@ ROTATION_KEYS = [
 
 def test_rig_rot_constants_exist_and_typed() -> None:
     """AC-1.1: _RIG_ROT_MIN, _RIG_ROT_MAX, _RIG_ROT_STEP exist, are float, correct values."""
-    assert isinstance(_RIG_ROT_MIN, float), "_RIG_ROT_MIN must be float"
-    assert isinstance(_RIG_ROT_MAX, float), "_RIG_ROT_MAX must be float"
-    assert isinstance(_RIG_ROT_STEP, float), "_RIG_ROT_STEP must be float"
-    assert _RIG_ROT_MIN == -180.0
-    assert _RIG_ROT_MAX == 180.0
-    assert _RIG_ROT_STEP == 1.0
+    assert isinstance(RIG_ROT_MIN, float), "RIG_ROT_MIN must be float"
+    assert isinstance(RIG_ROT_MAX, float), "RIG_ROT_MAX must be float"
+    assert isinstance(RIG_ROT_STEP, float), "RIG_ROT_STEP must be float"
+    assert RIG_ROT_MIN == -180.0
+    assert RIG_ROT_MAX == 180.0
+    assert RIG_ROT_STEP == 1.0
 
 
 def test_rig_rotation_control_defs_returns_six_dicts() -> None:
     """AC-1.2: _rig_rotation_control_defs() returns a list of exactly 6 dicts."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     assert isinstance(defs, list), "return value must be a list"
     assert len(defs) == 6, f"expected 6 defs, got {len(defs)}"
     for d in defs:
@@ -84,7 +82,7 @@ def test_rig_rotation_control_defs_returns_six_dicts() -> None:
 
 def test_rig_rotation_control_defs_exact_keys() -> None:
     """AC-1.3: the 6 keys match the exact strings, in order."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     actual_keys = [d["key"] for d in defs]
     expected_keys = ROTATION_KEYS
     assert actual_keys == expected_keys, (
@@ -95,7 +93,7 @@ def test_rig_rotation_control_defs_exact_keys() -> None:
 
 def test_rig_rotation_control_defs_type_and_bounds() -> None:
     """AC-1.4: every def has type=float, min=-180.0, max=180.0, step=1.0, default=0.0."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         assert d.get("type") == "float", f"{key}: expected type='float'"
@@ -104,14 +102,14 @@ def test_rig_rotation_control_defs_type_and_bounds() -> None:
         assert d.get("step") == 1.0, f"{key}: expected step=1.0"
         assert d.get("default") == 0.0, f"{key}: expected default=0.0"
         # Constants must match
-        assert d["min"] == _RIG_ROT_MIN, f"{key}: min must equal _RIG_ROT_MIN"
-        assert d["max"] == _RIG_ROT_MAX, f"{key}: max must equal _RIG_ROT_MAX"
-        assert d["step"] == _RIG_ROT_STEP, f"{key}: step must equal _RIG_ROT_STEP"
+        assert d["min"] == RIG_ROT_MIN, f"{key}: min must equal RIG_ROT_MIN"
+        assert d["max"] == RIG_ROT_MAX, f"{key}: max must equal RIG_ROT_MAX"
+        assert d["step"] == RIG_ROT_STEP, f"{key}: step must equal RIG_ROT_STEP"
 
 
 def test_rig_rotation_control_defs_key_and_label_are_non_empty_strings() -> None:
     """AC-1.4/AC-1.6: 'key' and 'label' are present and non-empty strings."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     for d in defs:
         assert isinstance(d.get("key"), str) and d["key"], f"key must be a non-empty string: {d}"
         assert isinstance(d.get("label"), str) and d["label"], (
@@ -121,7 +119,7 @@ def test_rig_rotation_control_defs_key_and_label_are_non_empty_strings() -> None
 
 def test_rig_rotation_control_defs_label_contains_axis_and_part() -> None:
     """AC-1.6: each label contains the axis letter (X/Y/Z) and part name (head/body)."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     for d in defs:
         label_lower = d["label"].lower()
         key = d["key"]
@@ -143,7 +141,7 @@ def test_rig_rotation_control_defs_callable_without_blender() -> None:
     """AC-1.5: function is callable; no Blender import is required (test env has no live Blender)."""
     # The test environment runs without Blender; reaching this line means the import
     # and call succeeded without bpy/mathutils.
-    result = _rig_rotation_control_defs()
+    result = rig_rotation_control_defs()
     assert result is not None
 
 
@@ -178,17 +176,17 @@ def test_animated_build_controls_for_api_excludes_rotation_keys_for_player_slime
 
 
 # ---------------------------------------------------------------------------
-# PRC-3: _defaults_for_slug()
+# PRC-3: defaults_for_slug()
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("slug", ANIMATED_SLUGS)
-def test_defaults_for_slug_has_rotation_keys_at_zero(slug: str) -> None:
+def testdefaults_for_slug_has_rotation_keys_at_zero(slug: str) -> None:
     """AC-3.1 / AC-3.2: all 6 rotation keys present at top level with value 0.0 (float)."""
-    defaults = abo._defaults_for_slug(slug)
+    defaults = abo.defaults_for_slug(slug)
     for rot_key in ROTATION_KEYS:
         assert rot_key in defaults, (
-            f"slug {slug!r}: expected rotation key {rot_key!r} in _defaults_for_slug()"
+            f"slug {slug!r}: expected rotation key {rot_key!r} in defaults_for_slug()"
         )
         val = defaults[rot_key]
         assert val == 0.0, (
@@ -199,15 +197,15 @@ def test_defaults_for_slug_has_rotation_keys_at_zero(slug: str) -> None:
         )
 
 
-def test_defaults_for_slug_existing_keys_not_affected() -> None:
+def testdefaults_for_slug_existing_keys_not_affected() -> None:
     """AC-3.3: adding rotation keys must not remove or change pre-existing default keys."""
-    defaults = abo._defaults_for_slug("imp")
+    defaults = abo.defaults_for_slug("imp")
     # Spot-check 3 pre-existing keys
-    assert "tail_enabled" in defaults, "tail_enabled must remain in _defaults_for_slug('imp')"
+    assert "tail_enabled" in defaults, "tail_enabled must remain in defaults_for_slug('imp')"
     assert defaults["tail_enabled"] is False, "tail_enabled default must remain False"
-    assert "eye_shape" in defaults, "eye_shape must remain in _defaults_for_slug('imp')"
+    assert "eye_shape" in defaults, "eye_shape must remain in defaults_for_slug('imp')"
     assert defaults["eye_shape"] == "circle", "eye_shape default must remain 'circle'"
-    assert "mouth_enabled" in defaults, "mouth_enabled must remain in _defaults_for_slug('imp')"
+    assert "mouth_enabled" in defaults, "mouth_enabled must remain in defaults_for_slug('imp')"
 
 
 # ---------------------------------------------------------------------------
@@ -472,7 +470,7 @@ def test_rotation_defs_ordering_for_all_animated_slugs(slug: str) -> None:
 
 # ---------------------------------------------------------------------------
 # [TB-2] player_slime defaults: spec PRC-3 says defaults may be unconditional.
-#         The API exclusion is the authoritative gate, but if _defaults_for_slug
+#         The API exclusion is the authoritative gate, but if defaults_for_slug
 #         also adds rotation keys to player_slime it is a latent hazard.
 #         We document the conservative expectation: player_slime defaults must
 #         NOT contain RIG_*_ROT_* keys (matching the API exclusion intent).
@@ -480,10 +478,10 @@ def test_rotation_defs_ordering_for_all_animated_slugs(slug: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_defaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None:
-    """PRC-3 (conservative): _defaults_for_slug('player_slime') must not expose rotation keys.
+def testdefaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None:
+    """PRC-3 (conservative): defaults_for_slug('player_slime') must not expose rotation keys.
 
-    The spec PRC-3 Risk section acknowledges that _defaults_for_slug() may be
+    The spec PRC-3 Risk section acknowledges that defaults_for_slug() may be
     unconditional and that player_slime would then receive rotation keys in its
     defaults dict.  The spec calls this 'harmless for the defaults function'.
     However, from an API boundary perspective, if player_slime defaults contain
@@ -491,10 +489,10 @@ def test_defaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None
     Conservative assumption: the 6 animated slugs are the only ones that should
     expose rotation keys anywhere in the pipeline.
     """  # CHECKPOINT — PRC-3 Risk says this is ambiguous; we enforce the stricter variant
-    defaults = abo._defaults_for_slug("player_slime")
+    defaults = abo.defaults_for_slug("player_slime")
     for rot_key in ROTATION_KEYS:
         assert rot_key not in defaults, (
-            f"player_slime _defaults_for_slug() must not contain {rot_key!r}; "
+            f"player_slime defaults_for_slug() must not contain {rot_key!r}; "
             "rotation keys are exclusive to the 6 animated enemy slugs"
         )
 
@@ -507,9 +505,9 @@ def test_defaults_for_slug_player_slime_does_not_contain_rotation_keys() -> None
 
 def test_rig_rotation_control_defs_returns_fresh_list_each_call() -> None:
     """PRC-1 mutation guard: mutating the returned list must not affect subsequent calls."""
-    first = _rig_rotation_control_defs()
+    first = rig_rotation_control_defs()
     first.clear()  # Destructive mutation
-    second = _rig_rotation_control_defs()
+    second = rig_rotation_control_defs()
     assert len(second) == 6, (
         "_rig_rotation_control_defs() must return a fresh list each call; "
         "mutating the first result affected the second (shared mutable reference)"
@@ -518,10 +516,10 @@ def test_rig_rotation_control_defs_returns_fresh_list_each_call() -> None:
 
 def test_rig_rotation_control_defs_dict_mutation_does_not_affect_next_call() -> None:
     """PRC-1 mutation guard: mutating a dict inside the returned list must not affect the next call."""
-    first = _rig_rotation_control_defs()
+    first = rig_rotation_control_defs()
     original_key = first[0]["key"]
     first[0]["key"] = "MUTATED_KEY"  # Mutate the first dict's key field
-    second = _rig_rotation_control_defs()
+    second = rig_rotation_control_defs()
     assert second[0]["key"] == original_key, (
         "_rig_rotation_control_defs() returned the same dict object across calls; "
         "dicts must be independent copies, not shared references"
@@ -657,7 +655,7 @@ def test_options_for_enemy_does_not_mutate_input_dict_on_clamp() -> None:
 
 def test_rig_rotation_control_defs_type_is_exactly_float_string_not_int() -> None:
     """PRC-1 AC-1.4: type field is the string 'float', not the string 'int' or Python type float."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         t = d.get("type")
@@ -677,19 +675,19 @@ def test_rig_rotation_control_defs_type_is_exactly_float_string_not_int() -> Non
 
 def test_rig_rot_step_is_float_not_int() -> None:
     """PRC-1 AC-1.1: _RIG_ROT_STEP must be float 1.0, not integer 1."""
-    step = _RIG_ROT_STEP
+    step = RIG_ROT_STEP
     assert isinstance(step, float), (
-        f"_RIG_ROT_STEP must be float, got {type(step).__name__!r} with value {step!r}"
+            f"RIG_ROT_STEP must be float, got {type(step).__name__!r} with value {step!r}"
     )
     assert step == 1.0
     # Explicit int check: `isinstance(True, int)` is True in Python, so also guard booleans
-    assert not isinstance(step, bool), "_RIG_ROT_STEP must not be a boolean"
-    assert not isinstance(step, int), "_RIG_ROT_STEP must not be int (even if value equals 1)"
+    assert not isinstance(step, bool), "RIG_ROT_STEP must not be a boolean"
+    assert not isinstance(step, int), "RIG_ROT_STEP must not be int (even if value equals 1)"
 
 
 def test_rig_rotation_control_defs_step_field_is_float_not_int() -> None:
     """PRC-1 AC-1.4: the step field in every def is a float, not int."""
-    defs = _rig_rotation_control_defs()
+    defs = rig_rotation_control_defs()
     for d in defs:
         key = d["key"]
         step = d.get("step")
