@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from .schema import (
+    OFFSET_XYZ_MAX,
+    OFFSET_XYZ_MIN,
     RIG_ROT_MAX,
     RIG_ROT_MIN,
     RIG_ROT_STEP,
@@ -10,6 +12,7 @@ from .schema import (
     defaults_for_slug,
     eye_shape_pupil_control_defs,
     feature_zones,
+    merge_zone_geometry_extras,
     mouth_control_defs,
     options_for_enemy,
     parse_build_options_json,
@@ -43,5 +46,8 @@ __all__ = sorted(
         "RIG_ROT_MIN",
         "RIG_ROT_MAX",
         "RIG_ROT_STEP",
+        "OFFSET_XYZ_MIN",
+        "OFFSET_XYZ_MAX",
+        "merge_zone_geometry_extras",
     }
 )

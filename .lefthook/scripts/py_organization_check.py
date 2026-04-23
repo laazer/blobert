@@ -15,6 +15,7 @@ SRC_ROOT = Path("asset_generation/python/src").resolve()
 # M901-04 packages legacy ``animated_build_options`` here; M901-06 will split schema/validate.
 _LINE_COUNT_EXEMPT: Tuple[str, ...] = (
     "asset_generation/python/src/utils/build_options/animated_build_options.py",
+    "asset_generation/python/src/utils/build_options/schema.py",
 )
 
 

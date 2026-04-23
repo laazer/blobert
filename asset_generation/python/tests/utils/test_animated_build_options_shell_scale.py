@@ -24,7 +24,7 @@ import math
 
 from src.utils import build_options as abo
 from src.utils.build_options import (
-    _merge_zone_geometry_extras,
+    merge_zone_geometry_extras,
     options_for_enemy,
 )
 
@@ -361,7 +361,7 @@ def test_merge_zone_geometry_extras_coerces_shell_scale_numeric_string() -> None
     Requires shell_scale in the merge float-coercion branch (alongside spike_size).
     """
     base = abo._default_zone_geometry_extras("slug")
-    merged = _merge_zone_geometry_extras(
+    merged = merge_zone_geometry_extras(
         "slug",
         {"extra_zone_body_shell_scale": "1.22"},
         base,
