@@ -1,0 +1,31 @@
+{
+  "filename": "spider_animated_13",
+  "attacks": [
+    {
+      "name": "pounce",
+      "animation_name": "attack",
+      "attack_type": "physical",
+      "damage_min": 5.0,
+      "damage_max": 15.0,
+      "range": 3.0,
+      "hit_frame": 18,
+      "cooldown_seconds": 2.0,
+      "knockback_force": 5.0,
+      "is_area_of_effect": false,
+      "aoe_radius": 0.0
+    },
+    {
+      "name": "acid_bite",
+      "animation_name": "special_attack",
+      "attack_type": "acid",
+      "damage_min": 12.0,
+      "damage_max": 28.0,
+      "range": 1.5,
+      "hit_frame": 40,
+      "cooldown_seconds": 5.0,
+      "knockback_force": 2.0,
+      "is_area_of_effect": false,
+      "aoe_radius": 0.0
+    }
+  ]
+}
