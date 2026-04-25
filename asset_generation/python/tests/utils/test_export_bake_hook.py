@@ -126,3 +126,31 @@ def test_bake_procedural_handles_material_get_exception() -> None:
     with patch.object(bpy.ops.object, "mode_set"):
         with patch.object(bpy.ops.object, "select_all"):
             bake_procedural_stripes_for_export(mesh, "/tmp")
+
+
+def test_bake_procedural_identifies_stripe_materials() -> None:
+    import bpy  # type: ignore[import-not-found]
+
+    from src.utils.export_bake import bake_procedural_stripes_for_export
+
+    mesh = MagicMock()
+    mesh.type = "MESH"
+    mesh.data = MagicMock()
+
+    mat_no_flag = MagicMock()
+    mat_no_flag.get.return_value = False
+
+    mat_with_stripe = MagicMock()
+    mat_with_stripe.get.side_effect = lambda key, default=None: True if key == "blobert_stripe_procedural" else False
+
+    mat_with_checker = MagicMock()
+    mat_with_checker.get.side_effect = lambda key, default=None: True if key == "blobert_checker_procedural" else False
+
+    mesh.data.materials = [mat_no_flag, mat_with_stripe, mat_with_checker]
+    mesh.data.uv_layers = [MagicMock()]
+    bpy.context.scene = MagicMock()
+    bpy.context.scene.render.engine = "EEVEE"
+
+    with patch.object(bpy.ops.object, "mode_set"):
+        with patch.object(bpy.ops.object, "select_all"):
+            bake_procedural_stripes_for_export(mesh, "/tmp")

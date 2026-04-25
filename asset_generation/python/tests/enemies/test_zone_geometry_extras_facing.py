@@ -1,5 +1,7 @@
 """Zone geometry extras: facing filter (surface normal vs world axes)."""
 
+from unittest.mock import patch
+
 from mathutils import Vector
 
 from src.enemies.zone_geometry_extras_attach import _facing_allows_normal
@@ -41,3 +43,13 @@ def test_facing_top_only_rejects_side_and_down() -> None:
 def test_facing_none_enabled_falls_back_to_all() -> None:
     spec = {k: False for k in _only_top()}
     assert _facing_allows_normal(spec, Vector((0.0, 0.0, -1.0))) is True
+
+
+def test_body_ref_scale_wrapper() -> None:
+    from src.enemies.zone_geometry_extras_attach import _body_ref_scale
+
+    with patch("src.enemies.zone_geometry_extras_attach._body_ref_scale_core") as mock_core:
+        mock_core.return_value = 2.5
+        result = _body_ref_scale(1.0, 2.0, 3.0)
+        assert result == 2.5
+        mock_core.assert_called_once_with(1.0, 2.0, 3.0)
