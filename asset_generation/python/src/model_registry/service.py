@@ -19,7 +19,7 @@ from .migrations import (
     default_migrated_manifest,
 )
 from .schema import _MAX_VERSION_NAME_LEN, _path_is_allowlisted, validate_manifest
-from .store import read_registry_object, write_registry_json_atomic
+from .store import read_registry_object, registry_path, write_registry_json_atomic
 
 _MAX_URL_DECODE_PASSES = 3
 _WINDOWS_DRIVE_PATH_RE = re.compile(r"^[a-zA-Z]:[/\\]")
@@ -615,6 +615,7 @@ __all__ = [
     "patch_player_version",
     "put_enemy_slots",
     "put_player_slots",
+    "registry_path",
     "save_manifest_atomic",
     "spawn_eligible_paths",
     "sync_discovered_animated_glb_versions",
