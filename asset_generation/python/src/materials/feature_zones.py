@@ -200,7 +200,7 @@ def _material_for_gradient_zone(
     return mat
 
 
-def _material_for_spots_zone(
+def material_for_spots_zone(
     *,
     base_palette_name: str,
     finish: str,
@@ -346,7 +346,7 @@ def apply_zone_texture_pattern_overrides(
             except (TypeError, ValueError):
                 continue
             density = max(0.1, min(5.0, density))
-            out[zone] = _material_for_spots_zone(
+            out[zone] = material_for_spots_zone(
                 base_palette_name=_palette_base_name_from_material(mat),
                 finish=finish,
                 spot_hex=str(build_options.get(f"feat_{zone}_texture_spot_color", "") or ""),

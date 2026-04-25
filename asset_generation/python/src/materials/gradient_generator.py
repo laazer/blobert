@@ -322,7 +322,7 @@ def create_stripes_png_and_load(
     return img
 
 
-def _spots_texture_generator(
+def spots_texture_generator(
     width: int,
     height: int,
     spot_color_hex: str,
@@ -479,7 +479,7 @@ def create_spots_png_and_load(
     Returns:
         Loaded Blender Image object.
     """
-    png_data = _spots_texture_generator(
+    png_data = spots_texture_generator(
         width, height, spot_color_hex, bg_color_hex, density, spot_pattern=spot_pattern
     )
     spots_dir = Path(__file__).parent.parent.parent / "animated_exports" / "spots"

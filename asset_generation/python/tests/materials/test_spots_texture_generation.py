@@ -17,29 +17,29 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.materials.gradient_generator import _crc32
+from src.materials.gradient_generator import crc32
 
 
 class TestSpotsTextureGenerator:
-    """Tests for _spots_texture_generator() function (AC1.1 – AC1.15)."""
+    """Tests for spots_texture_generator() function (AC1.1 – AC1.15)."""
 
-    def test_spots_texture_generator_exists(self) -> None:
+    def testspots_texture_generator_exists(self) -> None:
         """AC1.1: Function exists at gradient_generator.py."""
         # Import will fail if function doesn't exist
         try:
             from src.materials.gradient_generator import (
-                _spots_texture_generator,  # noqa: E402, F401
+                spots_texture_generator,  # noqa: E402, F401
             )
         except ImportError:
-            pytest.skip("_spots_texture_generator not yet implemented")
+            pytest.skip("spots_texture_generator not yet implemented")
 
     def test_returns_valid_png_bytes(self) -> None:
         """AC1.3: Function returns valid PNG bytes with correct signature."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32,
             height=32,
             spot_color_hex="ff0000",
@@ -56,11 +56,11 @@ class TestSpotsTextureGenerator:
     def test_output_dimensions_match_input(self) -> None:
         """AC1.4: PNG width/height match generator args."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
         for width, height in [(32, 32), (64, 128), (256, 256), (1, 1)]:
-            png_data = _spots_texture_generator(
+            png_data = spots_texture_generator(
                 width=width,
                 height=height,
                 spot_color_hex="ff0000",
@@ -82,10 +82,10 @@ class TestSpotsTextureGenerator:
     def test_hex_color_parsing_lowercase(self) -> None:
         """AC1.5: Lowercase hex 'ff0000' parses to red (1, 0, 0)."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=8, height=8, spot_color_hex="ff0000", bg_color_hex="", density=1.0
         )
         # Spot should be red; verify by sampling pixel colors
@@ -95,10 +95,10 @@ class TestSpotsTextureGenerator:
     def test_hex_color_parsing_uppercase(self) -> None:
         """AC1.6: Uppercase hex 'FF0000' parses to red (1, 0, 0)."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=8, height=8, spot_color_hex="FF0000", bg_color_hex="", density=1.0
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
@@ -106,10 +106,10 @@ class TestSpotsTextureGenerator:
     def test_empty_spot_color_defaults_to_black(self) -> None:
         """AC1.7: Empty spot_color_hex ('') defaults to black (0, 0, 0)."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=8, height=8, spot_color_hex="", bg_color_hex="ffffff", density=1.0
         )
         # Verify PNG is valid; pixel content verified in integration tests
@@ -118,10 +118,10 @@ class TestSpotsTextureGenerator:
     def test_empty_bg_color_defaults_to_white(self) -> None:
         """AC1.8: Empty bg_color_hex ('') defaults to white (1, 1, 1)."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=8, height=8, spot_color_hex="ff0000", bg_color_hex="", density=1.0
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
@@ -129,11 +129,11 @@ class TestSpotsTextureGenerator:
     def test_invalid_hex_raises_valueerror(self) -> None:
         """AC1.9: Invalid hex (e.g., 'zzz') raises ValueError."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
         with pytest.raises(ValueError):
-            _spots_texture_generator(
+            spots_texture_generator(
                 width=8,
                 height=8,
                 spot_color_hex="zzzzz",
@@ -144,13 +144,13 @@ class TestSpotsTextureGenerator:
     def test_density_0_1_creates_sparse_spots(self) -> None:
         """AC1.10: Density=0.1 produces visibly fewer spots than density=1.0."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_sparse = _spots_texture_generator(
+        png_sparse = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=0.1
         )
-        png_dense = _spots_texture_generator(
+        png_dense = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
 
@@ -171,13 +171,13 @@ class TestSpotsTextureGenerator:
         Instead, verify that density=5.0 produces a different pattern (more spot centers).
         """
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_normal = _spots_texture_generator(
+        png_normal = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
-        png_dense = _spots_texture_generator(
+        png_dense = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=5.0
         )
 
@@ -200,10 +200,10 @@ class TestSpotsTextureGenerator:
     def test_1x1_texture_does_not_crash(self) -> None:
         """AC1.12: Generator handles 1×1 input without crashing."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=1, height=1, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
@@ -211,10 +211,10 @@ class TestSpotsTextureGenerator:
     def test_256x256_texture_does_not_crash(self) -> None:
         """AC1.13: Generator handles large 256×256 input without crashing."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=256,
             height=256,
             spot_color_hex="ff0000",
@@ -224,13 +224,13 @@ class TestSpotsTextureGenerator:
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
         assert len(png_data) > 500, "Large PNG should have significant size"
 
-    def test_crc32_ihdr_valid(self) -> None:
+    def testcrc32_ihdr_valid(self) -> None:
         """AC1.14: IHDR CRC-32 matches calculated value."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
 
@@ -239,20 +239,20 @@ class TestSpotsTextureGenerator:
         ihdr_data = png_data[16:29]  # 13 bytes of IHDR data
         ihdr_chunk = b"IHDR" + ihdr_data
         stored_crc = struct.unpack(">I", png_data[29:33])[0]
-        computed_crc = _crc32(ihdr_chunk)
+        computed_crc = crc32(ihdr_chunk)
 
         assert stored_crc == computed_crc, (
             f"IHDR CRC-32 mismatch: stored {stored_crc:08x}, "
             f"computed {computed_crc:08x}"
         )
 
-    def test_crc32_idat_valid(self) -> None:
+    def testcrc32_idat_valid(self) -> None:
         """AC1.15: IDAT CRC-32 matches calculated value."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
 
@@ -267,7 +267,7 @@ class TestSpotsTextureGenerator:
                 idat_data = png_data[pos + 8 : pos + 8 + length]
                 idat_chunk = b"IDAT" + idat_data
                 stored_crc = struct.unpack(">I", png_data[pos + 8 + length : pos + 12 + length])[0]
-                computed_crc = _crc32(idat_chunk)
+                computed_crc = crc32(idat_chunk)
                 assert stored_crc == computed_crc, (
                     f"IDAT CRC-32 mismatch: stored {stored_crc:08x}, "
                     f"computed {computed_crc:08x}"
@@ -280,11 +280,11 @@ class TestSpotsTextureGenerator:
     def test_no_debug_logging_in_output(self) -> None:
         """AC1.16: Function produces no debug logging to files."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
         # Call generator
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
         )
 
@@ -298,12 +298,12 @@ class TestSpotsTextureGeneratorEdgeCases:
     def test_none_spot_color_treated_as_empty(self) -> None:
         """None as spot_color_hex should be treated like empty string."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
         # Some implementations may accept None; verify fallback behavior
         try:
-            png_data = _spots_texture_generator(
+            png_data = spots_texture_generator(
                 width=8,
                 height=8,
                 spot_color_hex=None,  # type: ignore
@@ -318,10 +318,10 @@ class TestSpotsTextureGeneratorEdgeCases:
     def test_case_insensitive_hex_parsing(self) -> None:
         """Mixed case hex ('Ff00Aa') should parse correctly."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=8, height=8, spot_color_hex="Ff00Aa", bg_color_hex="", density=1.0
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
@@ -329,10 +329,10 @@ class TestSpotsTextureGeneratorEdgeCases:
     def test_density_boundary_0_1(self) -> None:
         """Density at lower boundary (0.1) should work."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=0.1
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"
@@ -340,10 +340,10 @@ class TestSpotsTextureGeneratorEdgeCases:
     def test_density_boundary_5_0(self) -> None:
         """Density at upper boundary (5.0) should work."""
         from src.materials.gradient_generator import (
-            _spots_texture_generator,  # noqa: E402
+            spots_texture_generator,  # noqa: E402
         )
 
-        png_data = _spots_texture_generator(
+        png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=5.0
         )
         assert png_data[:8] == b"\x89PNG\r\n\x1a\n"

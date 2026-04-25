@@ -6,7 +6,7 @@ and that rotation doesn't accidentally make one pattern look like another.
 
 from __future__ import annotations
 
-from src.materials.gradient_generator import _stripes_texture_generator
+from src.materials.gradient_generator import stripes_texture_generator
 
 
 def _extract_stripe_samples(png_bytes: bytes, stride: int = 8) -> list[float]:
@@ -57,9 +57,9 @@ class TestStripePatternsDistinct:
             rot_y_deg=0.0,
         )
 
-        beachball = _stripes_texture_generator(**base, stripe_preset="beachball")
-        doplar = _stripes_texture_generator(**base, stripe_preset="doplar")
-        swirl = _stripes_texture_generator(**base, stripe_preset="swirl")
+        beachball = stripes_texture_generator(**base, stripe_preset="beachball")
+        doplar = stripes_texture_generator(**base, stripe_preset="doplar")
+        swirl = stripes_texture_generator(**base, stripe_preset="swirl")
 
         # All three patterns should be visually different
         assert beachball != doplar, "Beachball and doplar should differ at 0° yaw"
@@ -77,9 +77,9 @@ class TestStripePatternsDistinct:
             rot_y_deg=90.0,
         )
 
-        beachball = _stripes_texture_generator(**base, stripe_preset="beachball")
-        doplar = _stripes_texture_generator(**base, stripe_preset="doplar")
-        swirl = _stripes_texture_generator(**base, stripe_preset="swirl")
+        beachball = stripes_texture_generator(**base, stripe_preset="beachball")
+        doplar = stripes_texture_generator(**base, stripe_preset="doplar")
+        swirl = stripes_texture_generator(**base, stripe_preset="swirl")
 
         # All three patterns should still be visually different even when rotated
         assert beachball != doplar, "Beachball and doplar should differ at 90° yaw"
@@ -97,10 +97,10 @@ class TestStripePatternsDistinct:
             stripe_preset="doplar",
         )
 
-        doplar_0 = _stripes_texture_generator(**base, rot_y_deg=0.0)
-        doplar_90 = _stripes_texture_generator(**base, rot_y_deg=90.0)
-        doplar_180 = _stripes_texture_generator(**base, rot_y_deg=180.0)
-        doplar_270 = _stripes_texture_generator(**base, rot_y_deg=270.0)
+        doplar_0 = stripes_texture_generator(**base, rot_y_deg=0.0)
+        doplar_90 = stripes_texture_generator(**base, rot_y_deg=90.0)
+        doplar_180 = stripes_texture_generator(**base, rot_y_deg=180.0)
+        doplar_270 = stripes_texture_generator(**base, rot_y_deg=270.0)
 
         # Each rotation should produce a different texture
         assert doplar_0 != doplar_90, "Doplar at 0° and 90° should differ"
@@ -119,10 +119,10 @@ class TestStripePatternsDistinct:
             stripe_preset="beachball",
         )
 
-        beach_0 = _stripes_texture_generator(**base, rot_y_deg=0.0)
-        beach_90 = _stripes_texture_generator(**base, rot_y_deg=90.0)
-        beach_180 = _stripes_texture_generator(**base, rot_y_deg=180.0)
-        beach_270 = _stripes_texture_generator(**base, rot_y_deg=270.0)
+        beach_0 = stripes_texture_generator(**base, rot_y_deg=0.0)
+        beach_90 = stripes_texture_generator(**base, rot_y_deg=90.0)
+        beach_180 = stripes_texture_generator(**base, rot_y_deg=180.0)
+        beach_270 = stripes_texture_generator(**base, rot_y_deg=270.0)
 
         # Each rotation should produce a different texture
         assert beach_0 != beach_90, "Beachball at 0° and 90° should differ"
@@ -141,10 +141,10 @@ class TestStripePatternsDistinct:
             stripe_preset="swirl",
         )
 
-        swirl_0 = _stripes_texture_generator(**base, rot_y_deg=0.0)
-        swirl_90 = _stripes_texture_generator(**base, rot_y_deg=90.0)
-        swirl_180 = _stripes_texture_generator(**base, rot_y_deg=180.0)
-        swirl_270 = _stripes_texture_generator(**base, rot_y_deg=270.0)
+        swirl_0 = stripes_texture_generator(**base, rot_y_deg=0.0)
+        swirl_90 = stripes_texture_generator(**base, rot_y_deg=90.0)
+        swirl_180 = stripes_texture_generator(**base, rot_y_deg=180.0)
+        swirl_270 = stripes_texture_generator(**base, rot_y_deg=270.0)
 
         # Each rotation should produce a different texture
         assert swirl_0 != swirl_90, "Swirl at 0° and 90° should differ"
@@ -166,8 +166,8 @@ class TestStripePatternsDistinct:
             rot_y_deg=90.0,
         )
 
-        doplar_90 = _stripes_texture_generator(**base, stripe_preset="doplar")
-        beachball_90 = _stripes_texture_generator(**base, stripe_preset="beachball")
+        doplar_90 = stripes_texture_generator(**base, stripe_preset="doplar")
+        beachball_90 = stripes_texture_generator(**base, stripe_preset="beachball")
 
         assert (
             doplar_90 != beachball_90
