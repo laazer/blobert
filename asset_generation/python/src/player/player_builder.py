@@ -89,15 +89,15 @@ def export_player_slime(armature, mesh, filename: str, export_dir: str):
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
 
+    # Bake first because bake ops can mutate selection/active object state.
+    bake_procedural_stripes_for_export(mesh, export_dir)
+
     if armature:
         armature.select_set(True)
 
     if mesh:
         mesh.select_set(True)
         bpy.context.view_layer.objects.active = mesh
-
-    # Bake procedural stripe materials to image textures for glTF/web viewer parity.
-    bake_procedural_stripes_for_export(mesh, export_dir)
 
     filepath = os.path.join(export_dir, f"{filename}.glb")
 

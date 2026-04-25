@@ -34,6 +34,25 @@ def test_export_enemy_calls_bake_hook(tmp_path) -> None:
         mock_bake.assert_called_once_with(mesh, str(tmp_path))
 
 
+def test_export_enemy_bakes_before_final_selection(tmp_path) -> None:
+    _prepare_common_bpy_state()
+    from src.enemies.base_enemy import export_enemy
+
+    armature = MagicMock()
+    armature.animation_data = MagicMock()
+    armature.animation_data.action = None
+    mesh = MagicMock()
+    order: list[str] = []
+    armature.select_set.side_effect = lambda _state: order.append("armature_selected")
+    mesh.select_set.side_effect = lambda _state: order.append("mesh_selected")
+
+    with patch("src.enemies.base_enemy.bake_procedural_stripes_for_export") as mock_bake:
+        mock_bake.side_effect = lambda _mesh, _dir: order.append("baked")
+        export_enemy(armature, mesh, "enemy", str(tmp_path))
+        assert order.index("baked") < order.index("armature_selected")
+        assert order.index("baked") < order.index("mesh_selected")
+
+
 def test_export_player_calls_bake_hook(tmp_path) -> None:
     _prepare_common_bpy_state()
     from src.player.player_builder import export_player_slime
@@ -46,6 +65,23 @@ def test_export_player_calls_bake_hook(tmp_path) -> None:
     with patch("src.player.player_builder.bake_procedural_stripes_for_export") as mock_bake:
         export_player_slime(armature, mesh, "player", str(tmp_path))
         mock_bake.assert_called_once_with(mesh, str(tmp_path))
+
+
+def test_export_player_bakes_before_final_selection(tmp_path) -> None:
+    _prepare_common_bpy_state()
+    from src.player.player_builder import export_player_slime
+
+    armature = MagicMock()
+    mesh = MagicMock()
+    order: list[str] = []
+    armature.select_set.side_effect = lambda _state: order.append("armature_selected")
+    mesh.select_set.side_effect = lambda _state: order.append("mesh_selected")
+
+    with patch("src.player.player_builder.bake_procedural_stripes_for_export") as mock_bake:
+        mock_bake.side_effect = lambda _mesh, _dir: order.append("baked")
+        export_player_slime(armature, mesh, "player", str(tmp_path))
+        assert order.index("baked") < order.index("armature_selected")
+        assert order.index("baked") < order.index("mesh_selected")
 
 
 def test_export_level_object_calls_bake_hook(tmp_path) -> None:
