@@ -14,6 +14,8 @@ from typing import Any
 from urllib.parse import unquote
 
 from .migrations import (
+    _derive_player_active_visual_from_block,
+    _legacy_pav_to_player_block,
     default_migrated_manifest,
 )
 from .schema import _MAX_VERSION_NAME_LEN, _path_is_allowlisted, validate_manifest
@@ -595,3 +597,26 @@ def spawn_eligible_paths(manifest: dict[str, Any], family: str) -> list[str]:
             if isinstance(p, str) and _path_is_allowlisted(p):
                 out.append(p)
     return out
+
+
+__all__ = [
+    "_derive_player_active_visual_from_block",
+    "_legacy_pav_to_player_block",
+    "_MAX_VERSION_NAME_LEN",
+    "default_migrated_manifest",
+    "delete_enemy_version",
+    "delete_player_active_visual",
+    "get_enemy_slots",
+    "get_player_slots",
+    "load_effective_manifest",
+    "normalize_registry_relative_glb_path",
+    "patch_enemy_version",
+    "patch_player_active_visual",
+    "patch_player_version",
+    "put_enemy_slots",
+    "put_player_slots",
+    "save_manifest_atomic",
+    "spawn_eligible_paths",
+    "sync_discovered_animated_glb_versions",
+    "sync_discovered_player_glb_versions",
+]

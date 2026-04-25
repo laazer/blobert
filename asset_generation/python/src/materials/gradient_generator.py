@@ -608,3 +608,5 @@ def create_checkerboard_png_and_load(
         pass
 
     return img
+
+_spots_texture_generator = spots_texture_generator

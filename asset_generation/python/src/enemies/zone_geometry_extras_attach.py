@@ -27,7 +27,19 @@ from .zone_geometry_extras.attachment import (
     _orient_cone_outward as _orient_cone_outward_core,
 )
 from .zone_geometry_extras.geometry_math import (
+    body_ref_size as _body_ref_scale_core,
+)
+from .zone_geometry_extras.geometry_math import (
     ellipsoid_normal as _ellipsoid_normal_core,
+)
+from .zone_geometry_extras.geometry_math import (
+    head_ref_size as _head_ref_scale_core,
+)
+from .zone_geometry_extras.geometry_math import (
+    vec_xyz as _vec_xyz_core,
+)
+from .zone_geometry_extras.geometry_math import (
+    zone_extra_scale as _zone_extra_scale_core,
 )
 from .zone_geometry_extras.placement_strategy import (
     FACING_DOT_MIN as _FACING_DOT_MIN,
@@ -50,6 +62,22 @@ from .zone_geometry_extras.placement_strategy import (
 from .zone_geometry_extras.placement_strategy import (
     zone_uniform_shape as _zone_uniform_shape,
 )
+
+
+def _body_ref_scale(a: float, b: float, h: float) -> float:
+    return _body_ref_scale_core(a, b, h)
+
+
+def _head_ref_scale(ax: float, ay: float, az: float) -> float:
+    return _head_ref_scale_core(ax, ay, az)
+
+
+def _vec_xyz(v: Any) -> tuple[float, float, float]:
+    return _vec_xyz_core(v)
+
+
+def _zone_extra_scale(spec: dict[str, Any], key: str) -> float:
+    return _zone_extra_scale_core(spec, key)
 
 
 def _ellipsoid_normal(
