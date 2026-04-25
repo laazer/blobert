@@ -94,3 +94,35 @@ def test_export_level_object_calls_bake_hook(tmp_path) -> None:
     with patch("src.level.base_level_object.bake_procedural_stripes_for_export") as mock_bake:
         export_level_object(mesh, "platform", str(tmp_path))
         mock_bake.assert_called_once_with(mesh, str(tmp_path))
+
+
+def test_bake_procedural_handles_none_materials() -> None:
+    import bpy  # type: ignore[import-not-found]
+
+    from src.utils.export_bake import bake_procedural_stripes_for_export
+
+    mesh = MagicMock()
+    mesh.material_slots = [MagicMock(), MagicMock()]
+    mesh.material_slots[0].material = None
+    mesh.material_slots[1].material = MagicMock()
+    mesh.material_slots[1].material.get.return_value = False
+
+    with patch.object(bpy.ops.object, "mode_set"):
+        with patch.object(bpy.ops.object, "select_all"):
+            bake_procedural_stripes_for_export(mesh, "/tmp")
+
+
+def test_bake_procedural_handles_material_get_exception() -> None:
+    import bpy  # type: ignore[import-not-found]
+
+    from src.utils.export_bake import bake_procedural_stripes_for_export
+
+    mesh = MagicMock()
+    mesh.material_slots = [MagicMock()]
+    mat = MagicMock()
+    mat.get.side_effect = Exception("Material error")
+    mesh.material_slots[0].material = mat
+
+    with patch.object(bpy.ops.object, "mode_set"):
+        with patch.object(bpy.ops.object, "select_all"):
+            bake_procedural_stripes_for_export(mesh, "/tmp")
