@@ -389,7 +389,7 @@ def apply_zone_texture_pattern_overrides(
             if yaw_key not in build_options and f"feat_{zone}_texture_stripe_rot_y" in build_options:
                 yaw = _stripe_rot(f"feat_{zone}_texture_stripe_rot_y")
 
-            out[zone] = material_for_stripes_zone(
+            out[zone] = _material_for_stripes_zone(
                 base_palette_name=_palette_base_name_from_material(mat),
                 finish=finish,
                 stripe_hex=str(build_options.get(f"feat_{zone}_texture_stripe_color", "") or ""),
@@ -468,3 +468,4 @@ def material_for_zone_geometry_extra(
     )
 
 _material_for_spots_zone = material_for_spots_zone
+_material_for_stripes_zone = material_for_stripes_zone

@@ -971,3 +971,7 @@ def apply_material_to_object(obj, material) -> None:
 
 _material_for_spots_zone = material_for_spots_zone
 
+
+_gradient_image_pixel_buffer = gradient_image_pixel_buffer
+_sanitize_image_label = sanitize_image_label
+_parse_hex_color = parse_hex_color
