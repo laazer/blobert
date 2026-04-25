@@ -7,7 +7,13 @@ import os
 import random
 import sys
 import traceback
+from pathlib import Path
 from typing import Any, cast
+
+# Allow `from src...` imports when Blender launches this file directly.
+_PYTHON_ROOT = Path(__file__).resolve().parent.parent
+if str(_PYTHON_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PYTHON_ROOT))
 
 # Blender imports
 from src.core.blender_utils import clear_scene

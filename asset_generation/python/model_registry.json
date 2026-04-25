@@ -162,6 +162,24 @@
           "id": "spider_animated_10",
           "in_use": false,
           "path": "animated_exports/spider_animated_10.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_11",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_11.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_12",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_12.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_13",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_13.glb"
         }
       ]
     },

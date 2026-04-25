@@ -2,6 +2,7 @@
 Utility classes and constants for the enemy generation system
 """
 
+from . import run_contract
 from .config import (
     AnimationConfig,
     AnimationTypes,
@@ -22,6 +23,7 @@ __all__ = [
     # Core constants
     'EnemyTypes', 'AnimationTypes', 'EnemyBodyTypes', 'BoneNames',
     'AnimationConfig', 'ExportConfig',
+    'run_contract',
     
     # Material constants
     'MaterialColors', 'MaterialNames', 'MaterialThemes',

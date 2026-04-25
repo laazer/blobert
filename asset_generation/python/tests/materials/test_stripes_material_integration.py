@@ -10,30 +10,29 @@ import pytest
 class TestMaterialForStripesZone:
     def test_function_exists(self) -> None:
         from src.materials.material_stripes_zone import (
-            _material_for_stripes_zone,  # noqa: F401
+            material_for_stripes_zone,  # noqa: F401, PYI100
         )
 
     @patch("src.materials.material_stripes_zone.bpy")
-    def test_calls_create_stripes_png_and_load(self, mock_bpy) -> None:  # noqa: ARG002
+    def test_beachball_calls_baked_texture_path(self, mock_bpy) -> None:  # noqa: ARG002
         from src.materials.material_stripes_zone import (
-            _material_for_stripes_zone,  # noqa: E402
+            material_for_stripes_zone,  # noqa: E402, PYI100
         )
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
         mock_mat.node_tree = MagicMock()
 
-        mock_img = MagicMock()
         with patch(
             "src.materials.material_stripes_zone.create_stripes_png_and_load"
         ) as mock_png:
-            mock_png.return_value = mock_img
+            mock_png.return_value = MagicMock()
             with patch(
-                "src.materials.material_system.create_material"
+                "src.materials.material_stripes_zone.create_material"
             ) as mock_create_mat:
                 mock_create_mat.return_value = mock_mat
 
-                _material_for_stripes_zone(
+                material_for_stripes_zone(
                     base_palette_name="test_palette",
                     finish="default",
                     stripe_hex="ff0000",
@@ -50,6 +49,77 @@ class TestMaterialForStripesZone:
                 assert kw.get("rot_x_deg") == pytest.approx(10.0)
                 assert kw.get("rot_y_deg") == pytest.approx(-5.0)
                 assert kw.get("rot_z_deg") == pytest.approx(0.0)
+
+    @patch("src.materials.material_stripes_zone.bpy")
+    def test_doplar_calls_object_space_projection_path(self, mock_bpy) -> None:  # noqa: ARG002
+        from src.materials.material_stripes_zone import material_for_stripes_zone
+
+        mock_mat = MagicMock()
+        mock_mat.use_nodes = True
+        mock_mat.node_tree = MagicMock()
+        with patch(
+            "src.materials.material_stripes_zone._add_object_space_stripes_to_principled"
+        ) as mock_builder:
+            with patch("src.materials.material_stripes_zone.create_material") as mock_create_mat:
+                mock_create_mat.return_value = mock_mat
+
+                material_for_stripes_zone(
+                    base_palette_name="test_palette",
+                    finish="default",
+                    stripe_hex="ff0000",
+                    bg_hex="ffffff",
+                    stripe_width=0.4,
+                    stripe_preset="doplar",
+                    rot_yaw_deg=15.0,
+                    rot_pitch_deg=5.0,
+                    zone_hex_fallback="cccccc",
+                    instance_suffix="body_tex_stripe",
+                )
+                mock_builder.assert_called_once()
+
+    @patch("src.materials.material_stripes_zone.bpy")
+    def test_equivalent_rotations_share_canonical_image_name(self, mock_bpy) -> None:  # noqa: ARG002
+        from src.materials.material_stripes_zone import material_for_stripes_zone
+
+        mock_mat = MagicMock()
+        mock_mat.use_nodes = True
+        mock_mat.node_tree = MagicMock()
+        with patch(
+            "src.materials.material_stripes_zone._add_object_space_stripes_to_principled"
+        ) as mock_builder:
+            with patch("src.materials.material_stripes_zone.create_material") as mock_create_mat:
+                mock_create_mat.return_value = mock_mat
+
+                material_for_stripes_zone(
+                    base_palette_name="test_palette",
+                    finish="default",
+                    stripe_hex="ff0000",
+                    bg_hex="ffffff",
+                    stripe_width=0.4,
+                    stripe_preset="doplar",
+                    rot_yaw_deg=-90.0,
+                    rot_pitch_deg=10.0,
+                    zone_hex_fallback="cccccc",
+                    instance_suffix="body_tex_stripe",
+                )
+                first_name = mock_create_mat.call_args.kwargs["name"]
+
+                material_for_stripes_zone(
+                    base_palette_name="test_palette",
+                    finish="default",
+                    stripe_hex="ff0000",
+                    bg_hex="ffffff",
+                    stripe_width=0.4,
+                    stripe_preset="doplar",
+                    rot_yaw_deg=270.0,
+                    rot_pitch_deg=-10.0,
+                    zone_hex_fallback="cccccc",
+                    instance_suffix="body_tex_stripe",
+                )
+                second_name = mock_create_mat.call_args.kwargs["name"]
+
+                assert first_name == second_name
+                assert mock_builder.call_count == 2
 
 
 class TestApplyZoneTexturePatternOverridesStripes:
@@ -71,7 +141,7 @@ class TestApplyZoneTexturePatternOverridesStripes:
         }
 
         with patch(
-            "src.materials.material_stripes_zone._material_for_stripes_zone"
+            "src.materials.material_stripes_zone.material_for_stripes_zone"
         ) as mock_factory:
             mock_factory.return_value = mock_mat
             with patch(
@@ -100,7 +170,7 @@ class TestApplyZoneTexturePatternOverridesStripes:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_stripes_zone._material_for_stripes_zone") as mock_factory:
+        with patch("src.materials.material_stripes_zone.material_for_stripes_zone") as mock_factory:
             mock_factory.return_value = mock_mat
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 apply_zone_texture_pattern_overrides(slot_materials, build_options)
@@ -122,7 +192,7 @@ class TestApplyZoneTexturePatternOverridesStripes:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_stripes_zone._material_for_stripes_zone") as mock_factory:
+        with patch("src.materials.material_stripes_zone.material_for_stripes_zone") as mock_factory:
             mock_factory.return_value = mock_mat
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 # CHECKPOINT: conservative assumption is NaN/Inf rotations are coerced to 0.0.

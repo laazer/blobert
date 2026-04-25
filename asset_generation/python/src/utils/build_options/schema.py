@@ -1,4 +1,8 @@
-"""Consolidated animated build option schema/composition logic."""
+"""Consolidated animated build option schema/composition logic.
+
+This module provides typed contracts for build options, control definitions,
+and validation utilities for animated enemy generation.
+"""
 
 
 from __future__ import annotations
@@ -6,7 +10,7 @@ from __future__ import annotations
 import json
 import math
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 from src.utils.config import ANIMATED_SLUGS
 
@@ -14,6 +18,68 @@ from ..blender_stubs import ensure_blender_stubs
 from ..body_type_presets import body_type_control_def
 
 _ANIMATED_ENEMY_SLUGS: frozenset[str] = frozenset(ANIMATED_SLUGS)
+
+
+# Typed contracts for build options (framework-agnostic)
+class EyeConfigTypedDict(TypedDict):
+    """Typed contract for eye configuration options."""
+
+    count: int
+    direction: str  # 'uniform', 'random', 'separate'
+    scale_ratio: float
+    x_along: float
+    y_side: float
+    z_offset: float
+
+
+class MouthConfigTypedDict(TypedDict):
+    """Typed contract for mouth configuration options."""
+
+    enabled: bool
+    shape: str  # 'simple', 'detailed', 'teeth'
+    scale_ratio: float
+
+
+class TailConfigTypedDict(TypedDict):
+    """Typed contract for tail configuration options."""
+
+    enabled: bool
+    segments: int
+    curve_intensity: float
+    tip_shape: str  # 'pointed', 'rounded', 'spiked'
+
+
+class MaterialConfigTypedDict(TypedDict):
+    """Typed contract for material configuration options."""
+
+    base_color: str  # hex color
+    metallic_factor: float
+    roughness: float
+    emissive_enabled: bool
+    emissive_color: str | None
+
+
+class BuildOptionsCoreTypedDict(TypedDict, total=False):
+    """Core typed contract for build options (framework-agnostic)."""
+
+    eye_count: int
+    eye_direction: str
+    eye_scale_ratio: float
+    mouth_shape: str
+    tail_enabled: bool
+    tail_segments: int
+    material_base_color: str
+    material_metallic: float
+    material_roughness: float
+
+
+__all__ = [
+    "EyeConfigTypedDict",
+    "MouthConfigTypedDict",
+    "TailConfigTypedDict",
+    "MaterialConfigTypedDict",
+    "BuildOptionsCoreTypedDict",
+] + list(globals().keys())  # Preserve existing exports
 
 # Declarative controls for GET /api/meta (and validation). Spider eye_count comes from
 # ``AnimatedSpider`` (single source of truth) — see ``_spider_eye_control_defs``.

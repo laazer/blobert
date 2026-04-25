@@ -11,12 +11,45 @@ from services.python_bridge import import_asset_module
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 logger = logging.getLogger(__name__)
 
-_EXPORT_DIRS = [
-    "animated_exports",
-    "exports",
-    "player_exports",
-    "level_exports",
-]
+
+def _get_export_dirs() -> list[str]:
+    """Get export directory roots from canonical contract module."""
+    try:
+        contract_module = import_asset_module("src.utils.export_contract")
+        return list(contract_module.EXPORT_DIR_ROOTS)
+    except ImportError as e:
+        logger.warning(
+            "assets: fallback to hardcoded export dirs — %s", e, exc_info=True
+        )
+        # Hardcoded fallback (should match canonical order)
+        return [
+            "animated_exports",
+            "exports",
+            "player_exports",
+            "level_exports",
+        ]
+
+
+def _is_valid_export_path(path: str) -> bool:
+    """Check if path starts with a valid export directory."""
+    try:
+        contract_module = import_asset_module("src.utils.export_contract")
+        return contract_module.is_valid_export_path(path)
+    except ImportError as e:
+        logger.warning(
+            "assets: fallback to hardcoded validation — %s", e, exc_info=True
+        )
+        # Hardcoded fallback (should match canonical order)
+        valid_dirs = [
+            "animated_exports",
+            "exports",
+            "player_exports",
+            "level_exports",
+        ]
+        parts = path.split("/")
+        if not parts:
+            return False
+        return parts[0] in valid_dirs
 
 _MIME = {
     ".glb": "model/gltf-binary",
@@ -68,7 +101,8 @@ def _append_glb_json_files(assets: list[ListedAsset], base_dir: str, disk_dir: P
 @router.get("")
 async def list_assets() -> JSONResponse:
     assets: list[ListedAsset] = []
-    for export_dir in _EXPORT_DIRS:
+    export_dirs = _get_export_dirs()
+    for export_dir in export_dirs:
         d = settings.python_root / export_dir
         _append_glb_json_files(assets, export_dir, d)
         draft_d = d / "draft"
@@ -106,9 +140,8 @@ async def serve_asset(asset_path: str) -> FileResponse:
     except ValueError:
         raise HTTPException(status_code=400, detail="Path outside allowed directories")
 
-    # Must be under one of the export dirs
-    parts = resolved.relative_to(python_root).parts
-    if not parts or parts[0] not in _EXPORT_DIRS:
+    # Must be under one of the export dirs - use canonical validation
+    if not _is_valid_export_path(asset_path):
         raise HTTPException(status_code=403, detail="Access denied")
 
     if not resolved.exists() or not resolved.is_file():

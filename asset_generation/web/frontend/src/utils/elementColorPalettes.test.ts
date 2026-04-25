@@ -29,6 +29,52 @@ describe("buildFeatUpdatesFromPalette", () => {
     expect(u.feat_body_finish).toBe("matte");
     expect(u.feat_body_hex).toBe("");
   });
+
+  it("routes palette apply to gradient color fields when the zone uses gradient mode", () => {
+    const keys = new Set([
+      "feat_body_texture_mode",
+      "feat_body_texture_grad_color_a",
+      "feat_body_texture_grad_color_b",
+      "feat_body_finish",
+      "feat_body_hex",
+    ]);
+    const u = buildFeatUpdatesFromPalette(
+      { body: { finish: "glossy", hex: "#abcdef" } },
+      keys,
+      { feat_body_texture_mode: "gradient" },
+    );
+    expect(u.feat_body_texture_grad_color_a).toBe("#abcdef");
+    expect(typeof u.feat_body_texture_grad_color_b).toBe("string");
+    expect(u.feat_body_texture_grad_color_b).not.toBe("#abcdef");
+  });
+
+  it("routes palette apply to stripes and spots fields by current zone mode", () => {
+    const keys = new Set([
+      "feat_body_texture_mode",
+      "feat_body_texture_stripe_color",
+      "feat_body_texture_stripe_bg_color",
+      "feat_head_texture_mode",
+      "feat_head_texture_spot_color",
+      "feat_head_texture_spot_bg_color",
+    ]);
+    const u = buildFeatUpdatesFromPalette(
+      {
+        body: { finish: "matte", hex: "#112233" },
+        head: { finish: "gel", hex: "#445566" },
+      },
+      keys,
+      {
+        feat_body_texture_mode: "stripes",
+        feat_head_texture_mode: "spots",
+      },
+    );
+    expect(u.feat_body_texture_stripe_color).toBe("#112233");
+    expect(typeof u.feat_body_texture_stripe_bg_color).toBe("string");
+    expect(u.feat_body_texture_stripe_bg_color).not.toBe("#112233");
+    expect(u.feat_head_texture_spot_color).toBe("#445566");
+    expect(typeof u.feat_head_texture_spot_bg_color).toBe("string");
+    expect(u.feat_head_texture_spot_bg_color).not.toBe("#445566");
+  });
 });
 
 describe("extractZonePaletteFromValues", () => {

@@ -8,12 +8,12 @@ from collections.abc import Mapping
 import bpy
 
 from src.materials.gradient_generator import (
-    _gradient_image_pixel_buffer,
-    _sanitize_image_label,
     create_gradient_png_and_load,
     create_spots_png_and_load,
+    gradient_image_pixel_buffer,
+    sanitize_image_label,
 )
-from src.materials.material_stripes_zone import _material_for_stripes_zone
+from src.materials.material_stripes_zone import material_for_stripes_zone
 from src.materials.presets import (
     ENEMY_FINISH_PRESETS,
     MaterialColors,
@@ -149,9 +149,9 @@ def _add_uv_gradient_to_principled(
     else:
         width, height = 256, 4
 
-    safe_label = _sanitize_image_label(image_label)
+    safe_label = sanitize_image_label(image_label)
     image_name = f"BlobertTexGrad_{safe_label}"
-    pixel_buffer = _gradient_image_pixel_buffer(width, height, color_a, color_b, normalized_direction)
+    pixel_buffer = gradient_image_pixel_buffer(width, height, color_a, color_b, normalized_direction)
     img = create_gradient_png_and_load(width, height, pixel_buffer, image_name)
 
     tex = nodes.new(type="ShaderNodeTexImage")
@@ -237,7 +237,7 @@ def _material_for_spots_zone(
         spot_color_hex=sanitize_hex_input(spot_hex),
         bg_color_hex=sanitize_hex_input(bg_hex),
         density=density,
-        img_name=f"BlobertTexSpot_{_sanitize_image_label(instance_suffix)}",
+        img_name=f"BlobertTexSpot_{sanitize_image_label(instance_suffix)}",
     )
     nt = mat.node_tree
     if nt is not None:
@@ -389,7 +389,7 @@ def apply_zone_texture_pattern_overrides(
             if yaw_key not in build_options and f"feat_{zone}_texture_stripe_rot_y" in build_options:
                 yaw = _stripe_rot(f"feat_{zone}_texture_stripe_rot_y")
 
-            out[zone] = _material_for_stripes_zone(
+            out[zone] = material_for_stripes_zone(
                 base_palette_name=_palette_base_name_from_material(mat),
                 finish=finish,
                 stripe_hex=str(build_options.get(f"feat_{zone}_texture_stripe_color", "") or ""),

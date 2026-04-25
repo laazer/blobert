@@ -130,19 +130,80 @@ export function sanitizeHex(h: string): string {
   return HEX_RE.test(t) ? t : "";
 }
 
+function clampByte(v: number): number {
+  return Math.max(0, Math.min(255, Math.round(v)));
+}
+
+function parseHexRgb(hex: string): [number, number, number] | null {
+  if (!HEX_RE.test(hex)) return null;
+  const n = hex.slice(1);
+  const r = Number.parseInt(n.slice(0, 2), 16);
+  const g = Number.parseInt(n.slice(2, 4), 16);
+  const b = Number.parseInt(n.slice(4, 6), 16);
+  return [r, g, b];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const c = (n: number) => clampByte(n).toString(16).padStart(2, "0");
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+
+/** Build a visually distinct companion color for pattern backgrounds. */
+function companionPatternColor(hex: string): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return "";
+  const [r, g, b] = rgb;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  const delta = luminance > 140 ? -52 : 52;
+  const alt = rgbToHex(r + delta, g + delta, b + delta);
+  // Guard pathological edge-cases after clamping.
+  return alt.toLowerCase() === hex.toLowerCase() ? rgbToHex(r ^ 0x3a, g ^ 0x3a, b ^ 0x3a) : alt;
+}
+
 /** Build store updates for coarse zone keys that exist on this enemy. */
 export function buildFeatUpdatesFromPalette(
   palette: ElementPalette,
   existingDefKeys: ReadonlySet<string>,
+  currentValues: Readonly<Record<string, unknown>> = {},
 ): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   for (const zone of COARSE_ZONE_KEYS) {
     const mat = palette[zone];
     if (!mat) continue;
+    const modeKey = `feat_${zone}_texture_mode`;
+    const rawMode = currentValues[modeKey];
+    const mode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
     const fk = `feat_${zone}_finish`;
     const hk = `feat_${zone}_hex`;
+    const primary = sanitizeHex(mat.hex);
+    const secondary = companionPatternColor(primary);
+
+    if (mode === "gradient") {
+      const colorAKey = `feat_${zone}_texture_grad_color_a`;
+      const colorBKey = `feat_${zone}_texture_grad_color_b`;
+      if (existingDefKeys.has(colorAKey)) updates[colorAKey] = primary;
+      if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
+      continue;
+    }
+
+    if (mode === "spots") {
+      const spotKey = `feat_${zone}_texture_spot_color`;
+      const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
+      if (existingDefKeys.has(spotKey)) updates[spotKey] = primary;
+      if (existingDefKeys.has(spotBgKey)) updates[spotBgKey] = secondary;
+      continue;
+    }
+
+    if (mode === "stripes") {
+      const stripeKey = `feat_${zone}_texture_stripe_color`;
+      const stripeBgKey = `feat_${zone}_texture_stripe_bg_color`;
+      if (existingDefKeys.has(stripeKey)) updates[stripeKey] = primary;
+      if (existingDefKeys.has(stripeBgKey)) updates[stripeBgKey] = secondary;
+      continue;
+    }
+
     if (existingDefKeys.has(fk)) updates[fk] = sanitizeFinish(mat.finish);
-    if (existingDefKeys.has(hk)) updates[hk] = sanitizeHex(mat.hex);
+    if (existingDefKeys.has(hk)) updates[hk] = primary;
   }
   return updates;
 }

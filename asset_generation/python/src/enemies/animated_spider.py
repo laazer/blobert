@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import ClassVar
+from typing import Any, ClassVar, Mapping
 
 from mathutils import Euler, Vector
 
@@ -24,13 +24,14 @@ from ..core.rig_models.quadruped_simple import (
 from ..materials.material_system import apply_material_to_object, material_for_zone_part
 from ..utils.body_type_presets import spider_body_type_scales
 from ..utils.config import EnemyBodyTypes
-from .animated_enemy import AnimatedEnemy, UsesSimpleRigMixin
+from .animated_enemy import UsesSimpleRigMixin
 from .animated_spider_eye_helpers import (
     eye_dirs_random,
     eye_dirs_uniform,
     point_on_ellipsoid_surface,
     separate_eye_dirs,
 )
+from .builder_template import AnimatedEnemyBuilderBase
 from .zone_geometry_extras_attach import append_animated_enemy_zone_extras
 
 _SPIDER_LEG_ANCHOR_RATIOS: tuple[tuple[float, float, float], ...] = (
@@ -48,7 +49,7 @@ def _spider_body_radii_and_leg_nominal(
     mesh_scale_y: float,
     mesh_scale_z: float,
     leg_nominal: float,
-    build_options: dict,
+    build_options: Mapping[str, Any],
 ) -> tuple[Vector, float]:
     rx, ry, rz, leg_m = spider_body_type_scales(build_options)
     leg_nominal *= leg_m
@@ -62,7 +63,7 @@ def _spider_body_radii_and_leg_nominal(
     return body_radii, leg_nominal
 
 
-class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
+class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemyBuilderBase):
     """Multi-segment bug with quadruped movement"""
 
     body_height = 1.0
@@ -191,7 +192,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
         )
         return body_socket, root, knee, ankle, foot
 
-    def build_mesh_parts(self):
+    def _build_body_mesh(self) -> None:
         """Create body, head, eyes, and legs."""
         body_scale = random_variance(
             self._mesh("BODY_BASE"), self._mesh("BODY_VARIANCE"), self.rng
@@ -272,12 +273,11 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 )
         self._pupil_count = eye_count if pupil_enabled else 0
 
-        # Hard requirement: spider always has exactly 8 legs (ignore runtime overrides).
-        leg_count = 8
-        joint_radius = QUADRUPED_LEG_THICKNESS * float(
-            self._mesh("LIMB_JOINT_BALL_SCALE")
-        )
-        for i in range(leg_count):
+    def _build_limbs(self) -> None:
+        body_center = self._zone_geom_body_center
+        body_radii = self._zone_geom_body_radii
+        joint_radius = QUADRUPED_LEG_THICKNESS * float(self._mesh("LIMB_JOINT_BALL_SCALE"))
+        for i in range(8):
             leg_length = random_variance(
                 self._mesh("LEG_LENGTH_BASE"),
                 self._mesh("LEG_LENGTH_VARIANCE"),
@@ -377,7 +377,7 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                 create_tail_mesh(tail_shape, tail_length, tuple(tail_location))
             )
 
-    def apply_themed_materials(self):
+    def _apply_materials(self) -> None:
         enemy_mats = self._themed_slot_materials_for("spider")
         apply_material_to_object(self.parts[0], enemy_mats["body"])
         apply_material_to_object(self.parts[1], enemy_mats["head"])
@@ -407,7 +407,14 @@ class AnimatedSpider(QuadrupedSimpleRig, UsesSimpleRigMixin, AnimatedEnemy):
                     )
                 apply_material_to_object(self.parts[idx], mat)
 
+    def _add_zone_extras(self) -> None:
         append_animated_enemy_zone_extras(self)
 
-    def get_body_type(self):
+    def build_mesh_parts(self) -> None:
+        super().build_mesh_parts()
+
+    def apply_themed_materials(self) -> None:
+        super().apply_themed_materials()
+
+    def get_body_type(self) -> EnemyBodyTypes:
         return EnemyBodyTypes.QUADRUPED

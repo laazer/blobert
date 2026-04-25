@@ -212,7 +212,7 @@ def _add_object_space_stripes_to_principled(
     links.new(color_out, bc_in)
 
 
-def _material_for_stripes_zone(
+def material_for_stripes_zone(
     *,
     base_palette_name: str,
     finish: str,

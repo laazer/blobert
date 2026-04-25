@@ -1,10 +1,6 @@
 import asyncio
 import json
 import logging
-import os
-import re
-import sys
-from pathlib import Path
 from typing import Optional
 
 from core.config import settings
@@ -18,9 +14,8 @@ from sse_starlette.sse import EventSourceResponse
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/run", tags=["run"])
-
-_ALLOWED_CMDS = {"animated", "player", "level", "smart", "stats", "test"}
-_EXPORT_START_INDEX_ENV = "BLOBERT_EXPORT_START_INDEX"
+bootstrap_python_runtime()
+run_contract = import_asset_module("src.utils.run_contract")
 
 
 def _sync_registry_for_family(family: str) -> None:
@@ -36,112 +31,6 @@ def _sync_registry_for_family(family: str) -> None:
         reg.sync_discovered_animated_glb_versions(settings.python_root, family)
     except Exception:
         logger.warning("post-run registry sync failed for family %r", family, exc_info=True)
-
-
-def _next_start_index(export_dir: Path, stem_prefix: str) -> int:
-    """Return max existing variant index + 1 for files matching ``{stem_prefix}_*.glb``."""
-    indices = []
-    for p in export_dir.glob(f"{stem_prefix}_*.glb"):
-        m = re.search(r"_(\d{2})$", p.stem)
-        if m:
-            indices.append(int(m.group(1)))
-    return max(indices) + 1 if indices else 0
-
-
-def _build_command(
-    cmd: str,
-    enemy: Optional[str],
-    count: Optional[int],
-    description: Optional[str],
-    difficulty: Optional[str],
-    finish: Optional[str],
-    hex_color: Optional[str],
-) -> list[str]:
-    parts = [sys.executable, "main.py", cmd]
-    if enemy:
-        parts.append(enemy)
-    if count is not None and cmd not in ("smart", "test"):
-        parts.append(str(count))
-    if description:
-        parts.extend(["--description", description])
-    if difficulty:
-        parts.extend(["--difficulty", difficulty])
-    if cmd in ("player", "animated") and finish:
-        parts.extend(["--finish", finish])
-    if cmd in ("player", "animated") and hex_color:
-        parts.extend(["--hex-color", hex_color])
-    return parts
-
-
-def _guess_output_file(
-    cmd: str,
-    enemy: Optional[str],
-    count: Optional[int],
-    *,
-    start_index: int = 0,
-    output_draft: bool = False,
-) -> Optional[str]:
-    draft_seg = "draft/" if output_draft else ""
-    n = max(1, min(99, int(count) if count is not None else 1))
-    last = start_index + n - 1
-    if cmd == "animated" and enemy:
-        return f"animated_exports/{draft_seg}{enemy}_animated_{last:02d}.glb"
-    if cmd == "test":
-        return "animated_exports/spider_animated_00.glb"
-    if cmd == "player" and enemy:
-        return f"player_exports/{draft_seg}player_slime_{enemy}_{last:02d}.glb"
-    if cmd == "level" and enemy:
-        return f"level_exports/{draft_seg}{enemy}_{last:02d}.glb"
-    return None
-
-
-def _prepare_run_environment(
-    cmd: str,
-    enemy: Optional[str],
-    count: Optional[int],
-    description: Optional[str],
-    difficulty: Optional[str],
-    finish: Optional[str],
-    hex_color: Optional[str],
-    build_options: Optional[str],
-    output_draft: bool,
-    replace_variant_index: Optional[int] = None,
-) -> tuple[list[str], dict[str, str], int]:
-    """Shared command/env/start_index setup for SSE and completion endpoints."""
-    command = _build_command(cmd, enemy, count, description, difficulty, finish, hex_color)
-
-    env = os.environ.copy()
-    python_root = str(settings.python_root)
-    bin_path = str(settings.python_root / "bin")
-    src_path = str(settings.python_root / "src")
-    env["PYTHONPATH"] = os.pathsep.join([python_root, bin_path, src_path] +
-                                         env.get("PYTHONPATH", "").split(os.pathsep))
-    if build_options and str(build_options).strip():
-        env["BLOBERT_BUILD_OPTIONS_JSON"] = str(build_options).strip()
-    if output_draft and cmd in ("animated", "player", "level"):
-        env["BLOBERT_EXPORT_USE_DRAFT_SUBDIR"] = "1"
-
-    start_index = 0
-    use_fixed_index = (
-        replace_variant_index is not None
-        and cmd in ("animated", "player", "level")
-    )
-    if use_fixed_index:
-        assert replace_variant_index is not None
-        start_index = replace_variant_index
-        env[_EXPORT_START_INDEX_ENV] = str(start_index)
-    elif cmd == "animated" and enemy and enemy != "all":
-        draft_subdir = "draft" if output_draft else ""
-        export_dir = settings.python_root / "animated_exports" / draft_subdir if draft_subdir else settings.python_root / "animated_exports"
-        start_index = _next_start_index(export_dir, f"{enemy}_animated")
-        env[_EXPORT_START_INDEX_ENV] = str(start_index)
-    elif cmd == "player" and enemy:
-        draft_subdir = "draft" if output_draft else ""
-        export_dir = settings.python_root / "player_exports" / draft_subdir if draft_subdir else settings.python_root / "player_exports"
-        start_index = _next_start_index(export_dir, f"player_slime_{enemy}")
-        env[_EXPORT_START_INDEX_ENV] = str(start_index)
-
-    return command, env, start_index
 
 
 def _bound_log_text(lines: list[str], max_bytes: int) -> str:
@@ -171,7 +60,7 @@ async def _run_stream(
     output_draft: bool = False,
     replace_variant_index: Optional[int] = None,
 ):
-    if cmd not in _ALLOWED_CMDS:
+    if not run_contract.is_allowed_command(cmd):
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": f"Unknown command: {cmd}"})}
         return
 
@@ -179,16 +68,17 @@ async def _run_stream(
         yield {"event": "error", "data": json.dumps({"exit_code": -1, "message": "A process is already running"})}
         return
 
-    command, env, start_index = _prepare_run_environment(
-        cmd,
-        enemy,
-        count,
-        description,
-        difficulty,
-        finish,
-        hex_color,
-        build_options,
-        output_draft,
+    command, env, start_index = run_contract.prepare_run_environment(
+        python_root=settings.python_root,
+        cmd=cmd,
+        enemy=enemy,
+        count=count,
+        description=description,
+        difficulty=difficulty,
+        finish=finish,
+        hex_color=hex_color,
+        build_options=build_options,
+        output_draft=output_draft,
         replace_variant_index=replace_variant_index,
     )
 
@@ -202,7 +92,13 @@ async def _run_stream(
         yield {"event": "log", "data": json.dumps({"line": line, "run_id": run_id})}
 
     exit_code = process_manager.exit_code()
-    output_file = _guess_output_file(cmd, enemy, count, start_index=start_index, output_draft=output_draft)
+    output_file = run_contract.predict_output_file(
+        cmd=cmd,
+        enemy=enemy,
+        count=count,
+        start_index=start_index,
+        output_draft=output_draft,
+    )
 
     if exit_code == 0:
         if cmd == "animated" and enemy and enemy != "all":
@@ -260,7 +156,7 @@ async def run_complete(
     ),
 ) -> JSONResponse:
     """Agent-oriented completion: one JSON with bounded logs (GET /api/run/complete)."""
-    if cmd not in _ALLOWED_CMDS:
+    if not run_contract.is_allowed_command(cmd):
         return JSONResponse(
             status_code=400,
             content={"detail": f"Unknown command: {cmd}"},
@@ -275,22 +171,28 @@ async def run_complete(
             },
         )
 
-    command, env, start_index = _prepare_run_environment(
-        cmd,
-        enemy,
-        count,
-        description,
-        difficulty,
-        finish,
-        hex_color,
-        build_options,
-        output_draft,
+    command, env, start_index = run_contract.prepare_run_environment(
+        python_root=settings.python_root,
+        cmd=cmd,
+        enemy=enemy,
+        count=count,
+        description=description,
+        difficulty=difficulty,
+        finish=finish,
+        hex_color=hex_color,
+        build_options=build_options,
+        output_draft=output_draft,
         replace_variant_index=replace_variant_index,
     )
 
     try:
         run_id = await process_manager.start(command, cwd=settings.python_root, env=env)
     except Exception as e:
+        if isinstance(e, OSError):
+            return JSONResponse(
+                status_code=200,
+                content={"exit_code": -1, "message": str(e)},
+            )
         mapped = map_exception_to_http(
             e,
             route="/api/run/complete",
@@ -337,7 +239,13 @@ async def run_complete(
         await drain_task
 
     exit_code = process_manager.exit_code()
-    output_file = _guess_output_file(cmd, enemy, count, start_index=start_index, output_draft=output_draft)
+    output_file = run_contract.predict_output_file(
+        cmd=cmd,
+        enemy=enemy,
+        count=count,
+        start_index=start_index,
+        output_draft=output_draft,
+    )
     if exit_code == 0:
         if cmd == "animated" and enemy and enemy != "all":
             _sync_registry_for_family(enemy)

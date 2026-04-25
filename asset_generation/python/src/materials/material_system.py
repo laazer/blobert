@@ -11,11 +11,12 @@ import bpy
 
 from src.materials import material_system_enemy_themes as _material_system_enemy_themes
 from src.materials.gradient_generator import (
-    _gradient_image_pixel_buffer,
-    _sanitize_image_label,
     create_gradient_png_and_load,
     create_spots_png_and_load,
+    gradient_image_pixel_buffer,
+    sanitize_image_label,
 )
+from src.materials.presets import parse_hex_color
 from src.utils.materials import (
     MaterialCategories,
     MaterialColors,
@@ -43,19 +44,6 @@ _ORGANIC_BASE_COLOR_DETAIL_FAC = 0.12
 def _sanitize_hex_input(raw: str) -> str:
     s = "".join(c for c in str(raw or "").strip().lower() if c in "0123456789abcdef")
     return s[:6]
-
-
-def _parse_hex_color(hex_value: str):
-    raw = (hex_value or "").strip().lstrip("#")
-    if len(raw) != 6:
-        raise ValueError("hex color must be 6 characters (RRGGBB)")
-    try:
-        r = int(raw[0:2], 16) / 255.0
-        g = int(raw[2:4], 16) / 255.0
-        b = int(raw[4:6], 16) / 255.0
-    except ValueError as error:
-        raise ValueError("hex color must be valid hexadecimal") from error
-    return (r, g, b, 1.0)
 
 
 def _force_principled_value(bsdf, input_name, value):
@@ -264,7 +252,7 @@ def setup_materials(
 ) -> dict[str, bpy.types.Material]:
     """Create all materials from the shared color palette"""
     materials: dict[str, bpy.types.Material] = {}
-    override_color = _parse_hex_color(enemy_hex_color) if enemy_hex_color else None
+    override_color = parse_hex_color(enemy_hex_color) if enemy_hex_color else None
     finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
         enemy_finish,
         ENEMY_FINISH_PRESETS["default"],
@@ -318,7 +306,7 @@ def _material_for_finish_hex(
     if base_color is None:
         base_color = (0.6, 0.5, 0.5, 1.0)
     h = _sanitize_hex_input(hex_str)
-    override_color = _parse_hex_color(h) if h else None
+    override_color = parse_hex_color(h) if h else None
     material_color = override_color if override_color is not None else base_color
     finish_roughness, finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
         finish,
@@ -387,7 +375,7 @@ def _rgba_from_hex_or_fallback(
     if len(h) != 6:
         return fallback_rgba
     try:
-        return _parse_hex_color(h)
+        return parse_hex_color(h)
     except ValueError:
         return fallback_rgba
 
@@ -400,7 +388,7 @@ def _rgba_from_hex_or_default(  # pragma: no cover
     if len(h) != 6:
         return default_rgba
     try:
-        return _parse_hex_color(h)
+        return parse_hex_color(h)
     except ValueError:
         return default_rgba
 
@@ -457,9 +445,9 @@ def _add_uv_gradient_to_principled(
     else:
         gw, gh = 256, 4
 
-    safe = _sanitize_image_label(image_label)
+    safe = sanitize_image_label(image_label)
     img_name = f"BlobertTexGrad_{safe}"
-    buf = _gradient_image_pixel_buffer(gw, gh, color_a, color_b, d)
+    buf = gradient_image_pixel_buffer(gw, gh, color_a, color_b, d)
 
     img = create_gradient_png_and_load(gw, gh, buf, img_name)
 
@@ -491,7 +479,7 @@ def _material_for_gradient_zone(
     if palette_base is None:
         palette_base = (0.6, 0.5, 0.5, 1.0)
     h_zone = _sanitize_hex_input(zone_hex_fallback)
-    zone_rgba = _parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+    zone_rgba = parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
 
     # Use sensible defaults: color_a from hex or zone, color_b from hex or white for contrast
     default_for_b = (1.0, 1.0, 1.0, 1.0)
@@ -548,7 +536,7 @@ def _material_for_spots_zone(
     if palette_base is None:
         palette_base = (0.6, 0.5, 0.5, 1.0)
     h_zone = _sanitize_hex_input(zone_hex_fallback)
-    zone_rgba = _parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+    zone_rgba = parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
 
     # Spots color from hex or fallback to zone color
     spot_color = _rgba_from_hex_or_fallback(spot_hex, zone_rgba)
@@ -579,7 +567,7 @@ def _material_for_spots_zone(
     )
 
     # Generate and apply spots texture
-    safe = _sanitize_image_label(instance_suffix)
+    safe = sanitize_image_label(instance_suffix)
     img_name = f"BlobertTexSpot_{safe}"
     img = create_spots_png_and_load(
         width=128,
@@ -737,7 +725,7 @@ def apply_zone_texture_pattern_overrides(
                 instance_suffix=f"{zone}_tex_spot",
             )
         elif mode == "stripes":
-            from .material_stripes_zone import _material_for_stripes_zone
+            from .material_stripes_zone import material_for_stripes_zone
 
             base_palette_name = _palette_base_name_from_material(mat)
             zf = feat_dict.get(zone)
@@ -789,7 +777,7 @@ def apply_zone_texture_pattern_overrides(
             if yaw_k not in build_options and ly in build_options:
                 yaw = _stripe_rot(ly)
 
-            out[zone] = _material_for_stripes_zone(
+            out[zone] = material_for_stripes_zone(
                 base_palette_name=base_palette_name,
                 finish=finish,
                 stripe_hex=stripe_color,

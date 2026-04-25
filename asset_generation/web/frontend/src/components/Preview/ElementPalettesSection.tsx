@@ -28,12 +28,13 @@ type Props = { slug: string };
 export function ElementPalettesSection({ slug }: Props) {
   const meta = useAppStore((s) => s.animatedEnemyMeta);
   const defs = useAppStore((s) => s.animatedBuildControls[slug] ?? []);
+  const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
   const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
 
-  const coarseKeys = useMemo(() => {
+  const knownDefKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const d of defs) {
-      if (ZONE_FINISH_HEX_RE.test(d.key)) keys.add(d.key);
+      keys.add(d.key);
     }
     return keys;
   }, [defs]);
@@ -52,14 +53,14 @@ export function ElementPalettesSection({ slug }: Props) {
   const applyElement = useCallback(
     (id: ElementId) => {
       const palette = DEFAULT_ELEMENT_PALETTES[id];
-      const updates = buildFeatUpdatesFromPalette(palette, coarseKeys);
+      const updates = buildFeatUpdatesFromPalette(palette, knownDefKeys, values);
       if (Object.keys(updates).length === 0) return;
       applyBulk(slug, updates);
     },
-    [slug, coarseKeys, applyBulk],
+    [slug, knownDefKeys, values, applyBulk],
   );
 
-  const hasCoarseZones = coarseKeys.size > 0;
+  const hasCoarseZones = defs.some((d) => ZONE_FINISH_HEX_RE.test(d.key));
 
   return (
     <div

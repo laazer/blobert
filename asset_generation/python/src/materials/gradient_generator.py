@@ -27,7 +27,7 @@ def _lerp_rgba(
     )
 
 
-def _gradient_image_pixel_buffer(
+def gradient_image_pixel_buffer(
     w: int,
     h: int,
     color_a: tuple[float, float, float, float],
@@ -58,12 +58,12 @@ def _gradient_image_pixel_buffer(
     return buf
 
 
-def _sanitize_image_label(label: str) -> str:
+def sanitize_image_label(label: str) -> str:
     raw = re.sub(r"[^a-zA-Z0-9_]+", "_", str(label or "gradient").strip())
     return (raw[:48] or "gradient").lstrip("_") or "gradient"
 
 
-def _crc32(data: bytes) -> int:
+def crc32(data: bytes) -> int:
     """Compute CRC-32 for PNG chunks."""
     crc = 0xffffffff
     for byte in data:
@@ -78,7 +78,7 @@ def _create_png(width: int, height: int, pixels: list[float]) -> bytes:
     signature = b"\x89PNG\r\n\x1a\n"
     ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
     ihdr_chunk = b"IHDR" + ihdr_data
-    ihdr_crc = _crc32(ihdr_chunk)
+    ihdr_crc = crc32(ihdr_chunk)
 
     scanlines = b""
     for y in range(height):
@@ -93,9 +93,9 @@ def _create_png(width: int, height: int, pixels: list[float]) -> bytes:
 
     idat_data = zlib.compress(scanlines, 9)
     idat_chunk = b"IDAT" + idat_data
-    idat_crc = _crc32(idat_chunk)
+    idat_crc = crc32(idat_chunk)
 
-    iend_crc = _crc32(b"IEND")
+    iend_crc = crc32(b"IEND")
 
     ihdr = struct.pack(">I", 13) + ihdr_chunk + struct.pack(">I", ihdr_crc)
     idat = struct.pack(">I", len(idat_data)) + idat_chunk + struct.pack(">I", idat_crc)
@@ -192,7 +192,7 @@ def _stripe_uv_coord_for_preset(
     return coord + phase_offset + roll_phase
 
 
-def _stripes_texture_generator(
+def stripes_texture_generator(
     width: int,
     height: int,
     stripe_color_hex: str,
@@ -289,7 +289,7 @@ def create_stripes_png_and_load(
     rot_z_deg: float = 0.0,
 ) -> bpy.types.Image:
     """Create stripes PNG texture, save to disk, and load into Blender."""
-    png_data = _stripes_texture_generator(
+    png_data = stripes_texture_generator(
         width,
         height,
         stripe_color_hex,
