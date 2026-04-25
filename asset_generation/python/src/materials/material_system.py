@@ -375,7 +375,7 @@ def _rgba_from_hex_or_fallback(
     if len(h) != 6:
         return fallback_rgba
     try:
-        return parse_hex_color(h)
+        return _parse_hex_color(h)
     except ValueError:
         return fallback_rgba
 
@@ -388,7 +388,7 @@ def _rgba_from_hex_or_default(  # pragma: no cover
     if len(h) != 6:
         return default_rgba
     try:
-        return parse_hex_color(h)
+        return _parse_hex_color(h)
     except ValueError:
         return default_rgba
 

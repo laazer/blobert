@@ -8,14 +8,8 @@ Usage (via main.py):
 
 import random
 import sys
-from pathlib import Path
 
 import bpy
-
-# Allow `from src...` imports when Blender launches this file directly.
-_PYTHON_ROOT = Path(__file__).resolve().parent.parent
-if str(_PYTHON_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PYTHON_ROOT))
 
 from src.core.blender_utils import clear_scene
 from src.level.level_object_builder import LevelObjectBuilder
