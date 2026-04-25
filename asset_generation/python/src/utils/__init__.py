@@ -23,8 +23,7 @@ __all__ = [
     # Core constants
     'EnemyTypes', 'AnimationTypes', 'EnemyBodyTypes', 'BoneNames',
     'AnimationConfig', 'ExportConfig',
-    'run_contract',
-    
+
     # Material constants
     'MaterialColors', 'MaterialNames', 'MaterialThemes',
     'MaterialCategories', 'BodyPartMaterials'

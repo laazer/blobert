@@ -797,7 +797,7 @@ def apply_zone_texture_pattern_overrides(
             # Clamp density to valid range [0.1, 5.0]
             density = max(0.1, min(5.0, density))
 
-            out[zone] = material_for_spots_zone(
+            out[zone] = _material_for_spots_zone(
                 base_palette_name=base_palette_name,
                 finish=finish,
                 spot_hex=spot_color,
@@ -968,3 +968,6 @@ def apply_material_to_object(obj, material) -> None:
             obj.data.materials.append(material)
         else:
             obj.data.materials[0] = material
+
+_material_for_spots_zone = material_for_spots_zone
+

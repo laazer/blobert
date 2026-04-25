@@ -3,11 +3,28 @@
 from __future__ import annotations
 
 from .schema import (
+    _EXTRA_KINDS_ORDER,
+    _EXTRA_ZONE_FLAT_KEY,
+    _OFFSET_XYZ_MAX,
+    _OFFSET_XYZ_MIN,
+    _OFFSET_XYZ_STEP,
+    _SHELL_SCALE_MAX,
+    _SHELL_SCALE_MIN,
+    _ZONE_GEOM_EXTRA_FIELDS,
     OFFSET_XYZ_MAX,
     OFFSET_XYZ_MIN,
     RIG_ROT_MAX,
     RIG_ROT_MIN,
     RIG_ROT_STEP,
+    _coerce_and_validate,
+    _default_zone_geometry_extras,
+    _default_zone_geometry_extras_payload,
+    _feature_zones,
+    _merge_features_for_slug,
+    _merge_zone_geometry_extras,
+    _sanitize_zone_geometry_extras,
+    _validate_features_map,
+    _zone_extra_control_defs,
     animated_build_controls_for_api,
     defaults_for_slug,
     eye_shape_pupil_control_defs,
@@ -21,7 +38,10 @@ from .schema import (
     texture_control_defs,
     zone_texture_control_defs,
 )
-from .validate import coerce_validate_enemy_build_options, validate_build_options
+from .validate import (
+    coerce_validate_enemy_build_options,
+    validate_build_options,
+)
 
 get_control_definitions = animated_build_controls_for_api
 normalize_controls = options_for_enemy
@@ -49,5 +69,22 @@ __all__ = sorted(
         "OFFSET_XYZ_MIN",
         "OFFSET_XYZ_MAX",
         "merge_zone_geometry_extras",
+        "_OFFSET_XYZ_MIN",
+        "_OFFSET_XYZ_MAX",
+        "_OFFSET_XYZ_STEP",
+        "_SHELL_SCALE_MIN",
+        "_SHELL_SCALE_MAX",
+        "_EXTRA_KINDS_ORDER",
+        "_EXTRA_ZONE_FLAT_KEY",
+        "_ZONE_GEOM_EXTRA_FIELDS",
+        "_coerce_and_validate",
+        "_default_zone_geometry_extras",
+        "_default_zone_geometry_extras_payload",
+        "_feature_zones",
+        "_merge_features_for_slug",
+        "_merge_zone_geometry_extras",
+        "_sanitize_zone_geometry_extras",
+        "_validate_features_map",
+        "_zone_extra_control_defs",
     }
 )

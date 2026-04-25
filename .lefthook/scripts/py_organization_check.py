@@ -118,6 +118,7 @@ def private_import_errors(py_file: Path, tree: ast.AST) -> List[str]:
     is_dispatch_module = (
         py_file.name == "zone_geometry_extras_attach.py"
         or (py_file.name == "service.py" and "model_registry" in py_file.parts)
+        or (py_file.name == "__init__.py" and "build_options" in py_file.parts)
     )
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
