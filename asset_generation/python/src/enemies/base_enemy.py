@@ -9,6 +9,7 @@ import os
 from abc import abstractmethod
 from typing import List
 
+from ..utils.export_bake import bake_procedural_stripes_for_export
 from .base_animated_model import BaseAnimatedModel
 
 
@@ -76,6 +77,9 @@ def export_enemy(armature, mesh, filename, export_dir, attack_profile=None):
     if mesh:
         mesh.select_set(True)
         bpy.context.view_layer.objects.active = mesh
+
+    # Bake procedural stripe materials to image textures for glTF/web viewer parity.
+    bake_procedural_stripes_for_export(mesh, export_dir)
 
     filepath = os.path.join(export_dir, f"{filename}.glb")
 

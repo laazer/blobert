@@ -11,6 +11,7 @@ from ..utils.config import (
     PlayerAnimationTypes,
     PlayerBoneNames,
 )
+from ..utils.export_bake import bake_procedural_stripes_for_export
 from .player_animations import PlayerSlimeAnimations
 from .player_armature import create_player_slime_armature
 from .player_materials import SLIME_COLORS
@@ -94,6 +95,9 @@ def export_player_slime(armature, mesh, filename: str, export_dir: str):
     if mesh:
         mesh.select_set(True)
         bpy.context.view_layer.objects.active = mesh
+
+    # Bake procedural stripe materials to image textures for glTF/web viewer parity.
+    bake_procedural_stripes_for_export(mesh, export_dir)
 
     filepath = os.path.join(export_dir, f"{filename}.glb")
 

@@ -148,45 +148,48 @@ def _normalize_stripe_preset(raw: str) -> str:
     return "beachball"
 
 
-def _compute_stripe_phase_offset(rot_yaw_deg: float, rot_pitch_deg: float, rot_roll_deg: float = 0.0) -> float:
-    """Compute phase offset for stripe pattern based on yaw rotation only.
+def _stripe_uv_coord_for_preset(
+    u: float,
+    v: float,
+    preset: str,
+    rot_y_deg: float = 0.0,
+    rot_x_deg: float = 0.0,
+    rot_z_deg: float = 0.0,
+    phase_offset: float = 0.0,
+) -> float:
+    """Phase coordinate for stripe bands via directional UV projection.
 
-    Apply phase offset to yaw rotation only. This shifts where stripe poles appear
-    without risking pattern morphing at extreme angles. Pitch and roll are not
-    applied to avoid mathematical necessity of pattern type transitions.
-    """
-    # Only yaw affects phase offset (horizontal rotation)
-    phase_offset = (float(rot_yaw_deg) / 360.0) % 1.0
-    return phase_offset
-
-
-def _stripe_uv_coord_for_preset(u: float, v: float, preset: str, rot_y_deg: float = 0.0, phase_offset: float = 0.0) -> float:
-    """Phase coordinate for stripe bands: beachball / doplar / swirl with rotation and phase offset.
-
-    Rotation adjusts the pattern angle (theta), not the axes.
-    This ensures each pattern stays distinct regardless of rotation angle.
+    We do not rotate UVs. Instead, we project centered UV onto a direction vector
+    defined by (preset base angle + yaw), apply pitch as vertical scaling, and
+    roll as a phase shift.
     """
     p = _normalize_stripe_preset(preset)
 
-    # Step 1: Determine base theta for preset (non-90° offsets prevent convergence).
-    # Using offsets that don't align with rotation increments ensures each
-    # pattern+rotation combination produces unique results.
+    # Step 1: Base orientation per preset.
     if p == "beachball":
-        theta = 0.0  # 0°
+        base_angle_deg = 0.0
     elif p == "doplar":
-        theta = math.pi / 6.0  # 30°
+        base_angle_deg = 90.0
     else:  # swirl
-        theta = math.pi / 3.0  # 60°
+        base_angle_deg = 60.0
 
-    # Step 2: Apply rotation by rotating theta itself (not swapping axes).
-    # Each 90° rotation adjusts theta for that pattern, guaranteeing uniqueness.
-    rot_snapped = int(round(rot_y_deg / 90.0)) * 90 % 360
-    theta_rotated = theta + math.radians(rot_snapped)
+    # Step 2: Direction vector from (preset base + yaw).
+    final_angle_rad = math.radians(base_angle_deg + float(rot_y_deg))
+    dir_x = math.cos(final_angle_rad)
+    dir_y = math.sin(final_angle_rad)
 
-    # Step 3: Apply to original (u, v) axes. Theta changes with rotation,
-    # not the axes. This rotates the pattern while preserving its identity.
-    coord = u * math.cos(theta_rotated) + v * math.sin(theta_rotated)
-    return coord + phase_offset
+    # Step 3: Center UV about texture midpoint.
+    u_center = u - 0.5
+    v_center = v - 0.5
+
+    # Step 4: Pitch acts as vertical compression/expansion.
+    pitch_scale = math.cos(math.radians(float(rot_x_deg)))
+    v_center *= pitch_scale
+
+    # Step 5: Project onto direction and apply roll as phase offset.
+    coord = (u_center * dir_x) + (v_center * dir_y)
+    roll_phase = float(rot_z_deg) / 360.0
+    return coord + phase_offset + roll_phase
 
 
 def _stripes_texture_generator(
@@ -248,14 +251,19 @@ def _stripes_texture_generator(
 
     buf = [0.0] * (width * height * 4)
 
-    phase_offset = 0.0
-
     for y in range(height):
         for x in range(width):
             u = (x + 0.5) / width if width > 0 else 0.5
             v = (y + 0.5) / height if height > 0 else 0.5
-            # Calculate stripe pattern with rotation applied at pattern level
-            coord = _stripe_uv_coord_for_preset(u, v, preset, rot_y_deg, phase_offset)
+            coord = _stripe_uv_coord_for_preset(
+                u,
+                v,
+                preset,
+                rot_y_deg=rot_y_deg,
+                rot_x_deg=rot_x_deg,
+                rot_z_deg=rot_z_deg,
+                phase_offset=0.0,
+            )
             edge = coord * (1.0 / period)
             t = edge - math.floor(edge)
             rgba = stripe_rgba if t < 0.5 else bg_rgba

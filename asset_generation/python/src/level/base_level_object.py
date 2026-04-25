@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List
 
 from ..core.blender_utils import apply_smooth_shading, join_objects
+from ..utils.export_bake import bake_procedural_stripes_for_export
 from .level_object_data import TrapData
 
 
@@ -63,6 +64,9 @@ def export_level_object(mesh, filename: str, export_dir: str, level_object: Base
     if mesh:
         mesh.select_set(True)
         bpy.context.view_layer.objects.active = mesh
+
+    # Bake procedural stripe materials to image textures for glTF/web viewer parity.
+    bake_procedural_stripes_for_export(mesh, export_dir)
 
     filepath = os.path.join(export_dir, f"{filename}.glb")
 
