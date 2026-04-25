@@ -65,7 +65,7 @@ function firstNonEmptyString(...vals: unknown[]): string {
 
 /**
  * When switching ``texture_mode``, copy palette colors into the new mode's fields if they are still empty
- * so users do not lose work across gradient / spots / stripes.
+ * so users do not lose work across gradient / spots / checkerboard / stripes.
  */
 export function carryTexturePaletteOnModeChange(
   zone: string,
@@ -87,7 +87,7 @@ export function carryTexturePaletteOnModeChange(
   if (nextMode === "gradient") {
     setIfEmpty(`${p}grad_color_a`, g(`${p}spot_color`), g(`${p}stripe_color`));
     setIfEmpty(`${p}grad_color_b`, g(`${p}spot_bg_color`), g(`${p}stripe_bg_color`));
-  } else if (nextMode === "spots") {
+  } else if (nextMode === "spots" || nextMode === "checkerboard") {
     setIfEmpty(`${p}spot_color`, g(`${p}grad_color_a`), g(`${p}stripe_color`));
     setIfEmpty(`${p}spot_bg_color`, g(`${p}grad_color_b`), g(`${p}stripe_bg_color`));
   } else if (nextMode === "stripes") {
@@ -100,13 +100,14 @@ export function carryTexturePaletteOnModeChange(
 export function normalizedTextureMode(
   zone: string,
   values: Readonly<Record<string, unknown>>,
-): "none" | "gradient" | "spots" | "stripes" | "assets" {
+): "none" | "gradient" | "spots" | "checkerboard" | "stripes" | "assets" {
   const modeKey = `feat_${zone}_texture_mode`;
   const rawMode = values[modeKey];
   const textureMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
   if (
     textureMode === "gradient" ||
     textureMode === "spots" ||
+    textureMode === "checkerboard" ||
     textureMode === "stripes" ||
     textureMode === "assets" ||
     textureMode === "none"
@@ -127,7 +128,7 @@ function shouldShowTextureParam(
   if (defKey === modeKey) return true;
   const mode = normalizedTextureMode(zone, values);
   if (defKey.includes("_texture_grad_")) return mode === "gradient";
-  if (defKey.includes("_texture_spot_")) return mode === "spots";
+  if (defKey.includes("_texture_spot_")) return mode === "spots" || mode === "checkerboard";
   if (defKey.includes("_texture_stripe_")) return mode === "stripes";
   if (defKey.includes("_texture_asset_")) return mode === "assets";
   return false;

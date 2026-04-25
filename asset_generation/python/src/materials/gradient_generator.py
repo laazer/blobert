@@ -502,3 +502,109 @@ def create_spots_png_and_load(
         pass
 
     return img
+
+
+def checkerboard_texture_generator(
+    width: int,
+    height: int,
+    color_a_hex: str,
+    color_b_hex: str,
+    density: float,
+) -> bytes:
+    """Generate PNG with procedural checkerboard pattern."""
+    if not isinstance(width, int) or isinstance(width, bool):
+        raise TypeError("width must be an integer")
+    if not isinstance(height, int) or isinstance(height, bool):
+        raise TypeError("height must be an integer")
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be positive")
+    if not isinstance(density, (int, float)) or isinstance(density, bool):
+        raise TypeError("density must be numeric")
+    density_f = float(density)
+    if density_f <= 0.0:
+        raise ValueError("density must be greater than 0")
+    if not isinstance(color_a_hex, str):
+        raise TypeError("color_a_hex must be a string")
+    if not isinstance(color_b_hex, str):
+        raise TypeError("color_b_hex must be a string")
+
+    def _hex_to_rgba(
+        hex_str: str,
+        default_rgba: tuple[float, float, float, float],
+        allow_invalid: bool = False,
+    ) -> tuple[float, float, float, float]:
+        raw = (hex_str or "").strip()
+        h = raw.lstrip("#").lower()
+        if not h:
+            return default_rgba
+        if len(h) != 6:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError(f"hex color must be 6 characters (RRGGBB), got {h!r}")
+        try:
+            r = int(h[0:2], 16) / 255.0
+            g = int(h[2:4], 16) / 255.0
+            b = int(h[4:6], 16) / 255.0
+            return (r, g, b, 1.0)
+        except ValueError as e:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError("hex color must be valid hexadecimal") from e
+
+    color_a = _hex_to_rgba(color_a_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False)
+    color_b = _hex_to_rgba(color_b_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
+
+    grid_scale = max(0.1, density_f)
+    buf = [0.0] * (width * height * 4)
+    for y in range(height):
+        for x in range(width):
+            u = (x + 0.5) / width if width > 0 else 0.5
+            v = (y + 0.5) / height if height > 0 else 0.5
+            cell_x = int(math.floor(u * grid_scale))
+            cell_y = int(math.floor(v * grid_scale))
+            rgba = color_a if (cell_x + cell_y) % 2 == 0 else color_b
+            idx = (y * width + x) * 4
+            buf[idx] = rgba[0]
+            buf[idx + 1] = rgba[1]
+            buf[idx + 2] = rgba[2]
+            buf[idx + 3] = rgba[3]
+
+    return _create_png(width, height, buf)
+
+
+def create_checkerboard_png_and_load(
+    width: int,
+    height: int,
+    color_a_hex: str,
+    color_b_hex: str,
+    density: float,
+    img_name: str,
+) -> bpy.types.Image:
+    """Create checkerboard PNG texture, save to disk, and load into Blender."""
+    png_data = checkerboard_texture_generator(
+        width,
+        height,
+        color_a_hex,
+        color_b_hex,
+        density,
+    )
+    checker_dir = Path(__file__).parent.parent.parent / "animated_exports" / "checkerboards"
+    checker_dir.mkdir(parents=True, exist_ok=True)
+    tmp_png = checker_dir / f"{img_name}.png"
+    tmp_png.write_bytes(png_data)
+
+    img_path = str(tmp_png.absolute())
+    img = bpy.data.images.load(filepath=img_path, check_existing=False)
+    img.name = img_name
+
+    try:
+        img.colorspace_settings.name = "sRGB"
+    except (TypeError, AttributeError):  # pragma: no cover
+        pass
+
+    try:
+        img.pack()
+    except Exception:  # pragma: no cover
+        pass
+
+    return img

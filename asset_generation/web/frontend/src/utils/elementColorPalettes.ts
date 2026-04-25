@@ -186,7 +186,7 @@ export function buildFeatUpdatesFromPalette(
       continue;
     }
 
-    if (mode === "spots") {
+    if (mode === "spots" || mode === "checkerboard") {
       const spotKey = `feat_${zone}_texture_spot_color`;
       const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
       if (existingDefKeys.has(spotKey)) updates[spotKey] = primary;

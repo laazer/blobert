@@ -104,7 +104,7 @@ class TestZoneTextureControlDefs:
         entry = next(d for d in defs if d["key"] == "feat_body_texture_mode")
         assert entry["label"].startswith("Body")
         assert entry["type"] == "select_str"
-        assert entry["options"] == ["none", "gradient", "spots", "stripes", "assets"]
+        assert entry["options"] == ["none", "gradient", "spots", "checkerboard", "stripes", "assets"]
 
 
 @pytest.mark.parametrize("slug", _ALL_SLUGS)

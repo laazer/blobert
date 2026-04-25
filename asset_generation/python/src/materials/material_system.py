@@ -601,6 +601,88 @@ def material_for_spots_zone(
     return mat
 
 
+def _material_for_checkerboard_zone(
+    *,
+    base_palette_name: str,
+    finish: str,
+    color_a_hex: str,
+    color_b_hex: str,
+    density: float,
+    zone_hex_fallback: str,
+    instance_suffix: str,
+) -> bpy.types.Material:
+    """Solid base material with object-space procedural checkerboard texture."""
+    all_colors = MaterialColors.get_all()
+    palette_base = all_colors.get(base_palette_name)
+    if palette_base is None:
+        palette_base = (0.6, 0.5, 0.5, 1.0)
+    h_zone = _sanitize_hex_input(zone_hex_fallback)
+    zone_rgba = parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+
+    color_a = _rgba_from_hex_or_fallback(color_a_hex, zone_rgba)
+    color_b = _rgba_from_hex_or_fallback(color_b_hex, (1.0, 1.0, 1.0, 1.0))
+
+    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = finish != "default"
+    metallic = 0.0
+    roughness = 0.75
+    if finish_roughness is not None:
+        roughness = finish_roughness
+    transmission = finish_transmission if finish_transmission is not None else 0.0
+    alpha = color_a[3] if len(color_a) > 3 else 1.0
+
+    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    mat = create_material(
+        name=new_name,
+        color=color_a,
+        metallic=metallic,
+        roughness=roughness,
+        alpha=alpha,
+        transmission=transmission,
+        add_texture=False,
+        force_surface=force_surface,
+        force_base_color=False,
+    )
+
+    # Tag for export-time bake so GLTF/web viewer preserves procedural look.
+    mat["blobert_checker_procedural"] = True
+    nt = mat.node_tree
+    if nt is not None:
+        nodes = nt.nodes
+        links = nt.links
+        bsdf = _find_principled_bsdf(nodes)
+        if bsdf is not None:
+            bc_in = _principled_base_color_socket(bsdf)
+            if bc_in is not None:
+                for lk in list(bc_in.links):
+                    links.remove(lk)
+
+                tex_coord = nodes.new(type="ShaderNodeTexCoord")
+                tex_coord.location = (-1000, 220)
+
+                mapping = nodes.new(type="ShaderNodeMapping")
+                mapping.location = (-800, 220)
+                density_clamped = max(0.1, min(5.0, float(density)))
+                mapping.inputs["Scale"].default_value = (
+                    density_clamped,
+                    density_clamped,
+                    density_clamped,
+                )
+
+                checker = nodes.new(type="ShaderNodeTexChecker")
+                checker.location = (-600, 220)
+                checker.inputs["Color1"].default_value = color_a
+                checker.inputs["Color2"].default_value = color_b
+
+                links.new(tex_coord.outputs["Object"], mapping.inputs["Vector"])
+                links.new(mapping.outputs["Vector"], checker.inputs["Vector"])
+                links.new(checker.outputs["Color"], bc_in)
+    return mat
+
+
 def _material_for_asset_zone(  # pragma: no cover
     base_material: bpy.types.Material,
     asset_id: str,
@@ -723,6 +805,24 @@ def apply_zone_texture_pattern_overrides(
                 density=density,
                 zone_hex_fallback=zone_hex,
                 instance_suffix=f"{zone}_tex_spot",
+            )
+        elif mode == "checkerboard":
+            base_palette_name = _palette_base_name_from_material(mat)
+            zf = feat_dict.get(zone)
+            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
+            color_a = str(build_options.get(f"feat_{zone}_texture_spot_color", "") or "")
+            color_b = str(build_options.get(f"feat_{zone}_texture_spot_bg_color", "") or "")
+            density = float(build_options.get(f"feat_{zone}_texture_spot_density", 1.0) or 1.0)
+            density = max(0.1, min(5.0, density))
+            out[zone] = _material_for_checkerboard_zone(
+                base_palette_name=base_palette_name,
+                finish=finish,
+                color_a_hex=color_a,
+                color_b_hex=color_b,
+                density=density,
+                zone_hex_fallback=zone_hex,
+                instance_suffix=f"{zone}_tex_checker",
             )
         elif mode == "stripes":
             from .material_stripes_zone import material_for_stripes_zone

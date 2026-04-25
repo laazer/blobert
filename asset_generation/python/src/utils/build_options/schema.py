@@ -1054,7 +1054,14 @@ _TAIL_LENGTH_DEFAULT = 1.0
 # client-side-only upload mode (blob URL via URL.createObjectURL) and is NOT a
 # valid Blender build option. The frontend injects "custom" into the texture_mode
 # selector without modifying this tuple. See ticket M25-03.
-_TEXTURE_MODE_OPTIONS: tuple[str, ...] = ("none", "gradient", "spots", "stripes", "assets")
+_TEXTURE_MODE_OPTIONS: tuple[str, ...] = (
+    "none",
+    "gradient",
+    "spots",
+    "checkerboard",
+    "stripes",
+    "assets",
+)
 _GRAD_DIRECTION_OPTIONS: tuple[str, ...] = ("horizontal", "vertical", "radial")
 
 _TEXTURE_SPOT_DENSITY_MIN = 0.1

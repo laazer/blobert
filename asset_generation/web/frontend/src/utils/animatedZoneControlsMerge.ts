@@ -55,7 +55,7 @@ export function syntheticZoneTextureDefs(zone: string): AnimatedBuildControlDef[
       key: `${p}mode`,
       label: `${zlabel} — texture mode`,
       type: "select_str",
-      options: ["none", "gradient", "spots", "stripes", "assets"],
+      options: ["none", "gradient", "spots", "checkerboard", "stripes", "assets"],
       default: "none",
     },
     { key: `${p}grad_color_a`, label: `${zlabel} — gradient color A`, type: "str", default: "" },

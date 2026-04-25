@@ -55,7 +55,9 @@ def bake_procedural_stripes_for_export(
         if mat is None:
             continue
         try:
-            if bool(mat.get("blobert_stripe_procedural", False)):
+            if bool(mat.get("blobert_stripe_procedural", False)) or bool(
+                mat.get("blobert_checker_procedural", False)
+            ):
                 stripe_materials.append(mat)
         except Exception:
             continue

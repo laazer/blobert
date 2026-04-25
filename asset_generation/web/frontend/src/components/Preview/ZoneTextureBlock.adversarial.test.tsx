@@ -24,13 +24,14 @@ function gradientDirectionFromStore(raw: unknown): "horizontal" | "vertical" | "
 function normalizedTextureMode(
   zone: string,
   values: Readonly<Record<string, unknown>>,
-): "none" | "gradient" | "spots" | "stripes" | "assets" {
+): "none" | "gradient" | "spots" | "checkerboard" | "stripes" | "assets" {
   const modeKey = `feat_${zone}_texture_mode`;
   const rawMode = values[modeKey];
   const textureMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
   if (
     textureMode === "gradient" ||
     textureMode === "spots" ||
+    textureMode === "checkerboard" ||
     textureMode === "stripes" ||
     textureMode === "assets" ||
     textureMode === "none"
@@ -50,7 +51,7 @@ function shouldShowTextureParam(
   if (defKey === modeKey) return true;
   const mode = normalizedTextureMode(zone, values);
   if (defKey.includes("_texture_grad_")) return mode === "gradient";
-  if (defKey.includes("_texture_spot_")) return mode === "spots";
+  if (defKey.includes("_texture_spot_")) return mode === "spots" || mode === "checkerboard";
   if (defKey.includes("_texture_stripe_")) return mode === "stripes";
   if (defKey.includes("_texture_asset_")) return mode === "assets";
   return false;
