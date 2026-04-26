@@ -117,20 +117,96 @@ export function normalizedTextureMode(
   return "none";
 }
 
-/** Whether a ``feat_*_texture_*`` param applies to the current mode (non-mode keys only). */
+/** Normalize color mode (single | gradient). Falls back to old texture_mode="gradient" for backward compat. */
+export function normalizedColorMode(
+  zone: string,
+  values: Readonly<Record<string, unknown>>,
+): "single" | "gradient" {
+  const colorModeKey = `feat_${zone}_color_mode`;
+  const raw = values[colorModeKey];
+  if (typeof raw === "string" && (raw === "single" || raw === "gradient")) {
+    return raw;
+  }
+  // Fallback: if old texture_mode is "gradient" and color_mode not set, treat as gradient
+  const textureMode = normalizedTextureMode(zone, values);
+  return textureMode === "gradient" ? "gradient" : "single";
+}
+
+/**
+ * When switching ``color_mode``, preserve color values across transitions (single ↔ gradient).
+ * Ensures users do not lose work when toggling between single color and gradient modes.
+ */
+export function carryColorPaletteOnModeChange(
+  zone: string,
+  prevMode: "single" | "gradient",
+  nextMode: "single" | "gradient",
+  values: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  if (prevMode === nextMode) return {};
+  const p = `feat_${zone}_color_`;
+  const g = (k: string) => values[k];
+  const out: Record<string, unknown> = {};
+
+  // When switching to single, preserve a hex value (prefer _a if present, else fallback)
+  if (nextMode === "single") {
+    const existingHex = g(`${p}hex`);
+    if (!existingHex || (typeof existingHex === "string" && existingHex.trim() === "")) {
+      // Fallback: prefer new color_a, then old texture_grad_color_a, then default red
+      const fallback =
+        (typeof g(`${p}a`) === "string" ? g(`${p}a`) : undefined) ||
+        (typeof g(`feat_${zone}_texture_grad_color_a`) === "string" ? g(`feat_${zone}_texture_grad_color_a`) : undefined) ||
+        "ff0000";
+      out[`${p}hex`] = fallback;
+    }
+  }
+  // When switching to gradient, preserve color values (or use defaults)
+  else if (nextMode === "gradient") {
+    const existingA = g(`${p}a`);
+    const existingB = g(`${p}b`);
+    const fallbackHex = (typeof g(`${p}hex`) === "string" ? g(`${p}hex`) : undefined) || "ff0000";
+    if (!existingA || (typeof existingA === "string" && existingA.trim() === "")) {
+      out[`${p}a`] = fallbackHex;
+    }
+    if (!existingB || (typeof existingB === "string" && existingB.trim() === "")) {
+      out[`${p}b`] = "0000ff";
+    }
+  }
+  return out;
+}
+
+/** Whether a ``feat_*_*`` param applies to the current modes (color_mode and texture_mode). */
 function shouldShowTextureParam(
   zone: string,
   defKey: string | null | undefined,
   values: Readonly<Record<string, unknown>>,
 ): boolean {
   if (!defKey) return false;
-  const modeKey = `feat_${zone}_texture_mode`;
-  if (defKey === modeKey) return true;
-  const mode = normalizedTextureMode(zone, values);
-  if (defKey.includes("_texture_grad_")) return mode === "gradient";
-  if (defKey.includes("_texture_spot_")) return mode === "spots" || mode === "checkerboard";
-  if (defKey.includes("_texture_stripe_")) return mode === "stripes";
-  if (defKey.includes("_texture_asset_")) return mode === "assets";
+
+  // Color mode controls (new)
+  const colorModeKey = `feat_${zone}_color_mode`;
+  if (defKey === colorModeKey) return true;
+  const colorMode = normalizedColorMode(zone, values);
+  if (defKey.includes("_color_")) {
+    // Show single color hex only when color_mode is "single"
+    if (defKey === `feat_${zone}_color_hex`) return colorMode === "single";
+    // Show gradient colors and direction only when color_mode is "gradient"
+    if (
+      defKey.includes("_color_a") ||
+      defKey.includes("_color_b") ||
+      defKey.includes("_color_direction")
+    ) {
+      return colorMode === "gradient";
+    }
+  }
+
+  // Texture mode controls (existing)
+  const textureMode = normalizedTextureMode(zone, values);
+  const textureModeKey = `feat_${zone}_texture_mode`;
+  if (defKey === textureModeKey) return true;
+  if (defKey.includes("_texture_grad_")) return textureMode === "gradient";
+  if (defKey.includes("_texture_spot_")) return textureMode === "spots" || textureMode === "checkerboard";
+  if (defKey.includes("_texture_stripe_")) return textureMode === "stripes";
+  if (defKey.includes("_texture_asset_")) return textureMode === "assets";
   return false;
 }
 
@@ -163,41 +239,60 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
   if (defs.length === 0 && finishHexDefs.length === 0) return null;
 
   const values = animatedBuildOptionValues[slug] ?? {};
-  const modeKey = `feat_${zone}_texture_mode`;
+
+  // Color mode (NEW independent selector)
+  const colorModeKey = `feat_${zone}_color_mode`;
+  const colorHexKey = `feat_${zone}_color_hex`;
+  const colorAKey = `feat_${zone}_color_a`;
+  const colorBKey = `feat_${zone}_color_b`;
+  const colorDirKey = `feat_${zone}_color_direction`;
+  const colorMode = normalizedColorMode(zone, values);
+
+  // Texture mode (pattern overlay)
+  const textureModeKey = `feat_${zone}_texture_mode`;
+  const textureMode = normalizedTextureMode(zone, values);
+
+  // Base finish/hex controls
   const finishKey = `feat_${zone}_finish`;
   const hexKey = `feat_${zone}_hex`;
-  const mode = normalizedTextureMode(zone, values);
 
-  const modeDef = defs.find((d) => d.key === modeKey);
-  const nonFloat = defs.filter((d) => d.type !== "float" && d.key !== modeKey);
+  // Construct color picker value based on current color_mode
+  const colorPickerValue: ColorPickerValue =
+    colorMode === "gradient"
+      ? {
+          type: "gradient",
+          colorA: typeof values[colorAKey] === "string" ? values[colorAKey] : "",
+          colorB: typeof values[colorBKey] === "string" ? values[colorBKey] : "",
+          direction: gradientDirectionFromStore(values[colorDirKey]),
+        }
+      : {
+          type: "single",
+          color: typeof values[colorHexKey] === "string" ? values[colorHexKey] : "",
+        };
+
+  const modeDef = defs.find((d) => d.key === textureModeKey);
+  const nonFloat = defs.filter((d) => d.type !== "float" && d.key !== textureModeKey && d.key !== colorModeKey);
   const visibleNonFloat = nonFloat.filter((d) => shouldShowTextureParam(zone, d.key, values));
 
+  // Old gradient bundle keys (for backward compat filtering)
   const gradColorAKey = `feat_${zone}_texture_grad_color_a`;
   const gradColorBKey = `feat_${zone}_texture_grad_color_b`;
   const gradDirKey = `feat_${zone}_texture_grad_direction`;
   const isGradientBundleKey = (k: string) =>
     k === gradColorAKey || k === gradColorBKey || k === gradDirKey;
 
+  // Filter out old gradient keys from visible rows (they're now in color picker)
   const visibleNonFloatRows =
-    mode === "gradient"
+    textureMode === "gradient"
       ? visibleNonFloat.filter((d) => !isGradientBundleKey(d.key))
       : visibleNonFloat;
-
-  const gradientPickerValue: ColorPickerValue | null =
-    mode === "gradient"
-      ? {
-          type: "gradient",
-          colorA: typeof values[gradColorAKey] === "string" ? values[gradColorAKey] : "",
-          colorB: typeof values[gradColorBKey] === "string" ? values[gradColorBKey] : "",
-          direction: gradientDirectionFromStore(values[gradDirKey]),
-        }
-      : null;
 
   const finishDefsOrdered = finishHexDefs.filter((d) => d.key === finishKey);
   const hexDefsOrdered = finishHexDefs.filter((d) => d.key === hexKey);
   const orphanFinishHex = finishHexDefs.filter((d) => d.key !== finishKey && d.key !== hexKey);
 
-  const showBaseHex = mode === "none";
+  // Show base hex only when texture_mode is "none" (no pattern overlay)
+  const showBaseHex = textureMode === "none";
 
   const textureFloats = defs.filter((d) => d.type === "float");
   const textureFloatsVisible = textureFloats.filter((d) => shouldShowTextureParam(zone, d.key, values));
@@ -236,53 +331,66 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       }}
     >
       <span style={sectionTitle}>
-        Surface &amp; pattern — {partTitle}
+        Surface &amp; color — {partTitle}
       </span>
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Choose <strong style={{ color: "#bbb" }}>texture mode</strong> first. With <strong style={{ color: "#bbb" }}>no pattern</strong>, set
-        finish and base hex; with a pattern mode, set that mode&apos;s colors. Values apply when you regenerate the asset.
+        Choose <strong style={{ color: "#bbb" }}>color mode</strong> first (single or gradient). Then optionally add a <strong style={{ color: "#bbb" }}>pattern</strong> overlay.
+        Both are independent. Values apply when you regenerate the asset.
       </p>
+
+      {/* Color picker (independent, always visible) */}
+      <ColorPickerUniversal
+        mode={colorPickerValue.type}
+        value={colorPickerValue}
+        onModeChange={(newColorMode) => {
+          // Handle color mode transition (single ↔ gradient)
+          const carry = carryColorPaletteOnModeChange(zone, colorMode, newColorMode as "single" | "gradient", values);
+          setAnimatedBuildOption(slug, colorModeKey, newColorMode);
+          if (Object.keys(carry).length > 0) {
+            applyAnimatedBuildOptionsForSlug(slug, carry);
+          }
+        }}
+        onChange={(v) => {
+          // Handle color value changes within current mode
+          if (v.type === "single") {
+            setAnimatedBuildOption(slug, colorHexKey, v.color);
+          } else if (v.type === "gradient") {
+            setAnimatedBuildOption(slug, colorAKey, v.colorA);
+            setAnimatedBuildOption(slug, colorBKey, v.colorB);
+            setAnimatedBuildOption(slug, colorDirKey, v.direction);
+          }
+          // Image mode not currently used in texture controls
+        }}
+      />
+
+      {/* Texture mode selector (independent) */}
       {modeSelectDef ? (
         <ControlRow
-          key={modeKey}
+          key={textureModeKey}
           def={modeSelectDef}
-          value={values[modeKey]}
+          value={values[textureModeKey]}
           onChange={(v: number | string | boolean) => {
             if (typeof v !== "string") {
-              setAnimatedBuildOption(slug, modeKey, v);
+              setAnimatedBuildOption(slug, textureModeKey, v);
               return;
             }
-            const nextMode = normalizedTextureMode(zone, { ...values, [modeKey]: v });
-            const carry = carryTexturePaletteOnModeChange(zone, mode, nextMode, values);
+            const nextMode = normalizedTextureMode(zone, { ...values, [textureModeKey]: v });
+            const carry = carryTexturePaletteOnModeChange(zone, textureMode, nextMode, values);
             if (Object.keys(carry).length === 0) {
-              setAnimatedBuildOption(slug, modeKey, v);
+              setAnimatedBuildOption(slug, textureModeKey, v);
             } else {
-              applyAnimatedBuildOptionsForSlug(slug, { [modeKey]: v, ...carry });
+              applyAnimatedBuildOptionsForSlug(slug, { [textureModeKey]: v, ...carry });
             }
           }}
         />
       ) : null}
+
       {finishDefsOrdered.map(row)}
       {showBaseHex ? (
         <>
           {hexDefsOrdered.map(row)}
           {orphanFinishHex.map(row)}
         </>
-      ) : null}
-      {gradientPickerValue ? (
-        <ColorPickerUniversal
-          lockMode="gradient"
-          mode="gradient"
-          label={`Gradient — ${partTitle}`}
-          value={gradientPickerValue}
-          onModeChange={() => {}}
-          onChange={(v) => {
-            if (v.type !== "gradient") return;
-            setAnimatedBuildOption(slug, gradColorAKey, v.colorA);
-            setAnimatedBuildOption(slug, gradColorBKey, v.colorB);
-            setAnimatedBuildOption(slug, gradDirKey, v.direction);
-          }}
-        />
       ) : null}
       {visibleNonFloatRows.map((def) => (
         <ControlRow
@@ -292,7 +400,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
           onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
         />
       ))}
-      {mode === "assets" && (
+      {textureMode === "assets" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div>
             <label style={{ display: "block", fontSize: 11, color: "#9d9d9d", marginBottom: 4 }}>

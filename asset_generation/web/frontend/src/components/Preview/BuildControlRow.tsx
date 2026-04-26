@@ -246,6 +246,7 @@ export function ControlRow({
   if (def.type === "str") {
     if (
       def.key.endsWith("_hex") ||
+      def.key.endsWith("_color_hex") ||
       (def.key.includes("_texture_") && def.key.includes("color"))
     ) {
       return <HexStrControlRow def={def} value={value} onChange={onChange} />;
