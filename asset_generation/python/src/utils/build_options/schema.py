@@ -796,6 +796,31 @@ def _feature_control_defs(slug: str) -> list[dict[str, Any]]:
         label = zone.replace("_", " ").title()
         defs.append(
             {
+                "key": f"feat_{zone}_color_mode",
+                "label": f"{label} color mode",
+                "type": "select_str",
+                "options": list(_COLOR_MODE_OPTIONS),
+                "default": "single",
+            }
+        )
+        defs.append(
+            {
+                "key": f"feat_{zone}_color_image_id",
+                "label": f"{label} image texture ID",
+                "type": "str",
+                "default": "",
+            }
+        )
+        defs.append(
+            {
+                "key": f"feat_{zone}_color_image_preview",
+                "label": f"{label} image preview",
+                "type": "str",
+                "default": "",
+            }
+        )
+        defs.append(
+            {
                 "key": f"feat_{zone}_finish",
                 "label": f"{label} finish",
                 "type": "select_str",
@@ -886,6 +911,8 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     if slug in _ANIMATED_ENEMY_SLUGS:
         for c in _rig_rotation_control_defs():
             out[c["key"]] = c.get("default")
+    for c in _feature_control_defs(slug):
+        out[c["key"]] = c.get("default")
     for c in _zone_texture_control_defs(slug):
         out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)
@@ -1105,6 +1132,7 @@ _TEXTURE_MODE_OPTIONS: tuple[str, ...] = (
     "stripes",
     "assets",
 )
+_COLOR_MODE_OPTIONS: tuple[str, ...] = ("single", "gradient", "image")
 _GRAD_DIRECTION_OPTIONS: tuple[str, ...] = ("horizontal", "vertical", "radial")
 
 _TEXTURE_SPOT_DENSITY_MIN = 0.1
