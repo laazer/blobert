@@ -6,21 +6,22 @@ export interface GradientModeProps {
   colorA: string; // 6-char hex without #
   colorB: string; // 6-char hex without #
   direction: GradientDirection;
-  onColorAChange: (color: string) => void;
-  onColorBChange: (color: string) => void;
-  onDirectionChange: (direction: GradientDirection) => void;
+  onChange?: (colorA: string, colorB: string, direction: GradientDirection) => void;
+  onColorAChange?: (color: string) => void;
+  onColorBChange?: (color: string) => void;
+  onDirectionChange?: (direction: GradientDirection) => void;
   disabled?: boolean;
 }
 
 /**
- * Gradient color picker mode.
- * Provides two hex input fields for color A and B, plus direction selector.
- * Emits individual changes for each field.
+ * Gradient color picker mode with two color circles and direction selector.
+ * Supports both individual callbacks and unified onChange for flexibility.
  */
 export function GradientMode({
   colorA,
   colorB,
   direction,
+  onChange,
   onColorAChange,
   onColorBChange,
   onDirectionChange,
@@ -34,11 +35,26 @@ export function GradientMode({
     }
   };
 
+  const handleColorAChange = (color: string) => {
+    onColorAChange?.(color);
+    if (onChange) onChange(color, colorB, direction);
+  };
+
+  const handleColorBChange = (color: string) => {
+    onColorBChange?.(color);
+    if (onChange) onChange(colorA, color, direction);
+  };
+
+  const handleDirectionChange = (dir: GradientDirection) => {
+    onDirectionChange?.(dir);
+    if (onChange) onChange(colorA, colorB, dir);
+  };
+
   return (
     <div style={colorPickerStyles.modeContent}>
       <HexInput
         value={colorA}
-        onChange={onColorAChange}
+        onChange={handleColorAChange}
         disabled={disabled}
         label="From Color"
         onCopyClick={handleCopyClick}
@@ -46,7 +62,7 @@ export function GradientMode({
 
       <HexInput
         value={colorB}
-        onChange={onColorBChange}
+        onChange={handleColorBChange}
         disabled={disabled}
         label="To Color"
         onCopyClick={handleCopyClick}
@@ -54,7 +70,7 @@ export function GradientMode({
 
       <DirectionSelector
         direction={direction}
-        onChange={onDirectionChange}
+        onChange={handleDirectionChange}
         disabled={disabled}
       />
     </div>
