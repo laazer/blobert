@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { colorPickerStyles } from "../colorPickerStyles";
+import { fetchTextureAssets, assetUrl, type TextureAsset } from "../../../api/client";
 
 export interface ImageModeProps {
   file: File | null;
@@ -13,8 +14,8 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 /**
  * Image texture picker mode.
- * Provides file input for uploading custom image textures.
- * Generates preview URL and emits file + preview on selection.
+ * Provides both preloaded texture selection and custom file upload.
+ * Users can select from available textures or upload custom image textures.
  */
 export function ImageMode({
   file,
@@ -23,6 +24,22 @@ export function ImageMode({
   disabled = false,
 }: ImageModeProps) {
   const [error, setError] = useState<string>("");
+  const [textures, setTextures] = useState<TextureAsset[]>([]);
+  const [loadingTextures, setLoadingTextures] = useState(true);
+
+  // Fetch available textures on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const assets = await fetchTextureAssets();
+        setTextures(assets);
+      } catch (err) {
+        console.error("Failed to load texture assets:", err);
+      } finally {
+        setLoadingTextures(false);
+      }
+    })();
+  }, []);
 
   // Clean up preview URL on unmount
   useEffect(() => {
@@ -62,73 +79,129 @@ export function ImageMode({
     onFileChange(null);
   };
 
+  const handleSelectTexture = (texture: TextureAsset) => {
+    setError("");
+    // Create a preview URL for the texture
+    const texturePreviewUrl = assetUrl(texture.filename);
+    // Use null file since this is a preloaded texture, not a user upload
+    onFileChange(null, texturePreviewUrl);
+  };
+
   const fileName = file?.name || "No file selected";
 
   return (
     <div style={colorPickerStyles.modeContent}>
-      <div style={colorPickerStyles.fileInputLabel}>Texture Image</div>
-
-      <div style={colorPickerStyles.fileInputWrapper}>
-        <input
-          type="file"
-          aria-label="Upload texture image"
-          accept={ALLOWED_TYPES.join(",")}
-          onChange={handleFileSelect}
-          disabled={disabled}
-          style={{
-            ...colorPickerStyles.fileInput,
-            opacity: disabled ? 0.5 : 1,
-            cursor: disabled ? "not-allowed" : "pointer",
-          }}
-        />
-      </div>
-
-      {/* File name and info */}
-      <div style={colorPickerStyles.previewText}>{fileName}</div>
-
-      {/* Error message */}
-      {error && (
-        <div
-          style={{
-            ...colorPickerStyles.previewText,
-            color: "#f48771",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Image preview */}
-      {preview && (
-        <div style={colorPickerStyles.previewContainer}>
-          <img src={preview} alt="Preview" style={colorPickerStyles.previewImage} />
-          <div style={colorPickerStyles.previewText}>
-            {file?.size && file.size > 0
-              ? `${(file.size / 1024).toFixed(1)} KB`
-              : ""}
-          </div>
-          <button
-            onClick={handleClear}
-            disabled={disabled}
+      {/* Preloaded Textures Section */}
+      {!loadingTextures && textures.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+          <div style={colorPickerStyles.fileInputLabel}>Preloaded Textures</div>
+          <div
             style={{
-              background: "#3c3c3c",
-              color: "#d4d4d4",
-              border: "1px solid #555555",
-              borderRadius: 3,
-              padding: "4px 8px",
-              fontSize: 11,
-              cursor: disabled ? "not-allowed" : "pointer",
-              opacity: disabled ? 0.5 : 1,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))",
+              gap: 4,
             }}
           >
-            Clear
-          </button>
+            {textures.map((texture) => (
+              <button
+                key={texture.id}
+                onClick={() => handleSelectTexture(texture)}
+                disabled={disabled}
+                title={texture.display_name}
+                style={{
+                  background: preview === assetUrl(texture.filename) ? "#0e639c" : "#3c3c3c",
+                  border: "1px solid #555555",
+                  borderRadius: 3,
+                  padding: 0,
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                  height: 60,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                <img
+                  src={assetUrl(texture.filename)}
+                  alt={texture.display_name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    pointerEvents: "none",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Info text */}
-      <div style={colorPickerStyles.previewText}>
-        Supported: PNG, JPEG, WebP (max 5 MB)
+      {/* Custom Upload Section */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={colorPickerStyles.fileInputLabel}>Upload Custom</div>
+
+        <div style={colorPickerStyles.fileInputWrapper}>
+          <input
+            type="file"
+            aria-label="Upload texture image"
+            accept={ALLOWED_TYPES.join(",")}
+            onChange={handleFileSelect}
+            disabled={disabled}
+            style={{
+              ...colorPickerStyles.fileInput,
+              opacity: disabled ? 0.5 : 1,
+              cursor: disabled ? "not-allowed" : "pointer",
+            }}
+          />
+        </div>
+
+        {/* File name and info */}
+        <div style={colorPickerStyles.previewText}>{fileName}</div>
+
+        {/* Error message */}
+        {error && (
+          <div
+            style={{
+              ...colorPickerStyles.previewText,
+              color: "#f48771",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Image preview */}
+        {preview && (
+          <div style={colorPickerStyles.previewContainer}>
+            <img src={preview} alt="Preview" style={colorPickerStyles.previewImage} />
+            <div style={colorPickerStyles.previewText}>
+              {file?.size && file.size > 0
+                ? `${(file.size / 1024).toFixed(1)} KB`
+                : ""}
+            </div>
+            <button
+              onClick={handleClear}
+              disabled={disabled}
+              style={{
+                background: "#3c3c3c",
+                color: "#d4d4d4",
+                border: "1px solid #555555",
+                borderRadius: 3,
+                padding: "4px 8px",
+                fontSize: 11,
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.5 : 1,
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {/* Info text */}
+        <div style={colorPickerStyles.previewText}>
+          Supported: PNG, JPEG, WebP (max 5 MB)
+        </div>
       </div>
     </div>
   );
