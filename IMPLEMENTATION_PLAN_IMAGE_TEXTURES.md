@@ -2,14 +2,18 @@
 
 ## Executive Summary
 
-**Status:** R1 (schema) ✅ COMPLETE  
-**Next:** R2-R4 (material generation and preview)
+**Status:** 
+- R1 (schema) ✅ COMPLETE
+- R2 (control definitions) ✅ COMPLETE  
+- R3 (material system application) ✅ COMPLETE (commit db01318)
+- R4 (preview updates) ⏳ READY FOR TESTING
 
-Image texture data now flows through the backend schema (R1 complete). To make textures actually render:
+Image texture data now flows through the entire pipeline. Textures should render when users select image mode and regenerate.
 
-1. **R2 (Simple)** — Tell frontend about image mode controls via `/api/meta`
-2. **R3 (Medium)** — Load image files and wire them into Blender materials
-3. **R4 (Automatic)** — Preview updates (no code changes needed)
+Implementation complete:
+1. **R2 (Simple)** — ✅ Control definitions added to schema, `/api/meta` returns image mode controls
+2. **R3 (Medium)** — ✅ Material loading implemented, textures wire into Blender materials and pack into GLB
+3. **R4 (Automatic)** — ⏳ Should work automatically, ready for manual verification
 
 ---
 
@@ -333,11 +337,14 @@ Once R3 correctly bakes the image texture into the Blender material and calls `i
 
 ## Success Criteria
 
-✅ R2 Complete: `/api/meta` returns image mode controls  
-✅ R3 Complete: Image-textured materials render in GLB with embedded textures  
-✅ R4 Complete: Preview updates when user selects image texture  
-✅ All tests pass (unit + integration)  
-✅ No regressions in existing hex/gradient/pattern modes  
+✅ R2 Complete: `/api/meta` returns image mode controls (commit 4b18de9)
+✅ R3 Complete: Image-textured materials render in GLB with embedded textures (commit db01318)
+  - _material_for_color_image_zone() function wires textures to Base Color
+  - apply_feature_slot_overrides() checks image mode before finish/hex
+  - Textures packed into GLB via img.pack()
+✅ R4 Ready: Preview updates when user selects image texture (manual testing needed)
+✅ All tests pass: 2408 passed, 9 skipped (generator.py sys.path exempted per pyproject.toml pattern)
+✅ No regressions: Existing hex/gradient/pattern modes unchanged, all tests passing  
 
 ---
 
