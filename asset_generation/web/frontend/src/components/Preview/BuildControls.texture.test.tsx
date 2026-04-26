@@ -549,7 +549,7 @@ describe("BuildControls texture — texture_mode select renders pattern modes", 
     });
     render(<TextureControlsSection slug="slug" />);
 
-    // The label "Texture mode" must be in the DOM.
+    // The label "Pattern Setting" must be in the DOM (renamed from "Texture mode").
     expect(screen.getByText("Pattern Setting")).toBeInTheDocument();
 
     // Try to locate the select by its label.
@@ -557,10 +557,13 @@ describe("BuildControls texture — texture_mode select renders pattern modes", 
     if (select) {
       const optionValues = Array.from(select.options).map((o) => o.value);
       expect(optionValues).toContain("none");
-      expect(optionValues).toContain("gradient");
       expect(optionValues).toContain("spots");
       expect(optionValues).toContain("stripes");
+      // Gradient is now a color mode, not a texture mode, so it should NOT appear here
+      expect(optionValues).not.toContain("gradient");
+      // Custom and assets are also filtered out
       expect(optionValues).not.toContain("custom");
+      expect(optionValues).not.toContain("assets");
     }
     expect(screen.getByRole("combobox", { name: "Pattern Setting" })).toBeInTheDocument();
   });

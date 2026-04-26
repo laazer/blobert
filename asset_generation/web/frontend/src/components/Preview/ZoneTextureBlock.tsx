@@ -465,7 +465,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
 
   const modeSelectDef: AnimatedBuildControlDef | undefined =
     modeDef && modeDef.type === "select_str"
-      ? { ...modeDef, label: "Pattern Setting", options: modeDef.options.filter((o) => o !== "custom") }
+      ? { ...modeDef, label: "Pattern Setting", options: modeDef.options.filter((o) => !["custom", "gradient", "assets"].includes(o)) }
       : modeDef;
 
   const partTitle = zonePartDisplayName(zone);
