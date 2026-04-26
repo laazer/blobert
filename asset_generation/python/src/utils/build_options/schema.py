@@ -911,8 +911,6 @@ def _defaults_for_slug(slug: str) -> dict[str, Any]:
     if slug in _ANIMATED_ENEMY_SLUGS:
         for c in _rig_rotation_control_defs():
             out[c["key"]] = c.get("default")
-    for c in _feature_control_defs(slug):
-        out[c["key"]] = c.get("default")
     for c in _zone_texture_control_defs(slug):
         out[c["key"]] = c.get("default")
     mesh = _mesh_numeric_defaults(slug)

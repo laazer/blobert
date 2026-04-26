@@ -293,6 +293,47 @@ def _palette_base_name_from_material(mat) -> str:
     return name
 
 
+def _material_for_color_image_zone(
+    base_material: bpy.types.Material,
+    asset_id: str,
+    instance_suffix: str = "color_img",
+) -> bpy.types.Material:
+    """Create a material with preloaded texture as the base color."""
+    from ..utils.texture_asset_loader import get_texture_asset_filepath
+
+    mat = base_material.copy()
+    mat.name = f"{base_material.name}_{instance_suffix}"
+    if not mat.use_nodes:
+        mat.use_nodes = True
+
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    principled = None
+    for node in nodes:
+        if node.type == "BSDF" and isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
+            principled = node
+            break
+    if not principled:
+        return mat
+
+    try:
+        asset_path = get_texture_asset_filepath(asset_id)
+        image = bpy.data.images.load(str(asset_path))
+        image.pack()
+
+        # Create UV and TexImage nodes
+        coord_node = nodes.new(type="ShaderNodeTexCoord")
+        tex_node = nodes.new(type="ShaderNodeTexImage")
+        tex_node.image = image
+
+        # Wire: UV → TexImage Color → Base Color
+        links.new(coord_node.outputs["UV"], tex_node.inputs["Vector"])
+        links.new(tex_node.outputs["Color"], principled.inputs["Base Color"])
+    except (ValueError, IOError, Exception) as error:
+        print(f"Warning: failed to load color image texture {asset_id}: {error}")
+    return mat
+
+
 def _material_for_finish_hex(
     *,
     base_palette_name: str,
@@ -353,6 +394,20 @@ def apply_feature_slot_overrides(
         slot_feat = features.get(slot_key)
         if not isinstance(slot_feat, dict):
             continue
+
+        # Check for image mode first (priority over hex/finish)
+        color_image = slot_feat.get("color_image")
+        if isinstance(color_image, dict) and color_image.get("mode") == "image":
+            asset_id = (color_image.get("id") or "").strip()
+            if asset_id:
+                out[slot_key] = _material_for_color_image_zone(
+                    base_material=mat,
+                    asset_id=asset_id,
+                    instance_suffix=f"{slot_key}_color_img",
+                )
+                continue  # Skip hex/finish branch for this zone
+
+        # Existing hex/finish handling
         finish = slot_feat.get("finish") or "default"
         hex_str = (slot_feat.get("hex") or "").strip()
         if finish == "default" and not hex_str:
