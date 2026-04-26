@@ -169,6 +169,69 @@ export function carryColorPaletteOnModeChange(
   return out;
 }
 
+/**
+ * For a pattern color field (e.g., "spot_color"), return its current mode (single | gradient | image).
+ * Falls back to "single" for old data with just one key.
+ */
+export function normalizedPatternColorMode(
+  zone: string,
+  colorField: string,
+  values: Readonly<Record<string, unknown>>,
+): "single" | "gradient" | "image" {
+  const modeKey = `feat_${zone}_texture_${colorField}_mode`;
+  const raw = values[modeKey];
+  if (typeof raw === "string" && (raw === "single" || raw === "gradient" || raw === "image")) {
+    return raw;
+  }
+  // Old data: if only the base key exists, default to single mode
+  return "single";
+}
+
+/**
+ * For a pattern color field, carry palette values when switching modes.
+ * Similar to carryColorPaletteOnModeChange but for pattern colors.
+ */
+export function carryPatternColorPaletteOnModeChange(
+  zone: string,
+  colorField: string,
+  prevMode: "single" | "gradient" | "image",
+  nextMode: "single" | "gradient" | "image",
+  values: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  if (prevMode === nextMode) return {};
+  const p = `feat_${zone}_texture_${colorField}_`;
+  const g = (k: string) => values[k];
+  const out: Record<string, unknown> = {};
+
+  // When switching to single, preserve hex from gradient or existing single
+  if (nextMode === "single") {
+    const existingHex = g(`${p}hex`);
+    if (!existingHex || (typeof existingHex === "string" && existingHex.trim() === "")) {
+      // Fallback: prefer new color_a, then old single-key value, then default red
+      const fallback =
+        (typeof g(`${p}a`) === "string" ? g(`${p}a`) : undefined) ||
+        (typeof g(`feat_${zone}_texture_${colorField}`) === "string" ? g(`feat_${zone}_texture_${colorField}`) : undefined) ||
+        "ff0000";
+      out[`${p}hex`] = fallback;
+    }
+  }
+  // When switching to gradient, preserve or initialize gradient colors
+  else if (nextMode === "gradient") {
+    const existingA = g(`${p}a`);
+    const existingB = g(`${p}b`);
+    const fallbackHex = (typeof g(`${p}hex`) === "string" ? g(`${p}hex`) : undefined) ||
+      (typeof g(`feat_${zone}_texture_${colorField}`) === "string" ? g(`feat_${zone}_texture_${colorField}`) : undefined) ||
+      "ff0000";
+    if (!existingA || (typeof existingA === "string" && existingA.trim() === "")) {
+      out[`${p}a`] = fallbackHex;
+    }
+    if (!existingB || (typeof existingB === "string" && existingB.trim() === "")) {
+      out[`${p}b`] = "0000ff";
+    }
+  }
+  return out;
+}
+
 /** Whether a ``feat_*_*`` param applies to the current modes (color_mode and texture_mode). */
 function shouldShowTextureParam(
   zone: string,
@@ -198,8 +261,36 @@ function shouldShowTextureParam(
   const textureMode = normalizedTextureMode(zone, values);
   const textureModeKey = `feat_${zone}_texture_mode`;
   if (defKey === textureModeKey) return true;
-  if (defKey.includes("_texture_spot_")) return textureMode === "spots" || textureMode === "checkerboard";
-  if (defKey.includes("_texture_stripe_")) return textureMode === "stripes";
+
+  // Pattern color mode selectors (spot_color_mode, stripe_color_mode, etc.)
+  if (defKey.includes("_texture_") && defKey.endsWith("_mode")) {
+    // Show color mode selectors for active patterns
+    if (defKey.includes("_spot_") && (textureMode === "spots" || textureMode === "checkerboard")) return true;
+    if (defKey.includes("_stripe_") && textureMode === "stripes") return true;
+    return false;
+  }
+
+  // Pattern fields (spots and checkerboard share pattern settings)
+  if (defKey.includes("_texture_spot_")) {
+    const showForSpots = textureMode === "spots" || textureMode === "checkerboard";
+    // Color fields will be rendered by renderPatternColorPicker (hide them from generic ControlRow)
+    if ((defKey === `feat_${zone}_texture_spot_color` || defKey === `feat_${zone}_texture_spot_bg_color`) && showForSpots) {
+      return true; // Signal to render, but renderPatternColorPicker will handle it
+    }
+    // Other fields (density, etc.) are rendered generically
+    return showForSpots;
+  }
+
+  if (defKey.includes("_texture_stripe_")) {
+    const showForStripes = textureMode === "stripes";
+    // Color fields will be rendered by renderPatternColorPicker
+    if ((defKey === `feat_${zone}_texture_stripe_color` || defKey === `feat_${zone}_texture_stripe_bg_color`) && showForStripes) {
+      return true;
+    }
+    // Other fields (width, etc.)
+    return showForStripes;
+  }
+
   return false;
 }
 
@@ -287,6 +378,81 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
         (d) => d.key.toLowerCase().includes(tfq) || d.label.toLowerCase().includes(tfq),
       )
     : textureFloatsVisible;
+
+  /**
+   * Helper to render a pattern color field with full 3-mode support (single/gradient/image).
+   * Used for spot_color, spot_bg_color, stripe_color, stripe_bg_color, etc.
+   */
+  const renderPatternColorPicker = (
+    colorFieldName: string, // "spot_color", "stripe_color", etc.
+    label: string,
+  ) => {
+    const colorMode = normalizedPatternColorMode(zone, colorFieldName, values);
+    const modeKey = `feat_${zone}_texture_${colorFieldName}_mode`;
+    const hexKey = `feat_${zone}_texture_${colorFieldName}_hex`;
+    const colorAKey = `feat_${zone}_texture_${colorFieldName}_a`;
+    const colorBKey = `feat_${zone}_texture_${colorFieldName}_b`;
+    const colorDirKey = `feat_${zone}_texture_${colorFieldName}_direction`;
+    const imageIdKey = `feat_${zone}_texture_${colorFieldName}_image_id`;
+    const imagePreviewKey = `feat_${zone}_texture_${colorFieldName}_image_preview`;
+
+    // Build single color fallback (backward compat: check old key format)
+    const singleColor = typeof values[hexKey] === "string" ? values[hexKey] :
+      (typeof values[`feat_${zone}_texture_${colorFieldName}`] === "string" ? (values[`feat_${zone}_texture_${colorFieldName}`] as string) : "");
+
+    const pickerValue: ColorPickerValue =
+      colorMode === "gradient"
+        ? {
+            type: "gradient",
+            colorA: typeof values[colorAKey] === "string" ? values[colorAKey] : "",
+            colorB: typeof values[colorBKey] === "string" ? values[colorBKey] : "",
+            direction: gradientDirectionFromStore(values[colorDirKey]),
+          }
+        : colorMode === "image"
+          ? {
+              type: "image",
+              file: null,
+              preview: typeof values[imagePreviewKey] === "string" ? values[imagePreviewKey] : undefined,
+            }
+          : {
+              type: "single",
+              color: singleColor,
+            };
+
+    return (
+      <div key={modeKey} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <ColorPickerUniversal
+          mode={pickerValue.type}
+          value={pickerValue}
+          label={label}
+          onModeChange={(newColorMode) => {
+            if (newColorMode !== "image" && colorMode !== "image") {
+              const carry = carryPatternColorPaletteOnModeChange(zone, colorFieldName, colorMode as "single" | "gradient", newColorMode as "single" | "gradient", values);
+              setAnimatedBuildOption(slug, modeKey, newColorMode);
+              if (Object.keys(carry).length > 0) {
+                applyAnimatedBuildOptionsForSlug(slug, carry);
+              }
+            } else {
+              setAnimatedBuildOption(slug, modeKey, newColorMode);
+            }
+          }}
+          onChange={(v) => {
+            if (v.type === "single") {
+              setAnimatedBuildOption(slug, hexKey, v.color);
+            } else if (v.type === "gradient") {
+              setAnimatedBuildOption(slug, colorAKey, v.colorA);
+              setAnimatedBuildOption(slug, colorBKey, v.colorB);
+              setAnimatedBuildOption(slug, colorDirKey, v.direction);
+            } else if (v.type === "image") {
+              if (v.preview) {
+                setAnimatedBuildOption(slug, imagePreviewKey, v.preview);
+              }
+            }
+          }}
+        />
+      </div>
+    );
+  };
 
   const row = (def: AnimatedBuildControlDef) => (
     <ControlRow
@@ -388,14 +554,30 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
           {orphanFinishHex.map(row)}
         </>
       ) : null}
-      {visibleNonFloatRows.map((def) => (
-        <ControlRow
-          key={def.key}
-          def={def}
-          value={values[def.key]}
-          onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
-        />
-      ))}
+      {visibleNonFloatRows.map((def) => {
+        // Detect pattern color fields and render with full 3-mode support
+        if (def.key.includes("_texture_spot_color") && !def.key.endsWith("_mode")) {
+          return renderPatternColorPicker("spot_color", def.label);
+        }
+        if (def.key.includes("_texture_spot_bg_color") && !def.key.endsWith("_mode")) {
+          return renderPatternColorPicker("spot_bg_color", def.label);
+        }
+        if (def.key.includes("_texture_stripe_color") && !def.key.endsWith("_mode")) {
+          return renderPatternColorPicker("stripe_color", def.label);
+        }
+        if (def.key.includes("_texture_stripe_bg_color") && !def.key.endsWith("_mode")) {
+          return renderPatternColorPicker("stripe_bg_color", def.label);
+        }
+        // For all other controls (pattern density, width, etc.), use generic ControlRow
+        return (
+          <ControlRow
+            key={def.key}
+            def={def}
+            value={values[def.key]}
+            onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
+          />
+        );
+      })}
       {textureFloatsVisible.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 2, flex: 1, minHeight: 0 }}>
           <div style={sectionHeaderRow}>
