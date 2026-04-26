@@ -1,6 +1,7 @@
 // Three-tab color picker: Color, Gradient, Image
 import { useState } from "react";
 import type { ColorPickerValue } from "./ColorPickerUniversal";
+export type { ColorPickerValue };
 import { SingleColorMode } from "./modes/SingleColorMode";
 import { GradientMode } from "./modes/GradientMode";
 import { ImageMode } from "./modes/ImageMode";
@@ -39,8 +40,8 @@ const tabStyles = {
 } as const;
 
 export interface ColorPickerTabsProps {
-  mode: "color" | "gradient" | "image";
-  onModeChange: (mode: "color" | "gradient" | "image") => void;
+  mode: "single" | "gradient" | "image";
+  onModeChange: (mode: "single" | "gradient" | "image") => void;
   value: ColorPickerValue;
   onChange: (value: ColorPickerValue) => void;
   disabled?: boolean;
@@ -71,21 +72,21 @@ export function ColorPickerTabs({
 
       {/* Tab bar */}
       <div style={tabStyles.tabBar}>
-        {["color", "gradient", "image"].map((tab) => (
+        {["single", "gradient", "image"].map((tab) => (
           <button
             key={tab}
             disabled={disabled}
-            onClick={() => onModeChange(tab as "color" | "gradient" | "image")}
+            onClick={() => onModeChange(tab as "single" | "gradient" | "image")}
             style={tabStyles.tab(mode === tab)}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === "single" ? "Color" : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
 
       {/* Tab content */}
       <div style={tabStyles.content}>
-        {mode === "color" && value.type === "single" && (
+        {mode === "single" && value.type === "single" && (
           <SingleColorMode
             color={value.color}
             onChange={(color) => onChange({ type: "single", color })}

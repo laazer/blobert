@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import type { GradientDirection } from "../ColorPicker/common/DirectionSelector";
-import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
+import { ColorPickerTabs, type ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
 
 const meshFloatScrollWrap = {
@@ -421,7 +421,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
 
     return (
       <div key={modeKey} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <ColorPickerUniversal
+        <ColorPickerTabs
           mode={pickerValue.type}
           value={pickerValue}
           label={label}
@@ -490,7 +490,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       </p>
 
       {/* Color picker (independent, always visible) */}
-      <ColorPickerUniversal
+      <ColorPickerTabs
         mode={colorPickerValue.type}
         value={colorPickerValue}
         onModeChange={(newColorMode) => {

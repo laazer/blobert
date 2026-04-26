@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { AnimatedBuildControlDef } from "../../types";
 import { readHexFromClipboard } from "../../utils/clipboardHex";
-import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
+import { ColorPickerTabs, type ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
 
 export const floatHintStyle = {
   fontSize: 10,
@@ -104,15 +104,14 @@ function HexStrControlRow({
         maxWidth: "100%",
       }}
     >
-      <ColorPickerUniversal
-        lockMode="single"
+      <ColorPickerTabs
         mode="single"
+        onModeChange={() => {}}
         label={def.label}
         value={pickerValue}
         onChange={(v) => {
           if (v.type === "single") onChange(v.color);
         }}
-        onModeChange={() => {}}
       />
       <button
         type="button"
