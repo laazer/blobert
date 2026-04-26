@@ -134,7 +134,7 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
     "player_slime": ("body", "head"),
 }
 
-_FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex)$")
+_FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex|color_mode|color_image_id|color_image_preview)$")
 _FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
 
@@ -226,8 +226,15 @@ def _zone_texture_control_defs(slug: str) -> list[dict[str, Any]]:
     return _zone_texture_control_defs_for_zones(_feature_zones(slug))
 
 
-def _default_features_dict(slug: str) -> dict[str, dict[str, str]]:
-    return {z: {"finish": "default", "hex": ""} for z in _feature_zones(slug)}
+def _default_features_dict(slug: str) -> dict[str, dict[str, Any]]:
+    return {
+        z: {
+            "finish": "default",
+            "hex": "",
+            "color_image": {"mode": "single", "id": None, "preview": None},
+        }
+        for z in _feature_zones(slug)
+    }
 
 
 def _default_zone_geometry_extras_payload() -> dict[str, Any]:
@@ -307,6 +314,15 @@ def _validate_features_map(d: dict[str, Any]) -> dict[str, Any]:
         zd: dict[str, Any] = {"finish": fin, "hex": hx}
         if parts_out:
             zd["parts"] = parts_out
+        color_image = inner.get("color_image")
+        if isinstance(color_image, dict):
+            zd["color_image"] = {
+                "mode": str(color_image.get("mode", "single")),
+                "id": color_image.get("id"),
+                "preview": color_image.get("preview"),
+            }
+        else:
+            zd["color_image"] = {"mode": "single", "id": None, "preview": None}
         out[str(zone)] = zd
     return out
 
@@ -335,6 +351,15 @@ def _merge_features_for_slug(
                 "finish": str(b.get("finish", "default")),
                 "hex": str(b.get("hex", "")),
             }
+            color_img = b.get("color_image")
+            if isinstance(color_img, dict):
+                out[z]["color_image"] = {
+                    "mode": str(color_img.get("mode", "single")),
+                    "id": color_img.get("id"),
+                    "preview": color_img.get("preview"),
+                }
+            else:
+                out[z]["color_image"] = {"mode": "single", "id": None, "preview": None}
             bp = b.get("parts")
             if isinstance(bp, dict):
                 parts: dict[str, dict[str, str]] = {}
@@ -348,7 +373,11 @@ def _merge_features_for_slug(
                 if parts:
                     out[z]["parts"] = parts
         else:
-            out[z] = {"finish": "default", "hex": ""}
+            out[z] = {
+                "finish": "default",
+                "hex": "",
+                "color_image": {"mode": "single", "id": None, "preview": None},
+            }
     nested = src.get("features")
     if isinstance(nested, dict):
         for zone, data in nested.items():
@@ -358,6 +387,13 @@ def _merge_features_for_slug(
                 out[zone]["finish"] = str(data["finish"])
             if "hex" in data:
                 out[zone]["hex"] = str(data["hex"])
+            color_img = data.get("color_image")
+            if isinstance(color_img, dict):
+                out[zone]["color_image"] = {
+                    "mode": str(color_img.get("mode", "single")),
+                    "id": color_img.get("id"),
+                    "preview": color_img.get("preview"),
+                }
             subp = data.get("parts")
             if isinstance(subp, dict):
                 parts = _ensure_zone_parts(out, zone)
@@ -374,7 +410,14 @@ def _merge_features_for_slug(
         if m:
             zone, field = m.group(1), m.group(2)
             if zone in out:
-                out[zone][field] = str(v)
+                if field == "color_mode":
+                    out[zone]["color_image"]["mode"] = str(v)
+                elif field == "color_image_id":
+                    out[zone]["color_image"]["id"] = v if v is not None else None
+                elif field == "color_image_preview":
+                    out[zone]["color_image"]["preview"] = v if v is not None else None
+                else:
+                    out[zone][field] = str(v)
             continue
         m = _FEAT_LIMB_PART_FLAT_KEY.match(k)
         if m:
