@@ -31,7 +31,7 @@ Log: project_board/checkpoints/M9-02-mesh-material-audit/2026-04-21T14-18-29Z-or
 ### [M901-01-import-standardization] — OUTCOME: COMPLETE
 Import standardization shipped with behavior-first tests, passing diff-cover preflight, and ticket finalized under milestone `done/`.
 Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T15-05-00Z-orchestrator.md
-- Run: 2026-04-21T15-05-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T15-05-00Z-orchestrator.md
+- Run: 2026-04-21T15-05-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T15-05-00Z-specification.md
 - Run: 2026-04-21T15-40-00Z-test-design.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md | Stage: TEST_DESIGN | Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T15-40-00Z-test-design.md
 - Run: 2026-04-21T16-00-00Z-test-break.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md | Stage: TEST_BREAK | Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T16-00-00Z-test-break.md
 - Run: 2026-04-21T17-20-00Z-implementation-generalist.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/ready/01_import_standardization.md | Stage: STATIC_QA | Log: project_board/checkpoints/M901-01-import-standardization/2026-04-21T17-20-00Z-implementation-generalist.md
@@ -208,7 +208,7 @@ Log: project_board/checkpoints/M901-11-registry-path-policy-unification/2026-04-
 Registry delete mutation rules were extracted into shared service APIs and router endpoints were reduced to transport/error-mapping wrappers with regression coverage preserved.
 Log: project_board/checkpoints/M901-12-registry-mutation-service-boundary/2026-04-22T20-07-38Z-orchestrator.md
 
-## Run: 2026-04-22T22-58-59Z
+## Run: 2026-04-22T22:58:59Z
 - Queue mode: single ticket
 - Queue scope: project_board/901_milestone_901_asset_generation_refactoring/ready/13_backend_registry_service_extraction_and_router_thinning.md
 - Lean: no
@@ -229,9 +229,9 @@ Log: project_board/checkpoints/M901-13-backend-registry-service-extraction-and-r
 - Run: 2026-04-23T12-58-00Z-specification.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-58-00Z-specification.md | Outcome: deterministic backend error-mapping unification specification frozen; conservative parity and fallback assumptions checkpointed; advanced to TEST_DESIGN
 - Run: 2026-04-23T12-59-10Z-spec-exit-gate.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: SPEC_EXIT_GATE | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: skipped (no standalone spec file found under project_board/specs; proceeding with in-ticket specification)
 - Run: 2026-04-23T12-57-31Z-test-design.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: TEST_DESIGN | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-57-31Z-test-design.md | Outcome: primary backend error-mapping behavioral contracts added for parity, fallback safety, and structured logging
-- Run: 2026-04-23T13-20-00Z-test-break.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: TEST_BREAK | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T13-20-00Z-test-break.md | Outcome: adversarial edge/mutation/stress tests added for precedence exactness, concurrent fallback redaction, and run-router unknown-start failure safety
+- Run: 2026-04-23T13-20-00Z-test-break.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: TEST_BREAK | Log: project_board/checkpoints/M901-14-backend_error-mapping-unification/2026-04-23T13-20-00Z-test-break.md | Outcome: adversarial edge/mutation/stress tests added for precedence exactness, concurrent fallback redaction, and run-router unknown-start failure safety
 - Run: 2026-04-23T13-40-00Z-implementation.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: IMPLEMENTATION_BACKEND | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: shared `services/error_mapping.py` added, router exception handling unified, backend regression suites passing
-- Run: 2026-04-23T13-48-00Z-acceptance-criteria-gatekeeper.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/done/14_backend_error_mapping_unification.md | Stage: COMPLETE | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: AC1-AC5 evidenced and ticket closed in milestone `done/`
+- Run: 2026-04-23T13-48-00Z-acceptance-criteria-gatekeeper.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/14_backend_error_mapping_unification.md | Stage: COMPLETE | Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04-23T12-53-45Z-orchestrator.md | Outcome: AC1-AC5 evidenced and ticket closed in milestone `done/`
 
 ### [M901-14-backend-error-mapping-unification] — OUTCOME: COMPLETE
 Centralized backend exception-to-HTTP mapping into shared service helpers, preserved status/payload semantics, and closed with behavior-first regression coverage.
@@ -253,8 +253,27 @@ Log: project_board/checkpoints/M901-14-backend-error-mapping-unification/2026-04
 - Run: 2026-04-24T14-45-00Z-python-reviewer.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/15_run_contract_unification.md | Stage: INTEGRATION | Log: project_board/checkpoints/M901-15-run-contract-unification/2026-04-24T14-45-00Z-python-reviewer.md | Outcome: organization-first Python review found/fixed Ruff import-order violation; targeted run-contract and run-router suites PASS (18/18)
 - Run: 2026-04-24T15-20-00Z-acceptance-criteria-gatekeeper.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/in_progress/15_run_contract_unification.md | Stage: INTEGRATION | Log: project_board/checkpoints/M901-15-run-contract-unification/2026-04-24T15-20-00Z-acceptance-criteria-gatekeeper.md | Outcome: AC evidence confirmed; Stage held at INTEGRATION pending required in_progress→done folder transition before COMPLETE
 - Run: 2026-04-24T16-10-00Z-acceptance-criteria-gatekeeper.md | Ticket: project_board/901_milestone_901_asset_generation_refactoring/done/15_run_contract_unification.md | Stage: COMPLETE | Log: project_board/checkpoints/M901-15-run-contract-unification/2026-04-24T16-10-00Z-acceptance-criteria-gatekeeper.md | Outcome: post-move gatekeeper recheck confirmed complete AC evidence and stage-folder consistency; workflow advanced to COMPLETE
+
 ## Run: 2026-04-25T11:53:00Z
 - Queue mode: milestone
 - Queue scope: project_board/901_milestone_901_asset_generation_refactoring/
 - Lean: no
 - Log root: project_board/checkpoints/
+
+## Run: 2026-04-26T
+- Queue mode: bug fix
+- Ticket: project_board/bugfix/in_progress/image-textures-not-applied.md
+- Lean: no
+- Log root: project_board/checkpoints/image-textures-not-applied/
+
+### [image-textures-not-applied] — Diagnosis — Root cause in schema.py
+**Would have asked:** Should the whitelist of preloaded texture IDs be strict (fail on invalid) or lenient (accept and log warning)?  
+**Assumption made:** Strict fail-closed validation recommended; will catch configuration errors early.  
+**Confidence:** High. Root cause correctly identified (schema missing image mode handlers). Four interdependent requirements are clear. Scope boundaries are well-defined. Test strategy is sound.  
+Log: project_board/checkpoints/image-textures-not-applied/2026-04-26T-spec-diagnosis.md
+
+- Run: 2026-04-26T-test-design.md | Ticket: project_board/bugfix/in_progress/image-textures-not-applied.md | Stage: TEST_DESIGN → IMPLEMENTATION_GENERALIST | Outcome: 12 regression tests written, all FAIL as expected, pre-existing tests PASS (123+ tests in build_options suite)
+
+### [image-textures-not-applied] — Test Design Complete
+Regression test suite for Requirement 1 (Extend build_options schema to capture image texture data) completed. Tests encode AC1.1–AC1.5 with 12 independent test cases covering flat-key and nested syntax, multi-zone configurations, and fallback behavior. All tests currently FAIL (feature not yet implemented); all 123+ pre-existing build_options tests PASS (no regressions).  
+Log: project_board/checkpoints/image-textures-not-applied/2026-04-26T-test-design.md
