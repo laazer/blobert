@@ -81,6 +81,7 @@ class TextureAssetMetadata(BaseModel):
     width: int
     height: int
     tiling_supported: bool
+    url: str | None = None
 
 
 def _append_glb_json_files(assets: list[ListedAsset], base_dir: str, disk_dir: Path) -> None:
@@ -112,11 +113,18 @@ async def list_assets() -> JSONResponse:
 
 @router.get("/textures")
 async def get_texture_assets() -> JSONResponse:
-    """Return list of available pre-supplied texture assets."""
+    """Return list of available pre-supplied texture assets with URLs."""
     try:
         texture_asset_loader = import_asset_module("src.utils.texture_asset_loader")
         assets = texture_asset_loader.get_available_assets()
-        assets_list = [TextureAssetMetadata(**asset).model_dump() for asset in assets]
+        assets_list = []
+        for asset in assets:
+            meta = TextureAssetMetadata(**asset)
+            # Construct URL using encoded filename to avoid path traversal issues
+            encoded_filename = "/".join(p.replace(" ", "%20") for p in meta.filename.split("/"))
+            meta_dict = meta.model_dump()
+            meta_dict["url"] = f"/api/assets/textures/file/{encoded_filename}"
+            assets_list.append(meta_dict)
         return JSONResponse({"textures": assets_list})
     except Exception as e:
         if isinstance(e, RuntimeError) and str(e) == "loader failure":
@@ -128,6 +136,39 @@ async def get_texture_assets() -> JSONResponse:
             rules=(),
         )
         raise mapped from e
+
+
+@router.get("/textures/file/{file_path:path}")
+async def serve_texture_file(file_path: str) -> FileResponse:
+    """Serve a texture file by relative path from resources/textures/."""
+    try:
+        texture_asset_loader = import_asset_module("src.utils.texture_asset_loader")
+        # Decode URL-encoded filename and validate it exists in texture assets
+        import urllib.parse
+        decoded_path = urllib.parse.unquote(file_path)
+
+        # Get the texture directory and construct the full path
+        texture_dir = texture_asset_loader.get_texture_assets_dir()
+        full_path = (texture_dir / decoded_path).resolve()
+
+        # Ensure path is within texture directory (prevent traversal)
+        full_path.relative_to(texture_dir)
+
+        if not full_path.exists() or not full_path.is_file():
+            raise HTTPException(status_code=404, detail="Texture file not found")
+
+        return FileResponse(
+            full_path,
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Access denied - path outside texture directory")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        logger.error("Error serving texture file %s: %s", file_path, e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to serve texture file") from e
 
 
 @router.get("/{asset_path:path}")

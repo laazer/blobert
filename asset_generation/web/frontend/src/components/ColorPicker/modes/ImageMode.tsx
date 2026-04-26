@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { colorPickerStyles } from "../colorPickerStyles";
+import { fetchTextureAssets, type TextureAsset } from "../../../api/client";
 
 export interface ImageModeProps {
   file: File | null;
@@ -13,8 +14,8 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 /**
  * Image texture picker mode.
- * Provides file input for uploading custom image textures.
- * Generates preview URL and emits file + preview on selection.
+ * Provides both preloaded texture selection and custom file upload.
+ * Users can select from available textures or upload custom image textures.
  */
 export function ImageMode({
   file,
@@ -23,6 +24,22 @@ export function ImageMode({
   disabled = false,
 }: ImageModeProps) {
   const [error, setError] = useState<string>("");
+  const [textures, setTextures] = useState<TextureAsset[]>([]);
+  const [loadingTextures, setLoadingTextures] = useState(true);
+
+  // Fetch available textures on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const assets = await fetchTextureAssets();
+        setTextures(assets);
+      } catch (err) {
+        console.error("Failed to load texture assets:", err);
+      } finally {
+        setLoadingTextures(false);
+      }
+    })();
+  }, []);
 
   // Clean up preview URL on unmount
   useEffect(() => {
@@ -62,11 +79,69 @@ export function ImageMode({
     onFileChange(null);
   };
 
+  const handleSelectTexture = (texture: TextureAsset & { url?: string }) => {
+    setError("");
+    if (texture.url) {
+      // Use the URL from the API response
+      onFileChange(null, texture.url);
+    }
+  };
+
   const fileName = file?.name || "No file selected";
 
   return (
     <div style={colorPickerStyles.modeContent}>
-      <div style={colorPickerStyles.fileInputLabel}>Texture Image</div>
+      {/* Preloaded Textures Section */}
+      {!loadingTextures && textures.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+          <div style={colorPickerStyles.fileInputLabel}>Preloaded Textures</div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))",
+              gap: 4,
+            }}
+          >
+            {textures.map((texture) => {
+              const textureWithUrl = texture as TextureAsset & { url?: string };
+              return (
+                <button
+                  key={textureWithUrl.id}
+                  onClick={() => handleSelectTexture(textureWithUrl)}
+                  disabled={disabled}
+                  title={textureWithUrl.display_name}
+                  style={{
+                    background: preview === textureWithUrl.url ? "#0e639c" : "#3c3c3c",
+                    border: "1px solid #555555",
+                    borderRadius: 3,
+                    padding: 0,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.5 : 1,
+                    height: 60,
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  <img
+                    src={textureWithUrl.url}
+                    alt={textureWithUrl.display_name}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Custom Upload Section */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={colorPickerStyles.fileInputLabel}>Upload Custom</div>
 
       <div style={colorPickerStyles.fileInputWrapper}>
         <input
@@ -129,6 +204,7 @@ export function ImageMode({
       {/* Info text */}
       <div style={colorPickerStyles.previewText}>
         Supported: PNG, JPEG, WebP (max 5 MB)
+      </div>
       </div>
     </div>
   );
