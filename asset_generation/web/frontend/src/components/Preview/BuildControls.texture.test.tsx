@@ -31,7 +31,7 @@ afterEach(() => {
 
 const TEXTURE_MODE_DEF: AnimatedBuildControlDef = {
   key: "feat_body_texture_mode",
-  label: "Texture mode",
+  label: "Pattern Setting",
   type: "select_str",
   options: ["none", "gradient", "spots", "stripes"],
   default: "none",
@@ -438,25 +438,25 @@ describe("BuildControls texture — texture_mode control is never disabled", () 
       feat_body_texture_stripe_width: 0.2,
     });
     render(<TextureControlsSection slug="slug" />);
-    expect(isRowDisabled("Texture mode")).toBe(false);
+    expect(isRowDisabled("Pattern Setting")).toBe(false);
   });
 
   it("PTP-4-AC-2: texture_mode is not disabled when mode is gradient", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "gradient" });
     render(<TextureControlsSection slug="slug" />);
-    expect(isRowDisabled("Texture mode")).toBe(false);
+    expect(isRowDisabled("Pattern Setting")).toBe(false);
   });
 
   it("PTP-7-AC-6: texture_mode is not disabled when mode is spots", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "spots" });
     render(<TextureControlsSection slug="slug" />);
-    expect(isRowDisabled("Texture mode")).toBe(false);
+    expect(isRowDisabled("Pattern Setting")).toBe(false);
   });
 
   it("PTP-7-AC-6: texture_mode is not disabled when mode is stripes", () => {
     setupStore("slug", ALL_TEXTURE_CONTROLS, { feat_body_texture_mode: "stripes" });
     render(<TextureControlsSection slug="slug" />);
-    expect(isRowDisabled("Texture mode")).toBe(false);
+    expect(isRowDisabled("Pattern Setting")).toBe(false);
   });
 });
 
@@ -550,10 +550,10 @@ describe("BuildControls texture — texture_mode select renders pattern modes", 
     render(<TextureControlsSection slug="slug" />);
 
     // The label "Texture mode" must be in the DOM.
-    expect(screen.getByText("Texture mode")).toBeInTheDocument();
+    expect(screen.getByText("Pattern Setting")).toBeInTheDocument();
 
     // Try to locate the select by its label.
-    const select = screen.queryByLabelText("Texture mode") as HTMLSelectElement | null;
+    const select = screen.queryByLabelText("Pattern Setting") as HTMLSelectElement | null;
     if (select) {
       const optionValues = Array.from(select.options).map((o) => o.value);
       expect(optionValues).toContain("none");
@@ -562,7 +562,7 @@ describe("BuildControls texture — texture_mode select renders pattern modes", 
       expect(optionValues).toContain("stripes");
       expect(optionValues).not.toContain("custom");
     }
-    expect(screen.getByRole("combobox", { name: "Texture mode" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Pattern Setting" })).toBeInTheDocument();
   });
 });
 
@@ -607,7 +607,7 @@ describe("BuildControls texture — invalid texture_mode string treated as none"
     expectGradientBundleHidden();
     expectTextureParamHidden("Spot color");
     expectTextureParamHidden("Stripe color");
-    expect(isRowDisabled("Texture mode")).toBe(false);
+    expect(isRowDisabled("Pattern Setting")).toBe(false);
   });
 });
 

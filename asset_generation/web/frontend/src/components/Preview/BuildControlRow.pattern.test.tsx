@@ -314,7 +314,7 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
         { key: "feat_body_name", label: "Body name", type: "str", default: "default" },
         { key: "feat_body_scale", label: "Body scale", type: "float", min: 0.5, max: 2.0, step: 0.1, default: 1.0 },
         { key: "feat_body_count", label: "Body count", type: "int", min: 0, max: 10, default: 1 },
-        { key: "feat_body_texture_mode", label: "Texture mode", type: "select_str", options: ["none", "gradient"], default: "none" },
+        { key: "feat_body_texture_mode", label: "Pattern Setting", type: "select_str", options: ["none", "gradient"], default: "none" },
         { key: "feat_body_enabled", label: "Enabled", type: "bool", default: true },
       ];
 
