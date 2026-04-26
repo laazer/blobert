@@ -71,26 +71,26 @@ describe("Requirement 3: ZoneTextureBlock Gradient Mode Integration", () => {
     });
   });
 
-  describe("carryTexturePaletteOnModeChange", () => {
-    it("fills empty stripe colors from gradient when switching to stripes", () => {
+  describe("carryTexturePaletteOnModeChange (pattern mode transfers)", () => {
+    it("fills empty stripe colors from spot colors when switching to stripes", () => {
       const v = {
-        feat_body_texture_grad_color_a: "ff0000",
-        feat_body_texture_grad_color_b: "00ff00",
+        feat_body_texture_spot_color: "ff0000",
+        feat_body_texture_spot_bg_color: "00ff00",
         feat_body_texture_stripe_color: "",
         feat_body_texture_stripe_bg_color: "",
       };
-      const out = carryTexturePaletteOnModeChange("body", "gradient", "stripes", v);
+      const out = carryTexturePaletteOnModeChange("body", "spots", "stripes", v);
       expect(out.feat_body_texture_stripe_color).toBe("ff0000");
       expect(out.feat_body_texture_stripe_bg_color).toBe("00ff00");
     });
 
     it("does not overwrite existing stripe colors", () => {
       const v = {
-        feat_body_texture_grad_color_a: "ff0000",
+        feat_body_texture_spot_color: "ff0000",
         feat_body_texture_stripe_color: "aabbcc",
         feat_body_texture_stripe_bg_color: "ddeeff",
       };
-      const out = carryTexturePaletteOnModeChange("body", "gradient", "stripes", v);
+      const out = carryTexturePaletteOnModeChange("body", "spots", "stripes", v);
       expect(Object.keys(out).length).toBe(0);
     });
   });
@@ -178,7 +178,8 @@ describe("Requirement 3: ZoneTextureBlock Gradient Mode Integration", () => {
 
     it("supports all combinations of (color_mode, texture_mode)", () => {
       const colorModes = ["single", "gradient"];
-      const textureModes = ["none", "spots", "stripes", "checkerboard", "assets"];
+      // Only pattern modes now (gradient and assets moved out)
+      const textureModes = ["none", "spots", "stripes", "checkerboard"];
 
       for (const colorMode of colorModes) {
         for (const textureMode of textureModes) {
