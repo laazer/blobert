@@ -9,6 +9,11 @@ import sys
 import traceback
 from typing import Any, cast
 
+# Configure sys.path for CLI entry point (pyproject.toml: pythonpath = [".", "src"])
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 # Blender imports
 from src.core.blender_utils import clear_scene
 from src.enemies.animated import AnimatedEnemyBuilder
