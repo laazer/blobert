@@ -102,9 +102,11 @@ export const colorPickerStyles = {
     border: "1px solid #3c3c3c",
   } as const,
   previewImage: {
-    maxWidth: "100%",
+    width: "100%",
     maxHeight: 120,
     borderRadius: 2,
+    objectFit: "contain",
+    background: "#1e1e1e",
   } as const,
   previewText: {
     color: "#8f8f8f",
