@@ -489,6 +489,9 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
         Both are independent. Values apply when you regenerate the asset.
       </p>
 
+      {/* Finish selection (moved above color picker for clarity) */}
+      {finishDefsOrdered.map(row)}
+
       {/* Color picker (independent, always visible) */}
       <ColorPickerTabs
         mode={colorPickerValue.type}
@@ -547,7 +550,6 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
         />
       ) : null}
 
-      {finishDefsOrdered.map(row)}
       {showBaseHex ? (
         <>
           {hexDefsOrdered.map(row)}
