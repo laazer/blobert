@@ -68,7 +68,7 @@ def test_append_spider_body_spikes_appends_cones() -> None:
             ):
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",

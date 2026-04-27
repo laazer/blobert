@@ -96,7 +96,7 @@ class BaseAnimatedModel(ABC):
     def _themed_slot_materials_for(self, theme_name: str) -> dict:
         """Theme palette slots with optional per-slot finish/color from ``build_options['features']``."""
         raw = get_enemy_materials(theme_name, self.materials, self.rng)
-        with_feats = apply_feature_slot_overrides(raw, self.build_options.get("features"))
+        with_feats = apply_feature_slot_overrides(raw, self.build_options.get("features"), self.build_options)
         return apply_zone_texture_pattern_overrides(with_feats, self.build_options)
 
     def apply_themed_materials(self) -> None:

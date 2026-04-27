@@ -68,7 +68,7 @@ def test_append_slug_body_spikes_appends_cones() -> None:
             with patch("src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"body": MagicMock()}):
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
@@ -91,7 +91,7 @@ def test_append_slug_body_spikes_pyramid_vertices() -> None:
             with patch("src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"body": MagicMock()}):
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
@@ -113,7 +113,7 @@ def test_append_slug_body_bulbs() -> None:
             with patch("src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"body": MagicMock()}):
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
@@ -137,7 +137,7 @@ def test_append_slug_head_horns_and_spikes() -> None:
                 with patch("src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"head": MagicMock()}):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                        side_effect=lambda slots, _f: slots,
+                        side_effect=lambda slots, _f, build_opts=None: slots,
                     ):
                         with patch(
                             "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
@@ -155,7 +155,7 @@ def test_append_slug_head_bulbs() -> None:
             with patch("src.enemies.zone_geometry_extras_attach.get_enemy_materials", return_value={"head": MagicMock()}):
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",
@@ -218,7 +218,7 @@ def test_append_animated_enemy_zone_extras_non_slug_theme() -> None:
             ) as gm:
                 with patch(
                     "src.enemies.zone_geometry_extras_attach.apply_feature_slot_overrides",
-                    side_effect=lambda slots, _f: slots,
+                    side_effect=lambda slots, _f, build_opts=None: slots,
                 ):
                     with patch(
                         "src.enemies.zone_geometry_extras_attach.material_for_zone_geometry_extra",

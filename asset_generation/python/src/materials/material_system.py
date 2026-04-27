@@ -381,10 +381,13 @@ def _material_for_finish_hex(
 def apply_feature_slot_overrides(
     slot_materials: dict[str, bpy.types.Material | None],
     features: Mapping[str, Any] | None,
+    build_options: Mapping[str, Any] | None = None,
 ) -> dict[str, bpy.types.Material | None]:
     """Re-create body/head/limbs/extra materials when ``features`` sets finish or hex overrides."""
     if not features:
         return slot_materials
+    if build_options is None:
+        build_options = {}
 
     out: dict[str, bpy.types.Material | None] = dict(slot_materials)
 
@@ -396,9 +399,10 @@ def apply_feature_slot_overrides(
             continue
 
         # Check for image mode first (priority over hex/finish)
-        color_image = slot_feat.get("color_image")
-        if isinstance(color_image, dict) and color_image.get("mode") == "image":
-            asset_id = (color_image.get("id") or "").strip()
+        # Read from flat keys like pattern system does
+        color_mode = str(build_options.get(f"feat_{slot_key}_color_mode", "single") or "single").strip().lower()
+        if color_mode == "image":
+            asset_id = str(build_options.get(f"feat_{slot_key}_color_image_id", "") or "").strip()
             if asset_id:
                 out[slot_key] = _material_for_color_image_zone(
                     base_material=mat,

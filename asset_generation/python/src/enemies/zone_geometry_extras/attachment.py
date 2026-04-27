@@ -101,7 +101,7 @@ def append_animated_enemy_zone_extras(model: Any) -> None:
     features = model.build_options.get("features")
     feat_dict = features if isinstance(features, dict) else None
     enemy_mats = get_enemy_materials(theme, model.materials, model.rng)
-    slot_mats = apply_feature_slot_overrides(enemy_mats, feat_dict)
+    slot_mats = apply_feature_slot_overrides(enemy_mats, feat_dict, model.build_options)
     slot_mats = apply_zone_texture_pattern_overrides(slot_mats, model.build_options)
 
     body_spec = raw.get("body")
