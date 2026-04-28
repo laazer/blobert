@@ -15,6 +15,10 @@ from src.utils.build_options import (
     options_for_enemy,
     parse_build_options_json,
 )
+from src.utils.build_options.schema import (
+    _default_features_dict,
+    _merge_features_for_slug,
+)
 
 
 class TestImageTextureSchemaMerge:
@@ -254,3 +258,18 @@ class TestImageTextureSchemaMerge:
             )
             # Each should have mode, id, and preview fields
             assert "mode" in o["features"][zone]["color_image"]
+
+
+def test_merge_features_for_slug_non_dict_color_image_in_feat_base_defaults() -> None:
+    """When feat_base has a non-dict color_image, merge applies single-mode defaults (schema)."""
+    fb = _default_features_dict("spider")
+    fb["body"] = {
+        **fb["body"],
+        "color_image": "not-a-dict",
+    }
+    out = _merge_features_for_slug("spider", {}, fb)
+    assert out["body"]["color_image"] == {
+        "mode": "single",
+        "id": None,
+        "preview": None,
+    }

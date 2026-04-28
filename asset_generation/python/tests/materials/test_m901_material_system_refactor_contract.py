@@ -62,6 +62,32 @@ def test_feature_slot_overrides_return_derived_copy_not_mutation() -> None:
     assert got["limbs"] is base
 
 
+def test_feature_slot_overrides_nested_color_image_uses_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Image mode reads nested color_image (schema shape), not only flat build keys."""
+    zones = _load("src.materials.feature_zones")
+    base = SimpleNamespace(name="Organic_Brown")
+    original = {"body": base}
+    called: dict[str, str] = {}
+
+    def _fake_color_image(**kwargs):
+        called["asset_id"] = str(kwargs.get("asset_id", ""))
+        return SimpleNamespace(name="ImgOverride")
+
+    monkeypatch.setattr(zones, "_material_for_color_image_zone", _fake_color_image)
+    got = zones.apply_feature_slot_overrides(
+        original,
+        {
+            "body": {
+                "color_image": {"mode": "image", "id": "demo_textures3"},
+            }
+        },
+    )
+    assert called["asset_id"] == "demo_textures3"
+    assert got["body"].name == "ImgOverride"
+
+
 def test_feature_slot_overrides_ignore_non_dict_feature_entries() -> None:
     zones = _load("src.materials.feature_zones")
     base = SimpleNamespace(name="Bone_White")

@@ -186,6 +186,28 @@ def test_apply_feature_slot_overrides_updates_joints_slot() -> None:
     assert cm.called
 
 
+@patch.object(ms, "_material_for_color_image_zone")
+def test_apply_feature_slot_overrides_nested_color_image_delegates_to_image_helper(
+    mock_color_img: MagicMock,
+) -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    new_mat = MagicMock(name="from_image")
+    mock_color_img.return_value = new_mat
+    slots = {"body": base}
+    out = ms.apply_feature_slot_overrides(
+        slots,
+        {
+            "body": {
+                "color_image": {"mode": "image", "id": "demo_textures3"},
+            }
+        },
+    )
+    assert out["body"] is new_mat
+    mock_color_img.assert_called_once()
+    assert mock_color_img.call_args.kwargs["asset_id"] == "demo_textures3"
+
+
 def test_apply_zone_texture_gradient_replaces_slot_and_calls_gradient_setup() -> None:
     base = MagicMock()
     base.name = "Organic_Brown"
