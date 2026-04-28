@@ -5,7 +5,8 @@ import { fetchTextureAssets, type TextureAsset } from "../../../api/client";
 export interface ImageModeProps {
   file: File | null;
   preview?: string;
-  onFileChange: (file: File | null, preview?: string) => void;
+  assetId?: string;
+  onFileChange: (file: File | null, preview?: string, assetId?: string) => void;
   disabled?: boolean;
 }
 
@@ -82,8 +83,8 @@ export function ImageMode({
   const handleSelectTexture = (texture: TextureAsset & { url?: string }) => {
     setError("");
     if (texture.url) {
-      // Use the URL from the API response
-      onFileChange(null, texture.url);
+      // Use the URL from the API response and pass the asset ID
+      onFileChange(null, texture.url, texture.id);
     }
   };
 

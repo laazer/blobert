@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-from PIL import Image
+# Do not import PIL at module load. generator.py runs under Blender's bundled
+# Python (not the project venv); only `load_texture_image` needs Pillow.
 
 
 def get_texture_assets_dir() -> Path:
@@ -43,12 +44,15 @@ def get_asset_metadata(asset_id: str) -> Optional[dict[str, Any]]:
     return manifest.get(asset_id)
 
 
-def load_texture_image(asset_id: str) -> Image.Image:
-    """Load a texture image by asset ID.
+def load_texture_image(asset_id: str) -> Any:
+    """Load a texture image by asset ID (requires Pillow in the active interpreter).
 
     Raises ValueError if asset_id does not exist or file is missing.
     Raises IOError if image cannot be loaded.
+    Raises ModuleNotFoundError if Pillow is not installed (e.g. non-Blender uv venv without sync).
     """
+    from PIL import Image
+
     metadata = get_asset_metadata(asset_id)
     if not metadata:
         raise ValueError(f"Texture asset not found: {asset_id}")

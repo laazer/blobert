@@ -519,10 +519,12 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
             setAnimatedBuildOption(slug, colorBKey, v.colorB);
             setAnimatedBuildOption(slug, colorDirKey, v.direction);
           } else if (v.type === "image") {
-            // Store image preview URL (file data is transient)
-            // In the future, may also store image file ID or path if uploaded to server
+            // Store image preview URL and asset ID (for preloaded textures)
             if (v.preview) {
               setAnimatedBuildOption(slug, colorImagePreviewKey, v.preview);
+            }
+            if (v.assetId) {
+              setAnimatedBuildOption(slug, colorImageIdKey, v.assetId);
             }
           }
         }}

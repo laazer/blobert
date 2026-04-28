@@ -110,7 +110,7 @@ export function ColorPickerTabs({
           <ImageMode
             file={null}
             preview={value.preview}
-            onFileChange={(file, preview) => onChange({ type: "image", file, preview })}
+            onFileChange={(file, preview, assetId) => onChange({ type: "image", file, preview, assetId })}
             disabled={disabled}
           />
         )}

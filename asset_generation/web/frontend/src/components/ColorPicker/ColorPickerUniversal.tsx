@@ -12,7 +12,7 @@ export type ColorPickerValue =
       colorB: string;
       direction: "horizontal" | "vertical" | "radial";
     }
-  | { type: "image"; file: File | null; preview?: string };
+  | { type: "image"; file: File | null; preview?: string; assetId?: string };
 
 export interface ColorPickerUniversalProps {
   mode: "single" | "gradient" | "image";
@@ -120,8 +120,9 @@ export function ColorPickerUniversal({
           <ImageMode
             file={value.file}
             preview={value.preview}
-            onFileChange={(file, preview) =>
-              onChange({ type: "image", file, preview })
+            assetId={value.assetId}
+            onFileChange={(file, preview, assetId) =>
+              onChange({ type: "image", file, preview, assetId })
             }
             disabled={disabled}
           />

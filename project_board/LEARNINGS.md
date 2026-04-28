@@ -4,6 +4,68 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [body-part-image-not-applied] — Preserve identity fields across UI-to-payload boundaries
+*Completed: 2026-04-27*
+
+### Learnings
+- category: testing
+  insight: UI regressions involving "state appears correct but backend behavior is unchanged" are often identity-propagation failures, so tests must assert semantic identifiers (not only preview/display fields) at component boundaries.
+  impact: The selected image preview propagated, but the required `assetId` did not, so regeneration could not resolve the intended texture and silently kept prior material behavior.
+  prevention: For mode-based pickers, require regression tests that assert both presentation fields and execution-critical ids survive each callback hop.
+  severity: high
+
+- category: architecture
+  insight: Typed multi-mode value objects need an explicit per-mode required-field contract to prevent silent drops of execution-critical properties during adapter forwarding.
+  impact: One intermediary transformed image-mode data without preserving `assetId`, creating a partial state object that looked valid in UI but was invalid for downstream material application.
+  prevention: Define and enforce mode contracts where image mode requires id semantics for preloaded assets, and validate these contracts at translation points.
+  severity: high
+
+- category: process
+  insight: Frontend bugfix closeout quality improves when verification includes both direct regression scope and adjacent integration surfaces that consume the same value shape.
+  impact: Running regression plus related color-picker and zone-texture suites provided strong evidence that the fix restored behavior without cross-mode regressions.
+  prevention: Standardize post-fix validation bundles that include the failing path, sibling mode tests, and the payload/persistence integration boundary.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating UI preview correctness as sufficient evidence that a selection will apply in generated output.
+  detection_signal: UI reflects the newly selected asset, but regenerate payload lacks the corresponding id field and output remains unchanged.
+  prevention: Add assertions on serialized payload keys for execution-critical fields whenever a visual picker changes state.
+
+- description: Forwarding callback payloads through intermediary components without a declared "must-preserve" field list.
+  detection_signal: Callback signatures support richer data than intermediary handlers pass onward.
+  prevention: For each mode callback, document required pass-through fields and add contract tests on intermediary adapters.
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For any UI selection bugfix that affects generation or persistence, include at least one regression assertion on execution-critical identifier fields (e.g., asset/resource ids) at both component-callback and serialized payload boundaries; preview-only assertions are insufficient."
+  reason: Prevents false confidence from visual-state-only tests when downstream systems require stable ids.
+
+- agent: Spec Agent
+  change: "When specifying union/mode-based frontend value shapes, add a 'Mode Field Contract' subsection that explicitly marks required vs optional fields per mode and identifies which fields are mandatory for downstream execution."
+  reason: Reduces intermediary translation ambiguity and catches partial-object propagation defects earlier.
+
+- agent: Implementation Frontend Agent
+  change: "When adapting mode callbacks, preserve all execution-critical fields defined by the mode contract; if any required field is intentionally dropped, add an explicit guard/test explaining why."
+  reason: Makes silent data loss at component boundaries an intentional, reviewable decision rather than an accidental regression.
+
+### Workflow Improvements
+- issue: Acceptance checks can pass visual behavior while missing whether the regenerate payload contains required identity keys.
+  improvement: Add an AC template item for generator-affecting UI bugs: "serialized payload includes execution-critical identifiers for selected mode."
+  expected_benefit: Catches identity-propagation regressions before implementation handoff and reduces rework.
+
+- issue: Intermediary component adapters are under-tested compared with leaf-mode components.
+  improvement: Require at least one adapter-contract test whenever a leaf component callback includes optional metadata used downstream.
+  expected_benefit: Detects field-loss regressions at the exact seam where they are introduced.
+
+### Keep / Reinforce
+- practice: Pairing a bug-specific regression with broader related-scope test execution for nearby components.
+  reason: Confirms the fix and guards against mode/cross-component regressions in one validation pass.
+
+- practice: Conservative gatekeeping when workflow helper modules are missing, while still enforcing explicit acceptance evidence.
+  reason: Maintains delivery continuity without lowering validation rigor.
+
+---
+
 ## [M901-14-backend-error-mapping-unification] — Centralized fallback contracts need cross-router proof and bootstrap-aware regressions
 *Completed: 2026-04-23*
 

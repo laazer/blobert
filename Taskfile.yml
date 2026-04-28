@@ -26,6 +26,12 @@ tasks:
     cmds:
       - timeout 120 godot --headless --import
 
+  python:sync:
+    desc: Sync asset_generation Python venv (uv; includes Pillow + dev extras for pipeline/backends)
+    dir: asset_generation/python
+    cmds:
+      - uv sync --extra dev
+
   tests:python:
     desc: Run asset_generation Python tests (pytest + diff-cover; DIFF_COVER_FAIL_UNDER default 85 in py-tests.sh)
     cmds:

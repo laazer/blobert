@@ -144,10 +144,10 @@ def apply_feature_slot_overrides(
             continue
 
         # Check for image mode first (priority over hex/finish)
-        # Read from flat keys like pattern system does
-        color_mode = str(build_options.get(f"feat_{slot_key}_color_mode", "single") or "single").strip().lower()
-        if color_mode == "image":
-            asset_id = str(build_options.get(f"feat_{slot_key}_color_image_id", "") or "").strip()
+        # Read from nested color_image structure (already merged from flat keys by schema)
+        color_image = slot_feat.get("color_image")
+        if isinstance(color_image, dict) and color_image.get("mode") == "image":
+            asset_id = (color_image.get("id") or "").strip()
             if asset_id:
                 out[slot_key] = _material_for_color_image_zone(
                     base_material=mat,
