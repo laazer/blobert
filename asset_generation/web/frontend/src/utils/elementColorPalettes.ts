@@ -174,16 +174,23 @@ export function buildFeatUpdatesFromPalette(
     const rawMode = currentValues[modeKey];
     const mode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
     const fk = `feat_${zone}_finish`;
-    const hk = `feat_${zone}_hex`;
+    const hk = `feat_${zone}_color_hex`;
+    const colorAKey = `feat_${zone}_color_a`;
+    const colorBKey = `feat_${zone}_color_b`;
     const primary = sanitizeHex(mat.hex);
     const secondary = companionPatternColor(primary);
 
-    if (mode === "gradient") {
-      const colorAKey = `feat_${zone}_texture_grad_color_a`;
-      const colorBKey = `feat_${zone}_texture_grad_color_b`;
+    if (mode === "none") {
+      if (existingDefKeys.has(fk)) updates[fk] = sanitizeFinish(mat.finish);
+      if (existingDefKeys.has(hk)) updates[hk] = primary;
       if (existingDefKeys.has(colorAKey)) updates[colorAKey] = primary;
       if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
       continue;
+    }
+
+    if (typeof currentValues[`feat_${zone}_color_mode`] === "string" && String(currentValues[`feat_${zone}_color_mode`]).trim().toLowerCase() === "gradient") {
+      if (existingDefKeys.has(colorAKey)) updates[colorAKey] = primary;
+      if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
     }
 
     if (mode === "spots" || mode === "checkerboard") {
@@ -201,9 +208,6 @@ export function buildFeatUpdatesFromPalette(
       if (existingDefKeys.has(stripeBgKey)) updates[stripeBgKey] = secondary;
       continue;
     }
-
-    if (existingDefKeys.has(fk)) updates[fk] = sanitizeFinish(mat.finish);
-    if (existingDefKeys.has(hk)) updates[hk] = primary;
   }
   return updates;
 }
@@ -212,7 +216,7 @@ export function extractZonePaletteFromValues(values: Readonly<Record<string, unk
   const out: ElementPalette = {};
   for (const zone of COARSE_ZONE_KEYS) {
     const ff = values[`feat_${zone}_finish`];
-    const hx = values[`feat_${zone}_hex`];
+    const hx = values[`feat_${zone}_color_hex`];
     if (typeof ff === "string" && typeof hx === "string") {
       out[zone] = { finish: ff, hex: hx };
     }

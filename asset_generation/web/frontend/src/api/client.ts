@@ -75,9 +75,6 @@ export function defaultValuesForDefs(defs: readonly AnimatedBuildControlDef[]): 
 
 const LEGACY_GLOBAL_TEXTURE_KEYS = [
   "texture_mode",
-  "texture_grad_color_a",
-  "texture_grad_color_b",
-  "texture_grad_direction",
   "texture_spot_color",
   "texture_spot_bg_color",
   "texture_spot_density",
@@ -92,9 +89,6 @@ const LEGACY_GLOBAL_TEXTURE_KEYS = [
 
 const LEGACY_TEXTURE_TO_SUFFIX: Record<(typeof LEGACY_GLOBAL_TEXTURE_KEYS)[number], string> = {
   texture_mode: "mode",
-  texture_grad_color_a: "grad_color_a",
-  texture_grad_color_b: "grad_color_b",
-  texture_grad_direction: "grad_direction",
   texture_spot_color: "spot_color",
   texture_spot_bg_color: "spot_bg_color",
   texture_spot_density: "spot_density",

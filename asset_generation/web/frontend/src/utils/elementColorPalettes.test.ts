@@ -9,7 +9,7 @@ import {
 
 describe("buildFeatUpdatesFromPalette", () => {
   it("only sets keys present in defs", () => {
-    const keys = new Set(["feat_body_finish", "feat_body_hex", "feat_extra_finish"]);
+    const keys = new Set(["feat_body_finish", "feat_body_color_hex", "feat_extra_finish"]);
     const u = buildFeatUpdatesFromPalette(
       {
         body: { finish: "glossy", hex: "#abcdef" },
@@ -19,33 +19,34 @@ describe("buildFeatUpdatesFromPalette", () => {
     );
     expect(u).toEqual({
       feat_body_finish: "glossy",
-      feat_body_hex: "#abcdef",
+      feat_body_color_hex: "#abcdef",
     });
   });
 
   it("sanitizes invalid finish and hex", () => {
-    const keys = new Set(["feat_body_finish", "feat_body_hex"]);
+    const keys = new Set(["feat_body_finish", "feat_body_color_hex"]);
     const u = buildFeatUpdatesFromPalette({ body: { finish: "nope", hex: "bad" } }, keys);
     expect(u.feat_body_finish).toBe("matte");
-    expect(u.feat_body_hex).toBe("");
+    expect(u.feat_body_color_hex).toBe("");
   });
 
   it("routes palette apply to gradient color fields when the zone uses gradient mode", () => {
     const keys = new Set([
       "feat_body_texture_mode",
-      "feat_body_texture_grad_color_a",
-      "feat_body_texture_grad_color_b",
+      "feat_body_color_a",
+      "feat_body_color_b",
+      "feat_body_color_mode",
       "feat_body_finish",
-      "feat_body_hex",
+      "feat_body_color_hex",
     ]);
     const u = buildFeatUpdatesFromPalette(
       { body: { finish: "glossy", hex: "#abcdef" } },
       keys,
-      { feat_body_texture_mode: "gradient" },
+      { feat_body_color_mode: "gradient" },
     );
-    expect(u.feat_body_texture_grad_color_a).toBe("#abcdef");
-    expect(typeof u.feat_body_texture_grad_color_b).toBe("string");
-    expect(u.feat_body_texture_grad_color_b).not.toBe("#abcdef");
+    expect(u.feat_body_color_a).toBe("#abcdef");
+    expect(typeof u.feat_body_color_b).toBe("string");
+    expect(u.feat_body_color_b).not.toBe("#abcdef");
   });
 
   it("routes palette apply to stripes and spots fields by current zone mode", () => {
@@ -81,9 +82,9 @@ describe("extractZonePaletteFromValues", () => {
   it("round-trips coarse zones", () => {
     const values = {
       feat_body_finish: "glossy",
-      feat_body_hex: "#aabbcc",
+      feat_body_color_hex: "#aabbcc",
       feat_head_finish: "matte",
-      feat_head_hex: "#112233",
+      feat_head_color_hex: "#112233",
     };
     expect(extractZonePaletteFromValues(values).body).toEqual({ finish: "glossy", hex: "#aabbcc" });
   });
