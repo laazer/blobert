@@ -137,6 +137,9 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
 _FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex|color_mode|color_image_id|color_image_preview)$")
 _FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
+_FEAT_PATTERN_COLOR_KEY = re.compile(
+    r"^feat_(body|head|limbs|joints|extra)_texture_(spot_color|spot_bg_color|stripe_color|stripe_bg_color)_(hex|a|b|direction|mode|image_id|image_preview)$"
+)
 
 _EXTRA_KINDS_ORDER: tuple[str, ...] = ("none", "shell", "spikes", "horns", "bulbs")
 _SPIKE_COUNT_MIN = 1
@@ -339,7 +342,7 @@ def _ensure_zone_parts(out: dict[str, Any], zone: str) -> dict[str, Any]:
     return parts
 
 
-def _merge_features_for_slug(
+def _merge_features_for_slug(  # pylint: disable=too-many-statements
     slug: str, src: dict[str, Any], feat_base: dict[str, Any]
 ) -> dict[str, Any]:
     zones = _feature_zones(slug)
@@ -438,7 +441,7 @@ def _merge_features_for_slug(
     return _validate_features_map(out)
 
 
-def _merge_zone_geometry_extras(
+def _merge_zone_geometry_extras(  # pylint: disable=too-many-statements
     slug: str, src: dict[str, Any], base: dict[str, Any]
 ) -> dict[str, Any]:
     zones = _feature_zones(slug)
@@ -520,7 +523,9 @@ def merge_zone_geometry_extras(
     return _merge_zone_geometry_extras(slug, src, base)
 
 
-def _sanitize_zone_geometry_extras(slug: str, d: dict[str, Any]) -> dict[str, Any]:
+def _sanitize_zone_geometry_extras(  # pylint: disable=too-many-statements
+    slug: str, d: dict[str, Any]
+) -> dict[str, Any]:
     zones = _feature_zones(slug)
     valid_kinds = frozenset(_EXTRA_KINDS_ORDER)
     out: dict[str, Any] = {}
@@ -987,6 +992,9 @@ def options_for_enemy(enemy_type: str, raw: dict[str, Any] | None) -> dict[str, 
             or _FEAT_JOINT_PART_FLAT_KEY.match(k)
             or _EXTRA_ZONE_FLAT_KEY.match(k)
         ):
+            continue
+        if _FEAT_PATTERN_COLOR_KEY.match(k):
+            merged[k] = v
             continue
         if k in mesh_keys:
             mesh[k] = v

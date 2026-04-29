@@ -88,6 +88,35 @@ def test_feature_slot_overrides_nested_color_image_uses_path(
     assert got["body"].name == "ImgOverride"
 
 
+def test_feature_slot_overrides_nested_color_image_infers_id_from_preview(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When ``id`` is absent, resolve texture id from ``preview`` (editor URL shape)."""
+    zones = _load("src.materials.feature_zones")
+    base = SimpleNamespace(name="Organic_Brown")
+    original = {"body": base}
+    called: dict[str, str] = {}
+
+    def _fake_color_image(**kwargs):
+        called["asset_id"] = str(kwargs.get("asset_id", ""))
+        return SimpleNamespace(name="ImgFromPreview")
+
+    monkeypatch.setattr(zones, "_material_for_color_image_zone", _fake_color_image)
+    got = zones.apply_feature_slot_overrides(
+        original,
+        {
+            "body": {
+                "color_image": {
+                    "mode": "image",
+                    "preview": "/api/assets/textures/file/demo%20textures3.png",
+                },
+            },
+        },
+    )
+    assert called["asset_id"] == "demo_textures3"
+    assert got["body"].name == "ImgFromPreview"
+
+
 def test_feature_slot_overrides_ignore_non_dict_feature_entries() -> None:
     zones = _load("src.materials.feature_zones")
     base = SimpleNamespace(name="Bone_White")
@@ -106,7 +135,7 @@ def test_zone_texture_density_clamped_before_spots_material_builder(monkeypatch:
         captured["density"] = kwargs["density"]
         return base
 
-    monkeypatch.setattr(zones, "_material_for_spots_zone", _capture_spots)
+    monkeypatch.setattr(zones, "material_for_spots_zone", _capture_spots)
     zones.apply_zone_texture_pattern_overrides(
         slots,
         {
@@ -130,7 +159,7 @@ def test_zone_texture_stripe_rotation_values_sanitized(monkeypatch: pytest.Monke
         captured["pitch"] = kwargs["rot_pitch_deg"]
         return base
 
-    monkeypatch.setattr(zones, "_material_for_stripes_zone", _capture_stripes)
+    monkeypatch.setattr(zones, "material_for_stripes_zone", _capture_stripes)
     zones.apply_zone_texture_pattern_overrides(
         slots,
         {

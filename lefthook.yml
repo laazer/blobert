@@ -16,6 +16,8 @@
 # pre-commit — fast checks on staged files only:
 #   - py-parse: syntax-check staged Python files in asset_generation/python/
 #   - py-review: Ruff (E9/F/I from asset_generation/python/pyproject.toml) on staged asset_generation/**/*.py
+#   - py-pylint: Pylint too-many-statements (max 50) on staged asset_generation/python/**/*.py
+#   - py-organization: package/init/DRY; getattr/setattr forbidden on newly staged lines outside tests/
 #   - gd-review: hygiene + unexplained literals on added .gd lines (excludes tests/, reference_projects/)
 #
 # pre-push — full test suites:
@@ -50,6 +52,10 @@ pre-commit:
       name: Python (Ruff, pyproject.toml)
       glob: "asset_generation/**/*.py"
       run: task hooks:py-review -- {staged_files}
+    py-pylint:
+      name: Python (Pylint too-many-statements)
+      glob: "asset_generation/python/**/*.py"
+      run: task hooks:py-pylint -- {staged_files}
     py-organization:
       name: Python organization guardrails
       glob: "asset_generation/**/*.py"

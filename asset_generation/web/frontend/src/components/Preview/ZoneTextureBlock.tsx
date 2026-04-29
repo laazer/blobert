@@ -273,9 +273,16 @@ function shouldShowTextureParam(
   // Pattern fields (spots and checkerboard share pattern settings)
   if (defKey.includes("_texture_spot_")) {
     const showForSpots = textureMode === "spots" || textureMode === "checkerboard";
-    // Color fields will be rendered by renderPatternColorPicker (hide them from generic ControlRow)
-    if ((defKey === `feat_${zone}_texture_spot_color` || defKey === `feat_${zone}_texture_spot_bg_color`) && showForSpots) {
-      return true; // Signal to render, but renderPatternColorPicker will handle it
+    // Color fields are rendered only via renderPatternColorPicker.
+    if (defKey === `feat_${zone}_texture_spot_color` || defKey === `feat_${zone}_texture_spot_bg_color`) {
+      return showForSpots;
+    }
+    // Hide image/gradient helper keys from generic rows; picker manages them.
+    if (
+      defKey.startsWith(`feat_${zone}_texture_spot_color_`) ||
+      defKey.startsWith(`feat_${zone}_texture_spot_bg_color_`)
+    ) {
+      return false;
     }
     // Other fields (density, etc.) are rendered generically
     return showForSpots;
@@ -283,9 +290,16 @@ function shouldShowTextureParam(
 
   if (defKey.includes("_texture_stripe_")) {
     const showForStripes = textureMode === "stripes";
-    // Color fields will be rendered by renderPatternColorPicker
-    if ((defKey === `feat_${zone}_texture_stripe_color` || defKey === `feat_${zone}_texture_stripe_bg_color`) && showForStripes) {
-      return true;
+    // Color fields are rendered only via renderPatternColorPicker.
+    if (defKey === `feat_${zone}_texture_stripe_color` || defKey === `feat_${zone}_texture_stripe_bg_color`) {
+      return showForStripes;
+    }
+    // Hide image/gradient helper keys from generic rows; picker manages them.
+    if (
+      defKey.startsWith(`feat_${zone}_texture_stripe_color_`) ||
+      defKey.startsWith(`feat_${zone}_texture_stripe_bg_color_`)
+    ) {
+      return false;
     }
     // Other fields (width, etc.)
     return showForStripes;
@@ -367,6 +381,8 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
   const hexDefsOrdered = finishHexDefs.filter((d) => d.key === hexKey);
   const orphanFinishHex = finishHexDefs.filter((d) => d.key !== finishKey && d.key !== hexKey);
 
+  // Show base color controls only when no pattern overlay is active.
+  const showBaseColorPicker = textureMode === "none";
   // Show base hex only when texture_mode is "none" (no pattern overlay) AND color_mode is "single"
   const showBaseHex = textureMode === "none" && colorMode === "single";
 
@@ -447,6 +463,9 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
               if (v.preview) {
                 setAnimatedBuildOption(slug, imagePreviewKey, v.preview);
               }
+            if (v.assetId) {
+              setAnimatedBuildOption(slug, imageIdKey, v.assetId);
+            }
             }
           }}
         />
@@ -492,43 +511,44 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       {/* Finish selection (moved above color picker for clarity) */}
       {finishDefsOrdered.map(row)}
 
-      {/* Color picker (independent, always visible) */}
-      <ColorPickerTabs
-        mode={colorPickerValue.type}
-        value={colorPickerValue}
-        onModeChange={(newColorMode) => {
-          // Handle color mode transition (single ↔ gradient ↔ image)
-          // Only carry palette for single ↔ gradient; image mode is independent
-          if (newColorMode !== "image" && colorMode !== "image") {
-            const carry = carryColorPaletteOnModeChange(zone, colorMode as "single" | "gradient", newColorMode as "single" | "gradient", values);
-            setAnimatedBuildOption(slug, colorModeKey, newColorMode);
-            if (Object.keys(carry).length > 0) {
-              applyAnimatedBuildOptionsForSlug(slug, carry);
+      {showBaseColorPicker ? (
+        <ColorPickerTabs
+          mode={colorPickerValue.type}
+          value={colorPickerValue}
+          onModeChange={(newColorMode) => {
+            // Handle color mode transition (single ↔ gradient ↔ image)
+            // Only carry palette for single ↔ gradient; image mode is independent
+            if (newColorMode !== "image" && colorMode !== "image") {
+              const carry = carryColorPaletteOnModeChange(zone, colorMode as "single" | "gradient", newColorMode as "single" | "gradient", values);
+              setAnimatedBuildOption(slug, colorModeKey, newColorMode);
+              if (Object.keys(carry).length > 0) {
+                applyAnimatedBuildOptionsForSlug(slug, carry);
+              }
+            } else {
+              // Switching to/from image mode: no palette carry needed
+              setAnimatedBuildOption(slug, colorModeKey, newColorMode);
             }
-          } else {
-            // Switching to/from image mode: no palette carry needed
-            setAnimatedBuildOption(slug, colorModeKey, newColorMode);
-          }
-        }}
-        onChange={(v) => {
-          // Handle color value changes within current mode
-          if (v.type === "single") {
-            setAnimatedBuildOption(slug, colorHexKey, v.color);
-          } else if (v.type === "gradient") {
-            setAnimatedBuildOption(slug, colorAKey, v.colorA);
-            setAnimatedBuildOption(slug, colorBKey, v.colorB);
-            setAnimatedBuildOption(slug, colorDirKey, v.direction);
-          } else if (v.type === "image") {
-            // Store image preview URL and asset ID (for preloaded textures)
-            if (v.preview) {
-              setAnimatedBuildOption(slug, colorImagePreviewKey, v.preview);
+          }}
+          onChange={(v) => {
+            // Handle color value changes within current mode
+            if (v.type === "single") {
+              setAnimatedBuildOption(slug, colorHexKey, v.color);
+            } else if (v.type === "gradient") {
+              setAnimatedBuildOption(slug, colorAKey, v.colorA);
+              setAnimatedBuildOption(slug, colorBKey, v.colorB);
+              setAnimatedBuildOption(slug, colorDirKey, v.direction);
+            } else if (v.type === "image") {
+              // Store image preview URL and asset ID (for preloaded textures)
+              if (v.preview) {
+                setAnimatedBuildOption(slug, colorImagePreviewKey, v.preview);
+              }
+              if (v.assetId) {
+                setAnimatedBuildOption(slug, colorImageIdKey, v.assetId);
+              }
             }
-            if (v.assetId) {
-              setAnimatedBuildOption(slug, colorImageIdKey, v.assetId);
-            }
-          }
-        }}
-      />
+          }}
+        />
+      ) : null}
 
       {/* Texture mode selector (independent) */}
       {modeSelectDef ? (
@@ -560,16 +580,16 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       ) : null}
       {visibleNonFloatRows.map((def) => {
         // Detect pattern color fields and render with full 3-mode support
-        if (def.key.includes("_texture_spot_color") && !def.key.endsWith("_mode")) {
+        if (def.key === `feat_${zone}_texture_spot_color`) {
           return renderPatternColorPicker("spot_color", def.label);
         }
-        if (def.key.includes("_texture_spot_bg_color") && !def.key.endsWith("_mode")) {
+        if (def.key === `feat_${zone}_texture_spot_bg_color`) {
           return renderPatternColorPicker("spot_bg_color", def.label);
         }
-        if (def.key.includes("_texture_stripe_color") && !def.key.endsWith("_mode")) {
+        if (def.key === `feat_${zone}_texture_stripe_color`) {
           return renderPatternColorPicker("stripe_color", def.label);
         }
-        if (def.key.includes("_texture_stripe_bg_color") && !def.key.endsWith("_mode")) {
+        if (def.key === `feat_${zone}_texture_stripe_bg_color`) {
           return renderPatternColorPicker("stripe_bg_color", def.label);
         }
         // For all other controls (pattern density, width, etc.), use generic ControlRow

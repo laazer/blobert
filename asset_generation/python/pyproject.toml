@@ -22,6 +22,8 @@ dev = [
     # chardet 7 ships darwin .so helpers; mixed-arch venvs (e.g. Rosetta) can ImportError. Stay on 5.x.
     "chardet>=5.2,<6",
     "ruff>=0.8",
+    # Pre-commit: function size (too-many-statements / R0915); see [tool.pylint].
+    "pylint>=3.3",
     # MCP stdio server (ticket M23-03); also in optional group `mcp` for minimal installs.
     "fastmcp>=3.2.3",
     # Type stubs for bpy — enables IDE completion without a full Blender install.
@@ -49,6 +51,15 @@ select = ["E9", "F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401"]
+
+# Pylint (pre-commit hooks:py-pylint): only too-many-statements, aligned with a ~50 SLOC function budget.
+# Statement count is not identical to physical lines; it is the standard Pylint/R0915 signal for "split this function."
+[tool.pylint.main]
+disable = ["all"]
+enable = ["too-many-statements"]
+
+[tool.pylint.design]
+max-statements = 50
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

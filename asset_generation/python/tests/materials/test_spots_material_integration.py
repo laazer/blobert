@@ -17,21 +17,21 @@ import pytest
 
 
 class TestMaterialForSpotsZone:
-    """Tests for _material_for_spots_zone() factory function (AC3.1 – AC3.11)."""
+    """Tests for material_for_spots_zone() factory function (AC3.1 – AC3.11)."""
 
     def test_function_exists(self) -> None:
         """AC3.1: Function exists in material_system.py."""
         try:
             from src.materials.material_system import (
-                _material_for_spots_zone,  # noqa: E402, F401
+                material_for_spots_zone,  # noqa: E402, F401
             )
         except ImportError:
-            pytest.skip("_material_for_spots_zone not yet implemented")
+            pytest.skip("material_for_spots_zone not yet implemented")
 
     @patch("src.materials.material_system.bpy")
     def test_function_signature_correct(self, mock_bpy) -> None:  # noqa: ARG002
         """AC3.2: Function signature matches spec."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         # Verify function accepts required parameters
         mock_mat = MagicMock()
@@ -51,7 +51,7 @@ class TestMaterialForSpotsZone:
                 mock_create.return_value = mock_img
 
                 try:
-                    result = _material_for_spots_zone(
+                    result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
                         spot_hex="ff0000",
@@ -68,7 +68,7 @@ class TestMaterialForSpotsZone:
     @patch("src.materials.material_system.bpy")
     def test_calls_create_spots_png_and_load(self, mock_bpy) -> None:  # noqa: ARG002
         """AC3.3: Calls create_spots_png_and_load with correct parameters."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -86,7 +86,7 @@ class TestMaterialForSpotsZone:
                 mock_create_mat.return_value = mock_mat
 
                 try:
-                    _material_for_spots_zone(
+                    material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
                         spot_hex="ff0000",
@@ -102,7 +102,7 @@ class TestMaterialForSpotsZone:
     @patch("src.materials.material_system.bpy")
     def test_returns_material_with_nodes_enabled(self, mock_bpy) -> None:  # noqa: ARG002
         """AC3.4: Returns bpy.types.Material with use_nodes = True."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -117,7 +117,7 @@ class TestMaterialForSpotsZone:
                 mock_create_mat.return_value = mock_mat
 
                 try:
-                    result = _material_for_spots_zone(
+                    result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
                         spot_hex="ff0000",
@@ -133,7 +133,7 @@ class TestMaterialForSpotsZone:
     @patch("src.materials.material_system.bpy")
     def test_material_name_correct_format(self, mock_bpy) -> None:  # noqa: ARG002
         """AC3.7: Material name is {base_palette_name}__feat_{instance_suffix}."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -149,7 +149,7 @@ class TestMaterialForSpotsZone:
                 mock_create_mat.return_value = mock_mat
 
                 try:
-                    result = _material_for_spots_zone(
+                    result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
                         spot_hex="ff0000",
@@ -197,7 +197,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -232,7 +232,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -268,7 +268,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -305,7 +305,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -339,7 +339,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -373,7 +373,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -391,7 +391,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
 
     @patch("src.materials.material_system.bpy")
     def test_calls_spots_material_factory(self, mock_bpy) -> None:  # noqa: ARG002
-        """AC4.8: Calls _material_for_spots_zone with correct args."""
+        """AC4.8: Calls material_for_spots_zone with correct args."""
         from src.materials.material_system import (
             apply_zone_texture_pattern_overrides,  # noqa: E402
         )
@@ -407,7 +407,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat
             with patch(
@@ -443,7 +443,7 @@ class TestApplyZoneTexturePatternOverridesSpots:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone"
+            "src.materials.material_system.material_for_spots_zone"
         ) as mock_spots_mat:
             mock_spots_mat.return_value = mock_mat_new
             with patch(

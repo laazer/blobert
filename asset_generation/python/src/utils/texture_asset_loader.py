@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import unquote, urlparse
 
 # Do not import PIL at module load. generator.py runs under Blender's bundled
 # Python (not the project venv); only `load_texture_image` needs Pillow.
@@ -74,3 +75,34 @@ def get_texture_asset_filepath(asset_id: str) -> Path:
         raise ValueError(f"Texture asset not found: {asset_id}")
 
     return get_texture_assets_dir() / metadata["filename"]
+
+
+def infer_texture_asset_id_from_preview(preview: str | None) -> Optional[str]:
+    """Infer texture asset ID from a preview URL/path when ID is unavailable.
+
+    Supports frontend preview shapes such as:
+    - /api/assets/textures/file/demo%20textures3.png
+    - http://localhost:8000/api/assets/textures/file/demo%20textures3.png
+    - raw filename
+    """
+    if not preview:
+        return None
+    raw = str(preview).strip()
+    if not raw:
+        return None
+
+    candidate = unquote(raw)
+    parsed = urlparse(candidate)
+    path = parsed.path if parsed.path else candidate
+    filename = Path(path).name
+    if not filename:
+        return None
+
+    manifest = load_texture_manifest()
+    for asset_id, metadata in manifest.items():
+        if not isinstance(metadata, dict):
+            continue
+        mf = str(metadata.get("filename", ""))
+        if mf and Path(mf).name == filename:
+            return str(asset_id)
+    return None

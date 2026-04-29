@@ -2,9 +2,6 @@
 Material creation system with procedural textures
 """
 
-from __future__ import annotations
-
-import math
 from typing import Any, Callable, Mapping
 
 import bpy
@@ -16,11 +13,18 @@ from src.materials.gradient_generator import (
     gradient_image_pixel_buffer,
     sanitize_image_label,
 )
+from src.materials.material_types import (
+    RGBA,
+    FeatureMap,
+    ZoneTextureOptions,
+    feature_zone_map,
+)
 from src.materials.presets import parse_hex_color
 from src.utils.materials import (
     MaterialCategories,
     MaterialColors,
 )
+from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
 
 get_enemy_materials = _material_system_enemy_themes.get_enemy_materials
 
@@ -46,7 +50,7 @@ def _sanitize_hex_input(raw: str) -> str:
     return s[:6]
 
 
-def _force_principled_value(bsdf, input_name, value):
+def _force_principled_value(bsdf: Any, input_name: str, value: object) -> None:
     """Force a Principled input to a value by removing inbound links."""
     socket = bsdf.inputs.get(input_name)
     if socket is None:
@@ -57,16 +61,16 @@ def _force_principled_value(bsdf, input_name, value):
 
 
 def create_material(
-    name,
-    color,
-    metallic=0.0,
-    roughness=0.5,
-    alpha=1.0,
-    transmission=0.0,
-    add_texture=True,
-    force_surface=False,
-    force_base_color=False,
-):
+    name: str,
+    color: RGBA,
+    metallic: float = 0.0,
+    roughness: float = 0.5,
+    alpha: float = 1.0,
+    transmission: float = 0.0,
+    add_texture: bool = True,
+    force_surface: bool = False,
+    force_base_color: bool = False,
+) -> bpy.types.Material:
     """Create an enhanced material with optional procedural textures"""
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
@@ -90,12 +94,12 @@ def create_material(
     if "Transmission" in bsdf.inputs:
         bsdf.inputs["Transmission"].default_value = transmission
 
-    if alpha < 1.0:  # pragma: no cover
+    if alpha < 1.0:
         mat.blend_method = "BLEND"
         if "Alpha" in bsdf.inputs:
             bsdf.inputs["Alpha"].default_value = alpha
 
-    if add_texture:  # pragma: no cover
+    if add_texture:
         texture_type = MaterialCategories.get_texture_type(name)
         handler = _TEXTURE_HANDLERS.get(texture_type)
         if handler:
@@ -113,7 +117,7 @@ def create_material(
     return mat
 
 
-def add_organic_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cover
+def add_organic_texture(mat: Any, nodes: Any, links: Any, bsdf: Any, base_color: RGBA) -> None:
     """Add organic/biological texture details"""
     noise = nodes.new(type="ShaderNodeTexNoise")
     noise.location = (-600, 200)
@@ -137,12 +141,12 @@ def add_organic_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cove
     links.new(mix.outputs["Color"], bsdf.inputs["Base Color"])
 
 
-def add_metallic_texture(_mat, _nodes, _links, bsdf, _base_color):
+def add_metallic_texture(_mat: Any, _nodes: Any, _links: Any, bsdf: Any, _base_color: RGBA) -> None:
     """Emphasize metal response without driving roughness from noise (PMCP-1)."""
     bsdf.inputs["Metallic"].default_value = 0.9
 
 
-def add_emissive_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cover
+def add_emissive_texture(mat: Any, nodes: Any, links: Any, bsdf: Any, base_color: RGBA) -> None:
     """Add glowing/emissive texture"""
     emission = nodes.new(type="ShaderNodeEmission")
     emission.location = (0, -200)
@@ -180,7 +184,7 @@ def add_emissive_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cov
     links.new(math_node.outputs["Value"], bsdf.inputs["Emission Strength"])
 
 
-def add_rocky_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cover
+def add_rocky_texture(mat: Any, nodes: Any, links: Any, bsdf: Any, base_color: RGBA) -> None:
     """Add rocky/stone texture"""
     noise_large = nodes.new(type="ShaderNodeTexNoise")
     noise_large.location = (-600, 100)
@@ -211,7 +215,7 @@ def add_rocky_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cover
     bsdf.inputs["Roughness"].default_value = 0.9
 
 
-def add_crystalline_texture(mat, nodes, links, bsdf, base_color):  # pragma: no cover
+def add_crystalline_texture(mat: Any, nodes: Any, links: Any, bsdf: Any, base_color: RGBA) -> None:
     """Add ice/crystal texture"""
     bsdf.inputs["Roughness"].default_value = 0.1
     if "Transmission" in bsdf.inputs:
@@ -284,7 +288,7 @@ def setup_materials(
     return materials
 
 
-def _palette_base_name_from_material(mat) -> str:
+def _palette_base_name_from_material(mat: bpy.types.Material) -> str:
     name = getattr(mat, "name", "") or ""
     if "." in name:
         name = name.rsplit(".", 1)[0]
@@ -310,7 +314,7 @@ def _material_for_color_image_zone(
     links = mat.node_tree.links
     principled = None
     for node in nodes:
-        if node.type == "BSDF" and isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
+        if isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
             principled = node
             break
     if not principled:
@@ -380,11 +384,12 @@ def _material_for_finish_hex(
 
 def apply_feature_slot_overrides(
     slot_materials: dict[str, bpy.types.Material | None],
-    features: Mapping[str, Any] | None,
-    build_options: Mapping[str, Any] | None = None,
+    features: FeatureMap | None,
+    build_options: FeatureMap | None = None,
 ) -> dict[str, bpy.types.Material | None]:
     """Re-create body/head/limbs/extra materials when ``features`` sets finish or hex overrides."""
-    if not features:
+    zone_features = feature_zone_map(features)
+    if not zone_features:
         return slot_materials
     if build_options is None:
         build_options = {}
@@ -394,15 +399,17 @@ def apply_feature_slot_overrides(
     for slot_key, mat in list(out.items()):
         if mat is None:
             continue
-        slot_feat = features.get(slot_key)
-        if not isinstance(slot_feat, dict):
+        slot_feat = zone_features.get(slot_key)
+        if slot_feat is None:
             continue
 
         # Check for image mode first (priority over hex/finish)
         # Read from nested color_image structure (already merged from flat keys by schema)
-        color_image = slot_feat.get("color_image")
-        if isinstance(color_image, dict) and color_image.get("mode") == "image":
-            asset_id = (color_image.get("id") or "").strip()
+        color_image = slot_feat.color_image
+        if color_image is not None and color_image.mode == "image":
+            asset_id = color_image.asset_id
+            if not asset_id:
+                asset_id = infer_texture_asset_id_from_preview(color_image.preview) or ""
             if asset_id:
                 out[slot_key] = _material_for_color_image_zone(
                     base_material=mat,
@@ -412,8 +419,8 @@ def apply_feature_slot_overrides(
                 continue  # Skip hex/finish branch for this zone
 
         # Existing hex/finish handling
-        finish = slot_feat.get("finish") or "default"
-        hex_str = (slot_feat.get("hex") or "").strip()
+        finish = slot_feat.finish or "default"
+        hex_str = slot_feat.hex_value.strip()
         if finish == "default" and not hex_str:
             continue
 
@@ -434,25 +441,12 @@ def _rgba_from_hex_or_fallback(
     if len(h) != 6:
         return fallback_rgba
     try:
-        return _parse_hex_color(h)
+        return parse_hex_color(h)
     except ValueError:
         return fallback_rgba
 
 
-def _rgba_from_hex_or_default(  # pragma: no cover
-    hex_str: str, default_rgba: tuple[float, float, float, float]
-) -> tuple[float, float, float, float]:
-    """Like _rgba_from_hex_or_fallback but returns a sensible default when empty."""
-    h = _sanitize_hex_input(hex_str)
-    if len(h) != 6:
-        return default_rgba
-    try:
-        return _parse_hex_color(h)
-    except ValueError:
-        return default_rgba
-
-
-def _find_principled_bsdf(nodes) -> object | None:  # pragma: no cover
+def _find_principled_bsdf(nodes: Any) -> object | None:
     """Locate Principled BSDF across Blender versions (``type`` vs ``bl_idname``)."""
     for n in nodes:
         if getattr(n, "type", None) == "BSDF_PRINCIPLED":
@@ -742,7 +736,7 @@ def _material_for_checkerboard_zone(
     return mat
 
 
-def _material_for_asset_zone(  # pragma: no cover
+def _material_for_asset_zone(
     base_material: bpy.types.Material,
     asset_id: str,
     tile_repeat: float = 1.0,
@@ -761,7 +755,7 @@ def _material_for_asset_zone(  # pragma: no cover
 
     principled = None
     for node in nodes:
-        if node.type == "BSDF" and isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
+        if isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
             principled = node
             break
 
@@ -795,6 +789,106 @@ def _material_for_asset_zone(  # pragma: no cover
     return mat
 
 
+def _apply_gradient_pattern(
+    mat: bpy.types.Material,
+    settings: ZoneTextureOptions,
+) -> bpy.types.Material:
+    return _material_for_gradient_zone(
+        base_palette_name=_palette_base_name_from_material(mat),
+        finish=settings.finish,
+        grad_a_hex=settings.gradient_a_hex,
+        grad_b_hex=settings.gradient_b_hex,
+        direction=settings.gradient_direction,
+        zone_hex_fallback=settings.zone_hex,
+        instance_suffix=f"{settings.zone}_tex_grad",
+    )
+
+
+def _apply_asset_pattern(mat: bpy.types.Material, settings: ZoneTextureOptions) -> bpy.types.Material | None:
+    if not settings.asset_id:
+        return None
+    return _material_for_asset_zone(
+        base_material=mat,
+        asset_id=settings.asset_id,
+        tile_repeat=settings.tile_repeat,
+        instance_suffix=f"{settings.zone}_tex_asset",
+    )
+
+
+def _apply_spots_pattern(
+    mat: bpy.types.Material,
+    settings: ZoneTextureOptions,
+) -> bpy.types.Material:
+    pattern_asset_id = settings.pattern_image_asset_id(("spot_color", "spot_bg_color"))
+    if pattern_asset_id:
+        return _material_for_asset_zone(
+            base_material=mat,
+            asset_id=pattern_asset_id,
+            tile_repeat=settings.tile_repeat,
+            instance_suffix=f"{settings.zone}_tex_asset",
+        )
+    return material_for_spots_zone(
+        base_palette_name=_palette_base_name_from_material(mat),
+        finish=settings.finish,
+        spot_hex=settings.spot_color.resolved_hex(),
+        bg_hex=settings.spot_bg_color.resolved_hex(),
+        density=settings.spot_density,
+        zone_hex_fallback=settings.zone_hex,
+        instance_suffix=f"{settings.zone}_tex_spot",
+    )
+
+
+def _apply_checkerboard_pattern(
+    mat: bpy.types.Material,
+    settings: ZoneTextureOptions,
+) -> bpy.types.Material:
+    pattern_asset_id = settings.pattern_image_asset_id(("spot_color", "spot_bg_color"))
+    if pattern_asset_id:
+        return _material_for_asset_zone(
+            base_material=mat,
+            asset_id=pattern_asset_id,
+            tile_repeat=settings.tile_repeat,
+            instance_suffix=f"{settings.zone}_tex_asset",
+        )
+    return _material_for_checkerboard_zone(
+        base_palette_name=_palette_base_name_from_material(mat),
+        finish=settings.finish,
+        color_a_hex=settings.spot_color.resolved_hex(),
+        color_b_hex=settings.spot_bg_color.resolved_hex(),
+        density=settings.spot_density,
+        zone_hex_fallback=settings.zone_hex,
+        instance_suffix=f"{settings.zone}_tex_checker",
+    )
+
+
+def _apply_stripes_pattern(
+    mat: bpy.types.Material,
+    settings: ZoneTextureOptions,
+) -> bpy.types.Material:
+    pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
+    if pattern_asset_id:
+        return _material_for_asset_zone(
+            base_material=mat,
+            asset_id=pattern_asset_id,
+            tile_repeat=settings.tile_repeat,
+            instance_suffix=f"{settings.zone}_tex_asset",
+        )
+    from .material_stripes_zone import material_for_stripes_zone
+
+    return material_for_stripes_zone(
+        base_palette_name=_palette_base_name_from_material(mat),
+        finish=settings.finish,
+        stripe_hex=settings.stripe_color.resolved_hex(),
+        bg_hex=settings.stripe_bg_color.resolved_hex(),
+        stripe_width=settings.stripe_width,
+        stripe_preset=settings.stripe_preset,
+        rot_yaw_deg=settings.stripe_yaw,
+        rot_pitch_deg=settings.stripe_pitch,
+        zone_hex_fallback=settings.zone_hex,
+        instance_suffix=f"{settings.zone}_tex_stripe",
+    )
+
+
 def apply_zone_texture_pattern_overrides(
     slot_materials: dict[str, bpy.types.Material | None],
     build_options: Mapping[str, Any] | None,
@@ -805,149 +899,28 @@ def apply_zone_texture_pattern_overrides(
 
     out: dict[str, bpy.types.Material | None] = dict(slot_materials)
     features = build_options.get("features")
-    feat_dict: dict[str, Any] = features if isinstance(features, dict) else {}
+    zone_features = feature_zone_map(features if isinstance(features, dict) else None)
 
     for zone, mat in list(out.items()):
         if mat is None:
             continue
-        mode = (
-            str(build_options.get(f"feat_{zone}_texture_mode", "none")).strip().lower()
+        settings = ZoneTextureOptions.from_build_options(
+            zone=zone,
+            zone_features=zone_features,
+            build_options=build_options,
         )
-        if mode == "gradient":
-            base_palette_name = _palette_base_name_from_material(mat)
-            zf = feat_dict.get(zone)
-            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
-            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
-
-            grad_a = str(build_options.get(f"feat_{zone}_texture_grad_color_a", "") or "")
-            grad_b = str(build_options.get(f"feat_{zone}_texture_grad_color_b", "") or "")
-            direction = str(
-                build_options.get(f"feat_{zone}_texture_grad_direction", "horizontal")
-                or "horizontal"
-            )
-            out[zone] = _material_for_gradient_zone(
-                base_palette_name=base_palette_name,
-                finish=finish,
-                grad_a_hex=grad_a,
-                grad_b_hex=grad_b,
-                direction=direction,
-                zone_hex_fallback=zone_hex,
-                instance_suffix=f"{zone}_tex_grad",
-            )
-        elif mode == "assets":
-            asset_id = str(build_options.get(f"feat_{zone}_texture_asset_id", "") or "").strip()
-            if asset_id:
-                tile_repeat = float(build_options.get(f"feat_{zone}_texture_asset_tile_repeat", 1.0) or 1.0)
-                out[zone] = _material_for_asset_zone(
-                    base_material=mat,
-                    asset_id=asset_id,
-                    tile_repeat=tile_repeat,
-                    instance_suffix=f"{zone}_tex_asset",
-                )
-        elif mode == "spots":
-            base_palette_name = _palette_base_name_from_material(mat)
-            zf = feat_dict.get(zone)
-            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
-            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
-
-            spot_color = str(build_options.get(f"feat_{zone}_texture_spot_color", "") or "")
-            bg_color = str(build_options.get(f"feat_{zone}_texture_spot_bg_color", "") or "")
-            density = float(build_options.get(f"feat_{zone}_texture_spot_density", 1.0) or 1.0)
-            # Clamp density to valid range [0.1, 5.0]
-            density = max(0.1, min(5.0, density))
-
-            out[zone] = _material_for_spots_zone(
-                base_palette_name=base_palette_name,
-                finish=finish,
-                spot_hex=spot_color,
-                bg_hex=bg_color,
-                density=density,
-                zone_hex_fallback=zone_hex,
-                instance_suffix=f"{zone}_tex_spot",
-            )
-        elif mode == "checkerboard":
-            base_palette_name = _palette_base_name_from_material(mat)
-            zf = feat_dict.get(zone)
-            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
-            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
-            color_a = str(build_options.get(f"feat_{zone}_texture_spot_color", "") or "")
-            color_b = str(build_options.get(f"feat_{zone}_texture_spot_bg_color", "") or "")
-            density = float(build_options.get(f"feat_{zone}_texture_spot_density", 1.0) or 1.0)
-            density = max(0.1, min(5.0, density))
-            out[zone] = _material_for_checkerboard_zone(
-                base_palette_name=base_palette_name,
-                finish=finish,
-                color_a_hex=color_a,
-                color_b_hex=color_b,
-                density=density,
-                zone_hex_fallback=zone_hex,
-                instance_suffix=f"{zone}_tex_checker",
-            )
-        elif mode == "stripes":
-            from .material_stripes_zone import material_for_stripes_zone
-
-            base_palette_name = _palette_base_name_from_material(mat)
-            zf = feat_dict.get(zone)
-            finish = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
-            zone_hex = (zf.get("hex") or "").strip() if isinstance(zf, dict) else ""
-
-            stripe_color = str(build_options.get(f"feat_{zone}_texture_stripe_color", "") or "")
-            bg_color = str(build_options.get(f"feat_{zone}_texture_stripe_bg_color", "") or "")
-            stripe_w = float(build_options.get(f"feat_{zone}_texture_stripe_width", 0.2) or 0.2)
-            stripe_w = max(0.05, min(1.0, stripe_w))
-            stripe_preset = str(
-                build_options.get(f"feat_{zone}_texture_stripe_direction", "beachball")
-                or "beachball"
-            ).strip().lower()
-            if stripe_preset == "horizontal":
-                stripe_preset = "doplar"
-            elif stripe_preset == "vertical":
-                stripe_preset = "beachball"
-            elif stripe_preset == "x":
-                stripe_preset = "beachball"
-            elif stripe_preset == "y":
-                stripe_preset = "doplar"
-            elif stripe_preset == "z":
-                stripe_preset = "swirl"
-            if stripe_preset not in ("beachball", "doplar", "swirl"):
-                stripe_preset = "beachball"
-
-            def _stripe_rot(key: str) -> float:
-                """Extract rotation value in degrees from build_options; clamp to ±360; filter NaN/Inf."""
-                try:
-                    v = float(build_options.get(key, 0.0) or 0.0)
-                except (TypeError, ValueError):
-                    v = 0.0
-                if math.isnan(v) or math.isinf(v):
-                    v = 0.0
-                return max(-360.0, min(360.0, v))
-
-            # Stripe rotation parameters (yaw, pitch) control UV rotation before pattern generation.
-            # Mapping: yaw → rot_y (horizontal rotation), pitch → rot_x (vertical rotation).
-            yaw_k = f"feat_{zone}_texture_stripe_rot_yaw"
-            pitch_k = f"feat_{zone}_texture_stripe_rot_pitch"
-            yaw = _stripe_rot(yaw_k)
-            pitch = _stripe_rot(pitch_k)
-            # Fallback to legacy keys if new ones not present.
-            lx = f"feat_{zone}_texture_stripe_rot_x"
-            ly = f"feat_{zone}_texture_stripe_rot_y"
-            if pitch_k not in build_options and lx in build_options:
-                pitch = _stripe_rot(lx)
-            if yaw_k not in build_options and ly in build_options:
-                yaw = _stripe_rot(ly)
-
-            out[zone] = material_for_stripes_zone(
-                base_palette_name=base_palette_name,
-                finish=finish,
-                stripe_hex=stripe_color,
-                bg_hex=bg_color,
-                stripe_width=stripe_w,
-                stripe_preset=stripe_preset,
-                rot_yaw_deg=yaw,
-                rot_pitch_deg=pitch,
-                zone_hex_fallback=zone_hex,
-                instance_suffix=f"{zone}_tex_stripe",
-            )
+        if settings.mode == "gradient":
+            out[zone] = _apply_gradient_pattern(mat, settings)
+        elif settings.mode == "assets":
+            maybe = _apply_asset_pattern(mat, settings)
+            if maybe is not None:
+                out[zone] = maybe
+        elif settings.mode == "spots":
+            out[zone] = _apply_spots_pattern(mat, settings)
+        elif settings.mode == "checkerboard":
+            out[zone] = _apply_checkerboard_pattern(mat, settings)
+        elif settings.mode == "stripes":
+            out[zone] = _apply_stripes_pattern(mat, settings)
     return out
 
 
@@ -955,25 +928,23 @@ def material_for_zone_part(
     zone: str,
     part_id: str | None,
     slot_materials: dict[str, bpy.types.Material | None],
-    features: Mapping[str, Any] | None,
+    features: FeatureMap | None,
 ) -> bpy.types.Material | None:
     """Resolve material for a sub-part: optional ``features[zone]['parts'][part_id]`` overrides zone slot."""
     base = slot_materials.get(zone)
     if base is None or not part_id or not features:
         return base
-    zf = features.get(zone)
-    if not isinstance(zf, dict):
+    zone_features = feature_zone_map(features)
+    zf = zone_features.get(zone)
+    if zf is None:
         return base
-    parts = zf.get("parts")
-    if not isinstance(parts, dict):
+    pf = zf.parts.get(part_id)
+    if pf is None:
         return base
-    pf = parts.get(part_id)
-    if not isinstance(pf, dict):
-        return base
-    p_hex = _sanitize_hex_input(pf.get("hex", ""))
-    p_fin = str(pf.get("finish", "default"))
-    z_hex = _sanitize_hex_input(zf.get("hex", ""))
-    z_fin = str(zf.get("finish", "default"))
+    p_hex = _sanitize_hex_input(pf.hex_value)
+    p_fin = str(pf.finish)
+    z_hex = _sanitize_hex_input(zf.hex_value)
+    z_fin = str(zf.finish)
     wants_override = bool(p_hex) or p_fin != "default"
     if not wants_override:
         return base
@@ -994,7 +965,7 @@ def material_for_zone_part(
 def material_for_zone_geometry_extra(
     zone: str,
     slot_materials: dict[str, bpy.types.Material | None],
-    features: Mapping[str, Any] | None,
+    features: FeatureMap | None,
     extra_finish: str,
     extra_hex: str,
 ) -> bpy.types.Material | None:
@@ -1004,9 +975,9 @@ def material_for_zone_geometry_extra(
         return None
     xz = _sanitize_hex_input(extra_hex)
     fin = str(extra_finish or "default")
-    zf = (features or {}).get(zone) if features else None
-    z_hex = _sanitize_hex_input(zf.get("hex", "")) if isinstance(zf, dict) else ""
-    z_fin = str(zf.get("finish", "default")) if isinstance(zf, dict) else "default"
+    zf = feature_zone_map(features).get(zone)
+    z_hex = _sanitize_hex_input(zf.hex_value) if zf is not None else ""
+    z_fin = str(zf.finish) if zf is not None else "default"
     eff_fin = fin if fin != "default" else z_fin
     eff_hex = xz or z_hex
     if eff_fin == "default" and not eff_hex:
@@ -1020,17 +991,10 @@ def material_for_zone_geometry_extra(
     )
 
 
-def apply_material_to_object(obj, material) -> None:
+def apply_material_to_object(obj: Any, material: bpy.types.Material | None) -> None:
     """Apply material to a mesh object"""
     if obj and obj.type == "MESH" and material:
         if len(obj.data.materials) == 0:
             obj.data.materials.append(material)
         else:
             obj.data.materials[0] = material
-
-_material_for_spots_zone = material_for_spots_zone
-
-
-_gradient_image_pixel_buffer = gradient_image_pixel_buffer
-_sanitize_image_label = sanitize_image_label
-_parse_hex_color = parse_hex_color

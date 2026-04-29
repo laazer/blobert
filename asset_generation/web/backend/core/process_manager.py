@@ -36,14 +36,16 @@ class ProcessManager:
         return self._run_id
 
     async def stream_output(self) -> AsyncIterator[str]:
-        if self._process is None or self._process.stdout is None:
+        process = self._process
+        if process is None or process.stdout is None:
             return
+        stdout = process.stdout
         while True:
-            line = await self._process.stdout.readline()
+            line = await stdout.readline()
             if not line:
                 break
             yield line.decode("utf-8", errors="replace").rstrip("\n")
-        await self._process.wait()
+        await process.wait()
 
     async def kill(self) -> None:
         if self._process and self._process.returncode is None:

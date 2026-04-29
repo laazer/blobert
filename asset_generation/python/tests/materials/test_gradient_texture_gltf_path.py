@@ -1,7 +1,7 @@
 """Behavioral tests for zone gradient → packed image → TexImage (glTF-exportable path).
 
 Previous tests mocked ``_add_uv_gradient_to_principled``, so regressions in ``bpy.data.images``
-or ``_gradient_image_pixel_buffer`` were invisible. These tests lock the real wiring.
+or ``gradient_image_pixel_buffer`` (from ``gradient_generator``) were invisible. These tests lock the real wiring.
 
 What this file does *not* catch: ``bpy.ops.export_scene.gltf`` output (run Blender once and
 parse the GLB JSON + embedded PNG if a regression is viewer-only).
@@ -13,13 +13,17 @@ from unittest import skip
 from unittest.mock import MagicMock, patch
 
 from src.materials import material_system as ms
+from src.materials.gradient_generator import (
+    gradient_image_pixel_buffer,
+    sanitize_image_label,
+)
 
 
 def test_gradient_buffer_horizontal_length_and_endpoints() -> None:
     """256×4 horizontal strip: left ≈ color_a, right ≈ color_b (bottom row, left/right)."""
     a = (1.0, 0.0, 0.0, 1.0)
     b = (0.0, 0.0, 1.0, 1.0)
-    buf = ms._gradient_image_pixel_buffer(256, 4, a, b, "horizontal")
+    buf = gradient_image_pixel_buffer(256, 4, a, b, "horizontal")
     assert len(buf) == 256 * 4 * 4
     # Bottom row y=0: x=0 (left), x=255 (right)
     i0 = (0 * 256 + 0) * 4
@@ -29,14 +33,14 @@ def test_gradient_buffer_horizontal_length_and_endpoints() -> None:
 
 
 def test_gradient_buffer_vertical_dimensions() -> None:
-    buf = ms._gradient_image_pixel_buffer(4, 256, (1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), "vertical")
+    buf = gradient_image_pixel_buffer(4, 256, (1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), "vertical")
     assert len(buf) == 4 * 256 * 4
 
 
 def test_gradient_buffer_radial_center_vs_corner() -> None:
     a = (1.0, 0.0, 0.0, 1.0)
     b = (0.0, 0.0, 1.0, 1.0)
-    buf = ms._gradient_image_pixel_buffer(128, 128, a, b, "radial")
+    buf = gradient_image_pixel_buffer(128, 128, a, b, "radial")
     assert len(buf) == 128 * 128 * 4
     # Center (t≈0) → color_a; corner (t larger) → closer to b
     mid = 64
@@ -46,8 +50,8 @@ def test_gradient_buffer_radial_center_vs_corner() -> None:
 
 
 def test_sanitize_image_label() -> None:
-    assert ms._sanitize_image_label("body_tex_grad!") == "body_tex_grad_"
-    assert ms._sanitize_image_label("") == "gradient"
+    assert sanitize_image_label("body_tex_grad!") == "body_tex_grad_"
+    assert sanitize_image_label("") == "gradient"
 
 
 def _make_node_socket(socket_type: str = "base_color"):

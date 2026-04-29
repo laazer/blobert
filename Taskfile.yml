@@ -78,6 +78,11 @@ tasks:
     cmds:
       - bash .lefthook/scripts/py-review.sh {{.CLI_ARGS}}
 
+  hooks:py-pylint:
+    desc: Pylint too-many-statements for staged Python (asset_generation/python/pyproject.toml)
+    cmds:
+      - bash .lefthook/scripts/py-pylint.sh {{.CLI_ARGS}}
+
   hooks:py-organization:
     desc: Python organization guardrails for staged files (project .venv or uv run)
     cmds:

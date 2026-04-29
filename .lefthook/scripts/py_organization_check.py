@@ -4,7 +4,13 @@
 import ast
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
+
+_LEFTHOOK_SCRIPTS = Path(__file__).resolve().parent
+if str(_LEFTHOOK_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_LEFTHOOK_SCRIPTS))
+
+from precommit_git_diff import git_diff_cached, git_repo_root, parse_staged_additions
 
 MAX_FILE_LINES = 1500
 MAX_CLASS_LINES = 1000
@@ -18,13 +24,58 @@ _LINE_COUNT_EXEMPT: Tuple[str, ...] = (
     "asset_generation/python/src/utils/build_options/schema.py",
 )
 
+_FORBIDDEN_DYNAMIC_ACCESS: frozenset[str] = frozenset({"getattr", "setattr"})
+
 
 def class_span(node: ast.ClassDef) -> Optional[int]:
-    start = getattr(node, "lineno", None)
-    end = getattr(node, "end_lineno", None)
+    start = node.lineno
+    end = node.end_lineno
     if start is None or end is None:
         return None
     return end - start + 1
+
+
+def _call_dynamic_access_name(func: ast.expr) -> Optional[str]:
+    if isinstance(func, ast.Name) and func.id in _FORBIDDEN_DYNAMIC_ACCESS:
+        return func.id
+    if isinstance(func, ast.Attribute) and func.attr in _FORBIDDEN_DYNAMIC_ACCESS:
+        return func.attr
+    return None
+
+
+def _is_test_path(py_file: Path) -> bool:
+    return "tests" in py_file.parts or py_file.name.startswith("test_")
+
+
+def dynamic_access_errors(
+    py_file: Path, tree: ast.AST, touched_lines: Optional[Set[int]]
+) -> List[str]:
+    """Forbid getattr/setattr outside tests.
+
+    When ``touched_lines`` is ``None`` (no git repo), skip this rule.
+    Otherwise only flag calls whose lineno appears in staged additions (incremental policy).
+    """
+    if _is_test_path(py_file):
+        return []
+    if not touched_lines:
+        return []
+    errors: List[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_dynamic_access_name(node.func)
+        if name is None:
+            continue
+        lineno = node.lineno
+        if lineno is None:
+            continue
+        if touched_lines is not None and lineno not in touched_lines:
+            continue
+        errors.append(
+            f"{py_file}:{lineno}: avoid `{name}(...)` outside tests; "
+            "use explicit attributes, typing.Protocol, or structured APIs"
+        )
+    return errors
 
 
 def package_check(py_file: Path, errors: List[str]) -> None:
@@ -44,7 +95,7 @@ def package_check(py_file: Path, errors: List[str]) -> None:
             parent = parent.parent
 
 
-def check_file(py_file: Path) -> List[str]:
+def check_file(py_file: Path, touched_lines: Optional[Set[int]] = None) -> List[str]:
     errors: List[str] = []
 
     if not py_file.exists():
@@ -80,6 +131,7 @@ def check_file(py_file: Path) -> List[str]:
                     f"(max {MAX_CLASS_LINES}); extract helper classes/modules"
                 )
     errors.extend(private_import_errors(py_file, tree))
+    errors.extend(dynamic_access_errors(py_file, tree, touched_lines))
 
     duplicate_groups = find_duplicate_function_bodies(tree, content)
     for funcs in duplicate_groups:
@@ -114,7 +166,7 @@ def init_module_minimal_errors(py_file: Path, tree: ast.AST, lines: int) -> List
 
 def private_import_errors(py_file: Path, tree: ast.AST) -> List[str]:
     errors: List[str] = []
-    is_test_file = "tests" in py_file.parts or py_file.name.startswith("test_")
+    is_test_file = _is_test_path(py_file)
     is_dispatch_module = (
         py_file.name == "zone_geometry_extras_attach.py"
         or (py_file.name == "service.py" and "model_registry" in py_file.parts)
@@ -235,15 +287,34 @@ def codebase_dry_errors(
     return errors
 
 
+def _repo_relative_posix(py_file: Path, repo: Optional[Path]) -> str:
+    if repo is None:
+        return py_file.as_posix()
+    try:
+        return py_file.resolve().relative_to(repo).as_posix()
+    except ValueError:
+        return py_file.as_posix()
+
+
 def main(argv: List[str]) -> int:
     candidates = [Path(arg) for arg in argv[1:] if arg.endswith(".py")]
     if not candidates:
         return 0
 
+    repo = git_repo_root()
+    additions_map: dict[str, Set[int]] = {}
+    if repo is not None:
+        additions_map = {
+            path: {ln for ln, _ in items}
+            for path, items in parse_staged_additions(git_diff_cached(repo)).items()
+        }
+
     all_errors: List[str] = []
     codebase_catalog = build_codebase_catalog(candidates)
     for path in candidates:
-        all_errors.extend(check_file(path))
+        rel = _repo_relative_posix(path, repo)
+        touched: Optional[Set[int]] = additions_map.get(rel, set()) if repo is not None else None
+        all_errors.extend(check_file(path, touched_lines=touched))
     all_errors.extend(codebase_dry_errors(candidates, codebase_catalog))
 
     if all_errors:

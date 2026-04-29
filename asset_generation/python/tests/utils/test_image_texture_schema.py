@@ -273,3 +273,37 @@ def test_merge_features_for_slug_non_dict_color_image_in_feat_base_defaults() ->
         "id": None,
         "preview": None,
     }
+
+
+def test_pattern_color_image_keys_preserved_in_options_output() -> None:
+    """Pattern color image keys must survive options_for_enemy filtering for material application."""
+    out = options_for_enemy(
+        "spider",
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_spot_color_mode": "image",
+            "feat_body_texture_spot_color_image_id": "demo_textures3",
+            "feat_body_texture_spot_color_image_preview": "/api/assets/textures/demo_textures3",
+        },
+    )
+    assert out["feat_body_texture_mode"] == "spots"
+    assert out["feat_body_texture_spot_color_mode"] == "image"
+    assert out["feat_body_texture_spot_color_image_id"] == "demo_textures3"
+
+
+def test_pattern_color_hex_and_gradient_keys_preserved_in_options_output() -> None:
+    out = options_for_enemy(
+        "spider",
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_spot_color_mode": "single",
+            "feat_body_texture_spot_color_hex": "ff8800",
+            "feat_body_texture_spot_bg_color_mode": "gradient",
+            "feat_body_texture_spot_bg_color_a": "00ff00",
+            "feat_body_texture_spot_bg_color_b": "0000ff",
+            "feat_body_texture_spot_bg_color_direction": "horizontal",
+        },
+    )
+    assert out["feat_body_texture_spot_color_hex"] == "ff8800"
+    assert out["feat_body_texture_spot_bg_color_a"] == "00ff00"
+    assert out["feat_body_texture_spot_bg_color_b"] == "0000ff"

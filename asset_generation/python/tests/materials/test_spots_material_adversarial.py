@@ -43,7 +43,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -67,7 +67,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -91,7 +91,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -115,7 +115,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -138,7 +138,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -161,7 +161,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -184,7 +184,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -207,7 +207,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -231,7 +231,7 @@ class TestSpotsParameterExtraction:
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -264,7 +264,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"body": {"hex": "cccccc", "finish": "glossy"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -287,7 +287,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"body": {"hex": "cccccc"}},  # finish missing
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -310,7 +310,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"body": {"hex": "aabbcc", "finish": "default"}},
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -333,7 +333,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"body": {"finish": "default"}},  # hex missing
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -356,7 +356,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"legs": {"hex": "aabbcc", "finish": "default"}},  # body not in features
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -379,7 +379,7 @@ class TestSpotsFeatureDictHandling:
             "features": "not_a_dict",  # Wrong type
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -400,7 +400,7 @@ class TestSpotsFeatureDictHandling:
             "features": {"body": "not_a_dict"},  # Wrong type
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_factory:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_factory:
             with patch("src.materials.material_system._palette_base_name_from_material"):
                 mock_factory.return_value = mock_mat
 
@@ -423,7 +423,7 @@ class TestSpotsMaterialNaming:
     @patch("src.materials.material_system.bpy")
     def test_material_name_format_correct(self, mock_bpy) -> None:
         """Material name should be {base_palette_name}__feat_{instance_suffix}."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -432,7 +432,7 @@ class TestSpotsMaterialNaming:
             with patch("src.materials.material_system.create_material") as mock_create:
                 mock_create.return_value = mock_mat
 
-                _material_for_spots_zone(
+                material_for_spots_zone(
                     base_palette_name="MyPalette",
                     finish="default",
                     spot_hex="ff0000",
@@ -452,7 +452,7 @@ class TestSpotsMaterialNaming:
     @patch("src.materials.material_system.bpy")
     def test_instance_suffix_reflects_in_material_name(self, mock_bpy) -> None:
         """instance_suffix should appear in material name."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -461,7 +461,7 @@ class TestSpotsMaterialNaming:
             with patch("src.materials.material_system.create_material") as mock_create:
                 mock_create.return_value = mock_mat
 
-                _material_for_spots_zone(
+                material_for_spots_zone(
                     base_palette_name="Palette",
                     finish="default",
                     spot_hex="ff0000",
@@ -478,7 +478,7 @@ class TestSpotsMaterialNaming:
     @patch("src.materials.material_system.bpy")
     def test_different_zones_produce_different_material_names(self, mock_bpy) -> None:
         """Different zones should produce materials with different names."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat1 = MagicMock()
         mock_mat1.use_nodes = True
@@ -491,7 +491,7 @@ class TestSpotsMaterialNaming:
             with patch("src.materials.material_system.create_material") as mock_create:
                 mock_create.side_effect = [mock_mat1, mock_mat2]
 
-                _material_for_spots_zone(
+                material_for_spots_zone(
                     base_palette_name="Palette",
                     finish="default",
                     spot_hex="ff0000",
@@ -503,7 +503,7 @@ class TestSpotsMaterialNaming:
 
                 names.append(mock_create.call_args[1]["name"])
 
-                _material_for_spots_zone(
+                material_for_spots_zone(
                     base_palette_name="Palette",
                     finish="default",
                     spot_hex="ff0000",
@@ -543,7 +543,7 @@ class TestSpotsModeSwitch:
             }
 
             with patch(
-                "src.materials.material_system._material_for_spots_zone"
+                "src.materials.material_system.material_for_spots_zone"
             ) as mock_spots_factory:
                 with patch(
                     "src.materials.material_system._palette_base_name_from_material"
@@ -640,7 +640,7 @@ class TestSpotsMultipleZones:
             },
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as mock_spots:
+        with patch("src.materials.material_system.material_for_spots_zone") as mock_spots:
             with patch(
                 "src.materials.material_system._material_for_gradient_zone"
             ) as mock_grad:
@@ -690,7 +690,7 @@ class TestSpotsMultipleZones:
             },
         }
 
-        with patch("src.materials.material_system._material_for_spots_zone") as m_spots:
+        with patch("src.materials.material_system.material_for_spots_zone") as m_spots:
             with patch("src.materials.material_system._material_for_gradient_zone") as m_grad:
                 with patch("src.materials.material_system._material_for_asset_zone") as m_asset:
                     with patch(
@@ -719,7 +719,7 @@ class TestSpotsErrorPropagation:
     @patch("src.materials.material_system.bpy")
     def test_png_generation_failure_handled(self, mock_bpy) -> None:
         """If PNG generation fails, material factory should handle it."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -733,7 +733,7 @@ class TestSpotsErrorPropagation:
 
                 # Should either raise or handle gracefully
                 try:
-                    result = _material_for_spots_zone(
+                    result = material_for_spots_zone(
                         base_palette_name="Palette",
                         finish="default",
                         spot_hex="ff0000",
@@ -751,7 +751,7 @@ class TestSpotsErrorPropagation:
     @patch("src.materials.material_system.bpy")
     def test_invalid_hex_in_spot_color_handled(self, mock_bpy) -> None:
         """Invalid hex in spot_color should be caught by color parser."""
-        from src.materials.material_system import _material_for_spots_zone  # noqa: E402
+        from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
@@ -763,7 +763,7 @@ class TestSpotsErrorPropagation:
 
                 # Invalid hex should be caught (either in PNG gen or color parsing)
                 try:
-                    _material_for_spots_zone(
+                    material_for_spots_zone(
                         base_palette_name="Palette",
                         finish="default",
                         spot_hex="zzzzz",  # Invalid
@@ -790,7 +790,7 @@ class TestSpotsErrorPropagation:
         }
 
         with patch(
-            "src.materials.material_system._material_for_spots_zone",
+            "src.materials.material_system.material_for_spots_zone",
             side_effect=Exception("Material creation failed"),
         ):
             with patch("src.materials.material_system._palette_base_name_from_material"):

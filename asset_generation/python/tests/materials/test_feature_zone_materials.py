@@ -208,6 +208,31 @@ def test_apply_feature_slot_overrides_nested_color_image_delegates_to_image_help
     assert mock_color_img.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
+@patch.object(ms, "_material_for_color_image_zone")
+def test_apply_feature_slot_overrides_color_image_infers_asset_id_from_preview(
+    mock_color_img: MagicMock,
+) -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    new_mat = MagicMock(name="from_preview")
+    mock_color_img.return_value = new_mat
+    slots = {"body": base}
+    out = ms.apply_feature_slot_overrides(
+        slots,
+        {
+            "body": {
+                "color_image": {
+                    "mode": "image",
+                    "preview": "/api/assets/textures/file/demo%20textures3.png",
+                },
+            },
+        },
+    )
+    assert out["body"] is new_mat
+    mock_color_img.assert_called_once()
+    assert mock_color_img.call_args.kwargs["asset_id"] == "demo_textures3"
+
+
 def test_apply_zone_texture_gradient_replaces_slot_and_calls_gradient_setup() -> None:
     base = MagicMock()
     base.name = "Organic_Brown"
@@ -269,10 +294,49 @@ def test_apply_zone_texture_gradient_applies_with_fallback_when_no_hex() -> None
     assert cm.called
 
 
+def test_apply_zone_texture_checkerboard_uses_asset_when_spot_color_image_mode() -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    asset_mat = MagicMock(name="checker_asset")
+    with patch.object(ms, "_material_for_asset_zone", return_value=asset_mat) as pa:
+        out = ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "checkerboard",
+                "feat_body_texture_spot_color_mode": "image",
+                "feat_body_texture_spot_color_image_id": "demo_textures3",
+                "feat_body_texture_asset_tile_repeat": 1.25,
+            },
+        )
+    assert out["body"] is asset_mat
+    pa.assert_called_once()
+    assert pa.call_args.kwargs["asset_id"] == "demo_textures3"
+    assert pa.call_args.kwargs["tile_repeat"] == 1.25
+
+
+def test_apply_zone_texture_stripes_uses_asset_when_stripe_color_image_mode() -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    asset_mat = MagicMock(name="stripe_asset")
+    with patch.object(ms, "_material_for_asset_zone", return_value=asset_mat) as pa:
+        out = ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "stripes",
+                "feat_body_texture_stripe_color_mode": "image",
+                "feat_body_texture_stripe_color_image_id": "demo_textures3",
+                "feat_body_texture_asset_tile_repeat": 1.5,
+            },
+        )
+    assert out["body"] is asset_mat
+    pa.assert_called_once()
+    assert pa.call_args.kwargs["asset_id"] == "demo_textures3"
+
+
 def test_rgba_from_hex_or_fallback_returns_fallback_when_parse_raises() -> None:
     with (
         patch.object(ms, "_sanitize_hex_input", return_value="abcdef"),
-        patch.object(ms, "_parse_hex_color", side_effect=ValueError),
+        patch.object(ms, "parse_hex_color", side_effect=ValueError),
     ):
         fb = (0.1, 0.2, 0.3, 1.0)
         assert ms._rgba_from_hex_or_fallback("ignored", fb) == fb
@@ -434,6 +498,19 @@ def test_material_for_zone_geometry_extra_creates_when_extra_hex() -> None:
         got = ms.material_for_zone_geometry_extra(
             "body", slots, None, "default", "ff00aa"
         )
+    assert got is new_m
+    assert cm.called
+
+
+def test_material_for_zone_geometry_extra_uses_zone_hex_when_extra_empty() -> None:
+    """Reads zone feature hex/finish when geometry extra does not supply hex."""
+    b = MagicMock()
+    b.name = "Organic_Brown"
+    slots = {"body": b}
+    new_m = MagicMock()
+    features = {"body": {"finish": "default", "hex": "00aa11"}}
+    with patch.object(ms, "create_material", return_value=new_m) as cm:
+        got = ms.material_for_zone_geometry_extra("body", slots, features, "default", "")
     assert got is new_m
     assert cm.called
 

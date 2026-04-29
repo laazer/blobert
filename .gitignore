@@ -37,6 +37,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+asset_generation/python/.pylint_home/
 .coverage
 .coverage.*
 coverage.xml
