@@ -75,7 +75,7 @@ def test_feature_slot_overrides_nested_color_image_uses_path(
         called["asset_id"] = str(kwargs.get("asset_id", ""))
         return SimpleNamespace(name="ImgOverride")
 
-    monkeypatch.setattr(zones, "_material_for_color_image_zone", _fake_color_image)
+    monkeypatch.setattr(zones, "material_for_color_image_zone", _fake_color_image)
     got = zones.apply_feature_slot_overrides(
         original,
         {
@@ -101,7 +101,7 @@ def test_feature_slot_overrides_nested_color_image_infers_id_from_preview(
         called["asset_id"] = str(kwargs.get("asset_id", ""))
         return SimpleNamespace(name="ImgFromPreview")
 
-    monkeypatch.setattr(zones, "_material_for_color_image_zone", _fake_color_image)
+    monkeypatch.setattr(zones, "material_for_color_image_zone", _fake_color_image)
     got = zones.apply_feature_slot_overrides(
         original,
         {
@@ -127,6 +127,7 @@ def test_feature_slot_overrides_ignore_non_dict_feature_entries() -> None:
 
 def test_zone_texture_density_clamped_before_spots_material_builder(monkeypatch: pytest.MonkeyPatch) -> None:
     zones = _load("src.materials.feature_zones")
+    ms = _load("src.materials.material_system")
     base = SimpleNamespace(name="Organic_Brown")
     slots = {"body": base}
     captured: dict[str, float] = {}
@@ -135,7 +136,7 @@ def test_zone_texture_density_clamped_before_spots_material_builder(monkeypatch:
         captured["density"] = kwargs["density"]
         return base
 
-    monkeypatch.setattr(zones, "material_for_spots_zone", _capture_spots)
+    monkeypatch.setattr(ms, "material_for_spots_zone", _capture_spots)
     zones.apply_zone_texture_pattern_overrides(
         slots,
         {

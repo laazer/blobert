@@ -57,6 +57,20 @@ describe("buildFeatUpdatesFromPalette", () => {
       "feat_head_texture_mode",
       "feat_head_texture_spot_color",
       "feat_head_texture_spot_bg_color",
+      "feat_head_texture_spot_color_hex",
+      "feat_head_texture_spot_bg_color_hex",
+      "feat_head_texture_spot_color_mode",
+      "feat_head_texture_spot_bg_color_mode",
+      "feat_head_texture_spot_color_image_id",
+      "feat_head_texture_spot_bg_color_image_id",
+      "feat_head_texture_spot_color_image_preview",
+      "feat_head_texture_spot_bg_color_image_preview",
+      "feat_head_texture_spot_color_image_uv_rect",
+      "feat_head_texture_spot_bg_color_image_uv_rect",
+      "feat_head_texture_spot_color_a",
+      "feat_head_texture_spot_color_b",
+      "feat_head_texture_spot_bg_color_a",
+      "feat_head_texture_spot_bg_color_b",
     ]);
     const u = buildFeatUpdatesFromPalette(
       {
@@ -73,8 +87,47 @@ describe("buildFeatUpdatesFromPalette", () => {
     expect(typeof u.feat_body_texture_stripe_bg_color).toBe("string");
     expect(u.feat_body_texture_stripe_bg_color).not.toBe("#112233");
     expect(u.feat_head_texture_spot_color).toBe("#445566");
-    expect(typeof u.feat_head_texture_spot_bg_color).toBe("string");
-    expect(u.feat_head_texture_spot_bg_color).not.toBe("#445566");
+    expect(u.feat_head_texture_spot_bg_color).toBe("#78899a");
+    expect(u.feat_head_texture_spot_color_hex).toBe("#445566");
+    expect(u.feat_head_texture_spot_bg_color_hex).toBe("#78899a");
+    expect(u.feat_head_texture_spot_color_mode).toBe("single");
+    expect(u.feat_head_texture_spot_bg_color_mode).toBe("single");
+    expect(u.feat_head_texture_spot_color_image_id).toBe("");
+    expect(u.feat_head_texture_spot_bg_color_image_id).toBe("");
+    expect(u.feat_head_texture_spot_color_image_preview).toBe("");
+    expect(u.feat_head_texture_spot_bg_color_image_preview).toBe("");
+    expect(u.feat_head_texture_spot_color_image_uv_rect).toBe("");
+    expect(u.feat_head_texture_spot_bg_color_image_uv_rect).toBe("");
+    expect(u.feat_head_texture_spot_color_a).toBe("");
+    expect(u.feat_head_texture_spot_color_b).toBe("");
+    expect(u.feat_head_texture_spot_bg_color_a).toBe("");
+    expect(u.feat_head_texture_spot_bg_color_b).toBe("");
+  });
+
+  it("keeps spots background image mode when already configured", () => {
+    const keys = new Set([
+      "feat_head_texture_mode",
+      "feat_head_texture_spot_color",
+      "feat_head_texture_spot_color_hex",
+      "feat_head_texture_spot_color_mode",
+      "feat_head_texture_spot_bg_color_mode",
+      "feat_head_texture_spot_bg_color_image_id",
+      "feat_head_texture_spot_bg_color_image_preview",
+    ]);
+    const u = buildFeatUpdatesFromPalette(
+      { head: { finish: "gel", hex: "#445566" } },
+      keys,
+      {
+        feat_head_texture_mode: "spots",
+        feat_head_texture_spot_bg_color_mode: "image",
+        feat_head_texture_spot_bg_color_image_id: "demo_textures3",
+      },
+    );
+    expect(u.feat_head_texture_spot_color_mode).toBe("single");
+    expect(u.feat_head_texture_spot_color).toBe("#445566");
+    expect(u.feat_head_texture_spot_color_hex).toBe("#445566");
+    expect(u.feat_head_texture_spot_bg_color_mode).toBe("image");
+    expect(u.feat_head_texture_spot_bg_color_image_id).toBeUndefined();
   });
 });
 

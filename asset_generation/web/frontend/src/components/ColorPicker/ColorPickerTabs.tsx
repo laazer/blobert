@@ -108,9 +108,19 @@ export function ColorPickerTabs({
 
         {mode === "image" && value.type === "image" && (
           <ImageMode
-            file={null}
+            file={value.file ?? null}
             preview={value.preview}
-            onFileChange={(file, preview, assetId) => onChange({ type: "image", file, preview, assetId })}
+            assetId={value.assetId}
+            uvRect={value.uvRect}
+            onFileChange={(file, preview, assetId, uvRect) =>
+              onChange({
+                type: "image",
+                file,
+                preview,
+                assetId,
+                uvRect: uvRect !== undefined ? uvRect : value.uvRect,
+              })
+            }
             disabled={disabled}
           />
         )}

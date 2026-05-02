@@ -6,13 +6,18 @@ import bpy
 
 from src.materials.gradient_generator import (
     create_gradient_png_and_load,
-    create_spots_png_and_load,
     gradient_image_pixel_buffer,
     sanitize_image_label,
 )
 from src.materials.material_stripes_zone import material_for_stripes_zone
+from src.materials.material_system import (
+    material_for_color_image_zone,
+    overlay_base_image_on_zone_material,
+    resolve_zone_color_image_asset_id,
+)
 from src.materials.material_types import (
     FeatureMap,
+    FeatureZoneOptions,
     ZoneTextureOptions,
     feature_zone_map,
 )
@@ -22,6 +27,10 @@ from src.materials.presets import (
     parse_hex_color,
     rgba_from_hex_or_fallback,
     sanitize_hex_input,
+)
+from src.materials.spots_zone_pipeline import (
+    apply_spots_zone_pattern,
+    spot_density_payload_usable,
 )
 from src.materials.texture_handlers import create_material
 from src.utils.texture_asset_loader import (
@@ -37,55 +46,6 @@ def _palette_base_name_from_material(mat: object) -> str:
     if "__feat_" in name:
         return name.split("__feat_", 1)[0]
     return name
-
-
-def _material_for_color_image_zone(
-    base_material: bpy.types.Material,
-    asset_id: str,
-    instance_suffix: str = "color_img",
-) -> bpy.types.Material:
-    """Create a material with preloaded texture as the base color.
-
-    Args:
-        base_material: Material to copy and modify
-        asset_id: Preloaded texture asset ID (e.g., "stripe_01")
-        instance_suffix: Suffix for the material name
-
-    Returns:
-        Modified material with texture wired to Base Color, or base material if load fails.
-        Always calls img.pack() for GLB embedding.
-    """
-    mat = base_material.copy()
-    mat.name = f"{base_material.name}_{instance_suffix}"
-    if not mat.use_nodes:
-        mat.use_nodes = True
-
-    nodes = mat.node_tree.nodes
-    links = mat.node_tree.links
-    principled = None
-    for node in nodes:
-        if isinstance(node, bpy.types.ShaderNodeBsdfPrincipled):
-            principled = node
-            break
-    if not principled:
-        return mat
-
-    try:
-        asset_path = get_texture_asset_filepath(asset_id)
-        image = bpy.data.images.load(str(asset_path))
-        image.pack()
-
-        # Create UV and TexImage nodes
-        coord_node = nodes.new(type="ShaderNodeTexCoord")
-        tex_node = nodes.new(type="ShaderNodeTexImage")
-        tex_node.image = image
-
-        # Wire: UV → TexImage Color → Base Color
-        links.new(coord_node.outputs["UV"], tex_node.inputs["Vector"])
-        links.new(tex_node.outputs["Color"], principled.inputs["Base Color"])
-    except (ValueError, IOError, Exception) as error:
-        print(f"Warning: failed to load color image texture {asset_id}: {error}")
-    return mat
 
 
 def _material_for_finish_hex(
@@ -157,10 +117,11 @@ def apply_feature_slot_overrides(
             if not asset_id:
                 asset_id = infer_texture_asset_id_from_preview(color_image.preview) or ""
             if asset_id:
-                out[slot_key] = _material_for_color_image_zone(
+                out[slot_key] = material_for_color_image_zone(
                     base_material=mat,
                     asset_id=asset_id,
                     instance_suffix=f"{slot_key}_color_img",
+                    uv_rect=color_image.uv_rect,
                 )
                 continue  # Skip hex/finish branch for this zone
 
@@ -275,65 +236,6 @@ def _material_for_gradient_zone(
     return mat
 
 
-def material_for_spots_zone(
-    *,
-    base_palette_name: str,
-    finish: str,
-    spot_hex: str,
-    bg_hex: str,
-    density: float,
-    zone_hex_fallback: str,
-    instance_suffix: str,
-) -> bpy.types.Material:
-    palette_base = MaterialColors.get_all().get(base_palette_name, (0.6, 0.5, 0.5, 1.0))
-    zone_hex = sanitize_hex_input(zone_hex_fallback)
-    zone_rgba = parse_hex_color(zone_hex) if len(zone_hex) == 6 else palette_base
-    spot_color = rgba_from_hex_or_fallback(spot_hex, zone_rgba)
-
-    finish_roughness, _, finish_transmission = ENEMY_FINISH_PRESETS.get(finish, ENEMY_FINISH_PRESETS["default"])
-    roughness = finish_roughness if finish_roughness is not None else 0.75
-    transmission = finish_transmission if finish_transmission is not None else 0.0
-    alpha = spot_color[3] if len(spot_color) > 3 else 1.0
-    mat = create_material(
-        f"{base_palette_name}__feat_{instance_suffix}",
-        spot_color,
-        0.0,
-        roughness,
-        alpha,
-        transmission,
-        add_texture=False,
-        force_surface=finish != "default",
-        force_base_color=False,
-    )
-
-    img = create_spots_png_and_load(
-        width=128,
-        height=128,
-        spot_color_hex=sanitize_hex_input(spot_hex),
-        bg_color_hex=sanitize_hex_input(bg_hex),
-        density=density,
-        img_name=f"BlobertTexSpot_{sanitize_image_label(instance_suffix)}",
-    )
-    nt = mat.node_tree
-    if nt is not None:
-        nodes = nt.nodes
-        links = nt.links
-        bsdf = _find_principled_bsdf(nodes)
-        if bsdf is not None:
-            bc_in = _principled_base_color_socket(bsdf)
-            if bc_in is not None:
-                tex = nodes.new(type="ShaderNodeTexImage")
-                tex.location = (-450, 200)
-                tex.image = img
-                tex.interpolation = "Linear"
-                tex.extension = "REPEAT"
-                uv = nodes.new(type="ShaderNodeUVMap")
-                uv.location = (-800, 200)
-                links.new(uv.outputs["UV"], tex.inputs["Vector"])
-                links.new(tex.outputs["Color"], bc_in)
-    return mat
-
-
 def _material_for_asset_zone(  # pragma: no cover
     base_material: bpy.types.Material,
     asset_id: str,
@@ -375,6 +277,17 @@ def _material_for_asset_zone(  # pragma: no cover
     return mat
 
 
+def _zone_color_image_asset_id(zone_feature: FeatureZoneOptions | None) -> str:
+    if zone_feature is None:
+        return ""
+    color_image = zone_feature.color_image
+    if color_image is None or color_image.mode != "image":
+        return ""
+    if color_image.asset_id:
+        return color_image.asset_id
+    return infer_texture_asset_id_from_preview(color_image.preview) or ""
+
+
 def apply_zone_texture_pattern_overrides(
     slot_materials: dict[str, bpy.types.Material | None],
     build_options: FeatureMap | None,
@@ -388,6 +301,7 @@ def apply_zone_texture_pattern_overrides(
     for zone, mat in list(out.items()):
         if mat is None:
             continue
+        zone_feature = zone_features.get(zone)
         settings = ZoneTextureOptions.from_build_options(
             zone=zone,
             zone_features=zone_features,
@@ -412,51 +326,46 @@ def apply_zone_texture_pattern_overrides(
                     instance_suffix=f"{zone}_tex_asset",
                 )
         elif settings.mode == "spots":
-            # Preserve historical behavior in this module: invalid density payloads
-            # are treated as no-op instead of coercing to defaults.
-            try:
-                float(build_options.get(f"feat_{zone}_texture_spot_density", 1.0) or 1.0)
-            except (TypeError, ValueError):
+            if not spot_density_payload_usable(build_options, zone):
                 continue
-            pattern_asset_id = settings.pattern_image_asset_id(("spot_color", "spot_bg_color"))
-            if pattern_asset_id:
-                out[zone] = _material_for_asset_zone(
-                    base_material=mat,
-                    asset_id=pattern_asset_id,
-                    tile_repeat=settings.tile_repeat,
-                    instance_suffix=f"{zone}_tex_asset",
-                )
-                continue
-            out[zone] = material_for_spots_zone(
+            out[zone] = apply_spots_zone_pattern(
                 base_palette_name=_palette_base_name_from_material(mat),
-                finish=settings.finish,
-                spot_hex=settings.spot_color.resolved_hex(),
-                bg_hex=settings.spot_bg_color.resolved_hex(),
-                density=settings.spot_density,
-                zone_hex_fallback=settings.zone_hex,
-                instance_suffix=f"{zone}_tex_spot",
+                settings=settings,
+                zone=zone,
+                build_options=build_options,
+                zone_feature=zone_feature,
             )
         elif settings.mode == "stripes":
             pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
-            if pattern_asset_id:
-                out[zone] = _material_for_asset_zone(
-                    base_material=mat,
-                    asset_id=pattern_asset_id,
-                    tile_repeat=settings.tile_repeat,
-                    instance_suffix=f"{zone}_tex_asset",
-                )
-                continue
-            out[zone] = material_for_stripes_zone(
+            zone_image_asset_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+            if not pattern_asset_id and zone_image_asset_id:
+                pattern_asset_id = zone_image_asset_id
+            stripe_mat = material_for_stripes_zone(
                 base_palette_name=_palette_base_name_from_material(mat),
                 finish=settings.finish,
                 stripe_hex=settings.stripe_color.resolved_hex(),
-                bg_hex=settings.stripe_bg_color.resolved_hex(),
+                bg_hex="ffffff" if pattern_asset_id else settings.stripe_bg_color.resolved_hex(),
                 stripe_width=settings.stripe_width,
                 stripe_preset=settings.stripe_preset,
                 rot_yaw_deg=settings.stripe_yaw,
                 rot_pitch_deg=settings.stripe_pitch,
                 zone_hex_fallback=settings.zone_hex,
                 instance_suffix=f"{zone}_tex_stripe",
+            )
+            if pattern_asset_id:
+                out[zone] = overlay_base_image_on_zone_material(
+                    stripe_mat,
+                    asset_id=pattern_asset_id,
+                    log_prefix="[feature_zones] ",
+                )
+            else:
+                out[zone] = stripe_mat
+        image_asset_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+        if image_asset_id and out.get(zone) is not None and settings.mode in ("gradient", "checkerboard", "stripes"):
+            out[zone] = overlay_base_image_on_zone_material(
+                out[zone],
+                asset_id=image_asset_id,
+                log_prefix="[feature_zones] ",
             )
     return out
 

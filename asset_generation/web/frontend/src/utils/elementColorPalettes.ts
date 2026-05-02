@@ -193,7 +193,56 @@ export function buildFeatUpdatesFromPalette(
       if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
     }
 
-    if (mode === "spots" || mode === "checkerboard") {
+    if (mode === "spots") {
+      const spotKey = `feat_${zone}_texture_spot_color`;
+      const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
+      const spotHexKey = `feat_${zone}_texture_spot_color_hex`;
+      const spotBgHexKey = `feat_${zone}_texture_spot_bg_color_hex`;
+      const spotModeKey = `feat_${zone}_texture_spot_color_mode`;
+      const spotBgModeKey = `feat_${zone}_texture_spot_bg_color_mode`;
+      const spotImageIdKey = `feat_${zone}_texture_spot_color_image_id`;
+      const spotBgImageIdKey = `feat_${zone}_texture_spot_bg_color_image_id`;
+      const spotImagePreviewKey = `feat_${zone}_texture_spot_color_image_preview`;
+      const spotBgImagePreviewKey = `feat_${zone}_texture_spot_bg_color_image_preview`;
+      const spotImageUvRectKey = `feat_${zone}_texture_spot_color_image_uv_rect`;
+      const spotBgImageUvRectKey = `feat_${zone}_texture_spot_bg_color_image_uv_rect`;
+      const spotGradAKey = `feat_${zone}_texture_spot_color_a`;
+      const spotGradBKey = `feat_${zone}_texture_spot_color_b`;
+      const spotBgGradAKey = `feat_${zone}_texture_spot_bg_color_a`;
+      const spotBgGradBKey = `feat_${zone}_texture_spot_bg_color_b`;
+      const currentSpotBgMode = String(currentValues[spotBgModeKey] ?? "").trim().toLowerCase();
+      const currentSpotBgImageId = String(currentValues[spotBgImageIdKey] ?? "").trim();
+      const currentSpotBgImagePreview = String(currentValues[spotBgImagePreviewKey] ?? "").trim();
+      const keepBackgroundImage = currentSpotBgMode === "image" && (currentSpotBgImageId !== "" || currentSpotBgImagePreview !== "");
+
+      // Same semantics as stripes: primary → pattern (dots), companion → gap between dots.
+      updates[spotModeKey] = "single";
+      updates[spotKey] = primary;
+      updates[spotHexKey] = primary;
+      updates[spotImageIdKey] = "";
+      updates[spotGradAKey] = "";
+      updates[spotGradBKey] = "";
+
+      if (keepBackgroundImage) {
+        // Preserve bg image channel so spots are composited over the selected texture.
+        updates[spotBgModeKey] = "image";
+      } else {
+        updates[spotBgModeKey] = "single";
+        updates[spotBgKey] = secondary;
+        updates[spotBgHexKey] = secondary;
+        updates[spotBgImageIdKey] = "";
+        updates[spotBgImagePreviewKey] = "";
+        updates[spotBgImageUvRectKey] = "";
+        updates[spotBgGradAKey] = "";
+        updates[spotBgGradBKey] = "";
+      }
+
+      updates[spotImagePreviewKey] = "";
+      updates[spotImageUvRectKey] = "";
+      continue;
+    }
+
+    if (mode === "checkerboard") {
       const spotKey = `feat_${zone}_texture_spot_color`;
       const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
       if (existingDefKeys.has(spotKey)) updates[spotKey] = primary;

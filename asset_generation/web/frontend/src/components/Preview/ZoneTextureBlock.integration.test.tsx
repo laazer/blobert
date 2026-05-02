@@ -7,6 +7,7 @@ import {
   carryColorPaletteOnModeChange,
   normalizedTextureMode,
   normalizedColorMode,
+  patternFieldLabel,
   zonePartDisplayName,
 } from "./ZoneTextureBlock";
 
@@ -68,6 +69,19 @@ describe("Requirement 3: ZoneTextureBlock Gradient Mode Integration", () => {
       expect(zonePartDisplayName("body")).toBe("Body");
       expect(zonePartDisplayName("eye_left")).toBe("Eye Left");
       expect(zonePartDisplayName("mouth_tail")).toBe("Mouth Tail");
+    });
+  });
+
+  describe("patternFieldLabel", () => {
+    it("uses canonical spot/stripe labels regardless of metadata fallback", () => {
+      expect(patternFieldLabel("spot_color", "Background")).toBe("Spot color");
+      expect(patternFieldLabel("spot_bg_color", "Foreground")).toBe("Spot background color");
+      expect(patternFieldLabel("stripe_color", "Background")).toBe("Stripe color");
+      expect(patternFieldLabel("stripe_bg_color", "Foreground")).toBe("Stripe background color");
+    });
+
+    it("falls back for unknown fields", () => {
+      expect(patternFieldLabel("unknown_field", "Custom label")).toBe("Custom label");
     });
   });
 

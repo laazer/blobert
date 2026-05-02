@@ -1,4 +1,5 @@
 import { colorPickerStyles } from "./colorPickerStyles";
+import type { ImageUvRect } from "./imageUvRect";
 import { SingleColorMode } from "./modes/SingleColorMode";
 import { GradientMode } from "./modes/GradientMode";
 import { ImageMode } from "./modes/ImageMode";
@@ -12,7 +13,13 @@ export type ColorPickerValue =
       colorB: string;
       direction: "horizontal" | "vertical" | "radial";
     }
-  | { type: "image"; file: File | null; preview?: string; assetId?: string };
+  | {
+      type: "image";
+      file: File | null;
+      preview?: string;
+      assetId?: string;
+      uvRect?: ImageUvRect | null;
+    };
 
 export interface ColorPickerUniversalProps {
   mode: "single" | "gradient" | "image";
@@ -121,8 +128,15 @@ export function ColorPickerUniversal({
             file={value.file}
             preview={value.preview}
             assetId={value.assetId}
-            onFileChange={(file, preview, assetId) =>
-              onChange({ type: "image", file, preview, assetId })
+            uvRect={value.uvRect}
+            onFileChange={(file, preview, assetId, uvRect) =>
+              onChange({
+                type: "image",
+                file,
+                preview,
+                assetId,
+                uvRect: uvRect !== undefined ? uvRect : value.uvRect,
+              })
             }
             disabled={disabled}
           />

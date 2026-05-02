@@ -2,6 +2,7 @@
 Material creation system with procedural textures
 """
 
+from pathlib import Path
 from typing import Any, Callable, Mapping
 
 import bpy
@@ -12,19 +13,38 @@ from src.materials.gradient_generator import (
     create_spots_png_and_load,
     gradient_image_pixel_buffer,
     sanitize_image_label,
+    write_rgba_buffer_to_gradients_png,
 )
 from src.materials.material_types import (
     RGBA,
     FeatureMap,
+    FeatureZoneOptions,
+    PatternChannelOptions,
     ZoneTextureOptions,
     feature_zone_map,
+    pattern_normalize_hex6,
 )
 from src.materials.presets import parse_hex_color
+from src.materials.spot_overlay import (
+    overlay_base_image_onto_material as _spot_overlay_base_image,
+)
+from src.materials.spot_plate_mask import DEFAULT_DARK_THRESHOLD
+from src.materials.spots_composite_debug import log_spots_composite
+from src.materials.spots_zone_pipeline import apply_spots_zone_pattern
+from src.materials.uv_atlas import (
+    is_full_uv_rect,
+    mapping_scale_location_for_uv_rect,
+    parse_uv_rect,
+    resolved_asset_path_for_image_sampling,
+)
 from src.utils.materials import (
     MaterialCategories,
     MaterialColors,
 )
-from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
+from src.utils.texture_asset_loader import (
+    get_texture_asset_filepath,
+    infer_texture_asset_id_from_preview,
+)
 
 get_enemy_materials = _material_system_enemy_themes.get_enemy_materials
 
@@ -297,12 +317,16 @@ def _palette_base_name_from_material(mat: bpy.types.Material) -> str:
     return name
 
 
-def _material_for_color_image_zone(
+def material_for_color_image_zone(
     base_material: bpy.types.Material,
     asset_id: str,
     instance_suffix: str = "color_img",
+    uv_rect: tuple[float, float, float, float] | None = None,
 ) -> bpy.types.Material:
-    """Create a material with preloaded texture as the base color."""
+    """Create a material with preloaded texture as the base color.
+
+    Optional ``uv_rect`` selects a normalized sub-rectangle of an atlas (same UV convention as Blender).
+    """
     from ..utils.texture_asset_loader import get_texture_asset_filepath
 
     mat = base_material.copy()
@@ -325,13 +349,20 @@ def _material_for_color_image_zone(
         image = bpy.data.images.load(str(asset_path))
         image.pack()
 
-        # Create UV and TexImage nodes
         coord_node = nodes.new(type="ShaderNodeTexCoord")
         tex_node = nodes.new(type="ShaderNodeTexImage")
         tex_node.image = image
 
-        # Wire: UV → TexImage Color → Base Color
-        links.new(coord_node.outputs["UV"], tex_node.inputs["Vector"])
+        use_mapping = uv_rect is not None and not is_full_uv_rect(uv_rect)
+        if use_mapping:
+            mapping_node = nodes.new(type="ShaderNodeMapping")
+            scale_vec, loc_vec = mapping_scale_location_for_uv_rect(uv_rect)
+            mapping_node.inputs["Scale"].default_value = scale_vec
+            mapping_node.inputs["Location"].default_value = loc_vec
+            links.new(coord_node.outputs["UV"], mapping_node.inputs["Vector"])
+            links.new(mapping_node.outputs["Vector"], tex_node.inputs["Vector"])
+        else:
+            links.new(coord_node.outputs["UV"], tex_node.inputs["Vector"])
         links.new(tex_node.outputs["Color"], principled.inputs["Base Color"])
     except (ValueError, IOError, Exception) as error:
         print(f"Warning: failed to load color image texture {asset_id}: {error}")
@@ -411,10 +442,11 @@ def apply_feature_slot_overrides(
             if not asset_id:
                 asset_id = infer_texture_asset_id_from_preview(color_image.preview) or ""
             if asset_id:
-                out[slot_key] = _material_for_color_image_zone(
+                out[slot_key] = material_for_color_image_zone(
                     base_material=mat,
                     asset_id=asset_id,
                     instance_suffix=f"{slot_key}_color_img",
+                    uv_rect=color_image.uv_rect,
                 )
                 continue  # Skip hex/finish branch for this zone
 
@@ -630,6 +662,9 @@ def material_for_spots_zone(
         density=density,
         img_name=img_name,
     )
+    mat["blobert_spot_image_name"] = img.name
+    spots_dir = Path(__file__).parent.parent.parent / "animated_exports" / "spots"
+    mat["blobert_spot_image_path"] = str(spots_dir / f"{img_name}.png")
 
     # Attach to material via UV-mapped texture node
     nt = mat.node_tree
@@ -650,6 +685,133 @@ def material_for_spots_zone(
                 uv.location = (-800, 200)
                 links.new(uv.outputs["UV"], tex.inputs["Vector"])
                 links.new(tex.outputs["Color"], bc_in)
+
+    return mat
+
+
+def _wire_spot_plate_image_to_principled(
+    mat: bpy.types.Material,
+    image: bpy.types.Image,
+    *,
+    use_atlas_mapping: bool,
+    uv_rect: tuple[float, float, float, float] | None,
+) -> None:
+    """Attach packed spot-plate image to Principled Base Color with optional atlas Mapping."""
+    nt = mat.node_tree
+    if nt is None:
+        return
+    nodes = nt.nodes
+    links = nt.links
+    bsdf = _find_principled_bsdf(nodes)
+    if bsdf is None:
+        return
+    bc_in = _principled_base_color_socket(bsdf)
+    if bc_in is None:
+        return
+    tex = nodes.new(type="ShaderNodeTexImage")
+    tex.location = (-450, 200)
+    tex.image = image
+    tex.interpolation = "Linear"
+    tex.extension = "REPEAT"
+
+    uv = nodes.new(type="ShaderNodeUVMap")
+    uv.location = (-800, 200)
+    if use_atlas_mapping and uv_rect is not None:
+        mapping_node = nodes.new(type="ShaderNodeMapping")
+        mapping_node.location = (-650, 200)
+        scale_vec, loc_vec = mapping_scale_location_for_uv_rect(uv_rect)
+        mapping_node.inputs["Scale"].default_value = scale_vec
+        mapping_node.inputs["Location"].default_value = loc_vec
+        links.new(uv.outputs["UV"], mapping_node.inputs["Vector"])
+        links.new(mapping_node.outputs["Vector"], tex.inputs["Vector"])
+    else:
+        links.new(uv.outputs["UV"], tex.inputs["Vector"])
+    links.new(tex.outputs["Color"], bc_in)
+
+
+def material_for_spots_zone_from_image_asset(
+    *,
+    base_palette_name: str,
+    finish: str,
+    asset_id: str,
+    zone_hex_fallback: str,
+    instance_suffix: str,
+    spot_plate_mask_mode: str = "auto",
+    spot_plate_dark_threshold: float = DEFAULT_DARK_THRESHOLD,
+    spot_plate_mask_soft_edges: bool = True,
+    uv_rect: tuple[float, float, float, float] | None = None,
+) -> bpy.types.Material:
+    """Solid base material with a user image as the spot plate (same combine rules as procedural spots).
+
+    Compositing mask policy is ``spot_plate_mask_mode`` / ``spot_plate_dark_threshold`` (see ``spot_plate_mask``).
+    """
+    all_colors = MaterialColors.get_all()
+    palette_base = all_colors.get(base_palette_name)
+    if palette_base is None:
+        palette_base = (0.6, 0.5, 0.5, 1.0)
+    h_zone = _sanitize_hex_input(zone_hex_fallback)
+    zone_rgba = parse_hex_color(h_zone) if len(h_zone) == 6 else palette_base
+
+    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+        finish,
+        ENEMY_FINISH_PRESETS["default"],
+    )
+    force_surface = finish != "default"
+    metallic = 0.0
+    roughness = 0.75
+    if finish_roughness is not None:
+        roughness = finish_roughness
+    transmission = finish_transmission if finish_transmission is not None else 0.0
+    alpha = zone_rgba[3] if len(zone_rgba) > 3 else 1.0
+
+    new_name = f"{base_palette_name}__feat_{instance_suffix}"
+    mat = create_material(
+        name=new_name,
+        color=zone_rgba,
+        metallic=metallic,
+        roughness=roughness,
+        alpha=alpha,
+        transmission=transmission,
+        add_texture=False,
+        force_surface=force_surface,
+        force_base_color=False,
+    )
+
+    asset_path = Path(get_texture_asset_filepath(asset_id))
+    partial_atlas = uv_rect is not None and not is_full_uv_rect(uv_rect)
+    resolved_path = (
+        resolved_asset_path_for_image_sampling(asset_path, uv_rect) if partial_atlas else asset_path
+    )
+    atlas_mapping_fallback = partial_atlas and resolved_path == asset_path
+
+    image = bpy.data.images.load(str(resolved_path), check_existing=True)
+    try:
+        image.pack()
+    except Exception:  # pragma: no cover
+        pass
+
+    mat["blobert_spot_image_name"] = image.name
+    mat["blobert_spot_image_path"] = str(resolved_path)
+    mat["blobert_spot_plate_mask_mode"] = str(spot_plate_mask_mode or "auto")
+    mat["blobert_spot_plate_dark_threshold"] = float(spot_plate_dark_threshold)
+    mat["blobert_spot_plate_mask_soft_edges"] = 1 if spot_plate_mask_soft_edges else 0
+
+    log_spots_composite(
+        "spot_plate_from_image: "
+        f"asset_id={asset_id!r} filepath={resolved_path} "
+        f"image_size={tuple(image.size)!r} "
+        f"mask_mode={spot_plate_mask_mode!r} dark_threshold={spot_plate_dark_threshold!r} "
+        f"mask_soft_edges={spot_plate_mask_soft_edges!r} "
+        "→ full UV texture from file (not reprocedural dots). "
+        "Composite uses ``spot_plate_mask`` policy (auto picks white-holes vs dark-spots).",
+    )
+
+    _wire_spot_plate_image_to_principled(
+        mat,
+        image,
+        use_atlas_mapping=atlas_mapping_fallback,
+        uv_rect=uv_rect,
+    )
 
     return mat
 
@@ -789,6 +951,207 @@ def _material_for_asset_zone(
     return mat
 
 
+def _zone_color_image_asset_id(zone_feature: FeatureZoneOptions | None) -> str:
+    if zone_feature is None:
+        return ""
+    color_image = zone_feature.color_image
+    if color_image is None or color_image.mode != "image":
+        return ""
+    if color_image.asset_id:
+        return color_image.asset_id
+    return infer_texture_asset_id_from_preview(color_image.preview) or ""
+
+
+def resolve_zone_color_image_asset_id(
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
+) -> str:
+    """Asset id for the zone body/base image used to composite under patterns.
+
+    Prefer nested ``build_options["features"][zone].color_image`` (merged schema).
+    Fall back to flat ``feat_{zone}_color_mode`` / ``feat_{zone}_color_image_*`` so
+    Blender and minimal payloads still get the underlay for spot/stripe combine.
+    """
+    nested = _zone_color_image_asset_id(zone_feature)
+    if nested:
+        log_spots_composite(
+            f"zone_body_underlay zone={zone}: source=nested_features color_image.id={nested!r}",
+        )
+        return nested
+    mode = str(build_options.get(f"feat_{zone}_color_mode") or "").strip().lower()
+    if mode != "image":
+        return ""
+    asset_id = str(build_options.get(f"feat_{zone}_color_image_id") or "").strip()
+    if asset_id:
+        log_spots_composite(f"zone_body_underlay zone={zone}: source=flat_keys feat_*_color_image_id={asset_id!r}")
+        return asset_id
+    preview = build_options.get(f"feat_{zone}_color_image_preview")
+    if isinstance(preview, str) and preview.strip():
+        inferred = infer_texture_asset_id_from_preview(preview) or ""
+        log_spots_composite(
+            f"zone_body_underlay zone={zone}: source=flat_preview inferred_asset_id={inferred!r}",
+        )
+        return inferred
+    log_spots_composite(f"zone_body_underlay zone={zone}: image mode but no id/preview -> underlay empty")
+    return ""
+
+
+def resolve_zone_color_image_uv_rect(
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
+) -> tuple[float, float, float, float] | None:
+    """Normalized atlas rectangle for zone ``color_image`` (if any)."""
+    if zone_feature is not None and zone_feature.color_image is not None:
+        nested = zone_feature.color_image.uv_rect
+        if nested is not None:
+            return nested
+    raw = build_options.get(f"feat_{zone}_color_image_uv_rect")
+    return parse_uv_rect(raw)
+
+
+def _read_png_ihdr_dimensions(path: Path) -> tuple[int, int]:
+    """Return width, height from a PNG without PIL (IHDR only)."""
+    data = path.read_bytes()
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"not a PNG: {path}")
+    if data[12:16] != b"IHDR":
+        raise ValueError(f"missing IHDR: {path}")
+    w = int.from_bytes(data[16:20], "big")
+    h = int.from_bytes(data[20:24], "big")
+    if w <= 0 or h <= 0:
+        raise ValueError(f"invalid PNG dimensions: {path}")
+    return w, h
+
+
+def _spot_bg_rgba_endpoints(
+    ch: PatternChannelOptions,
+    zone_hex: str,
+) -> tuple[RGBA, RGBA]:
+    """Two RGBA colors for a horizontal UV gradient underlay (equal = solid)."""
+    z = _sanitize_hex_input(zone_hex)
+    zone_rgba: RGBA = parse_hex_color(z) if len(z) == 6 else (0.92, 0.92, 0.92, 1.0)
+    mode = str(ch.mode).strip().lower()
+    if mode == "gradient":
+        ha = pattern_normalize_hex6(ch.gradient_a) or pattern_normalize_hex6(ch.hex_value)
+        hb = pattern_normalize_hex6(ch.gradient_b) or pattern_normalize_hex6(ch.hex_value)
+        if not ha and not hb:
+            hx = _sanitize_hex_input(ch.resolved_hex() or (z or "ffffff"))
+            c = parse_hex_color(hx) if len(hx) == 6 else zone_rgba
+            return c, c
+        if not ha:
+            ha = hb
+        if not hb:
+            hb = ha
+        ra = parse_hex_color(ha) if len(ha) == 6 else zone_rgba
+        rb = parse_hex_color(hb) if len(hb) == 6 else zone_rgba
+        return ra, rb
+    hx = _sanitize_hex_input(ch.resolved_hex() or (z or "ffffff"))
+    if len(hx) != 6:
+        c = zone_rgba
+    else:
+        c = parse_hex_color(hx)
+    return c, c
+
+
+def _write_spot_background_underlay_png(
+    *,
+    zone: str,
+    spot_pattern_id: str,
+    width: int,
+    height: int,
+    spot_bg: PatternChannelOptions,
+    zone_hex: str,
+) -> Path | None:
+    """Raster matching spot plate size for mask composite (spot_bg channel, not zone color_image)."""
+    try:
+        ca, cb = _spot_bg_rgba_endpoints(spot_bg, zone_hex)
+        pixels = gradient_image_pixel_buffer(width, height, ca, cb, "horizontal")
+        label = f"BlobertSpotUnderlay_{sanitize_image_label(zone)}_{sanitize_image_label(spot_pattern_id)[:24]}"
+        out = write_rgba_buffer_to_gradients_png(width, height, pixels, label)
+        log_spots_composite(
+            f"spots_underlay: wrote synthesized spot_bg raster {out.name} ({width}x{height}) for composite",
+        )
+        return out
+    except (OSError, ValueError, TypeError, KeyError) as e:
+        log_spots_composite(f"spots_underlay: failed to write synthesized underlay: {type(e).__name__}: {e}")
+        return None
+
+
+def resolve_spots_composite_underlay(
+    *,
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
+    settings: ZoneTextureOptions,
+    spot_pattern_id: str,
+) -> tuple[str, Path | None]:
+    """Texture asset id and/or disk path to composite *under* an image spot plate.
+
+    If zone ``color_image`` is the same asset as the spot plate (editor often mirrors one upload),
+    that id is ignored and we use a distinct ``spot_bg_color`` image or a synthesized fill from
+    spot background hex/gradient.
+    """
+    zone_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+    if spot_pattern_id and zone_id and zone_id == spot_pattern_id:
+        log_spots_composite(
+            "spots_underlay: zone color_image matches spot plate "
+            f"{spot_pattern_id!r}; ignoring duplicate as underlay",
+        )
+        zone_id = ""
+    if zone_id:
+        return (zone_id, None)
+    if not spot_pattern_id:
+        return ("", None)
+    bg = settings.spot_bg_color
+    if str(bg.mode).strip().lower() == "image":
+        bid = bg.resolved_image_id()
+        if bid and bid != spot_pattern_id:
+            log_spots_composite(f"spots_underlay: using spot_bg_color image asset_id={bid!r}")
+            return (bid, None)
+    try:
+        pat_path = Path(get_texture_asset_filepath(spot_pattern_id))
+    except (ValueError, OSError, TypeError) as e:
+        log_spots_composite(f"spots_underlay: cannot resolve spot plate path: {type(e).__name__}: {e}")
+        return ("", None)
+    if not pat_path.is_file():
+        log_spots_composite(f"spots_underlay: spot plate path missing: {pat_path}")
+        return ("", None)
+    try:
+        w, h = _read_png_ihdr_dimensions(pat_path)
+    except (ValueError, OSError) as e:
+        log_spots_composite(f"spots_underlay: cannot read spot PNG dimensions: {type(e).__name__}: {e}")
+        return ("", None)
+    syn = _write_spot_background_underlay_png(
+        zone=zone,
+        spot_pattern_id=spot_pattern_id,
+        width=w,
+        height=h,
+        spot_bg=bg,
+        zone_hex=settings.zone_hex,
+    )
+    return ("", syn)
+
+
+def overlay_base_image_on_zone_material(
+    mat: bpy.types.Material,
+    *,
+    asset_id: str = "",
+    base_path: Path | None = None,
+    underlay_uv_rect: tuple[float, float, float, float] | None = None,
+    log_prefix: str = "",
+) -> bpy.types.Material:
+    """Overlay a texture asset or PNG onto the zone pattern material (combined PNG when applicable)."""
+    return _spot_overlay_base_image(
+        mat,
+        asset_id=asset_id,
+        base_path=base_path,
+        underlay_uv_rect=underlay_uv_rect,
+        log_prefix=log_prefix,
+    )
+
+
 def _apply_gradient_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
@@ -818,74 +1181,74 @@ def _apply_asset_pattern(mat: bpy.types.Material, settings: ZoneTextureOptions) 
 def _apply_spots_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
+    *,
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
 ) -> bpy.types.Material:
-    pattern_asset_id = settings.pattern_image_asset_id(("spot_color", "spot_bg_color"))
-    if pattern_asset_id:
-        return _material_for_asset_zone(
-            base_material=mat,
-            asset_id=pattern_asset_id,
-            tile_repeat=settings.tile_repeat,
-            instance_suffix=f"{settings.zone}_tex_asset",
-        )
-    return material_for_spots_zone(
+    return apply_spots_zone_pattern(
         base_palette_name=_palette_base_name_from_material(mat),
-        finish=settings.finish,
-        spot_hex=settings.spot_color.resolved_hex(),
-        bg_hex=settings.spot_bg_color.resolved_hex(),
-        density=settings.spot_density,
-        zone_hex_fallback=settings.zone_hex,
-        instance_suffix=f"{settings.zone}_tex_spot",
+        settings=settings,
+        zone=zone,
+        build_options=build_options,
+        zone_feature=zone_feature,
     )
 
 
 def _apply_checkerboard_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
+    zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
-    pattern_asset_id = settings.pattern_image_asset_id(("spot_color", "spot_bg_color"))
-    if pattern_asset_id:
-        return _material_for_asset_zone(
-            base_material=mat,
-            asset_id=pattern_asset_id,
-            tile_repeat=settings.tile_repeat,
-            instance_suffix=f"{settings.zone}_tex_asset",
-        )
-    return _material_for_checkerboard_zone(
+    pattern_asset_id = settings.pattern_image_asset_id(("spot_bg_color", "spot_color"))
+    if not pattern_asset_id and zone_image_asset_id:
+        pattern_asset_id = zone_image_asset_id
+    checker_mat = _material_for_checkerboard_zone(
         base_palette_name=_palette_base_name_from_material(mat),
         finish=settings.finish,
         color_a_hex=settings.spot_color.resolved_hex(),
-        color_b_hex=settings.spot_bg_color.resolved_hex(),
+        color_b_hex="ffffff" if pattern_asset_id else settings.spot_bg_color.resolved_hex(),
         density=settings.spot_density,
         zone_hex_fallback=settings.zone_hex,
         instance_suffix=f"{settings.zone}_tex_checker",
+    )
+    if not pattern_asset_id:
+        return checker_mat
+    return overlay_base_image_on_zone_material(
+        checker_mat,
+        asset_id=pattern_asset_id,
+        underlay_uv_rect=settings.pattern_overlay_uv_rect(("spot_bg_color", "spot_color")),
     )
 
 
 def _apply_stripes_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
+    zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
     pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
-    if pattern_asset_id:
-        return _material_for_asset_zone(
-            base_material=mat,
-            asset_id=pattern_asset_id,
-            tile_repeat=settings.tile_repeat,
-            instance_suffix=f"{settings.zone}_tex_asset",
-        )
+    if not pattern_asset_id and zone_image_asset_id:
+        pattern_asset_id = zone_image_asset_id
     from .material_stripes_zone import material_for_stripes_zone
 
-    return material_for_stripes_zone(
+    stripe_mat = material_for_stripes_zone(
         base_palette_name=_palette_base_name_from_material(mat),
         finish=settings.finish,
         stripe_hex=settings.stripe_color.resolved_hex(),
-        bg_hex=settings.stripe_bg_color.resolved_hex(),
+        bg_hex="ffffff" if pattern_asset_id else settings.stripe_bg_color.resolved_hex(),
         stripe_width=settings.stripe_width,
         stripe_preset=settings.stripe_preset,
         rot_yaw_deg=settings.stripe_yaw,
         rot_pitch_deg=settings.stripe_pitch,
         zone_hex_fallback=settings.zone_hex,
         instance_suffix=f"{settings.zone}_tex_stripe",
+    )
+    if not pattern_asset_id:
+        return stripe_mat
+    return overlay_base_image_on_zone_material(
+        stripe_mat,
+        asset_id=pattern_asset_id,
+        underlay_uv_rect=settings.stripe_pattern_image_uv_rect(),
     )
 
 
@@ -904,6 +1267,7 @@ def apply_zone_texture_pattern_overrides(
     for zone, mat in list(out.items()):
         if mat is None:
             continue
+        zone_feature = zone_features.get(zone)
         settings = ZoneTextureOptions.from_build_options(
             zone=zone,
             zone_features=zone_features,
@@ -916,11 +1280,33 @@ def apply_zone_texture_pattern_overrides(
             if maybe is not None:
                 out[zone] = maybe
         elif settings.mode == "spots":
-            out[zone] = _apply_spots_pattern(mat, settings)
+            out[zone] = _apply_spots_pattern(
+                mat,
+                settings,
+                zone=zone,
+                build_options=build_options,
+                zone_feature=zone_feature,
+            )
         elif settings.mode == "checkerboard":
-            out[zone] = _apply_checkerboard_pattern(mat, settings)
+            out[zone] = _apply_checkerboard_pattern(
+                mat,
+                settings,
+                zone_image_asset_id=resolve_zone_color_image_asset_id(zone, build_options, zone_feature),
+            )
         elif settings.mode == "stripes":
-            out[zone] = _apply_stripes_pattern(mat, settings)
+            out[zone] = _apply_stripes_pattern(
+                mat,
+                settings,
+                zone_image_asset_id=resolve_zone_color_image_asset_id(zone, build_options, zone_feature),
+            )
+
+        image_asset_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+        if image_asset_id and out.get(zone) is not None and settings.mode in ("gradient", "checkerboard", "stripes"):
+            out[zone] = overlay_base_image_on_zone_material(
+                out[zone],
+                asset_id=image_asset_id,
+                underlay_uv_rect=resolve_zone_color_image_uv_rect(zone, build_options, zone_feature),
+            )
     return out
 
 

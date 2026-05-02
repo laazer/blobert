@@ -93,6 +93,19 @@ class TestImageTextureSchemaMerge:
         assert color_image["id"] == "stripe_01"
         assert color_image["preview"] == preview_url
 
+    def test_color_image_uv_rect_merges_into_features(self) -> None:
+        """Flat ``feat_{zone}_color_image_uv_rect`` JSON merges into ``color_image.uv_rect``."""
+        rect = '{"u0":0.1,"v0":0.2,"u1":0.5,"v1":0.9}'
+        o = options_for_enemy(
+            "spider",
+            {
+                "feat_body_color_mode": "image",
+                "feat_body_color_image_id": "demo_textures3",
+                "feat_body_color_image_uv_rect": rect,
+            },
+        )
+        assert o["features"]["body"]["color_image"]["uv_rect"] == rect
+
     def test_BUG_image_textures_not_applied_multiple_zones_with_image_mode(
         self,
     ) -> None:
@@ -272,6 +285,7 @@ def test_merge_features_for_slug_non_dict_color_image_in_feat_base_defaults() ->
         "mode": "single",
         "id": None,
         "preview": None,
+        "uv_rect": None,
     }
 
 

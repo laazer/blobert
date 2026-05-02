@@ -134,11 +134,15 @@ _FEATURE_ZONES_BY_SLUG: dict[str, tuple[str, ...]] = {
     "player_slime": ("body", "head"),
 }
 
-_FEAT_ZONE_FLAT_KEY = re.compile(r"^feat_(body|head|limbs|joints|extra)_(finish|hex|color_mode|color_image_id|color_image_preview)$")
+_FEAT_ZONE_FLAT_KEY = re.compile(
+    r"^feat_(body|head|limbs|joints|extra)_"
+    r"(finish|hex|color_mode|color_image_id|color_image_preview|color_image_uv_rect)$"
+)
 _FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_PATTERN_COLOR_KEY = re.compile(
-    r"^feat_(body|head|limbs|joints|extra)_texture_(spot_color|spot_bg_color|stripe_color|stripe_bg_color)_(hex|a|b|direction|mode|image_id|image_preview)$"
+    r"^feat_(body|head|limbs|joints|extra)_texture_(spot_color|spot_bg_color|stripe_color|stripe_bg_color)_"
+    r"(hex|a|b|direction|mode|image_id|image_preview|image_uv_rect)$"
 )
 
 _EXTRA_KINDS_ORDER: tuple[str, ...] = ("none", "shell", "spikes", "horns", "bulbs")
@@ -234,7 +238,7 @@ def _default_features_dict(slug: str) -> dict[str, dict[str, Any]]:
         z: {
             "finish": "default",
             "hex": "",
-            "color_image": {"mode": "single", "id": None, "preview": None},
+            "color_image": {"mode": "single", "id": None, "preview": None, "uv_rect": None},
         }
         for z in _feature_zones(slug)
     }
@@ -323,9 +327,10 @@ def _validate_features_map(d: dict[str, Any]) -> dict[str, Any]:
                 "mode": str(color_image.get("mode", "single")),
                 "id": color_image.get("id"),
                 "preview": color_image.get("preview"),
+                "uv_rect": color_image.get("uv_rect"),
             }
         else:
-            zd["color_image"] = {"mode": "single", "id": None, "preview": None}
+            zd["color_image"] = {"mode": "single", "id": None, "preview": None, "uv_rect": None}
         out[str(zone)] = zd
     return out
 
@@ -360,9 +365,10 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                     "mode": str(color_img.get("mode", "single")),
                     "id": color_img.get("id"),
                     "preview": color_img.get("preview"),
+                    "uv_rect": color_img.get("uv_rect"),
                 }
             else:
-                out[z]["color_image"] = {"mode": "single", "id": None, "preview": None}
+                out[z]["color_image"] = {"mode": "single", "id": None, "preview": None, "uv_rect": None}
             bp = b.get("parts")
             if isinstance(bp, dict):
                 parts: dict[str, dict[str, str]] = {}
@@ -379,7 +385,7 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
             out[z] = {
                 "finish": "default",
                 "hex": "",
-                "color_image": {"mode": "single", "id": None, "preview": None},
+                "color_image": {"mode": "single", "id": None, "preview": None, "uv_rect": None},
             }
     nested = src.get("features")
     if isinstance(nested, dict):
@@ -396,6 +402,7 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                     "mode": str(color_img.get("mode", "single")),
                     "id": color_img.get("id"),
                     "preview": color_img.get("preview"),
+                    "uv_rect": color_img.get("uv_rect"),
                 }
             subp = data.get("parts")
             if isinstance(subp, dict):
@@ -419,6 +426,8 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                     out[zone]["color_image"]["id"] = v if v is not None else None
                 elif field == "color_image_preview":
                     out[zone]["color_image"]["preview"] = v if v is not None else None
+                elif field == "color_image_uv_rect":
+                    out[zone]["color_image"]["uv_rect"] = v if v is not None else None
                 else:
                     out[zone][field] = str(v)
             continue

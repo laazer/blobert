@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import type { GradientDirection } from "../ColorPicker/common/DirectionSelector";
+import { parseImageUvRect, stringifyImageUvRect } from "../ColorPicker/imageUvRect";
 import { ColorPickerTabs, type ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
 
@@ -64,6 +65,17 @@ function firstNonEmptyString(...vals: unknown[]): string {
 
 type PickerMode = "single" | "gradient" | "image";
 
+const PATTERN_FIELD_LABELS: Record<string, string> = {
+  spot_color: "Spot color",
+  spot_bg_color: "Spot background color",
+  stripe_color: "Stripe color",
+  stripe_bg_color: "Stripe background color",
+};
+
+export function patternFieldLabel(colorFieldName: string, fallbackLabel: string): string {
+  return PATTERN_FIELD_LABELS[colorFieldName] ?? fallbackLabel;
+}
+
 type ColorFieldKeys = {
   hexKey: string;
   colorAKey: string;
@@ -71,6 +83,7 @@ type ColorFieldKeys = {
   colorDirKey: string;
   imageIdKey: string;
   imagePreviewKey: string;
+  imageUvRectKey: string;
   legacySingleKey?: string;
 };
 
@@ -98,6 +111,11 @@ function buildColorPickerValue(
       type: "image",
       file: null,
       preview: typeof values[keys.imagePreviewKey] === "string" ? values[keys.imagePreviewKey] : undefined,
+      assetId:
+        typeof values[keys.imageIdKey] === "string" && values[keys.imageIdKey].trim() !== ""
+          ? values[keys.imageIdKey]
+          : undefined,
+      uvRect: parseImageUvRect(values[keys.imageUvRectKey]),
     };
   }
   return {
@@ -393,6 +411,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
   const colorDirKey = `feat_${zone}_color_direction`;
   const colorImageIdKey = `feat_${zone}_color_image_id`; // For tracking uploaded image
   const colorImagePreviewKey = `feat_${zone}_color_image_preview`; // For preview URL
+  const colorImageUvRectKey = `feat_${zone}_color_image_uv_rect`;
   const colorMode = normalizedColorMode(zone, values);
 
   // Texture mode (pattern overlay)
@@ -410,6 +429,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
     colorDirKey,
     imageIdKey: colorImageIdKey,
     imagePreviewKey: colorImagePreviewKey,
+    imageUvRectKey: colorImageUvRectKey,
   };
   const colorPickerValue = buildColorPickerValue(colorMode, values, baseColorKeys);
 
@@ -464,11 +484,14 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       setAnimatedBuildOption(slug, keys.colorDirKey, v.direction);
       return;
     }
-    if (v.preview) {
-      setAnimatedBuildOption(slug, keys.imagePreviewKey, v.preview);
-    }
-    if (v.assetId) {
-      setAnimatedBuildOption(slug, keys.imageIdKey, v.assetId);
+    if (v.type === "image") {
+      setAnimatedBuildOption(slug, keys.imagePreviewKey, v.preview ?? "");
+      setAnimatedBuildOption(slug, keys.imageIdKey, v.assetId ?? "");
+      setAnimatedBuildOption(
+        slug,
+        keys.imageUvRectKey,
+        v.uvRect ? stringifyImageUvRect(v.uvRect) : "",
+      );
     }
   };
 
@@ -478,8 +501,9 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
    */
   const renderPatternColorPicker = (
     colorFieldName: string, // "spot_color", "stripe_color", etc.
-    label: string,
+    fallbackLabel: string,
   ) => {
+    const label = patternFieldLabel(colorFieldName, fallbackLabel);
     const colorMode = normalizedPatternColorMode(zone, colorFieldName, values);
     const modeKey = `feat_${zone}_texture_${colorFieldName}_mode`;
     const hexKey = `feat_${zone}_texture_${colorFieldName}_hex`;
@@ -488,6 +512,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
     const colorDirKey = `feat_${zone}_texture_${colorFieldName}_direction`;
     const imageIdKey = `feat_${zone}_texture_${colorFieldName}_image_id`;
     const imagePreviewKey = `feat_${zone}_texture_${colorFieldName}_image_preview`;
+    const imageUvRectKey = `feat_${zone}_texture_${colorFieldName}_image_uv_rect`;
     const pickerKeys: ColorFieldKeys = {
       hexKey,
       colorAKey,
@@ -495,6 +520,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       colorDirKey,
       imageIdKey,
       imagePreviewKey,
+      imageUvRectKey,
       legacySingleKey: `feat_${zone}_texture_${colorFieldName}`,
     };
 

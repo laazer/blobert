@@ -8,6 +8,12 @@ from typing import Any, Mapping
 
 import bpy
 
+from src.materials.spot_plate_mask import DEFAULT_DARK_THRESHOLD
+from src.materials.uv_atlas import (
+    is_full_uv_rect,
+    parse_uv_rect,
+    uv_rect_to_pil_crop_box,
+)
 from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
 
 RGBA = tuple[float, float, float, float]
@@ -19,6 +25,8 @@ class ColorImageOptions:
     mode: str
     asset_id: str
     preview: str
+    #: Normalized atlas rectangle ``(u0, v0, u1, v1)`` (Blender UV: origin bottom-left).
+    uv_rect: tuple[float, float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -41,10 +49,12 @@ class FeatureZoneOptions:
         color_image_raw = raw.get("color_image")
         color_image: ColorImageOptions | None = None
         if isinstance(color_image_raw, dict):
+            uv_rect = parse_uv_rect(color_image_raw.get("uv_rect"))
             color_image = ColorImageOptions(
                 mode=str(color_image_raw.get("mode", "") or "").strip().lower(),
                 asset_id=str(color_image_raw.get("id", "") or "").strip(),
                 preview=str(color_image_raw.get("preview", "") or ""),
+                uv_rect=uv_rect,
             )
         parts_raw = raw.get("parts")
         parts: dict[str, PartOverrideOptions] = {}
@@ -82,13 +92,13 @@ def _sanitize_hex_input(raw: object) -> str:
     return s[:6]
 
 
-def _pattern_normalize_hex6(raw: object) -> str:
+def pattern_normalize_hex6(raw: object) -> str:
     return _sanitize_hex_input(raw)[:6]
 
 
 def _pattern_blend_hex(a_raw: object, b_raw: object) -> str:
-    a = _pattern_normalize_hex6(a_raw)
-    b = _pattern_normalize_hex6(b_raw)
+    a = pattern_normalize_hex6(a_raw)
+    b = pattern_normalize_hex6(b_raw)
     if not a and not b:
         return ""
     if not a:
@@ -100,9 +110,46 @@ def _pattern_blend_hex(a_raw: object, b_raw: object) -> str:
     return f"{(ar + br) // 2:02x}{(ag + bg) // 2:02x}{(ab + bb) // 2:02x}"
 
 
-def _pattern_image_average_hex(asset_id: str) -> str:
+def _pattern_image_average_hex(
+    asset_id: str,
+    uv_rect: tuple[float, float, float, float] | None = None,
+) -> str:
     if not asset_id:
         return ""
+    if uv_rect is not None and not is_full_uv_rect(uv_rect):
+        try:
+            from PIL import Image
+
+            from ..utils.texture_asset_loader import get_texture_asset_filepath
+
+            asset_path = get_texture_asset_filepath(asset_id)
+            with Image.open(asset_path) as im:
+                im = im.convert("RGBA")
+                w, h = im.size
+                box = uv_rect_to_pil_crop_box(w, h, uv_rect)
+                region = im.crop(box)
+                px = region.tobytes()
+                pixel_count = len(px) // 4
+                step = max(1, pixel_count // 2048)
+                s_r = s_g = s_b = 0.0
+                count = 0
+                i = 0
+                while i < pixel_count:
+                    base = i * 4
+                    s_r += float(px[base]) / 255.0
+                    s_g += float(px[base + 1]) / 255.0
+                    s_b += float(px[base + 2]) / 255.0
+                    count += 1
+                    i += step
+                if count == 0:
+                    return ""
+                return (
+                    f"{int((s_r / count) * 255):02x}"
+                    f"{int((s_g / count) * 255):02x}"
+                    f"{int((s_b / count) * 255):02x}"
+                )
+        except Exception:
+            pass
     try:
         from ..utils.texture_asset_loader import get_texture_asset_filepath
 
@@ -154,6 +201,23 @@ def _normalized_stripe_preset(raw: object) -> str:
     return preset if preset in ("beachball", "doplar", "swirl") else "beachball"
 
 
+def _safe_bool(raw: object, *, default: bool) -> bool:
+    if raw is None:
+        return default
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, (int, float)):
+        if isinstance(raw, float) and (math.isnan(raw) or math.isinf(raw)):
+            return default
+        return raw != 0
+    s = str(raw).strip().lower()
+    if s in ("false", "no", "off", "0"):
+        return False
+    if s in ("true", "yes", "on", "1"):
+        return True
+    return default
+
+
 def _safe_float(
     raw: object,
     *,
@@ -182,6 +246,8 @@ class PatternChannelOptions:
     gradient_b: str
     image_id: str
     image_preview: str
+    #: JSON string from ``feat_*_texture_*_image_uv_rect`` (merged atlas bounds).
+    image_uv_rect: str
     legacy_hex: str
 
     @classmethod
@@ -200,8 +266,12 @@ class PatternChannelOptions:
             gradient_b=str(build_options.get(f"{prefix}_b", "") or ""),
             image_id=str(build_options.get(f"{prefix}_image_id", "") or "").strip(),
             image_preview=str(build_options.get(f"{prefix}_image_preview", "") or ""),
+            image_uv_rect=str(build_options.get(f"{prefix}_image_uv_rect", "") or ""),
             legacy_hex=str(build_options.get(prefix, "") or ""),
         )
+
+    def parsed_image_uv_rect(self) -> tuple[float, float, float, float] | None:
+        return parse_uv_rect(self.image_uv_rect)
 
     def resolved_image_id(self) -> str:
         if self.image_id:
@@ -210,16 +280,21 @@ class PatternChannelOptions:
 
     def resolved_hex(self) -> str:
         if self.mode == "single":
-            return _pattern_normalize_hex6(self.hex_value) or _pattern_normalize_hex6(self.legacy_hex)
+            return pattern_normalize_hex6(self.hex_value) or pattern_normalize_hex6(self.legacy_hex)
         if self.mode == "gradient":
-            return _pattern_blend_hex(self.gradient_a, self.gradient_b) or _pattern_normalize_hex6(self.legacy_hex)
+            return _pattern_blend_hex(self.gradient_a, self.gradient_b) or pattern_normalize_hex6(self.legacy_hex)
         if self.mode == "image":
+            explicit = pattern_normalize_hex6(self.hex_value) or pattern_normalize_hex6(self.legacy_hex)
+            if explicit:
+                return explicit
             return (
-                _pattern_image_average_hex(self.resolved_image_id())
-                or _pattern_normalize_hex6(self.hex_value)
-                or _pattern_normalize_hex6(self.legacy_hex)
+                _pattern_image_average_hex(
+                    self.resolved_image_id(),
+                    self.parsed_image_uv_rect(),
+                )
+                or explicit
             )
-        return _pattern_normalize_hex6(self.legacy_hex)
+        return pattern_normalize_hex6(self.legacy_hex)
 
 
 @dataclass(frozen=True)
@@ -242,6 +317,12 @@ class ZoneTextureOptions:
     spot_bg_color: PatternChannelOptions
     stripe_color: PatternChannelOptions
     stripe_bg_color: PatternChannelOptions
+    #: ``white_holes`` | ``dark_spots`` | ``auto`` — see ``spot_plate_mask.py``
+    spot_plate_mask_mode: str
+    #: Linear RGB; used when effective mode is ``dark_spots`` (max channel >= threshold ⇒ show base).
+    spot_plate_dark_threshold: float
+    #: When False, compositing uses a hard mask (no feathered smoothstep, no mask blur).
+    spot_plate_mask_soft_edges: bool
 
     @classmethod
     def from_build_options(
@@ -292,6 +373,22 @@ class ZoneTextureOptions:
             spot_bg_color=PatternChannelOptions.from_build_options(zone=zone, field="spot_bg_color", build_options=build_options),
             stripe_color=PatternChannelOptions.from_build_options(zone=zone, field="stripe_color", build_options=build_options),
             stripe_bg_color=PatternChannelOptions.from_build_options(zone=zone, field="stripe_bg_color", build_options=build_options),
+            spot_plate_mask_mode=str(
+                build_options.get(f"feat_{zone}_texture_spot_plate_mask_mode", "auto") or "auto",
+            ).strip().lower(),
+            spot_plate_dark_threshold=_safe_float(
+                build_options.get(
+                    f"feat_{zone}_texture_spot_plate_dark_threshold",
+                    DEFAULT_DARK_THRESHOLD,
+                ),
+                default=DEFAULT_DARK_THRESHOLD,
+                min_value=0.05,
+                max_value=0.95,
+            ),
+            spot_plate_mask_soft_edges=_safe_bool(
+                build_options.get(f"feat_{zone}_texture_spot_plate_mask_soft_edges", True),
+                default=True,
+            ),
         )
 
     def pattern_image_asset_id(self, fields: tuple[str, ...]) -> str:
@@ -304,6 +401,41 @@ class ZoneTextureOptions:
         for field in fields:
             channel = field_map.get(field)
             if channel is None or channel.mode != "image":
+                continue
+            asset_id = channel.resolved_image_id()
+            if asset_id:
+                return asset_id
+        return ""
+
+    def pattern_overlay_uv_rect(self, fields: tuple[str, ...]) -> tuple[float, float, float, float] | None:
+        """Atlas bounds from the first image-mode channel in ``fields`` that has an asset id."""
+        field_map = {
+            "spot_color": self.spot_color,
+            "spot_bg_color": self.spot_bg_color,
+            "stripe_color": self.stripe_color,
+            "stripe_bg_color": self.stripe_bg_color,
+        }
+        for field in fields:
+            channel = field_map.get(field)
+            if channel is None or str(channel.mode).strip().lower() != "image":
+                continue
+            if channel.resolved_image_id():
+                return channel.parsed_image_uv_rect()
+        return None
+
+    def spot_pattern_image_uv_rect(self) -> tuple[float, float, float, float] | None:
+        return self.pattern_overlay_uv_rect(("spot_color", "spot_bg_color"))
+
+    def stripe_pattern_image_uv_rect(self) -> tuple[float, float, float, float] | None:
+        return self.pattern_overlay_uv_rect(("stripe_color", "stripe_bg_color"))
+
+    def spot_pattern_image_asset_id(self) -> str:
+        """Asset id for a user-authored spot plate image (white/near-white reveals base in composite).
+
+        Prefers ``spot_color`` over ``spot_bg_color`` when both are image mode.
+        """
+        for channel in (self.spot_color, self.spot_bg_color):
+            if str(channel.mode).strip().lower() != "image":
                 continue
             asset_id = channel.resolved_image_id()
             if asset_id:

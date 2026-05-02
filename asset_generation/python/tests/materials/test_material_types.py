@@ -68,7 +68,7 @@ def test_pattern_channel_resolved_hex_gradient_empty_pair() -> None:
     assert ch.resolved_hex() == "aabbcc"
 
 
-def test_pattern_channel_resolved_hex_image_uses_average_pipeline() -> None:
+def test_pattern_channel_resolved_hex_image_uses_average_pipeline_when_no_explicit_hex() -> None:
     with patch(
         "src.materials.material_types._pattern_image_average_hex",
         return_value="112233",
@@ -82,10 +82,23 @@ def test_pattern_channel_resolved_hex_image_uses_average_pipeline() -> None:
             },
         )
         assert ch.resolved_hex() == "112233"
-    mock_avg.assert_called_once_with("demo_textures3")
+    mock_avg.assert_called_once_with("demo_textures3", None)
 
 
-def test_pattern_channel_resolved_hex_image_falls_back_to_channel_hex() -> None:
+def test_pattern_channel_resolved_hex_image_prefers_explicit_hex_over_average() -> None:
+    with patch("src.materials.material_types._pattern_image_average_hex", return_value="112233"):
+        ch = PatternChannelOptions.from_build_options(
+            zone="body",
+            field="spot_color",
+            build_options={
+                "feat_body_texture_spot_color_mode": "image",
+                "feat_body_texture_spot_color_hex": "abcdef",
+            },
+        )
+        assert ch.resolved_hex() == "abcdef"
+
+
+def test_pattern_channel_resolved_hex_image_falls_back_to_channel_hex_when_average_empty() -> None:
     with patch("src.materials.material_types._pattern_image_average_hex", return_value=""):
         ch = PatternChannelOptions.from_build_options(
             zone="body",
@@ -120,6 +133,27 @@ def test_zone_texture_options_reads_legacy_stripe_rot_x() -> None:
     assert opts.stripe_pitch == 22.5
 
 
+def test_safe_bool_coerces_build_strings() -> None:
+    zf = FeatureZoneOptions.from_mapping({"finish": "default", "hex": ""})
+    assert zf is not None
+    off = ZoneTextureOptions.from_build_options(
+        zone="body",
+        zone_features={"body": zf},
+        build_options={
+            "feat_body_texture_spot_plate_mask_soft_edges": "false",
+        },
+    )
+    assert off.spot_plate_mask_soft_edges is False
+    on = ZoneTextureOptions.from_build_options(
+        zone="body",
+        zone_features={"body": zf},
+        build_options={
+            "feat_body_texture_spot_plate_mask_soft_edges": "1",
+        },
+    )
+    assert on.spot_plate_mask_soft_edges is True
+
+
 def test_safe_float_coerces_invalid_to_default() -> None:
     zf = FeatureZoneOptions.from_mapping({"finish": "default", "hex": ""})
     assert zf is not None
@@ -129,3 +163,29 @@ def test_safe_float_coerces_invalid_to_default() -> None:
         build_options={"feat_body_texture_spot_density": "not-a-float"},
     )
     assert opts.spot_density == 1.0
+
+
+def test_spot_pattern_image_asset_id_prefers_spot_color_over_spot_bg() -> None:
+    zf = FeatureZoneOptions.from_mapping({"finish": "default", "hex": ""})
+    assert zf is not None
+    fg_only = ZoneTextureOptions.from_build_options(
+        zone="body",
+        zone_features={"body": zf},
+        build_options={
+            "feat_body_texture_spot_color_mode": "image",
+            "feat_body_texture_spot_color_image_id": "foreground_asset",
+        },
+    )
+    assert fg_only.spot_pattern_image_asset_id() == "foreground_asset"
+
+    both = ZoneTextureOptions.from_build_options(
+        zone="body",
+        zone_features={"body": zf},
+        build_options={
+            "feat_body_texture_spot_color_mode": "image",
+            "feat_body_texture_spot_color_image_id": "foreground_asset",
+            "feat_body_texture_spot_bg_color_mode": "image",
+            "feat_body_texture_spot_bg_color_image_id": "background_asset",
+        },
+    )
+    assert both.spot_pattern_image_asset_id() == "foreground_asset"

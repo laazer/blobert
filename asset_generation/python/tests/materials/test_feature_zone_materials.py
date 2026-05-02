@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import types
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.enemies import animated_imp as imp_mod
 from src.enemies.base_animated_model import BaseAnimatedModel
+from src.materials import feature_zones as fz
 from src.materials import material_system as ms
 from src.materials import material_system_enemy_themes as ms_enemy_themes
 from src.utils.materials import MaterialNames
@@ -39,8 +41,17 @@ def _fake_mat_with_bsdf_for_uv_gradient() -> tuple[MagicMock, MagicMock, MagicMo
             n.type = type
             if type == "ShaderNodeUVMap":
                 n.outputs = {"UV": MagicMock()}
+            elif type == "ShaderNodeTexCoord":
+                n.outputs = {"UV": MagicMock()}
             elif type == "ShaderNodeTexImage":
                 n.inputs = {"Vector": MagicMock()}
+                n.outputs = {"Color": MagicMock()}
+            elif type == "ShaderNodeMixRGB":
+                n.inputs = {
+                    "Fac": MagicMock(),
+                    "Color1": MagicMock(),
+                    "Color2": MagicMock(),
+                }
                 n.outputs = {"Color": MagicMock()}
             elif type == "ShaderNodeSeparateXYZ":
                 n.outputs = {"X": MagicMock(), "Y": MagicMock(), "Z": MagicMock()}
@@ -83,6 +94,42 @@ def _fake_mat_with_bsdf_for_uv_gradient() -> tuple[MagicMock, MagicMock, MagicMo
     return mat, flinks, bsdf
 
 
+def _assert_overlay_zone_material_multiplies_existing_color_graph() -> None:
+    mat, links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    base_color_socket = bsdf.inputs["Base Color"]
+    existing_src = MagicMock()
+    base_color_socket.links[0].from_socket = existing_src
+    with (
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
+        patch.object(ms.bpy.data.images, "load", return_value=MagicMock()) as load_img,
+    ):
+        out = ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
+    assert out is mat
+    assert load_img.called
+    assert links.new_calls
+
+
+def _assert_overlay_zone_material_combines_when_pattern_tex_image_exists() -> None:
+    mat, _links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    base_color_socket = bsdf.inputs["Base Color"]
+    pattern_img = MagicMock()
+    pattern_img.name = "BlobertTexSpot_body_tex_spot"
+    existing_src = MagicMock()
+    existing_src.node = MagicMock()
+    existing_src.node.image = pattern_img
+    base_color_socket.links[0].from_socket = existing_src
+    combined_img = MagicMock()
+    with (
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
+        patch.object(ms.bpy.data.images, "load", return_value=MagicMock()) as load_img,
+        patch("src.materials.spot_overlay.combine_pattern_over_base_image", return_value=combined_img) as combine,
+    ):
+        out = ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
+    assert out is mat
+    assert load_img.called
+    combine.assert_called_once()
+
+
 def test_add_uv_gradient_to_principled_horizontal() -> None:
     mat, links, _bsdf = _fake_mat_with_bsdf_for_uv_gradient()
     ms._add_uv_gradient_to_principled(
@@ -106,6 +153,185 @@ def test_add_uv_gradient_to_principled_radial() -> None:
         mat, (1.0, 0.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0), "radial"
     )
     assert links.new_calls
+
+
+def test_overlay_base_image_on_material_multiplies_existing_color_graph() -> None:
+    _assert_overlay_zone_material_multiplies_existing_color_graph()
+
+
+def test_overlay_base_image_on_material_reconnects_when_load_fails() -> None:
+    mat, links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    base_color_socket = bsdf.inputs["Base Color"]
+    existing_src = MagicMock()
+    base_color_socket.links[0].from_socket = existing_src
+    with (
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/missing.png"),
+        patch.object(ms.bpy.data.images, "load", side_effect=IOError("missing")),
+    ):
+        out = ms.overlay_base_image_on_zone_material(mat, asset_id="missing_id")
+    assert out is mat
+    assert (existing_src, base_color_socket) in links.new_calls
+
+
+def test_overlay_base_image_on_material_uses_combined_png_when_pattern_image_exists() -> None:
+    _assert_overlay_zone_material_combines_when_pattern_tex_image_exists()
+
+
+def test_feature_zones_overlay_base_image_handles_unlinked_base_color() -> None:
+    mat, links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    bsdf.inputs["Base Color"].links = []
+    with (
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
+        patch.object(ms.bpy.data.images, "load", return_value=MagicMock()) as load_img,
+    ):
+        out = ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
+    assert out is mat
+    assert load_img.called
+    assert links.new_calls
+
+
+def test_feature_zones_overlay_base_image_uses_combined_png_when_pattern_image_exists() -> None:
+    _assert_overlay_zone_material_combines_when_pattern_tex_image_exists()
+
+
+def test_apply_zone_texture_pattern_overrides_blends_zone_image_with_pattern() -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    patterned = MagicMock(name="patterned")
+    with (
+        patch.object(ms, "_apply_spots_pattern", return_value=patterned) as apply_spots,
+    ):
+        out = ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "spots",
+                "features": {
+                    "body": {
+                        "color_image": {"mode": "image", "id": "demo_textures3"},
+                    }
+                },
+            },
+        )
+    assert out["body"] is patterned
+    apply_spots.assert_called_once()
+    assert apply_spots.call_args.kwargs["zone"] == "body"
+    assert apply_spots.call_args.kwargs["build_options"]["features"]["body"]["color_image"]["id"] == "demo_textures3"
+
+
+@pytest.mark.parametrize("module", [ms, fz])
+def test_zone_color_image_asset_id_prefers_id_and_preview(module) -> None:
+    zone = module.FeatureZoneOptions.from_mapping({"color_image": {"mode": "image", "id": "demo_textures3"}})
+    assert module._zone_color_image_asset_id(zone) == "demo_textures3"
+    zone_preview = module.FeatureZoneOptions.from_mapping(
+        {"color_image": {"mode": "image", "preview": "/api/assets/textures/file/demo%20textures3.png"}}
+    )
+    assert module._zone_color_image_asset_id(zone_preview) == "demo_textures3"
+
+
+def test_overlay_base_image_returns_early_for_empty_asset() -> None:
+    mat = MagicMock()
+    assert ms.overlay_base_image_on_zone_material(mat, asset_id="", base_path=None) is mat
+
+
+def test_overlay_base_image_prefers_tagged_spot_image() -> None:
+    mat, _links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+
+    def _contains_fn(_self: object, *args: object) -> bool:
+        key = args[0] if args else None
+        return key == "blobert_spot_image_name"
+
+    mat.__contains__ = types.MethodType(_contains_fn, mat)  # type: ignore[method-assign]
+
+    def _mat_getitem(self: object, key: object) -> str:
+        if key == "blobert_spot_image_name":
+            return "BlobertTexSpot_body_tex_spot"
+        raise KeyError(key)
+
+    mat.__getitem__ = types.MethodType(_mat_getitem, mat)  # type: ignore[method-assign]
+    existing_src = MagicMock()
+    existing_src.node = MagicMock()
+    existing_src.node.image = MagicMock(name="non_pattern_image")
+    bsdf.inputs["Base Color"].links[0].from_socket = existing_src
+    tagged_img = MagicMock(name="tagged_spot")
+    with (
+        patch.object(ms.bpy.data.images, "get", return_value=tagged_img),
+        patch("src.materials.spot_overlay.combine_pattern_over_base_image", return_value=MagicMock()) as combine,
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
+        patch.object(ms.bpy.data.images, "load", return_value=MagicMock()),
+    ):
+        ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
+    assert combine.called
+    assert combine.call_args.args[0] is None
+
+
+def test_overlay_base_image_enables_nodes_and_returns_when_node_tree_missing() -> None:
+    mat = MagicMock()
+    mat.use_nodes = False
+    mat.node_tree = None
+    out = ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
+    assert out is mat
+    assert mat.use_nodes is True
+
+
+def test_overlay_base_image_returns_when_bsdf_or_base_socket_missing() -> None:
+    mat, _links, _bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    with patch.object(ms, "_find_principled_bsdf", return_value=None):
+        assert ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3") is mat
+    with (
+        patch.object(ms, "_find_principled_bsdf", return_value=MagicMock()),
+        patch.object(ms, "_principled_base_color_socket", return_value=None),
+    ):
+        assert ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3") is mat
+
+
+def test_feature_zones_overlay_base_image_multiplies_existing_color_graph() -> None:
+    _assert_overlay_zone_material_multiplies_existing_color_graph()
+
+
+def test_feature_zones_apply_zone_texture_pattern_overrides_blends_zone_image() -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    patterned = MagicMock(name="patterned")
+    with (
+        patch.object(fz, "_material_for_gradient_zone", return_value=patterned),
+        patch.object(fz, "overlay_base_image_on_zone_material", return_value=patterned) as blend,
+    ):
+        out = fz.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "gradient",
+                "features": {
+                    "body": {
+                        "color_image": {"mode": "image", "id": "demo_textures3"},
+                    }
+                },
+            },
+        )
+    assert out["body"] is patterned
+    blend.assert_called_once()
+
+
+def test_spots_pattern_uses_zone_image_when_bg_image_not_set() -> None:
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    spots = MagicMock(name="spots")
+    with (
+        patch.object(ms, "material_for_spots_zone", return_value=spots) as mk,
+        patch.object(ms, "overlay_base_image_on_zone_material", return_value=spots) as blend,
+    ):
+        out = ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "spots",
+                "feat_body_texture_spot_color_mode": "image",
+                "features": {"body": {"color_image": {"mode": "image", "id": "demo_textures3"}}},
+            },
+        )
+    assert out["body"] is spots
+    assert mk.call_args.kwargs["spot_hex"] == "000000"
+    assert mk.call_args.kwargs["bg_hex"] == "ffffff"
+    blend.assert_called_once()
+    assert blend.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
 def test_material_for_gradient_zone_is_diffuse_for_export_even_on_metal_palette() -> (
@@ -186,7 +412,7 @@ def test_apply_feature_slot_overrides_updates_joints_slot() -> None:
     assert cm.called
 
 
-@patch.object(ms, "_material_for_color_image_zone")
+@patch.object(ms, "material_for_color_image_zone")
 def test_apply_feature_slot_overrides_nested_color_image_delegates_to_image_helper(
     mock_color_img: MagicMock,
 ) -> None:
@@ -208,7 +434,7 @@ def test_apply_feature_slot_overrides_nested_color_image_delegates_to_image_help
     assert mock_color_img.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
-@patch.object(ms, "_material_for_color_image_zone")
+@patch.object(ms, "material_for_color_image_zone")
 def test_apply_feature_slot_overrides_color_image_infers_asset_id_from_preview(
     mock_color_img: MagicMock,
 ) -> None:
@@ -294,11 +520,15 @@ def test_apply_zone_texture_gradient_applies_with_fallback_when_no_hex() -> None
     assert cm.called
 
 
-def test_apply_zone_texture_checkerboard_uses_asset_when_spot_color_image_mode() -> None:
+def test_apply_zone_texture_checkerboard_overlays_image_when_spot_color_image_mode() -> None:
     base = MagicMock()
     base.name = "Organic_Brown"
-    asset_mat = MagicMock(name="checker_asset")
-    with patch.object(ms, "_material_for_asset_zone", return_value=asset_mat) as pa:
+    checker_mat = MagicMock(name="checker_mat")
+    overlaid = MagicMock(name="checker_overlay")
+    with (
+        patch.object(ms, "_material_for_checkerboard_zone", return_value=checker_mat) as mk,
+        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
+    ):
         out = ms.apply_zone_texture_pattern_overrides(
             {"body": base},
             {
@@ -308,17 +538,21 @@ def test_apply_zone_texture_checkerboard_uses_asset_when_spot_color_image_mode()
                 "feat_body_texture_asset_tile_repeat": 1.25,
             },
         )
-    assert out["body"] is asset_mat
-    pa.assert_called_once()
-    assert pa.call_args.kwargs["asset_id"] == "demo_textures3"
-    assert pa.call_args.kwargs["tile_repeat"] == 1.25
+    assert out["body"] is overlaid
+    mk.assert_called_once()
+    ov.assert_called_once()
+    assert ov.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
-def test_apply_zone_texture_stripes_uses_asset_when_stripe_color_image_mode() -> None:
+def test_apply_zone_texture_stripes_overlays_image_when_stripe_color_image_mode() -> None:
     base = MagicMock()
     base.name = "Organic_Brown"
-    asset_mat = MagicMock(name="stripe_asset")
-    with patch.object(ms, "_material_for_asset_zone", return_value=asset_mat) as pa:
+    stripe_mat = MagicMock(name="stripe_mat")
+    overlaid = MagicMock(name="stripe_overlay")
+    with (
+        patch("src.materials.material_stripes_zone.material_for_stripes_zone", return_value=stripe_mat) as msz,
+        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
+    ):
         out = ms.apply_zone_texture_pattern_overrides(
             {"body": base},
             {
@@ -328,9 +562,10 @@ def test_apply_zone_texture_stripes_uses_asset_when_stripe_color_image_mode() ->
                 "feat_body_texture_asset_tile_repeat": 1.5,
             },
         )
-    assert out["body"] is asset_mat
-    pa.assert_called_once()
-    assert pa.call_args.kwargs["asset_id"] == "demo_textures3"
+    assert out["body"] is overlaid
+    msz.assert_called_once()
+    ov.assert_called_once()
+    assert ov.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
 def test_rgba_from_hex_or_fallback_returns_fallback_when_parse_raises() -> None:
