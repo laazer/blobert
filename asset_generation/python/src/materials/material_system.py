@@ -1011,6 +1011,28 @@ def resolve_zone_color_image_uv_rect(
     return parse_uv_rect(raw)
 
 
+def resolve_texture_pattern_overlay_uv_rect(
+    *,
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
+    pattern_asset_id: str,
+    zone_image_asset_id: str,
+    channel_uv_rect: tuple[float, float, float, float] | None,
+) -> tuple[float, float, float, float] | None:
+    """Atlas UV for checker/stripe pattern overlay sampling.
+
+    Prefer bounds from the pattern channel (``channel_uv_rect``). When the overlay reuses the
+    zone body texture (same asset id as ``feat_*_color_image_*``) because stripe/spot pattern
+    channels are not in ``image`` mode, use the zone ``color_image`` atlas bounds.
+    """
+    if channel_uv_rect is not None:
+        return channel_uv_rect
+    if pattern_asset_id and zone_image_asset_id and pattern_asset_id == zone_image_asset_id:
+        return resolve_zone_color_image_uv_rect(zone, build_options, zone_feature)
+    return None
+
+
 def _read_png_ihdr_dimensions(path: Path) -> tuple[int, int]:
     """Return width, height from a PNG without PIL (IHDR only)."""
     data = path.read_bytes()
@@ -1198,11 +1220,13 @@ def _apply_spots_pattern(
 def _apply_checkerboard_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
+    *,
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
     zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
     pattern_asset_id = settings.pattern_image_asset_id(("spot_bg_color", "spot_color"))
-    if not pattern_asset_id and zone_image_asset_id:
-        pattern_asset_id = zone_image_asset_id
     checker_mat = _material_for_checkerboard_zone(
         base_palette_name=_palette_base_name_from_material(mat),
         finish=settings.finish,
@@ -1214,21 +1238,32 @@ def _apply_checkerboard_pattern(
     )
     if not pattern_asset_id:
         return checker_mat
+    channel_uv = settings.pattern_overlay_uv_rect(("spot_bg_color", "spot_color"))
+    underlay_uv = resolve_texture_pattern_overlay_uv_rect(
+        zone=zone,
+        build_options=build_options,
+        zone_feature=zone_feature,
+        pattern_asset_id=pattern_asset_id,
+        zone_image_asset_id=zone_image_asset_id,
+        channel_uv_rect=channel_uv,
+    )
     return overlay_base_image_on_zone_material(
         checker_mat,
         asset_id=pattern_asset_id,
-        underlay_uv_rect=settings.pattern_overlay_uv_rect(("spot_bg_color", "spot_color")),
+        underlay_uv_rect=underlay_uv,
     )
 
 
 def _apply_stripes_pattern(
     mat: bpy.types.Material,
     settings: ZoneTextureOptions,
+    *,
+    zone: str,
+    build_options: Mapping[str, Any],
+    zone_feature: FeatureZoneOptions | None,
     zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
     pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
-    if not pattern_asset_id and zone_image_asset_id:
-        pattern_asset_id = zone_image_asset_id
     from .material_stripes_zone import material_for_stripes_zone
 
     stripe_mat = material_for_stripes_zone(
@@ -1245,10 +1280,19 @@ def _apply_stripes_pattern(
     )
     if not pattern_asset_id:
         return stripe_mat
+    channel_uv = settings.stripe_pattern_image_uv_rect()
+    underlay_uv = resolve_texture_pattern_overlay_uv_rect(
+        zone=zone,
+        build_options=build_options,
+        zone_feature=zone_feature,
+        pattern_asset_id=pattern_asset_id,
+        zone_image_asset_id=zone_image_asset_id,
+        channel_uv_rect=channel_uv,
+    )
     return overlay_base_image_on_zone_material(
         stripe_mat,
         asset_id=pattern_asset_id,
-        underlay_uv_rect=settings.stripe_pattern_image_uv_rect(),
+        underlay_uv_rect=underlay_uv,
     )
 
 
@@ -1291,12 +1335,18 @@ def apply_zone_texture_pattern_overrides(
             out[zone] = _apply_checkerboard_pattern(
                 mat,
                 settings,
+                zone=zone,
+                build_options=build_options,
+                zone_feature=zone_feature,
                 zone_image_asset_id=resolve_zone_color_image_asset_id(zone, build_options, zone_feature),
             )
         elif settings.mode == "stripes":
             out[zone] = _apply_stripes_pattern(
                 mat,
                 settings,
+                zone=zone,
+                build_options=build_options,
+                zone_feature=zone_feature,
                 zone_image_asset_id=resolve_zone_color_image_asset_id(zone, build_options, zone_feature),
             )
 

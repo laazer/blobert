@@ -13,11 +13,11 @@ from src.materials.material_stripes_zone import material_for_stripes_zone
 from src.materials.material_system import (
     material_for_color_image_zone,
     overlay_base_image_on_zone_material,
+    resolve_texture_pattern_overlay_uv_rect,
     resolve_zone_color_image_asset_id,
 )
 from src.materials.material_types import (
     FeatureMap,
-    FeatureZoneOptions,
     ZoneTextureOptions,
     feature_zone_map,
 )
@@ -277,17 +277,6 @@ def _material_for_asset_zone(  # pragma: no cover
     return mat
 
 
-def _zone_color_image_asset_id(zone_feature: FeatureZoneOptions | None) -> str:
-    if zone_feature is None:
-        return ""
-    color_image = zone_feature.color_image
-    if color_image is None or color_image.mode != "image":
-        return ""
-    if color_image.asset_id:
-        return color_image.asset_id
-    return infer_texture_asset_id_from_preview(color_image.preview) or ""
-
-
 def apply_zone_texture_pattern_overrides(
     slot_materials: dict[str, bpy.types.Material | None],
     build_options: FeatureMap | None,
@@ -353,9 +342,19 @@ def apply_zone_texture_pattern_overrides(
                 instance_suffix=f"{zone}_tex_stripe",
             )
             if pattern_asset_id:
+                channel_uv = settings.stripe_pattern_image_uv_rect()
+                underlay_uv = resolve_texture_pattern_overlay_uv_rect(
+                    zone=zone,
+                    build_options=build_options,
+                    zone_feature=zone_feature,
+                    pattern_asset_id=pattern_asset_id,
+                    zone_image_asset_id=zone_image_asset_id,
+                    channel_uv_rect=channel_uv,
+                )
                 out[zone] = overlay_base_image_on_zone_material(
                     stripe_mat,
                     asset_id=pattern_asset_id,
+                    underlay_uv_rect=underlay_uv,
                     log_prefix="[feature_zones] ",
                 )
             else:

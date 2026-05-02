@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import types
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -231,6 +232,42 @@ def test_zone_color_image_asset_id_prefers_id_and_preview(module) -> None:
 def test_overlay_base_image_returns_early_for_empty_asset() -> None:
     mat = MagicMock()
     assert ms.overlay_base_image_on_zone_material(mat, asset_id="", base_path=None) is mat
+
+
+def test_overlay_mask_combine_uses_cropped_pattern_path_when_underlay_uv_rect(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Atlas UV rect must affect mask composite (same as multiply fallback), not only full-atlas mask."""
+    mat, _links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
+    base_color_socket = bsdf.inputs["Base Color"]
+    pattern_img = MagicMock()
+    pattern_img.name = "BlobertTexSpot_body_tex_spot"
+    existing_src = MagicMock()
+    existing_src.node = MagicMock()
+    existing_src.node.image = pattern_img
+    base_color_socket.links[0].from_socket = existing_src
+    fake_pat = tmp_path / "full_atlas.png"
+    fake_pat.write_bytes(b"x")
+
+    monkeypatch.setattr(
+        "src.materials.spot_overlay.resolved_asset_path_for_image_sampling",
+        lambda p, uv: Path("/cropped_for_combine.png") if uv else Path(p),
+    )
+    combined = MagicMock()
+    with (
+        patch("src.materials.spot_overlay._resolve_pattern_sources", return_value=(fake_pat, None)),
+        patch("src.materials.spot_overlay.combine_pattern_over_base_image", return_value=combined) as combine_fn,
+        patch.object(ms.bpy.data.images, "load", return_value=MagicMock()),
+        patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
+    ):
+        ms.overlay_base_image_on_zone_material(
+            mat,
+            asset_id="demo_textures3",
+            underlay_uv_rect=(0.2, 0.3, 0.8, 0.9),
+        )
+    combine_fn.assert_called_once()
+    assert combine_fn.call_args[0][0] == Path("/cropped_for_combine.png")
 
 
 def test_overlay_base_image_prefers_tagged_spot_image() -> None:
@@ -566,6 +603,62 @@ def test_apply_zone_texture_stripes_overlays_image_when_stripe_color_image_mode(
     msz.assert_called_once()
     ov.assert_called_once()
     assert ov.call_args.kwargs["asset_id"] == "demo_textures3"
+
+
+def test_apply_zone_texture_stripes_uses_zone_color_uv_when_overlay_reuses_zone_body_asset() -> None:
+    """Zone color image overlay happens once in outer loop when stripe pattern has no explicit image."""
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    stripe_mat = MagicMock(name="stripe_mat")
+    overlaid = MagicMock(name="stripe_overlay")
+    rect = '{"u0":0,"v0":0,"u1":0.25,"v1":0.25}'
+    with (
+        patch("src.materials.material_stripes_zone.material_for_stripes_zone", return_value=stripe_mat),
+        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
+    ):
+        ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "stripes",
+                "feat_body_texture_stripe_color_mode": "single",
+                "feat_body_texture_stripe_color_hex": "ff0000",
+                "feat_body_color_mode": "image",
+                "feat_body_color_image_id": "shared_atlas",
+                "feat_body_color_image_uv_rect": rect,
+            },
+        )
+    assert ov.call_count == 1
+    expected = (0.0, 0.0, 0.25, 0.25)
+    assert ov.call_args_list[0].kwargs["asset_id"] == "shared_atlas"
+    assert ov.call_args_list[0].kwargs["underlay_uv_rect"] == expected
+
+
+def test_apply_zone_texture_checkerboard_uses_zone_color_uv_when_overlay_reuses_zone_body_asset() -> None:
+    """Zone color image overlay happens once in outer loop when checkerboard pattern has no explicit image."""
+    base = MagicMock()
+    base.name = "Organic_Brown"
+    checker_mat = MagicMock(name="checker_mat")
+    overlaid = MagicMock(name="checker_overlay")
+    rect = '{"u0":0.1,"v0":0.2,"u1":0.3,"v1":0.4}'
+    with (
+        patch.object(ms, "_material_for_checkerboard_zone", return_value=checker_mat),
+        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
+    ):
+        ms.apply_zone_texture_pattern_overrides(
+            {"body": base},
+            {
+                "feat_body_texture_mode": "checkerboard",
+                "feat_body_texture_spot_color_mode": "single",
+                "feat_body_texture_spot_color_hex": "00ff00",
+                "feat_body_color_mode": "image",
+                "feat_body_color_image_id": "shared_atlas",
+                "feat_body_color_image_uv_rect": rect,
+            },
+        )
+    assert ov.call_count == 1
+    expected = (0.1, 0.2, 0.3, 0.4)
+    assert ov.call_args_list[0].kwargs["asset_id"] == "shared_atlas"
+    assert ov.call_args_list[0].kwargs["underlay_uv_rect"] == expected
 
 
 def test_rgba_from_hex_or_fallback_returns_fallback_when_parse_raises() -> None:
