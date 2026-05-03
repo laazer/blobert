@@ -219,14 +219,14 @@ def test_apply_zone_texture_pattern_overrides_blends_zone_image_with_pattern() -
     assert apply_spots.call_args.kwargs["build_options"]["features"]["body"]["color_image"]["id"] == "demo_textures3"
 
 
-@pytest.mark.parametrize("module", [ms, fz])
-def test_zone_color_image_asset_id_prefers_id_and_preview(module) -> None:
-    zone = module.FeatureZoneOptions.from_mapping({"color_image": {"mode": "image", "id": "demo_textures3"}})
-    assert module._zone_color_image_asset_id(zone) == "demo_textures3"
-    zone_preview = module.FeatureZoneOptions.from_mapping(
+def test_zone_color_image_asset_id_prefers_id_and_preview() -> None:
+    """_zone_color_image_asset_id is now only in material_system (removed duplicate from feature_zones)."""
+    zone = ms.FeatureZoneOptions.from_mapping({"color_image": {"mode": "image", "id": "demo_textures3"}})
+    assert ms._zone_color_image_asset_id(zone) == "demo_textures3"
+    zone_preview = ms.FeatureZoneOptions.from_mapping(
         {"color_image": {"mode": "image", "preview": "/api/assets/textures/file/demo%20textures3.png"}}
     )
-    assert module._zone_color_image_asset_id(zone_preview) == "demo_textures3"
+    assert ms._zone_color_image_asset_id(zone_preview) == "demo_textures3"
 
 
 def test_overlay_base_image_returns_early_for_empty_asset() -> None:

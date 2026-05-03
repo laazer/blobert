@@ -1054,7 +1054,7 @@ def _spot_bg_rgba_endpoints(
     """Two RGBA colors for a horizontal UV gradient underlay (equal = solid)."""
     z = _sanitize_hex_input(zone_hex)
     zone_rgba: RGBA = parse_hex_color(z) if len(z) == 6 else (0.92, 0.92, 0.92, 1.0)
-    mode = str(ch.mode).strip().lower()
+    mode = ch.mode
     if mode == "gradient":
         ha = pattern_normalize_hex6(ch.gradient_a) or pattern_normalize_hex6(ch.hex_value)
         hb = pattern_normalize_hex6(ch.gradient_b) or pattern_normalize_hex6(ch.hex_value)
@@ -1111,27 +1111,28 @@ def resolve_spots_composite_underlay(
 ) -> tuple[str, Path | None]:
     """Texture asset id and/or disk path to composite *under* an image spot plate.
 
-    If zone ``color_image`` is the same asset as the spot plate (editor often mirrors one upload),
-    that id is ignored and we use a distinct ``spot_bg_color`` image or a synthesized fill from
-    spot background hex/gradient.
+    Priority: spot_bg_color (texture-specific) > zone color_image (global fallback).
+    If neither image is set, synthesize underlay from spot_bg_color hex/gradient.
     """
-    zone_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
-    if spot_pattern_id and zone_id and zone_id == spot_pattern_id:
-        log_spots_composite(
-            "spots_underlay: zone color_image matches spot plate "
-            f"{spot_pattern_id!r}; ignoring duplicate as underlay",
-        )
-        zone_id = ""
-    if zone_id:
-        return (zone_id, None)
-    if not spot_pattern_id:
-        return ("", None)
+    # Primary: spot_bg_color image (texture-mode-specific)
     bg = settings.spot_bg_color
-    if str(bg.mode).strip().lower() == "image":
+    if bg.mode == "image":
         bid = bg.resolved_image_id()
         if bid and bid != spot_pattern_id:
-            log_spots_composite(f"spots_underlay: using spot_bg_color image asset_id={bid!r}")
+            log_spots_composite(f"spots_underlay: using spot_bg_color image asset_id={bid!r} (primary)")
             return (bid, None)
+
+    # Fallback: zone color_image (global base material)
+    zone_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+    if zone_id and zone_id != spot_pattern_id:
+        log_spots_composite(
+            f"spots_underlay: zone color_image asset_id={zone_id!r} used as fallback "
+            f"(spot_bg_color not an image)",
+        )
+        return (zone_id, None)
+
+    if not spot_pattern_id:
+        return ("", None)
     try:
         pat_path = Path(get_texture_asset_filepath(spot_pattern_id))
     except (ValueError, OSError, TypeError) as e:
