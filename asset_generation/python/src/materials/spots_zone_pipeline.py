@@ -51,6 +51,7 @@ def apply_spots_zone_pattern(
         material_for_spots_zone_from_image_asset,
         overlay_base_image_on_zone_material,
         resolve_spots_composite_underlay,
+        resolve_zone_color_image_asset_id,
         resolve_zone_color_image_uv_rect,
     )
     from src.materials.uv_atlas import resolved_asset_path_for_image_sampling
@@ -106,7 +107,18 @@ def apply_spots_zone_pattern(
         )
 
     if under_asset:
-        u_uv = resolve_zone_color_image_uv_rect(zone, build_options, zone_feature)
+        # Determine which UV rect to use based on where the underlay came from.
+        # If underlay is from spot_bg_color image, use its UV rect.
+        # If underlay is zone color image, use zone's UV rect.
+        zone_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+
+        if under_asset != zone_id and settings.spot_bg_color.mode == "image":
+            # Underlay is from spot_bg_color image → use its UV rect
+            u_uv = settings.spot_bg_color.parsed_image_uv_rect()
+        else:
+            # Underlay is zone color image (or synthesized) → use zone's UV rect
+            u_uv = resolve_zone_color_image_uv_rect(zone, build_options, zone_feature)
+
         try:
             base_ap = Path(get_texture_asset_filepath(under_asset))
             resolved_u = resolved_asset_path_for_image_sampling(base_ap, u_uv)
