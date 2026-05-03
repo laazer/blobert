@@ -4,7 +4,7 @@ Typed models for material feature/texture options.
 
 import math
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 import bpy
 
@@ -240,7 +240,8 @@ def _safe_float(
 
 @dataclass(frozen=True)
 class PatternChannelOptions:
-    mode: str
+    #: Pattern mode: single color, gradient, or image texture
+    mode: Literal["single", "gradient", "image"]
     hex_value: str
     gradient_a: str
     gradient_b: str
@@ -300,7 +301,8 @@ class PatternChannelOptions:
 @dataclass(frozen=True)
 class ZoneTextureOptions:
     zone: str
-    mode: str
+    #: Texture pattern mode: gradient, spots, stripes, checkerboard, or assets
+    mode: Literal["gradient", "spots", "stripes", "checkerboard", "assets"]
     finish: str
     zone_hex: str
     tile_repeat: float
@@ -417,7 +419,7 @@ class ZoneTextureOptions:
         }
         for field in fields:
             channel = field_map.get(field)
-            if channel is None or str(channel.mode).strip().lower() != "image":
+            if channel is None or channel.mode != "image":
                 continue
             if channel.resolved_image_id():
                 return channel.parsed_image_uv_rect()
@@ -435,7 +437,7 @@ class ZoneTextureOptions:
         Prefers ``spot_color`` over ``spot_bg_color`` when both are image mode.
         """
         for channel in (self.spot_color, self.spot_bg_color):
-            if str(channel.mode).strip().lower() != "image":
+            if channel.mode != "image":
                 continue
             asset_id = channel.resolved_image_id()
             if asset_id:

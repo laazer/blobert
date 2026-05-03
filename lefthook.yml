@@ -60,6 +60,10 @@ pre-commit:
       name: Python organization guardrails
       glob: "asset_generation/**/*.py"
       run: task hooks:py-organization -- {staged_files}
+    py-defensive-normalization:
+      name: Python defensive normalization check (code smell)
+      glob: "asset_generation/python/**/*.py"
+      run: bash .lefthook/scripts/detect-defensive-normalization.sh {staged_files}
     gd-review:
       name: Godot script reviewer hygiene
       glob: "**/*.gd"
