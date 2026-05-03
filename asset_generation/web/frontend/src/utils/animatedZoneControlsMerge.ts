@@ -53,55 +53,107 @@ export function syntheticZoneTextureDefs(zone: string): AnimatedBuildControlDef[
   return [
     {
       key: `${p}mode`,
-      label: `${zlabel} — texture mode`,
+      label: `${zlabel} — Texture mode`,
       type: "select_str",
-      options: ["none", "gradient", "spots", "checkerboard", "stripes", "assets"],
+      options: ["none", "spots", "stripes", "checkerboard"],
       default: "none",
     },
-    { key: `${p}grad_color_a`, label: `${zlabel} — gradient color A`, type: "str", default: "" },
-    { key: `${p}grad_color_b`, label: `${zlabel} — gradient color B`, type: "str", default: "" },
+    // Pattern fill picker (unified color/gradient/image control)
     {
-      key: `${p}grad_direction`,
-      label: `${zlabel} — gradient direction`,
+      key: `${p}pattern`,
+      label: `${zlabel} — Pattern color`,
+      type: "fill_picker",
+    },
+    // Pattern fill mode selector
+    {
+      key: `${p}pattern_mode`,
+      label: `${zlabel} — Pattern fill type`,
+      type: "select_str",
+      options: ["single", "gradient", "image"],
+      default: "single",
+    },
+    // Pattern single color
+    { key: `${p}pattern_hex`, label: `${zlabel} — Pattern color (hex)`, type: "str", default: "" },
+    // Pattern gradient colors
+    { key: `${p}pattern_grad_a`, label: `${zlabel} — Pattern gradient color A`, type: "str", default: "" },
+    { key: `${p}pattern_grad_b`, label: `${zlabel} — Pattern gradient color B`, type: "str", default: "" },
+    {
+      key: `${p}pattern_grad_direction`,
+      label: `${zlabel} — Pattern gradient direction`,
       type: "select_str",
       options: ["horizontal", "vertical", "radial"],
       default: "horizontal",
     },
-    { key: `${p}spot_color`, label: `${zlabel} — spot color`, type: "str", default: "" },
-    { key: `${p}spot_bg_color`, label: `${zlabel} — spot background color`, type: "str", default: "" },
+    // Pattern image
+    { key: `${p}pattern_image_id`, label: `${zlabel} — Pattern image asset ID`, type: "str", default: "" },
+    { key: `${p}pattern_image_preview`, label: `${zlabel} — Pattern image preview`, type: "str", default: "" },
+    { key: `${p}pattern_image_uv_rect`, label: `${zlabel} — Pattern image UV rect`, type: "str", default: "" },
+
+    // Background fill picker (unified color/gradient/image control)
+    {
+      key: `${p}background`,
+      label: `${zlabel} — Background color`,
+      type: "fill_picker",
+    },
+    // Background fill mode selector
+    {
+      key: `${p}background_mode`,
+      label: `${zlabel} — Background fill type`,
+      type: "select_str",
+      options: ["single", "gradient", "image"],
+      default: "single",
+    },
+    // Background single color
+    { key: `${p}background_hex`, label: `${zlabel} — Background color (hex)`, type: "str", default: "" },
+    // Background gradient colors
+    { key: `${p}background_grad_a`, label: `${zlabel} — Background gradient color A`, type: "str", default: "" },
+    { key: `${p}background_grad_b`, label: `${zlabel} — Background gradient color B`, type: "str", default: "" },
+    {
+      key: `${p}background_grad_direction`,
+      label: `${zlabel} — Background gradient direction`,
+      type: "select_str",
+      options: ["horizontal", "vertical", "radial"],
+      default: "horizontal",
+    },
+    // Background image
+    { key: `${p}background_image_id`, label: `${zlabel} — Background image asset ID`, type: "str", default: "" },
+    { key: `${p}background_image_preview`, label: `${zlabel} — Background image preview`, type: "str", default: "" },
+    { key: `${p}background_image_uv_rect`, label: `${zlabel} — Background image UV rect`, type: "str", default: "" },
+
+    // Spot-specific controls
     {
       key: `${p}spot_pattern`,
-      label: `${zlabel} — spot layout`,
+      label: `${zlabel} — Spot layout`,
       type: "select_str",
-      options: ["grid", "hex"],
+      options: ["grid", "scatter"],
       default: "grid",
       segmented: true,
     },
     {
       key: `${p}spot_density`,
-      label: `${zlabel} — spot density`,
+      label: `${zlabel} — Spot density`,
       type: "float",
-      min: 0.1,
+      min: 0.5,
       max: 5,
-      step: 0.05,
+      step: 0.5,
       default: 1,
       unit: "",
     },
-    { key: `${p}stripe_color`, label: `${zlabel} — stripe color`, type: "str", default: "" },
-    { key: `${p}stripe_bg_color`, label: `${zlabel} — stripe background color`, type: "str", default: "" },
+
+    // Stripe-specific controls
     {
       key: `${p}stripe_width`,
-      label: `${zlabel} — stripe width`,
+      label: `${zlabel} — Stripe width`,
       type: "float",
-      min: 0.05,
+      min: 0.1,
       max: 1,
-      step: 0.01,
+      step: 0.05,
       default: 0.2,
       unit: "",
     },
     {
       key: `${p}stripe_direction`,
-      label: `${zlabel} — stripe preset`,
+      label: `${zlabel} — Stripe preset`,
       type: "select_str",
       options: ["beachball", "doplar", "swirl"],
       default: "beachball",
@@ -109,32 +161,34 @@ export function syntheticZoneTextureDefs(zone: string): AnimatedBuildControlDef[
     },
     {
       key: `${p}stripe_rot_yaw`,
-      label: `${zlabel} — stripe yaw`,
+      label: `${zlabel} — Stripe yaw`,
       type: "float",
-      min: -360,
-      max: 360,
+      min: -180,
+      max: 180,
       step: 1,
       default: 0,
       unit: "deg",
     },
     {
       key: `${p}stripe_rot_pitch`,
-      label: `${zlabel} — stripe pitch`,
+      label: `${zlabel} — Stripe pitch`,
       type: "float",
-      min: -360,
-      max: 360,
+      min: -180,
+      max: 180,
       step: 1,
       default: 0,
       unit: "deg",
     },
-    { key: `${p}asset_id`, label: `${zlabel} — asset texture`, type: "str", default: "" },
+
+    // Asset-specific controls
+    { key: `${p}asset_id`, label: `${zlabel} — Asset texture`, type: "str", default: "" },
     {
       key: `${p}asset_tile_repeat`,
-      label: `${zlabel} — tile repeat`,
+      label: `${zlabel} — Tile repeat`,
       type: "float",
       min: 0.5,
-      max: 8,
-      step: 0.5,
+      max: 4,
+      step: 0.1,
       default: 1,
       unit: "",
     },
