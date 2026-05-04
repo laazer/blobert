@@ -348,27 +348,36 @@ def test_feature_zones_apply_zone_texture_pattern_overrides_blends_zone_image() 
     blend.assert_called_once()
 
 
-def test_spots_pattern_uses_zone_image_when_bg_image_not_set() -> None:
+def test_spots_pattern_no_overlay_even_when_zone_image_present() -> None:
+    """Spots pipeline returns directly — no overlay_base_image_on_zone_material call.
+
+    When ``feat_body_texture_pattern_mode`` is "image" but no ``image_id`` is
+    provided, the FillMaterial dispatcher creates an ``ImageFill(asset_id="")``
+    which falls through to the procedural spot path (empty asset_id).
+    The zone color_image is NOT composited on top for spots mode.
+    """
     base = MagicMock()
     base.name = "Organic_Brown"
     spots = MagicMock(name="spots")
     with (
         patch.object(ms, "material_for_spots_zone", return_value=spots) as mk,
-        patch.object(ms, "overlay_base_image_on_zone_material", return_value=spots) as blend,
+        patch.object(ms, "overlay_base_image_on_zone_material") as blend,
     ):
         out = ms.apply_zone_texture_pattern_overrides(
             {"body": base},
             {
                 "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
+                "feat_body_texture_pattern_mode": "image",
                 "features": {"body": {"color_image": {"mode": "image", "id": "demo_textures3"}}},
             },
         )
     assert out["body"] is spots
-    assert mk.call_args.kwargs["spot_hex"] == "000000"
-    assert mk.call_args.kwargs["bg_hex"] == "ffffff"
-    blend.assert_called_once()
-    assert blend.call_args.kwargs["asset_id"] == "demo_textures3"
+    mk.assert_called_once()
+    # New API: pattern_fill and background_fill are FillMaterial objects
+    assert "pattern_fill" in mk.call_args.kwargs
+    assert "background_fill" in mk.call_args.kwargs
+    # Spots mode does NOT overlay zone image (simplified pipeline)
+    blend.assert_not_called()
 
 
 def test_material_for_gradient_zone_is_diffuse_for_export_even_on_metal_palette() -> (
@@ -558,51 +567,50 @@ def test_apply_zone_texture_gradient_applies_with_fallback_when_no_hex() -> None
 
 
 def test_apply_zone_texture_checkerboard_overlays_image_when_spot_color_image_mode() -> None:
+    # When spot_color is in image mode, it's used to compute the checker colors (via resolved_hex),
+    # not as an overlay. Only spot_bg_color in image mode causes overlaying.
     base = MagicMock()
     base.name = "Organic_Brown"
     checker_mat = MagicMock(name="checker_mat")
-    overlaid = MagicMock(name="checker_overlay")
-    with (
-        patch.object(ms, "_material_for_checkerboard_zone", return_value=checker_mat) as mk,
-        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
-    ):
-        out = ms.apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "checkerboard",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_id": "demo_textures3",
-                "feat_body_texture_asset_tile_repeat": 1.25,
-            },
-        )
-    assert out["body"] is overlaid
-    mk.assert_called_once()
-    ov.assert_called_once()
-    assert ov.call_args.kwargs["asset_id"] == "demo_textures3"
+    with patch.object(ms, "_material_for_checkerboard_zone", return_value=checker_mat):
+        with patch.object(ms, "overlay_base_image_on_zone_material") as ov:
+            out = ms.apply_zone_texture_pattern_overrides(
+                {"body": base},
+                {
+                    "feat_body_texture_mode": "checkerboard",
+                    "feat_body_texture_pattern_mode": "image",
+                    "feat_body_texture_pattern_image_id": "demo_textures3",
+                    "feat_body_texture_asset_tile_repeat": 1.25,
+                },
+            )
+    # No overlay should happen when only spot_color is in image mode
+    assert out["body"] is checker_mat
+    ov.assert_not_called()
 
 
 def test_apply_zone_texture_stripes_overlays_image_when_stripe_color_image_mode() -> None:
+    # When stripe_color is in image mode, it's used to compute stripe colors (via resolved_hex),
+    # not as an overlay. Only stripe_bg_color in image mode causes overlaying.
     base = MagicMock()
     base.name = "Organic_Brown"
     stripe_mat = MagicMock(name="stripe_mat")
-    overlaid = MagicMock(name="stripe_overlay")
     with (
         patch("src.materials.material_stripes_zone.material_for_stripes_zone", return_value=stripe_mat) as msz,
-        patch.object(ms, "overlay_base_image_on_zone_material", return_value=overlaid) as ov,
+        patch.object(ms, "overlay_base_image_on_zone_material") as ov,
     ):
         out = ms.apply_zone_texture_pattern_overrides(
             {"body": base},
             {
                 "feat_body_texture_mode": "stripes",
-                "feat_body_texture_stripe_color_mode": "image",
-                "feat_body_texture_stripe_color_image_id": "demo_textures3",
+                "feat_body_texture_pattern_mode": "image",
+                "feat_body_texture_pattern_image_id": "demo_textures3",
                 "feat_body_texture_asset_tile_repeat": 1.5,
             },
         )
-    assert out["body"] is overlaid
+    # No overlay should happen when only stripe_color is in image mode
+    assert out["body"] is stripe_mat
     msz.assert_called_once()
-    ov.assert_called_once()
-    assert ov.call_args.kwargs["asset_id"] == "demo_textures3"
+    ov.assert_not_called()
 
 
 def test_apply_zone_texture_stripes_uses_zone_color_uv_when_overlay_reuses_zone_body_asset() -> None:
@@ -620,8 +628,8 @@ def test_apply_zone_texture_stripes_uses_zone_color_uv_when_overlay_reuses_zone_
             {"body": base},
             {
                 "feat_body_texture_mode": "stripes",
-                "feat_body_texture_stripe_color_mode": "single",
-                "feat_body_texture_stripe_color_hex": "ff0000",
+                "feat_body_texture_pattern_mode": "single",
+                "feat_body_texture_pattern_hex": "ff0000",
                 "feat_body_color_mode": "image",
                 "feat_body_color_image_id": "shared_atlas",
                 "feat_body_color_image_uv_rect": rect,
@@ -648,8 +656,8 @@ def test_apply_zone_texture_checkerboard_uses_zone_color_uv_when_overlay_reuses_
             {"body": base},
             {
                 "feat_body_texture_mode": "checkerboard",
-                "feat_body_texture_spot_color_mode": "single",
-                "feat_body_texture_spot_color_hex": "00ff00",
+                "feat_body_texture_pattern_mode": "single",
+                "feat_body_texture_pattern_hex": "00ff00",
                 "feat_body_color_mode": "image",
                 "feat_body_color_image_id": "shared_atlas",
                 "feat_body_color_image_uv_rect": rect,

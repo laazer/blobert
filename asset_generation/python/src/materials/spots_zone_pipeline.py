@@ -1,16 +1,15 @@
 """Single pipeline for spot-zone materials.
 
-Steps (same for all ``PatternChannelOptions`` modes — colors resolve via ``resolved_hex()`` upstream):
+Dispatches to one of two factories based on ``pattern_fill`` type:
 
-1. Resolve optional image plate id (user-authored mask / tones) vs procedural dots.
-2. Resolve underlay asset id or synthesized PNG path (zone image / spot_bg / gradient fill).
-3. Pick spot / gap hex for procedural generation (neutral gap when compositing onto a file underlay).
-4. Build base material — load image plate **or** procedural ``BlobertTexSpot_*`` raster.
-5. If an underlay exists, composite pattern over base (shared overlay implementation).
+1. **Image plate** (``ImageFill``): loads the user-authored mask image directly,
+   applies UV rect for atlas sub-region selection.
+2. **Procedural** (``SolidFill`` / ``GradientFill``): generates a ``BlobertTexSpot_*``
+   raster with pattern and background colors.
 
-Call sites: ``material_system.apply_zone_texture_pattern_overrides`` and
-``feature_zones.apply_zone_texture_pattern_overrides`` only differ in density validation
-(see ``spot_density_payload_usable``).
+Call sites: ``material_system._apply_spots_pattern`` and
+``feature_zones.apply_zone_texture_pattern_overrides`` both delegate here.
+``feature_zones`` guards with ``spot_density_payload_usable`` first.
 """
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ def apply_spots_zone_pattern(
     build_options: Mapping[str, Any],
     zone_feature: FeatureZoneOptions | None,
 ) -> bpy.types.Material:
-    """Apply spots texture mode: one code path for procedural plate vs image plate + underlay."""
+    """Apply spots texture mode: image plate (with UV rect) or procedural dots."""
     from src.materials.material_system import (
         material_for_spots_zone,
         material_for_spots_zone_from_image_asset,

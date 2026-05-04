@@ -411,7 +411,7 @@ class TestSpotsIntegrationSeams:
         mock_mat = MagicMock()
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
+            "feat_body_texture_pattern": "ff0000",
             # features dict missing
         }
 

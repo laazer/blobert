@@ -375,33 +375,24 @@ def test_feature_zones_asset_zone_supports_principled_node_variants(
     assert "ShaderNodeTexImage" in ns.new_types
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
 def test_pattern_spots_image_mode_uses_image_as_spot_plate_material_system(
     mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-    tmp_path: Path,
 ) -> None:
+    """Spots image mode loads image plate directly (no overlay)."""
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
     mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
-    plate = tmp_path / "plate.png"
-    _write_min_png(plate)
-    with mock.patch("src.materials.material_system.get_texture_asset_filepath", return_value=str(plate)):
-        out = apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_id": "demo_textures3",
-                "feat_body_texture_spot_density": 2.0,
-            },
-        )
-    assert out["body"] is overlaid
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs.get("base_path") is not None
+    out = apply_zone_texture_pattern_overrides(
+        {"body": base},
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_pattern_mode": "image",
+            "feat_body_texture_pattern_image_id": "demo_textures3",
+            "feat_body_texture_spot_density": 2.0,
+        },
+    )
+    assert out["body"] is spots_mat
     mock_from_image.assert_called_once()
     assert mock_from_image.call_args.kwargs["asset_id"] == "demo_textures3"
 
@@ -426,33 +417,24 @@ def test_feature_zones_apply_zone_texture_assets_mode(
     assert mock_asset.call_args.kwargs["tile_repeat"] == 2.0
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
 def test_feature_zones_spots_image_mode_uses_image_as_spot_plate(
     mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-    tmp_path: Path,
 ) -> None:
+    """Feature zones spots image mode loads plate directly (no overlay)."""
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
     mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
-    plate = tmp_path / "plate.png"
-    _write_min_png(plate)
-    with mock.patch("src.materials.material_system.get_texture_asset_filepath", return_value=str(plate)):
-        out = fz_mod.apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_id": "demo_textures3",
-                "feat_body_texture_spot_density": 1.75,
-            },
-        )
-    assert out["body"] is overlaid
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs.get("base_path") is not None
+    out = fz_mod.apply_zone_texture_pattern_overrides(
+        {"body": base},
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_pattern_mode": "image",
+            "feat_body_texture_pattern_image_id": "demo_textures3",
+            "feat_body_texture_spot_density": 1.75,
+        },
+    )
+    assert out["body"] is spots_mat
     mock_from_image.assert_called_once()
     assert mock_from_image.call_args.kwargs["asset_id"] == "demo_textures3"
 
@@ -468,48 +450,46 @@ def test_pattern_stripes_image_mode_uses_asset_material_feature_zones(
         {"body": base},
         {
             "feat_body_texture_mode": "stripes",
-            "feat_body_texture_stripe_bg_color_mode": "image",
-            "feat_body_texture_stripe_bg_color_image_id": "demo_textures34",
+            "feat_body_texture_background_mode": "image",
+            "feat_body_texture_background_image_id": "demo_textures34",
             "feat_body_texture_asset_tile_repeat": 1.5,
         },
     )
     assert out["body"] is not None
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
-def test_pattern_spots_dual_image_mode_prefers_spot_color_as_spot_plate(
+def test_pattern_spots_dual_image_mode_uses_pattern_as_spot_plate(
     mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
 ) -> None:
+    """When both pattern and background are images, pattern_fill is the spot plate."""
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
     mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
     out = apply_zone_texture_pattern_overrides(
         {"body": base},
         {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color_mode": "image",
-            "feat_body_texture_spot_color_image_id": "foreground_img",
-            "feat_body_texture_spot_bg_color_mode": "image",
-            "feat_body_texture_spot_bg_color_image_id": "background_img",
+            "feat_body_texture_pattern_mode": "image",
+            "feat_body_texture_pattern_image_id": "foreground_img",
+            "feat_body_texture_background_mode": "image",
+            "feat_body_texture_background_image_id": "background_img",
         },
     )
-    assert out["body"] is overlaid
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args[0][0] is spots_mat
-    assert mock_overlay.call_args.kwargs["asset_id"] == "background_img"
+    # Spots pipeline uses pattern_fill (foreground) as the spot plate
+    assert out["body"] is spots_mat
+    mock_from_image.assert_called_once()
     assert mock_from_image.call_args.kwargs["asset_id"] == "foreground_img"
 
 
 @mock.patch("src.materials.material_system.material_for_spots_zone")
 @mock.patch("src.materials.material_system._material_for_asset_zone")
-def test_pattern_non_image_mode_uses_color_keys_not_image_ids(
+def test_pattern_non_image_mode_uses_fill_materials_not_image_ids(
     mock_asset: mock.MagicMock,
     mock_spots: mock.MagicMock,
 ) -> None:
+    from src.materials.material_types import SolidFill
+
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
     mock_spots.return_value = spots_mat
@@ -517,25 +497,30 @@ def test_pattern_non_image_mode_uses_color_keys_not_image_ids(
         {"body": base},
         {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color_mode": "single",
-            "feat_body_texture_spot_color_image_id": "should_not_be_used",
-            "feat_body_texture_spot_color": "ff00ff",
-            "feat_body_texture_spot_bg_color": "00ffff",
+            "feat_body_texture_pattern_mode": "single",
+            "feat_body_texture_pattern_image_id": "should_not_be_used",
+            "feat_body_texture_pattern_hex": "ff00ff",
+            "feat_body_texture_background_hex": "00ffff",
             "feat_body_texture_spot_density": 2.0,
         },
     )
     assert out["body"] is spots_mat
     mock_asset.assert_not_called()
-    assert mock_spots.call_args.kwargs["spot_hex"] == "ff00ff"
-    assert mock_spots.call_args.kwargs["bg_hex"] == "00ffff"
+    # pattern_fill and background_fill are SolidFill objects
+    assert isinstance(mock_spots.call_args.kwargs["pattern_fill"], SolidFill)
+    assert mock_spots.call_args.kwargs["pattern_fill"].hex_value == "ff00ff"
+    assert isinstance(mock_spots.call_args.kwargs["background_fill"], SolidFill)
+    assert mock_spots.call_args.kwargs["background_fill"].hex_value == "00ffff"
 
 
 @mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system._material_for_checkerboard_zone")
-def test_checkerboard_uses_spot_keys_when_not_in_image_mode(
+def test_checkerboard_with_image_background_overlays(
     mock_checker: mock.MagicMock,
     mock_overlay: mock.MagicMock,
 ) -> None:
+    from src.materials.material_types import ImageFill, SolidFill
+
     base = _create_mock_material("pattern_base")
     checker_mat = _create_mock_material("checker_mat")
     overlaid_mat = _create_mock_material("checker_overlay")
@@ -545,27 +530,31 @@ def test_checkerboard_uses_spot_keys_when_not_in_image_mode(
         {"body": base},
         {
             "feat_body_texture_mode": "checkerboard",
-            "feat_body_texture_spot_color_mode": "single",
-            "feat_body_texture_spot_color": "aa11aa",
-            "feat_body_texture_spot_bg_color_mode": "image",
-            "feat_body_texture_spot_bg_color_hex": "11aa11",
-            "feat_body_texture_spot_bg_color_image_id": "demo_textures3",
+            "feat_body_texture_pattern_mode": "single",
+            "feat_body_texture_pattern_hex": "aa11aa",
+            "feat_body_texture_background_mode": "image",
+            "feat_body_texture_background_hex": "11aa11",
+            "feat_body_texture_background_image_id": "demo_textures3",
             "feat_body_texture_spot_density": 3.0,
         },
     )
     assert out["body"] is overlaid_mat
     mock_overlay.assert_called_once()
     assert mock_overlay.call_args.kwargs["asset_id"] == "demo_textures3"
-    assert mock_checker.call_args.kwargs["color_a_hex"] == "aa11aa"
-    assert mock_checker.call_args.kwargs["color_b_hex"] == "ffffff"
+    # pattern_fill is SolidFill, background_fill is ImageFill
+    assert isinstance(mock_checker.call_args.kwargs["pattern_fill"], SolidFill)
+    assert mock_checker.call_args.kwargs["pattern_fill"].hex_value == "aa11aa"
+    assert isinstance(mock_checker.call_args.kwargs["background_fill"], ImageFill)
 
 
 @mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_stripes_zone.material_for_stripes_zone")
-def test_stripes_uses_stripe_keys_when_not_in_image_mode(
+def test_stripes_with_image_background_overlays(
     mock_stripes: mock.MagicMock,
     mock_overlay: mock.MagicMock,
 ) -> None:
+    from src.materials.material_types import ImageFill, SolidFill
+
     base = _create_mock_material("pattern_base")
     stripe_mat = _create_mock_material("stripe_mat")
     overlaid_mat = _create_mock_material("stripe_overlay")
@@ -575,25 +564,29 @@ def test_stripes_uses_stripe_keys_when_not_in_image_mode(
         {"body": base},
         {
             "feat_body_texture_mode": "stripes",
-            "feat_body_texture_stripe_color_mode": "single",
-            "feat_body_texture_stripe_color": "123456",
-            "feat_body_texture_stripe_bg_color_mode": "image",
-            "feat_body_texture_stripe_bg_color": "abcdef",
-            "feat_body_texture_stripe_bg_color_image_id": "demo_textures34",
+            "feat_body_texture_pattern_mode": "single",
+            "feat_body_texture_pattern_hex": "123456",
+            "feat_body_texture_background_mode": "image",
+            "feat_body_texture_background_image_id": "demo_textures34",
             "feat_body_texture_stripe_width": 0.33,
         },
     )
     assert out["body"] is overlaid_mat
     mock_overlay.assert_called_once()
     assert mock_overlay.call_args.kwargs["asset_id"] == "demo_textures34"
-    assert mock_stripes.call_args.kwargs["stripe_hex"] == "123456"
-    assert mock_stripes.call_args.kwargs["bg_hex"] == "ffffff"
+    # pattern_fill is SolidFill, background_fill is ImageFill
+    assert isinstance(mock_stripes.call_args.kwargs["pattern_fill"], SolidFill)
+    assert mock_stripes.call_args.kwargs["pattern_fill"].hex_value == "123456"
+    assert isinstance(mock_stripes.call_args.kwargs["background_fill"], ImageFill)
 
 
 @mock.patch("src.materials.material_system.material_for_spots_zone")
-def test_spots_gradient_mode_blends_a_b_keys(
+def test_spots_gradient_mode_passes_gradient_fill(
     mock_spots: mock.MagicMock,
 ) -> None:
+    """Gradient mode passes GradientFill objects directly — no hex averaging."""
+    from src.materials.material_types import GradientFill
+
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
     mock_spots.return_value = spots_mat
@@ -601,182 +594,94 @@ def test_spots_gradient_mode_blends_a_b_keys(
         {"body": base},
         {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color_mode": "gradient",
-            "feat_body_texture_spot_color_a": "ff0000",
-            "feat_body_texture_spot_color_b": "0000ff",
-            "feat_body_texture_spot_bg_color_mode": "gradient",
-            "feat_body_texture_spot_bg_color_a": "00ff00",
-            "feat_body_texture_spot_bg_color_b": "000000",
+            "feat_body_texture_pattern_mode": "gradient",
+            "feat_body_texture_pattern_a": "ff0000",
+            "feat_body_texture_pattern_b": "0000ff",
+            "feat_body_texture_background_mode": "gradient",
+            "feat_body_texture_background_a": "00ff00",
+            "feat_body_texture_background_b": "000000",
             "feat_body_texture_spot_density": 1.0,
         },
     )
     assert out["body"] is spots_mat
-    assert mock_spots.call_args.kwargs["spot_hex"] == "7f007f"
-    assert mock_spots.call_args.kwargs["bg_hex"] == "007f00"
+    assert isinstance(mock_spots.call_args.kwargs["pattern_fill"], GradientFill)
+    assert mock_spots.call_args.kwargs["pattern_fill"].hex_a == "ff0000"
+    assert mock_spots.call_args.kwargs["pattern_fill"].hex_b == "0000ff"
+    assert isinstance(mock_spots.call_args.kwargs["background_fill"], GradientFill)
+    assert mock_spots.call_args.kwargs["background_fill"].hex_a == "00ff00"
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
-def test_spots_image_mode_loads_spot_plate_without_zone_underlay(
+def test_spots_image_mode_loads_spot_plate_directly(
     mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-    tmp_path: Path,
 ) -> None:
+    """Spots image mode returns spot plate material directly (no overlay)."""
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
     mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
-    plate = tmp_path / "plate.png"
-    _write_min_png(plate)
-    with mock.patch("src.materials.material_system.get_texture_asset_filepath", return_value=str(plate)):
-        out = apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_id": "demo_textures3",
-                "feat_body_texture_spot_bg_color_mode": "single",
-                "feat_body_texture_spot_bg_color_hex": "00ff00",
-                "feat_body_texture_spot_density": 1.0,
-            },
-        )
-    assert out["body"] is overlaid
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs.get("base_path") is not None
+    out = apply_zone_texture_pattern_overrides(
+        {"body": base},
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_pattern_mode": "image",
+            "feat_body_texture_pattern_image_id": "demo_textures3",
+            "feat_body_texture_background_mode": "single",
+            "feat_body_texture_background_hex": "00ff00",
+            "feat_body_texture_spot_density": 1.0,
+        },
+    )
+    assert out["body"] is spots_mat
     mock_from_image.assert_called_once()
     assert mock_from_image.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
 @mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
 @mock.patch("src.materials.material_types.infer_texture_asset_id_from_preview")
 def test_spots_image_mode_uses_preview_to_infer_spot_plate_asset_id(
     mock_infer: mock.MagicMock,
     mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-    tmp_path: Path,
 ) -> None:
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
     mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
     mock_infer.return_value = "demo_textures3"
-    plate = tmp_path / "plate.png"
-    _write_min_png(plate)
-    with mock.patch("src.materials.material_system.get_texture_asset_filepath", return_value=str(plate)):
-        out = apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_preview": "/api/assets/textures/file/demo%20textures3.png",
-                "feat_body_texture_spot_bg_color_mode": "single",
-                "feat_body_texture_spot_bg_color_hex": "000000",
-                "feat_body_texture_spot_density": 1.0,
-            },
-        )
-    assert out["body"] is overlaid
+    out = apply_zone_texture_pattern_overrides(
+        {"body": base},
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_pattern_mode": "image",
+            "feat_body_texture_pattern_image_preview": "/api/assets/textures/file/demo%20textures3.png",
+            "feat_body_texture_background_mode": "single",
+            "feat_body_texture_background_hex": "000000",
+            "feat_body_texture_spot_density": 1.0,
+        },
+    )
+    assert out["body"] is spots_mat
     assert mock_infer.call_count >= 1
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs.get("base_path") is not None
     mock_from_image.assert_called_once()
     assert mock_from_image.call_args.kwargs["asset_id"] == "demo_textures3"
 
 
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
-@mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
-def test_spots_zone_color_image_same_as_plate_uses_spot_bg_synthesized_underlay(
-    mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-    tmp_path: Path,
+@mock.patch("src.materials.material_system.material_for_spots_zone")
+def test_spots_procedural_with_solid_fills(
+    mock_spots: mock.MagicMock,
 ) -> None:
-    """Editor often mirrors one upload into zone color_image and spot plate; composite needs a real underlay."""
+    """Procedural spots (non-image mode) uses material_for_spots_zone with FillMaterial."""
+    from src.materials.material_types import SolidFill
+
     base = _create_mock_material("pattern_base")
     spots_mat = _create_mock_material("spots_mat")
-    overlaid = _create_mock_material("spots_overlaid")
-    mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid
-    shared = "hash_texture"
-    plate = tmp_path / "plate.png"
-    _write_min_png(plate)
-    with mock.patch("src.materials.material_system.get_texture_asset_filepath", return_value=str(plate)):
-        out = apply_zone_texture_pattern_overrides(
-            {"body": base},
-            {
-                "feat_body_texture_mode": "spots",
-                "feat_body_texture_spot_color_mode": "image",
-                "feat_body_texture_spot_color_image_id": shared,
-                "feat_body_texture_spot_bg_color_mode": "single",
-                "feat_body_texture_spot_bg_color_hex": "e0e0ff",
-                "feat_body_texture_spot_density": 1.0,
-                "features": {"body": {"color_image": {"mode": "image", "id": shared}}},
-            },
-        )
-    assert out["body"] is overlaid
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs.get("base_path") is not None
-    assert not mock_overlay.call_args.kwargs.get("asset_id")
-
-
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
-@mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
-def test_spots_image_plate_composites_flat_body_keys_without_features_blob(
-    mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-) -> None:
-    """Blender/CLI often pass feat_body_color_image_id without a merged features dict."""
-    base = _create_mock_material("pattern_base")
-    spots_mat = _create_mock_material("spots_mat")
-    overlaid_mat = _create_mock_material("overlaid_mat")
-    mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid_mat
-
+    mock_spots.return_value = spots_mat
     out = apply_zone_texture_pattern_overrides(
         {"body": base},
         {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color_mode": "image",
-            "feat_body_texture_spot_color_image_id": "spot_plate_asset",
-            "feat_body_texture_spot_density": 1.0,
-            "feat_body_color_mode": "image",
-            "feat_body_color_image_id": "body_from_flat_keys",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "00ff00",
+            "feat_body_texture_spot_density": 1.5,
         },
     )
-    assert out["body"] is overlaid_mat
-    mock_from_image.assert_called_once()
-    assert mock_from_image.call_args.kwargs["asset_id"] == "spot_plate_asset"
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs["asset_id"] == "body_from_flat_keys"
-
-
-@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
-@mock.patch("src.materials.material_system.material_for_spots_zone_from_image_asset")
-def test_spots_image_plate_composites_zone_body_image_when_present(
-    mock_from_image: mock.MagicMock,
-    mock_overlay: mock.MagicMock,
-) -> None:
-    base = _create_mock_material("pattern_base")
-    spots_mat = _create_mock_material("spots_mat")
-    overlaid_mat = _create_mock_material("overlaid_mat")
-    mock_from_image.return_value = spots_mat
-    mock_overlay.return_value = overlaid_mat
-
-    out = apply_zone_texture_pattern_overrides(
-        {"body": base},
-        {
-            "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color_mode": "image",
-            "feat_body_texture_spot_color_image_id": "spot_plate_asset",
-            "feat_body_texture_spot_density": 1.0,
-            "features": {
-                "body": {"color_image": {"mode": "image", "id": "body_photo_asset"}},
-            },
-        },
-    )
-    assert out["body"] is overlaid_mat
-    mock_from_image.assert_called_once()
-    assert mock_from_image.call_args.kwargs["asset_id"] == "spot_plate_asset"
-    mock_overlay.assert_called_once()
-    assert mock_overlay.call_args.kwargs["asset_id"] == "body_photo_asset"
+    assert out["body"] is spots_mat
+    mock_spots.assert_called_once()
+    assert isinstance(mock_spots.call_args.kwargs["pattern_fill"], SolidFill)
+    assert isinstance(mock_spots.call_args.kwargs["background_fill"], SolidFill)

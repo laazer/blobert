@@ -6,13 +6,9 @@ import math
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping
 
-import bpy
-
 from src.materials.spot_plate_mask import DEFAULT_DARK_THRESHOLD
 from src.materials.uv_atlas import (
-    is_full_uv_rect,
     parse_uv_rect,
-    uv_rect_to_pil_crop_box,
 )
 from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
 
@@ -96,90 +92,6 @@ def pattern_normalize_hex6(raw: object) -> str:
     return _sanitize_hex_input(raw)[:6]
 
 
-def _pattern_blend_hex(a_raw: object, b_raw: object) -> str:
-    a = pattern_normalize_hex6(a_raw)
-    b = pattern_normalize_hex6(b_raw)
-    if not a and not b:
-        return ""
-    if not a:
-        return b
-    if not b:
-        return a
-    ar, ag, ab = int(a[0:2], 16), int(a[2:4], 16), int(a[4:6], 16)
-    br, bg, bb = int(b[0:2], 16), int(b[2:4], 16), int(b[4:6], 16)
-    return f"{(ar + br) // 2:02x}{(ag + bg) // 2:02x}{(ab + bb) // 2:02x}"
-
-
-def _pattern_image_average_hex(
-    asset_id: str,
-    uv_rect: tuple[float, float, float, float] | None = None,
-) -> str:
-    if not asset_id:
-        return ""
-    if uv_rect is not None and not is_full_uv_rect(uv_rect):
-        try:
-            from PIL import Image
-
-            from ..utils.texture_asset_loader import get_texture_asset_filepath
-
-            asset_path = get_texture_asset_filepath(asset_id)
-            with Image.open(asset_path) as im:
-                im = im.convert("RGBA")
-                w, h = im.size
-                box = uv_rect_to_pil_crop_box(w, h, uv_rect)
-                region = im.crop(box)
-                px = region.tobytes()
-                pixel_count = len(px) // 4
-                step = max(1, pixel_count // 2048)
-                s_r = s_g = s_b = 0.0
-                count = 0
-                i = 0
-                while i < pixel_count:
-                    base = i * 4
-                    s_r += float(px[base]) / 255.0
-                    s_g += float(px[base + 1]) / 255.0
-                    s_b += float(px[base + 2]) / 255.0
-                    count += 1
-                    i += step
-                if count == 0:
-                    return ""
-                return (
-                    f"{int((s_r / count) * 255):02x}"
-                    f"{int((s_g / count) * 255):02x}"
-                    f"{int((s_b / count) * 255):02x}"
-                )
-        except Exception:
-            pass
-    try:
-        from ..utils.texture_asset_loader import get_texture_asset_filepath
-
-        asset_path = get_texture_asset_filepath(asset_id)
-        image = bpy.data.images.load(str(asset_path))
-        try:
-            px = image.pixels
-        except AttributeError:
-            px = None
-        if px is None or len(px) < 4:
-            return ""
-        pixel_count = len(px) // 4
-        step = max(1, pixel_count // 2048)
-        s_r = s_g = s_b = 0.0
-        count = 0
-        i = 0
-        while i < pixel_count:
-            base = i * 4
-            s_r += float(px[base])
-            s_g += float(px[base + 1])
-            s_b += float(px[base + 2])
-            count += 1
-            i += step
-        if count == 0:
-            return ""
-        return f"{int((s_r / count) * 255):02x}{int((s_g / count) * 255):02x}{int((s_b / count) * 255):02x}"
-    except Exception:
-        return ""
-
-
 def _safe_rotation_degrees(raw: object) -> float:
     try:
         v = float(raw or 0.0)
@@ -238,18 +150,15 @@ def _safe_float(
     return value
 
 
+# ============================================================================
+# FillMaterial Types: Unified representation for pattern and background fills
+# ============================================================================
+
+
 @dataclass(frozen=True)
-class PatternChannelOptions:
-    #: Pattern mode: single color, gradient, or image texture
-    mode: Literal["single", "gradient", "image"]
+class SolidFill:
+    """Single flat color fill."""
     hex_value: str
-    gradient_a: str
-    gradient_b: str
-    image_id: str
-    image_preview: str
-    #: JSON string from ``feat_*_texture_*_image_uv_rect`` (merged atlas bounds).
-    image_uv_rect: str
-    legacy_hex: str
 
     @classmethod
     def from_build_options(
@@ -258,44 +167,90 @@ class PatternChannelOptions:
         zone: str,
         field: str,
         build_options: Mapping[str, Any],
-    ) -> "PatternChannelOptions":
+    ) -> "SolidFill":
+        """Construct SolidFill from build_options flat dict."""
         prefix = f"feat_{zone}_texture_{field}"
-        return cls(
-            mode=str(build_options.get(f"{prefix}_mode", "single") or "single").strip().lower(),
-            hex_value=str(build_options.get(f"{prefix}_hex", "") or ""),
-            gradient_a=str(build_options.get(f"{prefix}_a", "") or ""),
-            gradient_b=str(build_options.get(f"{prefix}_b", "") or ""),
-            image_id=str(build_options.get(f"{prefix}_image_id", "") or "").strip(),
-            image_preview=str(build_options.get(f"{prefix}_image_preview", "") or ""),
-            image_uv_rect=str(build_options.get(f"{prefix}_image_uv_rect", "") or ""),
-            legacy_hex=str(build_options.get(prefix, "") or ""),
-        )
+        hex_val = str(build_options.get(f"{prefix}_hex", "") or "")
+        return cls(hex_value=hex_val)
 
-    def parsed_image_uv_rect(self) -> tuple[float, float, float, float] | None:
-        return parse_uv_rect(self.image_uv_rect)
 
-    def resolved_image_id(self) -> str:
-        if self.image_id:
-            return self.image_id
-        return infer_texture_asset_id_from_preview(self.image_preview) or ""
+@dataclass(frozen=True)
+class GradientFill:
+    """Linear gradient fill with two endpoints and direction."""
+    hex_a: str
+    hex_b: str
+    direction: str
 
-    def resolved_hex(self) -> str:
-        if self.mode == "single":
-            return pattern_normalize_hex6(self.hex_value) or pattern_normalize_hex6(self.legacy_hex)
-        if self.mode == "gradient":
-            return _pattern_blend_hex(self.gradient_a, self.gradient_b) or pattern_normalize_hex6(self.legacy_hex)
-        if self.mode == "image":
-            explicit = pattern_normalize_hex6(self.hex_value) or pattern_normalize_hex6(self.legacy_hex)
-            if explicit:
-                return explicit
-            return (
-                _pattern_image_average_hex(
-                    self.resolved_image_id(),
-                    self.parsed_image_uv_rect(),
-                )
-                or explicit
-            )
-        return pattern_normalize_hex6(self.legacy_hex)
+    @classmethod
+    def from_build_options(
+        cls,
+        *,
+        zone: str,
+        field: str,
+        build_options: Mapping[str, Any],
+    ) -> "GradientFill":
+        """Construct GradientFill from build_options flat dict."""
+        prefix = f"feat_{zone}_texture_{field}"
+        hex_a = str(build_options.get(f"{prefix}_a", "") or "")
+        hex_b = str(build_options.get(f"{prefix}_b", "") or "")
+        direction = str(build_options.get(f"{prefix}_direction", "horizontal") or "horizontal")
+        return cls(hex_a=hex_a, hex_b=hex_b, direction=direction)
+
+
+@dataclass(frozen=True)
+class ImageFill:
+    """Image asset fill with optional atlas bounds."""
+    asset_id: str
+    uv_rect: tuple[float, float, float, float] | None
+
+    @classmethod
+    def from_build_options(
+        cls,
+        *,
+        zone: str,
+        field: str,
+        build_options: Mapping[str, Any],
+    ) -> "ImageFill":
+        """Construct ImageFill from build_options flat dict."""
+        prefix = f"feat_{zone}_texture_{field}"
+        image_id = str(build_options.get(f"{prefix}_image_id", "") or "").strip()
+        image_preview = str(build_options.get(f"{prefix}_image_preview", "") or "")
+        image_uv_rect_raw = str(build_options.get(f"{prefix}_image_uv_rect", "") or "")
+
+        # Resolve asset_id from image_id or infer from preview
+        asset_id = image_id or infer_texture_asset_id_from_preview(image_preview) or ""
+
+        # Parse UV rect if present
+        uv_rect = parse_uv_rect(image_uv_rect_raw)
+
+        return cls(asset_id=asset_id, uv_rect=uv_rect)
+
+
+FillMaterial = SolidFill | GradientFill | ImageFill
+
+
+def fill_material_from_build_options(
+    *,
+    zone: str,
+    field: str,
+    build_options: Mapping[str, Any],
+) -> FillMaterial:
+    """Dispatch to appropriate FillMaterial class based on mode.
+
+    Each class handles its own construction via from_build_options().
+    """
+    prefix = f"feat_{zone}_texture_{field}"
+    mode = str(build_options.get(f"{prefix}_mode", "single") or "single").strip().lower()
+
+    if mode == "single":
+        return SolidFill.from_build_options(zone=zone, field=field, build_options=build_options)
+    elif mode == "gradient":
+        return GradientFill.from_build_options(zone=zone, field=field, build_options=build_options)
+    elif mode == "image":
+        return ImageFill.from_build_options(zone=zone, field=field, build_options=build_options)
+    else:
+        # Invalid mode: default to empty solid
+        return SolidFill(hex_value="")
 
 
 @dataclass(frozen=True)
@@ -315,10 +270,8 @@ class ZoneTextureOptions:
     stripe_preset: str
     stripe_yaw: float
     stripe_pitch: float
-    spot_color: PatternChannelOptions
-    spot_bg_color: PatternChannelOptions
-    stripe_color: PatternChannelOptions
-    stripe_bg_color: PatternChannelOptions
+    pattern_fill: FillMaterial
+    background_fill: FillMaterial
     #: ``white_holes`` | ``dark_spots`` | ``auto`` — see ``spot_plate_mask.py``
     spot_plate_mask_mode: str
     #: Linear RGB; used when effective mode is ``dark_spots`` (max channel >= threshold ⇒ show base).
@@ -371,10 +324,8 @@ class ZoneTextureOptions:
             stripe_preset=_normalized_stripe_preset(build_options.get(f"feat_{zone}_texture_stripe_direction", "beachball")),
             stripe_yaw=yaw,
             stripe_pitch=pitch,
-            spot_color=PatternChannelOptions.from_build_options(zone=zone, field="spot_color", build_options=build_options),
-            spot_bg_color=PatternChannelOptions.from_build_options(zone=zone, field="spot_bg_color", build_options=build_options),
-            stripe_color=PatternChannelOptions.from_build_options(zone=zone, field="stripe_color", build_options=build_options),
-            stripe_bg_color=PatternChannelOptions.from_build_options(zone=zone, field="stripe_bg_color", build_options=build_options),
+            pattern_fill=fill_material_from_build_options(zone=zone, field="pattern", build_options=build_options),
+            background_fill=fill_material_from_build_options(zone=zone, field="background", build_options=build_options),
             spot_plate_mask_mode=str(
                 build_options.get(f"feat_{zone}_texture_spot_plate_mask_mode", "auto") or "auto",
             ).strip().lower(),
@@ -393,53 +344,11 @@ class ZoneTextureOptions:
             ),
         )
 
-    def pattern_image_asset_id(self, fields: tuple[str, ...]) -> str:
-        field_map = {
-            "spot_color": self.spot_color,
-            "spot_bg_color": self.spot_bg_color,
-            "stripe_color": self.stripe_color,
-            "stripe_bg_color": self.stripe_bg_color,
-        }
-        for field in fields:
-            channel = field_map.get(field)
-            if channel is None or channel.mode != "image":
-                continue
-            asset_id = channel.resolved_image_id()
-            if asset_id:
-                return asset_id
-        return ""
-
-    def pattern_overlay_uv_rect(self, fields: tuple[str, ...]) -> tuple[float, float, float, float] | None:
-        """Atlas bounds from the first image-mode channel in ``fields`` that has an asset id."""
-        field_map = {
-            "spot_color": self.spot_color,
-            "spot_bg_color": self.spot_bg_color,
-            "stripe_color": self.stripe_color,
-            "stripe_bg_color": self.stripe_bg_color,
-        }
-        for field in fields:
-            channel = field_map.get(field)
-            if channel is None or channel.mode != "image":
-                continue
-            if channel.resolved_image_id():
-                return channel.parsed_image_uv_rect()
-        return None
-
-    def spot_pattern_image_uv_rect(self) -> tuple[float, float, float, float] | None:
-        return self.pattern_overlay_uv_rect(("spot_color", "spot_bg_color"))
-
-    def stripe_pattern_image_uv_rect(self) -> tuple[float, float, float, float] | None:
-        return self.pattern_overlay_uv_rect(("stripe_color", "stripe_bg_color"))
-
     def spot_pattern_image_asset_id(self) -> str:
-        """Asset id for a user-authored spot plate image (white/near-white reveals base in composite).
+        """Asset id for a user-authored spot plate image.
 
-        Prefers ``spot_color`` over ``spot_bg_color`` when both are image mode.
+        Returns the asset_id from ``pattern_fill`` if it's an ``ImageFill``, else empty.
         """
-        for channel in (self.spot_color, self.spot_bg_color):
-            if channel.mode != "image":
-                continue
-            asset_id = channel.resolved_image_id()
-            if asset_id:
-                return asset_id
+        if isinstance(self.pattern_fill, ImageFill):
+            return self.pattern_fill.asset_id
         return ""

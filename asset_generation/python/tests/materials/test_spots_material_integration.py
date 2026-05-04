@@ -15,6 +15,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.materials.material_types import SolidFill
+
 
 class TestMaterialForSpotsZone:
     """Tests for material_for_spots_zone() factory function (AC3.1 – AC3.11)."""
@@ -30,10 +32,9 @@ class TestMaterialForSpotsZone:
 
     @patch("src.materials.material_system.bpy")
     def test_function_signature_correct(self, mock_bpy) -> None:  # noqa: ARG002
-        """AC3.2: Function signature matches spec."""
+        """AC3.2: Function signature matches spec (pattern_fill/background_fill)."""
         from src.materials.material_system import material_for_spots_zone  # noqa: E402
 
-        # Verify function accepts required parameters
         mock_mat = MagicMock()
         mock_mat.use_nodes = True
         mock_mat.node_tree = MagicMock()
@@ -54,13 +55,12 @@ class TestMaterialForSpotsZone:
                     result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
-                        spot_hex="ff0000",
-                        bg_hex="ffffff",
+                        pattern_fill=SolidFill(hex_value="ff0000"),
+                        background_fill=SolidFill(hex_value="ffffff"),
                         density=1.0,
                         zone_hex_fallback="cccccc",
                         instance_suffix="body_tex_spot",
                     )
-                    # If we got here without TypeError, signature is correct
                     assert result is not None or result is None  # Always true
                 except TypeError as e:
                     pytest.fail(f"Function signature mismatch: {e}")
@@ -89,8 +89,8 @@ class TestMaterialForSpotsZone:
                     material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
-                        spot_hex="ff0000",
-                        bg_hex="ffffff",
+                        pattern_fill=SolidFill(hex_value="ff0000"),
+                        background_fill=SolidFill(hex_value="ffffff"),
                         density=1.0,
                         zone_hex_fallback="cccccc",
                         instance_suffix="body_tex_spot",
@@ -120,8 +120,8 @@ class TestMaterialForSpotsZone:
                     result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
-                        spot_hex="ff0000",
-                        bg_hex="ffffff",
+                        pattern_fill=SolidFill(hex_value="ff0000"),
+                        background_fill=SolidFill(hex_value="ffffff"),
                         density=1.0,
                         zone_hex_fallback="cccccc",
                         instance_suffix="body_tex_spot",
@@ -152,8 +152,8 @@ class TestMaterialForSpotsZone:
                     result = material_for_spots_zone(
                         base_palette_name="test_palette",
                         finish="default",
-                        spot_hex="ff0000",
-                        bg_hex="ffffff",
+                        pattern_fill=SolidFill(hex_value="ff0000"),
+                        background_fill=SolidFill(hex_value="ffffff"),
                         density=1.0,
                         zone_hex_fallback="cccccc",
                         instance_suffix="body_tex_spot",
@@ -180,8 +180,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         assert 'mode' in source, "Function should check texture mode"
 
     @patch("src.materials.material_system.bpy")
-    def test_extracts_spot_color_parameter(self, mock_bpy) -> None:  # noqa: ARG002
-        """AC4.2: Extracts feat_{zone}_texture_spot_color with fallback to ''."""
+    def test_extracts_pattern_fill(self, mock_bpy) -> None:  # noqa: ARG002
+        """AC4.2: Extracts pattern_fill from build_options."""
         from src.materials.material_system import (
             apply_zone_texture_pattern_overrides,  # noqa: E402
         )
@@ -190,8 +190,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -205,18 +205,14 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    # Verify parameter was passed to spots factory
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert "spot_hex" in call_kwargs
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert isinstance(call_kwargs["pattern_fill"], SolidFill)
 
     @patch("src.materials.material_system.bpy")
-    def test_extracts_bg_color_parameter(self, mock_bpy) -> None:  # noqa: ARG002
-        """AC4.3: Extracts feat_{zone}_texture_spot_bg_color with fallback to ''."""
+    def test_extracts_background_fill(self, mock_bpy) -> None:  # noqa: ARG002
+        """AC4.3: Extracts background_fill from build_options."""
         from src.materials.material_system import (
             apply_zone_texture_pattern_overrides,  # noqa: E402
         )
@@ -225,8 +221,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "00ff00",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "00ff00",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -240,13 +236,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert "bg_hex" in call_kwargs
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert "background_fill" in call_kwargs
 
     @patch("src.materials.material_system.bpy")
     def test_extracts_density_with_fallback_and_clamping(self, mock_bpy) -> None:  # noqa: ARG002
@@ -257,13 +250,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
 
         mock_mat = MagicMock()
         slot_materials = {"body": mock_mat}
-
-        # Test with no density specified (should default to 1.0)
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
-            # density not specified
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
 
@@ -276,16 +266,12 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert "density" in call_kwargs
-                        density = call_kwargs["density"]
-                        # Should be within bounds
-                        assert 0.1 <= density <= 5.0
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert "density" in call_kwargs
+                    density = call_kwargs["density"]
+                    assert 0.1 <= density <= 5.0
 
     @patch("src.materials.material_system.bpy")
     def test_retrieves_base_palette_name(self, mock_bpy) -> None:  # noqa: ARG002
@@ -298,8 +284,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -313,13 +299,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "expected_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert call_kwargs.get("base_palette_name") == "expected_palette"
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert call_kwargs.get("base_palette_name") == "expected_palette"
 
     @patch("src.materials.material_system.bpy")
     def test_retrieves_zone_finish(self, mock_bpy) -> None:  # noqa: ARG002
@@ -332,8 +315,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "glossy"}},
         }
@@ -347,13 +330,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert call_kwargs.get("finish") == "glossy"
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert call_kwargs.get("finish") == "glossy"
 
     @patch("src.materials.material_system.bpy")
     def test_retrieves_zone_hex(self, mock_bpy) -> None:  # noqa: ARG002
@@ -366,8 +346,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "aabbcc", "finish": "default"}},
         }
@@ -381,13 +361,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    if mock_spots_mat.called:
-                        call_kwargs = mock_spots_mat.call_args.kwargs
-                        assert "zone_hex_fallback" in call_kwargs
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                if mock_spots_mat.called:
+                    call_kwargs = mock_spots_mat.call_args.kwargs
+                    assert "zone_hex_fallback" in call_kwargs
 
     @patch("src.materials.material_system.bpy")
     def test_calls_spots_material_factory(self, mock_bpy) -> None:  # noqa: ARG002
@@ -400,8 +377,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -415,12 +392,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    apply_zone_texture_pattern_overrides(slot_materials, build_options)
-                    # Verify factory was called
-                    assert mock_spots_mat.called, "Spots material factory should be called"
-                except Exception:  # noqa: BLE001
-                    pass
+                apply_zone_texture_pattern_overrides(slot_materials, build_options)
+                assert mock_spots_mat.called, "Spots material factory should be called"
 
     @patch("src.materials.material_system.bpy")
     def test_assigns_returned_material_to_output(self, mock_bpy) -> None:  # noqa: ARG002
@@ -436,8 +409,8 @@ class TestApplyZoneTexturePatternOverridesSpots:
         slot_materials = {"body": mock_mat_orig}
         build_options = {
             "feat_body_texture_mode": "spots",
-            "feat_body_texture_spot_color": "ff0000",
-            "feat_body_texture_spot_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_spot_density": 1.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -451,13 +424,10 @@ class TestApplyZoneTexturePatternOverridesSpots:
             ) as mock_palette:
                 mock_palette.return_value = "test_palette"
 
-                try:
-                    result = apply_zone_texture_pattern_overrides(
-                        slot_materials, build_options
-                    )
-                    assert result["body"] == mock_mat_new
-                except Exception:  # noqa: BLE001
-                    pass
+                result = apply_zone_texture_pattern_overrides(
+                    slot_materials, build_options
+                )
+                assert result["body"] == mock_mat_new
 
     def test_gradient_and_assets_branches_unchanged(self) -> None:
         """AC4.10: Gradient and assets branches remain unchanged."""
@@ -468,7 +438,5 @@ class TestApplyZoneTexturePatternOverridesSpots:
         )
 
         source = inspect.getsource(apply_zone_texture_pattern_overrides)
-        # Verify gradient handling is still present
         assert 'mode == "gradient"' in source or "gradient" in source
-        # Verify assets handling is still present
         assert 'mode == "assets"' in source or "assets" in source

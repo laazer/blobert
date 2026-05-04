@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.materials.material_types import SolidFill
+
 
 class TestMaterialForStripesZone:
     def test_function_exists(self) -> None:
@@ -35,8 +37,8 @@ class TestMaterialForStripesZone:
                 material_for_stripes_zone(
                     base_palette_name="test_palette",
                     finish="default",
-                    stripe_hex="ff0000",
-                    bg_hex="ffffff",
+                    pattern_fill=SolidFill(hex_value="ff0000"),
+                    background_fill=SolidFill(hex_value="ffffff"),
                     stripe_width=0.4,
                     stripe_preset="beachball",
                     rot_yaw_deg=-5.0,
@@ -66,8 +68,8 @@ class TestMaterialForStripesZone:
                 material_for_stripes_zone(
                     base_palette_name="test_palette",
                     finish="default",
-                    stripe_hex="ff0000",
-                    bg_hex="ffffff",
+                    pattern_fill=SolidFill(hex_value="ff0000"),
+                    background_fill=SolidFill(hex_value="ffffff"),
                     stripe_width=0.4,
                     stripe_preset="doplar",
                     rot_yaw_deg=15.0,
@@ -93,8 +95,8 @@ class TestMaterialForStripesZone:
                 material_for_stripes_zone(
                     base_palette_name="test_palette",
                     finish="default",
-                    stripe_hex="ff0000",
-                    bg_hex="ffffff",
+                    pattern_fill=SolidFill(hex_value="ff0000"),
+                    background_fill=SolidFill(hex_value="ffffff"),
                     stripe_width=0.4,
                     stripe_preset="doplar",
                     rot_yaw_deg=-90.0,
@@ -107,8 +109,8 @@ class TestMaterialForStripesZone:
                 material_for_stripes_zone(
                     base_palette_name="test_palette",
                     finish="default",
-                    stripe_hex="ff0000",
-                    bg_hex="ffffff",
+                    pattern_fill=SolidFill(hex_value="ff0000"),
+                    background_fill=SolidFill(hex_value="ffffff"),
                     stripe_width=0.4,
                     stripe_preset="doplar",
                     rot_yaw_deg=270.0,
@@ -131,8 +133,8 @@ class TestApplyZoneTexturePatternOverridesStripes:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "stripes",
-            "feat_body_texture_stripe_color": "ff0000",
-            "feat_body_texture_stripe_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_stripe_width": 0.35,
             "feat_body_texture_stripe_direction": "y",
             "feat_body_texture_stripe_rot_pitch": 10.0,
@@ -164,8 +166,8 @@ class TestApplyZoneTexturePatternOverridesStripes:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "stripes",
-            "feat_body_texture_stripe_color": "ff0000",
-            "feat_body_texture_stripe_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_stripe_width": -2.0,
             "features": {"body": {"hex": "cccccc", "finish": "default"}},
         }
@@ -184,8 +186,8 @@ class TestApplyZoneTexturePatternOverridesStripes:
         slot_materials = {"body": mock_mat}
         build_options = {
             "feat_body_texture_mode": "stripes",
-            "feat_body_texture_stripe_color": "ff0000",
-            "feat_body_texture_stripe_bg_color": "ffffff",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_hex": "ffffff",
             "feat_body_texture_stripe_width": 0.3,
             "feat_body_texture_stripe_rot_pitch": float("nan"),
             "feat_body_texture_stripe_rot_yaw": float("inf"),

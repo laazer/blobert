@@ -23,16 +23,16 @@ class TestTextureModeCoercionAdversarial:
 
 class TestGradDirectionCoercionAdversarial:
     def test_whitespace_padded_radial_direction_strips_and_coerces(self) -> None:
-        o = options_for_enemy("spider", {f"{_B}grad_direction": "  radial "})
-        assert o[f"{_B}grad_direction"] == "radial"
+        o = options_for_enemy("spider", {f"{_B}pattern_grad_direction": "  radial "})
+        assert o[f"{_B}pattern_grad_direction"] == "radial"
 
     def test_uppercase_vertical_direction_coerces_to_lowercase(self) -> None:
-        o = options_for_enemy("spider", {f"{_B}grad_direction": "VERTICAL"})
-        assert o[f"{_B}grad_direction"] == "vertical"
+        o = options_for_enemy("spider", {f"{_B}pattern_grad_direction": "VERTICAL"})
+        assert o[f"{_B}pattern_grad_direction"] == "vertical"
 
     def test_none_grad_direction_falls_back_to_horizontal(self) -> None:
-        o = options_for_enemy("spider", {f"{_B}grad_direction": None})
-        assert o[f"{_B}grad_direction"] == "horizontal"
+        o = options_for_enemy("spider", {f"{_B}pattern_grad_direction": None})
+        assert o[f"{_B}pattern_grad_direction"] == "horizontal"
 
 
 class TestSpotDensityCoercionAdversarial:

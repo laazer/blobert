@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.materials.material_types import SolidFill
+
 
 @patch("src.materials.material_system.bpy")
 def test_checkerboard_mode_calls_checkerboard_factory(mock_bpy) -> None:  # noqa: ARG001
@@ -15,8 +17,8 @@ def test_checkerboard_mode_calls_checkerboard_factory(mock_bpy) -> None:  # noqa
     slot_materials = {"body": mock_mat}
     build_options = {
         "feat_body_texture_mode": "checkerboard",
-        "feat_body_texture_spot_color": "ff0000",
-        "feat_body_texture_spot_bg_color": "ffffff",
+        "feat_body_texture_pattern_hex": "ff0000",
+        "feat_body_texture_background_hex": "ffffff",
         "feat_body_texture_spot_density": 1.5,
         "features": {"body": {"hex": "cccccc", "finish": "default"}},
     }
@@ -29,8 +31,10 @@ def test_checkerboard_mode_calls_checkerboard_factory(mock_bpy) -> None:  # noqa
             mock_factory.assert_called_once()
             kw = mock_factory.call_args.kwargs
             assert kw.get("base_palette_name") == "test_palette"
-            assert kw.get("color_a_hex") == "ff0000"
-            assert kw.get("color_b_hex") == "ffffff"
+            assert isinstance(kw.get("pattern_fill"), SolidFill)
+            assert kw["pattern_fill"].hex_value == "ff0000"
+            assert isinstance(kw.get("background_fill"), SolidFill)
+            assert kw["background_fill"].hex_value == "ffffff"
             assert kw.get("density") == pytest.approx(1.5)
 
 
@@ -49,8 +53,8 @@ def test_material_for_checkerboard_zone_creates_material_with_nodes(
     result = _material_for_checkerboard_zone(
         base_palette_name="test",
         finish="default",
-        color_a_hex="ff0000",
-        color_b_hex="00ff00",
+        pattern_fill=SolidFill(hex_value="ff0000"),
+        background_fill=SolidFill(hex_value="00ff00"),
         density=1.0,
         zone_hex_fallback="0000ff",
         instance_suffix="test_zone",
@@ -107,8 +111,8 @@ def test_material_for_checkerboard_zone_builds_node_tree(
     result = _material_for_checkerboard_zone(
         base_palette_name="test",
         finish="default",
-        color_a_hex="ff0000",
-        color_b_hex="00ff00",
+        pattern_fill=SolidFill(hex_value="ff0000"),
+        background_fill=SolidFill(hex_value="00ff00"),
         density=1.0,
         zone_hex_fallback="0000ff",
         instance_suffix="test_zone",
@@ -166,8 +170,8 @@ def test_material_for_checkerboard_zone_with_missing_palette_and_custom_finish(
     result = _material_for_checkerboard_zone(
         base_palette_name="missing",
         finish="glossy",
-        color_a_hex="ff0000",
-        color_b_hex="00ff00",
+        pattern_fill=SolidFill(hex_value="ff0000"),
+        background_fill=SolidFill(hex_value="00ff00"),
         density=1.0,
         zone_hex_fallback="0000ff",
         instance_suffix="test_zone",

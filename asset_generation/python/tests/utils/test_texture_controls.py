@@ -14,7 +14,6 @@ from src.utils.build_options import (
     defaults_for_slug,
     feature_zones,
     options_for_enemy,
-    texture_control_defs,
     zone_texture_control_defs,
 )
 
@@ -28,23 +27,38 @@ _ALL_SLUGS = [
     "player_slime",
 ]
 
-_TEXTURE_TEMPLATE_KEYS = [c["key"] for c in texture_control_defs()]
-
 _TEXTURE_DEFAULTS = {
     "texture_mode": "none",
-    "texture_grad_color_a": "",
-    "texture_grad_color_b": "",
-    "texture_grad_direction": "horizontal",
-    "texture_spot_color": "",
-    "texture_spot_bg_color": "",
+    # fill_picker controls (no default → None in options_for_enemy)
+    "texture_pattern": None,
+    "texture_background": None,
+    # Per-channel sub-controls for pattern fill
+    "texture_pattern_mode": "single",
+    "texture_pattern_hex": "",
+    "texture_pattern_grad_a": "",
+    "texture_pattern_grad_b": "",
+    "texture_pattern_grad_direction": "horizontal",
+    "texture_pattern_image_id": "",
+    "texture_pattern_image_preview": "",
+    "texture_pattern_image_uv_rect": "",
+    # Per-channel sub-controls for background fill
+    "texture_background_mode": "single",
+    "texture_background_hex": "",
+    "texture_background_grad_a": "",
+    "texture_background_grad_b": "",
+    "texture_background_grad_direction": "horizontal",
+    "texture_background_image_id": "",
+    "texture_background_image_preview": "",
+    "texture_background_image_uv_rect": "",
+    # Spot-specific
     "texture_spot_pattern": "grid",
     "texture_spot_density": 1.0,
-    "texture_stripe_color": "",
-    "texture_stripe_bg_color": "",
+    # Stripe-specific
     "texture_stripe_width": 0.2,
     "texture_stripe_direction": "beachball",
     "texture_stripe_rot_yaw": 0.0,
     "texture_stripe_rot_pitch": 0.0,
+    # Asset-specific
     "texture_asset_id": "",
     "texture_asset_tile_repeat": 1.0,
 }
@@ -66,38 +80,31 @@ def _body_prefix(slug: str) -> str:
     return "feat_body_texture_"
 
 
-class TestTextureTemplateDefs:
-    """Base template (_texture_control_defs) includes gradient, spots, stripes, and asset texture controls."""
-
-    def test_texture_control_defs_returns_16_entries(self) -> None:
-        result = texture_control_defs()
-        assert len(result) == 16
-        assert [c["key"] for c in result] == [
-            "texture_mode",
-            "texture_grad_color_a",
-            "texture_grad_color_b",
-            "texture_grad_direction",
-            "texture_spot_color",
-            "texture_spot_bg_color",
-            "texture_spot_pattern",
-            "texture_spot_density",
-            "texture_stripe_color",
-            "texture_stripe_bg_color",
-            "texture_stripe_width",
-            "texture_stripe_direction",
-            "texture_stripe_rot_yaw",
-            "texture_stripe_rot_pitch",
-            "texture_asset_id",
-            "texture_asset_tile_repeat",
-        ]
-
-
 class TestZoneTextureControlDefs:
-    def test_zone_texture_count_matches_zones_times_16(self) -> None:
+    """Per-zone texture controls organized by textureMode and pattern type."""
+
+    def test_zone_texture_controls_include_mode_and_fills(self) -> None:
+        """Each zone should have textureMode, pattern fill, and background fill controls."""
         for slug in _ALL_SLUGS:
-            zones = feature_zones(slug)
             defs = zone_texture_control_defs(slug)
-            assert len(defs) == len(zones) * 16
+            zones = feature_zones(slug)
+
+            # Each zone should contribute controls for textureMode, pattern, background,
+            # and pattern-specific options (spots, stripes, checkerboard) plus global (asset).
+            for zone in zones:
+                mode_key = f"feat_{zone}_texture_mode"
+                pattern_key = f"feat_{zone}_texture_pattern"
+                bg_key = f"feat_{zone}_texture_background"
+
+                mode_control = next((c for c in defs if c["key"] == mode_key), None)
+                assert mode_control is not None, f"Missing {mode_key}"
+                assert mode_control["type"] == "select_str"
+
+                pattern_control = next((c for c in defs if c["key"] == pattern_key), None)
+                assert pattern_control is not None, f"Missing {pattern_key}"
+
+                bg_control = next((c for c in defs if c["key"] == bg_key), None)
+                assert bg_control is not None, f"Missing {bg_key}"
 
     def test_spider_body_texture_mode_shape(self) -> None:
         defs = zone_texture_control_defs("spider")
@@ -193,9 +200,11 @@ class TestCoercionBodyZone:
         assert o[f"{self.BP}stripe_rot_yaw"] == -5.0
         assert f"{self.BP}stripe_rot_x" not in o
 
-    def test_grad_color_passthrough(self) -> None:
-        o = options_for_enemy("slug", {f"{self.BP}grad_color_a": "ff0000"})
-        assert o[f"{self.BP}grad_color_a"] == "ff0000"
+    def test_spot_color_defaults_to_empty(self) -> None:
+        """Pattern fill controls default to None (fill_picker type)."""
+        o = options_for_enemy("slug", {})
+        assert o[f"{self.BP}pattern"] is None
+        assert o[f"{self.BP}background"] is None
 
 
 class TestSerialization:
