@@ -19,7 +19,10 @@ from src.materials.material_types import (
     RGBA,
     FeatureMap,
     FeatureZoneOptions,
-    PatternChannelOptions,
+    FillMaterial,
+    GradientFill,
+    ImageFill,
+    SolidFill,
     ZoneTextureOptions,
     feature_zone_map,
     pattern_normalize_hex6,
@@ -63,6 +66,33 @@ ENEMY_FINISH_PRESETS = {
 
 # Organic handler: keep base color near palette (was 0.3 multiply — too muddy in GLTF).
 _ORGANIC_BASE_COLOR_DETAIL_FAC = 0.12
+
+
+def fill_material_hex(fill: FillMaterial, fallback: str = "") -> str:
+    """Extract a hex string from any FillMaterial type.
+
+    - SolidFill: return hex_value
+    - GradientFill: return hex_a (color endpoint)
+    - ImageFill: return fallback (images don't have a hex equivalent)
+    """
+    if isinstance(fill, SolidFill):
+        return fill.hex_value
+    elif isinstance(fill, GradientFill):
+        return fill.hex_a
+    else:  # ImageFill
+        return fallback
+
+
+def fill_material_image_asset_id(fill: FillMaterial) -> str:
+    """Extract image asset_id from FillMaterial, or empty string if not an image.
+
+    - SolidFill: return ""
+    - GradientFill: return ""
+    - ImageFill: return asset_id
+    """
+    if isinstance(fill, ImageFill):
+        return fill.asset_id
+    return ""
 
 
 def _sanitize_hex_input(raw: str) -> str:
@@ -606,8 +636,8 @@ def material_for_spots_zone(
     *,
     base_palette_name: str,
     finish: str,
-    spot_hex: str,
-    bg_hex: str,
+    pattern_fill: FillMaterial,
+    background_fill: FillMaterial,
     density: float,
     zone_hex_fallback: str,
     instance_suffix: str,
@@ -616,6 +646,9 @@ def material_for_spots_zone(
 
     Analogous to _material_for_gradient_zone, but for polka-dot patterns.
     """
+    spot_hex = fill_material_hex(pattern_fill, zone_hex_fallback)
+    bg_hex = fill_material_hex(background_fill, "ffffff")
+
     all_colors = MaterialColors.get_all()
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
@@ -716,7 +749,8 @@ def _wire_spot_plate_image_to_principled(
 
     uv = nodes.new(type="ShaderNodeUVMap")
     uv.location = (-800, 200)
-    if use_atlas_mapping and uv_rect is not None:
+    # Always apply UV mapping when uv_rect is provided, regardless of atlas resolution
+    if uv_rect is not None:
         mapping_node = nodes.new(type="ShaderNodeMapping")
         mapping_node.location = (-650, 200)
         scale_vec, loc_vec = mapping_scale_location_for_uv_rect(uv_rect)
@@ -761,7 +795,8 @@ def material_for_spots_zone_from_image_asset(
     roughness = 0.75
     if finish_roughness is not None:
         roughness = finish_roughness
-    transmission = finish_transmission if finish_transmission is not None else 0.0
+    # Pattern images are always fully opaque, no transmission
+    transmission = 0.0
     alpha = zone_rgba[3] if len(zone_rgba) > 3 else 1.0
 
     new_name = f"{base_palette_name}__feat_{instance_suffix}"
@@ -820,13 +855,16 @@ def _material_for_checkerboard_zone(
     *,
     base_palette_name: str,
     finish: str,
-    color_a_hex: str,
-    color_b_hex: str,
+    pattern_fill: FillMaterial,
+    background_fill: FillMaterial,
     density: float,
     zone_hex_fallback: str,
     instance_suffix: str,
 ) -> bpy.types.Material:
     """Solid base material with object-space procedural checkerboard texture."""
+    color_a_hex = fill_material_hex(pattern_fill, zone_hex_fallback)
+    color_b_hex = fill_material_hex(background_fill, "ffffff")
+
     all_colors = MaterialColors.get_all()
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
@@ -846,7 +884,8 @@ def _material_for_checkerboard_zone(
     roughness = 0.75
     if finish_roughness is not None:
         roughness = finish_roughness
-    transmission = finish_transmission if finish_transmission is not None else 0.0
+    # Pattern colors are always fully opaque, no transmission
+    transmission = 0.0
     alpha = color_a[3] if len(color_a) > 3 else 1.0
 
     new_name = f"{base_palette_name}__feat_{instance_suffix}"
@@ -1048,33 +1087,30 @@ def _read_png_ihdr_dimensions(path: Path) -> tuple[int, int]:
 
 
 def _spot_bg_rgba_endpoints(
-    ch: PatternChannelOptions,
+    fill: FillMaterial,
     zone_hex: str,
 ) -> tuple[RGBA, RGBA]:
     """Two RGBA colors for a horizontal UV gradient underlay (equal = solid)."""
     z = _sanitize_hex_input(zone_hex)
     zone_rgba: RGBA = parse_hex_color(z) if len(z) == 6 else (0.92, 0.92, 0.92, 1.0)
-    mode = ch.mode
-    if mode == "gradient":
-        ha = pattern_normalize_hex6(ch.gradient_a) or pattern_normalize_hex6(ch.hex_value)
-        hb = pattern_normalize_hex6(ch.gradient_b) or pattern_normalize_hex6(ch.hex_value)
+
+    if isinstance(fill, GradientFill):
+        ha = pattern_normalize_hex6(fill.hex_a) or pattern_normalize_hex6(fill.hex_b) or pattern_normalize_hex6(z or "ffffff")
+        hb = pattern_normalize_hex6(fill.hex_b) or pattern_normalize_hex6(fill.hex_a) or pattern_normalize_hex6(z or "ffffff")
         if not ha and not hb:
-            hx = _sanitize_hex_input(ch.resolved_hex() or (z or "ffffff"))
+            hx = _sanitize_hex_input(z or "ffffff")
             c = parse_hex_color(hx) if len(hx) == 6 else zone_rgba
             return c, c
-        if not ha:
-            ha = hb
-        if not hb:
-            hb = ha
         ra = parse_hex_color(ha) if len(ha) == 6 else zone_rgba
         rb = parse_hex_color(hb) if len(hb) == 6 else zone_rgba
         return ra, rb
-    hx = _sanitize_hex_input(ch.resolved_hex() or (z or "ffffff"))
-    if len(hx) != 6:
-        c = zone_rgba
-    else:
-        c = parse_hex_color(hx)
-    return c, c
+    elif isinstance(fill, SolidFill):
+        hx = _sanitize_hex_input(fill.hex_value or z or "ffffff")
+        c = parse_hex_color(hx) if len(hx) == 6 else zone_rgba
+        return c, c
+    else:  # ImageFill
+        # Images handled separately; return white endpoints
+        return (1.0, 1.0, 1.0, 1.0), (1.0, 1.0, 1.0, 1.0)
 
 
 def _write_spot_background_underlay_png(
@@ -1083,10 +1119,10 @@ def _write_spot_background_underlay_png(
     spot_pattern_id: str,
     width: int,
     height: int,
-    spot_bg: PatternChannelOptions,
+    spot_bg: FillMaterial,
     zone_hex: str,
 ) -> Path | None:
-    """Raster matching spot plate size for mask composite (spot_bg channel, not zone color_image)."""
+    """Raster matching spot plate size for mask composite (background_fill, not zone color_image)."""
     try:
         ca, cb = _spot_bg_rgba_endpoints(spot_bg, zone_hex)
         pixels = gradient_image_pixel_buffer(width, height, ca, cb, "horizontal")
@@ -1111,15 +1147,15 @@ def resolve_spots_composite_underlay(
 ) -> tuple[str, Path | None]:
     """Texture asset id and/or disk path to composite *under* an image spot plate.
 
-    Priority: spot_bg_color (texture-specific) > zone color_image (global fallback).
-    If neither image is set, synthesize underlay from spot_bg_color hex/gradient.
+    Priority: background_fill as image (texture-specific) > zone color_image (global fallback).
+    If neither image is set, synthesize underlay from background_fill hex/gradient.
     """
-    # Primary: spot_bg_color image (texture-mode-specific)
-    bg = settings.spot_bg_color
-    if bg.mode == "image":
-        bid = bg.resolved_image_id()
+    # Primary: background_fill image (texture-mode-specific)
+    bg_fill = settings.background_fill
+    if isinstance(bg_fill, ImageFill):
+        bid = bg_fill.asset_id
         if bid and bid != spot_pattern_id:
-            log_spots_composite(f"spots_underlay: using spot_bg_color image asset_id={bid!r} (primary)")
+            log_spots_composite(f"spots_underlay: using background_fill image asset_id={bid!r} (primary)")
             return (bid, None)
 
     # Fallback: zone color_image (global base material)
@@ -1127,7 +1163,7 @@ def resolve_spots_composite_underlay(
     if zone_id and zone_id != spot_pattern_id:
         log_spots_composite(
             f"spots_underlay: zone color_image asset_id={zone_id!r} used as fallback "
-            f"(spot_bg_color not an image)",
+            f"(background_fill not an image)",
         )
         return (zone_id, None)
 
@@ -1151,7 +1187,7 @@ def resolve_spots_composite_underlay(
         spot_pattern_id=spot_pattern_id,
         width=w,
         height=h,
-        spot_bg=bg,
+        spot_bg=bg_fill,
         zone_hex=settings.zone_hex,
     )
     return ("", syn)
@@ -1227,26 +1263,35 @@ def _apply_checkerboard_pattern(
     zone_feature: FeatureZoneOptions | None,
     zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
-    pattern_asset_id = settings.pattern_image_asset_id(("spot_bg_color", "spot_color"))
+    """Apply checkerboard pattern. Background_fill as image triggers overlay."""
+    # Check if background_fill is an image (that's the overlay)
+    bg_fill_is_image = isinstance(settings.background_fill, ImageFill)
+    pattern_asset_id = settings.background_fill.asset_id if bg_fill_is_image else ""
+
     checker_mat = _material_for_checkerboard_zone(
         base_palette_name=_palette_base_name_from_material(mat),
         finish=settings.finish,
-        color_a_hex=settings.spot_color.resolved_hex(),
-        color_b_hex="ffffff" if pattern_asset_id else settings.spot_bg_color.resolved_hex(),
+        pattern_fill=settings.pattern_fill,
+        background_fill=settings.background_fill,
         density=settings.spot_density,
         zone_hex_fallback=settings.zone_hex,
         instance_suffix=f"{settings.zone}_tex_checker",
     )
     if not pattern_asset_id:
         return checker_mat
-    channel_uv = settings.pattern_overlay_uv_rect(("spot_bg_color", "spot_color"))
+
+    # Overlay background_fill image onto checkerboard
+    bg_uv_rect = None
+    if bg_fill_is_image:
+        bg_uv_rect = settings.background_fill.uv_rect
+
     underlay_uv = resolve_texture_pattern_overlay_uv_rect(
         zone=zone,
         build_options=build_options,
         zone_feature=zone_feature,
         pattern_asset_id=pattern_asset_id,
         zone_image_asset_id=zone_image_asset_id,
-        channel_uv_rect=channel_uv,
+        channel_uv_rect=bg_uv_rect,
     )
     return overlay_base_image_on_zone_material(
         checker_mat,
@@ -1264,14 +1309,18 @@ def _apply_stripes_pattern(
     zone_feature: FeatureZoneOptions | None,
     zone_image_asset_id: str = "",
 ) -> bpy.types.Material:
-    pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
+    """Apply stripes pattern. Background_fill as image triggers overlay."""
+    # Check if background_fill is an image (that's the overlay)
+    bg_fill_is_image = isinstance(settings.background_fill, ImageFill)
+    pattern_asset_id = settings.background_fill.asset_id if bg_fill_is_image else ""
+
     from .material_stripes_zone import material_for_stripes_zone
 
     stripe_mat = material_for_stripes_zone(
         base_palette_name=_palette_base_name_from_material(mat),
         finish=settings.finish,
-        stripe_hex=settings.stripe_color.resolved_hex(),
-        bg_hex="ffffff" if pattern_asset_id else settings.stripe_bg_color.resolved_hex(),
+        pattern_fill=settings.pattern_fill,
+        background_fill=settings.background_fill,
         stripe_width=settings.stripe_width,
         stripe_preset=settings.stripe_preset,
         rot_yaw_deg=settings.stripe_yaw,
@@ -1281,14 +1330,19 @@ def _apply_stripes_pattern(
     )
     if not pattern_asset_id:
         return stripe_mat
-    channel_uv = settings.stripe_pattern_image_uv_rect()
+
+    # Overlay background_fill image onto stripes
+    bg_uv_rect = None
+    if bg_fill_is_image:
+        bg_uv_rect = settings.background_fill.uv_rect
+
     underlay_uv = resolve_texture_pattern_overlay_uv_rect(
         zone=zone,
         build_options=build_options,
         zone_feature=zone_feature,
         pattern_asset_id=pattern_asset_id,
         zone_image_asset_id=zone_image_asset_id,
-        channel_uv_rect=channel_uv,
+        channel_uv_rect=bg_uv_rect,
     )
     return overlay_base_image_on_zone_material(
         stripe_mat,

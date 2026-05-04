@@ -18,6 +18,7 @@ from src.materials.material_system import (
 )
 from src.materials.material_types import (
     FeatureMap,
+    ImageFill,
     ZoneTextureOptions,
     feature_zone_map,
 )
@@ -325,15 +326,17 @@ def apply_zone_texture_pattern_overrides(
                 zone_feature=zone_feature,
             )
         elif settings.mode == "stripes":
-            pattern_asset_id = settings.pattern_image_asset_id(("stripe_color", "stripe_bg_color"))
+            # Background_fill as image triggers overlay
+            bg_fill_is_image = isinstance(settings.background_fill, ImageFill)
+            pattern_asset_id = settings.background_fill.asset_id if bg_fill_is_image else ""
             zone_image_asset_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
             if not pattern_asset_id and zone_image_asset_id:
                 pattern_asset_id = zone_image_asset_id
             stripe_mat = material_for_stripes_zone(
                 base_palette_name=_palette_base_name_from_material(mat),
                 finish=settings.finish,
-                stripe_hex=settings.stripe_color.resolved_hex(),
-                bg_hex="ffffff" if pattern_asset_id else settings.stripe_bg_color.resolved_hex(),
+                pattern_fill=settings.pattern_fill,
+                background_fill=settings.background_fill,
                 stripe_width=settings.stripe_width,
                 stripe_preset=settings.stripe_preset,
                 rot_yaw_deg=settings.stripe_yaw,
@@ -342,7 +345,7 @@ def apply_zone_texture_pattern_overrides(
                 instance_suffix=f"{zone}_tex_stripe",
             )
             if pattern_asset_id:
-                channel_uv = settings.stripe_pattern_image_uv_rect()
+                channel_uv = settings.background_fill.uv_rect if bg_fill_is_image else None
                 underlay_uv = resolve_texture_pattern_overlay_uv_rect(
                     zone=zone,
                     build_options=build_options,

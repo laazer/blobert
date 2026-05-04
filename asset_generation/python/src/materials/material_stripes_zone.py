@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import math
 import re
+from typing import Any
 
 import bpy
 
 from .gradient_generator import create_stripes_png_and_load
+from .material_types import FillMaterial, GradientFill, SolidFill
 from .presets import (
     ENEMY_FINISH_PRESETS,
     MaterialColors,
@@ -94,6 +96,96 @@ def _rgba_to_rrggbb(rgba: tuple[float, ...]) -> str:
     return f"{r:02x}{g:02x}{b:02x}"
 
 
+def _build_directional_dot_product(
+    nodes: Any,
+    links: Any,
+    separate_xyz: Any,
+    dir_x: float,
+    dir_y: float,
+    dir_z: float,
+) -> Any:
+    """Build shader nodes for dot(position, direction) and return the sum output."""
+    mul_x = nodes.new(type="ShaderNodeMath")
+    mul_x.location = (-800, 300)
+    mul_x.operation = "MULTIPLY"
+    mul_x.inputs[1].default_value = dir_x
+    links.new(separate_xyz.outputs["X"], mul_x.inputs[0])
+
+    mul_y = nodes.new(type="ShaderNodeMath")
+    mul_y.location = (-800, 200)
+    mul_y.operation = "MULTIPLY"
+    mul_y.inputs[1].default_value = dir_y
+    links.new(separate_xyz.outputs["Y"], mul_y.inputs[0])
+
+    mul_z = nodes.new(type="ShaderNodeMath")
+    mul_z.location = (-800, 100)
+    mul_z.operation = "MULTIPLY"
+    mul_z.inputs[1].default_value = dir_z
+    links.new(separate_xyz.outputs["Z"], mul_z.inputs[0])
+
+    add_xy = nodes.new(type="ShaderNodeMath")
+    add_xy.location = (-620, 240)
+    add_xy.operation = "ADD"
+    links.new(mul_x.outputs["Value"], add_xy.inputs[0])
+    links.new(mul_y.outputs["Value"], add_xy.inputs[1])
+
+    add_xyz = nodes.new(type="ShaderNodeMath")
+    add_xyz.location = (-460, 220)
+    add_xyz.operation = "ADD"
+    links.new(add_xy.outputs["Value"], add_xyz.inputs[0])
+    links.new(mul_z.outputs["Value"], add_xyz.inputs[1])
+
+    return add_xyz
+
+
+def _build_stripe_band_selector(
+    nodes: Any,
+    links: Any,
+    dot_product_node: Any,
+    frequency: float,
+    phase_offset: float,
+    stripe_rgba: tuple[float, float, float, float],
+    bg_rgba: tuple[float, float, float, float],
+) -> Any | None:
+    """Build shader nodes that convert a scalar into alternating stripe colors. Returns color output or None."""
+    add_phase = nodes.new(type="ShaderNodeMath")
+    add_phase.location = (-300, 220)
+    add_phase.operation = "ADD"
+    add_phase.inputs[1].default_value = phase_offset
+    links.new(dot_product_node.outputs["Value"], add_phase.inputs[0])
+
+    mul_freq = nodes.new(type="ShaderNodeMath")
+    mul_freq.location = (-140, 220)
+    mul_freq.operation = "MULTIPLY"
+    mul_freq.inputs[1].default_value = frequency
+    links.new(add_phase.outputs["Value"], mul_freq.inputs[0])
+
+    frac = nodes.new(type="ShaderNodeMath")
+    frac.location = (20, 220)
+    frac.operation = "FRACT"
+    links.new(mul_freq.outputs["Value"], frac.inputs[0])
+
+    less_than = nodes.new(type="ShaderNodeMath")
+    less_than.location = (180, 220)
+    less_than.operation = "LESS_THAN"
+    less_than.inputs[1].default_value = 0.5
+    links.new(frac.outputs["Value"], less_than.inputs[0])
+
+    mix = nodes.new(type="ShaderNodeMixRGB")
+    mix.location = (380, 220)
+    mix.blend_type = "MIX"
+    fac_in = mix.inputs.get("Fac") or mix.inputs.get("Factor")
+    color1_in = mix.inputs.get("Color1") or mix.inputs.get("A")
+    color2_in = mix.inputs.get("Color2") or mix.inputs.get("B")
+    if fac_in is None or color1_in is None or color2_in is None:
+        return None
+    color1_in.default_value = bg_rgba
+    color2_in.default_value = stripe_rgba
+    links.new(less_than.outputs["Value"], fac_in)
+
+    return mix.outputs.get("Color")
+
+
 def _add_object_space_stripes_to_principled(
     *,
     mat: bpy.types.Material,
@@ -133,91 +225,34 @@ def _add_object_space_stripes_to_principled(
     tex_coord.location = (-1200, 200)
     separate_xyz = nodes.new(type="ShaderNodeSeparateXYZ")
     separate_xyz.location = (-1000, 200)
-    object_out = tex_coord.outputs.get("Object")
+    object_out = tex_coord.outputs.get("Object") or tex_coord.outputs.get("Generated")
     if object_out is None:
-        object_out = tex_coord.outputs.get("Generated")
-    if object_out is None:
-        # Keep existing base color if coordinate source is unavailable.
         return
     links.new(object_out, separate_xyz.inputs["Vector"])
 
-    mul_x = nodes.new(type="ShaderNodeMath")
-    mul_x.location = (-800, 300)
-    mul_x.operation = "MULTIPLY"
-    mul_x.inputs[1].default_value = dir_x
-    links.new(separate_xyz.outputs["X"], mul_x.inputs[0])
+    dot_node = _build_directional_dot_product(nodes, links, separate_xyz, dir_x, dir_y, dir_z)
+    color_out = _build_stripe_band_selector(
+        nodes, links, dot_node, frequency, phase_offset, stripe_rgba, bg_rgba,
+    )
+    if color_out is not None:
+        links.new(color_out, bc_in)
 
-    mul_y = nodes.new(type="ShaderNodeMath")
-    mul_y.location = (-800, 200)
-    mul_y.operation = "MULTIPLY"
-    mul_y.inputs[1].default_value = dir_y
-    links.new(separate_xyz.outputs["Y"], mul_y.inputs[0])
 
-    mul_z = nodes.new(type="ShaderNodeMath")
-    mul_z.location = (-800, 100)
-    mul_z.operation = "MULTIPLY"
-    mul_z.inputs[1].default_value = dir_z
-    links.new(separate_xyz.outputs["Z"], mul_z.inputs[0])
-
-    add_xy = nodes.new(type="ShaderNodeMath")
-    add_xy.location = (-620, 240)
-    add_xy.operation = "ADD"
-    links.new(mul_x.outputs["Value"], add_xy.inputs[0])
-    links.new(mul_y.outputs["Value"], add_xy.inputs[1])
-
-    add_xyz = nodes.new(type="ShaderNodeMath")
-    add_xyz.location = (-460, 220)
-    add_xyz.operation = "ADD"
-    links.new(add_xy.outputs["Value"], add_xyz.inputs[0])
-    links.new(mul_z.outputs["Value"], add_xyz.inputs[1])
-
-    add_phase = nodes.new(type="ShaderNodeMath")
-    add_phase.location = (-300, 220)
-    add_phase.operation = "ADD"
-    add_phase.inputs[1].default_value = phase_offset
-    links.new(add_xyz.outputs["Value"], add_phase.inputs[0])
-
-    mul_freq = nodes.new(type="ShaderNodeMath")
-    mul_freq.location = (-140, 220)
-    mul_freq.operation = "MULTIPLY"
-    mul_freq.inputs[1].default_value = frequency
-    links.new(add_phase.outputs["Value"], mul_freq.inputs[0])
-
-    frac = nodes.new(type="ShaderNodeMath")
-    frac.location = (20, 220)
-    frac.operation = "FRACT"
-    links.new(mul_freq.outputs["Value"], frac.inputs[0])
-
-    less_than = nodes.new(type="ShaderNodeMath")
-    less_than.location = (180, 220)
-    less_than.operation = "LESS_THAN"
-    less_than.inputs[1].default_value = 0.5
-    links.new(frac.outputs["Value"], less_than.inputs[0])
-
-    mix = nodes.new(type="ShaderNodeMixRGB")
-    mix.location = (380, 220)
-    mix.blend_type = "MIX"
-    fac_in = mix.inputs.get("Fac") or mix.inputs.get("Factor")
-    color1_in = mix.inputs.get("Color1") or mix.inputs.get("A")
-    color2_in = mix.inputs.get("Color2") or mix.inputs.get("B")
-    if fac_in is None or color1_in is None or color2_in is None:
-        return
-    color1_in.default_value = bg_rgba
-    color2_in.default_value = stripe_rgba
-    links.new(less_than.outputs["Value"], fac_in)
-
-    color_out = mix.outputs.get("Color")
-    if color_out is None:
-        return
-    links.new(color_out, bc_in)
+def _fill_hex(fill: FillMaterial) -> str:
+    """Extract hex string from a FillMaterial (SolidFill→hex_value, GradientFill→hex_a, else empty)."""
+    if isinstance(fill, SolidFill):
+        return fill.hex_value
+    if isinstance(fill, GradientFill):
+        return fill.hex_a
+    return ""
 
 
 def material_for_stripes_zone(
     *,
     base_palette_name: str,
     finish: str,
-    stripe_hex: str,
-    bg_hex: str,
+    pattern_fill: FillMaterial,
+    background_fill: FillMaterial,
     stripe_width: float,
     stripe_preset: str,
     rot_yaw_deg: float,
@@ -226,6 +261,9 @@ def material_for_stripes_zone(
     instance_suffix: str,
 ) -> bpy.types.Material:
     """Stripe material with mixed strategy: doplar=object-space, others=baked texture."""
+    stripe_hex = _fill_hex(pattern_fill)
+    bg_hex = _fill_hex(background_fill)
+
     all_colors = MaterialColors.get_all()
     palette_base = all_colors.get(base_palette_name)
     if palette_base is None:
@@ -245,7 +283,8 @@ def material_for_stripes_zone(
     roughness = 0.75
     if finish_roughness is not None:
         roughness = finish_roughness
-    transmission = finish_transmission if finish_transmission is not None else 0.0
+    # Pattern colors are always fully opaque, no transmission
+    transmission = 0.0
     alpha = stripe_color[3] if len(stripe_color) > 3 else 1.0
 
     sw = max(0.05, min(1.0, float(stripe_width)))

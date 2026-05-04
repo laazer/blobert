@@ -20,7 +20,13 @@ from typing import Any, Mapping
 
 import bpy
 
-from src.materials.material_types import FeatureZoneOptions, ZoneTextureOptions
+from src.materials.material_types import (
+    FeatureZoneOptions,
+    GradientFill,
+    ImageFill,
+    SolidFill,
+    ZoneTextureOptions,
+)
 from src.materials.spots_composite_debug import log_spots_composite
 
 
@@ -56,7 +62,10 @@ def apply_spots_zone_pattern(
     from src.materials.uv_atlas import resolved_asset_path_for_image_sampling
     from src.utils.texture_asset_loader import get_texture_asset_filepath
 
-    spot_pattern_id = settings.spot_pattern_image_asset_id()
+    # Check if pattern_fill is an image (that's the spot pattern)
+    spot_pattern_id = settings.pattern_fill.asset_id if isinstance(settings.pattern_fill, ImageFill) else ""
+    pattern_uv_rect = settings.pattern_fill.uv_rect if isinstance(settings.pattern_fill, ImageFill) else None
+
     under_asset, under_path = resolve_spots_composite_underlay(
         zone=zone,
         build_options=build_options,
@@ -65,8 +74,25 @@ def apply_spots_zone_pattern(
         spot_pattern_id=spot_pattern_id,
     )
     has_file_underlay = bool(under_asset or under_path)
-    spots_bg_hex = "ffffff" if has_file_underlay else settings.spot_bg_color.resolved_hex()
-    spot_hex = settings.spot_color.resolved_hex()
+
+    # Extract hex values for procedural generation
+    if isinstance(settings.pattern_fill, SolidFill):
+        spot_hex = settings.pattern_fill.hex_value
+    elif isinstance(settings.pattern_fill, GradientFill):
+        spot_hex = settings.pattern_fill.hex_a
+    else:  # ImageFill
+        spot_hex = ""
+
+    if isinstance(settings.background_fill, SolidFill):
+        spots_bg_hex = settings.background_fill.hex_value
+    elif isinstance(settings.background_fill, GradientFill):
+        spots_bg_hex = settings.background_fill.hex_a
+    else:  # ImageFill
+        spots_bg_hex = ""
+
+    # Use white for background when overlaying
+    if has_file_underlay and not spots_bg_hex:
+        spots_bg_hex = "ffffff"
     if not spot_hex and has_file_underlay and not spot_pattern_id:
         spot_hex = "000000"
 
@@ -87,7 +113,7 @@ def apply_spots_zone_pattern(
             spot_plate_mask_mode=settings.spot_plate_mask_mode,
             spot_plate_dark_threshold=settings.spot_plate_dark_threshold,
             spot_plate_mask_soft_edges=settings.spot_plate_mask_soft_edges,
-            uv_rect=settings.spot_pattern_image_uv_rect(),
+            uv_rect=pattern_uv_rect,
         )
     else:
         _under = under_asset or (str(under_path) if under_path else "(none)")
@@ -98,8 +124,8 @@ def apply_spots_zone_pattern(
         spots_mat = material_for_spots_zone(
             base_palette_name=base_palette_name,
             finish=settings.finish,
-            spot_hex=spot_hex,
-            bg_hex=spots_bg_hex,
+            pattern_fill=settings.pattern_fill,
+            background_fill=settings.background_fill,
             density=settings.spot_density,
             zone_hex_fallback=settings.zone_hex,
             instance_suffix=instance_suffix,
