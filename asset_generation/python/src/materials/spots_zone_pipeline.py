@@ -15,16 +15,13 @@ Call sites: ``material_system.apply_zone_texture_pattern_overrides`` and
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Mapping
 
 import bpy
 
 from src.materials.material_types import (
     FeatureZoneOptions,
-    GradientFill,
     ImageFill,
-    SolidFill,
     ZoneTextureOptions,
 )
 from src.materials.spots_composite_debug import log_spots_composite
@@ -55,56 +52,20 @@ def apply_spots_zone_pattern(
     from src.materials.material_system import (
         material_for_spots_zone,
         material_for_spots_zone_from_image_asset,
-        overlay_base_image_on_zone_material,
-        resolve_spots_composite_underlay,
-        resolve_zone_color_image_uv_rect,
     )
-    from src.materials.uv_atlas import resolved_asset_path_for_image_sampling
-    from src.utils.texture_asset_loader import get_texture_asset_filepath
 
     # Check if pattern_fill is an image (that's the spot pattern)
     spot_pattern_id = settings.pattern_fill.asset_id if isinstance(settings.pattern_fill, ImageFill) else ""
     pattern_uv_rect = settings.pattern_fill.uv_rect if isinstance(settings.pattern_fill, ImageFill) else None
 
-    under_asset, under_path = resolve_spots_composite_underlay(
-        zone=zone,
-        build_options=build_options,
-        zone_feature=zone_feature,
-        settings=settings,
-        spot_pattern_id=spot_pattern_id,
-    )
-    has_file_underlay = bool(under_asset or under_path)
-
-    # Extract hex values for procedural generation
-    if isinstance(settings.pattern_fill, SolidFill):
-        spot_hex = settings.pattern_fill.hex_value
-    elif isinstance(settings.pattern_fill, GradientFill):
-        spot_hex = settings.pattern_fill.hex_a
-    else:  # ImageFill
-        spot_hex = ""
-
-    if isinstance(settings.background_fill, SolidFill):
-        spots_bg_hex = settings.background_fill.hex_value
-    elif isinstance(settings.background_fill, GradientFill):
-        spots_bg_hex = settings.background_fill.hex_a
-    else:  # ImageFill
-        spots_bg_hex = ""
-
-    # Use white for background when overlaying
-    if has_file_underlay and not spots_bg_hex:
-        spots_bg_hex = "ffffff"
-    if not spot_hex and has_file_underlay and not spot_pattern_id:
-        spot_hex = "000000"
-
     instance_suffix = f"{zone}_tex_spot"
 
     if spot_pattern_id:
-        _under = under_asset or (str(under_path) if under_path else "") or "(none; full plate on UV only)"
+        # Image-based spots: load image directly, apply UV rect
         log_spots_composite(
-            f"apply_spots_zone_pattern zone={zone}: IMAGE spot plate asset_id={spot_pattern_id!r}; "
-            f"composite_underlay={_under!r}",
+            f"apply_spots_zone_pattern zone={zone}: IMAGE spot plate asset_id={spot_pattern_id!r}",
         )
-        spots_mat = material_for_spots_zone_from_image_asset(
+        return material_for_spots_zone_from_image_asset(
             base_palette_name=base_palette_name,
             finish=settings.finish,
             asset_id=spot_pattern_id,
@@ -115,36 +76,17 @@ def apply_spots_zone_pattern(
             spot_plate_mask_soft_edges=settings.spot_plate_mask_soft_edges,
             uv_rect=pattern_uv_rect,
         )
-    else:
-        _under = under_asset or (str(under_path) if under_path else "(none)")
-        log_spots_composite(
-            f"apply_spots_zone_pattern zone={zone}: procedural spots spot_hex={spot_hex!r} "
-            f"bg_hex={spots_bg_hex!r}; composite_underlay={_under!r}",
-        )
-        spots_mat = material_for_spots_zone(
-            base_palette_name=base_palette_name,
-            finish=settings.finish,
-            pattern_fill=settings.pattern_fill,
-            background_fill=settings.background_fill,
-            density=settings.spot_density,
-            zone_hex_fallback=settings.zone_hex,
-            instance_suffix=instance_suffix,
-        )
 
-    if under_asset:
-        u_uv = resolve_zone_color_image_uv_rect(zone, build_options, zone_feature)
-        try:
-            base_ap = Path(get_texture_asset_filepath(under_asset))
-            resolved_u = resolved_asset_path_for_image_sampling(base_ap, u_uv)
-            if resolved_u != base_ap:
-                return overlay_base_image_on_zone_material(spots_mat, base_path=resolved_u)
-        except (ValueError, OSError, TypeError):
-            pass
-        return overlay_base_image_on_zone_material(
-            spots_mat,
-            asset_id=under_asset,
-            underlay_uv_rect=u_uv,
-        )
-    if under_path is not None:
-        return overlay_base_image_on_zone_material(spots_mat, base_path=under_path)
-    return spots_mat
+    # Procedural spots: generate dot texture with pattern/background colors
+    log_spots_composite(
+        f"apply_spots_zone_pattern zone={zone}: procedural spots",
+    )
+    return material_for_spots_zone(
+        base_palette_name=base_palette_name,
+        finish=settings.finish,
+        pattern_fill=settings.pattern_fill,
+        background_fill=settings.background_fill,
+        density=settings.spot_density,
+        zone_hex_fallback=settings.zone_hex,
+        instance_suffix=instance_suffix,
+    )

@@ -659,7 +659,7 @@ def material_for_spots_zone(
     # Spots color from hex or fallback to zone color
     spot_color = _rgba_from_hex_or_fallback(spot_hex, zone_rgba)
 
-    finish_roughness, _finish_metallic, finish_transmission = ENEMY_FINISH_PRESETS.get(
+    finish_roughness, _finish_metallic, _finish_transmission = ENEMY_FINISH_PRESETS.get(
         finish,
         ENEMY_FINISH_PRESETS["default"],
     )
@@ -668,7 +668,8 @@ def material_for_spots_zone(
     roughness = 0.75
     if finish_roughness is not None:
         roughness = finish_roughness
-    transmission = finish_transmission if finish_transmission is not None else 0.0
+    # Pattern colors are always fully opaque, no transmission
+    transmission = 0.0
     alpha = spot_color[3] if len(spot_color) > 3 else 1.0
 
     new_name = f"{base_palette_name}__feat_{instance_suffix}"
