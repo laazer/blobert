@@ -95,6 +95,8 @@ def prepare_run_environment(
     env["PYTHONPATH"] = os.pathsep.join(
         [root, bin_path, src_path] + env.get("PYTHONPATH", "").split(os.pathsep)
     )
+    # Stream subprocess logs promptly to SSE clients instead of block-buffering.
+    env["PYTHONUNBUFFERED"] = "1"
     if build_options and str(build_options).strip():
         env["BLOBERT_BUILD_OPTIONS_JSON"] = str(build_options).strip()
     if output_draft and cmd in ("animated", "player", "level"):

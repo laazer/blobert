@@ -425,6 +425,10 @@ export function ImageMode({
   const [error, setError] = useState<string>("");
   const [textures, setTextures] = useState<TextureAsset[]>([]);
   const [loadingTextures, setLoadingTextures] = useState(true);
+  const resolvedAssetId =
+    _assetId ??
+    textures.find((texture) => preview && texture.url === preview)?.id ??
+    "";
 
   useEffect(() => {
     (async () => {
@@ -473,11 +477,9 @@ export function ImageMode({
     onFileChange(null, "", "", null);
   };
 
-  const handleSelectTexture = (texture: TextureAsset & { url?: string }) => {
+  const handleSelectTexture = (texture: TextureAsset) => {
     setError("");
-    if (texture.url) {
-      onFileChange(null, texture.url, texture.id, null);
-    }
+    onFileChange(null, texture.url, texture.id, null);
   };
 
   const fileName = file?.name || "No file selected";
@@ -495,16 +497,15 @@ export function ImageMode({
             }}
           >
             {textures.map((texture) => {
-              const textureWithUrl = texture as TextureAsset & { url?: string };
               return (
                 <button
-                  key={textureWithUrl.id}
+                  key={texture.id}
                   type="button"
-                  onClick={() => handleSelectTexture(textureWithUrl)}
+                  onClick={() => handleSelectTexture(texture)}
                   disabled={disabled}
-                  title={textureWithUrl.display_name}
+                  title={texture.display_name}
                   style={{
-                    background: preview === textureWithUrl.url ? "#0e639c" : "#3c3c3c",
+                    background: preview === texture.url ? "#0e639c" : "#3c3c3c",
                     border: "1px solid #555555",
                     borderRadius: 3,
                     padding: 0,
@@ -516,8 +517,8 @@ export function ImageMode({
                   }}
                 >
                   <img
-                    src={textureWithUrl.url}
-                    alt={textureWithUrl.display_name}
+                    src={texture.url}
+                    alt={texture.display_name}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -569,7 +570,7 @@ export function ImageMode({
               previewUrl={preview}
               uvRect={uvRect}
               disabled={disabled}
-              onUvRectChange={(r) => onFileChange(null, preview, _assetId, r)}
+              onUvRectChange={(r) => onFileChange(null, preview, resolvedAssetId, r)}
             />
             <p style={atlasHint}>
               <strong style={{ color: "#bbb" }}>Wheel</strong> zooms toward the cursor;{" "}
@@ -582,7 +583,7 @@ export function ImageMode({
                 <span style={colorPickerStyles.previewText}>{stringifyImageUvRect(uvRect)}</span>
                 <button
                   type="button"
-                  onClick={() => onFileChange(null, preview, _assetId, null)}
+                  onClick={() => onFileChange(null, preview, resolvedAssetId, null)}
                   disabled={disabled}
                   style={{
                     background: "#3c3c3c",

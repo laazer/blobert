@@ -234,11 +234,11 @@ def test_overlay_base_image_returns_early_for_empty_asset() -> None:
     assert ms.overlay_base_image_on_zone_material(mat, asset_id="", base_path=None) is mat
 
 
-def test_overlay_mask_combine_uses_cropped_pattern_path_when_underlay_uv_rect(
+def test_overlay_mask_combine_crops_underlay_path_when_underlay_uv_rect(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Atlas UV rect must affect mask composite (same as multiply fallback), not only full-atlas mask."""
+    """Atlas UV rect must crop underlay/base for mask composite, not the spot plate pattern."""
     mat, _links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
     base_color_socket = bsdf.inputs["Base Color"]
     pattern_img = MagicMock()
@@ -250,9 +250,10 @@ def test_overlay_mask_combine_uses_cropped_pattern_path_when_underlay_uv_rect(
     fake_pat = tmp_path / "full_atlas.png"
     fake_pat.write_bytes(b"x")
 
+    cropped_for_combine = Path("/cropped_for_combine.png")
     monkeypatch.setattr(
         "src.materials.spot_overlay.resolved_asset_path_for_image_sampling",
-        lambda p, uv: Path("/cropped_for_combine.png") if uv else Path(p),
+        lambda p, uv: cropped_for_combine if uv else Path(p),
     )
     combined = MagicMock()
     with (
@@ -267,7 +268,8 @@ def test_overlay_mask_combine_uses_cropped_pattern_path_when_underlay_uv_rect(
             underlay_uv_rect=(0.2, 0.3, 0.8, 0.9),
         )
     combine_fn.assert_called_once()
-    assert combine_fn.call_args[0][0] == Path("/cropped_for_combine.png")
+    assert combine_fn.call_args[0][0] == fake_pat
+    assert combine_fn.call_args[0][1] == cropped_for_combine
 
 
 def test_overlay_base_image_prefers_tagged_spot_image() -> None:
@@ -290,6 +292,9 @@ def test_overlay_base_image_prefers_tagged_spot_image() -> None:
     existing_src.node.image = MagicMock(name="non_pattern_image")
     bsdf.inputs["Base Color"].links[0].from_socket = existing_src
     tagged_img = MagicMock(name="tagged_spot")
+    tagged_img.filepath_raw = ""
+    tagged_img.file_format = "PNG"
+    tagged_img.save = MagicMock()
     with (
         patch.object(ms.bpy.data.images, "get", return_value=tagged_img),
         patch("src.materials.spot_overlay.combine_pattern_over_base_image", return_value=MagicMock()) as combine,
@@ -298,7 +303,7 @@ def test_overlay_base_image_prefers_tagged_spot_image() -> None:
     ):
         ms.overlay_base_image_on_zone_material(mat, asset_id="demo_textures3")
     assert combine.called
-    assert combine.call_args.args[0] is None
+    assert combine.call_args.args[0] is not None
 
 
 def test_overlay_base_image_enables_nodes_and_returns_when_node_tree_missing() -> None:

@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -21,8 +23,19 @@ from src.materials.spots_composite_debug import log_spots_composite
 from src.materials.uv_atlas import (
     is_full_uv_rect,
     mapping_scale_location_for_uv_rect,
+    resolved_asset_path_for_image_sampling,
 )
 from src.utils.texture_asset_loader import get_texture_asset_filepath
+
+
+def _pattern_path_for_mask_combine(
+    pattern_path: Path | None,
+    uv_rect: tuple[float, float, float, float] | None,
+) -> Path | None:
+    """Keep spot plate path unchanged; UV rect applies to underlay/base selection."""
+    if pattern_path is None:
+        return None
+    return Path(pattern_path)
 
 
 def _find_principled_bsdf(nodes: Any) -> object | None:
@@ -101,6 +114,36 @@ def _resolve_pattern_sources(
         if p.exists():
             pattern_path = p
     return pattern_path, pattern_img
+
+
+def _persist_image_to_temp_png(image: bpy.types.Image) -> Path | None:
+    """Best-effort disk path for an in-memory Blender image."""
+    fd, tmp_path = tempfile.mkstemp(suffix=".png", prefix="blobert_spot_pattern_")
+    os.close(fd)
+    out_path = Path(tmp_path)
+    old_raw = image.filepath_raw or ""
+    old_fmt = image.file_format or ""
+    try:
+        image.filepath_raw = str(out_path)
+        image.file_format = "PNG"
+        image.save()
+        return out_path
+    except Exception:
+        try:
+            out_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return None
+    finally:
+        try:
+            image.filepath_raw = old_raw
+        except Exception:
+            pass
+        try:
+            if old_fmt:
+                image.file_format = old_fmt
+        except Exception:
+            pass
 
 
 def _wire_tex_uv_to_base_color(
@@ -200,6 +243,10 @@ def overlay_base_image_onto_material(
             resolved_base = Path(base_path).resolve()
         else:
             resolved_base = Path(get_texture_asset_filepath(asset_id))
+        if underlay_uv_rect is not None and not is_full_uv_rect(underlay_uv_rect):
+            resolved_base = Path(
+                resolved_asset_path_for_image_sampling(resolved_base, underlay_uv_rect)
+            )
         underlay_img = bpy.data.images.load(str(resolved_base))
         underlay_img.pack()
     except (ValueError, OSError, IOError, Exception) as e:
@@ -214,6 +261,8 @@ def overlay_base_image_onto_material(
     lg(f"overlay_underlay: loaded base (underlay) asset_id={asset_id!r} path={resolved_base}")
 
     pattern_path, pattern_img = _resolve_pattern_sources(mat, existing_src)
+    if pattern_path is None and pattern_img is not None:
+        pattern_path = _persist_image_to_temp_png(pattern_img)
 
     if pattern_path is not None or pattern_img is not None:
         pattern_name = str(
@@ -226,8 +275,9 @@ def overlay_base_image_onto_material(
             f"over base_path={resolved_base!s}",
         )
         mask_mode, dark_thr, mask_soft_edges = _spot_mask_params(mat)
+        pattern_for_combine = _pattern_path_for_mask_combine(pattern_path, underlay_uv_rect)
         combined_img = combine_pattern_over_base_image(
-            pattern_path,
+            pattern_for_combine,
             resolved_base,
             combined_name,
             mask_mode=mask_mode,
@@ -241,7 +291,15 @@ def overlay_base_image_onto_material(
                 "overlay_underlay: success → base color uses combined image "
                 f"{combined_img.name!r} (mask blends pattern × base)",
             )
-            _wire_tex_uv_to_base_color(nodes, links, bc_in, combined_img, uv_rect=None)
+            # Keep UV selection behavior consistent with non-spots paths:
+            # if a rect is selected, apply it at final sampling too.
+            _wire_tex_uv_to_base_color(
+                nodes,
+                links,
+                bc_in,
+                combined_img,
+                uv_rect=underlay_uv_rect,
+            )
             return mat
         lg(
             "overlay_underlay: combine_pattern_over_base_image returned None "

@@ -61,6 +61,23 @@ def test_fill_material_gradient_mode_reads_a_b_direction() -> None:
         field="pattern",
         build_options={
             "feat_body_texture_pattern_mode": "gradient",
+            "feat_body_texture_pattern_grad_a": "ff0000",
+            "feat_body_texture_pattern_grad_b": "0000ff",
+            "feat_body_texture_pattern_grad_direction": "vertical",
+        },
+    )
+    assert isinstance(fill, GradientFill)
+    assert fill.hex_a == "ff0000"
+    assert fill.hex_b == "0000ff"
+    assert fill.direction == "vertical"
+
+
+def test_fill_material_gradient_mode_supports_legacy_gradient_keys() -> None:
+    fill = fill_material_from_build_options(
+        zone="body",
+        field="pattern",
+        build_options={
+            "feat_body_texture_pattern_mode": "gradient",
             "feat_body_texture_pattern_a": "ff0000",
             "feat_body_texture_pattern_b": "0000ff",
             "feat_body_texture_pattern_direction": "vertical",
@@ -246,8 +263,8 @@ def test_zone_texture_options_constructs_fill_materials() -> None:
             "feat_body_texture_pattern_mode": "single",
             "feat_body_texture_pattern_hex": "aabb00",
             "feat_body_texture_background_mode": "gradient",
-            "feat_body_texture_background_a": "ff0000",
-            "feat_body_texture_background_b": "00ff00",
+            "feat_body_texture_background_grad_a": "ff0000",
+            "feat_body_texture_background_grad_b": "00ff00",
         },
     )
     assert isinstance(opts.pattern_fill, SolidFill)

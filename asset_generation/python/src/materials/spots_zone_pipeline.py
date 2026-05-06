@@ -24,6 +24,7 @@ from src.materials.material_types import (
     ZoneTextureOptions,
 )
 from src.materials.spots_composite_debug import log_spots_composite
+from src.materials.uv_atlas import parse_uv_rect
 
 
 def spot_density_payload_usable(build_options: Mapping[str, Any], zone: str) -> bool:
@@ -51,6 +52,9 @@ def apply_spots_zone_pattern(
     from src.materials.material_system import (
         material_for_spots_zone,
         material_for_spots_zone_from_image_asset,
+        overlay_base_image_on_zone_material,
+        resolve_texture_pattern_overlay_uv_rect,
+        resolve_zone_color_image_asset_id,
     )
 
     # Check if pattern_fill is an image (that's the spot pattern)
@@ -80,7 +84,7 @@ def apply_spots_zone_pattern(
     log_spots_composite(
         f"apply_spots_zone_pattern zone={zone}: procedural spots",
     )
-    return material_for_spots_zone(
+    spots_mat = material_for_spots_zone(
         base_palette_name=base_palette_name,
         finish=settings.finish,
         pattern_fill=settings.pattern_fill,
@@ -89,3 +93,33 @@ def apply_spots_zone_pattern(
         zone_hex_fallback=settings.zone_hex,
         instance_suffix=instance_suffix,
     )
+
+    # Match stripes/checkerboard behavior: when background fill is an image, overlay it under spots.
+    bg_fill = settings.background_fill
+    if isinstance(bg_fill, ImageFill) and bg_fill.asset_id:
+        bg_uv_rect = bg_fill.uv_rect
+        if bg_uv_rect is None:
+            # Defensive fallback: honor raw build-options UV payload if fill parsing missed it.
+            bg_uv_rect = parse_uv_rect(
+                build_options.get(f"feat_{zone}_texture_background_image_uv_rect")
+            )
+        # Procedural spots are generated as "ink over white holes"; make composite policy explicit.
+        # This avoids auto+blur behavior washing out thin spot dots on image underlays.
+        spots_mat["blobert_spot_plate_mask_mode"] = "white_holes"
+        spots_mat["blobert_spot_plate_mask_soft_edges"] = 0
+        zone_image_asset_id = resolve_zone_color_image_asset_id(zone, build_options, zone_feature)
+        underlay_uv = resolve_texture_pattern_overlay_uv_rect(
+            zone=zone,
+            build_options=build_options,
+            zone_feature=zone_feature,
+            pattern_asset_id=bg_fill.asset_id,
+            zone_image_asset_id=zone_image_asset_id,
+            channel_uv_rect=bg_uv_rect,
+        )
+        return overlay_base_image_on_zone_material(
+            spots_mat,
+            asset_id=bg_fill.asset_id,
+            underlay_uv_rect=underlay_uv,
+        )
+
+    return spots_mat

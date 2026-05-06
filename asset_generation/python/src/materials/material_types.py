@@ -191,9 +191,20 @@ class GradientFill:
     ) -> "GradientFill":
         """Construct GradientFill from build_options flat dict."""
         prefix = f"feat_{zone}_texture_{field}"
-        hex_a = str(build_options.get(f"{prefix}_a", "") or "")
-        hex_b = str(build_options.get(f"{prefix}_b", "") or "")
-        direction = str(build_options.get(f"{prefix}_direction", "horizontal") or "horizontal")
+        # Canonical keys are *_grad_*; keep *_a/*_b/*_direction fallback for legacy payloads.
+        hex_a = str(
+            build_options.get(f"{prefix}_grad_a", build_options.get(f"{prefix}_a", "")) or ""
+        )
+        hex_b = str(
+            build_options.get(f"{prefix}_grad_b", build_options.get(f"{prefix}_b", "")) or ""
+        )
+        direction = str(
+            build_options.get(
+                f"{prefix}_grad_direction",
+                build_options.get(f"{prefix}_direction", "horizontal"),
+            )
+            or "horizontal"
+        )
         return cls(hex_a=hex_a, hex_b=hex_b, direction=direction)
 
 

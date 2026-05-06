@@ -104,6 +104,22 @@ def _create_png(width: int, height: int, pixels: list[float]) -> bytes:
     return signature + ihdr + idat + iend
 
 
+def write_rgba_buffer_to_gradients_png(
+    width: int,
+    height: int,
+    pixels: list[float],
+    img_name: str,
+) -> Path:
+    """Write RGBA float buffer (Blender ``Image.pixels`` layout) to ``animated_exports/gradients``."""
+    png_data = _create_png(width, height, pixels)
+    gradient_dir = Path(__file__).parent.parent.parent / "animated_exports" / "gradients"
+    gradient_dir.mkdir(parents=True, exist_ok=True)
+    safe = sanitize_image_label(img_name)
+    path = gradient_dir / f"{safe}.png"
+    path.write_bytes(png_data)
+    return path
+
+
 def create_gradient_png_and_load(
     width: int,
     height: int,
@@ -322,6 +338,84 @@ def create_stripes_png_and_load(
     return img
 
 
+def _hex_to_rgba_for_spot_texture(
+    hex_str: str,
+    default_rgba: tuple[float, float, float, float],
+    *,
+    allow_invalid: bool = False,
+) -> tuple[float, float, float, float]:
+    """Parse 6-char hex string to RGBA or return default."""
+    raw = (hex_str or "").strip()
+    h = raw.lstrip("#").lower()
+    if not h:
+        return default_rgba
+    if raw.startswith("#"):
+        if raw.count("#") > 1:
+            if allow_invalid:
+                return default_rgba
+            raise ValueError("hex color must be valid hexadecimal")
+    elif any(ch not in "0123456789abcdefABCDEF" for ch in raw):
+        if allow_invalid:
+            return default_rgba
+        raise ValueError("hex color must be valid hexadecimal")
+    if len(h) != 6:
+        if allow_invalid:
+            return default_rgba
+        raise ValueError(f"hex color must be 6 characters (RRGGBB), got {h!r}")
+    try:
+        r = int(h[0:2], 16) / 255.0
+        g = int(h[2:4], 16) / 255.0
+        b = int(h[4:6], 16) / 255.0
+        return (r, g, b, 1.0)
+    except ValueError as e:
+        if allow_invalid:
+            return default_rgba
+        raise ValueError("hex color must be valid hexadecimal") from e
+
+
+def _spots_grid_pixel_buffer(
+    width: int,
+    height: int,
+    density_f: float,
+    spot_pattern: str,
+    spot_rgba: tuple[float, float, float, float],
+    bg_rgba: tuple[float, float, float, float],
+) -> list[float]:
+    """RGBA for spots grid/hex pattern — bottom row first (Blender layout)."""
+    buf = [0.0] * (width * height * 4)
+    grid_scale = max(0.1, density_f)
+    spot_radius = 0.35
+    pat = str(spot_pattern or "grid").strip().lower()
+    if pat not in ("grid", "hex"):
+        pat = "grid"
+
+    for y in range(height):
+        for x in range(width):
+            u = (x + 0.5) / width if width > 0 else 0.5
+            v = (y + 0.5) / height if height > 0 else 0.5
+            v_scaled = v * grid_scale
+            row = math.floor(v_scaled)
+            if pat == "hex":
+                u_scaled = u * grid_scale + (row % 2) * 0.5
+                u_fract = u_scaled - math.floor(u_scaled)
+                v_fract = v_scaled - row
+            else:
+                u_scaled = u * grid_scale
+                u_fract = u_scaled - math.floor(u_scaled)
+                v_fract = v_scaled - math.floor(v_scaled)
+
+            du = u_fract - 0.5
+            dv = v_fract - 0.5
+            distance = math.sqrt(du * du + dv * dv)
+            rgba = spot_rgba if distance < spot_radius else bg_rgba
+            idx = (y * width + x) * 4
+            buf[idx] = rgba[0]
+            buf[idx + 1] = rgba[1]
+            buf[idx + 2] = rgba[2]
+            buf[idx + 3] = rgba[3]
+    return buf
+
+
 def spots_texture_generator(
     width: int,
     height: int,
@@ -361,99 +455,15 @@ def spots_texture_generator(
     if not isinstance(bg_color_hex, str):
         raise TypeError("bg_color_hex must be a string")
 
-    def _hex_to_rgba(hex_str: str, default_rgba: tuple[float, float, float, float], allow_invalid: bool = False) -> tuple[float, float, float, float]:
-        """Parse 6-char hex string to RGBA or return default.
-
-        Args:
-            hex_str: Hex color string
-            default_rgba: Fallback color if string is empty
-            allow_invalid: If False, raise ValueError for invalid non-empty strings
-
-        Returns:
-            RGBA tuple
-        """
-        raw = (hex_str or "").strip()
-        h = raw.lstrip("#").lower()
-        if not h:
-            return default_rgba
-        if raw.startswith("#"):
-            if raw.count("#") > 1:
-                if allow_invalid:
-                    return default_rgba
-                raise ValueError("hex color must be valid hexadecimal")
-        elif any(ch not in "0123456789abcdefABCDEF" for ch in raw):
-            if allow_invalid:
-                return default_rgba
-            raise ValueError("hex color must be valid hexadecimal")
-        if len(h) != 6:
-            if allow_invalid:
-                return default_rgba
-            raise ValueError(f"hex color must be 6 characters (RRGGBB), got {h!r}")
-        try:
-            r = int(h[0:2], 16) / 255.0
-            g = int(h[2:4], 16) / 255.0
-            b = int(h[4:6], 16) / 255.0
-            return (r, g, b, 1.0)
-        except ValueError as e:
-            if allow_invalid:
-                return default_rgba
-            raise ValueError("hex color must be valid hexadecimal") from e
-
-    # Parse colors - spot color can raise ValueError if non-empty and invalid
-    spot_rgba = _hex_to_rgba(spot_color_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False)
-    # Background color defaults to white if invalid
-    bg_rgba = _hex_to_rgba(bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True)
-
-    # Build pixel buffer (bottom-row-first, Blender convention)
-    buf = [0.0] * (width * height * 4)
-
-    # Linear grid scaling: density controls number of spot grid divisions per unit
-    # density=0.1: 0.1 divisions (1 huge spot)
-    # density=1.0: 1 division (1 baseline spot)
-    # density=5.0: 5 divisions (5x5 = 25 spots)
-    # For fractional densities < 1, we still get sparse spots by making them bigger
-    grid_scale = max(0.1, density_f)  # Allow fractional divisions
-    spot_radius = 0.35  # In normalized UV space per grid cell
-    pat = str(spot_pattern or "grid").strip().lower()
-    if pat not in ("grid", "hex"):
-        pat = "grid"
-
-    for y in range(height):
-        for x in range(width):
-            # Normalized UV coordinates
-            u = (x + 0.5) / width if width > 0 else 0.5
-            v = (y + 0.5) / height if height > 0 else 0.5
-
-            # Scale by density; optional brick offset for hex-like staggered rows
-            v_scaled = v * grid_scale
-            row = math.floor(v_scaled)
-            if pat == "hex":
-                u_scaled = u * grid_scale + (row % 2) * 0.5
-                u_fract = u_scaled - math.floor(u_scaled)
-                v_fract = v_scaled - row
-            else:
-                u_scaled = u * grid_scale
-                u_fract = u_scaled - math.floor(u_scaled)
-                v_fract = v_scaled - math.floor(v_scaled)
-
-            # Distance from cell center (0.5, 0.5)
-            du = u_fract - 0.5
-            dv = v_fract - 0.5
-            distance = math.sqrt(du * du + dv * dv)
-
-            # Choose spot or background color
-            if distance < spot_radius:
-                rgba = spot_rgba
-            else:
-                rgba = bg_rgba
-
-            # Store in buffer
-            idx = (y * width + x) * 4
-            buf[idx] = rgba[0]
-            buf[idx + 1] = rgba[1]
-            buf[idx + 2] = rgba[2]
-            buf[idx + 3] = rgba[3]
-
+    spot_rgba = _hex_to_rgba_for_spot_texture(
+        spot_color_hex, (0.0, 0.0, 0.0, 1.0), allow_invalid=False
+    )
+    bg_rgba = _hex_to_rgba_for_spot_texture(
+        bg_color_hex, (1.0, 1.0, 1.0, 1.0), allow_invalid=True
+    )
+    buf = _spots_grid_pixel_buffer(
+        width, height, density_f, spot_pattern, spot_rgba, bg_rgba
+    )
     return _create_png(width, height, buf)
 
 

@@ -685,3 +685,39 @@ def test_spots_procedural_with_solid_fills(
     mock_spots.assert_called_once()
     assert isinstance(mock_spots.call_args.kwargs["pattern_fill"], SolidFill)
     assert isinstance(mock_spots.call_args.kwargs["background_fill"], SolidFill)
+
+
+@mock.patch("src.materials.material_system.overlay_base_image_on_zone_material")
+@mock.patch("src.materials.material_system.material_for_spots_zone")
+def test_spots_solid_pattern_with_image_background_overlays_underlay(
+    mock_spots: mock.MagicMock,
+    mock_overlay: mock.MagicMock,
+) -> None:
+    """Spots mode overlays selected background image under a solid spot plate (with UV rect)."""
+    base = _create_mock_material("pattern_base")
+    spots_mat = _create_mock_material("spots_mat")
+    overlaid = _create_mock_material("spots_overlaid")
+    mock_spots.return_value = spots_mat
+    mock_overlay.return_value = overlaid
+
+    out = apply_zone_texture_pattern_overrides(
+        {"body": base},
+        {
+            "feat_body_texture_mode": "spots",
+            "feat_body_texture_pattern_mode": "single",
+            "feat_body_texture_pattern_hex": "ff0000",
+            "feat_body_texture_background_mode": "image",
+            "feat_body_texture_background_image_id": "demo_textures3",
+            "feat_body_texture_background_image_uv_rect": '{"u0":0.1,"v0":0.2,"u1":0.8,"v1":0.9}',
+            "feat_body_texture_spot_density": 1.0,
+        },
+    )
+
+    assert out["body"] is overlaid
+    mock_spots.assert_called_once()
+    mock_overlay.assert_called_once()
+    assert mock_overlay.call_args.kwargs["asset_id"] == "demo_textures3"
+    assert mock_overlay.call_args.kwargs["underlay_uv_rect"] == (0.1, 0.2, 0.8, 0.9)
+    # Procedural spots should use explicit white-holes compositing to preserve dot visibility.
+    spots_mat.__setitem__.assert_any_call("blobert_spot_plate_mask_mode", "white_holes")
+    spots_mat.__setitem__.assert_any_call("blobert_spot_plate_mask_soft_edges", 0)

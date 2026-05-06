@@ -141,8 +141,8 @@ _FEAT_ZONE_FLAT_KEY = re.compile(
 _FEAT_LIMB_PART_FLAT_KEY = re.compile(r"^feat_limb_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_JOINT_PART_FLAT_KEY = re.compile(r"^feat_joint_([a-z0-9_]+)_(finish|hex)$")
 _FEAT_PATTERN_COLOR_KEY = re.compile(
-    r"^feat_(body|head|limbs|joints|extra)_texture_(spot_color|spot_bg_color|stripe_color|stripe_bg_color)_"
-    r"(hex|a|b|direction|mode|image_id|image_preview|image_uv_rect)$"
+    r"^feat_(body|head|limbs|joints|extra)_texture_(pattern|background)_"
+    r"(hex|a|b|grad_a|grad_b|direction|grad_direction|mode|image_id|image_preview|image_uv_rect)$"
 )
 
 _EXTRA_KINDS_ORDER: tuple[str, ...] = ("none", "shell", "spikes", "horns", "bulbs")
@@ -229,8 +229,61 @@ def feature_zones(slug: str) -> tuple[str, ...]:
     return _feature_zones(slug)
 
 
+def _flatten_zone_texture_schema(schema: dict[str, Any]) -> list[dict[str, Any]]:
+    """Flatten organized zone texture schema into flat list of control definitions.
+
+    Used to convert from organized schema to API format.
+    Deduplicates controls that are shared between pattern types (e.g., stripes and checkerboard both use stripe_width).
+    """
+    out: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+
+    def add_control(control: dict[str, Any]) -> None:
+        """Add control if not already added (deduplication by key)."""
+        key = control.get("key")
+        if key and key not in seen_keys:
+            out.append(control)
+            seen_keys.add(key)
+
+    # Order matters: textureMode first, then pattern-related, then background-related, then patterns, then global
+    # Add textureMode first
+    if "textureMode" in schema:
+        add_control(schema["textureMode"])
+
+    # Add all pattern-related controls (pattern itself, then pattern_mode, pattern_hex, etc.)
+    for pattern_key in ["pattern", "pattern_mode", "pattern_hex", "pattern_grad_a", "pattern_grad_b",
+                       "pattern_grad_direction", "pattern_image_id", "pattern_image_preview", "pattern_image_uv_rect"]:
+        if pattern_key in schema:
+            add_control(schema[pattern_key])
+
+    # Add all background-related controls
+    for bg_key in ["background", "background_mode", "background_hex", "background_grad_a", "background_grad_b",
+                   "background_grad_direction", "background_image_id", "background_image_preview", "background_image_uv_rect"]:
+        if bg_key in schema:
+            add_control(schema[bg_key])
+
+    # Add pattern-specific controls (deduplicating shared keys)
+    if "patterns" in schema:
+        for pattern_name, pattern_controls in schema["patterns"].items():
+            for control_name, control in pattern_controls.items():
+                add_control(control)
+
+    # Add global controls
+    if "global" in schema:
+        for control_name, control in schema["global"].items():
+            add_control(control)
+
+    return out
+
+
 def _zone_texture_control_defs(slug: str) -> list[dict[str, Any]]:
-    return _zone_texture_control_defs_for_zones(_feature_zones(slug))
+    """Return flattened texture control definitions for all zones of a slug."""
+    zones = _feature_zones(slug)
+    out: list[dict[str, Any]] = []
+    for zone in zones:
+        schema = _zone_texture_schema_for_zone(zone)
+        out.extend(_flatten_zone_texture_schema(schema))
+    return out
 
 
 def _default_features_dict(slug: str) -> dict[str, dict[str, Any]]:
@@ -1211,134 +1264,242 @@ def eye_shape_pupil_control_defs() -> list[dict[str, Any]]:
     return _eye_shape_pupil_control_defs()
 
 
-def _texture_control_defs() -> list[dict[str, Any]]:
-    """Return the texture control defs shared by every animated slug."""
-    return [
-        {
-            "key": "texture_mode",
-            "label": "Texture mode",
+
+
+def _zone_texture_schema_for_zone(zone: str) -> dict[str, Any]:
+    """Build organized texture schema for a single zone.
+
+    Returns a hierarchical structure:
+    {
+        "textureMode": {...},
+        "pattern": {...},
+        "background": {...},
+        "patterns": {
+            "spots": {...},
+            "stripes": {...},
+            "checkerboard": {...}
+        },
+        "global": {...}
+    }
+    """
+    zone_label = _ZONE_LABEL.get(zone, zone.replace("_", " ").title())
+
+    return {
+        "textureMode": {
+            "key": f"feat_{zone}_texture_mode",
+            "label": f"{zone_label} — Texture mode",
             "type": "select_str",
             "options": list(_TEXTURE_MODE_OPTIONS),
             "default": "none",
         },
-        {
-            "key": "texture_grad_color_a",
-            "label": "Gradient color A",
-            "type": "str",
-            "default": "",
+        "pattern": {
+            "key": f"feat_{zone}_texture_pattern",
+            "label": f"{zone_label} — Pattern color",
+            "type": "fill_picker",
         },
-        {
-            "key": "texture_grad_color_b",
-            "label": "Gradient color B",
-            "type": "str",
-            "default": "",
-        },
-        {
-            "key": "texture_grad_direction",
-            "label": "Gradient direction",
+        "pattern_mode": {
+            "key": f"feat_{zone}_texture_pattern_mode",
+            "label": f"{zone_label} — Pattern fill type",
             "type": "select_str",
-            "options": list(_GRAD_DIRECTION_OPTIONS),
+            "options": ["single", "gradient", "image"],
+            "default": "single",
+        },
+        "pattern_hex": {
+            "key": f"feat_{zone}_texture_pattern_hex",
+            "label": f"{zone_label} — Pattern color (hex)",
+            "type": "str",
+            "default": "",
+        },
+        "pattern_grad_a": {
+            "key": f"feat_{zone}_texture_pattern_grad_a",
+            "label": f"{zone_label} — Pattern gradient color A",
+            "type": "str",
+            "default": "",
+        },
+        "pattern_grad_b": {
+            "key": f"feat_{zone}_texture_pattern_grad_b",
+            "label": f"{zone_label} — Pattern gradient color B",
+            "type": "str",
+            "default": "",
+        },
+        "pattern_grad_direction": {
+            "key": f"feat_{zone}_texture_pattern_grad_direction",
+            "label": f"{zone_label} — Pattern gradient direction",
+            "type": "select_str",
+            "options": ["horizontal", "vertical", "radial"],
             "default": "horizontal",
         },
-        {
-            "key": "texture_spot_color",
-            "label": "Spot color",
+        "pattern_image_id": {
+            "key": f"feat_{zone}_texture_pattern_image_id",
+            "label": f"{zone_label} — Pattern image asset ID",
             "type": "str",
             "default": "",
         },
-        {
-            "key": "texture_spot_bg_color",
-            "label": "Spot background color",
+        "pattern_image_preview": {
+            "key": f"feat_{zone}_texture_pattern_image_preview",
+            "label": f"{zone_label} — Pattern image preview",
             "type": "str",
             "default": "",
         },
-        {
-            "key": "texture_spot_pattern",
-            "label": "Spot layout",
+        "pattern_image_uv_rect": {
+            "key": f"feat_{zone}_texture_pattern_image_uv_rect",
+            "label": f"{zone_label} — Pattern image UV rect",
+            "type": "str",
+            "default": "",
+        },
+        "background": {
+            "key": f"feat_{zone}_texture_background",
+            "label": f"{zone_label} — Background color",
+            "type": "fill_picker",
+        },
+        "background_mode": {
+            "key": f"feat_{zone}_texture_background_mode",
+            "label": f"{zone_label} — Background fill type",
             "type": "select_str",
-            "options": list(_TEXTURE_SPOT_PATTERN_OPTIONS),
-            "default": _DEFAULT_TEXTURE_SPOT_PATTERN,
-            "segmented": True,
+            "options": ["single", "gradient", "image"],
+            "default": "single",
         },
-        {
-            "key": "texture_spot_density",
-            "label": "Spot density",
-            "type": "float",
-            "min": _TEXTURE_SPOT_DENSITY_MIN,
-            "max": _TEXTURE_SPOT_DENSITY_MAX,
-            "step": _TEXTURE_SPOT_DENSITY_STEP,
-            "default": _TEXTURE_SPOT_DENSITY_DEFAULT,
-        },
-        {
-            "key": "texture_stripe_color",
-            "label": "Stripe color",
+        "background_hex": {
+            "key": f"feat_{zone}_texture_background_hex",
+            "label": f"{zone_label} — Background color (hex)",
             "type": "str",
             "default": "",
         },
-        {
-            "key": "texture_stripe_bg_color",
-            "label": "Stripe background color",
+        "background_grad_a": {
+            "key": f"feat_{zone}_texture_background_grad_a",
+            "label": f"{zone_label} — Background gradient color A",
             "type": "str",
             "default": "",
         },
-        {
-            "key": "texture_stripe_width",
-            "label": "Stripe width",
-            "type": "float",
-            "min": _TEXTURE_STRIPE_WIDTH_MIN,
-            "max": _TEXTURE_STRIPE_WIDTH_MAX,
-            "step": _TEXTURE_STRIPE_WIDTH_STEP,
-            "default": _TEXTURE_STRIPE_WIDTH_DEFAULT,
+        "background_grad_b": {
+            "key": f"feat_{zone}_texture_background_grad_b",
+            "label": f"{zone_label} — Background gradient color B",
+            "type": "str",
+            "default": "",
         },
-        {
-            "key": "texture_stripe_direction",
-            "label": "Stripe preset",
+        "background_grad_direction": {
+            "key": f"feat_{zone}_texture_background_grad_direction",
+            "label": f"{zone_label} — Background gradient direction",
             "type": "select_str",
-            "options": list(_TEXTURE_STRIPE_PRESET_OPTIONS),
-            "default": _DEFAULT_TEXTURE_STRIPE_PRESET,
-            "segmented": True,
+            "options": ["horizontal", "vertical", "radial"],
+            "default": "horizontal",
         },
-        {
-            "key": "texture_stripe_rot_yaw",
-            "label": "Stripe yaw",
-            "type": "float",
-            "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
-            "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
-            "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
-            "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
-            "unit": "deg",
-        },
-        {
-            "key": "texture_stripe_rot_pitch",
-            "label": "Stripe pitch",
-            "type": "float",
-            "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
-            "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
-            "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
-            "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
-            "unit": "deg",
-        },
-        {
-            "key": "texture_asset_id",
-            "label": "Asset texture",
+        "background_image_id": {
+            "key": f"feat_{zone}_texture_background_image_id",
+            "label": f"{zone_label} — Background image asset ID",
             "type": "str",
             "default": "",
         },
-        {
-            "key": "texture_asset_tile_repeat",
-            "label": "Tile repeat",
-            "type": "float",
-            "min": _TEXTURE_ASSET_TILE_REPEAT_MIN,
-            "max": _TEXTURE_ASSET_TILE_REPEAT_MAX,
-            "step": _TEXTURE_ASSET_TILE_REPEAT_STEP,
-            "default": _TEXTURE_ASSET_TILE_REPEAT_DEFAULT,
+        "background_image_preview": {
+            "key": f"feat_{zone}_texture_background_image_preview",
+            "label": f"{zone_label} — Background image preview",
+            "type": "str",
+            "default": "",
         },
-    ]
-
-
-def texture_control_defs() -> list[dict[str, Any]]:
-    """Public wrapper for shared texture control definitions."""
-    return _texture_control_defs()
+        "background_image_uv_rect": {
+            "key": f"feat_{zone}_texture_background_image_uv_rect",
+            "label": f"{zone_label} — Background image UV rect",
+            "type": "str",
+            "default": "",
+        },
+        "patterns": {
+            "spots": {
+                "spotPattern": {
+                    "key": f"feat_{zone}_texture_spot_pattern",
+                    "label": f"{zone_label} — Spot layout",
+                    "type": "select_str",
+                    "options": list(_TEXTURE_SPOT_PATTERN_OPTIONS),
+                    "default": _DEFAULT_TEXTURE_SPOT_PATTERN,
+                    "segmented": True,
+                },
+                "spotDensity": {
+                    "key": f"feat_{zone}_texture_spot_density",
+                    "label": f"{zone_label} — Spot density",
+                    "type": "float",
+                    "min": _TEXTURE_SPOT_DENSITY_MIN,
+                    "max": _TEXTURE_SPOT_DENSITY_MAX,
+                    "step": _TEXTURE_SPOT_DENSITY_STEP,
+                    "default": _TEXTURE_SPOT_DENSITY_DEFAULT,
+                },
+            },
+            "stripes": {
+                "stripeWidth": {
+                    "key": f"feat_{zone}_texture_stripe_width",
+                    "label": f"{zone_label} — Stripe width",
+                    "type": "float",
+                    "min": _TEXTURE_STRIPE_WIDTH_MIN,
+                    "max": _TEXTURE_STRIPE_WIDTH_MAX,
+                    "step": _TEXTURE_STRIPE_WIDTH_STEP,
+                    "default": _TEXTURE_STRIPE_WIDTH_DEFAULT,
+                },
+                "stripeDirection": {
+                    "key": f"feat_{zone}_texture_stripe_direction",
+                    "label": f"{zone_label} — Stripe preset",
+                    "type": "select_str",
+                    "options": list(_TEXTURE_STRIPE_PRESET_OPTIONS),
+                    "default": _DEFAULT_TEXTURE_STRIPE_PRESET,
+                    "segmented": True,
+                },
+                "stripeRotYaw": {
+                    "key": f"feat_{zone}_texture_stripe_rot_yaw",
+                    "label": f"{zone_label} — Stripe yaw",
+                    "type": "float",
+                    "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
+                    "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
+                    "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
+                    "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
+                    "unit": "deg",
+                },
+                "stripeRotPitch": {
+                    "key": f"feat_{zone}_texture_stripe_rot_pitch",
+                    "label": f"{zone_label} — Stripe pitch",
+                    "type": "float",
+                    "min": _TEXTURE_STRIPE_ROT_DEG_MIN,
+                    "max": _TEXTURE_STRIPE_ROT_DEG_MAX,
+                    "step": _TEXTURE_STRIPE_ROT_DEG_STEP,
+                    "default": _DEFAULT_TEXTURE_STRIPE_ROT_DEG,
+                    "unit": "deg",
+                },
+            },
+            "checkerboard": {
+                # Checkerboard uses same controls as stripes (width, direction, rotation)
+                "stripeWidth": {
+                    "key": f"feat_{zone}_texture_stripe_width",
+                    "label": f"{zone_label} — Checkerboard size",
+                    "type": "float",
+                    "min": _TEXTURE_STRIPE_WIDTH_MIN,
+                    "max": _TEXTURE_STRIPE_WIDTH_MAX,
+                    "step": _TEXTURE_STRIPE_WIDTH_STEP,
+                    "default": _TEXTURE_STRIPE_WIDTH_DEFAULT,
+                },
+                "stripeDirection": {
+                    "key": f"feat_{zone}_texture_stripe_direction",
+                    "label": f"{zone_label} — Checkerboard preset",
+                    "type": "select_str",
+                    "options": list(_TEXTURE_STRIPE_PRESET_OPTIONS),
+                    "default": _DEFAULT_TEXTURE_STRIPE_PRESET,
+                    "segmented": True,
+                },
+            },
+        },
+        "global": {
+            "assetId": {
+                "key": f"feat_{zone}_texture_asset_id",
+                "label": f"{zone_label} — Asset texture",
+                "type": "str",
+                "default": "",
+            },
+            "assetTileRepeat": {
+                "key": f"feat_{zone}_texture_asset_tile_repeat",
+                "label": f"{zone_label} — Tile repeat",
+                "type": "float",
+                "min": _TEXTURE_ASSET_TILE_REPEAT_MIN,
+                "max": _TEXTURE_ASSET_TILE_REPEAT_MAX,
+                "step": _TEXTURE_ASSET_TILE_REPEAT_STEP,
+                "default": _TEXTURE_ASSET_TILE_REPEAT_DEFAULT,
+            },
+        },
+    }
 
 
 def _mouth_control_defs() -> list[dict[str, Any]]:
@@ -1549,23 +1710,6 @@ _ZONE_LABEL = {
     "joints": "Joints",
     "extra": "Extra",
 }
-
-
-def _zone_texture_control_defs_for_zones(zones: tuple[str, ...]) -> list[dict[str, Any]]:
-    """Per-zone surface texture controls; keys ``feat_{zone}_texture_*`` (aligned with material zones)."""
-    base = _texture_control_defs()
-    out: list[dict[str, Any]] = []
-    for z in zones:
-        zlab = _ZONE_LABEL.get(z, z.replace("_", " ").title())
-        for c in base:
-            old_key = str(c["key"])
-            if not old_key.startswith("texture_"):
-                continue
-            suffix = old_key.removeprefix("texture_")
-            new_key = f"feat_{z}_texture_{suffix}"
-            label = f"{zlab} — {c['label']}"
-            out.append({**c, "key": new_key, "label": label})
-    return out
 
 
 def zone_texture_control_defs(slug: str) -> list[dict[str, Any]]:

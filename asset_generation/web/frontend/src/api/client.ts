@@ -89,12 +89,12 @@ const LEGACY_GLOBAL_TEXTURE_KEYS = [
 
 const LEGACY_TEXTURE_TO_SUFFIX: Record<(typeof LEGACY_GLOBAL_TEXTURE_KEYS)[number], string> = {
   texture_mode: "mode",
-  texture_spot_color: "spot_color",
-  texture_spot_bg_color: "spot_bg_color",
+  texture_spot_color: "pattern",
+  texture_spot_bg_color: "background",
   texture_spot_density: "spot_density",
   texture_spot_pattern: "spot_pattern",
-  texture_stripe_color: "stripe_color",
-  texture_stripe_bg_color: "stripe_bg_color",
+  texture_stripe_color: "pattern",
+  texture_stripe_bg_color: "background",
   texture_stripe_width: "stripe_width",
   texture_stripe_direction: "stripe_direction",
   texture_stripe_rot_yaw: "stripe_rot_yaw",
@@ -401,6 +401,7 @@ export interface TextureAsset {
   display_name: string;
   description: string;
   layout: string;
+  url: string;
   width: number;
   height: number;
   tiling_supported: boolean;
@@ -410,5 +411,19 @@ export async function fetchTextureAssets(): Promise<TextureAsset[]> {
   const res = await fetch(`${BASE}/assets/textures`);
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
-  return data.textures;
+  const textures = Array.isArray(data.textures) ? data.textures : [];
+  return textures.filter((texture): texture is TextureAsset => {
+    return (
+      texture &&
+      typeof texture.id === "string" &&
+      typeof texture.filename === "string" &&
+      typeof texture.display_name === "string" &&
+      typeof texture.description === "string" &&
+      typeof texture.layout === "string" &&
+      typeof texture.url === "string" &&
+      typeof texture.width === "number" &&
+      typeof texture.height === "number" &&
+      typeof texture.tiling_supported === "boolean"
+    );
+  });
 }

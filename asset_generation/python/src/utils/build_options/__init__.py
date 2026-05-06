@@ -35,7 +35,6 @@ from .schema import (
     parse_build_options_json,
     rig_rotation_control_defs,
     tail_control_defs,
-    texture_control_defs,
     zone_texture_control_defs,
 )
 from .validate import (
@@ -61,7 +60,6 @@ __all__ = sorted(
         "coerce_validate_enemy_build_options",
         "feature_zones",
         "zone_texture_control_defs",
-        "texture_control_defs",
         "rig_rotation_control_defs",
         "RIG_ROT_MIN",
         "RIG_ROT_MAX",
