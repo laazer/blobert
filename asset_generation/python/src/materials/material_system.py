@@ -38,6 +38,7 @@ from src.materials.uv_atlas import (
     is_full_uv_rect,
     mapping_scale_location_for_uv_rect,
     parse_uv_rect,
+    read_png_ihdr_dimensions,
     resolved_asset_path_for_image_sampling,
 )
 from src.utils.materials import (
@@ -641,6 +642,8 @@ def material_for_spots_zone(
     density: float,
     zone_hex_fallback: str,
     instance_suffix: str,
+    spot_texture_width: int = 128,
+    spot_texture_height: int = 128,
 ) -> bpy.types.Material:
     """Solid base material with baked spots texture.
 
@@ -685,12 +688,14 @@ def material_for_spots_zone(
         force_base_color=False,
     )
 
-    # Generate and apply spots texture
+    # Generate and apply spots texture (raster domain is 0–1 over width × height)
+    sw = max(1, int(spot_texture_width))
+    sh = max(1, int(spot_texture_height))
     safe = sanitize_image_label(instance_suffix)
     img_name = f"BlobertTexSpot_{safe}"
     img = create_spots_png_and_load(
-        width=128,
-        height=128,
+        width=sw,
+        height=sh,
         spot_color_hex=_sanitize_hex_input(spot_hex),
         bg_color_hex=_sanitize_hex_input(bg_hex),
         density=density,
@@ -1073,20 +1078,6 @@ def resolve_texture_pattern_overlay_uv_rect(
     return None
 
 
-def _read_png_ihdr_dimensions(path: Path) -> tuple[int, int]:
-    """Return width, height from a PNG without PIL (IHDR only)."""
-    data = path.read_bytes()
-    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError(f"not a PNG: {path}")
-    if data[12:16] != b"IHDR":
-        raise ValueError(f"missing IHDR: {path}")
-    w = int.from_bytes(data[16:20], "big")
-    h = int.from_bytes(data[20:24], "big")
-    if w <= 0 or h <= 0:
-        raise ValueError(f"invalid PNG dimensions: {path}")
-    return w, h
-
-
 def _spot_bg_rgba_endpoints(
     fill: FillMaterial,
     zone_hex: str,
@@ -1179,7 +1170,7 @@ def resolve_spots_composite_underlay(
         log_spots_composite(f"spots_underlay: spot plate path missing: {pat_path}")
         return ("", None)
     try:
-        w, h = _read_png_ihdr_dimensions(pat_path)
+        w, h = read_png_ihdr_dimensions(pat_path)
     except (ValueError, OSError) as e:
         log_spots_composite(f"spots_underlay: cannot read spot PNG dimensions: {type(e).__name__}: {e}")
         return ("", None)

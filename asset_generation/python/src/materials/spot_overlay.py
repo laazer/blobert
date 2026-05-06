@@ -28,16 +28,6 @@ from src.materials.uv_atlas import (
 from src.utils.texture_asset_loader import get_texture_asset_filepath
 
 
-def _pattern_path_for_mask_combine(
-    pattern_path: Path | None,
-    uv_rect: tuple[float, float, float, float] | None,
-) -> Path | None:
-    """Keep spot plate path unchanged; UV rect applies to underlay/base selection."""
-    if pattern_path is None:
-        return None
-    return Path(pattern_path)
-
-
 def _find_principled_bsdf(nodes: Any) -> object | None:
     """Locate Principled BSDF across Blender versions (``type`` vs ``bl_idname``)."""
     for n in nodes:
@@ -275,7 +265,7 @@ def overlay_base_image_onto_material(
             f"over base_path={resolved_base!s}",
         )
         mask_mode, dark_thr, mask_soft_edges = _spot_mask_params(mat)
-        pattern_for_combine = _pattern_path_for_mask_combine(pattern_path, underlay_uv_rect)
+        pattern_for_combine = Path(pattern_path) if pattern_path is not None else None
         combined_img = combine_pattern_over_base_image(
             pattern_for_combine,
             resolved_base,
@@ -291,15 +281,9 @@ def overlay_base_image_onto_material(
                 "overlay_underlay: success → base color uses combined image "
                 f"{combined_img.name!r} (mask blends pattern × base)",
             )
-            # Keep UV selection behavior consistent with non-spots paths:
-            # if a rect is selected, apply it at final sampling too.
-            _wire_tex_uv_to_base_color(
-                nodes,
-                links,
-                bc_in,
-                combined_img,
-                uv_rect=underlay_uv_rect,
-            )
+            # Underlay and pattern are cropped to the same atlas rect before combine; the
+            # image pixels are already rect-local — do not apply Mapping again (double UV).
+            _wire_tex_uv_to_base_color(nodes, links, bc_in, combined_img, uv_rect=None)
             return mat
         lg(
             "overlay_underlay: combine_pattern_over_base_image returned None "
@@ -313,7 +297,7 @@ def overlay_base_image_onto_material(
         "not the same as masked composite; expect muddy tint if pattern covers UV.",
     )
     if existing_src is None:
-        _wire_tex_uv_to_base_color(nodes, links, bc_in, underlay_img, uv_rect=underlay_uv_rect)
+        _wire_tex_uv_to_base_color(nodes, links, bc_in, underlay_img, uv_rect=None)
         return mat
 
     _wire_multiply_underlay_over_existing(
@@ -322,6 +306,6 @@ def overlay_base_image_onto_material(
         bc_in,
         underlay_img,
         existing_src,
-        uv_rect=underlay_uv_rect,
+        uv_rect=None,
     )
     return mat

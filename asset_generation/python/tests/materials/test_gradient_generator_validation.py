@@ -2,9 +2,23 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from src.materials.gradient_generator import checkerboard_texture_generator
+from src.materials.gradient_generator import (
+    checkerboard_texture_generator,
+    write_rgba_float_png_top_first,
+)
+from src.materials.uv_atlas import read_png_ihdr_dimensions
+
+
+def test_write_rgba_float_png_top_first_writes_png_with_matching_ihdr(tmp_path: Path) -> None:
+    w, h = 17, 11
+    pixels = [0.5, 0.5, 0.5, 1.0] * (w * h)
+    out = tmp_path / "rgba_top_first.png"
+    write_rgba_float_png_top_first(out, w, h, pixels)
+    assert read_png_ihdr_dimensions(out) == (w, h)
 
 
 @pytest.mark.parametrize(

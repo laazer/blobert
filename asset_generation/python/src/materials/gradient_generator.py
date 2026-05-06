@@ -104,6 +104,16 @@ def _create_png(width: int, height: int, pixels: list[float]) -> bytes:
     return signature + ihdr + idat + iend
 
 
+def write_rgba_float_png_top_first(path: Path, width: int, height: int, pixels: list[float]) -> None:
+    """Write a PNG from RGBA floats (0–1).
+
+    ``pixels`` are row-major with **y = 0 as the top scanline** (same layout as :func:`_create_png`),
+    which matches PIL-exported crops and standard PNG row order—not Blender's bottom-first
+    :attr:`bpy.types.Image.pixels` layout (callers must reorder when copying from Blender).
+    """
+    path.write_bytes(_create_png(width, height, pixels))
+
+
 def write_rgba_buffer_to_gradients_png(
     width: int,
     height: int,

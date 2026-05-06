@@ -234,11 +234,11 @@ def test_overlay_base_image_returns_early_for_empty_asset() -> None:
     assert ms.overlay_base_image_on_zone_material(mat, asset_id="", base_path=None) is mat
 
 
-def test_overlay_mask_combine_crops_underlay_path_when_underlay_uv_rect(
+def test_overlay_mask_combine_crops_underlay_spot_plate_already_rect_sized(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Atlas UV rect must crop underlay/base for mask composite, not the spot plate pattern."""
+    """Underlay is cropped to atlas rect; spot plate is generated at that size — combine without pattern crop."""
     mat, _links, bsdf = _fake_mat_with_bsdf_for_uv_gradient()
     base_color_socket = bsdf.inputs["Base Color"]
     pattern_img = MagicMock()
@@ -259,6 +259,7 @@ def test_overlay_mask_combine_crops_underlay_path_when_underlay_uv_rect(
     with (
         patch("src.materials.spot_overlay._resolve_pattern_sources", return_value=(fake_pat, None)),
         patch("src.materials.spot_overlay.combine_pattern_over_base_image", return_value=combined) as combine_fn,
+        patch("src.materials.spot_overlay._wire_tex_uv_to_base_color") as wire_fn,
         patch.object(ms.bpy.data.images, "load", return_value=MagicMock()),
         patch("src.utils.texture_asset_loader.get_texture_asset_filepath", return_value="/tmp/demo.png"),
     ):
@@ -270,6 +271,8 @@ def test_overlay_mask_combine_crops_underlay_path_when_underlay_uv_rect(
     combine_fn.assert_called_once()
     assert combine_fn.call_args[0][0] == fake_pat
     assert combine_fn.call_args[0][1] == cropped_for_combine
+    wire_fn.assert_called_once()
+    assert wire_fn.call_args.kwargs.get("uv_rect") is None
 
 
 def test_overlay_base_image_prefers_tagged_spot_image() -> None:
