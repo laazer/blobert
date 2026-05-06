@@ -20,14 +20,22 @@ interface RunOptions {
 
 export function useStreamingOutput() {
   const esRef = useRef<EventSource | null>(null);
+  const heartbeatRef = useRef<number | null>(null);
   const appendLine = useAppStore((s) => s.appendLine);
   const setIsRunning = useAppStore((s) => s.setIsRunning);
   const refreshAssetsAndAutoSelect = useAppStore((s) => s.refreshAssetsAndAutoSelect);
   const bumpRegistryReload = useAppStore((s) => s.bumpRegistryReload);
 
   function start(options: RunOptions, endpoint = "/api/run/stream") {
+    const clearHeartbeat = () => {
+      if (heartbeatRef.current != null) {
+        window.clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    };
     if (esRef.current) {
       esRef.current.close();
+      clearHeartbeat();
     }
 
     const params = new URLSearchParams();
@@ -53,6 +61,12 @@ export function useStreamingOutput() {
     const es = new EventSource(url);
     esRef.current = es;
     setIsRunning(true);
+    appendLine(`--- Running: ${options.cmd}${options.enemy ? ` ${options.enemy}` : ""} ---`);
+    const startedAt = Date.now();
+    heartbeatRef.current = window.setInterval(() => {
+      const seconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+      appendLine(`... still running (${seconds}s)`);
+    }, 5000);
 
     es.addEventListener("log", (e: MessageEvent) => {
       try {
@@ -73,6 +87,7 @@ export function useStreamingOutput() {
         appendLine("--- Done ---");
       }
       setIsRunning(false);
+      clearHeartbeat();
       es.close();
       esRef.current = null;
     });
@@ -85,6 +100,7 @@ export function useStreamingOutput() {
         appendLine("--- Stream error ---");
       }
       setIsRunning(false);
+      clearHeartbeat();
       es.close();
       esRef.current = null;
     });
@@ -93,6 +109,7 @@ export function useStreamingOutput() {
     es.onerror = () => {
       appendLine("--- Connection lost ---");
       setIsRunning(false);
+      clearHeartbeat();
       es.close();
       esRef.current = null;
     };

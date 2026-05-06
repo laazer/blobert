@@ -6,6 +6,13 @@ tasks:
     cmds:
       - bash asset_generation/web/start.sh
 
+  editor:debug-spots:
+    desc: Start asset editor with BLOBERT_DEBUG_SPOTS=1 (stdout [blobert:spots] compositing logs)
+    env:
+      BLOBERT_DEBUG_SPOTS: "1"
+    cmds:
+      - bash asset_generation/web/start.sh
+
   web:start:
     desc: Alias for editor startup
     cmds:

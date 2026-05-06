@@ -180,6 +180,12 @@
           "id": "spider_animated_13",
           "in_use": false,
           "path": "animated_exports/spider_animated_13.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_14",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_14.glb"
         }
       ]
     },

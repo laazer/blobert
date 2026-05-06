@@ -22,9 +22,13 @@ afterEach(() => {
   cleanup();
 });
 
-// Helper: determine if a key should render as hex picker
+// Helper: mirror BuildControlRow str-control branch (must stay in sync)
 function shouldRenderAsHexPicker(key: string): boolean {
-  return key.endsWith("_hex") || (key.includes("_texture_") && key.includes("color"));
+  return (
+    key.endsWith("_hex") ||
+    key.endsWith("_color_hex") ||
+    (key.includes("_texture_") && key.includes("color"))
+  );
 }
 
 describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
@@ -108,12 +112,12 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
       expect(shouldRenderAsHexPicker("feat_body_texture_grad_color_b")).toBe(true);
     });
 
-    it("matches 'feat_eye_left_texture_spot_color' — spot color", () => {
-      expect(shouldRenderAsHexPicker("feat_eye_left_texture_spot_color")).toBe(true);
+    it("matches 'feat_eye_left_texture_pattern_hex' — spot / pattern fill hex", () => {
+      expect(shouldRenderAsHexPicker("feat_eye_left_texture_pattern_hex")).toBe(true);
     });
 
-    it("matches 'feat_body_texture_stripe_bg_color' — stripe background", () => {
-      expect(shouldRenderAsHexPicker("feat_body_texture_stripe_bg_color")).toBe(true);
+    it("matches 'feat_body_texture_background_hex' — background fill hex", () => {
+      expect(shouldRenderAsHexPicker("feat_body_texture_background_hex")).toBe(true);
     });
 
     it("does NOT match 'feat_body_texture_grad_density' — no 'color'", () => {
@@ -252,10 +256,10 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
         "feat_mouth_tail_hex",
         "feat_body_texture_grad_color_a",
         "feat_body_texture_grad_color_b",
-        "feat_body_texture_spot_color",
-        "feat_body_texture_spot_bg_color",
-        "feat_body_texture_stripe_color",
-        "feat_body_texture_stripe_bg_color",
+        "feat_body_texture_pattern_hex",
+        "feat_body_texture_background_hex",
+        "feat_body_texture_pattern_hex",
+        "feat_body_texture_background_hex",
       ];
 
       variations.forEach((key) => {
@@ -280,8 +284,8 @@ describe("BuildControlRow — Hex Pattern Detection & Mutations", () => {
         "feat_body_finish",
         "feat_body_texture_mode",
         "feat_body_texture_grad_direction",
-        "feat_body_texture_spot_density",
-        "feat_body_texture_stripe_width",
+        "feat_body_texture_pattern_density",
+        "feat_body_texture_pattern_width",
         "custom_option",
         "description",
       ];

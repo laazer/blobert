@@ -52,25 +52,21 @@ describe("buildFeatUpdatesFromPalette", () => {
   it("routes palette apply to stripes and spots fields by current zone mode", () => {
     const keys = new Set([
       "feat_body_texture_mode",
-      "feat_body_texture_stripe_color",
-      "feat_body_texture_stripe_bg_color",
+      "feat_body_texture_pattern_hex",
+      "feat_body_texture_background_hex",
       "feat_head_texture_mode",
-      "feat_head_texture_spot_color",
-      "feat_head_texture_spot_bg_color",
-      "feat_head_texture_spot_color_hex",
-      "feat_head_texture_spot_bg_color_hex",
-      "feat_head_texture_spot_color_mode",
-      "feat_head_texture_spot_bg_color_mode",
-      "feat_head_texture_spot_color_image_id",
-      "feat_head_texture_spot_bg_color_image_id",
-      "feat_head_texture_spot_color_image_preview",
-      "feat_head_texture_spot_bg_color_image_preview",
-      "feat_head_texture_spot_color_image_uv_rect",
-      "feat_head_texture_spot_bg_color_image_uv_rect",
-      "feat_head_texture_spot_color_a",
-      "feat_head_texture_spot_color_b",
-      "feat_head_texture_spot_bg_color_a",
-      "feat_head_texture_spot_bg_color_b",
+      "feat_head_texture_pattern_hex",
+      "feat_head_texture_background_hex",
+      "feat_head_texture_pattern_mode",
+      "feat_head_texture_background_mode",
+      "feat_head_texture_pattern_image_id",
+      "feat_head_texture_background_image_id",
+      "feat_head_texture_pattern_image_uv_rect",
+      "feat_head_texture_background_image_uv_rect",
+      "feat_head_texture_pattern_grad_a",
+      "feat_head_texture_pattern_grad_b",
+      "feat_head_texture_background_grad_a",
+      "feat_head_texture_background_grad_b",
     ]);
     const u = buildFeatUpdatesFromPalette(
       {
@@ -83,51 +79,44 @@ describe("buildFeatUpdatesFromPalette", () => {
         feat_head_texture_mode: "spots",
       },
     );
-    expect(u.feat_body_texture_stripe_color).toBe("#112233");
-    expect(typeof u.feat_body_texture_stripe_bg_color).toBe("string");
-    expect(u.feat_body_texture_stripe_bg_color).not.toBe("#112233");
-    expect(u.feat_head_texture_spot_color).toBe("#445566");
-    expect(u.feat_head_texture_spot_bg_color).toBe("#78899a");
-    expect(u.feat_head_texture_spot_color_hex).toBe("#445566");
-    expect(u.feat_head_texture_spot_bg_color_hex).toBe("#78899a");
-    expect(u.feat_head_texture_spot_color_mode).toBe("single");
-    expect(u.feat_head_texture_spot_bg_color_mode).toBe("single");
-    expect(u.feat_head_texture_spot_color_image_id).toBe("");
-    expect(u.feat_head_texture_spot_bg_color_image_id).toBe("");
-    expect(u.feat_head_texture_spot_color_image_preview).toBe("");
-    expect(u.feat_head_texture_spot_bg_color_image_preview).toBe("");
-    expect(u.feat_head_texture_spot_color_image_uv_rect).toBe("");
-    expect(u.feat_head_texture_spot_bg_color_image_uv_rect).toBe("");
-    expect(u.feat_head_texture_spot_color_a).toBe("");
-    expect(u.feat_head_texture_spot_color_b).toBe("");
-    expect(u.feat_head_texture_spot_bg_color_a).toBe("");
-    expect(u.feat_head_texture_spot_bg_color_b).toBe("");
+    expect(u.feat_body_texture_pattern_hex).toBe("#112233");
+    expect(typeof u.feat_body_texture_background_hex).toBe("string");
+    expect(u.feat_body_texture_background_hex).not.toBe("#112233");
+    expect(u.feat_head_texture_pattern_hex).toBe("#445566");
+    expect(u.feat_head_texture_background_hex).toBe("#78899a");
+    expect(u.feat_head_texture_pattern_mode).toBe("single");
+    expect(u.feat_head_texture_background_mode).toBe("single");
+    expect(u.feat_head_texture_pattern_image_id).toBe("");
+    expect(u.feat_head_texture_background_image_id).toBe("");
+    expect(u.feat_head_texture_pattern_image_uv_rect).toBe("");
+    expect(u.feat_head_texture_background_image_uv_rect).toBe("");
+    expect(u.feat_head_texture_pattern_grad_a).toBe("");
+    expect(u.feat_head_texture_pattern_grad_b).toBe("");
+    expect(u.feat_head_texture_background_grad_a).toBe("");
+    expect(u.feat_head_texture_background_grad_b).toBe("");
   });
 
   it("keeps spots background image mode when already configured", () => {
     const keys = new Set([
       "feat_head_texture_mode",
-      "feat_head_texture_spot_color",
-      "feat_head_texture_spot_color_hex",
-      "feat_head_texture_spot_color_mode",
-      "feat_head_texture_spot_bg_color_mode",
-      "feat_head_texture_spot_bg_color_image_id",
-      "feat_head_texture_spot_bg_color_image_preview",
+      "feat_head_texture_pattern_hex",
+      "feat_head_texture_pattern_mode",
+      "feat_head_texture_background_mode",
+      "feat_head_texture_background_image_id",
     ]);
     const u = buildFeatUpdatesFromPalette(
       { head: { finish: "gel", hex: "#445566" } },
       keys,
       {
         feat_head_texture_mode: "spots",
-        feat_head_texture_spot_bg_color_mode: "image",
-        feat_head_texture_spot_bg_color_image_id: "demo_textures3",
+        feat_head_texture_background_mode: "image",
+        feat_head_texture_background_image_id: "demo_textures3",
       },
     );
-    expect(u.feat_head_texture_spot_color_mode).toBe("single");
-    expect(u.feat_head_texture_spot_color).toBe("#445566");
-    expect(u.feat_head_texture_spot_color_hex).toBe("#445566");
-    expect(u.feat_head_texture_spot_bg_color_mode).toBe("image");
-    expect(u.feat_head_texture_spot_bg_color_image_id).toBeUndefined();
+    expect(u.feat_head_texture_pattern_mode).toBe("single");
+    expect(u.feat_head_texture_pattern_hex).toBe("#445566");
+    expect(u.feat_head_texture_background_mode).toBe("image");
+    expect(u.feat_head_texture_background_image_id).toBe("demo_textures3");
   });
 });
 

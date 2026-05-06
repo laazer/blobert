@@ -1,4 +1,9 @@
 import { FINISH_OPTIONS_ORDER } from "./animatedZoneControlsMerge";
+import {
+  readZoneTextureSettingsFromStore,
+  writeZoneTextureSettingsToStore,
+} from "./zoneTextureConverter";
+import type { Zone } from "../types/zoneTexture";
 
 /**
  * Built-in visual sets: combat-aligned (physical, fire, ice, acid, poison) plus
@@ -193,68 +198,25 @@ export function buildFeatUpdatesFromPalette(
       if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
     }
 
-    if (mode === "spots") {
-      const spotKey = `feat_${zone}_texture_spot_color`;
-      const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
-      const spotHexKey = `feat_${zone}_texture_spot_color_hex`;
-      const spotBgHexKey = `feat_${zone}_texture_spot_bg_color_hex`;
-      const spotModeKey = `feat_${zone}_texture_spot_color_mode`;
-      const spotBgModeKey = `feat_${zone}_texture_spot_bg_color_mode`;
-      const spotImageIdKey = `feat_${zone}_texture_spot_color_image_id`;
-      const spotBgImageIdKey = `feat_${zone}_texture_spot_bg_color_image_id`;
-      const spotImagePreviewKey = `feat_${zone}_texture_spot_color_image_preview`;
-      const spotBgImagePreviewKey = `feat_${zone}_texture_spot_bg_color_image_preview`;
-      const spotImageUvRectKey = `feat_${zone}_texture_spot_color_image_uv_rect`;
-      const spotBgImageUvRectKey = `feat_${zone}_texture_spot_bg_color_image_uv_rect`;
-      const spotGradAKey = `feat_${zone}_texture_spot_color_a`;
-      const spotGradBKey = `feat_${zone}_texture_spot_color_b`;
-      const spotBgGradAKey = `feat_${zone}_texture_spot_bg_color_a`;
-      const spotBgGradBKey = `feat_${zone}_texture_spot_bg_color_b`;
-      const currentSpotBgMode = String(currentValues[spotBgModeKey] ?? "").trim().toLowerCase();
-      const currentSpotBgImageId = String(currentValues[spotBgImageIdKey] ?? "").trim();
-      const currentSpotBgImagePreview = String(currentValues[spotBgImagePreviewKey] ?? "").trim();
-      const keepBackgroundImage = currentSpotBgMode === "image" && (currentSpotBgImageId !== "" || currentSpotBgImagePreview !== "");
+    if (mode === "spots" || mode === "checkerboard" || mode === "stripes") {
+      // Read current settings and preserve background image if it exists
+      const settings = readZoneTextureSettingsFromStore(zone as Zone, currentValues);
+      const keepBackgroundImage =
+        settings.background.type === "image" && settings.background.asset_id !== "";
 
-      // Same semantics as stripes: primary → pattern (dots), companion → gap between dots.
-      updates[spotModeKey] = "single";
-      updates[spotKey] = primary;
-      updates[spotHexKey] = primary;
-      updates[spotImageIdKey] = "";
-      updates[spotGradAKey] = "";
-      updates[spotGradBKey] = "";
+      // Build new settings with pattern as primary color, background as secondary or preserved
+      const newSettings = {
+        zone: zone as Zone,
+        textureMode: mode as "spots" | "stripes" | "checkerboard",
+        pattern: { type: "color" as const, hex: primary },
+        background: keepBackgroundImage
+          ? settings.background // Keep existing image
+          : ({ type: "color" as const, hex: secondary } as const),
+      };
 
-      if (keepBackgroundImage) {
-        // Preserve bg image channel so spots are composited over the selected texture.
-        updates[spotBgModeKey] = "image";
-      } else {
-        updates[spotBgModeKey] = "single";
-        updates[spotBgKey] = secondary;
-        updates[spotBgHexKey] = secondary;
-        updates[spotBgImageIdKey] = "";
-        updates[spotBgImagePreviewKey] = "";
-        updates[spotBgImageUvRectKey] = "";
-        updates[spotBgGradAKey] = "";
-        updates[spotBgGradBKey] = "";
-      }
-
-      updates[spotImagePreviewKey] = "";
-      updates[spotImageUvRectKey] = "";
-      continue;
-    }
-
-    if (mode === "checkerboard") {
-      const spotKey = `feat_${zone}_texture_spot_color`;
-      const spotBgKey = `feat_${zone}_texture_spot_bg_color`;
-      if (existingDefKeys.has(spotKey)) updates[spotKey] = primary;
-      if (existingDefKeys.has(spotBgKey)) updates[spotBgKey] = secondary;
-      continue;
-    }
-
-    if (mode === "stripes") {
-      const stripeKey = `feat_${zone}_texture_stripe_color`;
-      const stripeBgKey = `feat_${zone}_texture_stripe_bg_color`;
-      if (existingDefKeys.has(stripeKey)) updates[stripeKey] = primary;
-      if (existingDefKeys.has(stripeBgKey)) updates[stripeBgKey] = secondary;
+      // Convert typed settings back to flat store format
+      const settingsUpdates = writeZoneTextureSettingsToStore(newSettings);
+      Object.assign(updates, settingsUpdates);
       continue;
     }
   }
