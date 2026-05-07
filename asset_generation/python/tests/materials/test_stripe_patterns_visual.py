@@ -5,7 +5,7 @@ Tests that verify patterns are visually distinct, not just different PNG bytes.
 
 from __future__ import annotations
 
-from src.materials.gradient_generator import _stripe_uv_coord_for_preset
+from src.materials.pattern_texture_generators import _stripe_uv_coord_for_preset
 
 
 class TestStripePatternsSampled:

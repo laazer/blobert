@@ -10,7 +10,6 @@ from pathlib import Path
 
 import bpy  # type: ignore[import-not-found]
 
-from . import pattern_texture_generators as _pattern_generators
 from . import png_encoding as _png_encoding
 
 
@@ -114,13 +113,3 @@ def create_gradient_png_and_load(
 
     return img
 
-
-stripes_texture_generator = _pattern_generators.stripes_texture_generator
-create_stripes_png_and_load = _pattern_generators.create_stripes_png_and_load
-spots_texture_generator = _pattern_generators.spots_texture_generator
-create_spots_png_and_load = _pattern_generators.create_spots_png_and_load
-checkerboard_texture_generator = _pattern_generators.checkerboard_texture_generator
-create_checkerboard_png_and_load = _pattern_generators.create_checkerboard_png_and_load
-crc32 = _png_encoding.crc32
-write_rgba_float_png_top_first = _png_encoding.write_rgba_float_png_top_first
-_spots_texture_generator = spots_texture_generator

@@ -183,7 +183,7 @@ def _crop_texture_asset_to_temp_png_blender(
     try:
         import bpy  # type: ignore[import-not-found]
 
-        from src.materials.gradient_generator import write_rgba_float_png_top_first
+        from src.materials.png_encoding import write_rgba_float_png_top_first
     except ImportError as exc:
         logger.warning(
             "crop_texture_asset_to_temp_png: Blender crop unavailable (%s); "

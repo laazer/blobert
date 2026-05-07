@@ -6,7 +6,7 @@ import struct
 
 import pytest
 
-from src.materials.gradient_generator import checkerboard_texture_generator
+from src.materials.pattern_texture_generators import checkerboard_texture_generator
 
 
 def test_checkerboard_texture_generator_returns_valid_png() -> None:

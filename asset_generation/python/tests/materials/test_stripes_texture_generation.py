@@ -6,10 +6,10 @@ import struct
 
 import pytest
 
-from src.materials.gradient_generator import (
-    crc32,  # noqa: F401
+from src.materials.pattern_texture_generators import (
     stripes_texture_generator,  # noqa: F401
 )
+from src.materials.png_encoding import crc32  # noqa: F401
 
 
 class TestStripesTextureGenerator:
@@ -206,7 +206,7 @@ class TestStripesTextureGenerator:
 
 
 def test_create_stripes_png_and_load_exists() -> None:
-    from src.materials import gradient_generator as gg
+    from src.materials import pattern_texture_generators as gg
 
     assert hasattr(gg, "create_stripes_png_and_load")
 

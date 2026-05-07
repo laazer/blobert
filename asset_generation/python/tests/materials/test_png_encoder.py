@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.materials.gradient_generator import _create_png
+from src.materials.png_encoding import create_png
 
 from .gradient_glb_utils import png_histogram
 
@@ -10,7 +10,7 @@ from .gradient_glb_utils import png_histogram
 def test_png_encoder_creates_valid_png() -> None:
     """PNG encoder should produce valid PNG files."""
     pixels = [1.0, 0.0, 0.0, 1.0] * 4
-    png_data = _create_png(2, 2, pixels)
+    png_data = create_png(2, 2, pixels)
 
     assert png_data[:8] == b"\x89PNG\r\n\x1a\n", "PNG signature should be correct"
     assert len(png_data) > 50, "PNG should have content"
@@ -29,7 +29,7 @@ def test_png_encoder_preserves_gradient_colors() -> None:
             a = 1.0
             pixels.extend([r, g, b, a])
 
-    png_data = _create_png(width, height, pixels)
+    png_data = create_png(width, height, pixels)
     max_r, max_g, max_b = png_histogram(png_data)
 
     assert max_r > 200, f"Red channel should be bright in red-to-blue gradient, got {max_r}"
@@ -39,7 +39,7 @@ def test_png_encoder_preserves_gradient_colors() -> None:
 def test_png_encoder_black_gradient_is_black() -> None:
     """PNG encoder should produce black pixels for zero values."""
     pixels = [0.0, 0.0, 0.0, 1.0] * 4
-    png_data = _create_png(2, 2, pixels)
+    png_data = create_png(2, 2, pixels)
     max_r, max_g, max_b = png_histogram(png_data)
 
     assert max(max_r, max_g, max_b) <= 2, "All-zero gradient should be black"

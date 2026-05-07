@@ -6,7 +6,7 @@ and that rotation doesn't accidentally make one pattern look like another.
 
 from __future__ import annotations
 
-from src.materials.gradient_generator import stripes_texture_generator
+from src.materials.pattern_texture_generators import stripes_texture_generator
 
 
 def _extract_stripe_samples(png_bytes: bytes, stride: int = 8) -> list[float]:

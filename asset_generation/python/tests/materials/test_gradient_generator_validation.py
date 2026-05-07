@@ -6,10 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from src.materials.gradient_generator import (
-    checkerboard_texture_generator,
-    write_rgba_float_png_top_first,
-)
+from src.materials.pattern_texture_generators import checkerboard_texture_generator
+from src.materials.png_encoding import write_rgba_float_png_top_first
 from src.materials.uv_atlas import read_png_ihdr_dimensions
 
 
