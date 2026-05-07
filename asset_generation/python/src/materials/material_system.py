@@ -10,7 +10,6 @@ import bpy
 from src.materials import material_system_enemy_themes as _material_system_enemy_themes
 from src.materials.gradient_generator import (
     create_gradient_png_and_load,
-    create_spots_png_and_load,
     gradient_image_pixel_buffer,
     sanitize_image_label,
     write_rgba_buffer_to_gradients_png,
@@ -27,6 +26,7 @@ from src.materials.material_types import (
     feature_zone_map,
     pattern_normalize_hex6,
 )
+from src.materials.pattern_texture_generators import create_spots_png_and_load
 from src.materials.presets import parse_hex_color
 from src.materials.spot_overlay import (
     overlay_base_image_onto_material as _spot_overlay_base_image,

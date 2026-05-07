@@ -8,8 +8,8 @@ from typing import Any
 
 import bpy
 
-from .gradient_generator import create_stripes_png_and_load
 from .material_types import FillMaterial, GradientFill, SolidFill
+from .pattern_texture_generators import create_stripes_png_and_load
 from .presets import (
     ENEMY_FINISH_PRESETS,
     MaterialColors,
