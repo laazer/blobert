@@ -17,17 +17,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.materials.gradient_generator import crc32
+from src.materials.png_encoding import crc32
 
 
 class TestSpotsTextureGenerator:
     """Tests for spots_texture_generator() function (AC1.1 – AC1.15)."""
 
     def testspots_texture_generator_exists(self) -> None:
-        """AC1.1: Function exists at gradient_generator.py."""
+        """AC1.1: Function exists at pattern_texture_generators.py."""
         # Import will fail if function doesn't exist
         try:
-            from src.materials.gradient_generator import (
+            from src.materials.pattern_texture_generators import (
                 spots_texture_generator,  # noqa: E402, F401
             )
         except ImportError:
@@ -35,7 +35,7 @@ class TestSpotsTextureGenerator:
 
     def test_returns_valid_png_bytes(self) -> None:
         """AC1.3: Function returns valid PNG bytes with correct signature."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -55,7 +55,7 @@ class TestSpotsTextureGenerator:
 
     def test_output_dimensions_match_input(self) -> None:
         """AC1.4: PNG width/height match generator args."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -81,7 +81,7 @@ class TestSpotsTextureGenerator:
 
     def test_hex_color_parsing_lowercase(self) -> None:
         """AC1.5: Lowercase hex 'ff0000' parses to red (1, 0, 0)."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -94,7 +94,7 @@ class TestSpotsTextureGenerator:
 
     def test_hex_color_parsing_uppercase(self) -> None:
         """AC1.6: Uppercase hex 'FF0000' parses to red (1, 0, 0)."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -105,7 +105,7 @@ class TestSpotsTextureGenerator:
 
     def test_empty_spot_color_defaults_to_black(self) -> None:
         """AC1.7: Empty spot_color_hex ('') defaults to black (0, 0, 0)."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -117,7 +117,7 @@ class TestSpotsTextureGenerator:
 
     def test_empty_bg_color_defaults_to_white(self) -> None:
         """AC1.8: Empty bg_color_hex ('') defaults to white (1, 1, 1)."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -128,7 +128,7 @@ class TestSpotsTextureGenerator:
 
     def test_invalid_hex_raises_valueerror(self) -> None:
         """AC1.9: Invalid hex (e.g., 'zzz') raises ValueError."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -143,7 +143,7 @@ class TestSpotsTextureGenerator:
 
     def test_density_0_1_creates_sparse_spots(self) -> None:
         """AC1.10: Density=0.1 produces visibly fewer spots than density=1.0."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -170,7 +170,7 @@ class TestSpotsTextureGenerator:
         may be similar (formula: spots_count × area_per_spot × grid_area_per_spot ≈ constant).
         Instead, verify that density=5.0 produces a different pattern (more spot centers).
         """
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -199,7 +199,7 @@ class TestSpotsTextureGenerator:
 
     def test_1x1_texture_does_not_crash(self) -> None:
         """AC1.12: Generator handles 1×1 input without crashing."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -210,7 +210,7 @@ class TestSpotsTextureGenerator:
 
     def test_256x256_texture_does_not_crash(self) -> None:
         """AC1.13: Generator handles large 256×256 input without crashing."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -226,7 +226,7 @@ class TestSpotsTextureGenerator:
 
     def testcrc32_ihdr_valid(self) -> None:
         """AC1.14: IHDR CRC-32 matches calculated value."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -248,7 +248,7 @@ class TestSpotsTextureGenerator:
 
     def testcrc32_idat_valid(self) -> None:
         """AC1.15: IDAT CRC-32 matches calculated value."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -279,7 +279,7 @@ class TestSpotsTextureGenerator:
 
     def test_no_debug_logging_in_output(self) -> None:
         """AC1.16: Function produces no debug logging to files."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -297,7 +297,7 @@ class TestSpotsTextureGeneratorEdgeCases:
 
     def test_none_spot_color_treated_as_empty(self) -> None:
         """None as spot_color_hex should be treated like empty string."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -317,7 +317,7 @@ class TestSpotsTextureGeneratorEdgeCases:
 
     def test_case_insensitive_hex_parsing(self) -> None:
         """Mixed case hex ('Ff00Aa') should parse correctly."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -328,7 +328,7 @@ class TestSpotsTextureGeneratorEdgeCases:
 
     def test_density_boundary_0_1(self) -> None:
         """Density at lower boundary (0.1) should work."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -339,7 +339,7 @@ class TestSpotsTextureGeneratorEdgeCases:
 
     def test_density_boundary_5_0(self) -> None:
         """Density at upper boundary (5.0) should work."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             spots_texture_generator,  # noqa: E402
         )
 
@@ -353,18 +353,18 @@ class TestCreateSpotsTextureWrapper:
     """Tests for create_spots_png_and_load() wrapper function (AC2.1 – AC2.10)."""
 
     def test_wrapper_function_exists(self) -> None:
-        """AC2.1: Function exists in gradient_generator.py."""
+        """AC2.1: Function exists in pattern_texture_generators.py."""
         try:
-            from src.materials.gradient_generator import (
+            from src.materials.pattern_texture_generators import (
                 create_spots_png_and_load,  # noqa: E402, F401
             )
         except ImportError:
             pytest.skip("create_spots_png_and_load not yet implemented")
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_creates_spots_directory(self, mock_bpy) -> None:  # noqa: ARG002
         """AC2.2: Directory {animated_exports}/spots/ is created."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             create_spots_png_and_load,  # noqa: E402
         )
 
@@ -387,10 +387,10 @@ class TestCreateSpotsTextureWrapper:
                 # If not yet implemented, skip
                 pass
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_calls_blender_image_load(self, mock_bpy) -> None:  # noqa: ARG002
         """AC2.5: bpy.data.images.load() is called."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             create_spots_png_and_load,  # noqa: E402
         )
 
@@ -411,10 +411,10 @@ class TestCreateSpotsTextureWrapper:
         except Exception:
             pass
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_sets_colorspace_to_srgb(self, mock_bpy) -> None:  # noqa: ARG002
         """AC2.6: Image colorspace is set to 'sRGB'."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             create_spots_png_and_load,  # noqa: E402
         )
 
@@ -440,10 +440,10 @@ class TestCreateSpotsTextureWrapper:
         except Exception:
             pass
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_packs_image(self, mock_bpy) -> None:  # noqa: ARG002
         """AC2.7: Image.pack() is called (with exception handling)."""
-        from src.materials.gradient_generator import (
+        from src.materials.pattern_texture_generators import (
             create_spots_png_and_load,  # noqa: E402
         )
 

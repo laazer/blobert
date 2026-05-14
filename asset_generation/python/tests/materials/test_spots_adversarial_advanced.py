@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest  # noqa: E402, I001
 
-from src.materials.gradient_generator import crc32  # noqa: E402, I001
+from src.materials.png_encoding import crc32  # noqa: E402, I001
 
 
 # ============================================================================
@@ -32,7 +32,7 @@ class TestSpotsDeterminism:
 
     def test_same_input_produces_identical_bytes(self) -> None:
         """Same parameters → identical PNG bytes (not just valid PNG)."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png1 = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.5
@@ -44,7 +44,7 @@ class TestSpotsDeterminism:
 
     def test_determinism_across_multiple_calls(self) -> None:
         """Multiple calls with same params always match."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         pngs = [
             spots_texture_generator(
@@ -56,7 +56,7 @@ class TestSpotsDeterminism:
 
     def test_different_inputs_produce_different_output(self) -> None:
         """Different colors should produce different PNG bytes."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png_red = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
@@ -68,7 +68,7 @@ class TestSpotsDeterminism:
 
     def test_density_change_produces_different_output(self) -> None:
         """Different densities should produce visibly different spot patterns."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png_d1 = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=0.5
@@ -89,7 +89,7 @@ class TestSpotsResourceExhaustion:
 
     def test_repeated_calls_do_not_leak_memory(self) -> None:
         """Generate many PNGs; verify no unbounded growth (proxy test)."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         sizes = []
         for i in range(10):
@@ -103,7 +103,7 @@ class TestSpotsResourceExhaustion:
 
     def test_very_high_spot_density_memory(self) -> None:
         """Density approaching infinity (high frequency pattern)."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png_data = spots_texture_generator(
             width=64, height=64, spot_color_hex="ff0000", bg_color_hex="ffffff", density=100.0
@@ -123,7 +123,7 @@ class TestSpotsConcurrency:
 
     def test_parallel_png_generation_produces_consistent_output(self) -> None:
         """Generate same PNG from multiple threads; all should be identical."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         results = []
 
@@ -144,7 +144,7 @@ class TestSpotsConcurrency:
 
     def test_different_densities_in_parallel(self) -> None:
         """Generate different densities in parallel; verify no interference."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         results = {}
 
@@ -176,7 +176,7 @@ class TestSpotsErrorHandling:
 
     def test_invalid_hex_error_message_clarity(self) -> None:
         """Invalid hex should raise ValueError with clear message."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         with pytest.raises(ValueError) as exc_info:
             spots_texture_generator(
@@ -187,7 +187,7 @@ class TestSpotsErrorHandling:
 
     def test_dimension_error_message_clarity(self) -> None:
         """Invalid dimension should raise ValueError with clear message."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         with pytest.raises((ValueError, ZeroDivisionError)) as exc_info:
             spots_texture_generator(
@@ -198,7 +198,7 @@ class TestSpotsErrorHandling:
 
     def test_png_encoding_does_not_raise_unexpected_exceptions(self) -> None:
         """PNG encoding should not raise unexplained exceptions."""
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         # Valid inputs should never raise unexpected exceptions
         try:
@@ -224,7 +224,7 @@ class TestSpotsMutationTesting:
         Mutation: If code uses top-row-first, image will be vertically flipped.
         This test samples the PNG and verifies spot placement matches input.
         """
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         # Generate with known pattern (high density → most pixels are spots)
         png_data = spots_texture_generator(
@@ -258,7 +258,7 @@ class TestSpotsMutationTesting:
         Mutation: If radius is changed to 0.5, spots would cover twice as much area.
         This test compares spot density between two radii indirectly.
         """
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         # Use identical parameters to ensure consistent spot pattern
         png1 = spots_texture_generator(
@@ -279,7 +279,7 @@ class TestSpotsMutationTesting:
 
         Mutation: If CRC computation is wrong, PNG will be invalid.
         """
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
@@ -298,7 +298,7 @@ class TestSpotsMutationTesting:
 
         Mutation: If signature is wrong, PNG viewers reject the file.
         """
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         for w, h, d in [(8, 8, 0.1), (16, 16, 1.0), (32, 32, 5.0)]:
             png_data = spots_texture_generator(
@@ -311,7 +311,7 @@ class TestSpotsMutationTesting:
 
         Mutation: If bit depth or color type changes, image format is wrong.
         """
-        from src.materials.gradient_generator import spots_texture_generator  # noqa: E402
+        from src.materials.pattern_texture_generators import spots_texture_generator  # noqa: E402
 
         png_data = spots_texture_generator(
             width=32, height=32, spot_color_hex="ff0000", bg_color_hex="ffffff", density=1.0
@@ -333,10 +333,10 @@ class TestSpotsMutationTesting:
 class TestSpotsIntegrationSeams:
     """Expose issues at integration boundaries."""
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_handles_png_write_failure_gracefully(self, mock_bpy) -> None:
         """If PNG write fails, wrapper should handle it."""
-        from src.materials.gradient_generator import create_spots_png_and_load  # noqa: E402
+        from src.materials.pattern_texture_generators import create_spots_png_and_load  # noqa: E402
 
         mock_img = MagicMock()
         mock_bpy.data.images.load.return_value = mock_img
@@ -353,10 +353,10 @@ class TestSpotsIntegrationSeams:
                     img_name="test_spots",
                 )
 
-    @patch("src.materials.gradient_generator.bpy")
+    @patch("src.materials.pattern_texture_generators.bpy")
     def test_wrapper_returns_valid_image_object(self, mock_bpy) -> None:
         """Wrapper should return a valid bpy.types.Image."""
-        from src.materials.gradient_generator import create_spots_png_and_load  # noqa: E402
+        from src.materials.pattern_texture_generators import create_spots_png_and_load  # noqa: E402
 
         mock_img = MagicMock()
         mock_img.name = "BlobertTexSpot_test"
