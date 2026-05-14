@@ -12,6 +12,8 @@ vi.mock("../../api/client", async (importOriginal) => {
     fetchModelRegistry: vi.fn(),
     putEnemyFamilySlots: vi.fn(),
     patchRegistryEnemyVersion: vi.fn(),
+    postSyncDiscoveredPlayerGlbVersions: vi.fn(),
+    postSyncDiscoveredAnimatedGlbVersions: vi.fn(),
   };
 });
 
@@ -51,6 +53,8 @@ describe("SaveModelModal", () => {
       resolved_paths: ["animated_exports/spider_animated_00.glb"],
     });
     vi.mocked(client.patchRegistryEnemyVersion).mockResolvedValue(registry as never);
+    vi.mocked(client.postSyncDiscoveredPlayerGlbVersions).mockResolvedValue(registry as never);
+    vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockResolvedValue(registry as never);
   });
 
   it("renders portaled dialog and loads slots", async () => {
@@ -248,5 +252,90 @@ describe("SaveModelModal", () => {
     });
     expect(client.putEnemyFamilySlots).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("loads player slots and resolves version from playerColor + variantIndex", async () => {
+    const onClose = vi.fn();
+    vi.mocked(client.fetchEnemyFamilySlots).mockResolvedValue({
+      family: "player",
+      version_ids: ["player_slime_blue_00"],
+      resolved_paths: ["player_exports/player_slime_blue_00.glb"],
+    });
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue({
+      schema_version: 2,
+      enemies: {},
+      player: {
+        versions: [
+          {
+            id: "player_slime_blue_01",
+            path: "player_exports/player_slime_blue_01.glb",
+            draft: false,
+            in_use: true,
+            name: "Sapphire",
+          },
+        ],
+        slots: ["player_slime_blue_00"],
+      },
+      player_active_visual: null,
+    } as never);
+
+    render(<SaveModelModal open family="player" playerColor="blue" variantIndex={1} onClose={onClose} />);
+
+    await waitFor(() => expect(client.fetchEnemyFamilySlots).toHaveBeenCalledWith("player"));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Version name/i)).toHaveValue("Sapphire");
+    });
+  });
+
+  it("shows Register from disk when version is missing then refetches after sync", async () => {
+    const onClose = vi.fn();
+    const emptyReg = {
+      schema_version: 2,
+      enemies: {
+        spider: { versions: [] as { id: string; path: string; draft: boolean; in_use: boolean }[] },
+      },
+      player_active_visual: null,
+    };
+    const filledReg = {
+      schema_version: 2,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: true,
+              in_use: false,
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    };
+    vi.mocked(client.fetchEnemyFamilySlots).mockResolvedValue({
+      family: "spider",
+      version_ids: [""],
+      resolved_paths: [],
+    });
+    let regCalls = 0;
+    vi.mocked(client.fetchModelRegistry).mockImplementation(async () => {
+      regCalls += 1;
+      return (regCalls === 1 ? emptyReg : filledReg) as never;
+    });
+    vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockResolvedValue(filledReg as never);
+
+    render(<SaveModelModal open family="spider" variantIndex={0} onClose={onClose} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Register from disk" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Register from disk" }));
+
+    await waitFor(() => {
+      expect(client.postSyncDiscoveredAnimatedGlbVersions).toHaveBeenCalledWith("spider");
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Register from disk" })).not.toBeInTheDocument();
+    });
   });
 });

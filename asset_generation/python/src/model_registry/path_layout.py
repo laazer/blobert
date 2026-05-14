@@ -43,7 +43,7 @@ def expected_relative_path(root: str, basename: str, *, draft: bool) -> str:
 
 def _sidecar_names(root: str, glb_stem: str) -> list[str]:
     if root == "animated_exports":
-        return [f"{glb_stem}.attacks.json"]
+        return [f"{glb_stem}.attacks.json", f"{glb_stem}.build_options.json"]
     if root == "player_exports":
         return [f"{glb_stem}.player.json"]
     if root == "level_exports":

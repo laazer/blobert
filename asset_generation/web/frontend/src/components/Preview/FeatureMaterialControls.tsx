@@ -32,12 +32,6 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
   const zoneTextureDefs = defs.filter((d) => ZONE_TEXTURE_CONTROL_RE.test(d.key));
   const zones = FEATURE_ZONES_BY_SLUG[normalizeAnimatedSlug(slug)] ?? [];
 
-  if (defs.length > 0) {
-    console.log(`[FeatureMaterialControls] slug=${slug} total defs=${defs.length}, zoneTextureDefs=${zoneTextureDefs.length}`);
-    const patternBg = zoneTextureDefs.filter(d => d.key.includes('pattern') || d.key.includes('background'));
-    console.log(`[FeatureMaterialControls] pattern/background controls: ${patternBg.length}`, patternBg.map(d => d.key).slice(0, 10));
-  }
-
   if (featureDefs.length === 0) {
     if (!showEmptyHint) return null;
     return (

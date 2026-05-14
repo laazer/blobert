@@ -345,6 +345,24 @@ export function ModelRegistryPane() {
     }
   }
 
+  async function renameRegistryVersion(family: string, v: RegistryEnemyVersion, trimmed: string) {
+    const prev = (v.name ?? "").trim();
+    if (trimmed === prev) return;
+    const key = `${family}:${v.id}`;
+    setBusyKey(key);
+    setError(null);
+    try {
+      const updated = await patchRegistryEnemyVersion(family, v.id, {
+        name: trimmed === "" ? null : trimmed,
+      });
+      await syncFromRegistry(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   async function scanPlayerExports() {
     if (playerScanBusy) return;
     setPlayerScanBusy(true);
@@ -541,6 +559,7 @@ export function ModelRegistryPane() {
             onBulkEnemySetDraft={(family) => bulkEnemyApplyFlags(family, true, false)}
             onBulkEnemySetInPool={(family) => bulkEnemyApplyFlags(family, false, true)}
             onBulkEnemyDeleteSelected={bulkDeleteEnemyVersions}
+            onRenameVersion={renameRegistryVersion}
           />
           <RegistryEnemyLoadExistingSection
             loadExistingCandidates={loadExistingCandidates}
@@ -560,6 +579,7 @@ export function ModelRegistryPane() {
           onScanPlayerExports={scanPlayerExports}
           onApplyFlags={applyPlayerVersionFlags}
           onPreviewVersion={(v) => selectAssetByPath(v.path)}
+          onRenameVersion={(v, trimmed) => void renameRegistryVersion("player", v, trimmed)}
         />
       ) : null}
 

@@ -4,10 +4,12 @@ import {
   fetchEnemyFamilySlots,
   fetchModelRegistry,
   patchRegistryEnemyVersion,
+  postSyncDiscoveredAnimatedGlbVersions,
+  postSyncDiscoveredPlayerGlbVersions,
   putEnemyFamilySlots,
 } from "../../api/client";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
-import { animatedExportVersionId } from "../../utils/glbVariants";
+import { animatedExportVersionId, playerSlimeVersionId } from "../../utils/glbVariants";
 import { appendSlotIfMissing, replaceSlotAssignment, slotListHasDuplicates } from "../../utils/registrySlotOps";
 import { formatSaveScriptError } from "./SaveScriptModal";
 
@@ -81,13 +83,16 @@ const textInput: CSSProperties = {
 const MAX_VERSION_NAME_LEN = 128;
 
 function findVersion(registry: ModelRegistryPayload, family: string, versionId: string): RegistryEnemyVersion | null {
-  const versions = registry.enemies[family]?.versions ?? [];
+  const versions =
+    family === "player"
+      ? (registry.player?.versions ?? [])
+      : (registry.enemies[family]?.versions ?? []);
   return versions.find((v) => v.id === versionId) ?? null;
 }
 
 function slotErrorForPut(row: RegistryEnemyVersion | null, versionId: string): string | null {
   if (!row) {
-    return `Version ${versionId} is not in the registry yet. Run a successful export first, then refresh the Registry tab.`;
+    return `Version ${versionId} is not in the registry yet. Use “Register from disk” if the GLB exists, or export it first.`;
   }
   if (row.draft) {
     return "This version is still a draft. Turn off draft in the Registry tab before assigning slots.";
@@ -107,13 +112,18 @@ function namePatchIfChanged(trimmedInput: string, previousStored: string | undef
 export type SaveModelModalProps = {
   open: boolean;
   onClose: () => void;
-  /** Normalized enemy family slug (e.g. ``spider``). */
+  /** Normalized enemy family slug (e.g. ``spider``) or ``"player"`` for the player registry block. */
   family: string;
   /** GLB variant index; preview / default export uses ``0``. */
   variantIndex?: number;
+  /**
+   * When ``family === "player"``, normalized slime palette color for ``player_slime_{color}_NN`` ids
+   * (same as Command panel color).
+   */
+  playerColor?: string;
 };
 
-export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: SaveModelModalProps) {
+export function SaveModelModal({ open, onClose, family, variantIndex = 0, playerColor }: SaveModelModalProps) {
   const titleId = useId();
   const [slotIds, setSlotIds] = useState<string[]>([]);
   const [slotIndex, setSlotIndex] = useState(0);
@@ -121,14 +131,20 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
   const [localError, setLocalError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** null until first successful load for this open/versionId. */
+  const [targetRowExists, setTargetRowExists] = useState<boolean | null>(null);
 
-  const versionId = animatedExportVersionId(family, variantIndex);
+  const versionId =
+    family === "player"
+      ? playerSlimeVersionId((playerColor ?? "").trim().toLowerCase() || "blue", variantIndex)
+      : animatedExportVersionId(family, variantIndex);
 
   useEffect(() => {
     if (!open) return;
     setLocalError(null);
     setLoadError(null);
     setSlotIndex(0);
+    setTargetRowExists(null);
     let cancelled = false;
     void (async () => {
       try {
@@ -137,6 +153,7 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
         setSlotIds([...payload.version_ids]);
         const row = findVersion(registry, family, versionId);
         setVersionName(row?.name ?? "");
+        setTargetRowExists(row != null);
       } catch (e: unknown) {
         if (!cancelled) setLoadError(formatSaveScriptError(e));
       }
@@ -145,6 +162,34 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
       cancelled = true;
     };
   }, [open, family, versionId]);
+
+  async function registerFromDisk() {
+    setLocalError(null);
+    setBusy(true);
+    try {
+      if (family === "player") {
+        await postSyncDiscoveredPlayerGlbVersions();
+      } else {
+        await postSyncDiscoveredAnimatedGlbVersions(family);
+      }
+      const [payload, registry] = await Promise.all([fetchEnemyFamilySlots(family), fetchModelRegistry()]);
+      setSlotIds([...payload.version_ids]);
+      const row = findVersion(registry, family, versionId);
+      setVersionName(row?.name ?? "");
+      setTargetRowExists(row != null);
+      if (!row) {
+        setLocalError(
+          `Still no row for ${versionId}. Put ${versionId}.glb under ${
+            family === "player" ? "player_exports/" : `animated_exports/`
+          } (or draft/), then try again.`,
+        );
+      }
+    } catch (e: unknown) {
+      setLocalError(formatSaveScriptError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -177,7 +222,7 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
       if (op === "draft") {
         if (!row) {
           setLocalError(
-            `Version ${versionId} is not in the registry yet. Run a successful export first, then refresh the Registry tab.`,
+            `Version ${versionId} is not in the registry yet. Use “Register from disk” if the GLB exists, or export it first.`,
           );
           return;
         }
@@ -236,7 +281,7 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
       const row = findVersion(registry, family, versionId);
       if (!row) {
         setLocalError(
-          `Version ${versionId} is not in the registry yet. Run a successful export first, then refresh the Registry tab.`,
+          `Version ${versionId} is not in the registry yet. Use “Register from disk” if the GLB exists, or export it first.`,
         );
         return;
       }
@@ -274,13 +319,45 @@ export function SaveModelModal({ open, onClose, family, variantIndex = 0 }: Save
         </h2>
         <p style={hint}>
           Updates <span style={mono}>model_registry.json</span> for <span style={mono}>{versionId}</span>. The variant
-          matches the animated GLB in the 3D preview when it is the same family; otherwise it defaults to{" "}
-          <span style={mono}>_animated_00</span>. Export the GLB first so the registry row exists.
+          matches the GLB in the 3D preview when it matches the selected{" "}
+          {family === "player" ? (
+            <>
+              player color (<span style={mono}>player_slime_{"{color}"}_NN</span>)
+            </>
+          ) : (
+            <>
+              animated family (<span style={mono}>{"{slug}"}_animated_NN</span>)
+            </>
+          )}
+          ; otherwise it defaults to variant <span style={mono}>00</span>. If the matching GLB is already on disk,
+          use <strong style={{ color: "#bbb" }}>Register from disk</strong> to append a registry row (draft) without
+          re-exporting.
         </p>
         {loadError ? (
           <p style={err} role="alert">
             {loadError}
           </p>
+        ) : null}
+        {targetRowExists === false && !loadError ? (
+          <div style={row}>
+            <p style={hint}>
+              No manifest row for <span style={mono}>{versionId}</span>. Scan{" "}
+              {family === "player" ? (
+                <span style={mono}>player_exports/*.glb</span>
+              ) : (
+                <span style={mono}>animated_exports/{family}_animated_*.glb</span>
+              )}{" "}
+              and add missing entries as drafts.
+            </p>
+            <button
+              type="button"
+              style={btnPrimary}
+              onClick={() => void registerFromDisk()}
+              disabled={busy}
+            >
+              {busy ? "Scanning…" : "Register from disk"}
+            </button>
+          </div>
         ) : null}
         <div style={row}>
           <label htmlFor="save-model-version-name" style={label}>

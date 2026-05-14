@@ -1,0 +1,124 @@
+[gd_scene format=3 uid="uid://cdq5y86jyvs5t"]
+
+[ext_resource type="Script" uid="uid://deng4fd5kw0sv" path="res://scripts/player/player_controller_3d.gd" id="1_player_ctl"]
+[ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="PackedScene" uid="uid://2thebibkus48" path="res://asset_generation/python/animated_exports/spider_animated_06.glb" id="6_spider_glb"]
+[ext_resource type="Script" uid="uid://67hlquotuweb" path="res://scripts/system/scene_variant_controller_3d.gd" id="7_scene_variant_controller"]
+[ext_resource type="PackedScene" uid="uid://bmmx1rj7d4fua" path="res://asset_generation/python/player_exports/player_slime_blue_00.glb" id="8_player_glb"]
+[ext_resource type="Script" uid="uid://c6m886bux0ouv" path="res://scripts/fx/slime_visual_state.gd" id="9_slime_visual"]
+[ext_resource type="Script" uid="uid://cmgjcp42oxt6e" path="res://scripts/player/player_export_animation_controller_3d.gd" id="10_anim_ctl"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.18, 0.2, 0.26, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.58, 0.65, 1)
+ambient_light_energy = 0.85
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.32, 0.36, 0.42, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(50, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(60, 8, 15)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.25
+height = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_particles"]
+albedo_color = Color(0.5, 0.9, 0.6, 0.6)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_particles"]
+radius = 0.05
+height = 0.1
+
+[node name="PlayerSpiderSandbox" type="Node3D" unique_id=1764929814]
+
+[node name="SceneVariantController" type="Node" parent="." unique_id=449066067]
+script = ExtResource("7_scene_variant_controller")
+
+[node name="InfectionInteractionHandler" type="Node" parent="." unique_id=1876847510]
+script = ExtResource("3_infection_handler")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1394568366]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1673698192]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 5, 10, 5)
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="." unique_id=2140331722]
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor" unique_id=1737037184]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor" unique_id=1723946876]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("StandardMaterial3D_floor")
+mesh = SubResource("BoxMesh_floor")
+
+[node name="SpawnPosition" type="Marker3D" parent="." unique_id=1748343467]
+
+[node name="CrazySpiderEnemy" parent="." unique_id=118450140 instance=ExtResource("4_enemy")]
+physics_interpolation_mode = 1
+transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 5, 1, 0)
+mutation_drop = "spider"
+model_scene = ExtResource("6_spider_glb")
+
+[node name="InfectionUI" parent="." unique_id=216176310 instance=ExtResource("5_game_ui")]
+
+[node name="RespawnZone" type="Area3D" parent="." unique_id=1307180052]
+script = ExtResource("2_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone" unique_id=1456488160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[node name="Player3D" type="CharacterBody3D" parent="." unique_id=503005379 groups=["Player", "player"]]
+script = ExtResource("1_player_ctl")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player3D" unique_id=1525842997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="SlimeVisual" type="Node3D" parent="Player3D" unique_id=419990025]
+script = ExtResource("9_slime_visual")
+
+[node name="PlayerSlimeBlue00" parent="Player3D/SlimeVisual" unique_id=2030127478 instance=ExtResource("8_player_glb")]
+transform = Transform3D(-0.31546706, 0, -0.4505336, 0, 0.55, 0, 0.4505336, 0, -0.31546706, 0, 0, 0)
+
+[node name="Gimbal" type="Node3D" parent="Player3D" unique_id=662446553]
+
+[node name="Camera3D" type="Camera3D" parent="Player3D/Gimbal" unique_id=151864804]
+transform = Transform3D(1, 0, 0, 0, 0.866, -0.5, 0, 0.5, 0.866, 0, 5, 10)
+current = true
+
+[node name="ParticleTrail" type="CPUParticles3D" parent="Player3D" unique_id=838184870]
+material_override = SubResource("StandardMaterial3D_particles")
+amount = 20
+mesh = SubResource("CapsuleMesh_particles")
+emission_shape = 1
+emission_sphere_radius = 0.2
+direction = Vector3(0, 1, 0)
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.5
+initial_velocity_max = 1.0
+
+[node name="Footsteps" type="AudioStreamPlayer3D" parent="Player3D" unique_id=1304835399]
+
+[node name="PlayerExportAnimationController" type="Node" parent="Player3D" unique_id=1312785356]
+script = ExtResource("10_anim_ctl")
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]

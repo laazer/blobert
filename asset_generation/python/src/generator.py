@@ -98,7 +98,15 @@ def generate_animated_enemy(
 
             if armature and mesh:
                 filename = animated_export_stem(enemy_type, start + i, prefab_name=prefab_name)
-                filepath = export_enemy(armature, mesh, filename, export_dir, attack_profile)
+                opts = _build_options_for_current_enemy(enemy_type)
+                filepath = export_enemy(
+                    armature,
+                    mesh,
+                    filename,
+                    export_dir,
+                    attack_profile,
+                    build_options_snapshot=opts,
+                )
                 print(f"✅ Exported: {filepath}")
             else:
                 print(f"❌ Failed to generate {enemy_type} #{i}")

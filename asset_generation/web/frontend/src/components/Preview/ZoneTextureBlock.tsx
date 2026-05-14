@@ -5,11 +5,8 @@ import type { GradientDirection } from "../ColorPicker/common/DirectionSelector"
 import { parseImageUvRect, stringifyImageUvRect } from "../ColorPicker/imageUvRect";
 import { ColorPickerTabs, type ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
-import type { ZoneTextureSettings, PatternFill } from "../../types/zoneTexture";
-import {
-  readZoneTextureSettingsFromStore,
-  writeZoneTextureSettingsToStore,
-} from "../../utils/zoneTextureConverter";
+import type { PatternFill } from "../../types/zoneTexture";
+import { readZoneTextureSettingsFromStore } from "../../utils/zoneTextureConverter";
 
 const meshFloatScrollWrap = {
   flex: 1,
@@ -176,35 +173,18 @@ function carryPaletteBetweenSingleAndGradient(
 }
 
 /**
- * When switching ``texture_mode``, copy palette colors into the new mode's fields if they are still empty
- * so users do not lose work across spots / checkerboard / stripes.
- * (Gradient was moved to color_mode, so it's no longer handled here.)
+ * Spots / checkerboard / stripes all use the same unified ``feat_{zone}_texture_pattern_*`` and
+ * ``background_*`` keys, so there is nothing to copy when switching ``texture_mode`` between them.
+ * Intentionally does not read legacy ``spot_color`` / ``stripe_color`` keys.
  */
 export function carryTexturePaletteOnModeChange(
-  zone: string,
+  _zone: string,
   prevMode: ReturnType<typeof normalizedTextureMode>,
   nextMode: ReturnType<typeof normalizedTextureMode>,
-  values: Readonly<Record<string, unknown>>,
+  _values: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {
   if (prevMode === nextMode) return {};
-  const p = `feat_${zone}_texture_`;
-  const g = (k: string) => values[k];
-  const out: Record<string, unknown> = {};
-
-  const setIfEmpty = (key: string, ...candidates: unknown[]) => {
-    if (!textureColorEmpty(g(key))) return;
-    const s = firstNonEmptyString(...candidates);
-    if (s) out[key] = s;
-  };
-
-  if (nextMode === "spots" || nextMode === "checkerboard") {
-    setIfEmpty(`${p}spot_color`, g(`${p}stripe_color`));
-    setIfEmpty(`${p}spot_bg_color`, g(`${p}stripe_bg_color`));
-  } else if (nextMode === "stripes") {
-    setIfEmpty(`${p}stripe_color`, g(`${p}spot_color`));
-    setIfEmpty(`${p}stripe_bg_color`, g(`${p}spot_bg_color`));
-  }
-  return out;
+  return {};
 }
 
 export function normalizedTextureMode(

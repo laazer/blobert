@@ -289,11 +289,17 @@ def handle_view_command(args):
     
     try:
         # Run Blender in foreground with animation viewer script
-        subprocess.run([
-            _get_blender_path(),
-            "--python", viewer_script,
-            "--", glb_full_path, animation
-        ])
+        subprocess.run(
+            [
+                _get_blender_path(),
+                "--python",
+                viewer_script,
+                "--",
+                glb_full_path,
+                animation,
+            ],
+            cwd=_PROJECT_ROOT,
+        )
         return True
     except Exception as e:
         print_colored(f"❌ Error: {e}", Colors.RED)
@@ -442,10 +448,17 @@ def handle_player_command(args):
     if args.prefab:
         blender_args += ['--prefab', args.prefab]
 
-    result = subprocess.run([
-        _get_blender_path(), "--background", "--python", "src/player_generator.py",
-        "--", *blender_args
-    ])
+    result = subprocess.run(
+        [
+            _get_blender_path(),
+            "--background",
+            "--python",
+            "src/player_generator.py",
+            "--",
+            *blender_args,
+        ],
+        cwd=_PROJECT_ROOT,
+    )
 
     if result.returncode == 0:
         print_colored("✅ Player slime generated!", Colors.GREEN)
@@ -496,10 +509,18 @@ def handle_level_command(args):
     all_succeeded = True
     for object_type in object_types:
         print(f"\n🏗️  Generating {object_type}...")
-        result = subprocess.run([
-            _get_blender_path(), "--background", "--python", "src/level_generator.py",
-            "--", object_type, str(args.count)
-        ])
+        result = subprocess.run(
+            [
+                _get_blender_path(),
+                "--background",
+                "--python",
+                "src/level_generator.py",
+                "--",
+                object_type,
+                str(args.count),
+            ],
+            cwd=_PROJECT_ROOT,
+        )
         if result.returncode == 0:
             print_colored(f"✅ Generated {object_type}!", Colors.GREEN)
         else:
@@ -748,10 +769,20 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
             sys.exit(1)
         
         try:
-            result = subprocess.run([
-                _get_blender_path(), "--background", "--python", "src/generator.py",
-                "--", "spider", "1"
-            ], capture_output=True, text=True)
+            result = subprocess.run(
+                [
+                    _get_blender_path(),
+                    "--background",
+                    "--python",
+                    "src/generator.py",
+                    "--",
+                    "spider",
+                    "1",
+                ],
+                capture_output=True,
+                text=True,
+                cwd=_PROJECT_ROOT,
+            )
             
             if result.returncode == 0:
                 print_colored("✅ Test completed successfully!", Colors.GREEN)
@@ -823,10 +854,18 @@ For detailed smart generation guide: docs/SMART_GENERATION.md
                 blender_args += ['--prefab', args.prefab]
             if args.build_json:
                 blender_args += ['--build-json', args.build_json]
-            result = subprocess.run([
-                _get_blender_path(), "--background", "--python", "src/generator.py",
-                "--", *blender_args
-            ], env=run_env)
+            result = subprocess.run(
+                [
+                    _get_blender_path(),
+                    "--background",
+                    "--python",
+                    "src/generator.py",
+                    "--",
+                    *blender_args,
+                ],
+                env=run_env,
+                cwd=_PROJECT_ROOT,
+            )
             if result.returncode == 0:
                 print_colored(f"✅ Generated {enemy_type}!", Colors.GREEN)
             else:

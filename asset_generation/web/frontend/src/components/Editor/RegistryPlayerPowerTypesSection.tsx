@@ -12,6 +12,7 @@ import {
   savePlayerPowerTypes,
   type PlayerPowerType,
 } from "../../utils/playerPowerTypes";
+import { RegistryVersionNameInput } from "./RegistryVersionNameInput";
 
 export const PLAYER_POWER_TYPES_HEADING = "Player power types";
 
@@ -111,6 +112,7 @@ export type RegistryPlayerPowerTypesSectionProps = {
   onScanPlayerExports: () => void;
   onApplyFlags: (v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) => void | Promise<void>;
   onPreviewVersion: (v: RegistryEnemyVersion) => void;
+  onRenameVersion: (v: RegistryEnemyVersion, trimmedDisplayName: string) => void | Promise<void>;
 };
 
 export function RegistryPlayerPowerTypesSection({
@@ -120,6 +122,7 @@ export function RegistryPlayerPowerTypesSection({
   onScanPlayerExports,
   onApplyFlags,
   onPreviewVersion,
+  onRenameVersion,
 }: RegistryPlayerPowerTypesSectionProps) {
   const [powerTypes, setPowerTypesState] = useState<PlayerPowerType[]>(() => loadPlayerPowerTypes());
   const [sectionSlots, setSectionSlotsState] = useState<Record<string, string[]>>(() => {
@@ -370,6 +373,9 @@ export function RegistryPlayerPowerTypesSection({
       <div style={noteStyle}>
         Select multiple rows to <strong>Set selected → Draft</strong> or <strong>In pool</strong> in one pass.
       </div>
+      <div style={noteStyle}>
+        <strong>Name</strong> is optional metadata per GLB row; edit and press <strong>Enter</strong> or blur to save.
+      </div>
       {playerVersions.length === 0 ? (
         <div style={{ color: "#9d9d9d", fontSize: 11 }}>
           No player versions registered. Use &ldquo;Scan player exports&rdquo; to detect{" "}
@@ -407,7 +413,7 @@ export function RegistryPlayerPowerTypesSection({
             </button>
           </div>
           <div style={{ overflowX: "auto", width: "100%" }}>
-            <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 11 }}>
+            <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 11 }}>
               <thead>
                 <tr style={{ textAlign: "left", borderBottom: "1px solid #3c3c3c" }}>
                   <th style={{ ...th, width: 36 }}>
@@ -423,6 +429,7 @@ export function RegistryPlayerPowerTypesSection({
                     />
                   </th>
                   <th style={th}>Version id</th>
+                  <th style={th}>Name</th>
                   <th style={{ ...th, maxWidth: 180 }}>Path</th>
                   <th style={th}>Spawn state</th>
                   <th style={th}>Preview</th>
@@ -453,6 +460,14 @@ export function RegistryPlayerPowerTypesSection({
                         />
                       </td>
                       <td style={td}>{row.id}</td>
+                      <td style={td}>
+                        <RegistryVersionNameInput
+                          versionId={row.id}
+                          storedName={row.name}
+                          disabled={pending}
+                          onCommit={(trimmed) => void onRenameVersion(row, trimmed)}
+                        />
+                      </td>
                       <td
                         style={{
                           ...td,

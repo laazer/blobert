@@ -15,13 +15,21 @@ import {
   fetchAssets,
   fetchEnemyPreviewMeta,
   mergeBuildOptionValues,
+  fetchBuildOptionsSidecarForGlbPath,
+  replaceAnimatedSlugBuildOptionsRow,
 } from "../api/client";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../utils/animatedZoneControlsMerge";
+import {
+  buildOptionSlugFromPreviewGlbRelativePath,
+  commandExportPatchFromBuildSnapshot,
+  playerColorFromPlayerSlimeExportRelativePath,
+} from "../utils/glbBuildOptionsHydration";
 import {
   DEFAULT_ANIMATED_ENEMY_META,
   DEFAULT_ANIMATED_ENEMY_SLUGS,
   PLAYER_PROCEDURAL_BUILD_SLUG,
 } from "../utils/enemyDisplay";
+import { PLAYER_COLORS } from "../components/CommandPanel/commandLogic";
 
 /** Zone + defaults before / after /api/meta — keeps Colors usable if the API is down or still loading. */
 const OFFLINE_SEEDED_BUILD_CONTROLS = mergeCanonicalZoneControlsForAllSlugs(
@@ -106,6 +114,8 @@ interface AppState {
   loadAssets: () => Promise<void>;
   /** Load a GLB by server path (preview uses paths from `glbVariants.animatedExportRelativePath` for animated enemies). */
   selectAssetByPath: (path: string) => void;
+  /** When a preview GLB has a companion ``*.build_options.json``, merge it into build/colors/extras state. */
+  hydrateBuildOptionsFromPreviewGlbPath: (relativeGlbPath: string) => Promise<void>;
   setActiveGlbUrl: (url: string | null) => void;
   setAvailableClips: (names: string[]) => void;
   setActiveAnimation: (name: string | null) => void;
@@ -309,6 +319,43 @@ export const useAppStore = create<AppState>()(
         s.availableClips = [];
         s.activeAnimation = "Idle";
         s.isAnimationPaused = false;
+      });
+      void get().hydrateBuildOptionsFromPreviewGlbPath(path);
+    },
+    async hydrateBuildOptionsFromPreviewGlbPath(relativeGlbPath: string) {
+      const slug = buildOptionSlugFromPreviewGlbRelativePath(relativeGlbPath);
+      if (!slug) return;
+      let snap: Record<string, unknown> | null = null;
+      try {
+        snap = await fetchBuildOptionsSidecarForGlbPath(relativeGlbPath);
+      } catch {
+        return;
+      }
+      if (!snap || Object.keys(snap).length === 0) return;
+      const cmdPatch = commandExportPatchFromBuildSnapshot(snap);
+      set((s) => {
+        const controls = s.animatedBuildControls;
+        if (!(controls[slug]?.length)) return;
+        s.animatedBuildOptionValues = replaceAnimatedSlugBuildOptionsRow(
+          controls,
+          s.animatedBuildOptionValues,
+          slug,
+          snap,
+        );
+        if (cmdPatch.finish !== undefined) {
+          s.commandExportFinish = cmdPatch.finish;
+        }
+        if (cmdPatch.hexColor !== undefined) {
+          s.commandExportHexColor = cmdPatch.hexColor;
+        }
+        if (slug === PLAYER_PROCEDURAL_BUILD_SLUG) {
+          const pc = playerColorFromPlayerSlimeExportRelativePath(relativeGlbPath);
+          if (pc && PLAYER_COLORS.includes(pc)) {
+            s.commandContext = { cmd: "player", enemy: pc };
+          }
+        } else {
+          s.commandContext = { ...s.commandContext, cmd: "animated", enemy: slug };
+        }
       });
     },
     setActiveGlbUrl(url) {

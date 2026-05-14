@@ -4,7 +4,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
 import { enemySelectOptionLabel, normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
-import { animatedVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
+import { animatedVariantIndexFromPreviewGlb, playerVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import { regeneratePreviewParams } from "../../utils/regeneratePreviewParams";
 import {
@@ -269,10 +269,20 @@ export function CommandPanel() {
     await killProcess();
   }
 
-  const saveModelFamily =
-    cmd === "animated" && enemy && enemy !== "all" ? normalizeAnimatedSlug(enemy) : null;
+  const saveModelFamily: string | null =
+    cmd === "animated" && enemy && enemy !== "all"
+      ? normalizeAnimatedSlug(enemy)
+      : cmd === "player" && PLAYER_COLORS.includes((enemy || "").trim().toLowerCase())
+        ? "player"
+        : null;
 
-  const saveModelVariantIndex = animatedVariantIndexFromPreviewGlb(saveModelFamily, activeGlbUrl);
+  const saveModelPlayerColor =
+    saveModelFamily === "player" ? (enemy || "").trim().toLowerCase() : undefined;
+
+  const saveModelVariantIndex =
+    saveModelFamily === "player"
+      ? playerVariantIndexFromPreviewGlb(saveModelPlayerColor ?? "", activeGlbUrl)
+      : animatedVariantIndexFromPreviewGlb(saveModelFamily, activeGlbUrl);
 
   const canRegenerate =
     (cmd === "animated" || cmd === "player" || cmd === "level") &&
@@ -419,7 +429,11 @@ export function CommandPanel() {
             style={{ ...s.btn, background: "#2d6a4f" }}
             onClick={() => setSaveModelModalOpen(true)}
             disabled={isRunning}
-            title="Update model_registry.json slots or draft flag for the animated GLB in preview when it matches the selected enemy (otherwise variant 00)."
+            title={
+              saveModelFamily === "player"
+                ? "Update model_registry.json player slots or draft flag for the player_slime GLB in preview when it matches the selected color (otherwise variant 00)."
+                : "Update model_registry.json slots or draft flag for the animated GLB in preview when it matches the selected enemy (otherwise variant 00)."
+            }
           >
             Save model
           </button>
@@ -471,6 +485,7 @@ export function CommandPanel() {
           onClose={() => setSaveModelModalOpen(false)}
           family={saveModelFamily}
           variantIndex={saveModelVariantIndex}
+          playerColor={saveModelPlayerColor}
         />
       )}
     </div>

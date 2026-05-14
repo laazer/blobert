@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
-import { animatedExportRelativePath, playerExportRelativePath } from "../../utils/glbVariants";
+import { animatedExportRelativePath, parseAnimatedEnemyExportFilename, parseVariantFilename, playerExportRelativePath } from "../../utils/glbVariants";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
 import {
@@ -226,10 +226,32 @@ export function BuildControls() {
 
   useEffect(() => {
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
-    const desired = isPlayerSlimeBuild
-      ? playerExportRelativePath(playerColor, 0)
-      : animatedExportRelativePath(slug, 0);
     const current = previewPathFromAssetsUrl(useAppStore.getState().activeGlbUrl);
+    if (isPlayerSlimeBuild) {
+      const base = current?.split("/").pop() ?? "";
+      const parsed = parseVariantFilename(base);
+      if (
+        parsed &&
+        parsed.base.toLowerCase() === `player_slime_${playerColor}` &&
+        (current?.startsWith("player_exports/") || current?.startsWith("player_exports/draft/"))
+      ) {
+        return;
+      }
+      const desired = playerExportRelativePath(playerColor, 0);
+      if (current === desired) return;
+      selectAssetByPath(desired);
+      return;
+    }
+    const base = current?.split("/").pop() ?? "";
+    const parsedAnim = parseAnimatedEnemyExportFilename(base);
+    if (
+      parsedAnim &&
+      normalizeAnimatedSlug(parsedAnim.slug) === slug &&
+      (current?.startsWith("animated_exports/") || current?.startsWith("animated_exports/draft/"))
+    ) {
+      return;
+    }
+    const desired = animatedExportRelativePath(slug, 0);
     if (current === desired) return;
     selectAssetByPath(desired);
   }, [isAnimatedEnemy, isPlayerSlimeBuild, playerColor, slug, selectAssetByPath]);

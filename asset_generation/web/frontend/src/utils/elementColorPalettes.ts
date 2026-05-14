@@ -165,6 +165,39 @@ function companionPatternColor(hex: string): string {
   return alt.toLowerCase() === hex.toLowerCase() ? rgbToHex(r ^ 0x3a, g ^ 0x3a, b ^ 0x3a) : alt;
 }
 
+/** Meta / CLI use ``feat_{zone}_hex``; Colors tab picker uses ``feat_{zone}_color_hex``. */
+function zoneHexKeys(zone: CoarseZoneKey): { canonical: string; picker: string } {
+  return { canonical: `feat_${zone}_hex`, picker: `feat_${zone}_color_hex` };
+}
+
+function applyZoneFinishAndHex(
+  zone: CoarseZoneKey,
+  mat: ZoneMaterial,
+  existingDefKeys: ReadonlySet<string>,
+  updates: Record<string, unknown>,
+): void {
+  const fk = `feat_${zone}_finish`;
+  const { canonical: canonicalHexKey, picker: pickerHexKey } = zoneHexKeys(zone);
+  const colorAKey = `feat_${zone}_color_a`;
+  const colorBKey = `feat_${zone}_color_b`;
+  const primary = sanitizeHex(mat.hex);
+  const secondary = companionPatternColor(primary);
+
+  if (existingDefKeys.has(fk)) updates[fk] = sanitizeFinish(mat.finish);
+  if (!primary) return;
+
+  if (existingDefKeys.has(canonicalHexKey)) {
+    updates[canonicalHexKey] = primary;
+    updates[pickerHexKey] = primary;
+    updates[colorAKey] = primary;
+    updates[colorBKey] = secondary;
+  } else if (existingDefKeys.has(pickerHexKey)) {
+    updates[pickerHexKey] = primary;
+    if (existingDefKeys.has(colorAKey)) updates[colorAKey] = primary;
+    if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
+  }
+}
+
 /** Build store updates for coarse zone keys that exist on this enemy. */
 export function buildFeatUpdatesFromPalette(
   palette: ElementPalette,
@@ -178,18 +211,13 @@ export function buildFeatUpdatesFromPalette(
     const modeKey = `feat_${zone}_texture_mode`;
     const rawMode = currentValues[modeKey];
     const mode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "none";
-    const fk = `feat_${zone}_finish`;
-    const hk = `feat_${zone}_color_hex`;
     const colorAKey = `feat_${zone}_color_a`;
     const colorBKey = `feat_${zone}_color_b`;
     const primary = sanitizeHex(mat.hex);
     const secondary = companionPatternColor(primary);
 
     if (mode === "none") {
-      if (existingDefKeys.has(fk)) updates[fk] = sanitizeFinish(mat.finish);
-      if (existingDefKeys.has(hk)) updates[hk] = primary;
-      if (existingDefKeys.has(colorAKey)) updates[colorAKey] = primary;
-      if (existingDefKeys.has(colorBKey)) updates[colorBKey] = secondary;
+      applyZoneFinishAndHex(zone, mat, existingDefKeys, updates);
       continue;
     }
 
@@ -227,8 +255,16 @@ export function extractZonePaletteFromValues(values: Readonly<Record<string, unk
   const out: ElementPalette = {};
   for (const zone of COARSE_ZONE_KEYS) {
     const ff = values[`feat_${zone}_finish`];
-    const hx = values[`feat_${zone}_color_hex`];
-    if (typeof ff === "string" && typeof hx === "string") {
+    const { canonical, picker } = zoneHexKeys(zone);
+    const rawCanon = values[canonical];
+    const rawPicker = values[picker];
+    const hx =
+      typeof rawCanon === "string" && rawCanon.trim() !== ""
+        ? rawCanon
+        : typeof rawPicker === "string"
+          ? rawPicker
+          : "";
+    if (typeof ff === "string" && typeof hx === "string" && hx !== "") {
       out[zone] = { finish: ff, hex: hx };
     }
   }

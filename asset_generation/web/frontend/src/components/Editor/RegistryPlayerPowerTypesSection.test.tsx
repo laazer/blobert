@@ -11,6 +11,7 @@ import { savePlayerPowerTypes } from "../../utils/playerPowerTypes";
 const noopFlags = vi.fn();
 const noopPreview = vi.fn();
 const noopScan = vi.fn();
+const noopRename = vi.fn();
 
 const draftVersion: RegistryEnemyVersion = {
   id: "player_slime_blue_00",
@@ -38,6 +39,7 @@ function renderSection(
       onScanPlayerExports={noopScan}
       onApplyFlags={noopFlags}
       onPreviewVersion={noopPreview}
+      onRenameVersion={noopRename}
     />,
   );
 }

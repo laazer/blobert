@@ -201,14 +201,17 @@ def _ast_noncanonical_project_imports(tree: ast.Module) -> list[ast.AST]:
     return bad
 
 
+_BLENDER_PYTHON_ENTRYPOINTS = frozenset({"generator.py", "player_generator.py", "level_generator.py"})
+
+
 @pytest.mark.parametrize("path", _scoped_entrypoint_py_files(), ids=lambda p: p.name)
 def test_scoped_entrypoint_sources_have_no_sys_path_mutation(path: Path) -> None:
     tree = _parse_python_file(path)
     hits = _ast_sys_path_mutation_calls(tree)
-    # generator.py is allowed to mutate sys.path as documented in pyproject.toml:
-    # "CLI entrypoints tweak sys.path before imports"
-    if path.name == "generator.py":
-        pytest.skip("generator.py is a CLI entrypoint and is allowed to tweak sys.path")
+    # Blender --python scripts prepend project root before ``from src.*`` imports; see pyproject.toml
+    # note on CLI entrypoints / generator.py.
+    if path.name in _BLENDER_PYTHON_ENTRYPOINTS:
+        pytest.skip(f"{path.name} is a Blender subprocess entrypoint and may tweak sys.path")
     assert not hits, f"sys.path mutation in {path}: {hits!r}"
 
 

@@ -103,6 +103,12 @@
           "id": "claw_crawler_animated_04",
           "in_use": false,
           "path": "animated_exports/claw_crawler_animated_04.glb"
+        },
+        {
+          "draft": true,
+          "id": "claw_crawler_animated_05",
+          "in_use": false,
+          "path": "animated_exports/claw_crawler_animated_05.glb"
         }
       ]
     },
@@ -118,7 +124,7 @@
     },
     "spider": {
       "slots": [
-        ""
+        "spider_animated_06"
       ],
       "versions": [
         {
@@ -128,9 +134,10 @@
           "path": "animated_exports/spider_animated_05.glb"
         },
         {
-          "draft": true,
+          "draft": false,
           "id": "spider_animated_06",
-          "in_use": false,
+          "in_use": true,
+          "name": "crazy_varient",
           "path": "animated_exports/spider_animated_06.glb"
         },
         {
@@ -149,6 +156,7 @@
           "draft": true,
           "id": "spider_animated_00",
           "in_use": false,
+          "name": "default",
           "path": "animated_exports/spider_animated_00.glb"
         },
         {
@@ -186,6 +194,12 @@
           "id": "spider_animated_14",
           "in_use": false,
           "path": "animated_exports/spider_animated_14.glb"
+        },
+        {
+          "draft": true,
+          "id": "spider_animated_15",
+          "in_use": false,
+          "path": "animated_exports/spider_animated_15.glb"
         }
       ]
     },
@@ -202,7 +216,51 @@
   },
   "player": {
     "slots": [],
-    "versions": []
+    "versions": [
+      {
+        "draft": false,
+        "id": "player_slime_blue_00",
+        "in_use": true,
+        "name": "de",
+        "path": "player_exports/player_slime_blue_00.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_blue_01",
+        "in_use": false,
+        "path": "player_exports/player_slime_blue_01.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_blue_02",
+        "in_use": false,
+        "path": "player_exports/player_slime_blue_02.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_green_00",
+        "in_use": false,
+        "path": "player_exports/player_slime_green_00.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_green_01",
+        "in_use": false,
+        "path": "player_exports/player_slime_green_01.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_green_02",
+        "in_use": false,
+        "path": "player_exports/player_slime_green_02.glb"
+      },
+      {
+        "draft": true,
+        "id": "player_slime_pink_00",
+        "in_use": false,
+        "path": "player_exports/player_slime_pink_00.glb"
+      }
+    ]
   },
   "player_active_visual": null,
   "schema_version": 1

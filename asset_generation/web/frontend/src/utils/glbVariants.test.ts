@@ -6,6 +6,8 @@ import {
   parseAnimatedEnemyExportFilename,
   parseVariantFilename,
   playerExportRelativePath,
+  playerSlimeVersionId,
+  playerVariantIndexFromPreviewGlb,
   preferredAnimatedVersionIdFromPreview,
 } from "./glbVariants";
 
@@ -84,6 +86,41 @@ describe("animatedVariantIndexFromPreviewGlb", () => {
   it("returns 0 when URL missing or not a glb path", () => {
     expect(animatedVariantIndexFromPreviewGlb("spider", null)).toBe(0);
     expect(animatedVariantIndexFromPreviewGlb(null, "/api/assets/animated_exports/spider_animated_03.glb")).toBe(0);
+  });
+});
+
+describe("playerSlimeVersionId", () => {
+  it("matches stem used by playerExportRelativePath", () => {
+    expect(playerSlimeVersionId("blue", 0)).toBe("player_slime_blue_00");
+    expect(playerSlimeVersionId("Pink", 2)).toBe("player_slime_pink_02");
+  });
+});
+
+describe("playerVariantIndexFromPreviewGlb", () => {
+  it("returns variant from preview URL when color matches", () => {
+    expect(
+      playerVariantIndexFromPreviewGlb("blue", "/api/assets/player_exports/player_slime_blue_01.glb?t=1"),
+    ).toBe(1);
+  });
+
+  it("returns 0 when preview is another color", () => {
+    expect(
+      playerVariantIndexFromPreviewGlb("blue", "/api/assets/player_exports/player_slime_green_02.glb"),
+    ).toBe(0);
+  });
+
+  it("reads variant from draft player export path", () => {
+    expect(
+      playerVariantIndexFromPreviewGlb(
+        "blue",
+        "/api/assets/player_exports/draft/player_slime_blue_03.glb",
+      ),
+    ).toBe(3);
+  });
+
+  it("returns 0 when URL missing or not under player_exports", () => {
+    expect(playerVariantIndexFromPreviewGlb("blue", null)).toBe(0);
+    expect(playerVariantIndexFromPreviewGlb("blue", "/api/assets/animated_exports/spider_animated_01.glb")).toBe(0);
   });
 });
 

@@ -29,11 +29,18 @@ export function readPatternFillFromStore(
 
   if (mode === "gradient") {
     return readGradientFill(zone, fieldPrefix, values);
-  } else if (mode === "image") {
-    return readImageFill(zone, fieldPrefix, values);
-  } else {
-    return readColorFill(zone, fieldPrefix, values);
   }
+  if (mode === "image") {
+    return readImageFill(zone, fieldPrefix, values);
+  }
+  // Mode is "single" or unknown. If an image id is still present (store not fully
+  // normalized), treat as image so callers like element palette apply do not wipe it.
+  const idKey = `feat_${zone}_texture_${fieldPrefix}_image_id`;
+  const asset_id = typeof values[idKey] === "string" ? values[idKey].trim() : "";
+  if (asset_id !== "") {
+    return readImageFill(zone, fieldPrefix, values);
+  }
+  return readColorFill(zone, fieldPrefix, values);
 }
 
 function readColorFill(

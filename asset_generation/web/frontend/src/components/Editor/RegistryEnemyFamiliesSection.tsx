@@ -3,6 +3,7 @@ import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { enemyRegistryRowKey } from "../../utils/registryVersionSelection";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
 import { ENEMY_EMPTY_SLOTS_COPY } from "./registryPaneStrings";
+import { RegistryVersionNameInput } from "./RegistryVersionNameInput";
 
 const noteStyle: CSSProperties = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight: 1.45 };
 const sectionStyle: CSSProperties = { border: "1px solid #3c3c3c", borderRadius: 4, padding: 10, background: "#202020" };
@@ -107,6 +108,8 @@ export type RegistryEnemyFamiliesSectionProps = {
   onBulkEnemySetDraft: (family: string) => void;
   onBulkEnemySetInPool: (family: string) => void;
   onBulkEnemyDeleteSelected: (family: string) => void;
+  /** Persist optional display name (blur / Enter on the Name field). */
+  onRenameVersion: (family: string, v: RegistryEnemyVersion, trimmedDisplayName: string) => void | Promise<void>;
 };
 
 export function RegistryEnemyFamiliesSection({
@@ -134,6 +137,7 @@ export function RegistryEnemyFamiliesSection({
   onBulkEnemySetDraft,
   onBulkEnemySetInPool,
   onBulkEnemyDeleteSelected,
+  onRenameVersion,
 }: RegistryEnemyFamiliesSectionProps) {
   return (
     <div style={{ ...sectionStyle, marginBottom: 16 }}>
@@ -156,6 +160,10 @@ export function RegistryEnemyFamiliesSection({
       <div style={noteStyle}>
         Use the <strong>Select</strong> column to choose multiple versions, then <strong>Set selected</strong> for draft / in
         pool or <strong>Delete selected</strong> (same rules as per-row delete).
+      </div>
+      <div style={noteStyle}>
+        <strong>Name</strong> is an optional label in the manifest; edit the field and press <strong>Enter</strong> or click
+        away to save.
       </div>
 
       {families.map((family) => {
@@ -312,7 +320,14 @@ export function RegistryEnemyFamiliesSection({
                         />
                       </td>
                       <td style={td}>{row.id}</td>
-                      <td style={td}>{row.name?.trim() ? row.name.trim() : "—"}</td>
+                      <td style={td}>
+                        <RegistryVersionNameInput
+                          versionId={row.id}
+                          storedName={row.name}
+                          disabled={pending}
+                          onCommit={(trimmed) => void onRenameVersion(family, row, trimmed)}
+                        />
+                      </td>
                       <td style={{ ...td, maxWidth: 180, wordBreak: "break-all", fontSize: 10, color: "#9d9d9d" }}>{row.path}</td>
                       <td style={td}>
                         <div

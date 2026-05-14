@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { ZoneTextureBlock, shouldShowTextureParam } from "../ZoneTextureBlock";
+import {
+  ZoneTextureBlock,
+  shouldShowTextureParam,
+  carryTexturePaletteOnModeChange,
+} from "../ZoneTextureBlock";
 import type { AnimatedBuildControlDef } from "../../../types";
 
 describe("shouldShowTextureParam", () => {
@@ -79,6 +83,36 @@ describe("shouldShowTextureParam", () => {
       expect(assetIdShow).toBe(false);
       expect(tileRepeatShow).toBe(false);
     });
+  });
+});
+
+describe("carryTexturePaletteOnModeChange", () => {
+  it("returns {} when typed pattern/background hexes are already set", () => {
+    const values = {
+      feat_body_texture_mode: "stripes",
+      feat_body_texture_pattern_mode: "single",
+      feat_body_texture_pattern_hex: "#112233",
+      feat_body_texture_background_mode: "single",
+      feat_body_texture_background_hex: "#445566",
+    };
+    expect(carryTexturePaletteOnModeChange("body", "stripes", "spots", values)).toEqual({});
+  });
+
+  it("returns {} on mode change even when legacy stripe keys are populated", () => {
+    const values = {
+      feat_body_texture_mode: "stripes",
+      feat_body_texture_pattern_mode: "single",
+      feat_body_texture_pattern_hex: "",
+      feat_body_texture_background_mode: "single",
+      feat_body_texture_background_hex: "",
+      feat_body_texture_stripe_color: "aabbcc",
+      feat_body_texture_stripe_bg_color: "ddeeff",
+    };
+    expect(carryTexturePaletteOnModeChange("body", "stripes", "spots", values)).toEqual({});
+  });
+
+  it("returns {} when prev and next mode are the same", () => {
+    expect(carryTexturePaletteOnModeChange("body", "spots", "spots", {})).toEqual({});
   });
 });
 

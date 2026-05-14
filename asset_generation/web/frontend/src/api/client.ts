@@ -191,6 +191,40 @@ export function mergeBuildOptionValues(
   return next;
 }
 
+/** ``GET /api/assets/{path}`` for ``*.build_options.json`` next to an animated/player GLB (404 → null). */
+export async function fetchBuildOptionsSidecarForGlbPath(relativeGlbPath: string): Promise<Record<string, unknown> | null> {
+  if (!relativeGlbPath.toLowerCase().endsWith(".glb")) return null;
+  const jsonPath = relativeGlbPath.replace(/\.glb$/i, ".build_options.json");
+  const enc = jsonPath
+    .split("/")
+    .filter((seg) => seg.length > 0)
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+  const res = await fetch(`${BASE}/assets/${enc}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error((await res.text()).trim() || `HTTP ${res.status}`);
+  const data: unknown = await res.json();
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  return data as Record<string, unknown>;
+}
+
+/**
+ * Replace one slug's build row with ``defaults ∪ snapshot`` (used when the preview GLB has a sidecar).
+ * Runs legacy texture migration for that row.
+ */
+export function replaceAnimatedSlugBuildOptionsRow(
+  controls: Record<string, AnimatedBuildControlDef[]>,
+  full: Record<string, Record<string, unknown>>,
+  slug: string,
+  snapshot: Record<string, unknown>,
+): Record<string, Record<string, unknown>> {
+  const defs = controls[slug] ?? [];
+  const defaults = defaultValuesForDefs(defs);
+  const row: Record<string, unknown> = { ...defaults, ...snapshot };
+  migrateLegacyGlobalTextureToZones(slug, row);
+  return { ...full, [slug]: row };
+}
+
 export async function fetchModelRegistry(): Promise<ModelRegistryPayload> {
   const res = await fetch(`${BASE}/registry/model`);
   if (!res.ok) throw new Error(await res.text());

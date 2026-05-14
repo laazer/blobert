@@ -18,9 +18,16 @@ export function playerExportRelativePath(
 ): string {
   const c = color.trim().toLowerCase();
   const v = Math.max(0, Math.min(99, Math.floor(variantIndex)));
-  const stem = `player_slime_${c}_${String(v).padStart(2, "0")}`;
+  const stem = playerSlimeVersionId(c, v);
   const mid = draft ? `${PLAYER_EXPORT_DIR}/draft` : PLAYER_EXPORT_DIR;
   return `${mid}/${stem}.glb`;
+}
+
+/** Registry / export stem ``player_slime_{color}_{NN}`` (no ``.glb``). */
+export function playerSlimeVersionId(color: string, variantIndex: number): string {
+  const c = color.trim().toLowerCase();
+  const v = Math.max(0, Math.min(99, Math.floor(variantIndex)));
+  return `player_slime_${c}_${String(v).padStart(2, "0")}`;
 }
 
 /**
@@ -80,6 +87,25 @@ export function animatedVariantIndexFromPreviewGlb(
   const parsed = parseAnimatedEnemyExportFilename(base);
   if (!parsed) return 0;
   if (normalizeAnimatedSlug(parsed.slug) !== normalizedFamily) return 0;
+  return parsed.variantIndex;
+}
+
+/**
+ * Variant index for Save model / registry when preview is a ``player_slime_{color}_NN`` GLB matching the command color.
+ */
+export function playerVariantIndexFromPreviewGlb(
+  normalizedPlayerColor: string | null,
+  activeGlbUrl: string | null,
+): number {
+  const color = (normalizedPlayerColor || "").trim().toLowerCase();
+  if (!color) return 0;
+  const rel = previewPathFromAssetsUrl(activeGlbUrl);
+  if (!rel || !rel.endsWith(".glb")) return 0;
+  if (!rel.startsWith(`${PLAYER_EXPORT_DIR}/`) && !rel.startsWith(`${PLAYER_EXPORT_DIR}/draft/`)) return 0;
+  const base = rel.split("/").pop() ?? "";
+  const parsed = parseVariantFilename(base);
+  if (!parsed) return 0;
+  if (parsed.base.toLowerCase() !== `player_slime_${color}`) return 0;
   return parsed.variantIndex;
 }
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import os
 from abc import abstractmethod
-from typing import List
+from typing import Any, List, Mapping
 
 from ..utils.export_bake import bake_procedural_stripes_for_export
 from .base_animated_model import BaseAnimatedModel
@@ -58,8 +58,23 @@ class BaseEnemy(BaseAnimatedModel):
         return mesh
 
 
-def export_enemy(armature, mesh, filename, export_dir, attack_profile=None):
-    """Export enemy to GLB format with an optional companion attack-profile JSON"""
+def _export_build_options_json(filename: str, export_dir: str, build_options: Mapping[str, Any]) -> None:
+    """Write resolved build options next to the GLB for editor / tooling replay."""
+    json_filepath = os.path.join(export_dir, f"{filename}.build_options.json")
+    with open(json_filepath, "w", encoding="utf-8") as json_file:
+        json.dump(dict(build_options), json_file, indent=2, default=str)
+    print(f"Build options snapshot: {json_filepath}")
+
+
+def export_enemy(
+    armature,
+    mesh,
+    filename,
+    export_dir,
+    attack_profile=None,
+    build_options_snapshot: Mapping[str, Any] | None = None,
+):
+    """Export enemy to GLB format with optional companion JSON sidecars."""
     import bpy
 
     os.makedirs(export_dir, exist_ok=True)
@@ -115,6 +130,9 @@ def export_enemy(armature, mesh, filename, export_dir, attack_profile=None):
 
     if attack_profile:
         _export_attack_profile_json(filename, export_dir, attack_profile)
+
+    if build_options_snapshot is not None:
+        _export_build_options_json(filename, export_dir, build_options_snapshot)
 
     return filepath
 

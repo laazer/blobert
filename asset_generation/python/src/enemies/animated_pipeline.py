@@ -10,6 +10,7 @@ import bpy
 
 from ..core.blender_utils import clear_scene
 from ..materials.material_system import setup_materials
+from ..utils.build_options import options_for_enemy
 from .animated import AnimatedEnemyBuilder
 from .base_enemy import export_enemy
 
@@ -37,7 +38,15 @@ def run_blueprint_export_in_blender(
     rng = random.Random(generation_seed)
     built = AnimatedEnemyBuilder.create_enemy(enemy_type, materials, rng)
     if built.armature and built.mesh:
-        export_enemy(built.armature, built.mesh, blueprint_name, export_dir, built.attack_profile)
+        snap = dict(options_for_enemy(enemy_type, {}))
+        export_enemy(
+            built.armature,
+            built.mesh,
+            blueprint_name,
+            export_dir,
+            built.attack_profile,
+            build_options_snapshot=snap,
+        )
         print(f"✅ Generated {blueprint_name}")
         return True
     print("❌ Generation failed")

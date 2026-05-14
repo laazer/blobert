@@ -7,11 +7,12 @@ import { CommandPanel } from "./CommandPanel";
 const saveModelModalPropsSpy = vi.fn();
 
 vi.mock("./SaveModelModal", () => ({
-  SaveModelModal: (props: { open: boolean; family: string; variantIndex?: number }) => {
+  SaveModelModal: (props: { open: boolean; family: string; variantIndex?: number; playerColor?: string }) => {
     saveModelModalPropsSpy(props);
     return props.open ? (
       <div role="dialog" aria-label="Save model stub">
         variant:{props.variantIndex ?? "undef"}
+        {props.playerColor ? `;color:${props.playerColor}` : ""}
       </div>
     ) : null;
   },
@@ -91,6 +92,28 @@ describe("CommandPanel Save script", () => {
           open: true,
           family: "spider",
           variantIndex: 0,
+        }),
+      );
+    });
+  });
+
+  it("passes player family, color, and variant from preview for player cmd", async () => {
+    useAppStore.setState({
+      activeGlbUrl: "/api/assets/player_exports/player_slime_green_02.glb",
+    });
+    render(<CommandPanel />);
+    const preview = screen.getByPlaceholderText(/animated spider/);
+    fireEvent.change(preview, { target: { value: "player green" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save model" }));
+
+    await waitFor(() => {
+      expect(saveModelModalPropsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          open: true,
+          family: "player",
+          variantIndex: 2,
+          playerColor: "green",
         }),
       );
     });

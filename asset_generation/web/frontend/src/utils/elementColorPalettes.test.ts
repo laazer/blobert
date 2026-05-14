@@ -8,8 +8,8 @@ import {
 } from "./elementColorPalettes";
 
 describe("buildFeatUpdatesFromPalette", () => {
-  it("only sets keys present in defs", () => {
-    const keys = new Set(["feat_body_finish", "feat_body_color_hex", "feat_extra_finish"]);
+  it("sets meta hex plus picker mirror keys when feat_{zone}_hex is in defs", () => {
+    const keys = new Set(["feat_body_finish", "feat_body_hex", "feat_extra_finish"]);
     const u = buildFeatUpdatesFromPalette(
       {
         body: { finish: "glossy", hex: "#abcdef" },
@@ -17,17 +17,20 @@ describe("buildFeatUpdatesFromPalette", () => {
       },
       keys,
     );
-    expect(u).toEqual({
-      feat_body_finish: "glossy",
-      feat_body_color_hex: "#abcdef",
-    });
+    expect(u.feat_body_finish).toBe("glossy");
+    expect(u.feat_body_hex).toBe("#abcdef");
+    expect(u.feat_body_color_hex).toBe("#abcdef");
+    expect(u.feat_body_color_a).toBe("#abcdef");
+    expect(typeof u.feat_body_color_b).toBe("string");
+    expect(u.feat_body_color_b).not.toBe("#abcdef");
   });
 
   it("sanitizes invalid finish and hex", () => {
-    const keys = new Set(["feat_body_finish", "feat_body_color_hex"]);
+    const keys = new Set(["feat_body_finish", "feat_body_hex"]);
     const u = buildFeatUpdatesFromPalette({ body: { finish: "nope", hex: "bad" } }, keys);
     expect(u.feat_body_finish).toBe("matte");
-    expect(u.feat_body_color_hex).toBe("");
+    expect(u.feat_body_hex).toBeUndefined();
+    expect(u.feat_body_color_hex).toBeUndefined();
   });
 
   it("routes palette apply to gradient color fields when the zone uses gradient mode", () => {
@@ -37,7 +40,7 @@ describe("buildFeatUpdatesFromPalette", () => {
       "feat_body_color_b",
       "feat_body_color_mode",
       "feat_body_finish",
-      "feat_body_color_hex",
+      "feat_body_hex",
     ]);
     const u = buildFeatUpdatesFromPalette(
       { body: { finish: "glossy", hex: "#abcdef" } },
@@ -121,14 +124,23 @@ describe("buildFeatUpdatesFromPalette", () => {
 });
 
 describe("extractZonePaletteFromValues", () => {
-  it("round-trips coarse zones", () => {
+  it("round-trips coarse zones from feat_{zone}_hex", () => {
     const values = {
       feat_body_finish: "glossy",
-      feat_body_color_hex: "#aabbcc",
+      feat_body_hex: "#aabbcc",
       feat_head_finish: "matte",
-      feat_head_color_hex: "#112233",
+      feat_head_hex: "#112233",
     };
     expect(extractZonePaletteFromValues(values).body).toEqual({ finish: "glossy", hex: "#aabbcc" });
+  });
+
+  it("falls back to feat_{zone}_color_hex when canonical hex is empty", () => {
+    const values = {
+      feat_body_finish: "matte",
+      feat_body_hex: "",
+      feat_body_color_hex: "#00ff00",
+    };
+    expect(extractZonePaletteFromValues(values).body).toEqual({ finish: "matte", hex: "#00ff00" });
   });
 });
 
