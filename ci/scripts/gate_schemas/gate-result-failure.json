@@ -1,0 +1,34 @@
+{
+  "_example": {
+    "version": "0.1.0",
+    "status": "FAIL",
+    "gate": "spec_completeness_check",
+    "upstream_agent": "Spec",
+    "downstream_agent": "TestDesigner",
+    "timestamp": "2026-01-01T00:00:00",
+    "ticket_id": "M902-01",
+    "artifacts": [],
+    "duration_ms": 15,
+    "message": "Required sections missing from spec.",
+    "violations": [
+      {
+        "file": "project_board/specs/example_spec.md",
+        "line": 0,
+        "rule": "endpoint_freeze",
+        "message": "Missing section: Endpoint Freeze — Explicit HTTP method + URI for each endpoint.",
+        "severity": "ERROR"
+      },
+      {
+        "file": "project_board/specs/example_spec.md",
+        "line": 0,
+        "rule": "validation_precedence",
+        "message": "Missing section: Validation Precedence — Table ranking validation checks and status codes.",
+        "severity": "WARN"
+      }
+    ],
+    "remediation_hints": [
+      "Add a ## Endpoint Freeze section listing each endpoint's HTTP method and URI.",
+      "Add a ## Validation Precedence section with a table ranking validation checks."
+    ]
+  }
+}

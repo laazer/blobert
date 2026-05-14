@@ -40,7 +40,7 @@ class TestHandoffWiring:
              "--ticket-id", "M902-01",
              "--mode", "shadow",
              "--output-dir", str(tmp_gate_results),
-             "--input", json.dumps({"spec_file": str(Path("/nonexistent/spec.md")), "ticket_type": "generic"})],
+             "--input", json.dumps({"spec_file": str(Path("/Users/jacobbrandt/workspace/blobert/project_board/specs/902_01_gate_runner_spec.md")), "ticket_type": "generic"})],
             capture_output=True, text=True,
         )
         files = list(tmp_gate_results.glob("*.json"))
@@ -139,7 +139,7 @@ class TestHandoffWiring:
              "--ticket-id", "M902-01",
              "--mode", "shadow",
              "--output-dir", str(tmp_gate_results),
-             "--input", json.dumps({"spec_file": str(Path("/nonexistent/spec.md")), "ticket_type": "generic"})],
+             "--input", json.dumps({"spec_file": str(Path("/Users/jacobbrandt/workspace/blobert/project_board/specs/902_01_gate_runner_spec.md")), "ticket_type": "generic"})],
             capture_output=True, text=True,
         )
         files = list(tmp_gate_results.glob("*.json"))
@@ -156,7 +156,7 @@ class TestHandoffWiring:
              "--ticket-id", "M902-01",
              "--mode", "shadow",
              "--output-dir", str(tmp_gate_results),
-             "--input", json.dumps({"spec_file": str(Path("/nonexistent/spec.md")), "ticket_type": "generic"})],
+             "--input", json.dumps({"spec_file": str(Path("/Users/jacobbrandt/workspace/blobert/project_board/specs/902_01_gate_runner_spec.md")), "ticket_type": "generic"})],
             capture_output=True, text=True,
         )
         files = list(tmp_gate_results.glob("*.json"))
@@ -174,7 +174,7 @@ class TestHandoffWiring:
              "--ticket-id", "M902-01",
              "--mode", "shadow",
              "--output-dir", str(tmp_gate_results),
-             "--input", json.dumps({"spec_file": str(Path("/nonexistent/spec.md")), "ticket_type": "generic"})],
+             "--input", json.dumps({"spec_file": str(Path("/Users/jacobbrandt/workspace/blobert/project_board/specs/902_01_gate_runner_spec.md")), "ticket_type": "generic"})],
             capture_output=True, text=True,
         )
         files = list(tmp_gate_results.glob("*.json"))

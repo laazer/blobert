@@ -1,0 +1,10 @@
+[
+  {
+    "name": "spec_completeness_check",
+    "module": "spec_completeness",
+    "required_inputs": ["spec_file", "ticket_type"],
+    "default_mode": "shadow",
+    "description": "Validates that a spec .md file contains all required sections for its declared ticket type.",
+    "category": "workflow"
+  }
+]

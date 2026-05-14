@@ -1,0 +1,20 @@
+{
+  "_example": {
+    "version": "0.1.0",
+    "status": "PASS",
+    "gate": "spec_completeness_check",
+    "upstream_agent": "Spec",
+    "downstream_agent": "TestDesigner",
+    "timestamp": "2026-01-01T00:00:00",
+    "ticket_id": "M902-01",
+    "artifacts": [
+      {
+        "path": "project_board/specs/902_01_gate_runner_spec.md",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_bytes": 0
+      }
+    ],
+    "duration_ms": 42,
+    "message": "All required sections present."
+  }
+}
