@@ -5,6 +5,12 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-14T10:30:00Z
+- Queue mode: milestone 902
+- Queue scope: project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/
+- Lean: no
+- Log root: project_board/checkpoints/
+
 ## Run: 2026-04-21T14:18:29Z
 - Queue mode: single ticket
 - Queue scope: project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/02_mesh_and_material_audit_enemy_families_and_player.md
@@ -277,3 +283,13 @@ Log: project_board/checkpoints/image-textures-not-applied/2026-04-26T-spec-diagn
 ### [image-textures-not-applied] — Test Design Complete
 Regression test suite for Requirement 1 (Extend build_options schema to capture image texture data) completed. Tests encode AC1.1–AC1.5 with 12 independent test cases covering flat-key and nested syntax, multi-zone configurations, and fallback behavior. All tests currently FAIL (feature not yet implemented); all 123+ pre-existing build_options tests PASS (no regressions).  
 Log: project_board/checkpoints/image-textures-not-applied/2026-04-26T-test-design.md
+
+## Run: 2026-05-14T13:45:00Z
+- Queue mode: single ticket
+- Queue scope: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/01_validation_gate_framework.md
+- Lean: no
+- Log root: project_board/checkpoints/
+- Run log: project_board/checkpoints/902-vgf/2026-05-14T13-45-00Z-planning.md
+- Run: 2026-05-14T14-00-00Z-specification.md | Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/01_validation_gate_framework.md | Stage: SPECIFICATION | Log: project_board/checkpoints/M902-01/2026-05-14T10-00-00Z-spec.md | Outcome: specification written to project_board/specs/902_01_gate_runner_spec.md; 7 requirements, 5 NFRs, 5 risks; advanced to TEST_DESIGN
+- Run: 2026-05-14T12-00-00Z-test-design.md | Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/01_validation_gate_framework.md | Stage: TEST_DESIGN → TEST_BREAK | Log: project_board/checkpoints/M902-01/2026-05-14T12-00-00Z-test-designer.md | Outcome: 64 behavioral tests across 5 modules (gate runner CLI, registry, schemas, shadow mode, handoff wiring); pytest discoverable; 8 pass (error paths), 56 expect RED until implementation
+
