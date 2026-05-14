@@ -159,7 +159,28 @@ func test_pesal_t_04_zero_eligible_variants_fail_closed() -> void:
 	if selector == null:
 		_fail("PESAL-T-04_selector_instantiates", "selector unavailable")
 		return
-	var manifest: Dictionary = _read_json(MODEL_REGISTRY_JSON_PATH)
+	# Synthetic manifest: family exists but no in_use non-draft versions. Do not tie this
+	# contract to committed model_registry.json (real "spider" may gain eligible rows).
+	var manifest: Dictionary = {
+		"enemies": {
+			"spider": {
+				"versions": [
+					{
+						"id": "spider_contract_draft_only",
+						"path": "animated_exports/spider_contract_placeholder.glb",
+						"draft": true,
+						"in_use": true,
+					},
+					{
+						"id": "spider_contract_not_in_use",
+						"path": "animated_exports/spider_contract_placeholder_2.glb",
+						"draft": false,
+						"in_use": false,
+					},
+				]
+			}
+		}
+	}
 	var result: Dictionary = _call_selector(selector, "spider", manifest, _StubRng.new([0]))
 	if result.is_empty():
 		_fail("PESAL-T-04_selector_returns_dictionary", "selector returned empty/non-dictionary")

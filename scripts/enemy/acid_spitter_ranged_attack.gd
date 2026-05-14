@@ -36,7 +36,10 @@ func _resolve_player_for_attack() -> Node3D:
 		for c in room.get_children():
 			if c is Node3D and c.is_in_group("player"):
 				return c as Node3D
-	return get_tree().get_first_node_in_group("player") as Node3D
+	var tree := get_tree()
+	if tree == null:
+		return null
+	return tree.get_first_node_in_group("player") as Node3D
 
 
 func _range_to_player_for_attack(player: Node3D) -> float:
