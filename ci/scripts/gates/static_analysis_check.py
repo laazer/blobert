@@ -309,12 +309,20 @@ def run(inputs: dict) -> dict:
     has_violations = len(all_violations) > 0
     status = "blocking" if mode == "blocking" and has_violations else "shadow"
 
+    # Prepare artifacts list
+    artifacts: list[str] = []
+
+    # Write JSON output if output_dir specified
+    if output_dir != ".":
+        output_path = Path(output_dir) / f"static_analysis_check_{ticket_id}.json"
+        artifacts.append(str(output_path))
+
     # Build result dict matching gate schema
     result: dict[str, Any] = {
         "status": status,
         "violations": all_violations,
         "remediation_hints": sorted(list(hints)),
-        "artifacts": [],  # Populated if gate produces output files
+        "artifacts": artifacts,
         "duration_ms": duration_ms,
         "upstream_agent": upstream_agent,
         "downstream_agent": downstream_agent,
@@ -325,7 +333,6 @@ def run(inputs: dict) -> dict:
     if output_dir != ".":
         output_path = Path(output_dir) / f"static_analysis_check_{ticket_id}.json"
         output_path.write_text(json.dumps(result, indent=2))
-        result["artifacts"].append(str(output_path))
 
     return result
 
