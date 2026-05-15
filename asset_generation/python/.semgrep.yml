@@ -1,0 +1,78 @@
+# Semgrep local rules for static analysis gate (M902-02)
+# This file contains security, quality, and style rules for Python code analysis.
+# NOTE: Remote registry (semgrep.dev) is deferred to M903. Only local rules here.
+
+rules:
+  - id: no-hardcoded-secrets
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $KEY = "..."
+              - metavariable-pattern:
+                  metavariable: $KEY
+                  patterns:
+                    - pattern-either:
+                        - pattern: "password"
+                        - pattern: "secret"
+                        - pattern: "api_key"
+                        - pattern: "token"
+    message: "Potential hardcoded secret detected. Review and use environment variables."
+    languages: [python]
+    severity: ERROR
+
+  - id: no-exec-eval
+    patterns:
+      - pattern-either:
+          - pattern: exec(...)
+          - pattern: eval(...)
+          - pattern: compile(...)
+    message: "Use of exec/eval/compile is dangerous and should be avoided. Consider safer alternatives."
+    languages: [python]
+    severity: WARNING
+
+  - id: no-assert-in-production
+    patterns:
+      - pattern: assert ...
+    message: "Assert statements should not be used in production code. Use proper error handling instead."
+    languages: [python]
+    severity: WARNING
+    paths:
+      exclude:
+        - "tests/"
+
+  - id: bare-except-clause
+    patterns:
+      - pattern: |
+          try:
+              ...
+          except:
+              ...
+    message: "Bare except clause catches all exceptions including SystemExit and KeyboardInterrupt. Use specific exception types."
+    languages: [python]
+    severity: WARNING
+
+  - id: hardcoded-localhost
+    patterns:
+      - pattern-either:
+          - pattern: "127.0.0.1"
+          - pattern: "localhost"
+    message: "Hardcoded localhost detected. Consider using environment variables for configuration."
+    languages: [python]
+    severity: INFO
+    paths:
+      include:
+        - "asset_generation/web/backend/"
+
+  - id: sql-injection-risk
+    patterns:
+      - pattern-either:
+          - pattern: $DB.execute($QUERY % ...)
+          - pattern: $DB.execute(f"..." % ...)
+    message: "Potential SQL injection. Use parameterized queries instead."
+    languages: [python]
+    severity: ERROR
+
+metadata:
+  description: "Local semgrep rules for blobert project M902-02 static analysis gate"
+  rules_version: "1.0"
+  last_updated: "2026-05-14"

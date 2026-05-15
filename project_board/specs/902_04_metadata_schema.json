@@ -1,0 +1,462 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blobert.local/schemas/gate-metadata-v0.2.0.json",
+  "title": "Gate Handoff Metadata Schema (v0.2.0)",
+  "description": "Frozen specification for gate output metadata including risk scoring, architecture quality proxies, violations, warnings, escalation reasons, and audit event references. Extends M902-01 v0.1.0 with risk-based escalation semantics. Backward compatible via version field; consumers must handle version mismatches gracefully.",
+  "version": "0.2.0",
+  "type": "object",
+  "required": [
+    "status",
+    "risk_score",
+    "architecture_score",
+    "test_confidence",
+    "duplication_delta",
+    "complexity_delta",
+    "violations",
+    "warnings",
+    "escalation_reasons",
+    "audit_events"
+  ],
+  "properties": {
+    "_comment": {
+      "type": "string",
+      "description": "Schema documentation and backward compatibility notes. v0.2.0 extends M902-01 v0.1.0. Consumers must ignore unknown fields for forward compatibility.",
+      "default": "Handoff metadata schema v0.2.0 (M902-04). Extends M902-01 v0.1.0 with risk scoring and escalation. Consumers must handle version mismatches by ignoring unknown fields."
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version (semantic versioning). v0.1.0 = M902-01 base; v0.2.0 = M902-04 with escalation.",
+      "enum": ["0.1.0", "0.2.0"],
+      "default": "0.2.0"
+    },
+    "status": {
+      "type": "string",
+      "description": "Overall gate result status. PASS = no violations; WARN = moderate violations; FAIL = high violations; ESCALATE = human review required.",
+      "enum": ["PASS", "WARN", "FAIL", "ESCALATE"]
+    },
+    "risk_score": {
+      "description": "Numeric risk score (0-100) or UNKNOWN string. Weighted average of violation severities. Thresholds: <=50=PASS, >50-75=WARN, >75-90=FAIL, >90=ESCALATE.",
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Risk score as integer (0-100)"
+        },
+        {
+          "type": "string",
+          "enum": ["UNKNOWN"],
+          "description": "Risk score unavailable"
+        }
+      ]
+    },
+    "architecture_score": {
+      "description": "Numeric architecture quality score (0-100) or UNKNOWN. Penalty-based: 100 - (AR violations * 10). Lower scores indicate worse architecture. Thresholds: >70=PASS, 60-70=WARN, 30-60=FAIL, <=30=ESCALATE.",
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Architecture score as integer (0-100)"
+        },
+        {
+          "type": "string",
+          "enum": ["UNKNOWN"],
+          "description": "Architecture score unavailable"
+        }
+      ]
+    },
+    "test_confidence": {
+      "description": "Test confidence as percentage (0-100) or UNKNOWN. (tests_passed / tests_total) * 100 if gate has test data. Advisory only in MVP.",
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Test confidence as percentage"
+        },
+        {
+          "type": "string",
+          "enum": ["UNKNOWN"],
+          "description": "No test data available (static analysis gates, etc.)"
+        }
+      ]
+    },
+    "duplication_delta": {
+      "description": "Percentage change in code duplication from baseline (positive = more duplication) or null if unavailable. Formula: (current_tokens - baseline_tokens) / baseline_tokens * 100.",
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Duplication delta as percentage (-100 to +500)"
+        },
+        {
+          "type": "null",
+          "description": "Duplication delta unavailable (TODO: finalize baseline strategy in M903)"
+        }
+      ]
+    },
+    "complexity_delta": {
+      "description": "Percentage change in code complexity from baseline (positive = more complex) or null if unavailable. Formula: (current_complexity - baseline_complexity) / baseline_complexity * 100.",
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Complexity delta as percentage (-100 to +500)"
+        },
+        {
+          "type": "null",
+          "description": "Complexity delta unavailable (TODO: finalize tool metrics in M903)"
+        }
+      ]
+    },
+    "violations": {
+      "type": "array",
+      "description": "Array of rule violations detected by gate. Each violation has rule_id, file, line, severity, message, remediation_hint, suppressible.",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "file", "line", "severity", "message", "remediation_hint", "suppressible"],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Rule identifier (e.g., 'E501', 'AR-01', 'GV-06'). Prefix indicates tool: E/W=ruff, mypy-*=mypy, AR-*=architecture, GV-*=governance, etc."
+          },
+          "file": {
+            "type": "string",
+            "description": "File path relative to repo root (e.g., 'asset_generation/web/backend/routers/registry.py')"
+          },
+          "line": {
+            "description": "Line number (1-indexed) where violation occurs, or null if unknown/file-level",
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "description": "Violation severity level",
+            "enum": ["CRITICAL", "ERROR", "WARN", "INFO"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable violation description (1-2 sentences)"
+          },
+          "remediation_hint": {
+            "description": "Optional actionable hint for fixing the violation",
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Remediation suggestion (e.g., 'Remove bare except clause; specify exception type')"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suppressible": {
+            "type": "boolean",
+            "description": "Whether this violation can be suppressed via comment (# noqa, # nosemgrep, etc.). Unsuppressible violations block merge."
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Array of warnings (lower severity than violations). Same schema as violations.",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "file", "line", "severity", "message", "remediation_hint", "suppressible"],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["CRITICAL", "ERROR", "WARN", "INFO"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "remediation_hint": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "suppressible": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "escalation_reasons": {
+      "type": "array",
+      "description": "Array of escalation triggers (detector results). Each escalation has detector, severity, details, confidence, recommendation.",
+      "items": {
+        "type": "object",
+        "required": ["detector", "severity", "details", "confidence", "recommendation"],
+        "properties": {
+          "detector": {
+            "type": "string",
+            "description": "Detector name (e.g., 'governance_file_modifications', 'architecture_drift', 'suppression_abuse')"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Escalation severity (different scale than rule severity; detector-specific)",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+          },
+          "details": {
+            "type": "string",
+            "description": "Explanation of escalation trigger (1-3 sentences)"
+          },
+          "confidence": {
+            "type": "string",
+            "description": "Confidence level of escalation trigger (HIGH=deterministic, MEDIUM=heuristic, LOW=speculative)",
+            "enum": ["HIGH", "MEDIUM", "LOW"]
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "Recommended action (e.g., 'Design review required', 'Fix root cause or create ticket')"
+          }
+        }
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "description": "Array of audit log entry references (paths + line numbers). Enables forensic tracing. References only; full events stored in audit logs.",
+      "items": {
+        "type": "string",
+        "description": "Audit log entry reference (format: 'ci/artifacts/audit-logs/<gate>/<date>/<timestamp>-<mode>.jsonl:line-N')"
+      }
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "description": "Example 1: PASS status (no violations)",
+      "data": {
+        "version": "0.2.0",
+        "status": "PASS",
+        "risk_score": 0,
+        "architecture_score": 100,
+        "test_confidence": 95,
+        "duplication_delta": null,
+        "complexity_delta": null,
+        "violations": [],
+        "warnings": [],
+        "escalation_reasons": [],
+        "audit_events": []
+      }
+    },
+    {
+      "description": "Example 2: WARN status (low-risk violations)",
+      "data": {
+        "version": "0.2.0",
+        "status": "WARN",
+        "risk_score": 55,
+        "architecture_score": 85,
+        "test_confidence": 80,
+        "duplication_delta": 5.2,
+        "complexity_delta": 2.1,
+        "violations": [
+          {
+            "rule_id": "E501",
+            "file": "asset_generation/python/src/utils/validators.py",
+            "line": 42,
+            "severity": "WARN",
+            "message": "Line too long (110 > 100 characters)",
+            "remediation_hint": "Break line into multiple lines or use inline comment",
+            "suppressible": true
+          },
+          {
+            "rule_id": "W292",
+            "file": "asset_generation/web/backend/core/config.py",
+            "line": null,
+            "severity": "WARN",
+            "message": "No newline at end of file",
+            "remediation_hint": "Add final newline",
+            "suppressible": true
+          }
+        ],
+        "warnings": [],
+        "escalation_reasons": [],
+        "audit_events": [
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T10-30-00Z-shadow.jsonl:line-5",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T10-30-00Z-shadow.jsonl:line-6"
+        ]
+      }
+    },
+    {
+      "description": "Example 3: FAIL status (high-risk violations)",
+      "data": {
+        "version": "0.2.0",
+        "status": "FAIL",
+        "risk_score": 80,
+        "architecture_score": 50,
+        "test_confidence": 45,
+        "duplication_delta": 18.5,
+        "complexity_delta": 12.3,
+        "violations": [
+          {
+            "rule_id": "AR-01",
+            "file": "asset_generation/python/src/model_registry/__init__.py",
+            "line": 5,
+            "severity": "ERROR",
+            "message": "Domain module imports HTTP library: fastapi",
+            "remediation_hint": "Remove fastapi import; move HTTP logic to adapter/router layer",
+            "suppressible": false
+          },
+          {
+            "rule_id": "AR-02",
+            "file": "asset_generation/web/backend/services/registry_service.py",
+            "line": 28,
+            "severity": "ERROR",
+            "message": "Service layer constructs HTTP response directly",
+            "remediation_hint": "Move response construction to router layer; service should return data only",
+            "suppressible": false
+          },
+          {
+            "rule_id": "EX-02",
+            "file": "asset_generation/web/backend/routers/registry.py",
+            "line": 15,
+            "severity": "ERROR",
+            "message": "Exception handler swallows error silently (except: pass)",
+            "remediation_hint": "Log exception or re-raise; silent swallowing is dangerous",
+            "suppressible": false
+          }
+        ],
+        "warnings": [
+          {
+            "rule_id": "GV-06",
+            "file": "asset_generation/web/backend/routers/registry.py",
+            "line": 142,
+            "severity": "WARN",
+            "message": "Suppression without issue link: # noqa: E501",
+            "remediation_hint": "Add issue link: # issue: M902-04",
+            "suppressible": true
+          }
+        ],
+        "escalation_reasons": [],
+        "audit_events": [
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T14-15-00Z-blocking.jsonl:line-10",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T14-15-00Z-blocking.jsonl:line-12",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T14-15-00Z-blocking.jsonl:line-14"
+        ]
+      }
+    },
+    {
+      "description": "Example 4: ESCALATE status (triggered by detectors)",
+      "data": {
+        "version": "0.2.0",
+        "status": "ESCALATE",
+        "risk_score": 75,
+        "architecture_score": 45,
+        "test_confidence": "UNKNOWN",
+        "duplication_delta": null,
+        "complexity_delta": null,
+        "violations": [
+          {
+            "rule_id": "AR-01",
+            "file": "asset_generation/python/src/enemies/__init__.py",
+            "line": 3,
+            "severity": "ERROR",
+            "message": "Domain module imports HTTP library: requests",
+            "remediation_hint": "Remove requests import; use adapter pattern for network I/O",
+            "suppressible": false
+          }
+        ],
+        "warnings": [],
+        "escalation_reasons": [
+          {
+            "detector": "governance_file_modifications",
+            "severity": "CRITICAL",
+            "details": "Governance file CLAUDE.md modified with architecture rule AR-02: Architecture rule violation in policy file",
+            "confidence": "HIGH",
+            "recommendation": "Design review required before merge. Verify governance file changes are intentional."
+          },
+          {
+            "detector": "architecture_drift",
+            "severity": "HIGH",
+            "details": "New architecture violations detected: AR-01. This rule was not present in baseline.",
+            "confidence": "HIGH",
+            "recommendation": "Fix new architecture violations before merge. These indicate structural boundary violations."
+          }
+        ],
+        "audit_events": [
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T16-45-00Z-shadow.jsonl:line-15",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T16-45-00Z-shadow.jsonl:line-20",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T16-45-00Z-shadow.jsonl:line-25"
+        ]
+      }
+    },
+    {
+      "description": "Example 5: Multi-tool aggregated output (combined ruff + mypy + sempreg violations)",
+      "data": {
+        "version": "0.2.0",
+        "status": "WARN",
+        "risk_score": 48,
+        "architecture_score": 80,
+        "test_confidence": "UNKNOWN",
+        "duplication_delta": 3.5,
+        "complexity_delta": null,
+        "violations": [
+          {
+            "rule_id": "E501",
+            "file": "asset_generation/python/src/utils/formatters.py",
+            "line": 87,
+            "severity": "WARN",
+            "message": "Line too long (105 > 100 characters)",
+            "remediation_hint": "Break line into multiple lines",
+            "suppressible": true
+          },
+          {
+            "rule_id": "mypy-error",
+            "file": "asset_generation/python/src/model_registry/query.py",
+            "line": 23,
+            "severity": "WARN",
+            "message": "Argument 1 to 'dict' has incompatible type 'list[str]'; expected 'SupportsKeysAndGetItem[str, Unknown]'",
+            "remediation_hint": "Fix type annotation or cast appropriately",
+            "suppressible": false
+          },
+          {
+            "rule_id": "RF-01",
+            "file": "asset_generation/python/src/utils/validators.py",
+            "line": 15,
+            "severity": "WARN",
+            "message": "Use of getattr() outside allowed reflection zone",
+            "remediation_hint": "Move getattr() to router, serializer, or test zone; or use factory pattern",
+            "suppressible": true
+          }
+        ],
+        "warnings": [],
+        "escalation_reasons": [],
+        "audit_events": [
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T18-00-00Z-shadow.jsonl:line-8",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T18-00-00Z-shadow.jsonl:line-12",
+          "ci/artifacts/audit-logs/static_analysis_check/2026-05-15/2026-05-15T18-00-00Z-shadow.jsonl:line-16"
+        ]
+      }
+    }
+  ]
+}

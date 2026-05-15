@@ -1,0 +1,299 @@
+# Handoff Metadata & Escalation Configuration
+# M902-04: Escalation thresholds, score formulas, and detector configuration
+#
+# All values are tunable and should be refined in M903 based on operational data.
+# Thresholds and formulas are documented here to avoid hardcoding in implementation.
+
+---
+# SCORE CALIBRATION FORMULAS
+# These formulas define how to compute numeric risk/architecture/test confidence scores
+
+scoring:
+
+  # Risk Score Formula
+  # Weighted average of violation severities
+  # CRITICAL=100, ERROR=80, WARN=50, INFO=10
+  # Formula: risk_score = sum(severity_weights) / count(violations)
+  #
+  # Example 1 (Good): 0 violations → risk_score = 0
+  # Example 2 (Borderline): 2 ERROR + 1 WARN → (80+80+50)/3 = 70
+  # Example 3 (Bad): 2 CRITICAL → (100+100)/2 = 100
+  # Example 4 (Mixed): 1 CRITICAL + 1 ERROR + 1 INFO → (100+80+10)/3 = 63.3
+  #
+  risk_score:
+    formula: "sum(severity_weights) / count(violations) if count(violations) > 0 else 0"
+    severity_map:
+      CRITICAL: 100
+      ERROR: 80
+      WARN: 50
+      INFO: 10
+    description: "Weighted average of all violation severities; range [0, 100]"
+    tunable_in_m903: true
+
+  # Architecture Score Formula
+  # Penalty-based: 100 - (AR violations * 10) - severity_penalties, clamped [0, 100]
+  # AR-* rules are critical architecture violations
+  # Formula: architecture_score = max(0, 100 - (count(AR violations) * 10))
+  #
+  # Example 1 (Good): 0 AR violations → architecture_score = 100
+  # Example 2 (Acceptable): 2 AR violations → 100 - (2 * 10) = 80
+  # Example 3 (Concerning): 5 AR violations → 100 - (5 * 10) = 50
+  # Example 4 (Bad): 10 AR violations → max(0, 100 - 100) = 0
+  #
+  architecture_score:
+    formula: "max(0, 100 - (count(AR violations) * 10))"
+    ar_violation_penalty: 10
+    severity_penalties:
+      # Future: add per-rule severity modifiers if needed (M903)
+    range: [0, 100]
+    description: "Penalty-based architecture quality score; lower count of AR violations = higher score"
+    tunable_in_m903: true
+    baseline_source: "project_board/902_04_baseline_violations.json (immutable snapshot from M902-03)"
+
+  # Test Confidence Formula
+  # Percentage of tests passed, or "UNKNOWN" if no test data available
+  # Formula: test_confidence = (tests_passed / tests_total) * 100 if test_data else "UNKNOWN"
+  #
+  # Example 1 (Excellent): 100 passed / 100 total → test_confidence = 100
+  # Example 2 (Good): 95 passed / 100 total → test_confidence = 95
+  # Example 3 (Poor): 40 passed / 100 total → test_confidence = 40
+  # Example 4 (No test data): static analysis gate → test_confidence = "UNKNOWN"
+  #
+  test_confidence:
+    formula: "(tests_passed / tests_total) * 100 if gate has test_data else 'UNKNOWN'"
+    default_when_unavailable: "UNKNOWN"
+    description: "Test pass rate (percentage); UNKNOWN if gate does not have test data"
+    note: "Advisory only in MVP; not used for ESCALATE triggers until M903"
+    tunable_in_m903: true
+
+  # Duplication Delta Formula
+  # Percentage change in token count from baseline (measured by jscpd or similar)
+  # Formula: duplication_delta = (current_tokens - baseline_tokens) / baseline_tokens * 100
+  #
+  # Example 1 (No change): 1000 baseline → 1000 current → duplication_delta = 0%
+  # Example 2 (Slight increase): 1000 baseline → 1100 current → duplication_delta = +10%
+  # Example 3 (Significant increase): 1000 baseline → 1350 current → duplication_delta = +35%
+  # Example 4 (Improvement): 1000 baseline → 900 current → duplication_delta = -10%
+  # Example 5 (Baseline unavailable): marked "TODO" if jscpd baseline missing
+  #
+  duplication_delta:
+    formula: "(current_tokens - baseline_tokens) / baseline_tokens * 100"
+    baseline_source: "jscpd baseline (TODO: finalize strategy in M903)"
+    unit: "percentage"
+    range: [-100, +500]
+    default_when_unavailable: "TODO (M903 to finalize)"
+    description: "Percentage change in code duplication tokens; positive = more duplication"
+    note: "Baseline strategy deferred to M903; MVP may not have complete baseline"
+    tunable_in_m903: true
+
+  # Complexity Delta Formula
+  # Percentage change in code complexity metrics from baseline
+  # Formula: complexity_delta = (current_complexity - baseline_complexity) / baseline_complexity * 100
+  #
+  # Example 1 (No change): complexity_delta = 0%
+  # Example 2 (Increased): +10% complexity increase
+  # Example 3 (Baseline unavailable): marked "TODO" if static analysis tool doesn't emit metrics
+  #
+  complexity_delta:
+    formula: "(current_complexity - baseline_complexity) / baseline_complexity * 100"
+    baseline_source: "static analysis tool (semgrep, radon, etc.) — TODO: finalize in M903"
+    unit: "percentage"
+    range: [-100, +500]
+    default_when_unavailable: "TODO (M903 to finalize)"
+    description: "Percentage change in code complexity metrics; positive = more complex"
+    note: "Tool and baseline strategy deferred to M903"
+    tunable_in_m903: true
+
+---
+# THRESHOLD MAPPINGS
+# These thresholds define when status transitions from PASS → WARN → FAIL → ESCALATE
+
+thresholds:
+
+  # Risk Score Thresholds
+  # Determine status based on risk_score (0-100 range)
+  risk_score:
+    PASS: "≤ 50"          # Safe: low violation severity
+    WARN: "> 50 and ≤ 75" # Caution: moderate violations
+    FAIL: "> 75 and ≤ 90" # Failure: high violations
+    ESCALATE: "> 90"      # Critical: requires human review
+    description: "Risk thresholds determine status based on weighted violation severity"
+    tunable_in_m903: true
+    notes: |
+      Conservative defaults: 50% = WARN, 75% = FAIL, 90% = ESCALATE.
+      M903 may adjust based on operational data and false-positive rate.
+
+  # Architecture Score Thresholds
+  # Determine status based on architecture_score (0-100 range, inverted: lower = worse)
+  architecture_score:
+    PASS: "> 70"          # Good: few AR violations
+    WARN: "> 60 and ≤ 70" # Caution: moderate AR violations
+    FAIL: "> 30 and ≤ 60" # Failure: significant AR violations
+    ESCALATE: "≤ 30"      # Critical: severe AR violations
+    description: "Architecture thresholds determine status; lower scores = worse architecture quality"
+    tunable_in_m903: true
+    notes: |
+      Inverted scale: lower scores indicate worse architecture.
+      ESCALATE at ≤30 means 3+ AR violations (100 - 30 = 70 → 7 AR violations).
+      M903 may adjust per rule category.
+
+  # Test Confidence Thresholds
+  # Advisory only in MVP (not a blocker); used for informational purposes
+  test_confidence:
+    PASS: "> 70"          # Excellent: most tests pass
+    WARN: "> 40 and ≤ 70" # Caution: moderate test failures
+    FAIL: "≤ 40"          # Low confidence: poor test coverage
+    description: "Test confidence thresholds; advisory only in MVP, not escalation trigger"
+    tunable_in_m903: true
+    notes: |
+      Falls back to "UNKNOWN" if gate has no test data (acceptable).
+      May become escalation trigger in M903 for gates with available test data.
+
+  # Duplication Delta Thresholds
+  duplication_delta:
+    PASS: "≤ 10%"         # Acceptable: minimal duplication increase
+    WARN: "> 10% and ≤ 25%" # Caution: moderate duplication increase
+    FAIL: "> 25%"         # Failure: significant duplication increase
+    description: "Duplication thresholds; positive delta = more duplication"
+    tunable_in_m903: true
+    notes: |
+      Baseline strategy deferred to M903.
+      Currently marked "TODO" if jscpd baseline unavailable.
+
+  # Complexity Delta Thresholds
+  complexity_delta:
+    PASS: "≤ 5%"          # Acceptable: minimal complexity increase
+    WARN: "> 5% and ≤ 15%" # Caution: moderate complexity increase
+    FAIL: "> 15%"         # Failure: significant complexity increase
+    description: "Complexity thresholds; positive delta = more complex"
+    tunable_in_m903: true
+    notes: |
+      Tool and baseline strategy deferred to M903.
+      Currently marked "TODO" if static analysis tool doesn't emit baseline.
+
+---
+# ESCALATION DETECTOR CONFIGURATION
+
+escalation_detectors:
+
+  # Detector 1: Governance File Modifications
+  # Monitors critical governance files for architecture rule violations
+  governance_file_modifications:
+    enabled: true
+    severity: CRITICAL
+    confidence: HIGH
+    monitored_files:
+      - CLAUDE.md
+      - Taskfile.yml
+      - lefthook.yml
+      - project_board/CHECKPOINTS.md
+      - .gitignore
+    monitored_rules:
+      - AR-01
+      - AR-02
+      - AR-03
+      - AR-04
+      - AR-05
+      - AR-06
+    description: "Escalates if any monitored governance file is modified with an architecture rule violation"
+    tunable_in_m903: true
+
+  # Detector 2: Architecture Drift
+  # Monitors violation count increase and new architecture rules
+  architecture_drift:
+    enabled: true
+    severity: HIGH
+    confidence: MEDIUM
+    baseline_file: "project_board/902_04_baseline_violations.json"
+    drift_threshold_percent: 20
+    description: "Escalates if violation count increases >20% or new AR violations appear"
+    fallback_when_baseline_missing: "no escalation (graceful fallback)"
+    tunable_in_m903: true
+    notes: |
+      Baseline is immutable snapshot from M902-03 completion.
+      20% threshold is conservative; M903 may lower based on operational data.
+
+  # Detector 3: Suppression Abuse
+  # Monitors GV-06 violations (suppression integrity) and recurring suppression abuse
+  suppression_abuse:
+    enabled: true
+    severity: HIGH
+    confidence_current: HIGH
+    confidence_recurring: MEDIUM
+    suppression_rule_id: GV-06
+    recurring_run_threshold: 5
+    description: "Escalates if GV-06 violations found or suppressions are recurring across 5+ runs"
+    tunable_in_m903: true
+    notes: |
+      Current violations: HIGH confidence (deterministic from M902-03).
+      Recurring violations: MEDIUM confidence (depends on audit log query).
+      Threshold of 5 consecutive runs is conservative; M903 may refine.
+
+  # Detector 4: Security Sensitive Paths (Placeholder)
+  # Deferred to M903 when security rule set is finalized
+  security_sensitive_paths:
+    enabled: false
+    severity: UNKNOWN
+    confidence: UNKNOWN
+    description: "Placeholder; to be implemented in M903 when security rules are finalized"
+    deferred_to_m903: true
+    status: "TODO: implement after security rule set is ready"
+
+  # Detector 5: Repeated Failures (Placeholder)
+  # Deferred to full implementation in M903; spec in Requirement 07
+  repeated_failures:
+    enabled: false
+    severity: MEDIUM
+    confidence: HIGH
+    run_threshold: 5
+    description: "Placeholder; to be fully implemented in Task 7 (Implementation) and M903"
+    deferred_to_m903: true
+    status: "TODO: audit log infrastructure built in Task 10, full impl in Task 7"
+
+---
+# BASELINE STRATEGY
+# How to establish and maintain baseline violations for drift detection
+
+baseline:
+  source_file: "project_board/902_04_baseline_violations.json"
+  created_at_stage: "M902-03 completion (zero AR violations)"
+  immutable: true
+  version_tracking: "Stored in baseline file as 'version' field"
+  drift_detection: "Detectors compare current violations to baseline per rule_id"
+  m903_enhancements:
+    - "Rolling baseline (time-window based)"
+    - "Per-rule thresholds instead of global 20%"
+    - "Auto-update baseline after design review"
+  description: "Baseline is immutable snapshot used by drift detector; enables historical tracking of architecture quality"
+
+---
+# INTEGRATION NOTES
+
+integration:
+  gate_runner_post_aggregation: true
+  detector_call_order: "sequential (1 → 2 → 3 → 4 → 5)"
+  detector_results_aggregation: "Collect all EscalationReason dicts into escalation_reasons field"
+  status_determination: "if escalation_reasons non-empty → status = ESCALATE; else use risk_score/architecture_score/etc."
+  audit_logging: "All violations, escalations, and detector decisions logged to ci/artifacts/audit-logs/"
+  metadata_output_location: "gate_result dict matching 902_04_metadata_schema.json v0.2.0"
+
+---
+# M903 ROADMAP
+
+m903_planned_enhancements:
+  - "Threshold tuning based on real operational data"
+  - "Per-gate threshold overrides"
+  - "Per-rule complexity/duplication baselines"
+  - "Security detector implementation"
+  - "Repeated failures full implementation"
+  - "Auto-remediation suggestions per rule"
+  - "Audit log query API"
+  - "Retention policy and log rotation"
+  - "False-positive reduction via context-aware checks"
+  - "Integration with team Slack/email notifications"
+
+---
+# Revision History
+
+revision_history:
+  v1.0 (2026-05-15): "Initial configuration; all defaults conservative for MVP"
