@@ -6,5 +6,23 @@
     "default_mode": "shadow",
     "description": "Validates that a spec .md file contains all required sections for its declared ticket type.",
     "category": "workflow"
+  },
+  {
+    "name": "static_analysis_check",
+    "module": "static_analysis_check",
+    "required_inputs": [],
+    "optional_inputs": ["mode", "ticket_id", "upstream_agent", "downstream_agent", "output_dir"],
+    "default_mode": "shadow",
+    "description": "Runs mandatory static analysis bundle: ruff, mypy, bandit, vulture, import-linter, semgrep, wemake (Python); eslint + plugins (TypeScript); gdformat, gdlint (Godot); jscpd (duplication). Shadow mode only in M902; enforcement deferred to M903.",
+    "category": "analysis"
+  },
+  {
+    "name": "governance_check",
+    "module": "governance_check",
+    "required_inputs": [],
+    "optional_inputs": ["mode", "ticket_id", "upstream_agent", "downstream_agent", "repo_root"],
+    "default_mode": "shadow",
+    "description": "Automated enforcement of governance rules for multi-agent handoffs across six categories: architecture (dependency direction, layer boundaries), exception safety (bare except, silent swallowing), reflection safety (getattr/setattr scoping), async safety (blocking I/O in async), observability (structured logging), governance integrity (bypass prevention). Detects 30+ rules with suppressibility mechanics.",
+    "category": "governance"
   }
 ]

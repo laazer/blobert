@@ -105,6 +105,16 @@ tasks:
     cmds:
       - bash ci/scripts/asset_python.sh .lefthook/scripts/gd_organization_check.py {{.CLI_ARGS}}
 
+  hooks:static-analysis:
+    desc: Run static analysis gate (shadow mode, non-blocking) — validates Python, TypeScript, Godot, duplication
+    cmds:
+      - python ci/scripts/gate_runner.py static_analysis_check --mode shadow --upstream-agent "Implementation Generalist" --downstream-agent "Spec Agent" --ticket-id M902-02
+
+  hooks:governance-check:
+    desc: Run governance check gate (shadow mode, non-blocking) — validates architecture, exception safety, reflection, async, observability, integrity
+    cmds:
+      - python ci/scripts/gate_runner.py governance_check --mode shadow --upstream-agent "Implementation Generalist" --downstream-agent "Spec Agent" --ticket-id M902-03
+
   claude:sync-from-agent-context:
     desc: Install .claude/skills and .claude/agents from agent_context (see scripts/sync_claude_agent_context.sh)
     cmds:
