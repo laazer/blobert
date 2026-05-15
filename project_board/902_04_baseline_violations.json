@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "source": "M902-03 completion (governance_check.py)",
+    "date": "2026-05-15",
+    "version": "1.0",
+    "description": "Immutable baseline snapshot of violations at M902-03 completion. Used for architecture drift detection."
+  },
+  "AR-01": 0,
+  "AR-02": 0,
+  "AR-03": 0,
+  "AR-04": 0,
+  "AR-05": 0,
+  "AR-06": 0,
+  "EX-01": 0,
+  "EX-02": 0,
+  "RF-01": 0,
+  "RF-02": 0,
+  "AS-01": 0,
+  "AS-02": 0,
+  "OB-01": 0,
+  "OB-02": 0,
+  "GV-01": 0,
+  "GV-02": 0,
+  "GV-03": 0,
+  "GV-04": 0,
+  "GV-05": 0,
+  "GV-06": 0
+}

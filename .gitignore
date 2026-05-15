@@ -79,3 +79,10 @@ bun.lockb.lock
 bun.lockb.lock.lock
 bun.lockb.lock.lock.lock
 bun.lockb.lock.lock.lock.lock
+
+# AI Stuff
+.aisyphus/
+gate-results/
+
+# CI/Artifacts (audit logs, generated test artifacts)
+ci/artifacts/audit-logs/

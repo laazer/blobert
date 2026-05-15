@@ -293,7 +293,7 @@ def run(inputs: dict) -> dict:
             logger.exception(f"Tool {tool_name} failed:")
 
     # =========================================================================
-    # AGGREGATE RESULTS
+    # AGGREGATE RESULTS AND COMPUTE METADATA (M902-04)
     # =========================================================================
 
     duration_ms = int((time.time() - start_time) * 1000)
@@ -305,9 +305,50 @@ def run(inputs: dict) -> dict:
         elif "ERROR" in status and tool not in [h.split(":")[0] for h in hints]:
             hints.add(f"{tool}: {status}")
 
-    # Determine exit status based on mode
-    has_violations = len(all_violations) > 0
-    status = "blocking" if mode == "blocking" and has_violations else "shadow"
+    # Compute metadata scores per M902-04
+    # 1. Risk Score: weighted average of violation severities
+    severity_map = {"CRITICAL": 100, "ERROR": 80, "WARN": 50, "INFO": 10}
+    if all_violations:
+        risk_score = sum(severity_map.get(v.get("severity", "INFO"), 10) for v in all_violations) / len(all_violations)
+        risk_score = int(min(100, max(0, risk_score)))
+    else:
+        risk_score = 0
+
+    # 2. Architecture Score: 100 - (AR violations * 10), clamped [0, 100]
+    ar_violations = [v for v in all_violations if v.get("rule_id", "").startswith("AR-")]
+    architecture_score = max(0, 100 - (len(ar_violations) * 10))
+
+    # 3. Test Confidence: "UNKNOWN" for static analysis gate (no test data)
+    test_confidence = "UNKNOWN"
+
+    # 4. Duplication Delta: null for MVP (TODO M903)
+    duplication_delta = None
+
+    # 5. Complexity Delta: null for MVP (TODO M903)
+    complexity_delta = None
+
+    # 6. Determine status from scores
+    if risk_score > 90 or architecture_score <= 30:
+        status = "ESCALATE"
+    elif risk_score > 75 or architecture_score <= 60:
+        status = "FAIL"
+    elif risk_score > 50 or architecture_score <= 70:
+        status = "WARN"
+    else:
+        status = "PASS"
+
+    # Override if violations present (conservative fallback)
+    if all_violations and status == "PASS":
+        status = "WARN"
+
+    # 7. Escalation Reasons: populated by detectors (deferred to gate_runner integration)
+    escalation_reasons: list[dict[str, Any]] = []
+
+    # 8. Audit Events: references to audit log entries (deferred to gate_runner)
+    audit_events: list[str] = []
+
+    # 9. Warnings: empty for MVP (separate from violations)
+    warnings: list[dict[str, Any]] = []
 
     # Prepare artifacts list
     artifacts: list[str] = []
@@ -317,10 +358,19 @@ def run(inputs: dict) -> dict:
         output_path = Path(output_dir) / f"static_analysis_check_{ticket_id}.json"
         artifacts.append(str(output_path))
 
-    # Build result dict matching gate schema
+    # Build result dict matching M902-04 v0.2.0 schema
     result: dict[str, Any] = {
+        "version": "0.2.0",
         "status": status,
+        "risk_score": risk_score,
+        "architecture_score": architecture_score,
+        "test_confidence": test_confidence,
+        "duplication_delta": duplication_delta,
+        "complexity_delta": complexity_delta,
         "violations": all_violations,
+        "warnings": warnings,
+        "escalation_reasons": escalation_reasons,
+        "audit_events": audit_events,
         "remediation_hints": sorted(list(hints)),
         "artifacts": artifacts,
         "duration_ms": duration_ms,

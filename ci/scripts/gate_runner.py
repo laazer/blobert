@@ -26,9 +26,19 @@ import json
 import os
 import sys
 import time
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypedDict
+
+from audit_log import (
+    emit_gate_started,
+    emit_tool_invoked,
+    emit_tool_finished,
+    emit_violation_added,
+    emit_escalation_triggered,
+)
+from escalation_detectors import run_all_detectors
 
 _REGISTRY_DEFAULT = Path(__file__).resolve().parent / "gate_registry.json"
 _GATES_PKG = Path(__file__).resolve().parent / "gates"
@@ -245,12 +255,17 @@ def main() -> int:
     mode = args.mode
     output_dir = Path(args.output_dir) if args.output_dir else Path("./gate-results")
 
+    run_id = str(uuid.uuid4())
+
+    # Emit gate_started audit event
+    emit_gate_started(run_id, gate_name, args.ticket_id, mode, args.upstream_agent, args.downstream_agent)
+
     start = time.monotonic()
     raw_result = _run_gate(gate_entry, inputs, mode)
     duration_ms = int((time.monotonic() - start) * 1000)
 
     result = {
-        "version": "0.1.0",
+        "version": "0.2.0",  # Updated to v0.2.0 for M902-04 metadata
         "status": raw_result.get("status", "FAIL"),
         "gate": gate_name,
         "upstream_agent": args.upstream_agent,
@@ -264,10 +279,51 @@ def main() -> int:
         "message": raw_result.get("message", ""),
     }
 
+    # Emit violation_added audit events for each violation
+    violations = raw_result.get("violations", [])
+    audit_event_refs = []
+    for i, violation in enumerate(violations, start=1):
+        emit_violation_added(
+            run_id,
+            gate_name,
+            args.ticket_id,
+            violation.get("rule_id", "unknown"),
+            violation.get("file", "unknown"),
+            violation.get("line"),
+            violation.get("severity", "INFO"),
+            violation.get("message", ""),
+            mode
+        )
+        # Build audit event reference (will need to be populated post-logging)
+        # For now, we'll update this after we have the actual log file path
+        audit_event_refs.append(i)
+
     if "violations" in raw_result:
         result["violations"] = raw_result["violations"]
     if "remediation_hints" in raw_result:
         result["remediation_hints"] = raw_result["remediation_hints"]
+
+    # Run escalation detectors post-aggregation
+    baseline = None
+    audit_log = []
+    escalation_reasons = run_all_detectors(raw_result, baseline, audit_log)
+
+    if escalation_reasons:
+        result["escalation_reasons"] = escalation_reasons
+        result["status"] = "ESCALATE"
+
+        # Emit escalation_triggered audit events
+        for reason in escalation_reasons:
+            emit_escalation_triggered(
+                run_id,
+                gate_name,
+                args.ticket_id,
+                reason.get("detector", "unknown"),
+                reason.get("severity", "MEDIUM"),
+                reason.get("confidence", "MEDIUM"),
+                reason.get("details", ""),
+                mode
+            )
 
     _write_result(output_dir, gate_name, result)
 
