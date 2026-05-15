@@ -151,14 +151,52 @@ None (can proceed in parallel; coordinate file locations with gate framework tic
 
 ---
 
+## ADVERSARIAL TEST NOTES
+
+**Adversarial Test Suite Delivered:**
+- File: `tests/ci/test_pretooluse_command_inspection_adversarial.py`
+- Total Tests: 31 (all passing, 0.19s execution)
+- Test Classes: 6 (evasion, config mutations, tool failures, schema violations, governance bypass, performance)
+- Coverage: Targets weaknesses, evasion techniques, edge cases, configuration boundaries
+- Test organization:
+  - TestBypassEvasionTechniques (8 tests): Quoting evasion, case variation, comment obfuscation, env var substitution, hex escapes, variable indirection, case-sensitive env vars, path traversal deletion
+  - TestConfigurationMutations (5 tests): Mode typo (case-sensitive), escape hatch typo, empty mode value, CI environment missing, mode priority override
+  - TestToolFailures (4 tests): Malformed JSON, oversized input (>10MB), null bytes, recursion depth bomb (DoS prevention)
+  - TestSchemaViolations (4 tests): Missing required error response fields, pattern name mutation, invalid exit codes, missing continue field
+  - TestGovernanceBypassAttempts (4 tests): Direct hook disabler in CI, blanket suppress (eslint-disable), suppression without issue link, env var mode bypass attempt
+  - TestPerformanceAndBoundaries (3 tests): Performance (1000 benign commands <1s), stress (100 depth-2 nested <5s), false positive resilience under evasion stress
+  - TestCheckpointEncodedEdgeCases (3 tests): Env var word boundary, nesting depth limit enforcement, case-sensitive mode selection
+
+**Adversarial Coverage:**
+- Evasion attempts: 8 tests covering obfuscation, indirection, encoding
+- Configuration edge cases: 5 tests covering typos, defaults, fallback behavior
+- Tool robustness: 4 tests covering malformed input, resource exhaustion, DoS prevention
+- Schema/contract validation: 4 tests covering response format, field presence, valid codes
+- Governance bypass evasion: 4 tests covering suppression abuse, mode tricks
+- Performance/determinism: 3 tests covering batch operations, stress conditions, determinism
+
+**Combined Test Suite:**
+- Behavioral: 80 tests
+- Adversarial: 31 tests
+- Total: 111 tests (all passing, 0.18s combined execution)
+
+**Key Adversarial Findings:**
+- Tests encode strictest defensible expectations for ambiguous cases (e.g., env var case sensitivity, mode priority, nesting depth)
+- All tests target executable behavior (no prose assertions)
+- Tests are deterministic and reproducible
+- No mocks for core logic; mocks used for env/file seams where appropriate
+- Tests validate parser robustness against: malformed input, oversized data, null bytes, recursion bombs, and configuration edge cases
+
+---
+
 ## WORKFLOW STATE
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_BACKEND |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Implementation Agent |
 | Status | Proceed |
-| Validation Status | BEHAVIORAL TESTS COMPLETE; 80 tests passing; test design doc generated |
+| Validation Status | ADVERSARIAL TESTS COMPLETE; 31 tests passing; combined suite 111/111 passing; ready for implementation |
 | Blocking Issues | None |
