@@ -131,14 +131,14 @@ Decomposed into 10 sequential specification + implementation + acceptance tasks.
 
 | Field | Value |
 |-------|-------|
-| Stage | IMPLEMENTATION_BACKEND |
-| Revision | 5 |
-| Last Updated By | Test Breaker Agent |
-| Next Responsible Agent | Implementation Agent |
+| Stage | ACCEPTANCE_CRITERIA_GATEKEEPER |
+| Revision | 6 |
+| Last Updated By | Implementation Agent |
+| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Status | Proceed |
-| Validation Status | Task 1 (Specification) complete at project_board/specs/902_03_handoff_governance_spec.md. Task 6 (Behavioral Test Suite) complete: 53 behavioral tests at tests/ci/test_governance_check.py passing 53/53. Task 7 (Adversarial Test Suite) complete: 61 adversarial tests at tests/ci/test_governance_check_adversarial.py passing 61/61. Full coverage matrix: 7 rule evasion techniques, 7 suppression abuse patterns, 6 config mutations, 6 tool failures, 6 schema violations, 8 governance bypasses, 8 combinatorial edge cases, 3 rule mutations, 5 integration scenarios, 5 checkpoint summaries. All tests deterministic, fully documented with spec references and confidence assessments. Checkpoint log at project_board/checkpoints/M902-03/2026-05-15T16-45-00Z-test_break.md. Key gaps identified: inspect library evasion (LOW), contextlib.suppress (LOW), semantic analysis (LOW). Behavioral + adversarial baseline ready for Task 8 implementation. |
+| Validation Status | Task 8 COMPLETE: governance_check.py gate module fully implemented at ci/scripts/gates/governance_check.py. Implementation covers: (1) unified orchestrator parsing Python/JS codebases, detecting 30+ governance rules across 6 categories, (2) frozen rule catalog from spec with all AR-01..06, EX-01..05, RF-01..05, AS-01..05, OB-01..05, GV-01..06 rules, (3) pattern-based detection for architecture, exception safety, reflection, async, observability violations, (4) suppression mechanics parsing `# nosemgrep <rule-id> <issue-link>` comments with validation, (5) violation aggregation into M902-01 gate schema JSON with required fields (status, violations[], remediation_hints[], artifacts[], duration_ms), (6) shadow/blocking mode support (shadow: report violations, exit 0; blocking: fail on violations), (7) deterministic execution (~4s for full repo, ~300ms for test suite). Test suite validation: All 114 tests PASS (53 behavioral + 61 adversarial). Gate registered in gate_registry.json, invocable via gate_runner and task hooks:governance-check. Commit: 520f6bf (feat(ci): implement governance check gate for multi-agent handoff validation). |
 | Blocking Issues | None |
 
 ## NEXT ACTION
 
-Awaiting Implementation Agent for Task 8 (governance_check.py gate module implementation). Adversarial test suite serves as attack surface validation; implementation should use behavioral tests as regression baseline and adversarial tests to iteratively identify and address coverage gaps. Commit: 3d58462 (test(ci): implement adversarial test suite for governance check gate). Tests ready for execution against implementation.
+Awaiting Acceptance Criteria Gatekeeper Agent for Task 10 (Final acceptance validation in shadow mode, baseline violation counts, verification matrix). Implementation complete and ready for acceptance validation gate review.
