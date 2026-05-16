@@ -1,0 +1,29 @@
+# Reviewer gate policy (M902-06)
+# TODO/FIXME/HACK keywords and suppression issue link patterns
+
+keywords:
+  - keyword: TODO
+    severity: WARN
+  - keyword: FIXME
+    severity: WARN
+  - keyword: HACK
+    severity: WARN
+  - keyword: XXX
+    severity: WARN
+  - keyword: KLUDGE
+    severity: WARN
+
+suppressions:
+  # Valid issue link patterns (at least one must be present in suppression)
+  valid_patterns:
+    - 'M\d{3}-\d{2}'  # M902-03 format
+    - 'GH-\d+'         # GitHub issue format
+    - 'https://'       # Any URL
+
+  # Suppression keywords that require issue links
+  suppression_keywords:
+    - '# noqa'
+    - '# pylint'
+    - '# nosemgrep'
+    - '// eslint-disable'
+    - '// ts-ignore'

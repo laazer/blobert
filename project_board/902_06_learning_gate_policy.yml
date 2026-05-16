@@ -1,0 +1,28 @@
+# Learning gate policy (M902-06)
+# Forbidden phrases in checkpoint learning outputs
+
+forbidden_phrases:
+  - phrase: hack
+    case_sensitive: false
+    whole_word: true
+    description: "Avoid documenting 'hack' solutions in learning"
+
+  - phrase: temporary
+    case_sensitive: false
+    whole_word: true
+    description: "Avoid 'temporary' workarounds; make decisions permanent"
+
+  - phrase: XXX
+    case_sensitive: true
+    whole_word: true
+    description: "Remove XXX markers from learning outputs"
+
+  - phrase: KLUDGE
+    case_sensitive: false
+    whole_word: true
+    description: "Avoid documenting kludges; refactor instead"
+
+  - phrase: workaround
+    case_sensitive: false
+    whole_word: true
+    description: "Avoid documenting workarounds; fix root cause"

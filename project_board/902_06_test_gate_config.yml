@@ -1,0 +1,14 @@
+# Test gate configuration (M902-06)
+# Assertion density thresholds and async marker settings
+
+test_assertion_density:
+  # Minimum assertions per test function
+  min_assertions_per_function: 2
+  # Severity for violations below threshold
+  severity: WARN
+
+async_markers:
+  # Pytest marker for async tests
+  pytest_mark: "asyncio"
+  # Severity for missing async markers
+  severity: INFO
