@@ -630,6 +630,69 @@ def generate_markdown_report(
     return str(output_file)
 
 
+def generate_remediation_ticket(
+    rule_id: str,
+    violations: list[dict[str, Any]],
+    spec_link: str = "",
+) -> str:
+    """Generate a markdown remediation ticket suitable for backlog.
+
+    Each violation gets its own acceptance criterion.
+
+    Args:
+        rule_id: The governance rule ID
+        violations: List of violations for this rule/cluster
+        spec_link: Optional link to rule specification
+
+    Returns:
+        Markdown-formatted remediation ticket
+    """
+    lines = [
+        f"# Remediation Ticket: Rule {rule_id} Violations",
+        "",
+        "## Context",
+        "",
+        f"Governance rule **{rule_id}** has {len(violations)} violation(s)",
+        "that require remediation.",
+        "",
+        "**Affected files:**",
+        "",
+    ]
+
+    # List affected files
+    affected_files = set()
+    for v in violations:
+        affected_files.add(v.get("file", "unknown"))
+    for file_path in sorted(affected_files):
+        lines.append(f"- {file_path}")
+
+    lines.extend([
+        "",
+        "## Acceptance Criteria",
+        "",
+    ])
+
+    # Individual AC per violation
+    for i, violation in enumerate(violations, 1):
+        file_path = violation.get("file", "unknown")
+        line_num = violation.get("line", "?")
+        message = violation.get("message", "")
+
+        lines.append(f"- [ ] Fix violation {i}: `{file_path}:{line_num}`")
+        lines.append(f"  - {message}")
+        lines.append("")
+
+    # Footer
+    if spec_link:
+        lines.extend([
+            "## References",
+            "",
+            f"- Specification: {spec_link}",
+        ])
+
+    return "\n".join(lines)
+
+
 def _get_next_steps_markdown(baseline_diff: dict[str, Any]) -> str:
     """Get next steps as markdown.
 

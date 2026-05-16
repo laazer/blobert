@@ -687,56 +687,88 @@ class TestRemediationTicketGeneration:
         """Remediation ticket is generated in markdown format.
 
         Format (suitable for project_board/**/00_backlog/):
-        - Title with rule ID and cluster description
-        - Context section (rule description, count, affected paths)
-        - Scope section (list of violations)
-        - Acceptance criteria (compliance with rule)
+        - Title with rule ID
+        - Context section with violation count and affected files
+        - Individual acceptance criteria per violation (specific, actionable)
         """
-        cluster = {
-            "rule_id": "EX-01",
-            "violation_count": 3,
-            "affected_files": [
-                "asset_generation/python/src/enemies/builder.py",
-                "asset_generation/python/src/player/controller.py",
-                "asset_generation/web/backend/services/registry.py",
-            ],
-            "severities": ["ERROR"],
-        }
+        violations = [
+            {
+                "file": "asset_generation/python/src/enemies/builder.py",
+                "line": 42,
+                "message": "Bare except clause detected",
+                "severity": "ERROR",
+            },
+            {
+                "file": "asset_generation/python/src/player/controller.py",
+                "line": 88,
+                "message": "Bare except clause detected",
+                "severity": "ERROR",
+            },
+            {
+                "file": "asset_generation/web/backend/services/registry.py",
+                "line": 156,
+                "message": "Bare except clause detected",
+                "severity": "ERROR",
+            },
+        ]
 
-        def generate_ticket_markdown(cluster):
+        def generate_remediation_ticket(rule_id, violations, spec_link=""):
+            """Generate markdown remediation ticket with per-violation ACs."""
             lines = [
-                f"# Remediation Ticket: Rule {cluster['rule_id']} Violations",
+                f"# Remediation Ticket: Rule {rule_id} Violations",
                 "",
                 "## Context",
                 "",
-                f"Governance rule **{cluster['rule_id']}** has {cluster['violation_count']} violation(s)",
+                f"Governance rule **{rule_id}** has {len(violations)} violation(s)",
                 "that require remediation.",
                 "",
-                "Affected files:",
+                "**Affected files:**",
                 "",
             ]
-            for file in cluster["affected_files"]:
-                lines.append(f"- {file}")
 
-            lines.extend(
-                [
+            # List affected files
+            affected_files = set()
+            for v in violations:
+                affected_files.add(v.get("file", "unknown"))
+            for file_path in sorted(affected_files):
+                lines.append(f"- {file_path}")
+
+            lines.extend([
+                "",
+                "## Acceptance Criteria",
+                "",
+            ])
+
+            # Individual AC per violation (key improvement)
+            for i, violation in enumerate(violations, 1):
+                file_path = violation.get("file", "unknown")
+                line_num = violation.get("line", "?")
+                message = violation.get("message", "")
+
+                lines.append(f"- [ ] Fix violation {i}: `{file_path}:{line_num}`")
+                lines.append(f"  - {message}")
+                lines.append("")
+
+            if spec_link:
+                lines.extend([
+                    "## References",
                     "",
-                    "## Acceptance Criteria",
-                    "",
-                    f"- [ ] All violations of rule {cluster['rule_id']} in affected files are resolved",
-                    "- [ ] Violations are either fixed or added to baseline with expiration",
-                ]
-            )
+                    f"- Specification: {spec_link}",
+                ])
 
             return "\n".join(lines)
 
-        markdown = generate_ticket_markdown(cluster)
+        markdown = generate_remediation_ticket("EX-01", violations)
 
         # Verify markdown format
-        assert f"# Remediation Ticket: Rule {cluster['rule_id']}" in markdown
+        assert "# Remediation Ticket: Rule EX-01 Violations" in markdown
         assert "## Context" in markdown
         assert "## Acceptance Criteria" in markdown
-        assert cluster["affected_files"][0] in markdown
+        assert violations[0]["file"] in markdown
+        # Key assertion: each violation is a separate AC
+        assert "- [ ] Fix violation 1:" in markdown
+        assert "- [ ] Fix violation 2:" in markdown
+        assert "- [ ] Fix violation 3:" in markdown
 
     def test_remediation_ticket_includes_rule_guidance(
         self, tmp_audit_dir: Path
