@@ -1,4 +1,4 @@
-# TICKET: claw_player_attack
+# TICKET: 08_claw_player_attack
 
 Title: Claw mutation attack — fast melee swipe with short cooldown
 

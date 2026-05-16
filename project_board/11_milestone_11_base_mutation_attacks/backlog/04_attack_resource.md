@@ -1,4 +1,4 @@
-# TICKET: M11_core_1_attack_resource
+# TICKET: 04_attack_resource
 
 **Milestone:** M11 Base Mutation Attacks (Core Foundation)  
 **Status:** Ready  

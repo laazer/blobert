@@ -1,4 +1,4 @@
-# TICKET: attack_input_and_cooldown_framework
+# TICKET: 07_attack_input_and_cooldown_framework
 
 Title: Mutation attack input binding and per-mutation cooldown framework
 

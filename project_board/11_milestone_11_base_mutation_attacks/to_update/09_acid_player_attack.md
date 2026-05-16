@@ -1,4 +1,4 @@
-# TICKET: acid_player_attack
+# TICKET: 09_acid_player_attack
 
 Title: Acid mutation attack — ranged acid spit with damage over time
 

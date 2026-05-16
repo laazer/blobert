@@ -1,4 +1,4 @@
-# TICKET: M11_prereq_1_player_state_machine
+# TICKET: 01_player_state_machine
 
 **Milestone:** M11 Base Mutation Attacks (Prerequisite)  
 **Status:** Ready  

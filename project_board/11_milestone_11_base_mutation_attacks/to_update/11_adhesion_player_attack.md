@@ -1,4 +1,4 @@
-# TICKET: adhesion_player_attack
+# TICKET: 11_adhesion_player_attack
 
 Title: Adhesion mutation attack — sticky projectile that briefly immobilises enemies
 

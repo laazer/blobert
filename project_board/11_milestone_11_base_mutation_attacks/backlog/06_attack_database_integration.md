@@ -1,4 +1,4 @@
-# TICKET: M11_core_3_attack_database_integration
+# TICKET: 06_attack_database_integration
 
 **Milestone:** M11 Base Mutation Attacks (Core Foundation)  
 **Status:** Ready  

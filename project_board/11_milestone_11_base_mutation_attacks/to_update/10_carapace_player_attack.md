@@ -1,4 +1,4 @@
-# TICKET: carapace_player_attack
+# TICKET: 10_carapace_player_attack
 
 Title: Carapace mutation attack — ground slam with area knockback
 
