@@ -17,7 +17,7 @@ The MVP requires a repository-wide audit pipeline that scans the repo, normalize
 
 - Running audit on a clean checkout produces deterministic outputs given pinned tool versions.
 - Baseline file validates against a schema and is safe to commit (no secrets).
-- “New violation” detection has automated tests using synthetic fixtures.
+- "New violation" detection has automated tests using synthetic fixtures.
 - Remediation ticket generator outputs markdown snippets suitable for `project_board/**/00_backlog/`.
 
 # Agent Execution Prompt
@@ -47,14 +47,27 @@ If unclear, ask:
 
 - What specific ambiguity exists about baseline granularity (per-rule vs per-violation fingerprint)?
 - What decision needs to be made about expiration defaults?
-- What are the possible interpretations of “governance trend metrics” without historical storage?
+- What are the possible interpretations of "governance trend metrics" without historical storage?
 
 # Dependencies
 
 - Mandatory static analysis gate: Python, TypeScript/React, Godot, and duplication tooling
-- Automated governance checks for handoffs (architecture, safety, observability, integrity)
 
 # Definition of Done
 
 - Audit+baseline workflow is usable locally and documented in Milestone 902 README.
 - Tests cover baseline diff behavior.
+
+---
+
+## WORKFLOW STATE
+
+| Field | Value |
+|---|---|
+| Stage | TEST_BREAK |
+| Revision | 4 |
+| Last Updated By | Test Designer Agent |
+| Next Responsible Agent | Test Breaker Agent |
+| Status | Proceed |
+| Validation Status | Test Design Complete |
+| Blocking Issues | None |

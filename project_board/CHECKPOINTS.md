@@ -5,6 +5,34 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-16T-m902-backlog-lean (milestone 902 autonomous, lean)
+
+- Queue mode: milestone backlog
+- Queue scope: project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/ and 01_active/
+- Lean: yes (Stage 7 Learning skipped)
+- Current ticket: M902-07
+- Status: in progress
+
+### [M902-07-governance-audit-pipeline] — TEST_DESIGN
+
+Run: 2026-05-16T17-30-00Z-test_design.md | Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/07_governance_audit_pipeline_and_baseline.md | Stage: TEST_DESIGN → TEST_BREAK | Log: project_board/checkpoints/M902-07/2026-05-16T17-30-00Z-test_design.md | Outcome: Comprehensive behavioral test suite complete. 24 tests across 9 test classes (audit command execution, baseline generation, baseline diff detection with INVARIANT_PAIR markers, violation clustering, remediation ticket generation, baseline metadata, update policy, edge cases, integration). All tests passing (100%, 0.15s). Test file: tests/ci/test_audit_pipeline_and_baseline.py (632 lines). Full AC1–AC4 coverage with additional baseline metadata, clustering, policy, and integration tests. Spec gaps: none identified. Checkpoint assumptions: none (spec complete). Ready for Test Breaker Agent (adversarial suite for corruption, boundary, evasion, and schema violation tests).
+
+### [M902-07-governance-audit-pipeline] — SPECIFICATION
+
+Run: 2026-05-16T14-00-00Z-specification.md | Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/07_governance_audit_pipeline_and_baseline.md | Stage: SPECIFICATION → TEST_DESIGN | Log: project_board/checkpoints/M902-07/2026-05-16T14-00-00Z-specification.md | Outcome: Comprehensive specification written to project_board/specs/M902-07_audit_pipeline_spec.md (~650 lines). 9 functional requirements (FR1–FR9): audit command (with gate runner integration, CLI flags, error handling), baseline schema (JSON Schema with immutability, expiration, ownership, rationale), clustering algorithm (deterministic by rule + path_prefix with language-specific depth), baseline diff detection (NEW/EXPIRED/REMEDIATED categorization, audit status mapping), JSON audit report (violations, clusters, baseline diff, metadata), Markdown remediation report (human-readable with ticket templates), metadata integration (with M902-04 event log), operator guide (workflows, decision trees, troubleshooting), example baseline fragment (5–8 realistic entries). 3 NFRs: determinism, performance (<30s), graceful error handling. Risk taxonomy (high/medium/low priority). 10 frozen design decisions (audit wrapper reuse, baseline granularity, expiration policy, ownership model, schema validation, remediation generation, clustering depth, mode handling, immutability, metadata integration). 8 deferred boundaries (enforcement, second-reviewer gate, auto-remediation, expiration enforcement, advanced clustering, secret scanning, dashboards, parallel execution). 77 acceptance criteria across all requirements. Ticket advanced to TEST_DESIGN. Dependencies verified (M902-01, M902-02, M902-04 COMPLETE). No ambiguities. Ready for Test Designer Agent.
+
+### [M902-07-governance-audit-pipeline] — PLANNING
+
+Run: 2026-05-16T00-00-00Z-planning.md | Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/07_governance_audit_pipeline_and_baseline.md | Stage: PLANNING → SPECIFICATION | Log: project_board/checkpoints/M902-07/2026-05-16T00-00-00Z-planning.md | Outcome: Execution plan frozen with 12 sequential specification + implementation tasks. Design decisions for audit wrapper (reuse M902-02 gate), baseline granularity (rule + path prefix), expiration policy (absolute ISO 8601 dates per entry), ownership model (free-text field, no validation enforcement), baseline schema validation (JSON Schema at project_board/schemas/governance-baseline-schema.json), and remediation ticket generation (deferred to M903). All 6 design ambiguities checkpointed with confidence levels (HIGH/MEDIUM). Dependencies verified: M902-01 and M902-02 COMPLETE, stable. No blockers. Ready for Spec Agent.
+
+---
+
+### [M902-06-per-stage-gate-improvements] — COMPLETE
+
+Ticket moved to done/. Execution plan frozen (12 sequential tasks). Specifications complete (5 gate specs). Test suite: 253 tests all passing (163 behavioral + 90 adversarial, 0.51s). Implementation complete: 3 gate modules (planner DFS, reviewer TODO/FIXME, learning forbidden phrases). All gates registered. Configuration files created. Operator guide present. Code quality: Ruff PASS. AC1–AC6 all satisfied. Commit: 2bfebd3.
+
+---
+
 ## Run: 2026-05-15T18-00-00Z-implementation_backend (M902-05)
 
 - Queue mode: single ticket
