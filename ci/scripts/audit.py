@@ -83,7 +83,7 @@ def invoke_gate_runner(mode: str, upstream_agent: str, downstream_agent: str, ti
 
     if not gate_runner.exists():
         logger.error(f"Gate runner not found: {gate_runner}")
-        sys.exit(2)
+        sys.exit(EXIT_CONFIG_ERROR)
 
     cmd = [
         sys.executable,
@@ -110,7 +110,7 @@ def invoke_gate_runner(mode: str, upstream_agent: str, downstream_agent: str, ti
         if result.returncode not in (0, 1):
             logger.error(f"Gate runner failed with exit code {result.returncode}")
             logger.error(f"stderr: {result.stderr}")
-            sys.exit(2)
+            sys.exit(EXIT_CONFIG_ERROR)
 
         # Parse gate output (JSON from stdout)
         try:
@@ -118,16 +118,16 @@ def invoke_gate_runner(mode: str, upstream_agent: str, downstream_agent: str, ti
         except json.JSONDecodeError as e:
             logger.error(f"Gate runner produced invalid JSON: {e}")
             logger.error(f"stdout: {result.stdout[:500]}")
-            sys.exit(2)
+            sys.exit(EXIT_CONFIG_ERROR)
 
         return gate_output
 
     except subprocess.TimeoutExpired:
         logger.error("Gate runner timed out")
-        sys.exit(2)
+        sys.exit(EXIT_CONFIG_ERROR)
     except Exception as e:
         logger.error(f"Failed to invoke gate runner: {e}")
-        sys.exit(2)
+        sys.exit(EXIT_CONFIG_ERROR)
 
 
 def cluster_violations(violations: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -197,32 +197,39 @@ def _get_cluster_depth(file_path: str) -> int:
     return 1
 
 
+# Module-level constant for config errors
+EXIT_CONFIG_ERROR = 2
+
+
 def _extract_path_cluster(file_path: str, depth: int) -> str:
     """Extract path cluster from file path.
 
+    Clustering depth interpretation:
+    - depth=1: Return first path component (e.g., 'scripts')
+    - depth=2: Return first 4 components for Python/TypeScript/JavaScript backends
+             (language root is 3 components; depth 2 means 2 AFTER root = 4 total)
+
     Args:
         file_path: Normalized file path
-        depth: Number of path components to include
+        depth: Cluster depth (1 or 2); determines how many components to extract
 
     Returns:
         Path cluster (e.g., "asset_generation/python/src/models")
     """
     parts = file_path.split("/")
 
-    # Take first N parts (up to depth)
-    if depth >= len(parts):
-        return "/".join(parts)
-
-    # If path has enough parts, take first (depth) parts
-    # For depth=2, we want first 2 parts
     if depth == 1:
-        # Just first part or first 2 parts depending on context
-        if len(parts) >= 2:
-            return parts[0]  # Just the top-level directory
-        return "/".join(parts)
+        # Return first component only (Godot, jscpd)
+        return parts[0] if parts else ""
 
-    # For depth >= 2
-    return "/".join(parts[:depth])
+    if depth == 2:
+        # For Python/TypeScript backends: return first 4 components
+        # Language root = first 3 components
+        # Module level = first 4 components (add 1 to language root)
+        return "/".join(parts[:4]) if len(parts) >= 4 else "/".join(parts)
+
+    # Fallback (should not reach here based on _get_cluster_depth)
+    return "/".join(parts[:depth]) if len(parts) >= depth else "/".join(parts)
 
 
 def detect_baseline_diff(
@@ -361,8 +368,8 @@ def generate_json_report(
         )
         if result.returncode == 0:
             repo_commit = result.stdout.strip()[:8]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to get git commit SHA: {e}")
 
     try:
         result = subprocess.run(
@@ -374,8 +381,8 @@ def generate_json_report(
         )
         if result.returncode == 0:
             repo_branch = result.stdout.strip()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to get git branch: {e}")
 
     # Count violations by category
     violation_counts = {
@@ -398,14 +405,22 @@ def generate_json_report(
                    for nv in baseline_diff.get("new", []))
         )
 
+        # Count expired violations in this cluster
+        expired_count = sum(
+            1 for v in cluster_viols
+            if any(v.get("file") == ev.get("violation", {}).get("file")
+                   and v.get("line") == ev.get("violation", {}).get("line")
+                   for ev in baseline_diff.get("expired", []))
+        )
+
         cluster_list.append({
             "cluster_key": cluster_key,
             "rule_id": rule_id,
             "path_cluster": path_cluster,
             "violation_count": len(cluster_viols),
             "new_count": new_count,
-            "expired_count": 0,  # TODO: count expired
-            "remediated_count": 0,  # TODO: count remediated
+            "expired_count": expired_count,
+            "remediated_count": len(baseline_diff.get("remediated", [])),
             "baseline_matched_count": len(cluster_viols) - new_count,
         })
 
@@ -688,7 +703,7 @@ def main() -> None:
         repo_root = find_repo_root()
     except RuntimeError as e:
         logger.error(str(e))
-        sys.exit(2)
+        sys.exit(EXIT_CONFIG_ERROR)
 
     # Resolve baseline path relative to repo root if not absolute
     if not args.baseline_path.is_absolute():
@@ -716,7 +731,7 @@ def main() -> None:
             logger.warning("Baseline validation failed, but continuing with audit")
     except Exception as e:
         logger.error(f"Failed to load baseline: {e}")
-        sys.exit(2)
+        sys.exit(EXIT_CONFIG_ERROR)
 
     # Cluster violations
     clusters = cluster_violations(violations)
