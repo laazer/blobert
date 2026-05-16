@@ -124,10 +124,10 @@ Decomposed into 6 sequential tasks. Each task is independently executable once d
 
 | Field | Value |
 |---|---|
-| Stage | TEST_DESIGN |
-| Revision | 3 |
-| Last Updated By | Spec Agent |
-| Next Responsible Agent | Test Designer Agent |
+| Stage | TEST_BREAK |
+| Revision | 4 |
+| Last Updated By | Test Designer Agent |
+| Next Responsible Agent | Test Breaker Agent |
 | Status | Proceed |
-| Validation Status | SPECIFICATION complete. 6 functional requirements + 3 non-functional requirements defined. 68 total acceptance criteria (AC-01.1 through AC-06.9 + NF ACs). Specification frozen in project_board/test_designs/M902-08_specification.md. All planning checkpoint resolutions incorporated. Checkpoint log: project_board/checkpoints/M902-08/2026-05-16T-specification.md. Ready for TEST_DESIGN stage. No blockers. |
+| Validation Status | TEST_DESIGN complete. Comprehensive documentation integration test suite (41 tests, 700+ lines) written to tests/ci/test_m902_08_documentation_integration.py. Tests validate: README structure (sections, ordering), Mermaid diagram syntax (all stages, gates, outcomes), runbook commands (flag validity, gate matching), gate reference completeness (all 6 gates, consistent format), link resolution, CLAUDE.md compatibility. All tests currently FAIL as expected (README not yet updated); test suite defines strict behavioral contracts per spec. Checkpoint decision: documentation-only ticket requires schema/structure validation, not prose assertions per workflow_enforcement_v1.md. Test file syntax valid, fixtures correct, traceability to all 68 spec ACs. Checkpoint log: project_board/checkpoints/M902-08/2026-05-16T-test_design_checkpoint.md. Ready for TEST_BREAK stage (adversarial suite). |
 | Blocking Issues | None |
