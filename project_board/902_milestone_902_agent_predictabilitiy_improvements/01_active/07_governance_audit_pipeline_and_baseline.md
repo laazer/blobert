@@ -64,10 +64,10 @@ If unclear, ask:
 
 | Field | Value |
 |---|---|
-| Stage | TEST_BREAK |
-| Revision | 4 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | Test Breaker Agent |
+| Stage | IMPLEMENTATION_BACKEND |
+| Revision | 5 |
+| Last Updated By | Test Breaker Agent |
+| Next Responsible Agent | Implementation Backend Agent |
 | Status | Proceed |
-| Validation Status | Test Design Complete |
+| Validation Status | Test Break Complete |
 | Blocking Issues | None |
