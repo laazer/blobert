@@ -193,10 +193,11 @@ None (can proceed in parallel; coordinate file locations with gate framework tic
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_BACKEND_COMPLETE |
-| Revision | 6 |
-| Last Updated By | Implementation Agent |
-| Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
-| Status | Proceed |
-| Validation Status | IMPLEMENTATION COMPLETE; all 111 tests passing (80 behavioral + 31 adversarial); Ruff checks PASS; all 9 implementation tasks delivered (parser, modes, messages, hook integration, operator guide, tests); ready for acceptance validation |
+| Stage | COMPLETE |
+| Revision | 7 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Next Responsible Agent | Human |
+| Status | Complete; Ticket Ready for Merge/Archive |
+| Validation Status | ACCEPTANCE VALIDATED. AC-01 (hook integration in .claude/settings.json, pretooluse_command_inspection.py with run_hook and main entry points); AC-02 (80 behavioral + 31 adversarial = 111 tests all passing, covering 5 bypass patterns and benign command suite with 0% false positives); AC-03 (3 blocking modes STRICT/WARN/SHADOW fully implemented with BLOBERT_HOOK_MODE and BLOBERT_SKIP_HOOKS env overrides, documented in OPERATOR_GUIDE.md). Specification frozen and complete. Code quality verified (type hints, no unused imports/vars). Documentation complete (11.5 KB operator guide). No unmet acceptance criteria. Ticket meets all contractual requirements. |
 | Blocking Issues | None |
+| Escalation Notes | Ticket can be moved to 02_complete/05_pretooluse_hooks_command_inspection.md when merged to main. |
