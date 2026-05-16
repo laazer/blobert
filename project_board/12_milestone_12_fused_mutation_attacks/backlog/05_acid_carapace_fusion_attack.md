@@ -1,4 +1,4 @@
-# TICKET: acid_carapace_fusion_attack
+# TICKET: 05_acid_carapace_fusion_attack
 
 Title: Acid + Carapace fusion attack — corrosive slam
 

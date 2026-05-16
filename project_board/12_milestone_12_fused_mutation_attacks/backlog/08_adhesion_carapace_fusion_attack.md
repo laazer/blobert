@@ -1,4 +1,4 @@
-# TICKET: adhesion_carapace_fusion_attack
+# TICKET: 08_adhesion_carapace_fusion_attack
 
 Title: Adhesion + Carapace fusion attack — armoured lunge slam
 

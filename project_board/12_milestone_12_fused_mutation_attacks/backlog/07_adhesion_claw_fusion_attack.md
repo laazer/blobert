@@ -1,4 +1,4 @@
-# TICKET: adhesion_claw_fusion_attack
+# TICKET: 07_adhesion_claw_fusion_attack
 
 Title: Adhesion + Claw fusion attack — grapple and shred
 

@@ -1,4 +1,4 @@
-# TICKET: claw_carapace_fusion_attack
+# TICKET: 09_claw_carapace_fusion_attack
 
 Title: Claw + Carapace fusion attack — armoured flurry charge
 

@@ -1,4 +1,4 @@
-# TICKET: M12_core_2_fused_attack_resources
+# TICKET: 02_fused_attack_resources
 
 **Milestone:** M12 Fused Mutation Attacks  
 **Status:** Backlog  

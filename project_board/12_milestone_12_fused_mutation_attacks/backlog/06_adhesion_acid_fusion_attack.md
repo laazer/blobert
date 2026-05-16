@@ -1,4 +1,4 @@
-# TICKET: adhesion_acid_fusion_attack
+# TICKET: 06_adhesion_acid_fusion_attack
 
 Title: Adhesion + Acid fusion attack — sticky acid puddle
 
