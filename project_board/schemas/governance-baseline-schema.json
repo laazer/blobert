@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Governance Baseline Schema",
+  "description": "Schema for .governance-baseline.json baseline violations file with grandfathering policy",
+  "type": "object",
+  "required": ["_meta", "baseline_entries"],
+  "properties": {
+    "_meta": {
+      "type": "object",
+      "title": "Baseline Metadata",
+      "required": ["version", "generated_at", "tool", "description"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "title": "Baseline schema version",
+          "example": "1.0"
+        },
+        "generated_at": {
+          "type": "string",
+          "title": "Baseline generation timestamp (ISO 8601)",
+          "format": "date-time",
+          "example": "2026-05-15T12:00:00Z"
+        },
+        "tool": {
+          "type": "string",
+          "title": "Tool that generated this baseline",
+          "example": "governance-audit-pipeline"
+        },
+        "description": {
+          "type": "string",
+          "title": "Baseline description",
+          "example": "Baseline violations for grandfathering policy"
+        },
+        "audit_host": {
+          "type": ["string", "null"],
+          "title": "Host where audit was run",
+          "example": "ci-runner-001"
+        },
+        "audit_commit_sha": {
+          "type": ["string", "null"],
+          "title": "Git commit SHA at audit time",
+          "example": "abc1234567890def"
+        },
+        "updated_at": {
+          "type": ["string", "null"],
+          "title": "Last update timestamp",
+          "format": "date-time"
+        },
+        "updated_by": {
+          "type": ["string", "null"],
+          "title": "Agent that updated baseline",
+          "example": "spec-agent"
+        },
+        "change_reason": {
+          "type": ["string", "null"],
+          "title": "Reason for latest update",
+          "example": "Initial baseline after M902-03 completion"
+        }
+      },
+      "additionalProperties": false
+    },
+    "baseline_entries": {
+      "type": "array",
+      "title": "Baseline violations (append-only)",
+      "items": {
+        "type": "object",
+        "title": "Baseline Entry",
+        "required": ["rule_id", "file", "line", "expires_at", "owner", "rationale"],
+        "properties": {
+          "rule_id": {
+            "type": ["string", "null"],
+            "title": "Governance rule ID",
+            "description": "Rule identifier, e.g., 'EX-01', 'RF-02'",
+            "example": "EX-01"
+          },
+          "file": {
+            "type": "string",
+            "title": "File path (relative to repo root)",
+            "example": "asset_generation/python/src/enemies/builder.py"
+          },
+          "line": {
+            "type": ["integer", "null"],
+            "title": "Line number (or null for file-level rules)",
+            "example": 42
+          },
+          "expires_at": {
+            "type": ["string", "null"],
+            "title": "Expiration date (ISO 8601, optional)",
+            "description": "After this date, baseline entry is no longer valid. Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SSZ. Null means no expiration.",
+            "example": "2026-08-31"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Agent or team responsible",
+            "example": "impl-generalist"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Why this violation is tolerated",
+            "description": "Should reference ticket (e.g., M905-03) and timeline",
+            "example": "Refactoring in progress, tracked in M905-03"
+          },
+          "created_at": {
+            "type": ["string", "null"],
+            "title": "Entry creation timestamp",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": ["string", "null"],
+            "title": "Agent that created this entry",
+            "example": "spec-agent"
+          },
+          "suppression_justification": {
+            "type": ["string", "null"],
+            "title": "Technical details on why violation is suppressed",
+            "example": "Legacy code pattern, safe but requires large refactoring"
+          },
+          "fingerprint": {
+            "type": ["string", "null"],
+            "title": "Optional: unique identifier for this violation",
+            "description": "Can be used for fine-grained matching (deferred to M903)",
+            "example": "file:line:rule"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
