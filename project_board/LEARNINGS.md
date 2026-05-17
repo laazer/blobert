@@ -5207,3 +5207,83 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 - **Mechanical module-boundary tests** (AST) for “router stays transport-only” without tying tests to milestone prose.
 
 ---
+
+## [M8-01-enemy-floating-health-bar] — Guard-clause correctness requires dedicated adversarial test coverage in GDScript features with disabled modes
+
+*Completed: 2026-05-16*
+
+### Learnings
+- category: testing
+  insight: GDScript guard-clause logic (if !enabled { return }) can appear correct in unit tests of individual methods but fail under integration load if the test suite does not explicitly verify that disabled guards prevent observable state changes across all mutation paths. Behavioral-only assertions (method returns successfully) are insufficient—tests must capture side effects before and after.
+  impact: AC 6 required a dedicated test file (test_enemy_health_bar_3d_debug_toggle.gd) with 9 focused tests verifying that enabled=false prevents fill updates, visibility changes, and position updates. Without explicit guard-coverage tests, implementation could have soft-disabled some paths (e.g., visibility changes) while leaving others active (e.g., position updates), creating partial-disable bugs only visible in full-scene integration.
+  prevention: For any GDScript feature with an enabled/disabled flag, require an explicit adversarial test suite that asserts absence of state mutations when disabled, not just presence when enabled. Capture before/after state (visibility, progress_bar.value, node.position) rather than relying on return-value assertions.
+  severity: high
+
+- category: process
+  insight: World-space UI features (health bars, floating damage text) introduce positional-binding assumptions that are easy to defer to implementation but riskier when implementation must discover camera-facing projection logic and offset values without spec-level examples or baseline test cases.
+  impact: The planning checkpoint captured 10 clarifying questions with medium-to-medium-high confidence on positioning (offset value, billboard implementation choice, camera focus under rotation). Test Designer and Implementation agents had to re-derive these behaviors through test iteration. A spec-level example screenshot or pseudocode for position-update logic would have reduced assumption churn.
+  prevention: For world-space UI specs, include pseudocode or concrete calculation examples for position-to-screen-space projection. Document baseline offset values or ranges (e.g., "1.0–1.5m above enemy root center") and specify fallback behavior if camera is in unusual orientations (behind enemy, orthogonal).
+  severity: medium
+
+- category: testing
+  insight: Multi-test-file strategies (primary, adversarial-1, adversarial-2, debug-toggle, integration) are high-leverage for incremental-feature discovery but create maintenance burden if the test suite does not explicitly separate concerns. Behavioral test files should map cleanly to either "core AC behavior" or "risk category" (null-safety, boundary values, edge cases, feature flag).
+  impact: The ticket produced 71 tests across 5 files with clear separation: primary (core methods), adversarial-1 (null-safety/boundaries), adversarial-2 (determinism/concurrency), debug-toggle (AC 6 flag), integration (signal wiring/scene lifecycle). This separation made it easy to add the 9 debug-toggle tests late without reshuffling existing test organization. Tighter specs upfront would have allowed all 71 tests to be designed together in TEST_DESIGN rather than iteratively during implementation.
+  prevention: In TEST_DESIGN, explicitly list risk categories and map each test file to one category or a tightly-scoped combination (e.g., "integration handles signal + lifecycle" is one file; "null-safety + boundary values" is another). Avoid letting test files drift into multiple concerns without explicit mapping.
+  severity: low
+
+- category: architecture
+  insight: Health-bar-style world-space UI components that depend on enemy properties (current_hp, max_hp) should declare their dependency contract explicitly in both spec and test. If the enemy health component is not yet implemented, spec-level pseudocode or a mock/stub contract is necessary to unblock Test Designer and Implementation.
+  impact: Spec and checkpoint both captured a MEDIUM confidence assumption that "health is managed by a health component (not yet implemented) or exposed via EnemyBase properties." This deferral meant implementation had to stub/mock the health component in tests before testing the bar logic. Spec could have included a minimal HealthComponent interface (mock-friendly method signatures) as a non-blocking reference.
+  prevention: For UI features that depend on unimplemented gameplay components, define a minimal interface contract (method names, return types) in the spec, even as a "reference mock" section. This unblocks parallel test + implementation work without waiting for the dependency to be coded first.
+  severity: medium
+
+### Anti-Patterns
+- description: Treating "feature has an enabled flag" as sufficiently specified for testing without explicitly mapping guard-clause locations and verifying all side-effect paths respond to the flag.
+  detection_signal: Implementation includes guard clauses at entry points (e.g., `if !enabled: return` in `_process`), but test suite only asserts method-return correctness, not state isolation.
+  prevention: Create a mandatory checklist for enabled/disabled features: list all methods with state mutations, identify guard-clause entry points, then require state-before/after assertions for each mutation path when disabled.
+
+- description: Deferring world-space positioning logic (offset calculation, camera projection, billboard update) to implementation without spec-level examples or baseline test pseudocode.
+  detection_signal: Spec uses abstract language like "camera-facing" and "positioned above enemy" but includes no calculation example or concrete baseline values (e.g., offset = 1.2m).
+  prevention: For positional UI specs, include pseudocode or worked example for projection logic, baseline offset ranges, and fallback behavior for edge cases (camera behind object, extreme angles).
+
+- description: Accumulating test files without explicit concern mapping, allowing tests to drift into multiple risk categories per file.
+  detection_signal: A single test file verifies both null-safety and integration wiring, making it hard to understand which tests apply to which concern or to add feature-flag coverage late without reshuffling.
+  prevention: In TEST_DESIGN, declare test-file-to-concern mapping explicitly and update it when new risk categories emerge (e.g., "adding debug-toggle tests → new file test_*_debug_toggle.gd").
+
+### Prompt Patches
+- agent: Test Designer Agent
+  change: "For any GDScript feature with an enabled/disabled or feature-flag contract, create a dedicated test file with explicit before/after state assertions for all methods that should respect the flag. Do not rely on method-return assertions alone; capture observable mutations (visibility state, numeric property values, node position/rotation) before and after disabled-flag execution, and assert no changes occurred."
+  reason: Prevents partial-disable bugs where some code paths respond to the flag and others silently execute, only discoverable in full-scene integration.
+
+- agent: Spec Agent
+  change: "When specifying world-space UI (health bars, floating labels, damage text) that positions relative to 3D world objects, include a 'Positioning and Projection' subsection with pseudocode or worked examples for screen-space calculation, baseline offset values or ranges, and fallback behavior for camera edge cases. Reference unimplemented dependencies via interface contracts (mock-style method signatures) to unblock Test Designer and Implementation parallelization."
+  reason: Reduces positioning-assumption churn and allows parallel test/implementation work even when gameplay dependencies are not yet coded.
+
+- agent: Test Designer Agent
+  change: "Explicitly map each test file to a concern category (core AC behavior, null-safety, boundary values, performance/determinism, feature flags, integration/signals) at the start of TEST_DESIGN. When new concerns emerge during implementation, add them to the mapping and create corresponding test files. Document the mapping in a comment at the top of each test file or in the test checkpoint."
+  reason: Improves traceability and makes late-stage feature additions (e.g., AC 6 debug-toggle tests) easier to slot in without re-organizing existing test structure.
+
+### Workflow Improvements
+- issue: Test-suite expansion (from 4 planned test files to 5 actual files with 71 total tests) happened during implementation without early coordination, causing some rework in test organization.
+  improvement: In TEST_DESIGN, require an explicit per-AC test-mapping (which tests cover which ACs) and per-AC risk breakdown (what edge cases / adversarial paths apply). This unblocks Test Breaker and Implementation from independently identifying additional test files without rework.
+  expected_benefit: Reduces late-stage test-organization churn and allows all test files to be authored in parallel rather than sequentially during implementation.
+
+- issue: Positioning logic for world-space UI was uncertain until implementation, requiring test iteration to validate camera projection and offset behavior.
+  improvement: In SPEC, require a positioning-behavior worked example (pseudocode or screenshot) for world-space UI features. In TEST_DESIGN, use this example to author baseline integration tests before implementation, allowing implementation to match expected behavior rather than discover it.
+  expected_benefit: Reduces positional-UI rework cycles and shortens implementation-to-passing-tests time.
+
+- issue: AC 6 (debug flag toggle) was fully specified but lacked dedicated test-suite planning until implementation, causing a delayed test-file addition.
+  improvement: In TEST_DESIGN, treat enabled/disabled or feature-flag ACs as requiring dedicated adversarial test files, not as an afterthought in the primary suite. Call out guard-clause coverage explicitly.
+  expected_benefit: Ensures flag-based features are tested comprehensively upfront and reduces late-stage rework or partial-disable bugs.
+
+### Keep / Reinforce
+- practice: Multi-file test organization by risk category (primary, adversarial, feature-specific, integration) with clear separation of concerns.
+  reason: Makes test suite maintainable and allows risk-specific test files to be added or expanded without disrupting the overall structure.
+
+- practice: Writing adversarial and integration tests in parallel with primary tests rather than sequentially, to catch state-isolation and wiring issues early.
+  reason: Reduces implementation-stage surprises and ensures edge cases are covered from the start.
+
+- practice: Explicit before/after state assertions in guard-clause tests to catch partial-disable bugs.
+  reason: Prevents subtle bugs where some code paths respect a disabled flag and others do not, only visible under integration load.
+
+---

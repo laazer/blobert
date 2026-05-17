@@ -5,6 +5,51 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-17T-m8-sefi-test-design (enemy status effect indicators — TEST_DESIGN)
+
+- Queue mode: scoped backlog (milestone 8 enemy attacks)
+- Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+- Stage: TEST_DESIGN → TEST_BREAK
+- Log: project_board/checkpoints/M8-SEFI/2026-05-17T-test_design.md
+- Spec: project_board/specs/enemy_status_effect_indicators_spec.md
+- **Status: TEST_DESIGN COMPLETE** (Revision 4, ready for Test Breaker)
+- **Outcome: COMPREHENSIVE TEST SUITE AUTHORED.** 43 behavioral tests across 2 files: 21 primary (happy-path, AC/FR coverage) + 22 adversarial (boundary, edge case, stress). 100% AC coverage (10/10), 100% FR coverage (7/7), 100% NFR coverage (5/5). Test files: `/tests/ui/test_enemy_status_effect_indicators.gd` (25 KB) and `/tests/ui/test_enemy_status_effect_indicators_adversarial.gd` (26 KB). Mock enemy fixture supports spec FR2 conservative polling (4 interface methods). All tests deterministic, repeatable, executable. 3 checkpoint decisions logged (mock script embedding, conservative interface polling, icon texture fallback). All tests use `unittest.mock`-style fixtures (mock enemy node). No prose assertions. Tests validate: sort order (stun > weaken > poison > slow > infection), overflow badge (+N badge visibility/text), real-time updates (add/remove/refresh within 1 frame), max_visible enforcement, fallback icon handling, null/empty safety, boundary values (max_visible 0/1/100, effect count 1/1000+), rapid state transitions, sort stability, concurrent indicators (10+). Deferred to Integration: AC7 (health bar integration, z-order, camera-facing). Ready for Test Breaker.
+
+---
+
+## Run: 2026-05-17T-m8-sefi-specification (enemy status effect indicators — SPECIFICATION)
+
+- Queue mode: scoped backlog (milestone 8 enemy attacks)
+- Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+- Stage: SPECIFICATION (complete)
+- Log: project_board/checkpoints/M8-SEFI/2026-05-17T-specification.md
+- Spec: project_board/specs/enemy_status_effect_indicators_spec.md
+- **Status: SPECIFICATION COMPLETE** (Revision 3, completed by Spec Agent)
+- **Outcome: SPECIFICATION FINALIZED.** 10 Acceptance Criteria (AC1-AC10) with measurable, testable conditions. 7 Functional Requirements (FR1-FR7) with detailed acceptance criteria and rationale. 5 Non-Functional Requirements (NFR1-NFR5). Status effect interface contract defined via conservative polling approach (priority: array property → meta property → getter method → fallback to EnemyBase.State enum). All checkpoint ambiguities resolved with confidence levels (6 total: status effect interface MEDIUM, signal vs polling MEDIUM, icon assets MEDIUM, sort order HIGH, overflow badge HIGH, duplicates HIGH). Risk mitigation documented for all 5 identified risks (status interface undefined, icon assets missing, performance impact, scene hierarchy changes, sort non-determinism). Testing strategy outlined: 15-20 primary tests + 20-30 adversarial tests (35-50 total). Implementation checklist provided with @export properties, quality gates, and handoff points. Traceability matrix links AC → FR → NFR → Tests. Design decisions frozen (HBoxContainer architecture, enum-backed sort, configurable max_visible=5, "+N" overflow badge). Passed to Test Designer Agent.
+
+---
+
+## Run: 2026-05-17T-m8-sefi-planning (enemy status effect indicators — PLANNING)
+
+- Queue mode: scoped backlog (milestone 8 enemy attacks)
+- Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+- Stage: PLANNING → SPECIFICATION
+- Log: project_board/checkpoints/M8-SEFI/2026-05-17T-planning.md
+- **Status: PLANNING COMPLETE** (Revision 1, ready for Spec Agent)
+- **Outcome: EXECUTION PLAN FROZEN.** 6 sequential tasks (Spec → Test Designer → Test Breaker → Implementation → Static QA → Integration). 4 design decisions frozen (icon container as Control child, status effect polling/signals, enum-backed sort order, overflow badge with count). 5 checkpoint ambiguities resolved with MEDIUM confidence (status effect contract TBD by Spec Agent, icon asset paths, sort order, overflow badge, signal vs polling). Gating dependencies: none (ticket 01 COMPLETE). Ready for Spec Agent to resolve status effect interface contract.
+
+---
+
+## Run: 2026-05-16T—2026-05-17T-m8-efh-complete (enemy floating health bar — COMPLETE)
+
+- Queue mode: single ticket
+- Ticket: project_board/8_milestone_8_enemy_attacks/done/01_enemy_floating_health_bar.md
+- **Status: COMPLETE** (Revision 9)
+- Stages: PLANNING → SPECIFICATION → TEST_DESIGN → TEST_BREAK → IMPLEMENTATION_ENGINE_INTEGRATION → (GDScript Review) → Acceptance Criteria Gatekeeper (routed back to Test Designer for AC 6) → COMPLETE
+- **Outcome: ALL ACCEPTANCE CRITERIA SATISFIED.** 71 behavior-driven tests passing (primary 20 + adversarial 15 + adversarial-part2 13 + integration 16 + debug-toggle 9). Test rework: GDScript reviewer found initial 62 tests were specification prose assertions; Engine Integration rewrote to verify actual method execution. Gatekeeper found AC 6 (debug flag toggle) lacked unit test evidence; Test Designer added 9-test suite. Commits: b0049ea, 7f1a79b, 6d9b2bf, 9ca6d66, bb08d12. Deliverables: scene (enemy_health_bar_3d.tscn) + script (enemy_health_bar_3d.gd) + spec + 71 tests. Key decision: Control node (2D UI) with screen-space projection (not Node3D billboard) for rendering reliability. Blog post: "Building a World-Space Health Bar for Enemies (and Learning When Tests Lie)". Learnings appended to project_board/LEARNINGS.md.
+
+---
+
 ## Run: 2026-05-16T-m8-efhb-spec (enemy floating health bar specification)
 
 - Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/01_enemy_floating_health_bar.md
