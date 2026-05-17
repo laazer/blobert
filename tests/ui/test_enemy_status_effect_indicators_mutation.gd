@@ -33,11 +33,81 @@ func _create_mock_enemy_with_conflicting_interfaces(
 	getter_effects: Array = [],
 	state: int = 0
 ) -> Node3D:
-	return test_create_mock_enemy_with_effects(array_effects, meta_effects, getter_effects, state)
+	var body := Node3D.new()
+
+	var script_code := """
+extends Node3D
+
+var current_state = %d
+var active_status_effects = []
+
+func get_base_state():
+	return current_state
+
+func get_active_status_effects():
+	return %s
+
+func get_meta_effects():
+	return %s
+""" % [state, getter_effects, meta_effects]
+
+	var script = GDScript.new()
+	script.set_source_code(script_code)
+	body.set_script(script)
+	body.set_meta("active_status_effects", meta_effects.duplicate())
+
+	if body.has_method("get_active_status_effects"):
+		# The getter will return getter_effects
+		pass
+
+	# Set the property to array_effects
+	if body.has_property("active_status_effects"):
+		body.active_status_effects = array_effects.duplicate()
+
+	return body as Node3D
+
+
+func _create_mock_enemy_with_effects(effects: Array = []) -> Node3D:
+	var body := Node3D.new()
+
+	var script_code := """
+extends Node3D
+
+var current_state = 0
+var active_status_effects = []
+
+func get_base_state():
+	return current_state
+
+func get_active_status_effects():
+	return active_status_effects
+
+func set_active_status_effects(effects: Array) -> void:
+	active_status_effects = effects
+"""
+	var script = GDScript.new()
+	script.set_source_code(script_code)
+	body.set_script(script)
+	body.set_meta("active_status_effects", effects.duplicate())
+
+	if body.has_method("set_active_status_effects"):
+		body.call("set_active_status_effects", effects.duplicate())
+
+	return body as Node3D
 
 
 func _create_indicators_instance() -> Node:
-	return test_create_mock_indicators_instance()
+	# Load the actual scene instead of recreating it inline
+	var scene_path = "res://scenes/ui/enemy_status_effect_indicators.tscn"
+	if ResourceLoader.exists(scene_path):
+		var scene = load(scene_path)
+		return scene.instantiate() as Node
+	# Fallback: create minimal instance with just the script
+	var indicator = Control.new()
+	indicator.name = "EnemyStatusEffectIndicators"
+	var script = load("res://scripts/ui/enemy_status_effect_indicators.gd")
+	indicator.set_script(script)
+	return indicator
 
 
 # ---------------------------------------------------------------------------
@@ -585,45 +655,39 @@ func test_rapid_mutation_clear_reapply() -> void:
 
 
 # ---------------------------------------------------------------------------
-# HELPER ASSERTION METHODS
+# HELPER ASSERTION METHODS (note: delegates to parent class implementations)
 # ---------------------------------------------------------------------------
 
-func _assert_true(condition: bool, message: String) -> void:
+# Override parent _assert_true with correct signature
+func _assert_true(condition: bool, test_name: String, fail_msg: String = "expected true, got false") -> void:
 	if condition:
-		_pass(message)
+		_pass(test_name)
 	else:
-		_fail(message)
+		_fail(test_name, fail_msg)
 
 
-func _assert_false(condition: bool, message: String) -> void:
+# Override parent _assert_false with correct signature
+func _assert_false(condition: bool, test_name: String, fail_msg: String = "expected false, got true") -> void:
 	if not condition:
-		_pass(message)
+		_pass(test_name)
 	else:
-		_fail(message)
+		_fail(test_name, fail_msg)
 
 
-func _assert_eq_int(expected: int, actual: int, message: String) -> void:
+# Override parent _assert_eq_int with correct signature
+func _assert_eq_int(expected: int, actual: int, test_name: String) -> void:
 	if expected == actual:
-		_pass(message)
+		_pass(test_name)
 	else:
-		_fail(message + " (expected %d, got %d)" % [expected, actual])
+		_fail(test_name, "(expected %d, got %d)" % [expected, actual])
 
 
-func _assert_eq_string(expected: String, actual: String, message: String) -> void:
+# Override parent _assert_eq_string with correct signature
+func _assert_eq_string(expected: String, actual: String, test_name: String) -> void:
 	if expected == actual:
-		_pass(message)
+		_pass(test_name)
 	else:
-		_fail(message + " (expected '%s', got '%s')" % [expected, actual])
-
-
-func _pass(message: String) -> void:
-	_pass_count += 1
-	print("  PASS: %s" % message)
-
-
-func _fail(message: String) -> void:
-	_fail_count += 1
-	print("  FAIL: %s" % message)
+		_fail(test_name, "(expected '%s', got '%s')" % [expected, actual])
 
 
 func run_all() -> int:

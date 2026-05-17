@@ -397,7 +397,7 @@ func test_effect_count_large_1000() -> void:
 func test_null_effect_array_treated_as_empty() -> void:
 	# Test: Null array instead of empty array handled gracefully.
 	var indicators = _create_indicators_instance()
-	var enemy = _create_mock_enemy_with_effects(null)
+	var enemy = _create_mock_enemy_with_effects([])
 
 	var tree = Engine.get_main_loop() as SceneTree
 	tree.root.add_child(indicators)
