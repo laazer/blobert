@@ -1,0 +1,265 @@
+# enemy_status_effect_indicators.gd
+#
+# World-space status effect indicator badges for enemies. Displays active effects above health bar.
+# Shows compact icons representing poisoned, slowed, stunned, weakened, infected states.
+#
+# Implemented as a Control node that reads status effects from enemy node and renders
+# sorted, bounded icon list with overflow badge.
+#
+# Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+# Requirements:
+#   - Renders status effect icons above health bar
+#   - Deterministic sort order: stun > weaken > poison > slow > infection
+#   - Max visible count with overflow badge
+#   - Real-time updates on effect add/remove/refresh
+#   - Fallback icon for unknown effects (no missing-resource errors)
+#
+
+extends Control
+
+class_name EnemyStatusEffectIndicators
+
+# Configuration (all @export, live-tunable)
+@export var enabled: bool = true
+@export var max_visible_count: int = 5
+@export var icon_size: Vector2 = Vector2(32, 32)
+@export var spacing: int = 4
+@export var fallback_icon_path: String = "res://assets/ui/status_effects/unknown_effect.png"
+
+# Constants for effect priorities
+const EFFECT_PRIORITY_STUN: int = 0
+const EFFECT_PRIORITY_WEAKEN: int = 1
+const EFFECT_PRIORITY_POISON: int = 2
+const EFFECT_PRIORITY_SLOW: int = 3
+const EFFECT_PRIORITY_INFECTION: int = 4
+const EFFECT_PRIORITY_UNKNOWN: int = 999  # Unknown effects get lowest priority
+
+# Internal state
+var _enemy: Node = null
+var _last_seen_effects: Array = []
+var _icon_container: HBoxContainer = null
+var _overflow_badge: Label = null
+
+# Effect ID to priority mapping (lower = higher priority)
+var _effect_priority: Dictionary = {
+	"stun": EFFECT_PRIORITY_STUN,
+	"weaken": EFFECT_PRIORITY_WEAKEN,
+	"poison": EFFECT_PRIORITY_POISON,
+	"slow": EFFECT_PRIORITY_SLOW,
+	"infection": EFFECT_PRIORITY_INFECTION
+}
+
+
+func _ready() -> void:
+	# Create layout container (HBoxContainer for horizontal icon layout)
+	# Note: Tests embed similar _ready() logic for mock instances without requiring this script.
+	# Duplication is necessary for test isolation. --pragma-nolint-organization
+	_icon_container = HBoxContainer.new()
+	_icon_container.name = "IconContainer"
+	add_child(_icon_container)
+
+	# Create placeholder TextureRect nodes for icons (one per max_visible_count)
+	for i in range(max_visible_count):
+		var tex_rect = TextureRect.new()
+		tex_rect.name = "Icon_%d" % i
+		tex_rect.custom_minimum_size = icon_size
+		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		tex_rect.visible = false
+		_icon_container.add_child(tex_rect)
+
+	# Create overflow badge label (shows "+N" for hidden effects)
+	_overflow_badge = Label.new()
+	_overflow_badge.name = "OverflowBadge"
+	_overflow_badge.visible = false
+	_icon_container.add_child(_overflow_badge)
+
+	# Start hidden; show when effects present
+	visible = false
+
+
+func _process(_delta: float) -> void:
+	if not enabled or _enemy == null or not is_instance_valid(_enemy):
+		return
+
+	_process_update()
+
+
+func update_from_enemy(enemy: Node) -> void:
+	"""Set the enemy reference and initialize indicator state."""
+	if enemy == null:
+		_enemy = null
+		visible = false
+		return
+
+	_enemy = enemy
+	_process_update()
+
+
+func set_active_effects(effects: Array) -> void:
+	"""Directly set active effects array for testing."""
+	_update_from_effects(effects)
+
+
+# ---------------------------------------------------------------------------
+# Private methods: status effect reading and caching
+# ---------------------------------------------------------------------------
+
+func _process_update() -> void:
+	"""Each frame, read enemy effects and update if changed."""
+	if _enemy == null:
+		return
+
+	var effects = _get_active_effects_from_enemy()
+	_update_from_effects(effects)
+
+
+func _get_active_effects_from_enemy() -> Array:
+	"""Read active effects from enemy using multiple interface methods (priority order)."""
+	if _enemy == null:
+		return []
+
+	# Priority 1: Getter method
+	if _enemy.has_method("get_active_status_effects"):
+		var result = _enemy.call("get_active_status_effects")
+		if result is Array:
+			return result
+
+	# Priority 2: Meta property
+	if _enemy.get_meta_list().has("active_status_effects"):
+		var result = _enemy.get_meta("active_status_effects")
+		if result is Array:
+			return result
+
+	# Priority 3: Property
+	if _enemy.has_property("active_status_effects"):
+		var result = _enemy.active_status_effects
+		if result is Array:
+			return result
+
+	# Priority 4: Fallback to EnemyBase state enum
+	if _enemy.has_method("get_base_state"):
+		var state = _enemy.call("get_base_state")
+		var fallback_effects = []
+		if state == 1:  # WEAKENED
+			fallback_effects.append("weaken")
+		if state == 2:  # INFECTED
+			fallback_effects.append("infection")
+		return fallback_effects
+
+	return []
+
+
+func _update_from_effects(effects: Array) -> void:
+	"""Check if effects changed; if so, render indicators."""
+	# Cache check: only re-render if array changed
+	if _arrays_equal(effects, _last_seen_effects):
+		return
+
+	_last_seen_effects = effects.duplicate()
+	_render_indicators()
+
+
+func _arrays_equal(a: Array, b: Array) -> bool:
+	"""Compare two arrays element-by-element."""
+	if a.size() != b.size():
+		return false
+	for i in range(a.size()):
+		if a[i] != b[i]:
+			return false
+	return true
+
+
+# ---------------------------------------------------------------------------
+# Private methods: rendering and UI updates
+# ---------------------------------------------------------------------------
+
+func _render_indicators() -> void:
+	"""Rebuild UI based on current effects: sort, clamp, render icons, update badge."""
+	if _icon_container == null:
+		return
+
+	# Sort effects by priority (stun first)
+	var sorted_effects = _sort_effects(_last_seen_effects)
+
+	# Take only the first max_visible_count effects
+	var visible_effects = sorted_effects.slice(0, mini(max_visible_count, sorted_effects.size()))
+
+	# Update icon TextureRects
+	var icon_children = _get_icon_rects()
+	for i in range(icon_children.size()):
+		if i < visible_effects.size():
+			var tex_rect = icon_children[i]
+			var effect_id = visible_effects[i]
+			var icon = _load_icon(effect_id)
+			tex_rect.texture = icon
+			tex_rect.visible = true
+		else:
+			icon_children[i].visible = false
+
+	# Update overflow badge
+	_update_overflow_badge(sorted_effects.size())
+
+	# Show container only if any effects active
+	visible = sorted_effects.size() > 0
+
+
+func _get_icon_rects() -> Array:
+	"""Get all TextureRect children of icon container (for rendering)."""
+	var rects = []
+	if _icon_container == null:
+		return rects
+
+	for child in _icon_container.get_children():
+		if child is TextureRect:
+			rects.append(child)
+	return rects
+
+
+func _sort_effects(effects: Array) -> Array:
+	"""Sort effects by priority (stun > weaken > poison > slow > infection)."""
+	var result = effects.duplicate()
+	result.sort_custom(func(a, b):
+		var priority_a = _get_effect_priority(a)
+		var priority_b = _get_effect_priority(b)
+		return priority_a < priority_b
+	)
+	return result
+
+
+func _get_effect_priority(effect_id: Variant) -> int:
+	"""Get numeric priority for effect ID (lower = higher priority, renders first)."""
+	var id_str = str(effect_id)
+	if _effect_priority.has(id_str):
+		return _effect_priority[id_str]
+	return EFFECT_PRIORITY_UNKNOWN  # Unknown effects get lowest priority (render last)
+
+
+func _load_icon(effect_id: Variant) -> Texture2D:
+	"""Load icon texture for effect ID with fallback to unknown_effect.png."""
+	var id_str = str(effect_id)
+	var canonical_path = "res://assets/ui/status_effects/%s.png" % id_str
+
+	# Try canonical path first
+	if ResourceLoader.exists(canonical_path):
+		return load(canonical_path) as Texture2D
+
+	# Fallback to unknown_effect.png
+	if ResourceLoader.exists(fallback_icon_path):
+		return load(fallback_icon_path) as Texture2D
+
+	# Last resort: return placeholder texture (never return null)
+	return PlaceholderTexture2D.new()
+
+
+func _update_overflow_badge(total_effects: int) -> void:
+	"""Show/hide overflow badge. If hidden effects, show "+N"."""
+	if _overflow_badge == null:
+		return
+
+	if total_effects > max_visible_count:
+		var hidden_count = total_effects - max_visible_count
+		_overflow_badge.text = "+%d" % hidden_count
+		_overflow_badge.visible = true
+	else:
+		_overflow_badge.visible = false
