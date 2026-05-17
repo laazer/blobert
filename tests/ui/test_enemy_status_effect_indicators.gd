@@ -70,8 +70,16 @@ func _load_and_instantiate_indicators() -> Variant:
 
 
 # Create a status indicator script instance directly for unit testing.
-# Used when scene file doesn't exist yet.
+# Prefers loading the actual scene/script, falls back to mock if not available.
 func _create_indicators_instance() -> Node:
+	# Try loading the actual scene first
+	var scene_path = "res://scenes/ui/enemy_status_effect_indicators.tscn"
+	if ResourceLoader.exists(scene_path):
+		var scene = load(scene_path)
+		if scene != null:
+			return scene.instantiate() as Node
+
+	# Fallback: create mock if scene doesn't exist
 	var indicator = Control.new()
 	indicator.name = "EnemyStatusEffectIndicators"
 

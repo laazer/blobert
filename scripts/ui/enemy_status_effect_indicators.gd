@@ -64,7 +64,8 @@ func _ready() -> void:
 		add_child(_icon_container)
 
 	# Clear any pre-existing children and recreate all nodes
-	_icon_container.clear()
+	for child in _icon_container.get_children():
+		child.queue_free()
 
 	# Create placeholder TextureRect nodes for icons (one per max_visible_count)
 	for i in range(max_visible_count):
@@ -177,6 +178,9 @@ func _render_indicators() -> void:
 	if _icon_container == null:
 		return
 
+	# Ensure we have the right number of TextureRects for current max_visible_count
+	_ensure_icon_rects()
+
 	# Sort effects by priority (stun first)
 	var sorted_effects = _sort_effects(_last_seen_effects)
 
@@ -200,6 +204,30 @@ func _render_indicators() -> void:
 
 	# Show container only if any effects active
 	visible = sorted_effects.size() > 0
+
+
+func _ensure_icon_rects() -> void:
+	"""Ensure we have exactly max_visible_count TextureRects for rendering."""
+	if _icon_container == null:
+		return
+
+	var current_rects = _get_icon_rects()
+
+	# If we have too many, remove extras
+	if current_rects.size() > max_visible_count:
+		for i in range(max_visible_count, current_rects.size()):
+			current_rects[i].queue_free()
+
+	# If we have too few, create more
+	elif current_rects.size() < max_visible_count:
+		for i in range(current_rects.size(), max_visible_count):
+			var tex_rect = TextureRect.new()
+			tex_rect.name = "Icon_%d" % i
+			tex_rect.custom_minimum_size = icon_size
+			tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+			tex_rect.visible = false
+			_icon_container.add_child(tex_rect)
 
 
 func _get_icon_rects() -> Array:
