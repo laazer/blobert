@@ -5287,3 +5287,97 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   reason: Prevents subtle bugs where some code paths respect a disabled flag and others do not, only visible under integration load.
 
 ---
+
+## [M8-SEFI] — GDScript API differences and test generation create cascading rework in generated test files
+
+*Completed: 2026-05-17*
+
+### Learnings
+- category: testing
+  insight: Generated GDScript test files that embed fixture setup code (mock enemy builders, indicator instance creation) create maintenance burden and compliance issues. When test generation produces ~5 test files with duplicated helper methods, later edits to fix compilation errors must be applied to each file independently, multiplying rework cycles. Generated test code should minimize or eliminate duplication at the point of generation, not defer it to manual cleanup.
+  impact: Test Breaker created 42 additional tests across 2 files (mutation and concurrency suites). These files contained duplicated helper methods (_create_mock_enemy_with_effects, _create_indicators_instance). When implementation revealed compilation errors, fixing all copies required iterating through multiple files and manually reconciling changes. The fix commit had to update both mutation and concurrency test files with signature corrections and null parameter handling. Future test generation should template these helpers into a shared base class or mixin, not inline them.
+  prevention: When generating multiple test files with shared fixtures, refactor duplicated helper methods into a parent class or mixin module at generation time. Require test generation to validate generated code compiles before committing. Include a post-generation deduplication pass that extracts common fixtures into a shared module (e.g., tests/ui/enemy_status_effect_indicators_fixtures.gd).
+  severity: medium
+
+- category: architecture
+  insight: Godot 4 method availability differs from GDScript 3 and common assumptions (e.g., HBoxContainer.clear() does not exist). Implementation agents must verify API contracts against the actual Godot 4 runtime. Code review and linting can catch syntax errors but not missing methods on built-in classes.
+  impact: Initial implementation used `_icon_container.clear()` to reset TextureRect children. This method does not exist in Godot 4; the correct pattern is manual iteration and queue_free(). The error was caught during integration but would have been a runtime crash. Static review cannot detect this (linter has no visibility into Godot class hierarchies). Future implementation agents need a Godot 4 API reference or examples from existing codebase.
+  prevention: Add a Godot 4 API reference section to CLAUDE.md (or project_board/GODOT_API_NOTES.md) documenting commonly-used node patterns in this project: Container clearing, signal connection, scene instantiation, and dynamic child management. Include contrasts with GDScript 3 for agents familiar with older versions. Require implementation agents to validate API usage against a curated list before handoff to testing.
+  severity: high
+
+- category: testing
+  insight: Test helper methods that instantiate components should prefer loading actual scene files (when possible) over programmatic inline instantiation. Scene-based instantiation exposes integration mismatches between scene structure (@export defaults, node hierarchies) and test expectations. Inline instantiation can pass tests but fail in scene context.
+  impact: Early test helpers used inline _ready() logic to create EnemyStatusEffectIndicators instances without loading the scene file. Later, when integration revealed that max_visible_count changes after instantiation weren't triggering UI updates, it became clear that the scene file had no dynamic-resize logic. Adding _ensure_icon_rects() to the implementation required corresponding test helper updates to load the actual scene (which now calls _ensure_icon_rects()). Test helpers should load scenes from disk by default.
+  prevention: For GDScript UI components, define a standard test-helper pattern: load scene file via ResourceLoader or preload, then modify @export properties programmatically if needed. Document this in test templates. Avoid inline instantiation of Control/Node trees; inline instantiation should only be used for pure-data fixtures (mock enemies) or utility helpers (color checks).
+  severity: medium
+
+- category: process
+  insight: Dynamic @export property changes in Godot (e.g., max_visible_count changed at runtime) require coordinated re-initialization logic in both implementation and tests. If the implementation does not explicitly handle live updates to @export vars, tests that verify "change max_visible_count at runtime" will fail. Spec language like "live-tunable" must trigger implementation of property change handlers (_notification or explicit setters).
+  impact: Mutation tests included `test_max_visible_dynamic_change_reduces_visible`, which changed max_visible_count after scene initialization and expected immediate re-render. Implementation initially did not handle this; the test would fail because TextureRects were pre-allocated at _ready time. Adding _ensure_icon_rects() to _render_indicators() fixed it by dynamically adjusting the icon rect pool whenever max_visible_count differed from current count.
+  prevention: When spec mentions "@export properties" or "live-tunable" configuration, Test Designer must create explicit test cases for runtime property changes and Implementation must include a property-change handler (_notification with NOTIFICATION_PROPERTY_LIST_CHANGED or explicit setters) that re-initializes affected UI state.
+  severity: medium
+
+- category: testing
+  insight: Mutation test coverage of edge cases like "max_visible_count changed to negative value" exposes boundary validation bugs that happy-path tests never exercise. Defensive clamping logic (max_visible_count = max(1, max_visible_count)) prevents crashes but may be missing if implementation assumes spec-valid input. Adversarial tests should include boundary-value mutations for all numeric @export properties.
+  impact: Mutation tests included `test_max_visible_negative_becomes_one`, which verified that negative max_visible_count values were handled gracefully (clamped to 1, not crashed). This is a defensive pattern that should be standard for any numeric tuning parameters.
+  prevention: For numeric @export properties in UI/gameplay, include boundary mutation tests (zero, negative, huge values). Implementation should clamp or reject invalid values explicitly (not assume editor prevents invalid input). Document clamping behavior in spec or code comments.
+  severity: low
+
+### Anti-Patterns
+- description: Generating multiple test files with duplicated fixture code (helper methods that create mocks, instantiate components). This defers deduplication work and makes fixes apply in multiple places.
+  detection_signal: Test generation produces 2+ files with identical method signatures (_create_mock_enemy_with_effects, _create_indicators_instance) that differ only in minor details or parameter order.
+  prevention: At generation time, refactor duplicated helpers into a shared parent class or mixin module (tests/ui/*_fixtures.gd). Validate generated code compiles before returning.
+
+- description: Assuming Godot 4 method availability based on GDScript 3 patterns or general knowledge. Methods like HBoxContainer.clear() do not exist in Godot 4, causing runtime failures.
+  detection_signal: Implementation uses a method on a built-in class that was not validated against Godot 4 API docs or existing codebase usage.
+  prevention: Require agents to check existing codebase usage of a node type before using unfamiliar methods. Add Godot 4 API pitfalls section to CLAUDE.md with common corrections (e.g., "use manual loop + queue_free() instead of .clear()").
+
+- description: Test helpers that instantiate components inline without loading scene files. This hides integration mismatches between scene structure and test expectations.
+  detection_signal: Test helper creates a Control/Node tree programmatically; later, scene-based integration reveals missing initialization or property handling.
+  prevention: Require test helpers to load scene files when available. Reserve inline instantiation for data mocks only (e.g., mock enemies). Document this pattern in test templates.
+
+- description: Spec language like "live-tunable" or "@export property" without corresponding implementation of property-change handlers. Changes to @export vars at runtime do not trigger UI updates.
+  detection_signal: Mutation/adversarial tests change an @export property after initialization and expect immediate effect; implementation does not detect the change.
+  prevention: When spec mentions "@export" or "live-tunable", include explicit test cases for runtime changes. Implementation must include _notification handler or property setter to re-initialize affected state.
+
+### Prompt Patches
+- agent: Test Breaker Agent
+  change: "When generating multiple test files with shared setup fixtures, extract duplicated helper methods into a shared parent class (e.g., tests/<module>/<feature>_fixtures.gd) at generation time. Validate that all generated test files compile without parse errors before finalizing. Include a merge-deduplication step in the generation template to ensure helpers are defined once and imported by all test files."
+  reason: Reduces rework cycles when fixing compilation errors across multiple test files and improves maintainability by centralizing fixture logic.
+
+- agent: Implementation Agent (GDScript)
+  change: "Before implementing methods or properties that reference built-in Godot classes (HBoxContainer, Control, etc.), verify method availability in the Godot 4 codebase by: (1) searching existing blobert files for similar usage (git grep 'HBoxContainer'), (2) consulting CLAUDE.md Godot API pitfalls section if present, (3) checking Godot 4 docs if uncertain. Document non-obvious API contracts (e.g., 'use manual child loop instead of .clear()') in code comments near the usage."
+  reason: Prevents runtime failures from unavailable methods and builds team knowledge of Godot 4 API differences from earlier versions.
+
+- agent: Spec Agent
+  change: "When specifying dynamic or 'live-tunable' configuration (@export properties that can change at runtime), explicitly list which properties require immediate re-render or re-initialization (e.g., 'max_visible_count: changes must immediately adjust visible indicator count'). Include a 'Dynamic Property Changes' subsection in the spec that maps each mutable @export property to its expected behavior on change."
+  reason: Ensures Test Designer and Implementation both understand that @export property changes require active handlers, not passive reflection.
+
+- agent: Test Designer Agent
+  change: "For UI components with @export numeric properties, create explicit boundary-value mutation tests (zero, negative, huge values) that verify graceful handling (clamping, error messages, or rejection) rather than crashes. Include these in adversarial/mutation test files alongside happy-path variants."
+  reason: Exposes missing validation logic and ensures UI stability under invalid configuration.
+
+### Workflow Improvements
+- issue: Generated test files with duplicated fixture code require multiple coordinated fixes when compilation errors are discovered, multiplying rework cycles.
+  improvement: Implement a deduplication pass in test generation that extracts common helper methods into a shared fixtures module and requires all generated test files to import from it. Validate generated code compiles as part of the generation output step.
+  expected_benefit: Reduces fix-propagation burden and ensures generated test files are immediately compile-ready.
+
+- issue: Implementation agents may not be familiar with Godot 4 API differences (e.g., missing .clear() method), leading to runtime failures only discovered during integration testing.
+  improvement: Add a Godot 4 API reference section to CLAUDE.md or create a project_board/GODOT_4_API_NOTES.md with common pitfalls and correct patterns (Container clearing, signal connection, dynamic child management, etc.). Require static review to validate API usage against this reference.
+  expected_benefit: Catches API mismatches during code review rather than integration testing.
+
+- issue: Mutation tests that change @export properties at runtime revealed that implementation did not handle live updates, requiring addition of _ensure_icon_rects() logic.
+  improvement: In SPEC, explicitly document @export properties that are "live-tunable" and their expected behavior on change. In TEST_DESIGN, create explicit test cases for each live property. In Implementation, use _notification(NOTIFICATION_PROPERTY_LIST_CHANGED) or explicit property setters to handle changes.
+  expected_benefit: Ensures dynamic property handling is designed and tested upfront rather than discovered as a gap during mutation testing.
+
+### Keep / Reinforce
+- practice: Mutation test suites that exercise dynamic property changes (e.g., changing numeric config at runtime) to expose implementation gaps early.
+  reason: These tests caught the max_visible_count live-update gap, preventing a subtle runtime bug where UI layout would not adjust to config changes.
+
+- practice: Defensive clamping of numeric @export properties (max(1, max_visible_count)) to prevent crashes under invalid input.
+  reason: Protects against editor misconfiguration or accidental negative values and makes UI stable under all numeric inputs.
+
+- practice: Loading actual scene files in test helpers rather than inline instantiation, to expose scene-structure mismatches early.
+  reason: Avoids integration surprises where tests pass but scene-based usage fails due to missing initialization.
+
+---
