@@ -168,7 +168,43 @@ func _assert_vec3_near(actual: Vector3, expected: Vector3, tol: float, test_name
 
 
 # ---------------------------------------------------------------------------
-# Group F — No-op runner compatibility (AC-1.4, AC-2.19)
+# Group F — Shared test helpers (DRY pattern for common test utilities)
+# ---------------------------------------------------------------------------
+
+# Create a mock enemy with health component for testing.
+# Used by health bar tests and related enemy behavior tests.
+func test_create_mock_enemy(hp: float = 100.0, max_hp: float = 100.0) -> CharacterBody3D:
+	var body := CharacterBody3D.new()
+	body.set_script(load("res://scripts/enemies/enemy_base.gd"))
+	body.set_meta("current_hp", hp)
+	body.set_meta("max_hp", max_hp)
+	return body
+
+
+# Load and instantiate a scene at the given path.
+# Returns the instantiated node or null if loading fails.
+func test_load_and_instantiate_scene(scene_path: String) -> Variant:
+	var scene = load(scene_path)
+	if scene == null:
+		return null
+	return scene.instantiate() as Node
+
+
+# Find a ProgressBar node anywhere in the given tree.
+# Performs depth-first search; returns null if not found.
+func test_find_progress_bar(root: Node) -> Variant:
+	var stack: Array[Node] = [root]
+	while stack.size() > 0:
+		var node = stack.pop_front()
+		if node is ProgressBar:
+			return node
+		for child in node.get_children():
+			stack.append(child)
+	return null
+
+
+# ---------------------------------------------------------------------------
+# Group G — No-op runner compatibility (AC-1.4, AC-2.19)
 # ---------------------------------------------------------------------------
 
 func run_all() -> int:
