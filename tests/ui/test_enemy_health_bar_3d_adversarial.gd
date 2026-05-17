@@ -2,11 +2,8 @@
 # test_enemy_health_bar_3d_adversarial.gd
 #
 # Adversarial / edge-case test suite for enemy floating health bar (M8 feature).
-# Extends the primary test suite with mutation testing, boundary conditions,
-# concurrency scenarios, error handling, and spec gap detection.
-#
-# This suite targets runtime vulnerabilities: null inputs, extreme values,
-# rapid state changes, incomplete lifecycle, and feature toggle edge cases.
+# Tests boundary conditions, null/empty inputs, invalid data, and error handling
+# by exercising actual methods (update_from_enemy, on_enemy_damaged) with extreme values.
 #
 # Traceability: Extends primary test file at tests/ui/test_enemy_health_bar_3d.gd
 #
@@ -18,102 +15,124 @@ var _fail_count: int = 0
 
 
 # ---------------------------------------------------------------------------
+# Test infrastructure: fixtures and helpers
+# ---------------------------------------------------------------------------
+
+func _create_enemy_with_hp(hp: float = 100.0, max_hp: float = 100.0) -> CharacterBody3D:
+	var body := CharacterBody3D.new()
+	body.set_script(load("res://scripts/enemies/enemy_base.gd"))
+	body.set_meta("current_hp", hp)
+	body.set_meta("max_hp", max_hp)
+	return body
+
+
+func _load_health_bar() -> Variant:
+	var path := "res://scenes/ui/enemy_health_bar_3d.tscn"
+	var scene = load(path)
+	if scene == null:
+		return null
+	return scene.instantiate() as Node
+
+
+func _find_progress_bar(bar: Node) -> Variant:
+	var stack: Array[Node] = [bar]
+	while stack.size() > 0:
+		var node = stack.pop_front()
+		if node is ProgressBar:
+			return node
+		for child in node.get_children():
+			stack.append(child)
+	return null
+
+
+# ---------------------------------------------------------------------------
 # ADV-NULLS: Null/empty input handling
 # ---------------------------------------------------------------------------
 
 func test_adv_null_1_null_enemy_reference() -> void:
-	# ADV-NULL-1: Health bar attachment to null enemy should not crash.
-	# Defensive: does not require valid enemy.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-NULL-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-NULL-1: update_from_enemy(null) should not crash.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-NULL-1", "could not instantiate health bar")
+		_fail("test_adv_null_1_null_enemy_reference", "health bar not found")
 		return
 
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-NULL-1", "no valid scene tree")
+		_fail("test_adv_null_1_null_enemy_reference", "no scene tree")
 		bar.queue_free()
 		return
 
 	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	bar.call("update_from_enemy", null)
 
-	# Attempt to call any health-update method with null enemy.
-	# Should either be idempotent or explicitly handle null.
-	if bar.has_method("update_from_enemy"):
-		bar.call("update_from_enemy", null)
-
-	# Bar must still exist and be freeable.
 	_assert_true(
 		is_instance_valid(bar),
-		"ADV-NULL-1 — bar survives null enemy reference"
+		"test_adv_null_1_null_enemy_reference — bar survives null enemy"
 	)
 
 	bar.queue_free()
 
 
-func test_adv_null_2_missing_hp_property_on_enemy() -> void:
-	# ADV-NULL-2: If enemy lacks current_hp or max_hp property,
-	# bar should not crash; should handle gracefully or check before access.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-NULL-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_null_2_missing_hp_properties() -> void:
+	# ADV-NULL-2: Enemy without health properties should not crash.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-NULL-2", "could not instantiate health bar")
+		_fail("test_adv_null_2_missing_hp_properties", "health bar not found")
 		return
 
-	# Create an enemy WITHOUT health properties.
+	# Create enemy without health metas.
 	var enemy = CharacterBody3D.new()
 	enemy.set_script(load("res://scripts/enemies/enemy_base.gd"))
 
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-NULL-2", "no valid scene tree")
+		_fail("test_adv_null_2_missing_hp_properties", "no scene tree")
 		bar.queue_free()
 		return
 
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
 	tree.root.add_child(enemy)
-	enemy.add_child(bar)
 
-	# Trigger any health-update method.
-	if bar.has_method("update_from_enemy"):
-		bar.call("update_from_enemy", enemy)
+	bar.call("update_from_enemy", enemy)
 
-	# Bar must not crash.
 	_assert_true(
 		is_instance_valid(bar),
-		"ADV-NULL-2 — bar handles enemy without health properties"
+		"test_adv_null_2_missing_hp_properties — bar handles enemy without HP"
 	)
 
-	enemy.queue_free()
-
-
-func test_adv_null_3_empty_scene_tree_root() -> void:
-	# ADV-NULL-3: Bar removal when scene tree root is empty or null.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-NULL-3", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
-	if bar == null:
-		_fail("ADV-NULL-3", "could not instantiate health bar")
-		return
-
-	# Do NOT add bar to tree; attempt to queue_free directly.
 	bar.queue_free()
 
+
+func test_adv_null_3_damage_on_null_enemy() -> void:
+	# ADV-NULL-3: on_enemy_damaged() with bar not initialized should not crash.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_null_3_damage_on_null_enemy", "health bar not found")
+		return
+
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_null_3_damage_on_null_enemy", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+
+	# Call on_enemy_damaged without setting enemy first.
+	bar.call("on_enemy_damaged", 10.0)
+
 	_assert_true(
-		bar.is_queued_for_deletion(),
-		"ADV-NULL-3 — bar can be freed without being in tree"
+		is_instance_valid(bar),
+		"test_adv_null_3_damage_on_null_enemy — bar handles damage with no enemy"
 	)
+
+	bar.queue_free()
 
 
 # ---------------------------------------------------------------------------
@@ -121,338 +140,283 @@ func test_adv_null_3_empty_scene_tree_root() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adv_boundary_1_exact_zero_fill() -> void:
-	# ADV-BOUNDARY-1: When current_hp == 0, fill must be exactly 0.0, not < 0.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BOUNDARY-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-BOUNDARY-1: When current_hp == 0, fill must be exactly 0.0.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BOUNDARY-1", "could not instantiate health bar")
+		_fail("test_adv_boundary_1_exact_zero_fill", "health bar not found")
 		return
 
-	# Locate ProgressBar.
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-BOUNDARY-1", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(0.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_1_exact_zero_fill", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	progress_bar.value = 0.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Must be exactly 0, not negative.
-	_assert_true(
-		progress_bar.value >= 0.0,
-		"ADV-BOUNDARY-1 — fill is non-negative when hp==0"
-	)
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_boundary_1_exact_zero_fill", "no ProgressBar found")
+		bar.queue_free()
+		return
+
 	_assert_eq_float(
 		0.0,
 		progress_bar.value,
-		"ADV-BOUNDARY-1 — fill is exactly 0.0 when hp==0"
+		"test_adv_boundary_1_exact_zero_fill — fill is 0.0 at zero HP"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_boundary_2_exact_one_fill() -> void:
-	# ADV-BOUNDARY-2: When current_hp == max_hp, fill must be exactly 1.0, not > 1.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BOUNDARY-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-BOUNDARY-2: When current_hp == max_hp, fill must be exactly 100.0.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BOUNDARY-2", "could not instantiate health bar")
+		_fail("test_adv_boundary_2_exact_one_fill", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-BOUNDARY-2", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_2_exact_one_fill", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	progress_bar.value = 100.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Must be exactly 1.0 (ratio), not > 1.
-	_assert_true(
-		progress_bar.value <= progress_bar.max_value,
-		"ADV-BOUNDARY-2 — fill is clamped when hp==max_hp"
-	)
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_boundary_2_exact_one_fill", "no ProgressBar found")
+		bar.queue_free()
+		return
+
 	_assert_eq_float(
-		1.0,
-		progress_bar.value / progress_bar.max_value,
-		"ADV-BOUNDARY-2 — fill ratio is exactly 1.0 when hp==max_hp"
+		100.0,
+		progress_bar.value,
+		"test_adv_boundary_2_exact_one_fill — fill is 100.0 at full HP"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_boundary_3_negative_hp_clamped() -> void:
-	# ADV-BOUNDARY-3: If enemy somehow has negative HP (bug elsewhere),
-	# bar fill must not go negative. Must clamp to [0, max].
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BOUNDARY-3", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-BOUNDARY-3: If enemy has negative HP (defensive), fill should not go negative.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BOUNDARY-3", "could not instantiate health bar")
+		_fail("test_adv_boundary_3_negative_hp_clamped", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-BOUNDARY-3", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(-10.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_3_negative_hp_clamped", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	progress_bar.value = -10.0  # Negative HP edge case
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_boundary_3_negative_hp_clamped", "no ProgressBar found")
+		bar.queue_free()
+		return
+
+	# Fill should be clamped to >= 0.
 	_assert_true(
 		progress_bar.value >= 0.0,
-		"ADV-BOUNDARY-3 — bar value is non-negative even if set to negative"
+		"test_adv_boundary_3_negative_hp_clamped — fill non-negative even with negative HP"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_boundary_4_huge_max_hp() -> void:
-	# ADV-BOUNDARY-4: When max_hp is very large (e.g., 1_000_000),
-	# bar still computes correct fill ratio without overflow/underflow.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BOUNDARY-4", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-BOUNDARY-4: Very large max_hp (1M+) should compute correct ratio without overflow.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BOUNDARY-4", "could not instantiate health bar")
+		_fail("test_adv_boundary_4_huge_max_hp", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-BOUNDARY-4", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(500_000.0, 1_000_000.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_4_huge_max_hp", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 1_000_000.0
-	progress_bar.value = 500_000.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Ratio should be exactly 0.5.
-	var ratio = progress_bar.value / progress_bar.max_value
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_boundary_4_huge_max_hp", "no ProgressBar found")
+		bar.queue_free()
+		return
+
+	# Ratio should be 0.5, so value should be 50.0.
 	_assert_eq_float(
-		0.5,
-		ratio,
-		"ADV-BOUNDARY-4 — bar fill ratio is correct for very large max_hp"
+		50.0,
+		progress_bar.value,
+		"test_adv_boundary_4_huge_max_hp — correct ratio for huge HP values"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_boundary_5_tiny_positive_max_hp() -> void:
-	# ADV-BOUNDARY-5: When max_hp is very small but positive (e.g., 0.001),
-	# bar computes correct ratio without division edge cases.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BOUNDARY-5", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-BOUNDARY-5: Very small max_hp (0.001) should compute correct ratio.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BOUNDARY-5", "could not instantiate health bar")
+		_fail("test_adv_boundary_5_tiny_positive_max_hp", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-BOUNDARY-5", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(0.0005, 0.001)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_5_tiny_positive_max_hp", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 0.001
-	progress_bar.value = 0.0005
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Ratio should be exactly 0.5 (no division by zero, no NaN).
-	var ratio = progress_bar.value / progress_bar.max_value
-	_assert_true(
-		not is_nan(ratio) and ratio > 0 and ratio <= 1.0,
-		"ADV-BOUNDARY-5 — bar fill ratio is valid for tiny max_hp"
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_boundary_5_tiny_positive_max_hp", "no ProgressBar found")
+		bar.queue_free()
+		return
+
+	# Ratio should be 0.5, so value should be 50.0.
+	_assert_eq_float(
+		50.0,
+		progress_bar.value,
+		"test_adv_boundary_5_tiny_positive_max_hp — correct ratio for tiny HP values"
 	)
 
 	bar.queue_free()
 
 
 # ---------------------------------------------------------------------------
-# ADV-INVALID: Invalid / corrupt input handling
+# ADV-INVALID: Invalid / corrupt floating point
 # ---------------------------------------------------------------------------
 
-func test_adv_invalid_1_nan_hp_value() -> void:
-	# ADV-INVALID-1: If enemy HP is NaN (corrupt floating point),
-	# bar must not crash; should either ignore or clamp to safe value.
-	# CHECKPOINT: Assume NaN is clamped to 0 or max.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-INVALID-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_invalid_1_nan_hp() -> void:
+	# ADV-INVALID-1: NaN HP value should not crash; bar should remain valid.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-INVALID-1", "could not instantiate health bar")
+		_fail("test_adv_invalid_1_nan_hp", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
+	var enemy = CharacterBody3D.new()
+	enemy.set_script(load("res://scripts/enemies/enemy_base.gd"))
+	var nan_val: float = 0.0 / 0.0
+	enemy.set_meta("current_hp", nan_val)
+	enemy.set_meta("max_hp", 100.0)
 
-	if progress_bar == null:
-		_fail("ADV-INVALID-1", "no ProgressBar found")
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_invalid_1_nan_hp", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	var nan_val: float = 0.0 / 0.0  # Produces NaN
-	progress_bar.value = nan_val
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Bar must still exist; value should be safe.
+	bar.call("update_from_enemy", enemy)
+
 	_assert_true(
 		is_instance_valid(bar),
-		"ADV-INVALID-1 — bar survives NaN hp assignment"
+		"test_adv_invalid_1_nan_hp — bar survives NaN HP"
 	)
 
 	bar.queue_free()
 
 
-func test_adv_invalid_2_inf_hp_value() -> void:
-	# ADV-INVALID-2: If enemy HP is infinity, bar must not crash.
-	# Should clamp or handle gracefully.
-	# CHECKPOINT: Assume infinity is clamped to max_hp.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-INVALID-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_invalid_2_inf_hp() -> void:
+	# ADV-INVALID-2: Infinity HP should not crash.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-INVALID-2", "could not instantiate health bar")
+		_fail("test_adv_invalid_2_inf_hp", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
+	var enemy = CharacterBody3D.new()
+	enemy.set_script(load("res://scripts/enemies/enemy_base.gd"))
+	var inf_val: float = 1e308 * 10.0
+	enemy.set_meta("current_hp", inf_val)
+	enemy.set_meta("max_hp", 100.0)
 
-	if progress_bar == null:
-		_fail("ADV-INVALID-2", "no ProgressBar found")
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_invalid_2_inf_hp", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	var inf_val: float = 1e308 * 10.0  # Approaches infinity
-	progress_bar.value = inf_val
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Bar must still exist; no crash.
+	bar.call("update_from_enemy", enemy)
+
 	_assert_true(
 		is_instance_valid(bar),
-		"ADV-INVALID-2 — bar survives infinity hp assignment"
+		"test_adv_invalid_2_inf_hp — bar survives infinity HP"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_invalid_3_negative_max_hp() -> void:
-	# ADV-INVALID-3: If max_hp is negative (should never happen),
-	# bar handles gracefully without division error.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-INVALID-3", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-INVALID-3: Negative max_hp should not crash.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-INVALID-3", "could not instantiate health bar")
+		_fail("test_adv_invalid_3_negative_max_hp", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-INVALID-3", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(50.0, -100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_invalid_3_negative_max_hp", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = -100.0  # Invalid but should not crash.
-	progress_bar.value = 50.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	bar.call("update_from_enemy", enemy)
 
 	_assert_true(
 		is_instance_valid(bar),
-		"ADV-INVALID-3 — bar survives negative max_hp"
+		"test_adv_invalid_3_negative_max_hp — bar survives negative max_hp"
 	)
 
 	bar.queue_free()
@@ -463,115 +427,108 @@ func test_adv_invalid_3_negative_max_hp() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adv_visibility_1_rapid_damage_hide_cycles() -> void:
-	# ADV-VISIBILITY-1: Rapid damage → hide → damage → hide cycles
+	# ADV-VISIBILITY-1: Rapid damage → visibility → heal → hide cycles
 	# should not leave bar in inconsistent state.
-	# CHECKPOINT: Bar visibility state must be deterministic after sequence.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-VISIBILITY-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-VISIBILITY-1", "could not instantiate health bar")
+		_fail("test_adv_visibility_1_rapid_damage_hide_cycles", "health bar not found")
 		return
 
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-VISIBILITY-1", "no valid scene tree")
+		_fail("test_adv_visibility_1_rapid_damage_hide_cycles", "no scene tree")
 		bar.queue_free()
 		return
 
 	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	if bar is CanvasItem:
-		# Simulate damage (show).
-		bar.visible = true
-		_assert_true(bar.visible, "ADV-VISIBILITY-1 — bar shown on damage (1)")
+	bar.call("update_from_enemy", enemy)
 
-		# Simulate full health hide.
-		bar.visible = false
-		_assert_false(bar.visible, "ADV-VISIBILITY-1 — bar hidden at full health (1)")
+	# Cycle 1: damage → show
+	enemy.set_meta("current_hp", 75.0)
+	bar.call("on_enemy_damaged", 25.0)
+	_assert_true(bar.visible, "cycle 1: visible after damage")
 
-		# Repeat rapidly.
-		bar.visible = true
-		_assert_true(bar.visible, "ADV-VISIBILITY-1 — bar shown on damage (2)")
-		bar.visible = false
-		_assert_false(bar.visible, "ADV-VISIBILITY-1 — bar hidden at full health (2)")
-	else:
-		_fail("ADV-VISIBILITY-1", "bar is not a CanvasItem")
+	# Cycle 2: recover → hide timeout starts
+	enemy.set_meta("current_hp", 100.0)
+	bar.call("on_enemy_healed", 25.0)
+
+	# Cycle 3: damage again (interrupt timeout)
+	enemy.set_meta("current_hp", 50.0)
+	bar.call("on_enemy_damaged", 50.0)
+	_assert_true(bar.visible, "cycle 3: visible after re-damage")
+
+	_assert_true(
+		is_instance_valid(bar),
+		"test_adv_visibility_1_rapid_damage_hide_cycles — state consistent after cycles"
+	)
 
 	bar.queue_free()
 
 
-func test_adv_visibility_2_show_without_damage_signal() -> void:
-	# ADV-VISIBILITY-2: Bar should remain hidden if enemy has not taken damage.
-	# No direct visibility toggle should happen without a damage event.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-VISIBILITY-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_visibility_2_hidden_by_default() -> void:
+	# ADV-VISIBILITY-2: Bar should be hidden by default on full-health enemy.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-VISIBILITY-2", "could not instantiate health bar")
+		_fail("test_adv_visibility_2_hidden_by_default", "health bar not found")
 		return
 
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-VISIBILITY-2", "no valid scene tree")
+		_fail("test_adv_visibility_2_hidden_by_default", "no scene tree")
 		bar.queue_free()
 		return
 
 	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# On initialization, bar should default to hidden (no damage yet).
-	if bar is CanvasItem:
-		# Bar should be hidden by default.
-		_assert_false(
-			bar.visible,
-			"ADV-VISIBILITY-2 — bar is hidden by default (no damage)"
-		)
-	else:
-		_fail("ADV-VISIBILITY-2", "bar is not a CanvasItem")
+	bar.call("update_from_enemy", enemy)
+
+	_assert_false(
+		bar.visible,
+		"test_adv_visibility_2_hidden_by_default — bar hidden on init at full health"
+	)
 
 	bar.queue_free()
 
 
-func test_adv_visibility_3_multiple_visibility_timeouts() -> void:
-	# ADV-VISIBILITY-3: If bar is shown multiple times rapidly,
-	# timeout timers should not stack or conflict.
-	# CHECKPOINT: Only one timeout should be active at a time.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-VISIBILITY-3", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_visibility_3_multiple_visibility_toggles() -> void:
+	# ADV-VISIBILITY-3: Multiple rapid visibility changes should not cause crashes.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-VISIBILITY-3", "could not instantiate health bar")
+		_fail("test_adv_visibility_3_multiple_visibility_toggles", "health bar not found")
 		return
 
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-VISIBILITY-3", "no valid scene tree")
+		_fail("test_adv_visibility_3_multiple_visibility_toggles", "no scene tree")
 		bar.queue_free()
 		return
 
 	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	if bar is CanvasItem:
-		# Show multiple times.
-		bar.visible = true
-		bar.visible = true
-		bar.visible = true
+	bar.call("update_from_enemy", enemy)
 
-		_assert_true(
-			bar.visible,
-			"ADV-VISIBILITY-3 — bar remains visible after multiple shows"
-		)
-	else:
-		_fail("ADV-VISIBILITY-3", "bar is not a CanvasItem")
+	# Simulate rapid damage events.
+	for i in range(10):
+		enemy.set_meta("current_hp", 50.0 + float(i))
+		bar.call("on_enemy_damaged", 1.0)
+
+	_assert_true(
+		is_instance_valid(bar),
+		"test_adv_visibility_3_multiple_visibility_toggles — stable after rapid events"
+	)
 
 	bar.queue_free()
 
@@ -580,66 +537,52 @@ func test_adv_visibility_3_multiple_visibility_timeouts() -> void:
 # ADV-LIFECYCLE: Cleanup and orphan prevention
 # ---------------------------------------------------------------------------
 
-func test_adv_lifecycle_1_no_orphan_on_early_despawn() -> void:
-	# ADV-LIFECYCLE-1: If enemy despawns before bar cleanup signal is sent,
-	# bar must be freed (not orphaned in tree).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-LIFECYCLE-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_lifecycle_1_parent_reparenting() -> void:
+	# ADV-LIFECYCLE-1: Bar attached to enemy should be freed when enemy is freed.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-LIFECYCLE-1", "could not instantiate health bar")
+		_fail("test_adv_lifecycle_1_parent_reparenting", "health bar not found")
 		return
 
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-LIFECYCLE-1", "no valid scene tree")
+		_fail("test_adv_lifecycle_1_parent_reparenting", "no scene tree")
 		bar.queue_free()
 		return
 
-	# Create enemy, attach bar, then free enemy immediately.
-	var enemy = CharacterBody3D.new()
 	tree.root.add_child(enemy)
 	enemy.add_child(bar)
 
-	# Simulate despawn by freeing enemy.
+	# Free enemy (bar should follow).
 	enemy.queue_free()
 
-	# Bar should also be queued (parent dependency).
 	_assert_true(
 		bar.is_queued_for_deletion(),
-		"ADV-LIFECYCLE-1 — bar is freed when enemy is freed"
+		"test_adv_lifecycle_1_parent_reparenting — bar freed when enemy freed"
 	)
 
 
-func test_adv_lifecycle_2_multiple_bars_per_enemy_cleanup() -> void:
-	# ADV-LIFECYCLE-2: If multiple bars somehow exist on same enemy,
-	# all must be cleaned up (no partial orphaning).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-LIFECYCLE-2", "health bar scene not found")
-		return
-
-	var bar1 = scene.instantiate() as Node
-	var bar2 = scene.instantiate() as Node
+func test_adv_lifecycle_2_multiple_bars_per_enemy() -> void:
+	# ADV-LIFECYCLE-2: Multiple bars on same enemy should all be freed.
+	var bar1 = _load_health_bar()
+	var bar2 = _load_health_bar()
 	if bar1 == null or bar2 == null:
-		_fail("ADV-LIFECYCLE-2", "could not instantiate health bar")
+		_fail("test_adv_lifecycle_2_multiple_bars_per_enemy", "health bar not found")
 		if bar1 != null:
 			bar1.queue_free()
 		if bar2 != null:
 			bar2.queue_free()
 		return
 
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-LIFECYCLE-2", "no valid scene tree")
+		_fail("test_adv_lifecycle_2_multiple_bars_per_enemy", "no scene tree")
 		bar1.queue_free()
 		bar2.queue_free()
 		return
 
-	var enemy = CharacterBody3D.new()
 	tree.root.add_child(enemy)
 	enemy.add_child(bar1)
 	enemy.add_child(bar2)
@@ -647,59 +590,114 @@ func test_adv_lifecycle_2_multiple_bars_per_enemy_cleanup() -> void:
 	# Free enemy.
 	enemy.queue_free()
 
-	# Both bars must be queued.
 	_assert_true(
 		bar1.is_queued_for_deletion() and bar2.is_queued_for_deletion(),
-		"ADV-LIFECYCLE-2 — all bars freed when enemy freed"
+		"test_adv_lifecycle_2_multiple_bars_per_enemy — all bars freed"
 	)
 
 
-func test_adv_lifecycle_3_orphan_detection_after_free() -> void:
-	# ADV-LIFECYCLE-3: After enemy is freed, orphaned bar should be
-	# detectable (get_parent() == null).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-LIFECYCLE-3", "health bar scene not found")
+func test_adv_lifecycle_3_orphan_detection() -> void:
+	# ADV-LIFECYCLE-3: Orphaned bar (parent freed) should have null parent.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_lifecycle_3_orphan_detection", "health bar not found")
 		return
 
-	var bar = scene.instantiate() as Node
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_lifecycle_3_orphan_detection", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(enemy)
+	enemy.add_child(bar)
+
+	# Verify parent is set.
+	_assert_true(bar.get_parent() == enemy, "bar parent is enemy")
+
+	# Free enemy without freeing bar.
+	enemy.free()
+
+	# After free, bar's parent should be null or bar should be invalid.
+	var parent = bar.get_parent()
+	var is_valid = is_instance_valid(bar)
+
+	# Either orphaned (null parent) or freed along with enemy.
+	_assert_true(
+		parent == null or not is_valid,
+		"test_adv_lifecycle_3_orphan_detection — orphaned bar detectable"
+	)
+
+	if is_valid and parent == null:
+		bar.queue_free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-INTEGRATION: Method call order and state consistency
+# ---------------------------------------------------------------------------
+
+func test_adv_integration_1_update_then_damage() -> void:
+	# ADV-INTEGRATION-1: update_from_enemy() followed by on_enemy_damaged()
+	# should maintain consistent state.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-LIFECYCLE-3", "could not instantiate health bar")
+		_fail("test_adv_integration_1_update_then_damage", "health bar not found")
+		return
+
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_integration_1_update_then_damage", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	bar.call("update_from_enemy", enemy)
+	_assert_false(bar.visible, "bar hidden after update at full health")
+
+	enemy.set_meta("current_hp", 75.0)
+	bar.call("on_enemy_damaged", 25.0)
+	_assert_true(bar.visible, "bar shown after damage")
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar != null:
+		_assert_eq_float(75.0, progress_bar.value, "fill reflects damage")
+
+	bar.queue_free()
+
+
+func test_adv_integration_2_damage_without_update() -> void:
+	# ADV-INTEGRATION-2: on_enemy_damaged() called before update_from_enemy()
+	# should not crash.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_integration_2_damage_without_update", "health bar not found")
 		return
 
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-LIFECYCLE-3", "no valid scene tree")
+		_fail("test_adv_integration_2_damage_without_update", "no scene tree")
 		bar.queue_free()
 		return
 
-	var enemy = CharacterBody3D.new()
-	tree.root.add_child(enemy)
-	enemy.add_child(bar)
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
 
-	var parent_before_free = bar.get_parent()
+	# Call damage before update_from_enemy.
+	bar.call("on_enemy_damaged", 10.0)
+
 	_assert_true(
-		parent_before_free == enemy,
-		"ADV-LIFECYCLE-3 — bar parent is enemy before free"
+		is_instance_valid(bar),
+		"test_adv_integration_2_damage_without_update — stable without prior update"
 	)
 
-	# Free enemy without freeing bar (orphan scenario).
-	enemy.free()
-
-	# At next tick, bar's parent should be null (orphaned).
-	# For determinism, we check immediately after free().
-	var parent_after_free = bar.get_parent()
-
-	# If bar is still in tree, parent will be null (enemy was freed).
-	# If bar was also freed, is_instance_valid will return false.
-	if parent_after_free == null or not is_instance_valid(bar):
-		_pass("ADV-LIFECYCLE-3 — orphaned bar is detectable")
-	else:
-		_fail("ADV-LIFECYCLE-3", "orphaned bar not cleaned up")
-
-	# Clean up.
-	if is_instance_valid(bar):
-		bar.queue_free()
+	bar.queue_free()
 
 
 # ---------------------------------------------------------------------------
@@ -713,8 +711,8 @@ func run_all() -> int:
 
 	# ADV-NULLS tests
 	test_adv_null_1_null_enemy_reference()
-	test_adv_null_2_missing_hp_property_on_enemy()
-	test_adv_null_3_empty_scene_tree_root()
+	test_adv_null_2_missing_hp_properties()
+	test_adv_null_3_damage_on_null_enemy()
 
 	# ADV-BOUNDARY tests
 	test_adv_boundary_1_exact_zero_fill()
@@ -724,19 +722,23 @@ func run_all() -> int:
 	test_adv_boundary_5_tiny_positive_max_hp()
 
 	# ADV-INVALID tests
-	test_adv_invalid_1_nan_hp_value()
-	test_adv_invalid_2_inf_hp_value()
+	test_adv_invalid_1_nan_hp()
+	test_adv_invalid_2_inf_hp()
 	test_adv_invalid_3_negative_max_hp()
 
 	# ADV-VISIBILITY tests
 	test_adv_visibility_1_rapid_damage_hide_cycles()
-	test_adv_visibility_2_show_without_damage_signal()
-	test_adv_visibility_3_multiple_visibility_timeouts()
+	test_adv_visibility_2_hidden_by_default()
+	test_adv_visibility_3_multiple_visibility_toggles()
 
 	# ADV-LIFECYCLE tests
-	test_adv_lifecycle_1_no_orphan_on_early_despawn()
-	test_adv_lifecycle_2_multiple_bars_per_enemy_cleanup()
-	test_adv_lifecycle_3_orphan_detection_after_free()
+	test_adv_lifecycle_1_parent_reparenting()
+	test_adv_lifecycle_2_multiple_bars_per_enemy()
+	test_adv_lifecycle_3_orphan_detection()
+
+	# ADV-INTEGRATION tests
+	test_adv_integration_1_update_then_damage()
+	test_adv_integration_2_damage_without_update()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

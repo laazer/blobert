@@ -2,8 +2,8 @@
 # test_enemy_health_bar_3d_adversarial_part2.gd
 #
 # Part 2 of adversarial test suite for enemy floating health bar (M8 feature).
-# Contains tests for debug flag behavior, fill mutations, stress scenarios,
-# determinism, and billboard positioning edge cases.
+# Tests state mutations, stress scenarios, and determinism by exercising actual
+# methods with extreme values and rapid sequences.
 #
 # Traceability: Extends primary test file at tests/ui/test_enemy_health_bar_3d.gd
 #
@@ -15,85 +15,34 @@ var _fail_count: int = 0
 
 
 # ---------------------------------------------------------------------------
-# ADV-TOGGLE: Debug flag behavior and edge cases
+# Test infrastructure: fixtures and helpers
 # ---------------------------------------------------------------------------
 
-func test_adv_toggle_1_flag_persists_across_spawns() -> void:
-	# ADV-TOGGLE-1: Debug flag should persist across multiple enemy spawns.
-	# If flag is disabled, all subsequent bars should respect it.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
+func _create_enemy_with_hp(hp: float = 100.0, max_hp: float = 100.0) -> CharacterBody3D:
+	var body := CharacterBody3D.new()
+	body.set_script(load("res://scripts/enemies/enemy_base.gd"))
+	body.set_meta("current_hp", hp)
+	body.set_meta("max_hp", max_hp)
+	return body
+
+
+func _load_health_bar() -> Variant:
+	var path := "res://scenes/ui/enemy_health_bar_3d.tscn"
+	var scene = load(path)
 	if scene == null:
-		_fail("ADV-TOGGLE-1", "health bar scene not found")
-		return
-
-	# Check if ProjectSettings has the flag.
-	var flag_key = "debug/enable_enemy_health_bars"
-	var initial_state: bool = ProjectSettings.get_setting(flag_key, true)
-
-	# Disable flag.
-	if ProjectSettings.has_setting(flag_key):
-		ProjectSettings.set_setting(flag_key, false)
-
-		var bar1 = scene.instantiate() as Node
-		var bar2 = scene.instantiate() as Node
-		if bar1 != null and bar2 != null:
-			if bar1 is CanvasItem and bar2 is CanvasItem:
-				# Both bars should respect disabled flag.
-				bar1.visible = false
-				bar2.visible = false
-
-				_assert_false(
-					bar1.visible or bar2.visible,
-					"ADV-TOGGLE-1 — flag persists across multiple bars"
-				)
-
-			bar1.queue_free()
-			bar2.queue_free()
-
-		# Restore flag.
-		ProjectSettings.set_setting(flag_key, initial_state)
-	else:
-		print("  SKIP: ADV-TOGGLE-1 — flag not in ProjectSettings yet")
+		return null
+	return scene.instantiate() as Node
 
 
-func test_adv_toggle_2_toggle_inversion() -> void:
-	# ADV-TOGGLE-2: Toggling flag on/off/on should leave bars in expected state.
-	# CHECKPOINT: Assume bars follow flag state deterministically.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-TOGGLE-2", "health bar scene not found")
-		return
-
-	var flag_key = "debug/enable_enemy_health_bars"
-	if not ProjectSettings.has_setting(flag_key):
-		print("  SKIP: ADV-TOGGLE-2 — flag not in ProjectSettings yet")
-		return
-
-	var initial_state: bool = ProjectSettings.get_setting(flag_key)
-
-	var bar = scene.instantiate() as Node
-	if bar == null:
-		_fail("ADV-TOGGLE-2", "could not instantiate bar")
-		return
-
-	if bar is CanvasItem:
-		# State 1: disabled
-		ProjectSettings.set_setting(flag_key, false)
-		bar.visible = false
-		_assert_false(bar.visible, "ADV-TOGGLE-2 — bar hidden when flag=false")
-
-		# State 2: enabled
-		ProjectSettings.set_setting(flag_key, true)
-		bar.visible = true
-		_assert_true(bar.visible, "ADV-TOGGLE-2 — bar shown when flag=true")
-
-		# State 3: disabled again
-		ProjectSettings.set_setting(flag_key, false)
-		bar.visible = false
-		_assert_false(bar.visible, "ADV-TOGGLE-2 — bar hidden when flag=false (again)")
-
-	bar.queue_free()
-	ProjectSettings.set_setting(flag_key, initial_state)
+func _find_progress_bar(bar: Node) -> Variant:
+	var stack: Array[Node] = [bar]
+	while stack.size() > 0:
+		var node = stack.pop_front()
+		if node is ProgressBar:
+			return node
+		for child in node.get_children():
+			stack.append(child)
+	return null
 
 
 # ---------------------------------------------------------------------------
@@ -102,43 +51,41 @@ func test_adv_toggle_2_toggle_inversion() -> void:
 
 func test_adv_fill_1_fill_monotonic_increase() -> void:
 	# ADV-FILL-1: As HP increases from 0 to max, fill must monotonically increase.
-	# No jumps backward.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-FILL-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-FILL-1", "could not instantiate health bar")
+		_fail("test_adv_fill_1_fill_monotonic_increase", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-FILL-1", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(0.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_fill_1_fill_monotonic_increase", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
 	var prev_fill = 0.0
 
-	# Increase HP in steps.
+	# Increase HP in steps and verify fill increases monotonically.
 	for hp in [10.0, 25.0, 50.0, 75.0, 100.0]:
-		progress_bar.value = hp
+		enemy.set_meta("current_hp", hp)
+		bar.call("update_from_enemy", enemy)
+
+		var progress_bar = _find_progress_bar(bar)
+		if progress_bar == null:
+			_fail("test_adv_fill_1_fill_monotonic_increase", "no ProgressBar found")
+			bar.queue_free()
+			return
+
 		var fill = progress_bar.value / progress_bar.max_value
 
 		_assert_true(
 			fill >= prev_fill,
-			"ADV-FILL-1 — fill is monotonic at hp=" + str(hp)
+			"test_adv_fill_1_fill_monotonic_increase — fill monotonic at hp=" + str(hp)
 		)
 
 		prev_fill = fill
@@ -148,43 +95,41 @@ func test_adv_fill_1_fill_monotonic_increase() -> void:
 
 func test_adv_fill_2_fill_monotonic_decrease() -> void:
 	# ADV-FILL-2: As HP decreases from max to 0, fill must monotonically decrease.
-	# No jumps forward.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-FILL-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-FILL-2", "could not instantiate health bar")
+		_fail("test_adv_fill_2_fill_monotonic_decrease", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-FILL-2", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_fill_2_fill_monotonic_decrease", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
 	var prev_fill = 1.0
 
-	# Decrease HP in steps.
+	# Decrease HP in steps and verify fill decreases monotonically.
 	for hp in [75.0, 50.0, 25.0, 10.0, 0.0]:
-		progress_bar.value = hp
+		enemy.set_meta("current_hp", hp)
+		bar.call("update_from_enemy", enemy)
+
+		var progress_bar = _find_progress_bar(bar)
+		if progress_bar == null:
+			_fail("test_adv_fill_2_fill_monotonic_decrease", "no ProgressBar found")
+			bar.queue_free()
+			return
+
 		var fill = progress_bar.value / progress_bar.max_value
 
 		_assert_true(
 			fill <= prev_fill,
-			"ADV-FILL-2 — fill is monotonic (decreasing) at hp=" + str(hp)
+			"test_adv_fill_2_fill_monotonic_decrease — fill monotonic at hp=" + str(hp)
 		)
 
 		prev_fill = fill
@@ -193,41 +138,36 @@ func test_adv_fill_2_fill_monotonic_decrease() -> void:
 
 
 func test_adv_fill_3_fill_fractional_precision() -> void:
-	# ADV-FILL-3: Fill at fractional HP values (e.g., 33/100 = 0.33)
-	# must be computed with at least 2 decimal places precision.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-FILL-3", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-FILL-3: Fill at fractional HP (33/100 = 0.33) must have valid precision.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-FILL-3", "could not instantiate health bar")
+		_fail("test_adv_fill_3_fill_fractional_precision", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-FILL-3", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(33.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_fill_3_fill_fractional_precision", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
-	progress_bar.value = 33.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	var fill = progress_bar.value / progress_bar.max_value
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_fill_3_fill_fractional_precision", "no ProgressBar found")
+		bar.queue_free()
+		return
+
 	_assert_eq_float(
-		0.33,
-		fill,
-		"ADV-FILL-3 — fill is 0.33 at hp=33/100"
+		33.0,
+		progress_bar.value,
+		"test_adv_fill_3_fill_fractional_precision — fill is 33.0 at hp=33/100"
 	)
 
 	bar.queue_free()
@@ -238,16 +178,15 @@ func test_adv_fill_3_fill_fractional_precision() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adv_stress_1_many_bars_simultaneous() -> void:
-	# ADV-STRESS-1: Multiple enemies with bars spawned simultaneously.
-	# Should not crash or leak resources.
+	# ADV-STRESS-1: Multiple bars spawned simultaneously should not crash.
 	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
 	if scene == null:
-		_fail("ADV-STRESS-1", "health bar scene not found")
+		_fail("test_adv_stress_1_many_bars_simultaneous", "health bar not found")
 		return
 
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-STRESS-1", "no valid scene tree")
+		_fail("test_adv_stress_1_many_bars_simultaneous", "no scene tree")
 		return
 
 	var bars: Array[Node] = []
@@ -255,11 +194,11 @@ func test_adv_stress_1_many_bars_simultaneous() -> void:
 
 	# Create 10 enemies with bars.
 	for i in range(10):
-		var enemy = CharacterBody3D.new()
+		var enemy = _create_enemy_with_hp(50.0, 100.0)
 		var bar = scene.instantiate() as Node
 
 		if bar == null:
-			_fail("ADV-STRESS-1", "could not instantiate bar " + str(i))
+			_fail("test_adv_stress_1_many_bars_simultaneous", "could not instantiate bar " + str(i))
 			for e in enemies:
 				e.queue_free()
 			for b in bars:
@@ -268,15 +207,15 @@ func test_adv_stress_1_many_bars_simultaneous() -> void:
 
 		tree.root.add_child(enemy)
 		enemy.add_child(bar)
+		bar.call("update_from_enemy", enemy)
 
 		enemies.append(enemy)
 		bars.append(bar)
 
-	# All bars must be alive.
-	_assert_eq(
-		bars.size(),
+	_assert_eq_int(
 		10,
-		"ADV-STRESS-1 — created 10 bars"
+		bars.size(),
+		"test_adv_stress_1_many_bars_simultaneous — created 10 bars"
 	)
 
 	# Clean up.
@@ -285,32 +224,32 @@ func test_adv_stress_1_many_bars_simultaneous() -> void:
 
 
 func test_adv_stress_2_rapid_spawn_despawn_cycles() -> void:
-	# ADV-STRESS-2: Rapid enemy spawn/despawn cycles.
-	# Bar allocation/deallocation should not leak or crash.
+	# ADV-STRESS-2: Rapid enemy spawn/despawn cycles should not leak.
 	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
 	if scene == null:
-		_fail("ADV-STRESS-2", "health bar scene not found")
+		_fail("test_adv_stress_2_rapid_spawn_despawn_cycles", "health bar not found")
 		return
 
 	var tree = Engine.get_main_loop() as SceneTree
 	if tree == null:
-		_fail("ADV-STRESS-2", "no valid scene tree")
+		_fail("test_adv_stress_2_rapid_spawn_despawn_cycles", "no scene tree")
 		return
 
 	# 5 rapid cycles.
 	for cycle in range(5):
-		var enemy = CharacterBody3D.new()
+		var enemy = _create_enemy_with_hp(50.0, 100.0)
 		var bar = scene.instantiate() as Node
 
 		if bar == null:
-			_fail("ADV-STRESS-2", "could not instantiate bar in cycle " + str(cycle))
+			_fail("test_adv_stress_2_rapid_spawn_despawn_cycles", "cycle " + str(cycle))
 			return
 
 		tree.root.add_child(enemy)
 		enemy.add_child(bar)
+		bar.call("update_from_enemy", enemy)
 		enemy.queue_free()
 
-	_pass("ADV-STRESS-2 — rapid spawn/despawn cycles completed")
+	_pass("test_adv_stress_2_rapid_spawn_despawn_cycles — completed 5 cycles")
 
 
 # ---------------------------------------------------------------------------
@@ -318,150 +257,272 @@ func test_adv_stress_2_rapid_spawn_despawn_cycles() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adv_determinism_1_same_hp_same_fill() -> void:
-	# ADV-DETERMINISM-1: Setting the same HP twice in a row must yield
-	# identical fill values (deterministic).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-DETERMINISM-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-DETERMINISM-1: Setting same HP twice yields identical fill.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-DETERMINISM-1", "could not instantiate health bar")
+		_fail("test_adv_determinism_1_same_hp_same_fill", "health bar not found")
 		return
 
-	var progress_bar: ProgressBar = null
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			progress_bar = node
-			break
-		for child in node.get_children():
-			stack.append(child)
-
-	if progress_bar == null:
-		_fail("ADV-DETERMINISM-1", "no ProgressBar found")
+	var enemy = _create_enemy_with_hp(50.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_determinism_1_same_hp_same_fill", "no scene tree")
 		bar.queue_free()
 		return
 
-	progress_bar.max_value = 100.0
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-	# Set HP = 50 twice.
-	progress_bar.value = 50.0
+	# First update.
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar == null:
+		_fail("test_adv_determinism_1_same_hp_same_fill", "no ProgressBar found")
+		bar.queue_free()
+		return
+
 	var fill1 = progress_bar.value / progress_bar.max_value
 
-	progress_bar.value = 50.0
+	# Second update (same HP).
+	bar.call("update_from_enemy", enemy)
 	var fill2 = progress_bar.value / progress_bar.max_value
 
 	_assert_eq_float(
 		fill1,
 		fill2,
-		"ADV-DETERMINISM-1 — identical HP yields identical fill"
+		"test_adv_determinism_1_same_hp_same_fill — identical HP yields identical fill"
 	)
 
 	bar.queue_free()
 
 
 func test_adv_determinism_2_visibility_toggle_consistency() -> void:
-	# ADV-DETERMINISM-2: Toggling visibility on/off repeatedly
-	# must be idempotent (state is consistent).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-DETERMINISM-2", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+	# ADV-DETERMINISM-2: Toggling visibility repeatedly is idempotent.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-DETERMINISM-2", "could not instantiate health bar")
+		_fail("test_adv_determinism_2_visibility_toggle_consistency", "health bar not found")
 		return
 
-	if bar is CanvasItem:
-		# Toggle 5 times to hidden.
-		for i in range(5):
-			bar.visible = false
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_determinism_2_visibility_toggle_consistency", "no scene tree")
+		bar.queue_free()
+		return
 
-		_assert_false(
-			bar.visible,
-			"ADV-DETERMINISM-2 — bar is hidden after 5 toggles to false"
-		)
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
 
-		# Toggle 5 times to visible.
-		for i in range(5):
-			bar.visible = true
+	# Toggle to false 5 times.
+	for i in range(5):
+		bar.visible = false
 
-		_assert_true(
-			bar.visible,
-			"ADV-DETERMINISM-2 — bar is visible after 5 toggles to true"
-		)
+	_assert_false(
+		bar.visible,
+		"test_adv_determinism_2_visibility_toggle_consistency — hidden after 5 toggles"
+	)
+
+	# Toggle to true 5 times.
+	for i in range(5):
+		bar.visible = true
+
+	_assert_true(
+		bar.visible,
+		"test_adv_determinism_2_visibility_toggle_consistency — visible after 5 toggles"
+	)
 
 	bar.queue_free()
 
 
 # ---------------------------------------------------------------------------
-# ADV-BILLBOARD: Camera facing and positioning edge cases
+# ADV-RAPID-STATE: Rapid state changes and transitions
 # ---------------------------------------------------------------------------
 
-func test_adv_billboard_1_position_offset_nonzero() -> void:
-	# ADV-BILLBOARD-1: Bar must have non-zero Y offset above enemy.
-	# Offset should be consistent (e.g., always 2 units above).
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BILLBOARD-1", "health bar scene not found")
-		return
-
-	var bar = scene.instantiate() as Node
+func test_adv_rapid_state_1_rapid_damage_cycles() -> void:
+	# ADV-RAPID-STATE-1: Rapid damage calls should not cause inconsistency.
+	var bar = _load_health_bar()
 	if bar == null:
-		_fail("ADV-BILLBOARD-1", "could not instantiate health bar")
+		_fail("test_adv_rapid_state_1_rapid_damage_cycles", "health bar not found")
 		return
 
-	if bar is Node3D:
-		var pos = bar.position
-		# Y offset should be positive (above).
-		_assert_true(
-			pos.y > 0.0,
-			"ADV-BILLBOARD-1 — bar Y offset is positive (above enemy)"
-		)
-	else:
-		print("  SKIP: ADV-BILLBOARD-1 — bar is not Node3D")
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_rapid_state_1_rapid_damage_cycles", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	bar.call("update_from_enemy", enemy)
+
+	# Rapid damage sequence.
+	for i in range(20):
+		enemy.set_meta("current_hp", maxf(0.0, 100.0 - float(i * 5)))
+		bar.call("on_enemy_damaged", 5.0)
+
+	# Bar should still be valid and visible.
+	_assert_true(
+		is_instance_valid(bar) and bar.visible,
+		"test_adv_rapid_state_1_rapid_damage_cycles — consistent after rapid damages"
+	)
 
 	bar.queue_free()
 
 
-func test_adv_billboard_2_position_repeatable() -> void:
-	# ADV-BILLBOARD-2: Creating multiple bars should have same offset.
-	# Positions should be deterministic.
-	var scene = load("res://scenes/ui/enemy_health_bar_3d.tscn")
-	if scene == null:
-		_fail("ADV-BILLBOARD-2", "health bar scene not found")
+func test_adv_rapid_state_2_alternating_damage_heal() -> void:
+	# ADV-RAPID-STATE-2: Alternating damage/heal should maintain state.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_rapid_state_2_alternating_damage_heal", "health bar not found")
 		return
 
-	var bar1 = scene.instantiate() as Node
-	var bar2 = scene.instantiate() as Node
-	if bar1 == null or bar2 == null:
-		_fail("ADV-BILLBOARD-2", "could not instantiate bars")
-		if bar1 != null:
-			bar1.queue_free()
-		if bar2 != null:
-			bar2.queue_free()
+	var enemy = _create_enemy_with_hp(50.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_rapid_state_2_alternating_damage_heal", "no scene tree")
+		bar.queue_free()
 		return
 
-	if bar1 is Node3D and bar2 is Node3D:
-		var pos1 = bar1.position
-		var pos2 = bar2.position
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
 
-		# Positions should be identical (deterministic instantiation).
-		_assert_vec3_near(
-			pos1,
-			pos2,
-			0.001,
-			"ADV-BILLBOARD-2 — bar positions are deterministic"
-		)
-	else:
-		print("  SKIP: ADV-BILLBOARD-2 — bars are not Node3D")
+	bar.call("update_from_enemy", enemy)
 
-	bar1.queue_free()
-	bar2.queue_free()
+	# Alternate damage/heal 10 times.
+	for i in range(10):
+		if i % 2 == 0:
+			enemy.set_meta("current_hp", 25.0)
+			bar.call("on_enemy_damaged", 25.0)
+		else:
+			enemy.set_meta("current_hp", 75.0)
+			bar.call("on_enemy_healed", 50.0)
+
+	_assert_true(
+		is_instance_valid(bar),
+		"test_adv_rapid_state_2_alternating_damage_heal — stable after alternating"
+	)
+
+	bar.queue_free()
+
+
+# ---------------------------------------------------------------------------
+# ADV-BOUNDARY-UPDATE: Update method boundary conditions
+# ---------------------------------------------------------------------------
+
+func test_adv_boundary_update_1_update_with_zero_hp() -> void:
+	# ADV-BOUNDARY-UPDATE-1: update_from_enemy() with 0 HP should work.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_boundary_update_1_update_with_zero_hp", "health bar not found")
+		return
+
+	var enemy = _create_enemy_with_hp(0.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_update_1_update_with_zero_hp", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar != null:
+		_assert_eq_float(0.0, progress_bar.value, "fill is 0 at zero HP")
+
+	_assert_true(
+		is_instance_valid(bar),
+		"test_adv_boundary_update_1_update_with_zero_hp — survives zero HP"
+	)
+
+	bar.queue_free()
+
+
+func test_adv_boundary_update_2_update_with_max_hp() -> void:
+	# ADV-BOUNDARY-UPDATE-2: update_from_enemy() with max HP should work.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_boundary_update_2_update_with_max_hp", "health bar not found")
+		return
+
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_update_2_update_with_max_hp", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	bar.call("update_from_enemy", enemy)
+
+	var progress_bar = _find_progress_bar(bar)
+	if progress_bar != null:
+		_assert_eq_float(100.0, progress_bar.value, "fill is 100 at max HP")
+
+	_assert_false(
+		bar.visible,
+		"test_adv_boundary_update_2_update_with_max_hp — hidden at full health"
+	)
+
+	bar.queue_free()
+
+
+func test_adv_boundary_update_3_sequential_updates() -> void:
+	# ADV-BOUNDARY-UPDATE-3: Multiple sequential updates should maintain state.
+	var bar = _load_health_bar()
+	if bar == null:
+		_fail("test_adv_boundary_update_3_sequential_updates", "health bar not found")
+		return
+
+	var enemy = _create_enemy_with_hp(100.0, 100.0)
+	var tree = Engine.get_main_loop() as SceneTree
+	if tree == null:
+		_fail("test_adv_boundary_update_3_sequential_updates", "no scene tree")
+		bar.queue_free()
+		return
+
+	tree.root.add_child(bar)
+	if bar.has_method("_ready"):
+		bar.call("_ready")
+	tree.root.add_child(enemy)
+
+	# Update 1: Full health.
+	bar.call("update_from_enemy", enemy)
+	_assert_false(bar.visible, "hidden at full health")
+
+	# Update 2: Damaged.
+	enemy.set_meta("current_hp", 50.0)
+	bar.call("update_from_enemy", enemy)
+	bar.call("on_enemy_damaged", 50.0)
+	_assert_true(bar.visible, "visible when damaged")
+
+	# Update 3: Full health again.
+	enemy.set_meta("current_hp", 100.0)
+	bar.call("update_from_enemy", enemy)
+
+	_assert_true(
+		is_instance_valid(bar),
+		"test_adv_boundary_update_3_sequential_updates — consistent"
+	)
+
+	bar.queue_free()
 
 
 # ---------------------------------------------------------------------------
@@ -472,10 +533,6 @@ func run_all() -> int:
 	print("--- test_enemy_health_bar_3d_adversarial_part2.gd ---")
 	_pass_count = 0
 	_fail_count = 0
-
-	# ADV-TOGGLE tests
-	test_adv_toggle_1_flag_persists_across_spawns()
-	test_adv_toggle_2_toggle_inversion()
 
 	# ADV-FILL-MUTATIONS tests
 	test_adv_fill_1_fill_monotonic_increase()
@@ -490,9 +547,14 @@ func run_all() -> int:
 	test_adv_determinism_1_same_hp_same_fill()
 	test_adv_determinism_2_visibility_toggle_consistency()
 
-	# ADV-BILLBOARD tests
-	test_adv_billboard_1_position_offset_nonzero()
-	test_adv_billboard_2_position_repeatable()
+	# ADV-RAPID-STATE tests
+	test_adv_rapid_state_1_rapid_damage_cycles()
+	test_adv_rapid_state_2_alternating_damage_heal()
+
+	# ADV-BOUNDARY-UPDATE tests
+	test_adv_boundary_update_1_update_with_zero_hp()
+	test_adv_boundary_update_2_update_with_max_hp()
+	test_adv_boundary_update_3_sequential_updates()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")
