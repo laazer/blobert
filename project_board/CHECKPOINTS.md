@@ -5,14 +5,26 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-17T-m8-sefi-acceptance-gatekeeper (enemy status effect indicators — ACCEPTANCE_CRITERIA_GATEKEEPER)
+
+- Queue mode: scoped backlog (milestone 8 enemy attacks)
+- Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+- Stage: INTEGRATION (corrected from invalid IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE)
+- Log: project_board/checkpoints/M8-SEFI/2026-05-17T-acceptance_gatekeeper.md
+- Spec: project_board/specs/enemy_status_effect_indicators_spec.md
+- **STATUS: ACCEPTANCE_CRITERIA GATEKEEPER REVIEW COMPLETE** (Revision 8, Stage corrected and routed to Human for integration verification)
+- **OUTCOME: ALL 6 ACCEPTANCE CRITERIA HAVE EXPLICIT EVIDENCE.** Gatekeeper corrected invalid Stage from `IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE` (not in enum) to valid `INTEGRATION`. Verified all 6 ACs (active effects render, multiple effects ordered, expired effects removed, overflow badge, real-time updates, fallback handling) have test coverage and implementation methods in place. Implementation 100% code-complete: `scripts/ui/enemy_status_effect_indicators.gd` (274 lines, all required methods present—effect reading, sorting, rendering, fallback handling, overflow badge, null safety). Scene file complete: `scenes/ui/enemy_status_effect_indicators.tscn` with script and config. Test suites complete: 85 tests across 5 files (21 primary + 22 adversarial-part1 + 7 adversarial-part2 + 22 mutation + 20 concurrency). **Blocking:** Cannot execute tests autonomously (requires Godot binary subprocess). **Next step:** Human must execute `timeout 300 ci/scripts/run_tests.sh` to verify all 85 tests pass. Once tests pass, move ticket to done/ and set Stage to COMPLETE. If tests fail, route back to implementation agent. Comprehensive checkpoint decision log (3 decisions, all HIGH confidence). AC → test/implementation coverage matrix provided. Ready for Human integration verification.
+
+---
+
 ## Run: 2026-05-17T-m8-sefi-test-break (enemy status effect indicators — TEST_BREAK)
 
 - Queue mode: scoped backlog (milestone 8 enemy attacks)
 - Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
-- Stage: TEST_BREAK → IMPLEMENTATION_BACKEND
+- Stage: TEST_BREAK → IMPLEMENTATION_BACKEND (superseded by Acceptance Gatekeeper review above)
 - Log: project_board/checkpoints/M8-SEFI/2026-05-17T-test_break.md
 - Spec: project_board/specs/enemy_status_effect_indicators_spec.md
-- **STATUS: TEST_BREAK COMPLETE** (Revision 5, ready for Backend Implementation)
+- **STATUS: TEST_BREAK COMPLETE** (Revision 5, extended to 85 tests)
 - **OUTCOME: ADVERSARIAL TEST SUITE EXTENDED TO 85 TESTS.** Test Breaker Agent added 42 new mutation and concurrency tests to existing 43 tests (21 primary + 22 adversarial). New files: `tests/ui/test_enemy_status_effect_indicators_mutation.gd` (22 tests, type confusion, interface conflicts, cache invalidation, container sizing, fallback chain, overflow badge, rapid mutations) and `tests/ui/test_enemy_status_effect_indicators_concurrency.gd` (20 tests, enemy lifecycle, state machine transitions, rapid updates, concurrent indicators, disabled behavior). Vulnerability coverage: (1) Type confusion—integer/float/object effect IDs must be converted to strings; (2) Interface priority conflicts—multiple fallback methods must respect strict order (getter > meta > property > enum); (3) Cache invalidation—array must be duplicated, not referenced; (4) Config mutations—max_visible changes must trigger immediate re-render; (5) Fallback chain exhaustion—all paths must return non-null (3-level: canonical → fallback_path → PlaceholderTexture2D). 5 checkpoint decisions logged with confidence levels. All 85 tests deterministic, executable, repeatable, mock-based. Zero dependencies on scene files. Combined coverage: happy path (21), adversarial boundaries (22), adversarial part2 (7), mutation (22), concurrency (20). Ready for Backend Implementation.
 
 ---

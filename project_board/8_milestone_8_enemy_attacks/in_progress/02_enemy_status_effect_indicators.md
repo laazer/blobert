@@ -34,13 +34,13 @@ Scope Notes:
 ## WORKFLOW STATE
 
 ### Stage
-IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE
+INTEGRATION
 
 ### Revision
-7
+8
 
 ### Last Updated By
-Orchestrator (Post-Review Fixes)
+Acceptance Criteria Gatekeeper Agent
 
 ### Validation Status
 - Specification: COMPLETE (project_board/specs/enemy_status_effect_indicators_spec.md)
@@ -51,29 +51,31 @@ Orchestrator (Post-Review Fixes)
 - Tests: CONCURRENCY SUITE COMPLETE (20 tests, test_enemy_status_effect_indicators_concurrency.gd)
 - Static QA: COMPLETE (GDScript linter passed, all review findings addressed)
   - Commit: 2678947 — Fixed magic numbers, validated resource paths, removed redundant _arrays_equal(), cleaned up scene orphans
-- Integration: Pending
+- Integration: IN PROGRESS
+  - Implementation files exist and are complete:
+    - `scripts/ui/enemy_status_effect_indicators.gd` (274 lines, all required methods present)
+    - `scenes/ui/enemy_status_effect_indicators.tscn` (scene structure complete with script and config)
+  - All 85 tests created and structured for execution
+  - Manual verification pending: test suite execution via ci/scripts/run_tests.sh to confirm all tests pass
 
 ### Blocking Issues
 None
 
 ### Escalation Notes
-Test Breaker complete. Extended test suite to 85 deterministic tests across 4 files (original 43 + new 42). New mutation tests expose type confusion, interface conflicts, cache invalidation, config edge cases. New concurrency tests expose enemy lifecycle, state machine, and concurrent update vulnerabilities. All tests executable without scene files. Comprehensive coverage of adversarial scenarios, stress testing, and edge cases. Ready for Backend Implementation.
+Test Breaker complete. Extended test suite to 85 deterministic tests across 5 files (original 43 + new 42 mutation/concurrency tests). Implementation is code-complete with all required methods (effect reading, sorting, rendering, fallback handling, overflow badge). Stage corrected from invalid `IMPLEMENTATION_ENGINE_INTEGRATION_COMPLETE` to `INTEGRATION`. Awaiting test verification and human acceptance review.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Human
 
 ## Required Deliverables
-1. GDScript implementation: `scripts/ui/enemy_status_effect_indicators.gd`
-2. Scene file: `scenes/ui/enemy_status_effect_indicators.tscn`
-3. All 85 tests passing (existing + mutation + concurrency suites)
-4. Type safety: All effect IDs converted to strings
-5. Cache correctness: Array duplication for change detection
-6. Interface priority: Strict order (getter > meta > property > enum)
-7. Export property live-update: Re-render on @export value change
+1. Test execution verification: Run `timeout 300 ci/scripts/run_tests.sh` and confirm all 85 tests pass
+2. Visual integration verification: Launch Godot, load a test scene with enemies, verify status effect indicators render above health bars
+3. Code review: Inspect `scripts/ui/enemy_status_effect_indicators.gd` for correctness against Acceptance Criteria
+4. Acceptance sign-off: Confirm that all 6 Acceptance Criteria are satisfied by implementation
 
 ## Test Files
 - Primary: `tests/ui/test_enemy_status_effect_indicators.gd` (21 tests)
@@ -81,10 +83,20 @@ Acceptance Criteria Gatekeeper Agent
 - Adversarial Part 2: `tests/ui/test_enemy_status_effect_indicators_adversarial_part2.gd` (7 tests)
 - Mutation: `tests/ui/test_enemy_status_effect_indicators_mutation.gd` (22 tests)
 - Concurrency: `tests/ui/test_enemy_status_effect_indicators_concurrency.gd` (20 tests)
+- Implementation: `scripts/ui/enemy_status_effect_indicators.gd` (274 lines)
+- Scene: `scenes/ui/enemy_status_effect_indicators.tscn`
 - Checkpoint: `project_board/checkpoints/M8-SEFI/2026-05-17T-test_break.md`
 
 ## Status
-Proceed
+Blocked — Awaiting Integration Verification
 
 ## Reason
-Test Breaker Agent extended test suite from 43 to 85 deterministic tests. Added mutation tests targeting type confusion, interface conflicts, cache invalidation, extreme configurations. Added concurrency tests targeting enemy lifecycle, state machines, concurrent indicators, disabled behavior. Comprehensive vulnerability coverage with checkpoint decisions logged. All tests executable without scene files. Ready for Backend Implementation to write GDScript and scene files while passing all 85 tests.
+Implementation code is complete and all test suites are structured. However, Acceptance Criteria Gatekeeper cannot verify test execution results in this autonomous run (test execution requires test runner subprocess with Godot binary). All 6 Acceptance Criteria require objective evidence from test execution:
+1. AC1 (active effects render): Covered by tests, implementation present
+2. AC2 (multiple effects in order): Covered by tests (_sort_effects method present)
+3. AC3 (expired effects removed): Covered by tests, _process_update detects changes
+4. AC4 (overflow badge): Covered by tests, _update_overflow_badge method present
+5. AC5 (real-time updates): Covered by tests, _process method present
+6. AC6 (fallback icon): Covered by tests, _get_fallback_icon method present
+
+Before Stage can advance to COMPLETE, Human must execute test suite and confirm all 85 tests pass. If any tests fail, route to implementation agent to fix. If all tests pass and visual verification succeeds, move ticket to `project_board/8_milestone_8_enemy_attacks/done/` and set Stage to COMPLETE.
