@@ -5,15 +5,27 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-17T-m8-sefi-test-break (enemy status effect indicators — TEST_BREAK)
+
+- Queue mode: scoped backlog (milestone 8 enemy attacks)
+- Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
+- Stage: TEST_BREAK → IMPLEMENTATION_BACKEND
+- Log: project_board/checkpoints/M8-SEFI/2026-05-17T-test_break.md
+- Spec: project_board/specs/enemy_status_effect_indicators_spec.md
+- **STATUS: TEST_BREAK COMPLETE** (Revision 5, ready for Backend Implementation)
+- **OUTCOME: ADVERSARIAL TEST SUITE EXTENDED TO 85 TESTS.** Test Breaker Agent added 42 new mutation and concurrency tests to existing 43 tests (21 primary + 22 adversarial). New files: `tests/ui/test_enemy_status_effect_indicators_mutation.gd` (22 tests, type confusion, interface conflicts, cache invalidation, container sizing, fallback chain, overflow badge, rapid mutations) and `tests/ui/test_enemy_status_effect_indicators_concurrency.gd` (20 tests, enemy lifecycle, state machine transitions, rapid updates, concurrent indicators, disabled behavior). Vulnerability coverage: (1) Type confusion—integer/float/object effect IDs must be converted to strings; (2) Interface priority conflicts—multiple fallback methods must respect strict order (getter > meta > property > enum); (3) Cache invalidation—array must be duplicated, not referenced; (4) Config mutations—max_visible changes must trigger immediate re-render; (5) Fallback chain exhaustion—all paths must return non-null (3-level: canonical → fallback_path → PlaceholderTexture2D). 5 checkpoint decisions logged with confidence levels. All 85 tests deterministic, executable, repeatable, mock-based. Zero dependencies on scene files. Combined coverage: happy path (21), adversarial boundaries (22), adversarial part2 (7), mutation (22), concurrency (20). Ready for Backend Implementation.
+
+---
+
 ## Run: 2026-05-17T-m8-sefi-test-design (enemy status effect indicators — TEST_DESIGN)
 
 - Queue mode: scoped backlog (milestone 8 enemy attacks)
 - Ticket: project_board/8_milestone_8_enemy_attacks/in_progress/02_enemy_status_effect_indicators.md
-- Stage: TEST_DESIGN → TEST_BREAK
+- Stage: TEST_DESIGN → TEST_BREAK (superseded by TEST_BREAK run above)
 - Log: project_board/checkpoints/M8-SEFI/2026-05-17T-test_design.md
 - Spec: project_board/specs/enemy_status_effect_indicators_spec.md
-- **Status: TEST_DESIGN COMPLETE** (Revision 4, ready for Test Breaker)
-- **Outcome: COMPREHENSIVE TEST SUITE AUTHORED.** 43 behavioral tests across 2 files: 21 primary (happy-path, AC/FR coverage) + 22 adversarial (boundary, edge case, stress). 100% AC coverage (10/10), 100% FR coverage (7/7), 100% NFR coverage (5/5). Test files: `/tests/ui/test_enemy_status_effect_indicators.gd` (25 KB) and `/tests/ui/test_enemy_status_effect_indicators_adversarial.gd` (26 KB). Mock enemy fixture supports spec FR2 conservative polling (4 interface methods). All tests deterministic, repeatable, executable. 3 checkpoint decisions logged (mock script embedding, conservative interface polling, icon texture fallback). All tests use `unittest.mock`-style fixtures (mock enemy node). No prose assertions. Tests validate: sort order (stun > weaken > poison > slow > infection), overflow badge (+N badge visibility/text), real-time updates (add/remove/refresh within 1 frame), max_visible enforcement, fallback icon handling, null/empty safety, boundary values (max_visible 0/1/100, effect count 1/1000+), rapid state transitions, sort stability, concurrent indicators (10+). Deferred to Integration: AC7 (health bar integration, z-order, camera-facing). Ready for Test Breaker.
+- **STATUS: TEST_DESIGN COMPLETE** (Revision 4, superseded by Test Breaker)
+- **OUTCOME: COMPREHENSIVE TEST SUITE AUTHORED.** 43 behavioral tests across 2 files: 21 primary (happy-path, AC/FR coverage) + 22 adversarial (boundary, edge case, stress). 100% AC coverage (10/10), 100% FR coverage (7/7), 100% NFR coverage (5/5). Test files: `/tests/ui/test_enemy_status_effect_indicators.gd` (25 KB) and `/tests/ui/test_enemy_status_effect_indicators_adversarial.gd` (26 KB). Mock enemy fixture supports spec FR2 conservative polling (4 interface methods). All tests deterministic, repeatable, executable. 3 checkpoint decisions logged (mock script embedding, conservative interface polling, icon texture fallback). All tests use `unittest.mock`-style fixtures (mock enemy node). No prose assertions. Tests validate: sort order (stun > weaken > poison > slow > infection), overflow badge (+N badge visibility/text), real-time updates (add/remove/refresh within 1 frame), max_visible enforcement, fallback icon handling, null/empty safety, boundary values (max_visible 0/1/100, effect count 1/1000+), rapid state transitions, sort stability, concurrent indicators (10+). Deferred to Integration: AC7 (health bar integration, z-order, camera-facing). Passed to Test Breaker.
 
 ---
 

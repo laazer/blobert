@@ -34,18 +34,20 @@ Scope Notes:
 ## WORKFLOW STATE
 
 ### Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ### Revision
-4
+5
 
 ### Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ### Validation Status
 - Specification: COMPLETE (project_board/specs/enemy_status_effect_indicators_spec.md)
 - Tests: PRIMARY SUITE COMPLETE (21 tests, test_enemy_status_effect_indicators.gd)
 - Tests: ADVERSARIAL SUITE COMPLETE (22 tests, test_enemy_status_effect_indicators_adversarial.gd)
+- Tests: MUTATION SUITE COMPLETE (22 tests, test_enemy_status_effect_indicators_mutation.gd)
+- Tests: CONCURRENCY SUITE COMPLETE (20 tests, test_enemy_status_effect_indicators_concurrency.gd)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -53,30 +55,34 @@ Test Designer Agent
 None
 
 ### Escalation Notes
-Test Design complete. Comprehensive test suite covers 100% of AC (10/10), FR (7/7), and NFR (5/5). 43 deterministic behavioral tests across 2 files. Mock fixtures support conservative polling interface per FR2. All tests executable; no scene file required for tests to run. Ready for Test Breaker to review adversarial coverage and identify vulnerabilities.
+Test Breaker complete. Extended test suite to 85 deterministic tests across 4 files (original 43 + new 42). New mutation tests expose type confusion, interface conflicts, cache invalidation, config edge cases. New concurrency tests expose enemy lifecycle, state machine, and concurrent update vulnerabilities. All tests executable without scene files. Comprehensive coverage of adversarial scenarios, stress testing, and edge cases. Ready for Backend Implementation.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Backend Implementation Agent (GDScript)
 
 ## Required Deliverables
-1. Adversarial test refinement and vulnerability analysis
-2. Edge case gap identification
-3. Boundary condition exhaustiveness check
-4. Determinism verification
-5. Performance/stress test results
-6. Final test suite readiness report
+1. GDScript implementation: `scripts/ui/enemy_status_effect_indicators.gd`
+2. Scene file: `scenes/ui/enemy_status_effect_indicators.tscn`
+3. All 85 tests passing (existing + mutation + concurrency suites)
+4. Type safety: All effect IDs converted to strings
+5. Cache correctness: Array duplication for change detection
+6. Interface priority: Strict order (getter > meta > property > enum)
+7. Export property live-update: Re-render on @export value change
 
 ## Test Files
 - Primary: `tests/ui/test_enemy_status_effect_indicators.gd` (21 tests)
 - Adversarial: `tests/ui/test_enemy_status_effect_indicators_adversarial.gd` (22 tests)
-- Checkpoint: `project_board/checkpoints/M8-SEFI/2026-05-17T-test_design.md`
+- Adversarial Part 2: `tests/ui/test_enemy_status_effect_indicators_adversarial_part2.gd` (7 tests)
+- Mutation: `tests/ui/test_enemy_status_effect_indicators_mutation.gd` (22 tests)
+- Concurrency: `tests/ui/test_enemy_status_effect_indicators_concurrency.gd` (20 tests)
+- Checkpoint: `project_board/checkpoints/M8-SEFI/2026-05-17T-test_break.md`
 
 ## Status
 Proceed
 
 ## Reason
-Test Design Agent completed comprehensive test suite (43 tests, 1050+ lines of code). All 10 AC mapped to tests with full coverage. Mock enemy fixture implements spec FR2 conservative polling. Tests are deterministic, repeatable, and executable. 3 checkpoint decisions logged with confidence levels. Deferred AC7 (health bar integration) to Integration stage. Ready for Test Breaker to conduct adversarial review and finalize test suite before Implementation handoff.
+Test Breaker Agent extended test suite from 43 to 85 deterministic tests. Added mutation tests targeting type confusion, interface conflicts, cache invalidation, extreme configurations. Added concurrency tests targeting enemy lifecycle, state machines, concurrent indicators, disabled behavior. Comprehensive vulnerability coverage with checkpoint decisions logged. All tests executable without scene files. Ready for Backend Implementation to write GDScript and scene files while passing all 85 tests.
