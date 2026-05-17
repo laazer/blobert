@@ -34,6 +34,10 @@ const EFFECT_PRIORITY_SLOW: int = 3
 const EFFECT_PRIORITY_INFECTION: int = 4
 const EFFECT_PRIORITY_UNKNOWN: int = 999  # Unknown effects get lowest priority
 
+# Constants for EnemyBase.State enum values (from enemy_base.gd)
+const ENEMY_STATE_WEAKENED: int = 1
+const ENEMY_STATE_INFECTED: int = 2
+
 # Internal state
 var _enemy: Node = null
 var _last_seen_effects: Array = []
@@ -51,12 +55,16 @@ var _effect_priority: Dictionary = {
 
 
 func _ready() -> void:
-	# Create layout container (HBoxContainer for horizontal icon layout)
-	# Note: Tests embed similar _ready() logic for mock instances without requiring this script.
-	# Duplication is necessary for test isolation. --pragma-nolint-organization
-	_icon_container = HBoxContainer.new()
-	_icon_container.name = "IconContainer"
-	add_child(_icon_container)
+	# Find or create layout container (HBoxContainer for horizontal icon layout)
+	_icon_container = find_child("IconContainer", false, false) as HBoxContainer
+	if _icon_container == null:
+		# Scene doesn't have IconContainer; create it (for test isolation)
+		_icon_container = HBoxContainer.new()
+		_icon_container.name = "IconContainer"
+		add_child(_icon_container)
+
+	# Clear any pre-existing children and recreate all nodes
+	_icon_container.clear()
 
 	# Create placeholder TextureRect nodes for icons (one per max_visible_count)
 	for i in range(max_visible_count):
@@ -141,9 +149,9 @@ func _get_active_effects_from_enemy() -> Array:
 	if _enemy.has_method("get_base_state"):
 		var state = _enemy.call("get_base_state")
 		var fallback_effects = []
-		if state == 1:  # WEAKENED
+		if state == ENEMY_STATE_WEAKENED:
 			fallback_effects.append("weaken")
-		if state == 2:  # INFECTED
+		if state == ENEMY_STATE_INFECTED:
 			fallback_effects.append("infection")
 		return fallback_effects
 
@@ -153,21 +161,11 @@ func _get_active_effects_from_enemy() -> Array:
 func _update_from_effects(effects: Array) -> void:
 	"""Check if effects changed; if so, render indicators."""
 	# Cache check: only re-render if array changed
-	if _arrays_equal(effects, _last_seen_effects):
+	if effects == _last_seen_effects:
 		return
 
 	_last_seen_effects = effects.duplicate()
 	_render_indicators()
-
-
-func _arrays_equal(a: Array, b: Array) -> bool:
-	"""Compare two arrays element-by-element."""
-	if a.size() != b.size():
-		return false
-	for i in range(a.size()):
-		if a[i] != b[i]:
-			return false
-	return true
 
 
 # ---------------------------------------------------------------------------
@@ -237,7 +235,12 @@ func _get_effect_priority(effect_id: Variant) -> int:
 
 func _load_icon(effect_id: Variant) -> Texture2D:
 	"""Load icon texture for effect ID with fallback to unknown_effect.png."""
-	var id_str = str(effect_id)
+	var id_str = str(effect_id).to_lower().strip_edges()
+
+	# Validate effect_id format (alphanumeric + underscore only)
+	if not id_str.is_valid_identifier():
+		return _get_fallback_icon()
+
 	var canonical_path = "res://assets/ui/status_effects/%s.png" % id_str
 
 	# Try canonical path first
@@ -245,6 +248,11 @@ func _load_icon(effect_id: Variant) -> Texture2D:
 		return load(canonical_path) as Texture2D
 
 	# Fallback to unknown_effect.png
+	return _get_fallback_icon()
+
+
+func _get_fallback_icon() -> Texture2D:
+	"""Get fallback icon texture, with PlaceholderTexture2D as last resort."""
 	if ResourceLoader.exists(fallback_icon_path):
 		return load(fallback_icon_path) as Texture2D
 

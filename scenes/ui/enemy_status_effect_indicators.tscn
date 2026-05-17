@@ -14,31 +14,3 @@ fallback_icon_path = "res://assets/ui/status_effects/unknown_effect.png"
 [node name="IconContainer" type="HBoxContainer" parent="."]
 size_flags_horizontal = 2
 size_flags_vertical = 2
-
-[node name="Icon_0" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(32, 32)
-expand_mode = 1
-stretch_mode = 0
-
-[node name="Icon_1" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(32, 32)
-expand_mode = 1
-stretch_mode = 0
-
-[node name="Icon_2" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(32, 32)
-expand_mode = 1
-stretch_mode = 0
-
-[node name="Icon_3" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(32, 32)
-expand_mode = 1
-stretch_mode = 0
-
-[node name="Icon_4" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(32, 32)
-expand_mode = 1
-stretch_mode = 0
-
-[node name="OverflowBadge" type="Label" parent="IconContainer"]
-layout_mode = 2

@@ -34,13 +34,13 @@ Scope Notes:
 ## WORKFLOW STATE
 
 ### Stage
-IMPLEMENTATION_BACKEND
+IMPLEMENTATION_ENGINE_INTEGRATION
 
 ### Revision
-5
+6
 
 ### Last Updated By
-Test Breaker Agent
+Engine Integration Agent
 
 ### Validation Status
 - Specification: COMPLETE (project_board/specs/enemy_status_effect_indicators_spec.md)
