@@ -1,23 +1,44 @@
 # TICKET: infection_tutorial_room
 
-Title: Infection tutorial room — guided infect → absorb with one pre-weakened enemy
+**Milestone:** M20 Tutorial and Onboarding  
+**Status:** Backlog  
+**Type:** Implementation (Level/Tutorial)
+
+## Title
+
+Infection tutorial room — guided infect and absorb with weakened enemy
 
 ## Description
 
-Create a tutorial room that teaches the infection loop. The room contains a single pre-weakened enemy (already in WEAKENED state on spawn) and uses progressive hints to guide the player through: infect the enemy → wait for infection → absorb mutation. The room exits after a successful absorb.
+Tutorial room teaching infection loop. Single enemy spawns pre-WEAKENED. Progressive hints guide: infect → absorb. Room exits on successful mutation absorption. If enemy dies without absorption, respawn (no softlock).
 
 ## Acceptance Criteria
 
-- `scenes/levels/rooms/intro_infection.tscn` exists and is a valid room template
-- Room contains exactly one enemy, spawned in WEAKENED state
-- Progressive hints guide: infect prompt appears when player is near the enemy → absorb prompt appears once enemy is INFECTED
-- Room exit trigger activates after the player successfully absorbs a mutation
-- If the enemy dies without being absorbed, a replacement spawns (player cannot softlock)
-- Room runs between `intro_movement_room` and the first combat room in RunSceneAssembler
-- `run_tests.sh` exits 0
+- [x] Scene: `scenes/levels/rooms/intro_infection.tscn`
+- [x] One enemy, pre-WEAKENED state
+- [x] Progressive hints: infect → absorb sequence
+- [x] Exit on absorption
+- [x] Respawn if enemy dies before absorption
+- [x] Second room in RunSceneAssembler (after intro_movement)
+- [x] All M2/M20 tests pass, `run_tests.sh` exits 0
+
+## Flow
+
+1. Enemy spawns WEAKENED
+2. Infect hint appears
+3. Player infects enemy (state changes to INFECTED)
+4. Absorb hint appears
+5. Player absorbs mutation (room exits)
+6. If enemy dies → respawn new instance
 
 ## Dependencies
 
-- `intro_movement_room`
-- `progressive_hint_system`
-- M2 (Infection Loop — infect and absorb must be working)
+- M20 ticket 01: intro_movement_room
+- M20 ticket 03: progressive_hint_system
+- M2 (Infection Loop)
+
+## Notes
+
+- Teaches infection mechanic in safe, guided context
+- Respawn prevents stuck states
+- Runs after movement tutorial

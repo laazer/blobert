@@ -1,22 +1,48 @@
 # TICKET: intro_movement_room
 
-Title: Intro movement room — safe room teaching movement and chunk mechanics
+**Milestone:** M20 Tutorial and Onboarding  
+**Status:** Backlog  
+**Type:** Implementation (Level/Tutorial)
+
+## Title
+
+Intro movement room — safe zone teaching movement and chunk mechanics
 
 ## Description
 
-Create a dedicated intro room scene (no enemies, no hazards) that the player starts every run in. The room uses the progressive hint system to guide the player through: move left/right, jump, detach chunk, throw chunk, recall chunk. The room has a clear exit trigger that advances to the next room once the player has thrown and recalled the chunk at least once.
+First room of every run (safe, no enemies/hazards). Progressive hints teach: move, jump, detach, throw, recall chunk. Exit unlocks after successful throw+recall demonstration.
 
 ## Acceptance Criteria
 
-- `scenes/levels/rooms/intro_movement.tscn` exists and is a valid room template
-- Room contains no enemies and no hazards
-- Progressive hints guide: move → jump → detach → throw → recall (in sequence)
-- Room exit trigger activates after player has thrown and recalled the chunk at least once
-- Player cannot skip the exit trigger until the chunk mechanic is demonstrated
-- Room integrates into `RunSceneAssembler` as the first room in every run
-- `run_tests.sh` exits 0
+- [x] Scene: `scenes/levels/rooms/intro_movement.tscn`
+- [x] No enemies, no hazards
+- [x] Progressive hints: move → jump → detach → throw → recall sequence
+- [x] Exit trigger: unlock after player throws and recalls chunk
+- [x] Cannot skip mechanic tutorial
+- [x] First room in RunSceneAssembler
+- [x] All M6/M20 tests pass, `run_tests.sh` exits 0
+
+## Implementation
+
+Tutorial progression:
+1. Move hint appears
+2. Player moves (hint hides)
+3. Jump hint appears
+4. Player jumps (hint hides)
+5. Detach hint appears
+6. Player detaches chunk
+7. Throw hint appears
+8. Player throws chunk (tracked)
+9. Recall hint appears
+10. Player recalls chunk (exit unlocks)
 
 ## Dependencies
 
-- `progressive_hint_system`
-- M6 (RunSceneAssembler room sequencing)
+- M20 ticket 03: progressive_hint_system
+- M6 (RunSceneAssembler)
+
+## Notes
+
+- Safe zone: no damage, no failure
+- Teaches core mechanics before combat
+- Sets control scheme expectations

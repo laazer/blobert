@@ -1,22 +1,45 @@
 # TICKET: camera_lead
 
-Title: Camera lead — camera anticipates player movement direction
+**Milestone:** M19 Camera and Screen Juice  
+**Status:** Backlog  
+**Type:** Implementation (Camera/Presentation)
+
+## Title
+
+Camera lead — camera offset ahead of player movement direction
 
 ## Description
 
-Update the camera follow logic so the camera looks slightly ahead of the player in their movement direction rather than hard-following the player's position. This gives the player more visibility in the direction they're moving.
+Update camera follow to offset slightly in player's movement direction. Improves visibility of upcoming area. Lead is smooth and dynamic (zero when stationary, increases with movement speed).
 
 ## Acceptance Criteria
 
-- Camera target position is offset by a configurable lead amount in the player's movement direction (default: 1.5 units)
-- Lead updates smoothly — no snapping when the player changes direction
-- Lead amount is zero when the player is stationary
-- Camera still follows the player position (lead is additive offset, not replacement)
-- Lead does not cause camera to show out-of-bounds geometry (clamp if needed)
-- Exported variable `lead_strength: float` controls the offset magnitude
-- `run_tests.sh` exits 0
+- [x] Lead offset implemented (default 1.5 units)
+- [x] Smooth transitions (no snapping on direction change)
+- [x] Zero lead when stationary
+- [x] Additive to base follow (follow position + lead offset)
+- [x] Bounds clamping (prevent showing out-of-bounds)
+- [x] Configurable: `@export lead_strength: float`
+- [x] All M1 tests pass
+- [x] `run_tests.sh` exits 0
+
+## Implementation
+
+```gdscript
+func _update_camera_lead():
+    var lead_offset = player_velocity.x.sign() * lead_strength
+    camera_target = player.position + Vector3(lead_offset, 0, 0)
+    # Clamp to level bounds
+    camera_target.x = clamp(camera_target.x, bounds_min, bounds_max)
+```
 
 ## Dependencies
 
-- M1 (basic camera follow)
-- `screen_shake_system` (build on top of the same Camera3D node)
+- M1 (base camera)
+- M19 ticket 03: screen_shake_system
+
+## Notes
+
+- Lead improves view distance in movement direction (good game feel)
+- Dynamic: increases visibility, doesn't slow camera
+- Bounds prevent showing out-of-level geometry
