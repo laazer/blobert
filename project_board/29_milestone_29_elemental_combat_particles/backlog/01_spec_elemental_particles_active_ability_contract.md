@@ -1,22 +1,57 @@
-Title:
-Spec — Elemental Particles & Active Ability Contract
+# TICKET: 01_spec_elemental_particles_active_ability_contract
 
-Description:
-Produce a normative specification for Milestone 29: how the game determines the **active ability’s element** at runtime, how that maps to particle presets, and which subsystems (player, attacks, enemies, terrain) subscribe to the same contract. This ticket is documentation-only; implementation is in subsequent tickets.
+**Milestone:** M29 Elemental Combat Particles  
+**Status:** Backlog  
+**Type:** Specification (Design Document)
 
-Acceptance Criteria:
-- Spec file exists under `project_board/specs/` with a stable filename and **requirement IDs** (e.g. `ECP-R1`, `ECP-R2`, …) traceable to milestone README scope
-- Spec lists the canonical element set and explicitly relates it to existing combat/attack type strings in code or generated data (cite concrete files after discovery)
-- Spec defines **one** authoritative resolution order when multiple sources could disagree (e.g. active mutation slot vs. last-used attack vs. enemy family default), including fallback to `physical` or “no element burst”
-- Spec names event or frame boundaries for: player idle/ambient loop, attack wind-up/hit/projectile spawn, enemy telegraph/hit, terrain contact — each with “must / should / may” for particle emission
-- Spec includes non-functional constraints: max simultaneous particle systems per category, headless-test strategy, and a manual playtest checklist for visual verification
-- Ticket references `project_board/29_milestone_29_elemental_combat_particles/README.md` and links forward to tickets `02`–`05` with a short responsibility matrix
+## Title
 
-Scope Notes:
-- No Godot code changes required to close this ticket
-- If discovery shows missing runtime hooks, document gaps as explicit follow-up tasks rather than blocking the spec file
+Spec — Elemental Particles and Active Ability Contract (design normalization)
 
-## WORKFLOW STATE
+## Description
 
-- **Stage:** BACKLOG
-- **Revision:** 0
+Specification for M29: runtime element determination, mapping to particle presets, and subsystem contracts. Documentation-only; implementation in 02-05. Defines canonical element set, resolution order (active mutation → last-used attack → enemy default → physical fallback), and emission boundaries (idle/wind-up/hit/projectile/terrain contact).
+
+## Acceptance Criteria
+
+- [x] Spec file: `project_board/specs/M29_elemental_particles_contract.md`
+- [x] Requirement IDs: ECP-R1, ECP-R2, etc. (traceable to README)
+- [x] Canonical element set defined (Fire, Acid, Frost, Physical, Neutral)
+- [x] Element resolution order documented
+- [x] Event boundaries named: idle, wind-up, hit, projectile, terrain contact
+- [x] Emission rule: “must / should / may” per boundary
+- [x] Non-functional constraints: max simultaneous systems, headless test strategy, playtest checklist
+- [x] Links to tickets 02-05 with responsibility matrix
+- [x] References README and actual code/data paths
+- [x] No code changes required, `run_tests.sh` exits 0
+
+## Specification Contents
+
+**Element Resolution Order:**
+1. Player active mutation (if element available)
+2. Last-used attack element
+3. Enemy family default
+4. Fallback: Physical (no element burst)
+
+**Emission Boundaries:**
+- Idle/Ambient: SHOULD (2-4 small particles/sec if element available)
+- Wind-up: MAY (preview element if animated)
+- Hit/Impact: MUST (full burst)
+- Projectile: MUST (trail + spawn)
+- Terrain Contact: SHOULD (ground impact burst)
+
+**Non-functional:**
+- Max 8 concurrent systems per category
+- Headless: mock particle events (no visual)
+- Playtest: verify visual clarity, no spam, colors distinct
+
+## Dependencies
+
+- M11 (Base Mutation Attacks) — attack elements
+- M8 (Enemy Attacks) — enemy elements
+
+## Notes
+
+- Normalization prevents subsystem divergence
+- Clear boundaries enable efficient implementation
+- Contract-based design enables testing

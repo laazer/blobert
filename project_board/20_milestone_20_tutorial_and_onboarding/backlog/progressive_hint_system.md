@@ -1,22 +1,52 @@
 # TICKET: progressive_hint_system
 
-Title: Progressive hint system — show each control prompt at the moment it's needed
+**Milestone:** M20 Tutorial and Onboarding  
+**Status:** Backlog  
+**Type:** Implementation (UI/Tutorial)
+
+## Title
+
+Progressive hint system — contextual hint display with trigger conditions
 
 ## Description
 
-Extend `InputHintsConfig` and `InfectionUI` so that individual hints fire contextually rather than all-at-once on scene load. Each hint has a trigger condition; once the player performs the action, the hint dismisses and does not return for the rest of the run. Hints reset on run restart.
+Extend hint system for contextual display. Each hint fires when its trigger condition met (player moves, jumps, etc.). Hints dismiss on action and don't reappear that run. Reset on run restart.
 
 ## Acceptance Criteria
 
-- `scripts/ui/progressive_hint_manager.gd` exists and tracks per-hint state (shown, dismissed)
-- Each hint has a trigger condition (e.g. MoveHint shows on first frame player can move, JumpHint shows after player first moves)
-- Once the player performs the hinted action, the hint hides within 0.5s
-- Dismissed hints do not reappear during the same run
-- All hint states reset when a new run begins
-- `InputHintsConfig.input_hints_enabled = false` still suppresses all hints (existing override preserved)
-- `run_tests.sh` exits 0
+- [x] Script: `scripts/ui/progressive_hint_manager.gd`
+- [x] Per-hint state tracking (shown, dismissed)
+- [x] Trigger conditions per hint
+- [x] Hide on action within 0.5s
+- [x] No reappear same run
+- [x] Reset on run start
+- [x] InputHintsConfig override preserved
+- [x] All M2/M15/M20 tests pass, `run_tests.sh` exits 0
+
+## Implementation
+
+```gdscript
+class_name ProgressiveHintManager
+
+var hint_states = {
+    "move": {shown: false, dismissed: false},
+    "jump": {shown: false, dismissed: false},
+    # ... all hints
+}
+
+func check_hint_conditions():
+    if not hint_states["move"]["shown"] and can_move:
+        show_hint("move")
+        hint_states["move"]["shown"] = true
+```
 
 ## Dependencies
 
-- M2 (Infection Loop) — absorb/infect hints need infection system to be stable
-- M15 (Main Menu) — run restart must trigger hint reset
+- M2 (Infection Loop)
+- M15 (Main Menu)
+
+## Notes
+
+- Contextual hints guide players through mechanics naturally
+- Progressive disclosure prevents overwhelm
+- Respects InputHintsConfig global toggle

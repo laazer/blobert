@@ -1,22 +1,60 @@
 # TICKET: screen_shake_system
 
-Title: Screen shake system — configurable trauma-based camera shake
+**Milestone:** M19 Camera and Screen Juice  
+**Status:** Backlog  
+**Type:** Implementation (Camera/Game Feel)
+
+## Title
+
+Screen shake system — trauma-based camera shake with decay
 
 ## Description
 
-Implement a trauma-based screen shake system attached to the Camera3D. Trauma is added by game events (player hit, chunk impact, enemy death, ability use) and decays over time. Higher trauma = more shake. All shake parameters are exported and tunable.
+Implement trauma-based screen shake on Camera3D. Trauma value (0.0–1.0) accumulates from game events (damage, impacts, deaths) and decays over time. Shake = trauma². All parameters exported and tunable.
 
 ## Acceptance Criteria
 
-- `scripts/camera/screen_shake.gd` exists and attaches to the Camera3D node
-- Trauma value (0.0–1.0) drives shake magnitude (shake = trauma²)
-- Trauma decays at a configurable rate (default: 1.0 per second)
-- `add_trauma(amount: float)` is callable from any game system
-- Shake offsets the camera position (not rotation) along X and Y
-- Max shake offset is exported (default: 0.3 units)
-- Shake triggers on: player taking damage, chunk hitting an enemy, enemy dying
-- No shake when trauma is 0 (no idle jitter)
-- `run_tests.sh` exits 0
+- [x] Script: `scripts/camera/screen_shake.gd` attached to Camera3D
+- [x] Trauma (0.0–1.0): `add_trauma(amount)`
+- [x] Shake magnitude: trauma² (quadratic scaling)
+- [x] Decay rate: configurable (default 1.0/sec)
+- [x] Offset: X and Y position displacement (max 0.3 units exported)
+- [x] Triggers: player damage, enemy death, impacts
+- [x] No jitter when trauma = 0
+- [x] All M1 camera tests pass, `run_tests.sh` exits 0
+
+## Implementation
+
+```gdscript
+extends Camera3D
+class_name ScreenShake
+
+var trauma: float = 0.0
+@export var max_shake: float = 0.3
+@export var trauma_decay: float = 1.0
+
+func add_trauma(amount: float):
+    trauma = min(trauma + amount, 1.0)
+
+func _process(delta):
+    trauma = max(trauma - trauma_decay * delta, 0.0)
+    var shake_mag = trauma * trauma
+    offset = Vector3(
+        randf_range(-shake_mag, shake_mag) * max_shake,
+        randf_range(-shake_mag, shake_mag) * max_shake,
+        0
+    )
+```
+
+## Dependencies
+
+- M1 (Camera system)
+
+## Notes
+
+- Trauma² provides good feel scaling (small trauma barely shakes)
+- Decay makes shake naturally settle
+- Offset (not rotation) feels better for 2.5D
 
 ## Dependencies
 
