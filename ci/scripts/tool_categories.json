@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "categories": [
+    {
+      "name": "parse",
+      "description": "Non-destructive code exploration for specification writing. Read-only tools for codebase analysis and research."
+    },
+    {
+      "name": "modify",
+      "description": "Implementation, refactoring, and file creation. Write-capable tools for code changes and artifact generation."
+    },
+    {
+      "name": "test",
+      "description": "Test execution, verification, and behavior validation. Tools for running tests and confirming system behavior."
+    },
+    {
+      "name": "plan",
+      "description": "Task decomposition, dependency discovery, and historical analysis. Tools for work breakdown and git history exploration."
+    },
+    {
+      "name": "think",
+      "description": "Analysis, design decisions, and architectural evaluation. Open-ended tools for synthesis and reasoning."
+    }
+  ],
+  "tools": [
+    {
+      "name": "read",
+      "categories": ["parse", "think"],
+      "rationale": "Read file content without modification. Core tool for non-destructive exploration in spec/analysis phases. Used by Spec Agent and Architecture Review agents."
+    },
+    {
+      "name": "write",
+      "categories": ["modify"],
+      "rationale": "Create or overwrite files. Implementation-focused tool. Only modify category agents should create new content. Restricted from parse (read-only) category."
+    },
+    {
+      "name": "glob",
+      "categories": ["parse", "think"],
+      "rationale": "Find files by pattern without mutation. Non-mutating discovery tool used in spec research and architecture analysis."
+    },
+    {
+      "name": "grep",
+      "categories": ["parse", "think"],
+      "rationale": "Search content by regex without modification. Non-mutating search tool for targeted code exploration and pattern discovery."
+    },
+    {
+      "name": "bash",
+      "categories": ["test", "plan", "think"],
+      "rationale": "Execute shell commands for testing, git history exploration, and system state analysis. Subprocess execution with diverse constraints per category."
+    },
+    {
+      "name": "edit",
+      "categories": ["modify"],
+      "rationale": "Modify files in-place during implementation. Separate from Write for incremental changes during refactoring."
+    },
+    {
+      "name": "todotype",
+      "categories": ["plan"],
+      "rationale": "Manage tasks and decompose work. Planning-focused tool for task creation and dependency tracking."
+    },
+    {
+      "name": "agent",
+      "categories": ["think"],
+      "rationale": "Invoke subagent for delegated analysis or synthesis. Enables open-ended reasoning and multi-step problem solving."
+    }
+  ]
+}
