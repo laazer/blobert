@@ -4,6 +4,84 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M902-18] — Deferred Work Requires Explicit Downstream Ticket Updates
+*Completed: 2026-05-18*
+
+### Critical Learning
+
+**When an agent defers acceptance criteria or work to a future task, that future task's ticket MUST be explicitly updated.** Silent deferral leads to downstream tasks not knowing they have inherited work, resulting in surprise dependencies and missed scope.
+
+### Learnings
+
+- **category: workflow**
+  **insight:** Deferred work is invisible to downstream tasks unless the downstream ticket is explicitly updated with the dependency and requirement.
+  **impact:** M902-18's AC-4, AC-5, AC-7, AC-8 were deferred to "Task 5 (Integration Agent)" without updating M902-09-M902-17 active tickets or M902-19+ backlog tickets. Downstream tasks would not discover these requirements unless they read M902-18 checkpoints explicitly.
+  **prevention:** **Mandatory pattern:** When any agent defers work, the orchestrator or deferring agent MUST immediately update the receiving task's description with: (1) what work is deferred, (2) why, (3) where the requirements are documented, (4) what's blocking implementation.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Task sequencing (Task 5 must complete before M902-19 can use categorization) is implicit in execution plans but not discoverable from the forward-referenced tickets.
+  **impact:** M902-19 had no cross-reference to M902-18 framework integration dependency until manually added.
+  **prevention:** Create bidirectional pointers: upstream ticket (M902-18) → downstream task (Task 5), AND downstream ticket (M902-19) → upstream blocker (M902-18 framework integration). Use INTEGRATION_GUIDE.md pattern.
+  **severity:** high
+
+- **category: process**
+  **insight:** AC Gatekeeper's "deferred to later task" decision is correct per execution plan, but requires explicit documentation in the downstream ticket for future agents to understand the intent.
+  **impact:** Without INTEGRATION_GUIDE.md and cross-references, Task 5 agent would not know M902-18 implementation was ready and waiting.
+  **prevention:** Gatekeeper (or orchestrator after Gatekeeper) must update downstream tickets when deferring ACs. Provide: ticket path, what's deferred, checkpoint reference, integration guide link.
+  **severity:** high
+
+### Anti-Patterns
+
+1. **Silent deferral:** Deferring work without updating downstream ticket description or acceptance criteria.
+2. **Unidirectional dependencies:** Upstream task (M902-18) knows about downstream (Task 5), but downstream doesn't know about upstream.
+3. **Execution-plan-only documentation:** Sequencing documented in execution plan checkpoints but not reflected in actual ticket descriptions.
+4. **Implicit task names:** Referencing "Task 5" without explaining what "Task 5" is or where the Task 5 work will be defined.
+
+### Prompt Patches (For Agent Instructions)
+
+**Spec Agent:**
+- When deferring SDK/framework dependencies: "Create a cross-reference in downstream tickets that depend on these deferred items. Update their DEPENDENCIES section explicitly."
+
+**AC Gatekeeper:**
+- When setting Stage to INTEGRATION/BLOCKED due to deferred ACs: "Immediately update each downstream ticket (by ticket path) with: (1) what AC is deferred, (2) why, (3) where implementation is ready (checkpoint/spec link), (4) integration guide path if created."
+
+**Orchestrator (Autopilot/ap-continue):**
+- After any agent defers work: "Verify the downstream ticket (if it exists in backlog/in_progress) has been updated with the deferred requirement. If not, update it now with explicit cross-reference."
+
+**All agents (General):**
+- "If your work depends on or defers to another task/ticket, BOTH the upstream and downstream tickets must be updated. One-way pointers create invisible dependencies."
+
+### Workflow Improvement
+
+**Add to `agent_context/agents/common_assets/workflow_enforcement_v1.md`:**
+
+```markdown
+## Deferred Work Rule (Cross-Task Coupling)
+
+When an agent defers acceptance criteria, implementation, or testing to a future task:
+
+1. **Document in current ticket:** Mark deferred ACs with reason, target task, and checkpoint reference
+2. **Update downstream ticket:** Add explicit DEPENDENCIES section noting:
+   - What is deferred from upstream
+   - Why (architectural, sequencing, external dependency)
+   - Where implementation is ready (checkpoint path, spec path, code path)
+   - Integration guide or next steps
+3. **Create integration guide (if complex):** For multi-phase work (backend + framework + live testing), document phases in INTEGRATION_GUIDE.md
+4. **Bidirectional pointers:** Upstream → downstream AND downstream → upstream, so no task is surprised
+
+**Objective:** Make deferred work visible and actionable to downstream agents without requiring them to read full checkpoint logs.
+```
+
+### Practices to Reinforce
+
+1. **Mandatory cross-references:** Deferred work = mandatory downstream ticket update
+2. **Bidirectional pointers:** Both tickets reference each other
+3. **Integration guides for distributed work:** When work spans multiple tasks, create INTEGRATION_GUIDE.md
+4. **Explicit dependency chains:** "Task 5 must complete before M902-19 implementation begins" should appear in both ticket descriptions
+
+---
+
 ## [body-part-image-not-applied] — Preserve identity fields across UI-to-payload boundaries
 *Completed: 2026-04-27*
 
@@ -5379,5 +5457,171 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 - practice: Loading actual scene files in test helpers rather than inline instantiation, to expose scene-structure mismatches early.
   reason: Avoids integration surprises where tests pass but scene-based usage fails due to missing initialization.
+
+---
+
+## [M902-18] — Tool categorization system: ambiguity-first specification resolved SDK uncertainty and deferred framework integration
+
+*Completed: 2026-05-18*
+
+### Learnings
+- category: process
+  insight: When a feature depends on uncertain SDK or framework capabilities (e.g., "agent SDK supports tool filtering"), the Spec Agent should explicitly document the assumption, define a contract that assumes the capability exists, and defer implementation/framework-integration tasks to downstream agents who can verify and adapt. Spec does not validate SDK internals; it freezes the contract that implementation must satisfy.
+  impact: Planner identified SDK tool filtering as MEDIUM-confidence assumption. Spec Agent did not investigate SDK availability; instead, it documented the assumption clearly and defined the interface contract (`get_tools_for_category()`) that implementation must deliver regardless of SDK mechanism. This deferred the framework integration details to Integration Agent (Task 5) but unblocked backend implementation (Task 4) immediately. All 180 backend tests passed without waiting for SDK coordination.
+  prevention: When Spec encounters an uncertain external dependency (SDK feature, framework capability), capture the assumption in Spec Clarifying Questions section with explicit confidence levels. Define the feature contract (function signature, error handling, measurement protocol) independent of the SDK mechanism. Document what downstream agent (Integration Agent, Framework Integration) must verify and decide. This separates specification (what the feature does) from integration (how it hooks into frameworks).
+  severity: high
+
+- category: architecture
+  insight: Backend implementation and framework integration can be decoupled via clear function contracts. Tool categorization has two phases: (1) Backend—build the filtering logic and measurement functions, fully testable in isolation; (2) Framework Integration—wire the framework to accept tool_category parameter and call backend functions. Separating these avoids blocking backend work on uncertain framework internals.
+  impact: Execution plan explicitly anticipated deferred framework integration (Task 5 separate from Task 4 backend). This allowed Implementation Agent to complete all 180 tests and deliver tool_category_manager.py without waiting for agent framework code access or modification. Framework integration blocked by unknown framework architecture but has a clear contract to implement (accept tool_category param, extract category from prompt using regex, call get_tools_for_category()). Backward compatibility is guaranteed (agents without category param get all tools).
+  prevention: For features that span backend logic + framework wiring, define a clear handoff contract: (1) Backend phase: define function interface, build against specs only, test in isolation with mocks. (2) Framework phase: accept handoff, verify framework can satisfy the contract, integrate cleanly. Document both phases in execution plan with separate tasks.
+  severity: high
+
+- category: testing
+  insight: Adversarial and mutation test suites can detect spec gaps (unstated assumptions, missing constraints) early. Test Breaker discovered 7 significant gaps (version field requirement, tool naming constraints, config parsing strictness, file change detection, floating-point precision, schema immutability, bash categorization). These gaps do not block implementation but require explicit documentation and design decisions by implementer.
+  impact: Test Breaker created spec-gap test class that exposed assumptions unstated in spec. Examples: (1) version field—spec doesn't say if required; (2) tool naming—no constraints on spaces/special chars; (3) bash in parse—implicit constraint not enforced. These gaps were flagged to Implementation Agent in recommendations. Implementation made reasonable decisions (strict parsing, accept all tool names, etc.) but the gaps should have been frozen in spec beforehand.
+  prevention: Spec Agent should include a "Implicit Constraints" review pass before finalizing spec. For each config field, enum value, and function behavior, ask: "What am I assuming about this that is not explicitly stated?" Test Designer should then create spec-gap tests for each assumption. This moves assumption documentation from implementation time to spec time.
+  severity: medium
+
+- category: process
+  insight: Acceptance Criteria Gatekeeper must recognize when partial satisfaction (AC-1 through AC-6 complete, AC-7 and AC-8 deferred to later tasks) is correct per the execution plan, not a blocker condition. In M902-18, 6 of 8 ACs were satisfied in backend phase; 2 ACs (live agent integration, runbook documentation) were correctly sequenced to Integration Agent tasks. Gatekeeper validated this was intentional per spec design, not an escalation issue.
+  impact: Gatekeeper initially noted AC-4 and AC-5 (framework integration) not complete in this ticket, and AC-7 and AC-8 (live agent testing, runbook) not complete. But gatekeeper correctly recognized that execution plan explicitly anticipated these deferrals as downstream tasks, and confirmed with spec that this was the intended workflow. No escalation was needed; the ticket was correctly partitioned.
+  prevention: Gatekeeper should cross-reference ticket WORKFLOW STATE against execution plan task breakdown before escalating incomplete ACs. If a task deliberately defers work to a later task, mark as "Deferred (intended)" with task reference rather than "Incomplete (blocker)". This requires gatekeeper to understand not just spec, but execution plan and task sequencing.
+  severity: medium
+
+- category: testing
+  insight: Mutation tests can catch subtle bugs in deterministic functions (e.g., JSON serialization without sort_keys loses determinism, regex group indexing off-by-one returns wrong substring). For infrastructure features like tool categorization, mutation test coverage validates that the implementation is not just correct, but stable under code changes.
+  impact: Test Breaker created 30 mutation tests covering: inverted conditions (category validation), off-by-one errors (regex group indexing), exception handling (ValueError vs. TypeError), and JSON serialization (sort_keys=True vs. omitted). Each mutation directly targets a code pattern likely to regress. This gave Implementation high confidence that the delivered functions are correct and stable.
+  prevention: For deterministic or cryptographic-style functions (parsing, serialization, filtering), require mutation test coverage of: (1) boolean inversion (if cond: → if not cond:), (2) off-by-one in indexing, (3) exception type changes, (4) JSON/serialization parameter omission, (5) operator swaps (AND ↔ OR). This is especially valuable for infrastructure code that will be reused by many agents.
+  severity: medium
+
+- category: performance
+  insight: Stress tests with large schemas (1000+ tools, 10MB+) and concurrent access patterns validated that tool categorization overhead is acceptable (<10ms per call, <100ms per measurement). These tests should be run before declaring a feature "complete" to avoid discovering performance issues in production agent runs.
+  impact: Stress test suite (20 tests) verified: 1000-tool schema filtering in <50ms, deterministic measurements across 100 iterations, no race conditions under parallel access (10 threads), floating-point precision stability. This gave Implementation and Gatekeeper confidence that the feature won't become a bottleneck in agent workflows.
+  prevention: For any feature that processes collections, filters data, or does serialization, require stress test suite with: (1) large dataset (10x or 100x typical size), (2) repeated operations (determinism check), (3) concurrent access (thread safety), (4) performance assertions (<X ms per AC/NFR). Include stress tests in the Test Designer baseline, not deferred to late stages.
+  severity: low
+
+### Anti-Patterns
+- description: SDK/framework dependencies stated as assumptions without explicit escalation or fallback mechanism. "Use agent SDK's tool filtering mechanism" assumes SDK has the feature, but doesn't define what happens if SDK doesn't expose it.
+  detection_signal: Spec mentions an external dependency (SDK, framework) without defining what the contract is if that dependency doesn't exist. No fallback or mitigation documented.
+  prevention: When specifying a feature that depends on external capability, state the assumption with confidence level. Define what the feature must do (contract), separate from how the SDK might enable it (mechanism). Document fallback: if SDK doesn't support filtering, can we filter at a different layer (middleware, framework wrapper)?
+
+- description: Acceptance Criteria Gatekeeper escalates incomplete ACs without cross-referencing execution plan. If execution plan explicitly defers work to later tasks, escalation is unnecessary.
+  detection_signal: Gatekeeper marks ACs incomplete; on review, execution plan clearly shows these ACs in downstream task scope with documented reasoning.
+  prevention: Gatekeeper should always check execution plan and spec design decisions before escalating. "This AC is incomplete in this ticket" only escalates if it blocks this ticket's success criteria. "This AC is deferred per plan to task X" is not an escalation—it's the intended workflow.
+
+- description: Spec finalizes without explicitly documenting implicit constraints and assumptions. Config field names, enum values, and function behaviors often have unstated requirements (field optionality, tool naming rules, parsing strictness).
+  detection_signal: Test suite creates "spec gap" test class and identifies 5+ assumptions not in spec prose. Implementation must make design decisions about these gaps (strict vs. lenient parsing, etc.).
+  prevention: Add Implicit Constraints review to Spec completion checklist. For each config field, function parameter, and enum, explicitly document: is this required? what values are allowed? what happens on invalid input? Gaps should be resolved in spec, not deferred to implementation.
+
+### Prompt Patches
+- agent: Spec Agent
+  change: "For features with external dependencies (SDK capabilities, framework internals), document assumptions with confidence levels in Clarifying Questions section. Define the feature contract (function signature, error handling) independent of SDK mechanism. Explicitly defer framework-integration tasks to downstream agents (Integration Agent) with a clear handoff contract."
+  reason: Separates specification from implementation concerns and prevents speculation about SDK internals from blocking backend work. Allows backend to complete and be testable while framework integration is coordinated separately.
+
+- agent: Spec Agent
+  change: "Before finalizing spec, create an Implicit Constraints section. For each config field, function parameter, and behavior, explicitly state: required/optional, allowed values, handling of invalid input. Identify gaps that don't have clear answers and call them out for Test Designer to verify via spec-gap tests."
+  reason: Moves unstated assumptions into explicit documentation and ensures implementation doesn't have to guess about constraints. Test Designer can then verify these constraints are enforced.
+
+- agent: Acceptance Criteria Gatekeeper Agent
+  change: "Before escalating incomplete ACs, cross-reference the execution plan to confirm whether deferral is intentional and documented. Mark as 'Deferred (intentional, Task X)' rather than 'Incomplete (blocker)' when execution plan explicitly scopes that AC to a downstream task. Only escalate if the deferral blocks this ticket's primary success criteria."
+  reason: Prevents unnecessary escalations when partial AC satisfaction is correct per design. Distinguishes between "incomplete by accident" (escalate) and "incomplete by design" (proceed).
+
+- agent: Test Designer Agent
+  change: "Create a spec-gap test class dedicated to documenting unstated assumptions and implicit constraints in the spec. For each assumption found, create a test that would fail if the assumption is violated (e.g., if version field is assumed required, test fails when it's missing). Document each gap with a recommendation for spec clarification."
+  reason: Surfaces spec ambiguities early and ensures implementation decisions about these gaps are made consciously rather than by accident.
+
+### Workflow Improvements
+- issue: Features with uncertain SDK/framework dependencies block backend implementation waiting for framework coordination. "Can the SDK filter tools?" is a yes/no question but blocks work while it's being clarified.
+  improvement: In SPEC, document the assumption and define the contract. Defer framework integration to a separate task with clear handoff criteria. Allow backend implementation to proceed on schedule with full test coverage and mocks for the framework layer.
+  expected_benefit: Backend work is unblocked; framework integration is a parallel or sequential task with a clear contract rather than a blocker.
+
+- issue: Execution plan task breakdown and sequencing is not visible to Gatekeeper, leading to false escalations of incomplete ACs.
+  improvement: Require Gatekeeper to review execution plan before escalating. Include explicit deferral language in execution plan (e.g., "Task 4: Backend only; Task 5: Framework integration; Task 7: Live agent testing and runbook"). Gatekeeper should verify ticket success criteria are met in this phase before escalating.
+  expected_benefit: Reduces noise in escalations and clarifies which ACs belong to which task.
+
+- issue: Spec gaps (implicit constraints, unstated requirements) are discovered late by test suites and must be resolved by implementation via trial-and-error.
+  improvement: Move spec-gap discovery to test design phase. Test Designer creates spec-gap tests for each assumption. Spec Agent reviews and documents findings. Spec is finalized with explicit coverage of implicit constraints.
+  expected_benefit: Implementation has clear spec requirements and doesn't need to make assumption-based design decisions.
+
+### Keep / Reinforce
+- practice: Explicit assumption documentation in Spec Clarifying Questions, with confidence levels for each assumption. This allows downstream agents to understand what's certain vs. uncertain.
+  reason: M902-18 Spec clearly documented that SDK tool filtering was an assumption and would be verified/adapted in framework integration task. This prevented over-specification and allowed backend to proceed.
+
+- practice: Decoupled backend implementation (Tool Category Manager) from framework integration (agent framework modification). Clear function contracts and isolated test suites allowed backend to complete independently.
+  reason: 180 tests passing and backend complete on schedule, even though framework integration was uncertain. This is an efficient workflow: build what you can, defer what you can't.
+
+- practice: Comprehensive mutation and stress test suites for infrastructure features like tool categorization. These tests validated determinism, performance, and stability under edge cases.
+  reason: Gave high confidence that the delivered tool_category_manager.py is correct, efficient, and thread-safe. Implementation teams can depend on this module without worrying about subtle bugs under load.
+
+---
+
+## [M902-09] — Bare Exception Handlers Must Be Replaced with Explicit Types; Timing-Sensitive Tests Require System Load Tolerance
+*Completed: 2026-05-18*
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Bare `except Exception` clauses in critical paths mask the root cause of errors and prevent meaningful error propagation. In subprocess-based infrastructure, expected exceptions must be caught explicitly so unexpected exceptions propagate correctly.
+  **impact:** Implementation had 2 bare `except Exception` blocks in `_is_formatting_only_file` (line 205) and `_get_staged_files` (line 262). Security review required replacing with explicit `(OSError, subprocess.CalledProcessError, ValueError)`. This pattern was correct but went undetected initially, meaning code review didn't flag it as a finding during initial implementation—only during security-focused review.
+  **prevention:** Infrastructure agents and code reviewers must audit subprocess/shell-integration modules specifically for bare exception handlers. Add to pre-commit hook: flag any `except Exception` in `ci/scripts/gates/*.py` and `ci/scripts/*.py` as a finding. Document the policy: "infrastructure modules must catch specific exception types only."
+  **severity:** high
+
+- **category: testing**
+  **insight:** Performance timing thresholds in tests must account for system load variance. A 500ms threshold is ambiguous on shared/CI systems where CPU contention can cause legitimate variance.
+  **impact:** Test `test_nfr_performance_completes_in_under_500ms` failed intermittently when system load was high (500–600ms executions vs. 500ms threshold). This was not a code bug but a timing assumption that was too strict. Fix: raised threshold to 1000ms and renamed test to clarify intent.
+  **prevention:** Timing-sensitive tests should document their environment assumptions (expected system load, CPU availability). For CI environments, use percentile thresholds (e.g., "p95 latency < 1000ms") rather than hard limits. Alternatively, measure on current system and add a margin (e.g., 2x baseline). Test name should reflect whether threshold is advisory or hard requirement.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Test infrastructure bugs (mkdir on existing directories, missing parent paths) can coexist with implementation bugs and should be caught early by running tests in a clean environment before marking implementation COMPLETE.
+  **impact:** 5 of 105 tests failed on first integration run: 2 mkdir idempotence issues in adversarial tests, 3 logic bugs in behavioral tests. These were caught by Test Breaker (who adds adversarial coverage), but marked as "pre-existing test infrastructure bugs" rather than being escalated immediately. However, marking implementation COMPLETE with 5 failing tests triggered AC Gatekeeper escalation and held ticket in INTEGRATION, requiring a second fix cycle.
+  **prevention:** Implementation Agent should run full test suite (behavioral + adversarial) in a clean shell environment before marking COMPLETE. If any tests fail, categorize them: is this a code bug or test bug? Do not claim COMPLETE if unresolved test failures exist. If test bugs are discovered, fix them in the implementation checkpoint and re-run before updating ticket status.
+  **severity:** high
+
+### Anti-Patterns
+
+1. **Bare exception handlers in infrastructure modules:** `except Exception` in subprocess/git integration paths allows errors to be silently swallowed. Root cause is obscured.
+
+2. **Timing thresholds without margin:** Hard timing limits (e.g., "< 500ms") in performance tests without accounting for system variance. Should use "< X ms on typical CI environment" with documented assumptions or percentile targets.
+
+3. **Test failures marked as "infrastructure bugs" without immediate escalation:** When a test fails, determine root cause immediately. Don't defer categorization to later. If test bugs exist, fix them before marking ticket COMPLETE.
+
+4. **Isolated test runs:** Running only behavioral tests or only adversarial tests in isolation. Full suite (behavioral + adversarial) should be run together to catch interaction bugs.
+
+### Prompt Patches
+
+- **agent: Implementation Agent (M902 gates and infrastructure)**
+  **change:** "After implementation is complete, run the full test suite (both behavioral and adversarial tests) in a clean environment. If any tests fail, immediately investigate: is this a code bug or a test infrastructure bug? Do not mark Stage COMPLETE with failing tests. If test bugs are found, fix them and re-run. Failing tests = unresolved issues that will be escalated by AC Gatekeeper."
+  **reason:** Prevents discovering test failures during AC Gatekeeper review. Ensures all issues are resolved before claiming completion. Reduces rework cycles.
+
+- **agent: Code Reviewer (GDScript / Python security review)**
+  **change:** "For modules under `ci/scripts/gates/` and `ci/scripts/`, specifically audit subprocess and shell-integration functions for bare `except Exception` blocks. Require explicit exception types `(OSError, subprocess.CalledProcessError, ValueError, TimeoutError, FileNotFoundError)` or similar. Bare exceptions in infrastructure are HIGH-priority findings."
+  **reason:** Subprocess error handling is a common source of silent failures. Explicit types ensure meaningful error propagation. Infrastructure modules must be reliable.
+
+- **agent: Test Designer (Performance tests)**
+  **change:** "For timing-sensitive tests (performance, latency, responsiveness), document the measurement conditions: expected system load, CPU availability, warm/cold caches. Set thresholds with margin: measured baseline + 50% = threshold, or use percentile language ('p95 < 1000ms'). Test name should reflect whether threshold is hard requirement or advisory (e.g., test_perf_completes_in_reasonable_time_1000ms or test_perf_sla_required_under_500ms)."
+  **reason:** Timing tests are often flaky on shared systems. Margin prevents false failures. Clear naming prevents misinterpretation of thresholds.
+
+### Workflow Improvements
+
+- **issue:** Test failures discovered during AC Gatekeeper review create a second rework cycle (Gatekeeper escalates, Implementation/Test Breaker fixes, Gatekeeper re-reviews). This delays completion.
+  **improvement:** Require Implementation Agent to run full test suite before marking COMPLETE. If failures exist, fix them immediately. Only mark COMPLETE when all tests pass. Document test execution results in implementation checkpoint.
+  **expected_benefit:** Eliminates second rework cycle. AC Gatekeeper can focus on spec compliance rather than test execution validation.
+
+- **issue:** Bare exception handlers in infrastructure are a recurring pattern (this ticket, others). Code review doesn't always catch them without specific focus.
+  **improvement:** Add linting rule or pre-commit hook: `grep -r "except Exception:" ci/scripts/gates/ ci/scripts/` and fail the hook if found. Require explicit exception types in these modules.
+  **expected_benefit:** Prevents silent failures and improves observability of infrastructure module errors.
+
+### Keep / Reinforce
+
+- **practice:** Comprehensive adversarial test suite (mutation, boundary, stress, concurrency, determinism, error handling, assumption validation, type/schema validation) for infrastructure modules. Test Breaker adds 50+ adversarial tests that catch subtle implementation bugs.
+  **reason:** M902-09's adversarial suite caught concurrency race conditions and file descriptor leaks that basic tests missed. This is a high-value investment for infrastructure.
+
+- **practice:** Clear test naming conventions (behavior-driven, no ticket IDs) and organized test classes (one per requirement). Makes tests discoverable and maintainable.
+  **reason:** 105 tests across 2 files, all organized and named clearly, making it easy to locate specific coverage and understand what each test validates.
+
+- **practice:** Real git fixtures (not mocks) for diff classification testing. Tests use actual git repos and subprocess calls to validate real behavior.
+  **reason:** Caught actual git integration bugs (path normalization, subprocess output parsing) that mocks would have missed.
 
 ---

@@ -34,6 +34,9 @@ from unittest import mock
 
 import pytest
 
+# Lock to synchronize global os.chdir() calls in tests
+_CWD_LOCK = threading.Lock()
+
 # Add ci/scripts to path for gate imports
 _CI_SCRIPTS = Path(__file__).resolve().parents[2] / "ci" / "scripts"
 sys.path.insert(0, str(_CI_SCRIPTS))
@@ -50,7 +53,7 @@ sys.path.insert(0, str(_CI_SCRIPTS))
 def _setup_git_repo(tmp_path: Path) -> Path:
     """Create a minimal git repo with configured user."""
     repo = tmp_path / "test_repo"
-    repo.mkdir()
+    repo.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "init"], cwd=repo, capture_output=True, check=True)
     subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, capture_output=True, check=True)
     subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, capture_output=True, check=True)
@@ -58,15 +61,20 @@ def _setup_git_repo(tmp_path: Path) -> Path:
 
 
 def _run_gate_in_repo(repo: Path) -> dict[str, Any]:
-    """Run the gate from within a repo and return result."""
+    """Run the gate from within a repo and return result.
+
+    Uses a lock to synchronize global os.chdir() calls across threads to avoid race conditions.
+    """
     from gates import diff_classification
 
     original_cwd = Path.cwd()
     try:
-        os.chdir(repo)
-        return diff_classification.run({})
+        with _CWD_LOCK:
+            os.chdir(repo)
+            return diff_classification.run({})
     finally:
-        os.chdir(original_cwd)
+        with _CWD_LOCK:
+            os.chdir(original_cwd)
 
 
 # ============================================================================
