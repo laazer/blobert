@@ -70,7 +70,9 @@ func _ready() -> void:
 		_visibility_timer.name = "HideTimer"
 		add_child(_visibility_timer)
 
-	_visibility_timer.timeout.connect(_on_visibility_timeout)
+	# Connect timeout signal if not already connected
+	if not _visibility_timer.timeout.is_connected(Callable(self, "_on_visibility_timeout")):
+		_visibility_timer.timeout.connect(Callable(self, "_on_visibility_timeout"))
 
 	# Start hidden
 	visible = false
@@ -78,6 +80,12 @@ func _ready() -> void:
 
 	# Store original position for offset calculations
 	_original_position = global_position
+
+
+func _exit_tree() -> void:
+	# Clean up when bar is removed from scene
+	if _visibility_timer != null and _visibility_timer.timeout.is_connected(Callable(self, "_on_visibility_timeout")):
+		_visibility_timer.timeout.disconnect(Callable(self, "_on_visibility_timeout"))
 
 
 func _process(_delta: float) -> void:
@@ -122,7 +130,7 @@ func update_from_enemy(enemy: Node) -> void:
 
 func on_enemy_damaged(damage_amount: float = 1.0) -> void:
 	# Called when enemy takes damage
-	if _enemy == null or not enabled:
+	if _enemy == null or not is_instance_valid(_enemy) or not enabled:
 		return
 
 	# Show the bar if it was hidden
@@ -131,7 +139,7 @@ func on_enemy_damaged(damage_amount: float = 1.0) -> void:
 		visible = true
 
 	# Cancel any pending hide timeout
-	if not _visibility_timer.is_stopped():
+	if _visibility_timer != null and not _visibility_timer.is_stopped():
 		_visibility_timer.stop()
 
 	# Update display
@@ -142,7 +150,7 @@ func on_enemy_damaged(damage_amount: float = 1.0) -> void:
 
 func on_enemy_healed(heal_amount: float = 1.0) -> void:
 	# Called when enemy heals
-	if _enemy == null or not enabled:
+	if _enemy == null or not is_instance_valid(_enemy) or not enabled:
 		return
 
 	var current_hp = _get_enemy_hp()
@@ -189,7 +197,11 @@ func _update_health_display(current_hp: float, max_hp: float) -> void:
 
 func _start_visibility_timeout() -> void:
 	# Start timer to hide bar after timeout
-	if _visibility_timer == null:
+	if _visibility_timer == null or not is_instance_valid(_visibility_timer):
+		return
+
+	# Only start timer if it's in the scene tree
+	if not _visibility_timer.is_inside_tree():
 		return
 
 	_visibility_timer.wait_time = visibility_timeout
@@ -209,7 +221,7 @@ func _on_visibility_timeout() -> void:
 
 func _get_enemy_hp() -> float:
 	# Get current HP from enemy
-	if _enemy == null:
+	if _enemy == null or not is_instance_valid(_enemy):
 		return 0.0
 
 	# Try meta first
@@ -228,7 +240,7 @@ func _get_enemy_hp() -> float:
 
 func _get_enemy_max_hp() -> float:
 	# Get max HP from enemy
-	if _enemy == null:
+	if _enemy == null or not is_instance_valid(_enemy):
 		return 1.0
 
 	# Try meta first
