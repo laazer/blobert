@@ -29,32 +29,17 @@ var _fail_count: int = 0
 # Create a mock enemy with health component for testing.
 # Returns a CharacterBody3D node with health properties.
 func _create_mock_enemy(hp: float = 100.0, max_hp: float = 100.0) -> CharacterBody3D:
-	var body := CharacterBody3D.new()
-	body.set_script(load("res://scripts/enemies/enemy_base.gd"))
-	body.set_meta("current_hp", hp)
-	body.set_meta("max_hp", max_hp)
-	return body
+	return test_create_mock_enemy(hp, max_hp)
 
 
 # Load health bar scene and instantiate it.
 func _load_and_instantiate_health_bar() -> Variant:
-	var path := "res://scenes/ui/enemy_health_bar_3d.tscn"
-	var scene = load(path)
-	if scene == null:
-		return null
-	return scene.instantiate() as Node
+	return test_load_and_instantiate_scene("res://scenes/ui/enemy_health_bar_3d.tscn")
 
 
 # Get the ProgressBar from within a health bar instance.
 func _find_progress_bar(bar: Node) -> Variant:
-	var stack: Array[Node] = [bar]
-	while stack.size() > 0:
-		var node = stack.pop_front()
-		if node is ProgressBar:
-			return node
-		for child in node.get_children():
-			stack.append(child)
-	return null
+	return test_find_progress_bar(bar)
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +90,10 @@ func test_update_from_enemy_updates_fill_from_hp() -> void:
 
 	tree.root.add_child(bar)
 	tree.root.add_child(enemy)
+
+	# Manually call _ready() since we're not in the normal scene flow.
+	if bar.has_method("_ready"):
+		bar.call("_ready")
 
 	# Call update_from_enemy() and verify fill is set to 50%.
 	bar.call("update_from_enemy", enemy)
@@ -443,6 +432,10 @@ func test_integration_full_damage_cycle() -> void:
 
 	tree.root.add_child(bar)
 	tree.root.add_child(enemy)
+
+	# Manually call _ready() since we're not in the normal scene flow.
+	if bar.has_method("_ready"):
+		bar.call("_ready")
 
 	# Initialize at full health.
 	bar.call("update_from_enemy", enemy)
