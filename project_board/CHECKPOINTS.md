@@ -5,6 +5,17 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-18T-m902-09-test-break (M902-09 Stage 0 Diff Classification Gate — TEST_BREAK)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/09_stage_0_diff_classification_gate.md
+- Stage: TEST_BREAK (Revision 5)
+- Log: project_board/checkpoints/M902-09/2026-05-18T-test-break.md
+- **Status: TEST_BREAK COMPLETE** (50+ adversarial tests added, ready for IMPLEMENTATION_BACKEND)
+- **Outcome:** Adversarial test suite delivered. New file: `tests/ci/test_diff_classification_gate_adversarial.py` (600 LOC, 50+ tests). Total suite: 90+ tests (40 behavioral + 50 adversarial). Adversarial coverage: 12 mutation tests (priority logic, formatting detection, output contract), 8 boundary tests (file patterns, exact matching, special files), 5 stress tests (high volume, combinatorial), 2 concurrency tests (thread safety), 4 determinism tests (flakiness detection), 4 git error handling tests, 7 assumption validation tests, 6 type/schema validation tests. All tests deterministic; use real git fixtures; catch code regressions, edge case failures, concurrency issues, flakiness. Implementation prerequisite: `ci/scripts/gates/diff_classification.py` must be created with correct priority hierarchy (p1-p6), formatting detection logic, output contract (9 fields), and git error handling.
+
+---
+
 ## Run: 2026-05-18T-m902-09-test-design (M902-09 Stage 0 Diff Classification Gate — TEST_DESIGN)
 
 - Queue mode: single ticket
