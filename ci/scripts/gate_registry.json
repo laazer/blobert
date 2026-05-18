@@ -51,5 +51,14 @@
     "default_mode": "shadow",
     "description": "Scans learning output files under project_board/checkpoints/ for forbidden phrases (hack, temporary, XXX, KLUDGE, etc.) defined by YAML policy. Prevents codifying hacks and workarounds in documented learning.",
     "category": "learning"
+  },
+  {
+    "name": "diff_classification",
+    "module": "diff_classification",
+    "required_inputs": [],
+    "optional_inputs": ["ticket_id"],
+    "default_mode": "shadow",
+    "description": "Classifies staged git changes into six categories (docs-only, formatting-only, lockfile-only, tests-only, migration-only, runtime-code) and recommends pipeline route.",
+    "category": "workflow"
   }
 ]
