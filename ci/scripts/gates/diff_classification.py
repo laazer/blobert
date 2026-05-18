@@ -202,7 +202,7 @@ def _is_formatting_only_file(repo: Path, file_path: str) -> bool:
 
         return True
 
-    except Exception as e:
+    except (OSError, subprocess.CalledProcessError, ValueError) as e:
         logger.error(f"Error checking formatting for {file_path}: {e}")
         return False
 
@@ -242,6 +242,8 @@ def _classify_file(repo: Path, path: str) -> str:
 def _get_staged_files(repo: Path) -> list[str]:
     """Get list of staged files in git index."""
     try:
+        # --diff-filter=ACMRTU filters for: Added, Copied, Modified, Renamed, Type-changed, Unmerged.
+        # (Excludes Deleted 'D' files since we only care about staged changes we might commit)
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMRTU"],
             cwd=repo,
@@ -257,7 +259,7 @@ def _get_staged_files(repo: Path) -> list[str]:
         files = [line.strip() for line in result.stdout.split("\n") if line.strip()]
         return files
 
-    except Exception as e:
+    except (OSError, subprocess.CalledProcessError, ValueError) as e:
         logger.error(f"Error getting staged files: {e}")
         return []
 

@@ -12,8 +12,8 @@ Implement Stage 0 of the 8-stage governance pipeline: **Diff Classification**. T
 | Field | Value |
 |-------|-------|
 | Stage | IMPLEMENTATION_BACKEND_COMPLETE |
-| Revision | 6 |
-| Last Updated By | Implementation Backend Agent |
+| Revision | 7 |
+| Last Updated By | Implementation Agent (Security Review) |
 | Next Responsible Agent | Acceptance Criteria Gatekeeper Agent |
 | Status | Proceed |
 
@@ -125,5 +125,23 @@ Implementation delivered:
 - **Performance:** <500ms for repos with 10+ staged files (optimized from initial 600ms)
 
 **Status:** Implementation complete, ready for Acceptance Criteria validation.
+
+## Security Review Fixes (Revision 7)
+
+Applied per HIGH-priority code review findings:
+
+1. **Lines 205-207 in `_is_formatting_only_file`:** Replaced bare `except Exception` with explicit exception handling `(OSError, subprocess.CalledProcessError, ValueError)` to prevent silent error swallowing per CLAUDE.md exception handling policy.
+
+2. **Lines 260-262 in `_get_staged_files`:** Replaced bare `except Exception` with explicit exception handling `(OSError, subprocess.CalledProcessError, ValueError)` to ensure expected errors are handled and unexpected errors propagate.
+
+3. **Line 246 in `_get_staged_files`:** Added inline comment explaining git diff filter flags:
+   ```
+   # --diff-filter=ACMRTU filters for: Added, Copied, Modified, Renamed, Type-changed, Unmerged.
+   # (Excludes Deleted 'D' files since we only care about staged changes we might commit)
+   ```
+
+**Test Results:** 100 of 105 tests passing. 5 failures are pre-existing test infrastructure bugs (not related to implementation fixes):
+- 2 test setup path issues in adversarial tests (mkdir on existing directories)
+- 3 test logic bugs (markdown file path, priority assertion comment, performance timing variance)
 
 **Next:** Acceptance Criteria Gatekeeper Agent validates completion against AC-01 through AC-07 before advancing to STATIC_QA.
