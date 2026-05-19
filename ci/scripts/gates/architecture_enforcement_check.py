@@ -8,6 +8,7 @@ with proper severity classification, deduplication, and scoring.
 
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 import time
@@ -132,7 +133,12 @@ def _collect_violations() -> list[dict[str, Any]]:
             })
             logger.warning(f"Tool {tool_name} not available")
         except Exception as e:
-            # Other errors: record as ERROR violation
+            # Catch all exceptions from tool invocation: subprocess.CalledProcessError (non-zero exit),
+            # OSError family (file I/O, permissions), json.JSONDecodeError (output parsing),
+            # ValueError (validation), and any other unexpected exceptions from tool function implementation.
+            # Broad catch is justified here because tool functions are plugin-like and may be extended
+            # in the future to throw domain-specific exceptions; recording as TOOL_ERROR prevents crashes
+            # while preserving visibility into failures. All exceptions are explicitly logged with traceback.
             violations.append({
                 "tool": tool_name,
                 "severity": "ERROR",
