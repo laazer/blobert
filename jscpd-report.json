@@ -1,6 +1,6 @@
 {
   "statistics": {
-    "detectionDate": "2026-05-16T14:30:25.996Z",
+    "detectionDate": "2026-05-19T12:35:05.994Z",
     "formats": {
       "json": {
         "sources": {
@@ -2221,6 +2221,42 @@
             "duplicatedTokens": 0,
             "percentage": 0,
             "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "/Users/jacobbrandt/workspace/blobert/reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json": {
+            "lines": 30,
+            "tokens": 183,
+            "sources": 1,
+            "clones": 20,
+            "duplicatedLines": 581,
+            "duplicatedTokens": 3527,
+            "percentage": 1936.67,
+            "percentageTokens": 1927.32,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "/Users/jacobbrandt/workspace/blobert/reference_projects/kirby64/kirby64/assets/enemies/Small_Fire_normal_stats.json": {
+            "lines": 16,
+            "tokens": 81,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "/Users/jacobbrandt/workspace/blobert/reference_projects/kirby64/kirby64/assets/enemies/Small_Fire_normal.attacks.json": {
+            "lines": 30,
+            "tokens": 183,
+            "sources": 1,
+            "clones": 1,
+            "duplicatedLines": 29,
+            "duplicatedTokens": 176,
+            "percentage": 96.67,
+            "percentageTokens": 96.17,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5296,15 +5332,39 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "/Users/jacobbrandt/workspace/blobert/reference_projects/kirby64/kirby64/.codegraph/config.json": {
+            "lines": 130,
+            "tokens": 542,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "/Users/jacobbrandt/workspace/blobert/reference_projects/kirby64/kirby64/.claude/settings.local.json": {
+            "lines": 36,
+            "tokens": 143,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "/Users/jacobbrandt/workspace/blobert/asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json": {
             "lines": 30,
             "tokens": 183,
             "sources": 1,
-            "clones": 19,
-            "duplicatedLines": 552,
-            "duplicatedTokens": 3351,
-            "percentage": 1840,
-            "percentageTokens": 1831.15,
+            "clones": 2,
+            "duplicatedLines": 59,
+            "duplicatedTokens": 359,
+            "percentage": 196.67,
+            "percentageTokens": 196.17,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5317,6 +5377,18 @@
             "duplicatedTokens": 359,
             "percentage": 196.67,
             "percentageTokens": 196.17,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
+          "/Users/jacobbrandt/workspace/blobert/project_board/902_milestone_902_agent_predictabilitiy_improvements/docs/902_04_baseline_violations.json": {
+            "lines": 27,
+            "tokens": 178,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5793,10 +5865,10 @@
             "tokens": 183,
             "sources": 1,
             "clones": 1,
-            "duplicatedLines": 29,
-            "duplicatedTokens": 176,
-            "percentage": 96.67,
-            "percentageTokens": 96.17,
+            "duplicatedLines": 30,
+            "duplicatedTokens": 183,
+            "percentage": 100,
+            "percentageTokens": 100,
             "newDuplicatedLines": 0,
             "newClones": 0
           },
@@ -5824,9 +5896,21 @@
             "newDuplicatedLines": 0,
             "newClones": 0
           },
+          "/Users/jacobbrandt/workspace/blobert/ci/scripts/tool_categories.json": {
+            "lines": 66,
+            "tokens": 373,
+            "sources": 1,
+            "clones": 0,
+            "duplicatedLines": 0,
+            "duplicatedTokens": 0,
+            "percentage": 0,
+            "percentageTokens": 0,
+            "newDuplicatedLines": 0,
+            "newClones": 0
+          },
           "/Users/jacobbrandt/workspace/blobert/ci/scripts/gate_registry.json": {
-            "lines": 54,
-            "tokens": 371,
+            "lines": 82,
+            "tokens": 558,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -5839,18 +5923,6 @@
           "/Users/jacobbrandt/workspace/blobert/asset_generation/python/model_registry.json": {
             "lines": 266,
             "tokens": 1468,
-            "sources": 1,
-            "clones": 0,
-            "duplicatedLines": 0,
-            "duplicatedTokens": 0,
-            "percentage": 0,
-            "percentageTokens": 0,
-            "newDuplicatedLines": 0,
-            "newClones": 0
-          },
-          "/Users/jacobbrandt/workspace/blobert/project_board/902_04_baseline_violations.json": {
-            "lines": 27,
-            "tokens": 178,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6377,8 +6449,8 @@
             "newClones": 0
           },
           "/Users/jacobbrandt/workspace/blobert/.claude/settings.local.json": {
-            "lines": 310,
-            "tokens": 1240,
+            "lines": 325,
+            "tokens": 1300,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6389,8 +6461,8 @@
             "newClones": 0
           },
           "/Users/jacobbrandt/workspace/blobert/.claude/settings.json": {
-            "lines": 48,
-            "tokens": 216,
+            "lines": 72,
+            "tokens": 319,
             "sources": 1,
             "clones": 0,
             "duplicatedLines": 0,
@@ -6438,28 +6510,28 @@
           }
         },
         "total": {
-          "lines": 48254,
-          "tokens": 287869,
-          "sources": 536,
-          "clones": 322,
-          "duplicatedLines": 7094,
-          "duplicatedTokens": 41369,
-          "percentage": 14.7,
-          "percentageTokens": 14.37,
+          "lines": 48629,
+          "tokens": 289724,
+          "sources": 542,
+          "clones": 324,
+          "duplicatedLines": 7153,
+          "duplicatedTokens": 41728,
+          "percentage": 14.71,
+          "percentageTokens": 14.4,
           "newDuplicatedLines": 0,
           "newClones": 0
         }
       }
     },
     "total": {
-      "lines": 48254,
-      "tokens": 287869,
-      "sources": 536,
-      "clones": 322,
-      "duplicatedLines": 7094,
-      "duplicatedTokens": 41369,
-      "percentage": 14.7,
-      "percentageTokens": 14.37,
+      "lines": 48629,
+      "tokens": 289724,
+      "sources": 542,
+      "clones": 324,
+      "duplicatedLines": 7153,
+      "duplicatedTokens": 41728,
+      "percentage": 14.71,
+      "percentageTokens": 14.4,
       "newDuplicatedLines": 0,
       "newClones": 0
     }
@@ -12011,6 +12083,42 @@
     },
     {
       "format": "json",
+      "lines": 30,
+      "fragment": ",\n  \"attacks\": [\n    {\n      \"name\": \"pounce\",\n      \"animation_name\": \"attack\",\n      \"attack_type\": \"physical\",\n      \"damage_min\": 5.0,\n      \"damage_max\": 15.0,\n      \"range\": 3.0,\n      \"hit_frame\": 18,\n      \"cooldown_seconds\": 2.0,\n      \"knockback_force\": 5.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    },\n    {\n      \"name\": \"acid_bite\",\n      \"animation_name\": \"special_attack\",\n      \"attack_type\": \"acid\",\n      \"damage_min\": 12.0,\n      \"damage_max\": 28.0,\n      \"range\": 1.5,\n      \"hit_frame\": 40,\n      \"cooldown_seconds\": 5.0,\n      \"knockback_force\": 2.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    }\n  ]\n}",
+      "tokens": 0,
+      "firstFile": {
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/Small_Fire_normal.attacks.json",
+        "start": 2,
+        "end": 31,
+        "startLoc": {
+          "line": 2,
+          "column": 34,
+          "position": 7
+        },
+        "endLoc": {
+          "line": 31,
+          "column": 2,
+          "position": 183
+        }
+      },
+      "secondFile": {
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
+        "start": 2,
+        "end": 31,
+        "startLoc": {
+          "line": 2,
+          "column": 41,
+          "position": 7
+        },
+        "endLoc": {
+          "line": 31,
+          "column": 2,
+          "position": 183
+        }
+      }
+    },
+    {
+      "format": "json",
       "lines": 22,
       "fragment": ",\n  \"author\": {\n    \"name\": \"Paul Henschel\"\n  },\n  \"bugs\": {\n    \"url\": \"https://github.com/pmndrs/zustand/issues\"\n  },\n  \"bundleDependencies\": false,\n  \"contributors\": [\n    {\n      \"name\": \"Jeremy Holcomb\",\n      \"url\": \"https://github.com/JeremyRH\"\n    },\n    {\n      \"name\": \"Daishi Kato\",\n      \"url\": \"https://github.com/dai-shi\"\n    }\n  ],\n  \"deprecated\": false,\n  \"description\": \"🐻 Bear necessities for state management in React\",\n  \"engines\": {\n    \"node\": \">=12.20.0\"",
       "tokens": 0,
@@ -15327,6 +15435,42 @@
       "fragment": ",\n  \"attacks\": [\n    {\n      \"name\": \"pounce\",\n      \"animation_name\": \"attack\",\n      \"attack_type\": \"physical\",\n      \"damage_min\": 5.0,\n      \"damage_max\": 15.0,\n      \"range\": 3.0,\n      \"hit_frame\": 18,\n      \"cooldown_seconds\": 2.0,\n      \"knockback_force\": 5.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    },\n    {\n      \"name\": \"acid_bite\",\n      \"animation_name\": \"special_attack\",\n      \"attack_type\": \"acid\",\n      \"damage_min\": 12.0,\n      \"damage_max\": 28.0,\n      \"range\": 1.5,\n      \"hit_frame\": 40,\n      \"cooldown_seconds\": 5.0,\n      \"knockback_force\": 2.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    }\n  ]\n}",
       "tokens": 0,
       "firstFile": {
+        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "start": 2,
+        "end": 31,
+        "startLoc": {
+          "line": 2,
+          "column": 35,
+          "position": 7
+        },
+        "endLoc": {
+          "line": 31,
+          "column": 2,
+          "position": 183
+        }
+      },
+      "secondFile": {
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
+        "start": 2,
+        "end": 31,
+        "startLoc": {
+          "line": 2,
+          "column": 41,
+          "position": 7
+        },
+        "endLoc": {
+          "line": 31,
+          "column": 2,
+          "position": 183
+        }
+      }
+    },
+    {
+      "format": "json",
+      "lines": 30,
+      "fragment": ",\n  \"attacks\": [\n    {\n      \"name\": \"pounce\",\n      \"animation_name\": \"attack\",\n      \"attack_type\": \"physical\",\n      \"damage_min\": 5.0,\n      \"damage_max\": 15.0,\n      \"range\": 3.0,\n      \"hit_frame\": 18,\n      \"cooldown_seconds\": 2.0,\n      \"knockback_force\": 5.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    },\n    {\n      \"name\": \"acid_bite\",\n      \"animation_name\": \"special_attack\",\n      \"attack_type\": \"acid\",\n      \"damage_min\": 12.0,\n      \"damage_max\": 28.0,\n      \"range\": 1.5,\n      \"hit_frame\": 40,\n      \"cooldown_seconds\": 5.0,\n      \"knockback_force\": 2.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    }\n  ]\n}",
+      "tokens": 0,
+      "firstFile": {
         "name": "asset_generation/python/animated_exports/draft/spider_animated_00.attacks.json",
         "start": 2,
         "end": 31,
@@ -15342,12 +15486,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15666,12 +15810,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15702,12 +15846,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15738,12 +15882,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15774,12 +15918,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15810,12 +15954,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15846,12 +15990,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15882,12 +16026,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15918,12 +16062,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -15954,12 +16098,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16134,12 +16278,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16170,12 +16314,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16206,12 +16350,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16242,12 +16386,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16278,12 +16422,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16530,12 +16674,12 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
           "line": 2,
-          "column": 35,
+          "column": 41,
           "position": 7
         },
         "endLoc": {
@@ -16566,28 +16710,7 @@
         }
       },
       "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
-        "start": 2,
-        "end": 31,
-        "startLoc": {
-          "line": 2,
-          "column": 35,
-          "position": 7
-        },
-        "endLoc": {
-          "line": 31,
-          "column": 2,
-          "position": 183
-        }
-      }
-    },
-    {
-      "format": "json",
-      "lines": 30,
-      "fragment": ",\n  \"attacks\": [\n    {\n      \"name\": \"pounce\",\n      \"animation_name\": \"attack\",\n      \"attack_type\": \"physical\",\n      \"damage_min\": 5.0,\n      \"damage_max\": 15.0,\n      \"range\": 3.0,\n      \"hit_frame\": 18,\n      \"cooldown_seconds\": 2.0,\n      \"knockback_force\": 5.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    },\n    {\n      \"name\": \"acid_bite\",\n      \"animation_name\": \"special_attack\",\n      \"attack_type\": \"acid\",\n      \"damage_min\": 12.0,\n      \"damage_max\": 28.0,\n      \"range\": 1.5,\n      \"hit_frame\": 40,\n      \"cooldown_seconds\": 5.0,\n      \"knockback_force\": 2.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    }\n  ]\n}",
-      "tokens": 0,
-      "firstFile": {
-        "name": "asset_generation/python/animated_exports/adhesion_bug_animated_00.attacks.json",
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
         "start": 2,
         "end": 31,
         "startLoc": {
@@ -16600,15 +16723,36 @@
           "column": 2,
           "position": 183
         }
-      },
-      "secondFile": {
-        "name": "asset_generation/python/animated_exports/draft/spider_animated_01.attacks.json",
-        "start": 2,
+      }
+    },
+    {
+      "format": "json",
+      "lines": 31,
+      "fragment": "{\n  \"filename\": \"adhesion_bug_animated_00\",\n  \"attacks\": [\n    {\n      \"name\": \"pounce\",\n      \"animation_name\": \"attack\",\n      \"attack_type\": \"physical\",\n      \"damage_min\": 5.0,\n      \"damage_max\": 15.0,\n      \"range\": 3.0,\n      \"hit_frame\": 18,\n      \"cooldown_seconds\": 2.0,\n      \"knockback_force\": 5.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    },\n    {\n      \"name\": \"acid_bite\",\n      \"animation_name\": \"special_attack\",\n      \"attack_type\": \"acid\",\n      \"damage_min\": 12.0,\n      \"damage_max\": 28.0,\n      \"range\": 1.5,\n      \"hit_frame\": 40,\n      \"cooldown_seconds\": 5.0,\n      \"knockback_force\": 2.0,\n      \"is_area_of_effect\": false,\n      \"aoe_radius\": 0.0\n    }\n  ]\n}",
+      "tokens": 0,
+      "firstFile": {
+        "name": "asset_generation/python/animated_exports/adhesion_bug_animated_00.attacks.json",
+        "start": 1,
         "end": 31,
         "startLoc": {
-          "line": 2,
-          "column": 35,
-          "position": 7
+          "line": 1,
+          "column": 1,
+          "position": 0
+        },
+        "endLoc": {
+          "line": 31,
+          "column": 2,
+          "position": 183
+        }
+      },
+      "secondFile": {
+        "name": "reference_projects/kirby64/kirby64/assets/enemies/adhesion_bug_animated_00.attacks.json",
+        "start": 1,
+        "end": 31,
+        "startLoc": {
+          "line": 1,
+          "column": 1,
+          "position": 0
         },
         "endLoc": {
           "line": 31,

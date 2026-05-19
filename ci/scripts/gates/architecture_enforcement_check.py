@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -41,57 +42,356 @@ def _iso8601_timestamp() -> str:
     return ts.replace("+00:00", "Z")
 
 
-def _run_import_linter() -> list[dict[str, Any]]:
+def _invoke_tool(
+    tool_name: str,
+    args: list[str],
+    timeout: int,
+    cwd: str,
+) -> subprocess.CompletedProcess:
+    """Invoke a subprocess tool with standard error handling.
+
+    Raises subprocess.TimeoutExpired on timeout, FileNotFoundError if executable not found,
+    CalledProcessError if exit code indicates failure (other than tool-specific acceptable codes).
+
+    Args:
+        tool_name: name of tool (for logging)
+        args: command and arguments
+        timeout: timeout in seconds
+        cwd: working directory for subprocess
+
+    Returns: CompletedProcess with captured output
+
+    Raises:
+        subprocess.TimeoutExpired: if tool exceeds timeout
+        FileNotFoundError: if executable not found on PATH
+        CalledProcessError: if exit code outside acceptable range (propagates to caller)
+    """
+    try:
+        logger.debug(f"Running {tool_name}: {args}")
+        return subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=cwd,
+        )
+    except subprocess.TimeoutExpired:
+        logger.error(f"{tool_name} timeout (exceeded {timeout}s)")
+        raise
+    except FileNotFoundError:
+        logger.warning(f"{tool_name} not found on PATH")
+        raise
+
+
+def _run_import_linter(codebase_root: str) -> list[dict[str, Any]]:
     """Run import-linter and return violations with AR-* rules.
 
     Returns: list of violation dicts with tool, severity, file, line, column, rule_id, message.
     On timeout/unavailable, raises subprocess.TimeoutExpired or FileNotFoundError.
+    On JSON parse error, raises ValueError.
     """
-    # Mocked for testing; real implementation would invoke subprocess
-    return []
+    result = _invoke_tool("import-linter", ["lint-imports", "--config", ".import-linter"], 60, codebase_root)
+
+    violations: list[dict[str, Any]] = []
+
+    # import-linter exit code 0 = clean, 1 = violations found
+    if result.returncode not in (0, 1):
+        logger.error(f"import-linter exited with code {result.returncode}: {result.stderr}")
+        raise subprocess.CalledProcessError(result.returncode, "lint-imports")
+
+    if result.returncode == 1 and result.stdout:
+        # Parse import-linter output (text format)
+        # import-linter outputs lines like:
+        # "ERROR: <file>:<line>:<column>: <message>"
+        # or violation contracts
+        for line in result.stdout.split("\n"):
+            if not line.strip():
+                continue
+
+            # Try to parse as violation (heuristic)
+            # import-linter format varies; conservative parsing
+            if "forbidden import" in line.lower() or "circular" in line.lower():
+                # Extract file and line if present
+                parts = line.split(":")
+                if len(parts) >= 2:
+                    try:
+                        file_path = parts[0].strip()
+                        line_no = int(parts[1]) if parts[1].strip().isdigit() else 0
+
+                        # Determine rule_id and severity based on message
+                        rule_id = "AR-02"
+                        severity = "ERROR"
+
+                        if "circular" in line.lower():
+                            rule_id = "AR-07"
+                            severity = "CRITICAL"
+                        elif "forbidden" in line.lower() and "import" in line.lower():
+                            rule_id = "AR-02"
+                            severity = "ERROR"
+
+                        violations.append({
+                            "tool": "import-linter",
+                            "severity": severity,
+                            "file": file_path,
+                            "line": line_no,
+                            "column": 0,
+                            "rule_id": rule_id,
+                            "message": line.strip(),
+                        })
+                    except (ValueError, IndexError):
+                        # Parsing failed for this line; skip
+                        pass
+
+    logger.debug(f"import-linter found {len(violations)} violations")
+    return violations
 
 
-def _run_eslint() -> list[dict[str, Any]]:
+def _run_eslint(codebase_root: str) -> list[dict[str, Any]]:
     """Run eslint-plugin-boundaries and return violations with AR-* rules.
 
     Returns: list of violation dicts.
+    On timeout/unavailable, raises subprocess.TimeoutExpired or FileNotFoundError.
+    On JSON parse error, raises ValueError.
     """
-    # Mocked for testing
-    return []
+    result = _invoke_tool(
+        "eslint",
+        ["npx", "eslint", "--format", "json", "asset_generation/web/frontend/src"],
+        60,
+        codebase_root,
+    )
+
+    violations: list[dict[str, Any]] = []
+
+    # eslint returns 0 if no errors, >0 if errors/warnings found
+    if result.stdout.strip():
+        try:
+            eslint_output = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            logger.error(f"eslint output parsing failed: {e}. Output: {result.stdout[:500]}")
+            raise ValueError(f"eslint produced invalid JSON: {str(e)}") from e
+
+        # eslint JSON format: array of {filePath, messages: [{line, column, message, ruleId}]}
+        if isinstance(eslint_output, list):
+            for file_entry in eslint_output:
+                file_path = file_entry.get("filePath", "unknown")
+                messages = file_entry.get("messages", [])
+                for msg in messages:
+                    line = msg.get("line", 0)
+                    column = msg.get("column", 0)
+                    rule_id = msg.get("ruleId", "UNKNOWN")
+                    message = msg.get("message", "")
+                    severity = msg.get("severity", 1)  # 1=warning, 2=error
+
+                    # Map eslint severity and rule_id to gate severity
+                    gate_severity = "WARN" if severity == 1 else "ERROR"
+
+                    # Map eslint rule IDs to architecture rules
+                    if "boundaries" in rule_id.lower():
+                        gate_rule_id = "AR-03" if "import" in message.lower() else "AR-06"
+                    else:
+                        gate_rule_id = rule_id
+
+                    violations.append({
+                        "tool": "eslint",
+                        "severity": gate_severity,
+                        "file": file_path,
+                        "line": line,
+                        "column": column,
+                        "rule_id": gate_rule_id,
+                        "message": message,
+                    })
+
+    logger.debug(f"eslint found {len(violations)} violations")
+    return violations
 
 
-def _run_semgrep() -> list[dict[str, Any]]:
+def _run_semgrep(codebase_root: str) -> list[dict[str, Any]]:
     """Run semgrep with custom rule set and return violations with AR-*, AS-*, CX-* rules.
 
     Returns: list of violation dicts.
+    On timeout/unavailable, raises subprocess.TimeoutExpired or FileNotFoundError.
+    On JSON parse error, raises ValueError.
     """
-    # Mocked for testing
-    return []
+    result = _invoke_tool(
+        "semgrep",
+        [
+            "semgrep",
+            "--config",
+            "asset_generation/python/.semgrep.yml",
+            "--json",
+            "asset_generation/python/src",
+            "asset_generation/web/backend",
+        ],
+        120,
+        codebase_root,
+    )
+
+    violations: list[dict[str, Any]] = []
+
+    # semgrep exit code 0 = clean, nonzero = violations or error
+    if result.stdout.strip():
+        try:
+            semgrep_output = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            logger.error(f"semgrep output parsing failed: {e}. Output: {result.stdout[:500]}")
+            raise ValueError(f"semgrep produced invalid JSON: {str(e)}") from e
+
+        # semgrep JSON format: {results: [{path, start: {line, col}, message, rule_id}]}
+        results = semgrep_output.get("results", [])
+        for finding in results:
+            file_path = finding.get("path", "unknown")
+            start = finding.get("start", {})
+            line = start.get("line", 0)
+            col = start.get("col", 0)
+            message = finding.get("message", "")
+            rule_id = finding.get("check_id", finding.get("rule_id", "UNKNOWN"))
+
+            # Map semgrep rule IDs to gate rule IDs
+            # Semgrep returns rule ids; map to AR-*, AS-*, etc based on message/rule_id
+            gate_rule_id = rule_id
+            gate_severity = "WARN"
+
+            if "hardcoded" in rule_id.lower() or "secret" in message.lower():
+                gate_rule_id = "AR-01"
+                gate_severity = "ERROR"
+            elif "circular" in message.lower():
+                gate_rule_id = "AR-07"
+                gate_severity = "CRITICAL"
+            elif "forbidden" in message.lower() or "import" in message.lower():
+                gate_rule_id = "AR-02"
+                gate_severity = "ERROR"
+            elif "async" in message.lower() or "blocking" in message.lower():
+                gate_rule_id = "AS-01"
+                gate_severity = "CRITICAL"
+            elif rule_id == "sql-injection-risk":
+                gate_rule_id = "AR-05"
+                gate_severity = "CRITICAL"
+
+            violations.append({
+                "tool": "semgrep",
+                "severity": gate_severity,
+                "file": file_path,
+                "line": line,
+                "column": col,
+                "rule_id": gate_rule_id,
+                "message": message,
+            })
+
+    logger.debug(f"semgrep found {len(violations)} violations")
+    return violations
 
 
-def _run_jscpd() -> list[dict[str, Any]]:
+def _run_jscpd(codebase_root: str) -> list[dict[str, Any]]:
     """Run jscpd (duplication checker) and return violations with DUP-* rules.
 
     Returns: list of violation dicts.
+    On timeout/unavailable, raises subprocess.TimeoutExpired or FileNotFoundError.
+    On JSON parse error, raises ValueError.
     """
-    # Mocked for testing
-    return []
+    result = _invoke_tool(
+        "jscpd",
+        ["npx", "jscpd", "--config", "jscpd.json", "--format", "json"],
+        120,
+        codebase_root,
+    )
+
+    violations: list[dict[str, Any]] = []
+
+    if result.stdout.strip():
+        try:
+            jscpd_output = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            logger.error(f"jscpd output parsing failed: {e}. Output: {result.stdout[:500]}")
+            raise ValueError(f"jscpd produced invalid JSON: {str(e)}") from e
+
+        # jscpd JSON format: {duplicates: [{firstFile: {name, start}, secondFile: {name, start}, lines}]}
+        duplicates = jscpd_output.get("duplicates", [])
+        for dup in duplicates:
+            first_file = dup.get("firstFile", {})
+            first_name = first_file.get("name", "unknown")
+            first_line = first_file.get("start", {}).get("line", 0)
+
+            second_file = dup.get("secondFile", {})
+            second_name = second_file.get("name", "unknown")
+            second_line = second_file.get("start", {}).get("line", 0)
+
+            lines = dup.get("lines", 0)
+
+            # Create violation for duplication
+            message = f"Duplication: '{first_name}' lines {first_line}-{first_line + lines} duplicates '{second_name}' lines {second_line}-{second_line + lines} ({lines} lines)"
+
+            violations.append({
+                "tool": "jscpd",
+                "severity": "WARN",
+                "file": first_name,
+                "line": first_line,
+                "column": 0,
+                "rule_id": "DUP-01",
+                "message": message,
+            })
+
+    logger.debug(f"jscpd found {len(violations)} violations")
+    return violations
 
 
-def _run_radon() -> list[dict[str, Any]]:
+def _run_radon(codebase_root: str) -> list[dict[str, Any]]:
     """Run radon (complexity checker) and return violations with CX-* rules.
 
     Returns: list of violation dicts.
+    On timeout/unavailable, raises subprocess.TimeoutExpired or FileNotFoundError.
+    On JSON parse error, raises ValueError.
     """
-    # Mocked for testing
-    return []
+    result = _invoke_tool(
+        "radon",
+        ["radon", "cc", "-j", "asset_generation/python/src"],
+        60,
+        codebase_root,
+    )
+
+    violations: list[dict[str, Any]] = []
+
+    if result.stdout.strip():
+        try:
+            radon_output = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            logger.error(f"radon output parsing failed: {e}. Output: {result.stdout[:500]}")
+            raise ValueError(f"radon produced invalid JSON: {str(e)}") from e
+
+        # radon cc JSON format: {filename: {function_name: {lineno, col_offset, classname, classmethod, complexity}}}
+        for filename, items in radon_output.items():
+            if isinstance(items, dict):
+                for func_name, metrics in items.items():
+                    if isinstance(metrics, dict):
+                        complexity = metrics.get("complexity", 0)
+                        lineno = metrics.get("lineno", 0)
+                        col_offset = metrics.get("col_offset", 0)
+
+                        # Threshold: complexity > 10 is WARN
+                        if complexity > 10:
+                            violations.append({
+                                "tool": "radon",
+                                "severity": "WARN",
+                                "file": filename,
+                                "line": lineno,
+                                "column": col_offset,
+                                "rule_id": "CX-03",
+                                "message": f"Cognitive complexity in '{func_name}' is {complexity} (threshold: 10)",
+                            })
+
+    logger.debug(f"radon found {len(violations)} violations")
+    return violations
 
 
-def _collect_violations() -> list[dict[str, Any]]:
+def _collect_violations(codebase_root: str) -> list[dict[str, Any]]:
     """Call all five tools and collect violations.
+
+    Args:
+        codebase_root: path to codebase root for subprocess working directory
 
     Returns: aggregated list of violations from all tools.
     On tool timeout/unavailable, record as violation with TOOL_TIMEOUT or TOOL_UNAVAILABLE rule_id.
+    On tool error (non-zero exit), record as TOOL_ERROR violation.
+    On tool JSON parse error, record as TOOL_ERROR violation.
     """
     violations: list[dict[str, Any]] = []
 
@@ -106,7 +406,7 @@ def _collect_violations() -> list[dict[str, Any]]:
 
     for tool_name, tool_func in tools:
         try:
-            tool_violations = tool_func()
+            tool_violations = tool_func(codebase_root)
             violations.extend(tool_violations)
         except subprocess.TimeoutExpired as e:
             # Record timeout as violation
@@ -132,13 +432,10 @@ def _collect_violations() -> list[dict[str, Any]]:
                 "message": f"{tool_name} not installed",
             })
             logger.warning(f"Tool {tool_name} not available")
-        except Exception as e:
-            # Catch all exceptions from tool invocation: subprocess.CalledProcessError (non-zero exit),
-            # OSError family (file I/O, permissions), json.JSONDecodeError (output parsing),
-            # ValueError (validation), and any other unexpected exceptions from tool function implementation.
-            # Broad catch is justified here because tool functions are plugin-like and may be extended
-            # in the future to throw domain-specific exceptions; recording as TOOL_ERROR prevents crashes
-            # while preserving visibility into failures. All exceptions are explicitly logged with traceback.
+        except (subprocess.CalledProcessError, ValueError) as e:
+            # CalledProcessError: tool exited with non-zero code (other than normal failure codes)
+            # ValueError: tool produced invalid JSON or other parsing error
+            # Record as TOOL_ERROR for both cases; both indicate tool failure, not governance violation
             violations.append({
                 "tool": tool_name,
                 "severity": "ERROR",
@@ -149,6 +446,22 @@ def _collect_violations() -> list[dict[str, Any]]:
                 "message": f"{tool_name} error: {str(e)}",
             })
             logger.error(f"Tool {tool_name} error: {e}", exc_info=True)
+        except Exception as e:
+            # Defensive catch for unexpected exceptions from tool function.
+            # Tool functions are plugin-like and may throw domain-specific exceptions;
+            # catching and recording as TOOL_ERROR prevents crashes while preserving visibility.
+            # This is justified exception handling: catching to transform into structured violation,
+            # not to swallow silently. See code_governance.md: explicit recovery with clear semantics.
+            violations.append({
+                "tool": tool_name,
+                "severity": "ERROR",
+                "file": tool_name,
+                "line": 0,
+                "column": 0,
+                "rule_id": "TOOL_ERROR",
+                "message": f"{tool_name} error: {str(e)}",
+            })
+            logger.error(f"Tool {tool_name} unexpected error: {e}", exc_info=True)
 
     return violations
 
@@ -316,10 +629,11 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
     start_time = time.time()
     mode = inputs.get("mode", "shadow")
     ticket_id = inputs.get("ticket_id", "M902-11")
+    codebase_root = inputs.get("codebase_root", os.getcwd())
 
     try:
         # Step 1: Collect violations from all tools
-        violations = _collect_violations()
+        violations = _collect_violations(codebase_root)
 
         # Step 2: Deduplicate violations by fingerprint
         violations = _deduplicate_violations(violations)
