@@ -20,7 +20,7 @@ Comprehensive execution plan created at `project_board/execution_plans/M902-12_s
 
 1. **Task 1 (Spec Agent):** Specification freeze — signal catalog, scoring matrix, weights, output schema, test vectors [COMPLETE]
 2. **Task 2 (Test Designer):** Behavioral test suite — 50+ tests covering module contract, signal aggregation, band classification, error handling [COMPLETE]
-3. **Task 3 (Test Breaker):** Adversarial test suite — 40+ tests for boundary conditions, weight mutations, schema edge cases, determinism
+3. **Task 3 (Test Breaker):** Adversarial test suite — 40+ tests for boundary conditions, weight mutations, schema edge cases, determinism [COMPLETE]
 4. **Task 4 (Implementation Agent):** Python module `risk_scoring_check.py` with signal ingestion, scoring logic, proper error handling
 5. **Task 5 (Spec/Code Review Agent):** Static QA — linting, type checking, schema compliance, scoring matrix verification
 6. **Task 6 (Integration Agent):** Registry entry in `gate_registry.json`, integration tests, orchestrator validation
@@ -66,14 +66,14 @@ Complete specification created and frozen at `project_board/specs/902_12_risk_sc
 
 | Field | Value |
 |-------|-------|
-| **Stage** | TEST_BREAK |
-| **Revision** | 4 |
-| **Last Updated By** | Test Designer Agent |
-| **Next Responsible Agent** | Test Breaker Agent |
+| **Stage** | IMPLEMENTATION_BACKEND |
+| **Revision** | 5 |
+| **Last Updated By** | Test Breaker Agent |
+| **Next Responsible Agent** | Implementation Agent (Backend) |
 | **Status** | Proceed |
-| **Validation Status** | Spec COMPLETE (Revision 3); Test Design COMPLETE (Revision 4): 79 behavioral tests in `tests/ci/test_risk_scoring_check.py` covering all 33 test vectors and all 7 ACs |
+| **Validation Status** | Spec COMPLETE (Revision 3); Test Design COMPLETE (Revision 4): 79 behavioral tests; Test Break COMPLETE (Revision 5): 75 adversarial tests in `tests/ci/test_risk_scoring_check_adversarial.py` covering boundary conditions, weight mutations, schema edge cases, determinism, assumption validation, signal interactions, performance stress, and output consistency |
 | **Blocking Issues** | None |
 
 ## NEXT ACTION
 
-Test Breaker Agent: Read spec at `project_board/specs/902_12_risk_scoring_spec.md` and behavioral test suite at `tests/ci/test_risk_scoring_check.py`. Implement Task 3: Design adversarial test suite (40+ tests) covering boundary conditions (weight mutations, rounding precision, score edge cases at 2.0/2.5/5.0/5.99/6.0), schema edge cases (huge message/reasoning strings, null/missing optional fields), determinism stress tests, and assumption validation (prior gate output format variations). Create test file `tests/ci/test_risk_scoring_check_adversarial.py` with mutation and edge case tests. Mark assumptions with `# CHECKPOINT` comments. Ensure no untested code paths remain. Proceed immediately.
+Implementation Agent (Backend): Read spec at `project_board/specs/902_12_risk_scoring_spec.md`, behavioral tests at `tests/ci/test_risk_scoring_check.py`, and adversarial tests at `tests/ci/test_risk_scoring_check_adversarial.py`. Implement Task 4: Create Python module `ci/scripts/gates/risk_scoring_check.py` with `run(inputs: dict) -> dict` function that (1) ingests violations from prior gates (M902-09/10/11), (2) extracts risk signals via rule_id prefix matching (8 signal types: SRP +3, arch +5, dup +1, async +5, migration +2, supp +2, obs +1, ownership +1), (3) computes risk_score = (sum_weights / 20) * 100, floored to [0-100], (4) classifies band (0–2 EXIT, 3–5 WARN, 6+ ESCALATE), (5) returns JSON with all 15 required fields (version, status=PASS, gate, timestamp, ticket_id, upstream_agent, downstream_agent, mode=shadow, message, violations=[], artifacts=[], duration_ms, risk_score, band, reasoning, next_stage_recommendation). Follow M902-01 gate contract. All 154 tests (79 behavioral + 75 adversarial) must pass. No bare except clauses. Proper exception handling per code_governance.md. Run `timeout 300 python -m pytest tests/ci/test_risk_scoring_check.py tests/ci/test_risk_scoring_check_adversarial.py -v` before handoff.
