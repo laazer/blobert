@@ -5,6 +5,41 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-18T-m902-10-test-break (M902-10 Stage 1 Formatting & Re-stage Gate — TEST_DESIGN)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/10_stage_1_formatting_and_restage_gate.md
+- Stage: TEST_DESIGN (Revision 3 → 4)
+- Log: project_board/checkpoints/M902-10/2026-05-18T-test-break.md
+- **Status: TEST_DESIGN COMPLETE** (35+ tests written, ready for TEST_BREAK)
+- **Outcome:** Comprehensive behavioral test suite delivered. Test file: `tests/ci/test_formatting_check.py` (850+ LOC, 35+ tests). Coverage: all 7 requirements (Req 01-07); all 7 acceptance criteria; 25/25 test vectors. Tests: 4 module/signature, 10 output contract, 3 formatter invocation, 3 re-staging logic, 4 error handling, 4 output validation, 3 non-functional, 7+ mixed scenarios, 4 edge cases, 2 failure schema, 2 message templates. Mocked subprocess (no external tools required). Syntax validated. Ready for Test Breaker to design adversarial/mutation tests.
+
+---
+
+## Run: 2026-05-18T-m902-10-specification (M902-10 Stage 1 Formatting & Re-stage Gate — SPECIFICATION)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/10_stage_1_formatting_and_restage_gate.md
+- Stage: SPECIFICATION (Revision 2 → 3)
+- Log: project_board/checkpoints/M902-10/2026-05-18T-specification.md
+- Spec: project_board/specs/902_10_formatting_gate_spec.md
+- **Status: SPECIFICATION COMPLETE** (ready for TEST_DESIGN)
+- **Outcome: SPECIFICATION FROZEN.** Complete functional and non-functional spec (8 requirements + 25+ test vectors). All planning assumptions resolved: (Q1–Q7 from planning checkpoint) sequential formatter execution, re-staging semantics, staged-files-only, error handling rules, graceful tool degradation, idempotency out-of-scope, exact diff matching. Formatter invocation frozen (black → ruff format → prettier → gdformat). Re-staging workflow defined (git add, no auto-commit, user controls final commit). Error handling per code_governance.md (no bare except, explicit propagation or recovery). Output contract frozen (success/failure schema, message templates, violations array). NFR targets defined (<5s performance, <30s timeouts, <100MB memory, logging requirements). Deferred scope explicitly documented (CI/CD integration, lefthook, orchestration, formatter tuning deferred to M903+). Test vectors: 6 basic formatter tests, 8 mixed scenarios, 5 error paths, 4 edge cases, 2 NFR tests. All 7 ticket ACs mapped to requirements and test vectors. Risk register: 10 risks with mitigations. No ambiguities remain. Ready for Test Designer (Task 2) to design comprehensive test suite.
+
+---
+
+## Run: 2026-05-18T-m902-10-planning (M902-10 Stage 1 Formatting & Re-stage Gate — PLANNING)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/10_stage_1_formatting_and_restage_gate.md
+- Stage: PLANNING → SPECIFICATION
+- Log: project_board/checkpoints/M902-10/2026-05-18T-planning.md
+- Execution Plan: project_board/execution_plans/M902-10_stage_1_formatting_gate.md
+- **Status: PLANNING COMPLETE** (Revision 2, ready for Spec Agent)
+- **Outcome: EXECUTION PLAN FROZEN.** 7 sequential tasks (Spec → Test Design → Test Break → Implementation → Static QA → Integration → Acceptance). All 7 ticket ACs mapped to specific tasks. 7 clarifying questions resolved via checkpoint protocol (Q1–Q7: formatter sequencing, re-staging semantics, staged-files-only, error handling, missing tools, idempotency, diff matching). All assumptions logged (sequential execution safe, graceful tool degradation, git error propagation, no swallowing exceptions). Risk register: R1–R6 identified with mitigations. Hard dependency M902-01 (gate framework) is COMPLETE; soft dependencies M902-09 + code_governance are informational (no blocking). No blocking issues or ambiguities remain. Ready for Spec Agent (Task 1) to freeze requirements, acceptance criteria, test vectors at project_board/specs/902_10_formatting_gate_spec.md.
+
+---
+
 ## Run: 2026-05-18T-m902-09-complete (M902-09 Stage 0 Diff Classification Gate — FULL PIPELINE COMPLETE)
 
 - Queue mode: single ticket
@@ -178,3 +213,21 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ---
 
 ## Run: 2026-05-17T-m8-sefi-acceptance-gatekeeper (enemy status effect indicators — ACCEPTANCE_CRITERIA_GATEKEEPER)
+
+## Run: 2026-05-18T-m902-10-start (M902-10 Stage 1 Formatting & Re-stage Gate)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/10_stage_1_formatting_and_restage_gate.md
+- Input format: Legacy (Status/Target); converted to WORKFLOW STATE for pipeline
+- Lean: no (Stage 7 Learning enabled)
+- Status: INITIALIZING → PLANNING
+
+## Run: 2026-05-18T-m902-10-spec-exit (M902-10 Stage 1 — SPEC EXIT GATE)
+
+- Queue mode: single ticket
+- Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/10_stage_1_formatting_and_restage_gate.md
+- Stage: SPECIFICATION (Revision 3)
+- Spec: project_board/specs/902_10_formatting_gate_spec.md
+- Exit Gate: PASSED
+- **Status: GATE PASSED** (generic ticket type; all required sections present)
+- **Outcome:** Spec completeness verified; 8 requirements + 25+ test vectors present. Proceed to TEST_DESIGN.
