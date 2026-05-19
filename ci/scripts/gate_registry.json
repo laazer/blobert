@@ -99,5 +99,15 @@
     "default_mode": "shadow",
     "description": "Extracts focused review bundles (code hunks, imports, ownership, tests, violations) from high-risk changes for agent semantic review (Stage 6). Builds <100KB JSON bundles with dependency neighborhoods (1-2 hop imports), CODEOWNERS assignments, related test code, and violation summaries",
     "category": "governance"
+  },
+  {
+    "name": "agent_review_check",
+    "module": "ci.scripts.gates.agent_review_check",
+    "run_function": "run",
+    "required_inputs": [],
+    "optional_inputs": ["bundle_path", "issue_id", "upstream_agent", "downstream_agent", "mode", "ticket_id"],
+    "default_mode": "shadow",
+    "description": "Evaluates semantic bundles (code, imports, ownership, violations) using rule-based agent logic; renders approve/warn/reject decision with confidence score. 8 signals: SRP, abstraction, hierarchy, ownership, observability, async safety, exception handling, suppression justification.",
+    "category": "governance"
   }
 ]
