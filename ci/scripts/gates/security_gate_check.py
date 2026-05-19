@@ -13,14 +13,47 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Type Definitions
+# ============================================================================
+
+
+class GateInputs(TypedDict, total=False):
+    """Gate function inputs."""
+    mode: str
+    ticket_id: str
+    upstream_agent: str | None
+    downstream_agent: str
+    changed_files: list[str]
+    issue_id: str
+
+
+class ToolStatus(TypedDict):
+    """Tool execution status record."""
+    name: str
+    exit_code: int | None
+    findings_count: int
+    timeout: bool
+    error: str | None
+
+
+class Violation(TypedDict):
+    """Security violation record."""
+    file: str
+    line: int | None
+    rule: str
+    message: str
+    severity: Literal["ERROR", "WARN", "INFO"]
+
 
 # ============================================================================
 # Constants
@@ -139,7 +172,7 @@ def _cvss_to_severity(cvss_score: float | str) -> str:
 # ============================================================================
 
 
-def _run_gitleaks(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _run_gitleaks(inputs: GateInputs) -> tuple[list[Violation], ToolStatus]:
     """Run gitleaks secret detection.
 
     Args:
@@ -148,18 +181,17 @@ def _run_gitleaks(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[st
     Returns:
         tuple of (violations list, tool_status dict)
     """
-    tool_status = {
+    tool_status: ToolStatus = {
         "name": "gitleaks",
         "exit_code": None,
         "findings_count": 0,
         "timeout": False,
         "error": None,
     }
-    violations = []
+    violations: list[Violation] = []
 
     try:
         # Command: gitleaks detect --source . --json --report-path <temp>.json
-        import tempfile
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp:
             tmp_path = tmp.name
 
@@ -186,7 +218,7 @@ def _run_gitleaks(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[st
         # Parse matches
         matches = report.get("matches", [])
         for match in matches:
-            violation = {
+            violation: Violation = {
                 "file": match.get("File", "unknown"),
                 "line": match.get("LineNumber"),
                 "rule": match.get("RuleID", "gitleaks-secret"),
@@ -214,7 +246,7 @@ def _run_gitleaks(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[st
     return violations, tool_status
 
 
-def _run_bandit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _run_bandit(inputs: GateInputs) -> tuple[list[Violation], ToolStatus]:
     """Run bandit Python security scanning.
 
     Args:
@@ -223,14 +255,14 @@ def _run_bandit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str,
     Returns:
         tuple of (violations list, tool_status dict)
     """
-    tool_status = {
+    tool_status: ToolStatus = {
         "name": "bandit",
         "exit_code": None,
         "findings_count": 0,
         "timeout": False,
         "error": None,
     }
-    violations = []
+    violations: list[Violation] = []
 
     try:
         cmd = [
@@ -265,7 +297,7 @@ def _run_bandit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str,
             bandit_severity = issue.get("severity", "MEDIUM")
             severity = _map_severity(bandit_severity, "bandit")
 
-            violation = {
+            violation: Violation = {
                 "file": issue.get("filename", "unknown"),
                 "line": issue.get("line_number"),
                 "rule": issue.get("test_id", "unknown"),
@@ -287,7 +319,7 @@ def _run_bandit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str,
     return violations, tool_status
 
 
-def _run_semgrep(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _run_semgrep(inputs: GateInputs) -> tuple[list[Violation], ToolStatus]:
     """Run semgrep pattern matching.
 
     Args:
@@ -296,14 +328,14 @@ def _run_semgrep(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
     Returns:
         tuple of (violations list, tool_status dict)
     """
-    tool_status = {
+    tool_status: ToolStatus = {
         "name": "semgrep",
         "exit_code": None,
         "findings_count": 0,
         "timeout": False,
         "error": None,
     }
-    violations = []
+    violations: list[Violation] = []
 
     try:
         cmd = [
@@ -345,7 +377,7 @@ def _run_semgrep(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
             if isinstance(start, dict):
                 start_line = start.get("line")
 
-            violation = {
+            violation: Violation = {
                 "file": finding.get("path", "unknown"),
                 "line": start_line,
                 "rule": finding.get("rule_id", "unknown"),
@@ -367,7 +399,7 @@ def _run_semgrep(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
     return violations, tool_status
 
 
-def _run_pip_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _run_pip_audit(inputs: GateInputs) -> tuple[list[Violation], ToolStatus]:
     """Run pip-audit for Python dependencies.
 
     Args:
@@ -376,14 +408,14 @@ def _run_pip_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
     Returns:
         tuple of (violations list, tool_status dict)
     """
-    tool_status = {
+    tool_status: ToolStatus = {
         "name": "pip-audit",
         "exit_code": None,
         "findings_count": 0,
         "timeout": False,
         "error": None,
     }
-    violations = []
+    violations: list[Violation] = []
 
     try:
         cmd = [
@@ -420,7 +452,7 @@ def _run_pip_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
 
             severity = _cvss_to_severity(cvss_score) if cvss_score else "WARN"
 
-            violation = {
+            violation: Violation = {
                 "file": vuln.get("requirement", "unknown-package"),
                 "line": None,
                 "rule": vuln.get("vulnerability_id", "CVE-UNKNOWN"),
@@ -442,7 +474,7 @@ def _run_pip_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
     return violations, tool_status
 
 
-def _run_npm_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _run_npm_audit(inputs: GateInputs) -> tuple[list[Violation], ToolStatus]:
     """Run npm audit for JavaScript dependencies.
 
     Args:
@@ -451,14 +483,14 @@ def _run_npm_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
     Returns:
         tuple of (violations list, tool_status dict)
     """
-    tool_status = {
+    tool_status: ToolStatus = {
         "name": "npm-audit",
         "exit_code": None,
         "findings_count": 0,
         "timeout": False,
         "error": None,
     }
-    violations = []
+    violations: list[Violation] = []
 
     try:
         cmd = [
@@ -505,7 +537,7 @@ def _run_npm_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
                         cves = vuln.get("cves", [])
                         cve_id = cves[0] if cves else "CVE-UNKNOWN"
 
-                        violation = {
+                        violation: Violation = {
                             "file": pkg_name,
                             "line": None,
                             "rule": cve_id,
@@ -532,7 +564,7 @@ def _run_npm_audit(inputs: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[s
 # ============================================================================
 
 
-def _determine_status(violations: list[dict[str, Any]]) -> str:
+def _determine_status(violations: list[Violation]) -> str:
     """Determine gate status (PASS, WARN, FAIL) from violations.
 
     Decision cascade:
@@ -546,8 +578,8 @@ def _determine_status(violations: list[dict[str, Any]]) -> str:
     Returns:
         Status string: PASS, WARN, or FAIL
     """
-    has_error = any(v.get("severity") == "ERROR" for v in violations)
-    has_warn = any(v.get("severity") == "WARN" for v in violations)
+    has_error = any(v["severity"] == "ERROR" for v in violations)
+    has_warn = any(v["severity"] == "WARN" for v in violations)
 
     if has_error:
         return "FAIL"
@@ -557,7 +589,7 @@ def _determine_status(violations: list[dict[str, Any]]) -> str:
         return "PASS"
 
 
-def _sort_violations(violations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _sort_violations(violations: list[Violation]) -> list[Violation]:
     """Sort violations by severity (ERROR > WARN > INFO).
 
     Args:
@@ -566,10 +598,10 @@ def _sort_violations(violations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     Returns:
         Sorted violation list
     """
-    return sorted(violations, key=lambda v: SEVERITY_ORDER.get(v.get("severity", "INFO"), 2))
+    return sorted(violations, key=lambda v: SEVERITY_ORDER.get(v["severity"], 2))
 
 
-def _generate_remediation_hints(violations: list[dict[str, Any]]) -> list[str]:
+def _generate_remediation_hints(violations: list[Violation]) -> list[str]:
     """Generate actionable remediation hints from violations.
 
     Args:
@@ -582,8 +614,8 @@ def _generate_remediation_hints(violations: list[dict[str, Any]]) -> list[str]:
     seen_rules = set()
 
     for violation in violations:
-        rule = violation.get("rule", "")
-        file_path = violation.get("file", "")
+        rule = violation["rule"]
+        file_path = violation["file"]
 
         # Avoid duplicate hints per rule
         if rule in seen_rules:
@@ -619,7 +651,7 @@ def _generate_remediation_hints(violations: list[dict[str, Any]]) -> list[str]:
 # ============================================================================
 
 
-def run(inputs: dict[str, Any]) -> dict[str, Any]:
+def run(inputs: GateInputs) -> dict[str, Any]:
     """Execute security gate check.
 
     Invokes 5 security tools (gitleaks, bandit, semgrep, pip-audit, npm audit),
@@ -742,9 +774,9 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
             "version": "1.0",
             "status": "FAIL",
             "gate": "security_gate_check",
-            "upstream_agent": inputs.get("upstream_agent"),
-            "downstream_agent": inputs.get("downstream_agent", "commit"),
-            "ticket_id": inputs.get("ticket_id", "M902-16"),
+            "upstream_agent": inputs.get("upstream_agent"),  # type: ignore
+            "downstream_agent": inputs.get("downstream_agent", "commit"),  # type: ignore
+            "ticket_id": inputs.get("ticket_id", "M902-16"),  # type: ignore
             "timestamp": _iso8601_timestamp(),
             "mode": "shadow",
             "_shadow_mode": True,
