@@ -4,6 +4,96 @@ Structured insights extracted after each completed ticket.
 
 ---
 
+## [M902-12] — Late Specification Contradictions Require Systematic Multi-Domain Alignment
+*Completed: 2026-05-19*
+
+### Critical Learning
+
+**Specification contradictions discovered during implementation validation (not design review) expose misalignment between formal requirements, test vectors, and code. Resolving these requires systematic re-verification across all three domains, not just fixing one artifact.** The contradiction in M902-12 was caught late because test vectors and band definitions lived in the same spec document but were evaluated in isolation.
+
+### Learnings
+
+- **category: testing**
+  **insight:** Test vectors can contradict formal requirements even when both are in the same spec document. Test vectors are often written from intuition or prior examples, while formal requirements may be written more rigorously. Contradictions surface only when implementation forces a choice.
+  **impact:** Test vectors (TV-02, TV-03, TV-04, TV-09, TV-14) expected score-based band classification (weight 3 → score 15 → band EXIT), while Requirement 03 clearly stated weight-based thresholds. Implementation correctly chose weight-based (per spec intent), but 10+ test assertions had to be corrected post-implementation.
+  **prevention:** At spec freeze (before Test Designer), run a consistency check: pick 5–10 test vectors and manually compute expected outputs using the formal formula. If results don't match test vector expectations, route to Spec Agent for contradiction resolution before Test Designer begins.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Semantic domain boundaries (weight scale [0-20] vs score scale [0-100]) are easy to confuse when both scales are present in the same module. Mapping band thresholds to the wrong scale is a subtle but high-impact mistake.
+  **impact:** Requirement 03 text said "classifies risk_score into a band" (ambiguous: could mean score-based), but implementation comment and code governance used weight-based. This dual interpretation persisted until AC Gatekeeper verified the implementation and discovered test assertion mismatches.
+  **prevention:** When defining thresholds or classification rules: (1) state the input domain explicitly ("band thresholds apply to WEIGHT scale [0-20]"), (2) verify the formula makes the mapping unambiguous, (3) include example calculations at boundaries in the spec, (4) implementation code should document which domain is used.
+  **severity:** high
+
+- **category: process**
+  **insight:** Spec contradiction between Requirement 03 (band definitions) and Requirement 05 (test vectors) was only discovered when Implementation Agent tested both, not when Spec Agent reviewed consistency. Spec review does not catch logical contradictions if both statements are individually plausible.
+  **impact:** Specification v1.0 was marked COMPLETE and frozen, but contained contradictory band classification semantics. This forced a revision cycle (v1.0 → v1.1) and test fixes post-implementation.
+  **prevention:** Add a "cross-requirement consistency check" step in spec review: identify overlapping domains (e.g., Req-03 and Req-05 both reference bands), then verify 3–5 test vector calculations against the formula. Use the Spec Agent's checkpoint protocol to resolve ambiguities before freezing.
+  **severity:** high
+
+- **category: testing**
+  **insight:** When test suite is large (144 tests), assertion failures are expected and easily attributed to "edge cases" or "environmental factors" rather than systematic misalignment. Investigating the root cause required examining the pattern: 10 tests all failed in the same direction (wrong band prediction), pointing to a systematic issue, not isolated bugs.
+  **impact:** If the test suite had been smaller (30–40 tests), the pattern would be harder to hide. With 144 tests, individual failures seemed like isolated test bugs. Only when Implementation Agent examined ALL failing tests together did the contradiction become obvious.
+  **prevention:** When implementing against a large test suite, group test failures by assertion type (band classification, score computation, schema validation). If all failures of one type fail in the same direction, suspect systematic contradiction, not isolated bugs. Escalate to Spec Agent for contradiction resolution.
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **Ambiguous requirement + plausible test vector:** A requirement can be written in a way that sounds correct ("classify risk_score into a band") but is ambiguous about which scale to apply. Test vectors that contradict it sound equally plausible because they don't reference the ambiguity explicitly. Both seem correct until one is proven wrong.
+
+2. **No consistency-check gate between Spec and Test Design:** Spec is frozen without validating test vectors against the formula. Test Designer is handed test vectors without checking whether they're consistent with Requirement 03. Contradiction discovered during Implementation, after test effort is spent.
+
+3. **Test assertions as informal documentation:** Test vectors (Requirement 05) are often treated as informal "examples" rather than formal contracts. This allows contradictions to persist: if a test vector contradicts a formal requirement, the test vector is assumed to be wrong (or vice versa) without systematic resolution.
+
+4. **Single-domain verification:** Spec Agent reviews spec, Test Designer reviews tests, Implementation Agent reviews code—each in isolation. Contradictions between domains are discovered late by accident.
+
+### Prompt Patches (For Agent Instructions)
+
+**Spec Agent (post-spec-freeze):**
+- Add: "Before marking Specification COMPLETE, perform a spot-check consistency review: (1) Pick 3–5 test vectors from Requirement 05, (2) Manually compute expected outputs using formulas from Requirement 02, (3) If vectors match, note confidence 'consistent'. If vectors contradict Requirement 02–04, escalate to contradiction resolution checkpoint BEFORE freezing. Do not hand off to Test Designer with known contradictions."
+- Add: "When defining thresholds or classification rules: explicitly state the input domain. Example: 'Band thresholds apply to the WEIGHT scale [0-20], not the RISK_SCORE scale [0-100]. Mapping: weight 0-2 → score 0-10 → band EXIT'."
+
+**Test Designer (pre-test-design):**
+- Add: "Read Spec Requirement 02 (formula) and Requirement 03 (thresholds) before implementing tests. For each test vector in Requirement 05, manually compute expected output using the spec formula. If your computation differs from the expected output in the test vector, document the contradiction in a checkpoint and route to Spec Agent for resolution. Do not implement contradictory assertions."
+
+**AC Gatekeeper (final validation):**
+- Add: "If test assertions fail in a systematic pattern (e.g., all band-classification tests fail in the same direction), do not treat as isolated bugs. Investigate root cause: check if there's a semantic domain mismatch (e.g., weight vs score scale). Escalate to Spec Agent if spec contradiction is suspected."
+
+### Workflow Improvement
+
+**Add to `agent_context/agents/common_assets/workflow_enforcement_v1.md` or `spec_exit_gate.md`:**
+
+```markdown
+## Spec-to-Test Consistency Gate (Specification Stage)
+
+Before a spec is handed off to Test Designer:
+
+1. **Cross-requirement domain review:** Identify all numerical scales, thresholds, and classification rules.
+2. **Spot-check test vectors:** Pick 3–5 test vectors. Manually compute expected outputs using formulas in Requirement 02.
+3. **If vectors contradict formula:**
+   - Log contradiction in checkpoint
+   - Route to Spec Agent contradiction resolution
+   - Do not freeze spec with known contradictions
+4. **Confidence rating:** "Consistent" if spot-check passes; "Requires clarification" if any contradiction found.
+5. **Handoff:** Test Designer receives spec marked "Consistent" or "Contradiction Resolved (v1.x)".
+
+**Rationale:** Discovering contradictions at Test Design time costs 0 rework. Discovering during Implementation costs test fixes + spec revision. Discovering during AC Gatekeeper costs full cycle revision.
+```
+
+**Consider adding a `spec-test-consistency` agent skill or checkpoint protocol** that validates test vectors against spec before Test Designer begins.
+
+### Keep / Reinforce
+
+1. **Implementation Agent's testing philosophy:** Implement code against tests, then run full suite to discover contradictions. This is how M902-12's contradiction was discovered. The contradiction would have persisted in spec and tests without implementation validation.
+
+2. **AC Gatekeeper's systematic verification:** AC Gatekeeper investigated all 7 ACs and discovered that band-classification tests had a systematic contradiction. This thorough approach caught the root cause.
+
+3. **Checkpoint protocol for contradiction resolution:** Spec Agent's v1.1 revision using checkpoint protocol (documenting options, choosing one, explaining evidence) made the contradiction explicit and traceable. Future agents can understand why the choice was made.
+
+4. **Spec versioning (v1.0 → v1.1):** Marking spec revisions with "contradiction resolved" notes clarifies that the spec was inconsistent and has been corrected. This helps future agents understand the history.
+
+---
+
 ## [M902-18] — Deferred Work Requires Explicit Downstream Ticket Updates
 *Completed: 2026-05-18*
 
