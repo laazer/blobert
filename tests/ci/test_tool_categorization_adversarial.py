@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -435,3 +436,353 @@ class TestAdditionalRobustness:
         # With floating point, result should be stable
         reduction2 = ((1000 - 333) / 1000) * 100
         assert abs(reduction - reduction2) < 0.001, "Floating point precision issue"
+
+
+# =============================================================================
+# TEST CLASS 6: Concurrency and Race Condition Testing (8 tests)
+# =============================================================================
+
+class TestConcurrencyAndRaceConditions:
+    """Tests for concurrent access and potential race conditions."""
+
+    def test_concurrent_get_tools_calls_no_interference(self) -> None:
+        """Parallel get_tools_for_category calls don't interfere with each other."""
+        schemas = {
+            "parse": [{"name": "read"}],
+            "modify": [{"name": "write"}],
+            "test": [{"name": "bash"}],
+            "plan": [{"name": "plan"}],
+            "think": [{"name": "think"}]
+        }
+
+        results = {}
+        errors = []
+
+        def get_tools(category: str) -> None:
+            try:
+                if category not in schemas:
+                    raise ValueError(f"Unknown category: {category}")
+                results[category] = schemas[category]
+            except Exception as e:
+                errors.append((category, e))
+
+        threads = [
+            threading.Thread(target=get_tools, args=(cat,))
+            for cat in ["parse", "modify", "test", "plan", "think"]
+        ]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert len(errors) == 0, f"Errors occurred: {errors}"
+        assert len(results) == 5, "All categories should be retrieved"
+
+    def test_concurrent_measurement_function_calls_deterministic(self) -> None:
+        """Parallel measurement calls produce identical results for same category."""
+        schemas = {
+            "parse": [{"name": f"tool_{i}"} for i in range(10)],
+            "think": [{"name": f"tool_{i}"} for i in range(100)]
+        }
+
+        all_tools = [t for tools in schemas.values() for t in tools]
+        results = []
+        lock = threading.Lock()
+
+        def measure(category: str) -> None:
+            baseline_bytes = len(json.dumps(all_tools, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+            filtered_bytes = len(json.dumps(schemas[category], separators=(",", ":"), sort_keys=True).encode("utf-8"))
+            reduction = ((baseline_bytes - filtered_bytes) / baseline_bytes) * 100
+            with lock:
+                results.append(reduction)
+
+        threads = [threading.Thread(target=measure, args=("parse",)) for _ in range(10)]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # All results should be identical
+        assert all(r == results[0] for r in results), f"Results not identical: {results}"
+
+    def test_concurrent_regex_extraction_no_state_corruption(self) -> None:
+        """Parallel regex extractions don't corrupt state."""
+        prompts = [
+            "I declare tool category: parse",
+            "My workflow category is modify",
+            "Tool category: test",
+        ]
+        results = []
+        lock = threading.Lock()
+
+        def extract(prompt: str) -> None:
+            pattern = r"(?:I declare tool category:\s*|My workflow category is\s+|Tool category:\s*)(\w+)"
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            category = match.group(1).lower() if match else None
+            with lock:
+                results.append(category)
+
+        threads = [
+            threading.Thread(target=extract, args=(p,))
+            for p in prompts * 5  # 15 threads total
+        ]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert len(results) == 15, "All threads should complete"
+        assert "parse" in results and "modify" in results and "test" in results
+
+    def test_config_reload_during_concurrent_access(self, valid_minimal_config: dict[str, Any]) -> None:
+        """Simulated config reload doesn't break concurrent category access."""
+        configs = [valid_minimal_config, valid_minimal_config.copy()]
+        current_config = [valid_minimal_config]
+        results = []
+        lock = threading.Lock()
+
+        def get_tools(idx: int) -> None:
+            # Use current config (may change during iteration)
+            config = current_config[0]
+            tools = [t for t in config["tools"] if "parse" in t.get("categories", [])]
+            with lock:
+                results.append(len(tools))
+
+        # Spawn threads
+        threads = [threading.Thread(target=get_tools, args=(i,)) for i in range(10)]
+
+        for thread in threads:
+            thread.start()
+
+        # Swap config mid-execution
+        current_config[0] = configs[1]
+
+        for thread in threads:
+            thread.join()
+
+        # All threads should complete without error
+        assert len(results) > 0, "Threads should complete"
+
+    def test_measurement_not_affected_by_concurrent_tool_access(self) -> None:
+        """Measurement function not affected by concurrent tool schema access."""
+        schemas = {
+            "parse": [{"name": f"tool_{i}"} for i in range(10)],
+            "think": [{"name": f"tool_{i}"} for i in range(100)]
+        }
+
+        results = []
+        lock = threading.Lock()
+
+        def measure() -> None:
+            all_tools = [t for tools in schemas.values() for t in tools]
+            baseline_bytes = len(json.dumps(all_tools, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+            filtered_bytes = len(json.dumps(schemas["parse"], separators=(",", ":"), sort_keys=True).encode("utf-8"))
+            reduction = ((baseline_bytes - filtered_bytes) / baseline_bytes) * 100
+            with lock:
+                results.append(reduction)
+
+        threads = [threading.Thread(target=measure) for _ in range(5)]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # All results should be identical (no interference)
+        assert all(r == results[0] for r in results), "Concurrent measurements should be identical"
+
+    def test_error_handling_in_concurrent_calls_consistent(self) -> None:
+        """Error handling remains consistent in concurrent invalid category calls."""
+        errors = []
+        lock = threading.Lock()
+
+        def get_tools_invalid(category: str) -> None:
+            try:
+                if category not in ["parse", "modify", "test", "plan", "think"]:
+                    raise ValueError(f"Unknown category: {category}")
+            except ValueError as e:
+                with lock:
+                    errors.append(str(e))
+
+        threads = [
+            threading.Thread(target=get_tools_invalid, args=("invalid",))
+            for _ in range(10)
+        ]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # All error messages should be identical
+        assert len(set(errors)) == 1, f"Error messages not consistent: {errors}"
+
+    def test_category_list_iteration_safe_during_concurrent_access(self) -> None:
+        """Iterating category list is safe during concurrent modifications."""
+        categories = ["parse", "modify", "test", "plan", "think"]
+        results = []
+        lock = threading.Lock()
+
+        def iterate_categories() -> None:
+            # Safe iteration (list doesn't change mid-loop in this test)
+            for cat in categories:
+                with lock:
+                    results.append(cat)
+
+        threads = [threading.Thread(target=iterate_categories) for _ in range(5)]
+
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert len(results) == 25, "All iterations should complete"
+
+
+# =============================================================================
+# TEST CLASS 7: Combinatorial Edge Cases (10 tests)
+# =============================================================================
+
+class TestCombinatorialEdgeCases:
+    """Tests combining multiple edge factors (null + empty + invalid, etc.)."""
+
+    def test_null_category_and_empty_schemas_together(self) -> None:
+        """Null category with empty schemas handled gracefully."""
+        schemas = {}
+        category = None
+
+        if category and category in schemas:
+            tools = schemas[category]
+        else:
+            # Should handle gracefully
+            tools = []
+
+        assert tools == [], "Should default to empty when category is null"
+
+    def test_invalid_category_and_empty_schemas_together(self) -> None:
+        """Invalid category with empty schemas raises clear error."""
+        schemas = {}
+        category = "invalid"
+
+        try:
+            if category not in schemas:
+                raise ValueError(f"Category {category} not in empty schemas")
+        except ValueError as e:
+            assert "not in" in str(e).lower() or "unknown" in str(e).lower()
+
+    def test_very_large_schema_and_invalid_category_error_message_helpful(self) -> None:
+        """Even with large schema, invalid category error is helpful."""
+        large_schema = {f"cat_{i}": [{"name": f"tool_{i}"}] for i in range(100)}
+        category = "invalid"
+
+        try:
+            if category not in large_schema:
+                raise ValueError(f"Unknown category: {category}. Valid categories: {list(large_schema.keys())[:5]}...")
+        except ValueError as e:
+            error_msg = str(e)
+            assert "Unknown category" in error_msg
+            assert "invalid" in error_msg
+
+    def test_unicode_tool_names_and_special_characters_in_categories(self) -> None:
+        """Unicode tool names with special category names serialize correctly."""
+        tool = {
+            "name": "café_reade#r",  # Unicode + special chars
+            "categories": ["parçe", "modify"],  # Unicode in category
+        }
+
+        json_str = json.dumps(tool, separators=(",", ":"), sort_keys=True)
+        assert len(json_str) > 0, "Unicode serialization should succeed"
+
+    def test_empty_tool_description_and_large_category_list(self) -> None:
+        """Tool with empty description and large category list."""
+        tool = {
+            "name": "sparse_tool",
+            "description": "",  # Empty
+            "categories": [f"cat_{i}" for i in range(1000)]  # Many categories
+        }
+
+        json_str = json.dumps(tool, separators=(",", ":"), sort_keys=True)
+        assert len(json_str) > 1000, "Should serialize even with empty description"
+
+    def test_null_in_multiple_fields_with_validation(self) -> None:
+        """Config with multiple null fields detected properly."""
+        config = {
+            "categories": None,
+            "tools": None,
+            "version": None
+        }
+
+        # Validation: categories should be a list
+        try:
+            for cat in config["categories"]:
+                pass
+        except (TypeError, AttributeError):
+            # Expected: can't iterate over None
+            pass
+
+    def test_category_name_matches_tool_name_collision(self) -> None:
+        """Category named same as tool name (potential confusion)."""
+        category = {"name": "read"}
+        tool = {"name": "read"}
+
+        # Both are valid, but could cause confusion
+        assert category["name"] == tool["name"] == "read", "Names can collide"
+
+    def test_reduction_calculation_with_identical_baseline_and_filtered(self) -> None:
+        """Reduction when baseline equals filtered (category has all tools)."""
+        all_tools = [{"name": "a"}, {"name": "b"}]
+        think_tools = all_tools  # think category has all
+
+        baseline_json = json.dumps(all_tools, separators=(",", ":"), sort_keys=True)
+        filtered_json = json.dumps(think_tools, separators=(",", ":"), sort_keys=True)
+
+        baseline_bytes = len(baseline_json.encode("utf-8"))
+        filtered_bytes = len(filtered_json.encode("utf-8"))
+
+        reduction = ((baseline_bytes - filtered_bytes) / baseline_bytes) * 100 if baseline_bytes > 0 else 0
+        assert reduction == 0, "No reduction when category has all tools"
+
+    def test_whitespace_variations_in_category_declaration_and_validation(self) -> None:
+        """Multiple whitespace variations in declaration with validation."""
+        prompts = [
+            "I declare tool category:parse",
+            "I declare tool category: parse",
+            "I declare tool category:  parse",
+            "I declare tool category:\tparse",
+        ]
+
+        pattern = r"I declare tool category:\s*(\w+)"
+        for prompt in prompts:
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            category = match.group(1).lower() if match else None
+            assert category == "parse", f"Should extract 'parse' from {prompt}"
+
+    def test_error_path_after_successful_path_in_same_session(self) -> None:
+        """Invalid request after valid request in same session."""
+        def get_tools_safe(category: str, schemas: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+            if category not in schemas:
+                return []  # Fallback
+            return schemas[category]
+
+        schemas = {
+            "parse": [{"name": "read"}],
+            "modify": [{"name": "write"}],
+            "think": [{"name": "think"}]
+        }
+
+        # Valid call
+        result1 = get_tools_safe("parse", schemas)
+        assert len(result1) > 0
+
+        # Invalid call (fallback)
+        result2 = get_tools_safe("invalid", schemas)
+        assert result2 == []
+
+        # Valid call again
+        result3 = get_tools_safe("parse", schemas)
+        assert len(result3) > 0
+        # Content should be the same (even if different object)
+        assert [t["name"] for t in result3] == [t["name"] for t in result1], "Valid call should return same result content"

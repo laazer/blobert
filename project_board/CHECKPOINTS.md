@@ -5,6 +5,29 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-18T-m902-18-task5-created (M902-18-T5 Framework Integration Ticket Created)
+
+- Queue mode: ticket creation
+- New ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/18a_tool_categorization_framework_integration.md`
+- Status: **PENDING FRAMEWORK DISCOVERY**
+- Objective: Locate agent framework invocation code and implement tool_category parameter support
+- Blocks: M902-18 (Tasks 6-8), M902-19, M902-20, M902-21, M902-22, M902-23
+- **Reason Created:** Separate framework integration work from M902-18 backend implementation to clarify dependency and enable parallel progress on other M902 tickets
+- **Critical Blocker:** Agent framework location unknown (requires codebase exploration to locate invocation code)
+
+## Run: 2026-05-18T-m902-18-blocked (M902-18 TOOL CATEGORIZATION — TRANSITIONED TO BLOCKED)
+
+- Queue mode: single ticket  
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/18_tool_categorization_layer.md`
+- Stage: INTEGRATION → BLOCKED (Revision 7 → 8)
+- Status: **BACKEND COMPLETE, BLOCKED ON TASK 5**
+- Test Coverage: 180 tests (100% pass rate, <2 seconds)
+- **Reason Blocked:** Task 5 (Agent Framework Integration) requires locating agent invocation code (location unknown)
+- **Unblock Path:** (1) Complete M902-18-T5 (locate framework, implement tool_category support) → (2) Resume via `ap-continue` → (3) Complete Tasks 6-8 (Static QA, Integration, Gatekeeper)
+- **Blocked Dependencies:** M902-19+ (9 backlog tickets) all waiting on framework integration per their specs
+
+---
+
 ## Run: 2026-05-18T-m902-10-test-break (M902-10 Stage 1 Formatting & Re-stage Gate — TEST_DESIGN)
 
 - Queue mode: single ticket
