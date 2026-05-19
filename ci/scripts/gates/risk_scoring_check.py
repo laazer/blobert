@@ -81,8 +81,32 @@ BAND_RECOMMENDATIONS = {
 }
 
 
+def _get_signal_violation_count(signal_name: str, weight: int) -> int:
+    """Compute violation count estimate for a signal.
+
+    Given a signal name and its total weight, estimate how many violations
+    occurred by dividing by the base weight of that signal.
+
+    Args:
+        signal_name: name of the signal (key in SIGNAL_CATALOG)
+        weight: total accumulated weight for this signal
+
+    Returns:
+        int estimated violation count (minimum 1 if weight > 0)
+    """
+    if weight <= 0:
+        return 0
+    signal_config = SIGNAL_CATALOG[signal_name]
+    base_weight = signal_config["weight"]
+    return weight // base_weight if base_weight > 0 else 1
+
+
 def _iso8601_timestamp() -> str:
-    """Return current UTC time in ISO 8601 format with Z suffix and hyphens in time part."""
+    """Return current UTC time in ISO 8601 format with Z suffix and hyphens in time part.
+
+    Returns:
+        ISO 8601 timestamp string in format YYYY-MM-DDTHH-MM-SSZ.
+    """
     ts = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
     # Replace +00:00 with Z
     ts = ts.replace("+00:00", "Z")
@@ -103,7 +127,12 @@ def _detect_migrations_in_files(violations: list[dict[str, Any]]) -> bool:
     """Detect if any violation file path matches migration patterns.
 
     Migration patterns: **/alembic/versions/*.py or **/migrations/*.py
-    Returns: True if any migration file detected, False otherwise
+
+    Args:
+        violations: list of violation dicts with optional file field
+
+    Returns:
+        True if any migration file detected, False otherwise
     """
     migration_patterns = ["alembic/versions/", "migrations/"]
 
@@ -170,7 +199,7 @@ def _compute_risk_score(signal_weights: dict[str, int]) -> int:
         signal_weights: dict mapping signal names to their weights
 
     Returns:
-        risk_score as integer [0, 100]
+        integer risk_score in range [0, 100]
     """
     total_weight = sum(signal_weights.values())
 
@@ -197,7 +226,7 @@ def _classify_band(total_weight: int) -> RiskBand:
         total_weight: sum of all signal weights [0, 20]
 
     Returns:
-        RiskBand enum
+        RiskBand enum value (EXIT, WARN, or ESCALATE)
     """
     if total_weight <= 2:
         return RiskBand.EXIT
@@ -218,7 +247,7 @@ def _format_message(risk_score: int, band: RiskBand, signal_weights: dict[str, i
         signal_weights: dict of signal names to weights
 
     Returns:
-        message string (<300 chars)
+        str message (<300 chars)
     """
     # Summarize detected signals
     detected_signals = [name for name, weight in signal_weights.items() if weight > 0]
@@ -256,16 +285,14 @@ def _format_reasoning(signal_weights: dict[str, int], total_weight: int, risk_sc
         band: band classification
 
     Returns:
-        reasoning string (<500 chars)
+        str reasoning (<500 chars)
     """
     # Build signal breakdown
     signal_details = []
     for signal_name, weight in signal_weights.items():
         if weight > 0:
             # Count how many violations of this signal (estimate: weight / base weight)
-            signal_config = SIGNAL_CATALOG[signal_name]
-            base_weight = signal_config["weight"]
-            count = weight // base_weight if base_weight > 0 else 1
+            count = _get_signal_violation_count(signal_name, weight)
             signal_details.append(f"{signal_name}: {count} violation(s), weight +{weight}")
 
     if signal_details:
@@ -311,6 +338,11 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
         - upstream_agent: name of prior stage (optional, default None)
         - downstream_agent: name of next stage (default 'semantic_extraction')
 
+    Raises:
+        TypeError: if ticket_id is not a string or mode is not a string
+        TypeError: if upstream_agent is provided and is not a string
+        ValueError: if violations list contains non-dict items
+
     Returns: dict matching gate result schema with fields:
         - version: "1.0"
         - status: "PASS" (always, shadow mode)
@@ -342,6 +374,15 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(violations, list):
             logger.warning(f"Invalid violations input: expected list, got {type(violations).__name__}. Using empty list.")
             violations = []
+
+        if not isinstance(ticket_id, str):
+            raise TypeError(f"ticket_id must be a string, got {type(ticket_id).__name__}")
+
+        if not isinstance(mode, str):
+            raise TypeError(f"mode must be a string, got {type(mode).__name__}")
+
+        if upstream_agent is not None and not isinstance(upstream_agent, str):
+            raise TypeError(f"upstream_agent must be a string or None, got {type(upstream_agent).__name__}")
 
         # Step 1: Extract signal weights from violations
         signal_weights = _extract_signal_weights(violations)
