@@ -38,7 +38,9 @@ RULE_ID_MAPPING = {
     "EXH": "exception_handling",  # EXH-01 to EXH-04
 }
 
-# Signal definitions (S1-S8)
+# Signal definitions (S1-S8) - Metadata for documentation and future extensibility
+# Maps signal IDs and names to severity types. Not currently used in evaluation logic,
+# but preserved for reference and potential future use in agent orchestration or reporting.
 SIGNAL_DEFINITIONS = [
     {"id": "S1", "name": "srp_correctness", "type": "moderate"},
     {"id": "S2", "name": "abstraction_justification", "type": "moderate"},
