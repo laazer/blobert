@@ -28,12 +28,12 @@ Semantic suppression syntax (`# blobert-ignore-next-line`) requires explicit jus
 
 | Field | Value |
 |-------|-------|
-| **Stage** | TEST_DESIGN |
-| **Revision** | 3 |
-| **Last Updated By** | Spec Agent |
-| **Next Responsible Agent** | Test Designer Agent |
+| **Stage** | TEST_BREAK |
+| **Revision** | 4 |
+| **Last Updated By** | Test Designer Agent |
+| **Next Responsible Agent** | Test Breaker Agent |
 | **Status** | Proceed |
 
 ## NEXT ACTION
 
-Test Designer: Create 50+ behavioral tests at `tests/ci/test_override_and_escalation_check.py` covering all suppression formats, validation scenarios, escalation detection, and edge cases. Spec: `project_board/specs/902_15_override_escalation_spec.md` (v1.0 FROZEN). Checkpoint: `project_board/checkpoints/M902-15/2026-05-19T-m902-15-specification.md` (specification complete, 6 requirements, 50+ ACs, all assumptions logged A1–A8, all risks mitigated R1–R8, zero ambiguities).
+Test Breaker (Task 3): Create 40+ adversarial tests at `tests/ci/test_override_and_escalation_check_adversarial.py` covering boundary conditions, malformed inputs, decision consistency, performance/stress testing, and edge cases. Test Designer delivered: 92 passing behavioral tests + 2 skipped (gate module TBD) in `tests/ci/test_override_and_escalation_check.py`. Checkpoint: `project_board/checkpoints/M902-15/2026-05-19T-test_design.md` (behavioral test design complete, all 6 requirements covered with 50+ test vectors, parametrization strategy documented, determinism enforced).
