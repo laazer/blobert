@@ -26,12 +26,36 @@ Implement Stage 8 of the 8-stage governance pipeline: **Final Security Gate**. R
 
 | Field | Value |
 |-------|-------|
-| **Stage** | TEST_BREAK |
-| **Revision** | 4 |
-| **Last Updated By** | Test Designer Agent |
-| **Next Responsible Agent** | Test Breaker Agent |
+| **Stage** | IMPLEMENTATION_BACKEND |
+| **Revision** | 5 |
+| **Last Updated By** | Test Breaker Agent |
+| **Next Responsible Agent** | Implementation Agent (Python Backend) |
 | **Status** | Proceed |
 
 ## NEXT ACTION
 
-Test Breaker Agent: Develop adversarial test suite for M902-16 security gate. Create `tests/ci/test_security_gate_check_adversarial.py` with 30+ adversarial tests covering timeout scenarios, tool subprocess failures, malformed output, boundary thresholds (CVSS exactly 7.0 vs 6.9), determinism validation, and mixed violation scenarios. Behavioral tests completed: 59 tests at `tests/ci/test_security_gate_check.py` covering all 5 tools, decision matrix, schema compliance, and edge cases. See spec at `project_board/specs/902_16_security_gate_spec.md` for threat model and decision logic.
+Implementation Agent: Implement `ci/scripts/gates/security_gate_check.py` (backend security gate module). 
+
+**Test foundation ready:** 118 executable tests verified (59 behavioral + 59 adversarial).
+- Behavioral tests (test_security_gate_check.py): 59 tests covering all 5 tools, decision matrix, schema compliance, and edge cases
+- Adversarial tests (test_security_gate_check_adversarial.py): 59 tests covering timeout scenarios, subprocess failures, malformed JSON, boundary thresholds, determinism stress, mixed violations, mutation testing, extreme payloads, tool state isolation, encoding edge cases, empty/null scenarios, concurrency, exit code semantics, and checkpoint assumptions
+
+**Test categories:**
+1. Timeout Adversarial (6 tests) — per-tool timeouts, aggregate timeouts
+2. Subprocess Failure (5 tests) — missing binary, permission denied, exit codes
+3. Malformed JSON (7 tests) — parse errors, missing required fields
+4. Boundary Thresholds (6 tests) — CVSS 7.0 vs 6.9, soft/hard-fail boundaries
+5. Determinism Stress (4 tests) — repeated runs, tool order independence, timestamp exclusion
+6. Mixed Violations (5 tests) — complex multi-tool scenarios, priority cascades
+7. Mutation Testing (4 tests) — operator flips, boundary condition negation
+8. Extreme Payloads (4 tests) — 1000+ violations, deep nesting, long paths
+9. Tool State (2 tests) — order independence, state isolation
+10. Encoding/Special Chars (3 tests) — unicode, control chars, JSON escaping
+11. Empty/Null (4 tests) — empty arrays, null fields
+12. Concurrency (2 tests) — interleaved output, truncated JSON
+13. Exit Code Semantics (3 tests) — per-tool exit code handling
+14. Checkpoint Assumptions (4 tests) — uppercase enums, status values, hints format
+
+**Spec reference:** project_board/specs/902_16_security_gate_spec.md (FROZEN v1.0, 834 lines)
+
+Implementation must satisfy all behavioral and adversarial test contracts. Commit and push before advancing to IMPLEMENTATION_COMPLETE.
