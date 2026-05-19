@@ -1,0 +1,879 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [],
+  "import_graph": {
+    "affected_modules": [
+      {
+        "docstring": "Module module_a.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_a"
+      },
+      {
+        "docstring": "Module module_b.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_b"
+      }
+    ],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": false,
+    "depth_limit_2_hops": true,
+    "direct_imports": [
+      {
+        "from": "module_a",
+        "to": "fastapi",
+        "type": "external"
+      },
+      {
+        "from": "module_a",
+        "to": "module_b",
+        "type": "external"
+      },
+      {
+        "from": "module_b",
+        "to": "core.config",
+        "type": "external"
+      }
+    ]
+  },
+  "issue_id": "TEST-SHADOW-2",
+  "metadata": {
+    "bundle_size_bytes": 12016,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "ownership": {
+    "assignments": [],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [],
+  "risk_band": "ESCALATE",
+  "risk_score": 50,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V0",
+        "rule_id": "V-0",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V1",
+        "rule_id": "V-1",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V10",
+        "rule_id": "V-10",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V11",
+        "rule_id": "V-11",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V12",
+        "rule_id": "V-12",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V13",
+        "rule_id": "V-13",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V14",
+        "rule_id": "V-14",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V15",
+        "rule_id": "V-15",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V16",
+        "rule_id": "V-16",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V17",
+        "rule_id": "V-17",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V18",
+        "rule_id": "V-18",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V19",
+        "rule_id": "V-19",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V2",
+        "rule_id": "V-2",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V20",
+        "rule_id": "V-20",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V21",
+        "rule_id": "V-21",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V22",
+        "rule_id": "V-22",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V23",
+        "rule_id": "V-23",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V24",
+        "rule_id": "V-24",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V25",
+        "rule_id": "V-25",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V26",
+        "rule_id": "V-26",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V27",
+        "rule_id": "V-27",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V28",
+        "rule_id": "V-28",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V29",
+        "rule_id": "V-29",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V3",
+        "rule_id": "V-3",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V30",
+        "rule_id": "V-30",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V31",
+        "rule_id": "V-31",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V32",
+        "rule_id": "V-32",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V33",
+        "rule_id": "V-33",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V34",
+        "rule_id": "V-34",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V35",
+        "rule_id": "V-35",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V36",
+        "rule_id": "V-36",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V37",
+        "rule_id": "V-37",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V38",
+        "rule_id": "V-38",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V39",
+        "rule_id": "V-39",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V4",
+        "rule_id": "V-4",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V40",
+        "rule_id": "V-40",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V41",
+        "rule_id": "V-41",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V42",
+        "rule_id": "V-42",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V43",
+        "rule_id": "V-43",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V44",
+        "rule_id": "V-44",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V45",
+        "rule_id": "V-45",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V46",
+        "rule_id": "V-46",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V47",
+        "rule_id": "V-47",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V48",
+        "rule_id": "V-48",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V49",
+        "rule_id": "V-49",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V5",
+        "rule_id": "V-5",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V50",
+        "rule_id": "V-50",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V51",
+        "rule_id": "V-51",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V52",
+        "rule_id": "V-52",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V53",
+        "rule_id": "V-53",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V54",
+        "rule_id": "V-54",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V55",
+        "rule_id": "V-55",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V56",
+        "rule_id": "V-56",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V57",
+        "rule_id": "V-57",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V58",
+        "rule_id": "V-58",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V59",
+        "rule_id": "V-59",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V6",
+        "rule_id": "V-6",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V60",
+        "rule_id": "V-60",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V61",
+        "rule_id": "V-61",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V62",
+        "rule_id": "V-62",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V63",
+        "rule_id": "V-63",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V64",
+        "rule_id": "V-64",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V65",
+        "rule_id": "V-65",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V66",
+        "rule_id": "V-66",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V67",
+        "rule_id": "V-67",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V68",
+        "rule_id": "V-68",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V69",
+        "rule_id": "V-69",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V7",
+        "rule_id": "V-7",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V70",
+        "rule_id": "V-70",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V71",
+        "rule_id": "V-71",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V72",
+        "rule_id": "V-72",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V73",
+        "rule_id": "V-73",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V74",
+        "rule_id": "V-74",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V75",
+        "rule_id": "V-75",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V76",
+        "rule_id": "V-76",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V77",
+        "rule_id": "V-77",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V78",
+        "rule_id": "V-78",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V79",
+        "rule_id": "V-79",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V8",
+        "rule_id": "V-8",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V80",
+        "rule_id": "V-80",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V81",
+        "rule_id": "V-81",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V82",
+        "rule_id": "V-82",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V83",
+        "rule_id": "V-83",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V84",
+        "rule_id": "V-84",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V85",
+        "rule_id": "V-85",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V86",
+        "rule_id": "V-86",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V87",
+        "rule_id": "V-87",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V88",
+        "rule_id": "V-88",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V89",
+        "rule_id": "V-89",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V9",
+        "rule_id": "V-9",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V90",
+        "rule_id": "V-90",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V91",
+        "rule_id": "V-91",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V92",
+        "rule_id": "V-92",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V93",
+        "rule_id": "V-93",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V94",
+        "rule_id": "V-94",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V95",
+        "rule_id": "V-95",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V96",
+        "rule_id": "V-96",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V97",
+        "rule_id": "V-97",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V98",
+        "rule_id": "V-98",
+        "severity": "ERROR"
+      },
+      {
+        "file": "",
+        "gate": "prior_gate",
+        "line": null,
+        "message": "V99",
+        "rule_id": "V-99",
+        "severity": "ERROR"
+      }
+    ],
+    "risk_signals": [],
+    "violation_count": 100
+  }
+}

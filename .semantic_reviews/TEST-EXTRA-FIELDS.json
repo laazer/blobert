@@ -1,0 +1,116 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [
+    {
+      "file": "x.py",
+      "hunk": "# Code snippet from x.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "AR-01"
+      ]
+    }
+  ],
+  "import_graph": {
+    "affected_modules": [
+      {
+        "docstring": "Module module_a.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_a"
+      },
+      {
+        "docstring": "Module module_b.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_b"
+      }
+    ],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": false,
+    "depth_limit_2_hops": true,
+    "direct_imports": [
+      {
+        "from": "module_a",
+        "to": "fastapi",
+        "type": "external"
+      },
+      {
+        "from": "module_a",
+        "to": "module_b",
+        "type": "external"
+      },
+      {
+        "from": "module_b",
+        "to": "core.config",
+        "type": "external"
+      }
+    ]
+  },
+  "issue_id": "TEST-EXTRA-FIELDS",
+  "metadata": {
+    "bundle_size_bytes": 1730,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "ownership": {
+    "assignments": [
+      {
+        "file": "x.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      }
+    ],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [
+    {
+      "code_snippet": "def test_x():\n    # Test code\n    pass",
+      "file": "tests/x/test_x.py",
+      "relevant_tests": [
+        "test_x",
+        "test_x_edge_case"
+      ]
+    }
+  ],
+  "risk_band": "ESCALATE",
+  "risk_score": 6,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [
+      {
+        "file": "x.py",
+        "gate": "prior_gate",
+        "line": 10,
+        "message": "Test",
+        "rule_id": "AR-01",
+        "severity": "ERROR"
+      }
+    ],
+    "risk_signals": [],
+    "violation_count": 1
+  }
+}

@@ -1,0 +1,1061 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [
+    {
+      "file": "f11.py",
+      "hunk": "# Code snippet from f11.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-88"
+      ]
+    },
+    {
+      "file": "f63.py",
+      "hunk": "# Code snippet from f63.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-36"
+      ]
+    },
+    {
+      "file": "f75.py",
+      "hunk": "# Code snippet from f75.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-24"
+      ]
+    },
+    {
+      "file": "f31.py",
+      "hunk": "# Code snippet from f31.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-68"
+      ]
+    },
+    {
+      "file": "f87.py",
+      "hunk": "# Code snippet from f87.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-12"
+      ]
+    },
+    {
+      "file": "f0.py",
+      "hunk": "# Code snippet from f0.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-99"
+      ]
+    },
+    {
+      "file": "f21.py",
+      "hunk": "# Code snippet from f21.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-78"
+      ]
+    },
+    {
+      "file": "f28.py",
+      "hunk": "# Code snippet from f28.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-71"
+      ]
+    },
+    {
+      "file": "f40.py",
+      "hunk": "# Code snippet from f40.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-59"
+      ]
+    },
+    {
+      "file": "f32.py",
+      "hunk": "# Code snippet from f32.py\ndef changed_function():\n    pass",
+      "language": "python",
+      "lines": [
+        1,
+        50
+      ],
+      "truncated": false,
+      "violation_rule_ids": [
+        "ZZ-67"
+      ]
+    }
+  ],
+  "import_graph": {
+    "affected_modules": [
+      {
+        "docstring": "Module module_a.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_a"
+      },
+      {
+        "docstring": "Module module_b.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_b"
+      }
+    ],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": false,
+    "depth_limit_2_hops": true,
+    "direct_imports": [
+      {
+        "from": "module_a",
+        "to": "fastapi",
+        "type": "external"
+      },
+      {
+        "from": "module_a",
+        "to": "module_b",
+        "type": "external"
+      },
+      {
+        "from": "module_b",
+        "to": "core.config",
+        "type": "external"
+      }
+    ]
+  },
+  "issue_id": "TEST-100-VIOLATIONS",
+  "metadata": {
+    "bundle_size_bytes": 15042,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "ownership": {
+    "assignments": [
+      {
+        "file": "f11.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f63.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f75.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f31.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f87.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      }
+    ],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [
+    {
+      "code_snippet": "def test_f11():\n    # Test code\n    pass",
+      "file": "tests/f11/test_f11.py",
+      "relevant_tests": [
+        "test_f11",
+        "test_f11_edge_case"
+      ]
+    },
+    {
+      "code_snippet": "def test_f63():\n    # Test code\n    pass",
+      "file": "tests/f63/test_f63.py",
+      "relevant_tests": [
+        "test_f63",
+        "test_f63_edge_case"
+      ]
+    },
+    {
+      "code_snippet": "def test_f75():\n    # Test code\n    pass",
+      "file": "tests/f75/test_f75.py",
+      "relevant_tests": [
+        "test_f75",
+        "test_f75_edge_case"
+      ]
+    }
+  ],
+  "risk_band": "WARN",
+  "risk_score": 5,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [
+      {
+        "file": "f99.py",
+        "gate": "prior_gate",
+        "line": 99,
+        "message": "V99",
+        "rule_id": "ZZ-00",
+        "severity": "WARN"
+      },
+      {
+        "file": "f98.py",
+        "gate": "prior_gate",
+        "line": 98,
+        "message": "V98",
+        "rule_id": "ZZ-01",
+        "severity": "WARN"
+      },
+      {
+        "file": "f97.py",
+        "gate": "prior_gate",
+        "line": 97,
+        "message": "V97",
+        "rule_id": "ZZ-02",
+        "severity": "WARN"
+      },
+      {
+        "file": "f96.py",
+        "gate": "prior_gate",
+        "line": 96,
+        "message": "V96",
+        "rule_id": "ZZ-03",
+        "severity": "WARN"
+      },
+      {
+        "file": "f95.py",
+        "gate": "prior_gate",
+        "line": 95,
+        "message": "V95",
+        "rule_id": "ZZ-04",
+        "severity": "WARN"
+      },
+      {
+        "file": "f94.py",
+        "gate": "prior_gate",
+        "line": 94,
+        "message": "V94",
+        "rule_id": "ZZ-05",
+        "severity": "WARN"
+      },
+      {
+        "file": "f93.py",
+        "gate": "prior_gate",
+        "line": 93,
+        "message": "V93",
+        "rule_id": "ZZ-06",
+        "severity": "WARN"
+      },
+      {
+        "file": "f92.py",
+        "gate": "prior_gate",
+        "line": 92,
+        "message": "V92",
+        "rule_id": "ZZ-07",
+        "severity": "WARN"
+      },
+      {
+        "file": "f91.py",
+        "gate": "prior_gate",
+        "line": 91,
+        "message": "V91",
+        "rule_id": "ZZ-08",
+        "severity": "WARN"
+      },
+      {
+        "file": "f90.py",
+        "gate": "prior_gate",
+        "line": 90,
+        "message": "V90",
+        "rule_id": "ZZ-09",
+        "severity": "WARN"
+      },
+      {
+        "file": "f89.py",
+        "gate": "prior_gate",
+        "line": 89,
+        "message": "V89",
+        "rule_id": "ZZ-10",
+        "severity": "WARN"
+      },
+      {
+        "file": "f88.py",
+        "gate": "prior_gate",
+        "line": 88,
+        "message": "V88",
+        "rule_id": "ZZ-11",
+        "severity": "WARN"
+      },
+      {
+        "file": "f87.py",
+        "gate": "prior_gate",
+        "line": 87,
+        "message": "V87",
+        "rule_id": "ZZ-12",
+        "severity": "WARN"
+      },
+      {
+        "file": "f86.py",
+        "gate": "prior_gate",
+        "line": 86,
+        "message": "V86",
+        "rule_id": "ZZ-13",
+        "severity": "WARN"
+      },
+      {
+        "file": "f85.py",
+        "gate": "prior_gate",
+        "line": 85,
+        "message": "V85",
+        "rule_id": "ZZ-14",
+        "severity": "WARN"
+      },
+      {
+        "file": "f84.py",
+        "gate": "prior_gate",
+        "line": 84,
+        "message": "V84",
+        "rule_id": "ZZ-15",
+        "severity": "WARN"
+      },
+      {
+        "file": "f83.py",
+        "gate": "prior_gate",
+        "line": 83,
+        "message": "V83",
+        "rule_id": "ZZ-16",
+        "severity": "WARN"
+      },
+      {
+        "file": "f82.py",
+        "gate": "prior_gate",
+        "line": 82,
+        "message": "V82",
+        "rule_id": "ZZ-17",
+        "severity": "WARN"
+      },
+      {
+        "file": "f81.py",
+        "gate": "prior_gate",
+        "line": 81,
+        "message": "V81",
+        "rule_id": "ZZ-18",
+        "severity": "WARN"
+      },
+      {
+        "file": "f80.py",
+        "gate": "prior_gate",
+        "line": 80,
+        "message": "V80",
+        "rule_id": "ZZ-19",
+        "severity": "WARN"
+      },
+      {
+        "file": "f79.py",
+        "gate": "prior_gate",
+        "line": 79,
+        "message": "V79",
+        "rule_id": "ZZ-20",
+        "severity": "WARN"
+      },
+      {
+        "file": "f78.py",
+        "gate": "prior_gate",
+        "line": 78,
+        "message": "V78",
+        "rule_id": "ZZ-21",
+        "severity": "WARN"
+      },
+      {
+        "file": "f77.py",
+        "gate": "prior_gate",
+        "line": 77,
+        "message": "V77",
+        "rule_id": "ZZ-22",
+        "severity": "WARN"
+      },
+      {
+        "file": "f76.py",
+        "gate": "prior_gate",
+        "line": 76,
+        "message": "V76",
+        "rule_id": "ZZ-23",
+        "severity": "WARN"
+      },
+      {
+        "file": "f75.py",
+        "gate": "prior_gate",
+        "line": 75,
+        "message": "V75",
+        "rule_id": "ZZ-24",
+        "severity": "WARN"
+      },
+      {
+        "file": "f74.py",
+        "gate": "prior_gate",
+        "line": 74,
+        "message": "V74",
+        "rule_id": "ZZ-25",
+        "severity": "WARN"
+      },
+      {
+        "file": "f73.py",
+        "gate": "prior_gate",
+        "line": 73,
+        "message": "V73",
+        "rule_id": "ZZ-26",
+        "severity": "WARN"
+      },
+      {
+        "file": "f72.py",
+        "gate": "prior_gate",
+        "line": 72,
+        "message": "V72",
+        "rule_id": "ZZ-27",
+        "severity": "WARN"
+      },
+      {
+        "file": "f71.py",
+        "gate": "prior_gate",
+        "line": 71,
+        "message": "V71",
+        "rule_id": "ZZ-28",
+        "severity": "WARN"
+      },
+      {
+        "file": "f70.py",
+        "gate": "prior_gate",
+        "line": 70,
+        "message": "V70",
+        "rule_id": "ZZ-29",
+        "severity": "WARN"
+      },
+      {
+        "file": "f69.py",
+        "gate": "prior_gate",
+        "line": 69,
+        "message": "V69",
+        "rule_id": "ZZ-30",
+        "severity": "WARN"
+      },
+      {
+        "file": "f68.py",
+        "gate": "prior_gate",
+        "line": 68,
+        "message": "V68",
+        "rule_id": "ZZ-31",
+        "severity": "WARN"
+      },
+      {
+        "file": "f67.py",
+        "gate": "prior_gate",
+        "line": 67,
+        "message": "V67",
+        "rule_id": "ZZ-32",
+        "severity": "WARN"
+      },
+      {
+        "file": "f66.py",
+        "gate": "prior_gate",
+        "line": 66,
+        "message": "V66",
+        "rule_id": "ZZ-33",
+        "severity": "WARN"
+      },
+      {
+        "file": "f65.py",
+        "gate": "prior_gate",
+        "line": 65,
+        "message": "V65",
+        "rule_id": "ZZ-34",
+        "severity": "WARN"
+      },
+      {
+        "file": "f64.py",
+        "gate": "prior_gate",
+        "line": 64,
+        "message": "V64",
+        "rule_id": "ZZ-35",
+        "severity": "WARN"
+      },
+      {
+        "file": "f63.py",
+        "gate": "prior_gate",
+        "line": 63,
+        "message": "V63",
+        "rule_id": "ZZ-36",
+        "severity": "WARN"
+      },
+      {
+        "file": "f62.py",
+        "gate": "prior_gate",
+        "line": 62,
+        "message": "V62",
+        "rule_id": "ZZ-37",
+        "severity": "WARN"
+      },
+      {
+        "file": "f61.py",
+        "gate": "prior_gate",
+        "line": 61,
+        "message": "V61",
+        "rule_id": "ZZ-38",
+        "severity": "WARN"
+      },
+      {
+        "file": "f60.py",
+        "gate": "prior_gate",
+        "line": 60,
+        "message": "V60",
+        "rule_id": "ZZ-39",
+        "severity": "WARN"
+      },
+      {
+        "file": "f59.py",
+        "gate": "prior_gate",
+        "line": 59,
+        "message": "V59",
+        "rule_id": "ZZ-40",
+        "severity": "WARN"
+      },
+      {
+        "file": "f58.py",
+        "gate": "prior_gate",
+        "line": 58,
+        "message": "V58",
+        "rule_id": "ZZ-41",
+        "severity": "WARN"
+      },
+      {
+        "file": "f57.py",
+        "gate": "prior_gate",
+        "line": 57,
+        "message": "V57",
+        "rule_id": "ZZ-42",
+        "severity": "WARN"
+      },
+      {
+        "file": "f56.py",
+        "gate": "prior_gate",
+        "line": 56,
+        "message": "V56",
+        "rule_id": "ZZ-43",
+        "severity": "WARN"
+      },
+      {
+        "file": "f55.py",
+        "gate": "prior_gate",
+        "line": 55,
+        "message": "V55",
+        "rule_id": "ZZ-44",
+        "severity": "WARN"
+      },
+      {
+        "file": "f54.py",
+        "gate": "prior_gate",
+        "line": 54,
+        "message": "V54",
+        "rule_id": "ZZ-45",
+        "severity": "WARN"
+      },
+      {
+        "file": "f53.py",
+        "gate": "prior_gate",
+        "line": 53,
+        "message": "V53",
+        "rule_id": "ZZ-46",
+        "severity": "WARN"
+      },
+      {
+        "file": "f52.py",
+        "gate": "prior_gate",
+        "line": 52,
+        "message": "V52",
+        "rule_id": "ZZ-47",
+        "severity": "WARN"
+      },
+      {
+        "file": "f51.py",
+        "gate": "prior_gate",
+        "line": 51,
+        "message": "V51",
+        "rule_id": "ZZ-48",
+        "severity": "WARN"
+      },
+      {
+        "file": "f50.py",
+        "gate": "prior_gate",
+        "line": 50,
+        "message": "V50",
+        "rule_id": "ZZ-49",
+        "severity": "WARN"
+      },
+      {
+        "file": "f49.py",
+        "gate": "prior_gate",
+        "line": 49,
+        "message": "V49",
+        "rule_id": "ZZ-50",
+        "severity": "WARN"
+      },
+      {
+        "file": "f48.py",
+        "gate": "prior_gate",
+        "line": 48,
+        "message": "V48",
+        "rule_id": "ZZ-51",
+        "severity": "WARN"
+      },
+      {
+        "file": "f47.py",
+        "gate": "prior_gate",
+        "line": 47,
+        "message": "V47",
+        "rule_id": "ZZ-52",
+        "severity": "WARN"
+      },
+      {
+        "file": "f46.py",
+        "gate": "prior_gate",
+        "line": 46,
+        "message": "V46",
+        "rule_id": "ZZ-53",
+        "severity": "WARN"
+      },
+      {
+        "file": "f45.py",
+        "gate": "prior_gate",
+        "line": 45,
+        "message": "V45",
+        "rule_id": "ZZ-54",
+        "severity": "WARN"
+      },
+      {
+        "file": "f44.py",
+        "gate": "prior_gate",
+        "line": 44,
+        "message": "V44",
+        "rule_id": "ZZ-55",
+        "severity": "WARN"
+      },
+      {
+        "file": "f43.py",
+        "gate": "prior_gate",
+        "line": 43,
+        "message": "V43",
+        "rule_id": "ZZ-56",
+        "severity": "WARN"
+      },
+      {
+        "file": "f42.py",
+        "gate": "prior_gate",
+        "line": 42,
+        "message": "V42",
+        "rule_id": "ZZ-57",
+        "severity": "WARN"
+      },
+      {
+        "file": "f41.py",
+        "gate": "prior_gate",
+        "line": 41,
+        "message": "V41",
+        "rule_id": "ZZ-58",
+        "severity": "WARN"
+      },
+      {
+        "file": "f40.py",
+        "gate": "prior_gate",
+        "line": 40,
+        "message": "V40",
+        "rule_id": "ZZ-59",
+        "severity": "WARN"
+      },
+      {
+        "file": "f39.py",
+        "gate": "prior_gate",
+        "line": 39,
+        "message": "V39",
+        "rule_id": "ZZ-60",
+        "severity": "WARN"
+      },
+      {
+        "file": "f38.py",
+        "gate": "prior_gate",
+        "line": 38,
+        "message": "V38",
+        "rule_id": "ZZ-61",
+        "severity": "WARN"
+      },
+      {
+        "file": "f37.py",
+        "gate": "prior_gate",
+        "line": 37,
+        "message": "V37",
+        "rule_id": "ZZ-62",
+        "severity": "WARN"
+      },
+      {
+        "file": "f36.py",
+        "gate": "prior_gate",
+        "line": 36,
+        "message": "V36",
+        "rule_id": "ZZ-63",
+        "severity": "WARN"
+      },
+      {
+        "file": "f35.py",
+        "gate": "prior_gate",
+        "line": 35,
+        "message": "V35",
+        "rule_id": "ZZ-64",
+        "severity": "WARN"
+      },
+      {
+        "file": "f34.py",
+        "gate": "prior_gate",
+        "line": 34,
+        "message": "V34",
+        "rule_id": "ZZ-65",
+        "severity": "WARN"
+      },
+      {
+        "file": "f33.py",
+        "gate": "prior_gate",
+        "line": 33,
+        "message": "V33",
+        "rule_id": "ZZ-66",
+        "severity": "WARN"
+      },
+      {
+        "file": "f32.py",
+        "gate": "prior_gate",
+        "line": 32,
+        "message": "V32",
+        "rule_id": "ZZ-67",
+        "severity": "WARN"
+      },
+      {
+        "file": "f31.py",
+        "gate": "prior_gate",
+        "line": 31,
+        "message": "V31",
+        "rule_id": "ZZ-68",
+        "severity": "WARN"
+      },
+      {
+        "file": "f30.py",
+        "gate": "prior_gate",
+        "line": 30,
+        "message": "V30",
+        "rule_id": "ZZ-69",
+        "severity": "WARN"
+      },
+      {
+        "file": "f29.py",
+        "gate": "prior_gate",
+        "line": 29,
+        "message": "V29",
+        "rule_id": "ZZ-70",
+        "severity": "WARN"
+      },
+      {
+        "file": "f28.py",
+        "gate": "prior_gate",
+        "line": 28,
+        "message": "V28",
+        "rule_id": "ZZ-71",
+        "severity": "WARN"
+      },
+      {
+        "file": "f27.py",
+        "gate": "prior_gate",
+        "line": 27,
+        "message": "V27",
+        "rule_id": "ZZ-72",
+        "severity": "WARN"
+      },
+      {
+        "file": "f26.py",
+        "gate": "prior_gate",
+        "line": 26,
+        "message": "V26",
+        "rule_id": "ZZ-73",
+        "severity": "WARN"
+      },
+      {
+        "file": "f25.py",
+        "gate": "prior_gate",
+        "line": 25,
+        "message": "V25",
+        "rule_id": "ZZ-74",
+        "severity": "WARN"
+      },
+      {
+        "file": "f24.py",
+        "gate": "prior_gate",
+        "line": 24,
+        "message": "V24",
+        "rule_id": "ZZ-75",
+        "severity": "WARN"
+      },
+      {
+        "file": "f23.py",
+        "gate": "prior_gate",
+        "line": 23,
+        "message": "V23",
+        "rule_id": "ZZ-76",
+        "severity": "WARN"
+      },
+      {
+        "file": "f22.py",
+        "gate": "prior_gate",
+        "line": 22,
+        "message": "V22",
+        "rule_id": "ZZ-77",
+        "severity": "WARN"
+      },
+      {
+        "file": "f21.py",
+        "gate": "prior_gate",
+        "line": 21,
+        "message": "V21",
+        "rule_id": "ZZ-78",
+        "severity": "WARN"
+      },
+      {
+        "file": "f20.py",
+        "gate": "prior_gate",
+        "line": 20,
+        "message": "V20",
+        "rule_id": "ZZ-79",
+        "severity": "WARN"
+      },
+      {
+        "file": "f19.py",
+        "gate": "prior_gate",
+        "line": 19,
+        "message": "V19",
+        "rule_id": "ZZ-80",
+        "severity": "WARN"
+      },
+      {
+        "file": "f18.py",
+        "gate": "prior_gate",
+        "line": 18,
+        "message": "V18",
+        "rule_id": "ZZ-81",
+        "severity": "WARN"
+      },
+      {
+        "file": "f17.py",
+        "gate": "prior_gate",
+        "line": 17,
+        "message": "V17",
+        "rule_id": "ZZ-82",
+        "severity": "WARN"
+      },
+      {
+        "file": "f16.py",
+        "gate": "prior_gate",
+        "line": 16,
+        "message": "V16",
+        "rule_id": "ZZ-83",
+        "severity": "WARN"
+      },
+      {
+        "file": "f15.py",
+        "gate": "prior_gate",
+        "line": 15,
+        "message": "V15",
+        "rule_id": "ZZ-84",
+        "severity": "WARN"
+      },
+      {
+        "file": "f14.py",
+        "gate": "prior_gate",
+        "line": 14,
+        "message": "V14",
+        "rule_id": "ZZ-85",
+        "severity": "WARN"
+      },
+      {
+        "file": "f13.py",
+        "gate": "prior_gate",
+        "line": 13,
+        "message": "V13",
+        "rule_id": "ZZ-86",
+        "severity": "WARN"
+      },
+      {
+        "file": "f12.py",
+        "gate": "prior_gate",
+        "line": 12,
+        "message": "V12",
+        "rule_id": "ZZ-87",
+        "severity": "WARN"
+      },
+      {
+        "file": "f11.py",
+        "gate": "prior_gate",
+        "line": 11,
+        "message": "V11",
+        "rule_id": "ZZ-88",
+        "severity": "WARN"
+      },
+      {
+        "file": "f10.py",
+        "gate": "prior_gate",
+        "line": 10,
+        "message": "V10",
+        "rule_id": "ZZ-89",
+        "severity": "WARN"
+      },
+      {
+        "file": "f9.py",
+        "gate": "prior_gate",
+        "line": 9,
+        "message": "V9",
+        "rule_id": "ZZ-90",
+        "severity": "WARN"
+      },
+      {
+        "file": "f8.py",
+        "gate": "prior_gate",
+        "line": 8,
+        "message": "V8",
+        "rule_id": "ZZ-91",
+        "severity": "WARN"
+      },
+      {
+        "file": "f7.py",
+        "gate": "prior_gate",
+        "line": 7,
+        "message": "V7",
+        "rule_id": "ZZ-92",
+        "severity": "WARN"
+      },
+      {
+        "file": "f6.py",
+        "gate": "prior_gate",
+        "line": 6,
+        "message": "V6",
+        "rule_id": "ZZ-93",
+        "severity": "WARN"
+      },
+      {
+        "file": "f5.py",
+        "gate": "prior_gate",
+        "line": 5,
+        "message": "V5",
+        "rule_id": "ZZ-94",
+        "severity": "WARN"
+      },
+      {
+        "file": "f4.py",
+        "gate": "prior_gate",
+        "line": 4,
+        "message": "V4",
+        "rule_id": "ZZ-95",
+        "severity": "WARN"
+      },
+      {
+        "file": "f3.py",
+        "gate": "prior_gate",
+        "line": 3,
+        "message": "V3",
+        "rule_id": "ZZ-96",
+        "severity": "WARN"
+      },
+      {
+        "file": "f2.py",
+        "gate": "prior_gate",
+        "line": 2,
+        "message": "V2",
+        "rule_id": "ZZ-97",
+        "severity": "WARN"
+      },
+      {
+        "file": "f1.py",
+        "gate": "prior_gate",
+        "line": 1,
+        "message": "V1",
+        "rule_id": "ZZ-98",
+        "severity": "WARN"
+      },
+      {
+        "file": "f0.py",
+        "gate": "prior_gate",
+        "line": 0,
+        "message": "V0",
+        "rule_id": "ZZ-99",
+        "severity": "WARN"
+      }
+    ],
+    "risk_signals": [],
+    "violation_count": 100
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [
+    {
+      "file": "large_file.py",
+      "hunk": "changed line 0\nchanged line 1\nchanged line 2\nchanged line 3\nchanged line 4\nchanged line 5\nchanged line 6\nchanged line 7\nchanged line 8\nchanged line 9\nchanged line 10\nchanged line 11\nchanged line 12\nchanged line 13\nchanged line 14\nchanged line 15\nchanged line 16\nchanged line 17\nchanged line 18\nchanged line 19",
+      "language": "unknown",
+      "lines": [
+        5000,
+        5020
+      ],
+      "truncated": false,
+      "violation_rule_ids": []
+    }
+  ],
+  "import_graph": {
+    "affected_modules": [
+      {
+        "docstring": "Module module_a.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_a"
+      },
+      {
+        "docstring": "Module module_b.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_b"
+      }
+    ],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": false,
+    "depth_limit_2_hops": true,
+    "direct_imports": [
+      {
+        "from": "module_a",
+        "to": "fastapi",
+        "type": "external"
+      },
+      {
+        "from": "module_a",
+        "to": "module_b",
+        "type": "external"
+      },
+      {
+        "from": "module_b",
+        "to": "core.config",
+        "type": "external"
+      }
+    ]
+  },
+  "issue_id": "TEST-LARGE-FILE",
+  "metadata": {
+    "bundle_size_bytes": 1945,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "ownership": {
+    "assignments": [
+      {
+        "file": "large_file.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      }
+    ],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [
+    {
+      "code_snippet": "def test_large_file():\n    # Test code\n    pass",
+      "file": "tests/large_file/test_large_file.py",
+      "relevant_tests": [
+        "test_large_file",
+        "test_large_file_edge_case"
+      ]
+    }
+  ],
+  "risk_band": "EXIT",
+  "risk_score": 2,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [],
+    "risk_signals": [],
+    "violation_count": 0
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [],
+  "import_graph": {
+    "affected_modules": [],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": false,
+    "depth_limit_2_hops": true,
+    "direct_imports": []
+  },
+  "issue_id": "TEST-1000-VIOLATIONS",
+  "metadata": {
+    "bundle_size_bytes": 1233,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": true,
+    "truncation_reason": "size_limit_exceeded"
+  },
+  "ownership": {
+    "assignments": [
+      {
+        "file": "f530.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f63.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f970.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f158.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      },
+      {
+        "file": "f272.py",
+        "owner": "unassigned",
+        "source": "heuristic"
+      }
+    ],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [],
+  "risk_band": "WARN",
+  "risk_score": 5,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [],
+    "risk_signals": [],
+    "violation_count": 1000
+  }
+}

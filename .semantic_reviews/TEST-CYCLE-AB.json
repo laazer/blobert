@@ -1,0 +1,73 @@
+{
+  "change_summary": {
+    "categories": [],
+    "change_type": "unknown",
+    "files_changed": 0,
+    "lines_added": 0,
+    "lines_deleted": 0
+  },
+  "code_hunks": [],
+  "import_graph": {
+    "affected_modules": [
+      {
+        "docstring": "Module module_a.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_a"
+      },
+      {
+        "docstring": "Module module_b.py",
+        "exports": [
+          "exported_func"
+        ],
+        "module": "module_b"
+      }
+    ],
+    "changed_files": [
+      "module_a.py",
+      "module_b.py"
+    ],
+    "cycles_detected": true,
+    "depth_limit_2_hops": true,
+    "direct_imports": [
+      {
+        "from": "module_a",
+        "to": "module_b",
+        "type": "external"
+      },
+      {
+        "from": "module_b",
+        "to": "module_a",
+        "type": "external"
+      }
+    ]
+  },
+  "issue_id": "TEST-CYCLE-AB",
+  "metadata": {
+    "bundle_size_bytes": 1172,
+    "codeowners_source": "heuristic",
+    "compressed": false,
+    "extraction_time_ms": 0,
+    "git_commit_hash": "abc123",
+    "git_diff_command": "git diff --cached",
+    "schema_version": "1.0",
+    "staged_changes": true,
+    "truncated": false,
+    "truncation_reason": null
+  },
+  "ownership": {
+    "assignments": [],
+    "codeowners_available": false,
+    "fallback_used": true
+  },
+  "related_tests": [],
+  "risk_band": "ESCALATE",
+  "risk_score": 6,
+  "version": "1.0",
+  "violations_summary": {
+    "from_prior_gates": [],
+    "risk_signals": [],
+    "violation_count": 0
+  }
+}
