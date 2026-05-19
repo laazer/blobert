@@ -6092,3 +6092,81 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** M902-15 completed with 5 checkpoint files documenting 7 planning decisions, 8 spec assumptions, 8 risks, and 6 assumption-encoding checkpoint tests. This artifact enables AC Gatekeeper to validate with confidence and future agents to avoid repeating analysis.
 
 ---
+
+## [M902-16] — Frozen Planning + Detailed Specification Enables Zero-Rework Gate Implementation
+*Completed: 2026-05-19*
+
+### Critical Learning
+
+**Comprehensive planning that freezes all ambiguities in checkpoints, paired with a detailed specification document (834 lines, 8 requirements), enabled the Implementation Agent to build a 804-line security gate with 118 tests all passing on the first implementation attempt (zero rework, zero test failures). No contradictions emerged. Planning decisions froze 8 major design choices with HIGH confidence; only 1 item (Tool Timeout Strategy) had MEDIUM confidence, and integration tests validated it.**
+
+### Learnings
+
+- **category: process**
+  **insight:** Planning agents that produce checkpoint decisions (frozen tool selections, severity thresholds, fixture strategy, determinism requirements) reduce downstream ambiguity and rework. Planning checkpoint for M902-16 documented 8 frozen decisions with confidence levels. When Implementation Agent encountered a technical choice, the decision was already made (not re-evaluated).
+  **impact:** No specification contradictions discovered during implementation (zero revision cycles). No test vector mismatches (contrast with M902-12 which required spec v1.0 → v1.1 revision after test failures). All 118 tests passed on first implementation, suggesting spec-to-test alignment was correct.
+  **prevention:** Require Planning Agent to document: (1) 5+ key design decisions with explicit "Would have asked / Assumption made / Confidence", (2) Risk assessment for each medium/low-confidence item, (3) Checkpoint file saved before handoff to Spec Agent. Template in checkpoint protocol: "Decision: X, Rationale: Y, Confidence: HIGH|MEDIUM|LOW, Mitigation: Z".
+  **severity:** medium
+
+- **category: architecture**
+  **insight:** Detailed specification documents (8 requirements, 834 lines, including tool configurations, severity mappings, schema examples, fixture strategy, and false-positive risk mitigation) guide implementation without ambiguity. M902-16 spec froze all tool-specific behaviors (gitleaks JSON structure, bandit severity mapping, semgrep result format, CVSS thresholds, timeout values).
+  **impact:** Implementation Agent did not need to make architectural decisions; all decisions were spec-driven. Gate implementation was straightforward subprocess orchestration + JSON parsing + decision matrix, no novel patterns. Zero "what did the spec really mean?" discussions.
+  **prevention:** Specification freeze gate (e.g., spec-exit-gate skill) should verify: (1) All numeric thresholds documented with units and rationale. (2) All tool configurations include example JSON input/output. (3) All schema definitions are complete (field names, types, presence). (4) Severity mappings are explicit (tool_rule_name → severity_enum with examples). (5) Failure modes documented (timeout handling, missing tool, malformed JSON, network failure if applicable).
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Test Designer producing 59 behavioral tests with comprehensive coverage (gitleaks, bandit, semgrep, pip-audit, npm audit, decision matrix, schema compliance, determinism, scope, error handling, edge cases) provided clear contracts. Test Breaker producing 59 adversarial tests covering 14 dimensions (timeout, subprocess failure, malformed JSON, boundary thresholds, determinism, mixed violations, mutation, extreme payloads, tool state, encoding, empty/null, concurrency, exit codes, checkpoint assumptions) left no implementation blind spots.
+  **impact:** 118 tests all passing on first implementation suggests test coverage was correct and implementation understood all edge cases. No test-then-fix cycle. Contrast with tickets where tests fail during implementation (indication of spec-test misalignment).
+  **prevention:** Before handoff from Test Breaker to Implementation, verify: (1) All acceptance criteria have ≥2 behavioral tests. (2) All boundary conditions have adversarial tests. (3) All error paths have tests (timeout, subprocess failure, malformed output). (4) Mutation testing covers critical operators (>= vs >, any() vs all()). (5) Determinism tests verify repeated runs → identical output. (6) Checkpoint document lists all 14 vulnerability dimensions covered with test count per dimension.
+  **severity:** low
+
+- **category: process**
+  **insight:** AC Gatekeeper validation report (273 lines) that maps all 9 ACs to implementation code paths, test coverage, and objective evidence (line numbers, tool invocation examples, severity mapping examples) provides confidence that implementation is complete and correct. Evidence-driven validation (not assertion-based).
+  **impact:** AC Gatekeeper concluded "All 9 ACs satisfied with explicit, objective evidence" without escalation or rework. Ticket transitioned cleanly from IMPLEMENTATION_COMPLETE → COMPLETE. No gates blocked.
+  **prevention:** AC Gatekeeper template should require: (1) For each AC, cite implementation code path (file + line range). (2) For each AC, cite test evidence (≥2 tests with class + method names). (3) For each AC, verify M902-01 schema compliance if gate-related. (4) For critical ACs, cite objective measurements (e.g., "AC-9 Determinism: 4 tests run gate 5x each on same fixtures → identical output all runs"). (5) If any AC cannot be evidenced, escalate to responsible agent; do not advance stage.
+  **severity:** low
+
+### Anti-Patterns
+
+1. **Planning without decision checkpoints:** Planning phase analyzes design space but does not document frozen decisions. Spec Agent re-evaluates same decisions (waste), or assumes prior decisions are outdated (risk). Solution: Planning Agent must produce checkpoint file with ≥5 explicit decisions.
+
+2. **Specification without schema examples:** Spec describes tool JSON outputs in narrative form ("gitleaks returns an array of matches with severity, rule, and file"). Implementation must reverse-engineer the exact schema from tool documentation or trial runs, risking mismatches. Solution: Spec freeze gate requires tool JSON input/output examples.
+
+3. **Test suite without dimension enumeration:** Test Breaker writes 50 tests covering "edge cases" without systematic categorization. Implementation encounters untested scenarios (missing field, timeout, extremely large payload, encoding edge case). Solution: Test Breaker checkpoint lists vulnerability dimension categories and test count per category.
+
+4. **AC Gatekeeper validation without evidence:** AC Gatekeeper states "AC-1 is satisfied" without citing code path or test. If rework is needed, there's no traceability to guide it. Solution: Evidence-driven validation with code citations.
+
+### Prompt Patches
+
+- **agent: Planning Agent**
+  **change:** "In the planning checkpoint, document (1) Tool selection: which security scanning tools are required? Why? Per spec/code_governance or ticket? (2) Severity thresholds: what are HARD_FAIL, WARN, PASS conditions? (3) Fixture strategy: mock-only or real? How to prevent accidental real secrets/vulns? (4) Determinism requirement: identical output guarantee or best-effort? (5) Shadow vs blocking mode: which applies in this milestone? (6) Framework integration: which gate runner version? (7) Timeout strategy: per-tool or aggregate? (8) Exclusion policy: which files/directories skip scanning? For each decision, state: Assumption, Rationale, Confidence (HIGH|MEDIUM|LOW), Mitigation (if MEDIUM/LOW)."
+  **reason:** Explicit planning checkpoints freeze design space before Spec Agent writes. Eliminates spec re-evaluation and reduces ambiguity-driven rework downstream."
+
+- **agent: Specification Agent**
+  **change:** "When freezing a specification for gates or infrastructure, include: (1) Tool version pinning (pyproject.toml, package.json references). (2) Complete tool JSON input/output examples (gitleaks, bandit, semgrep, etc.). (3) Severity mapping table (tool_rule_name → ERROR/WARN/INFO enum). (4) Numeric threshold definitions with units (CVSS 7.0 = critical, <7.0 = warn, <4.0 = info). (5) Timeout values per tool and aggregate limit. (6) Error handling strategy (tool not found, subprocess timeout, malformed JSON). (7) Determinism validation approach (no timestamps in logic, sorted output, no randomness). (8) M902-01 schema compliance checklist (required fields, field types, examples). Freeze spec only when all 8 items are complete."
+  **reason:** Detailed specifications guide implementation without ambiguity. Spec completeness checklist prevents 'clarified in implementation' deferrals that delay or derisk testing."
+
+- **agent: Test Breaker Agent**
+  **change:** "When producing adversarial tests, enumerate vulnerability dimensions upfront: (1) Boundary conditions (threshold edge cases, min/max values). (2) Null/empty/missing fields (subprocess returns empty array, malformed JSON, missing field). (3) Type mismatches (field is string when int expected). (4) Logic consistency (operators, cascading conditions, priority order). (5) Scope (tool applies to right files? ignores exclusions?). (6) Timestamps and ordering (non-determinism risks). (7) Concurrency (subprocess interleaved output). (8) Regex/pattern matching (false positives/negatives). (9) File I/O (permissions, path encoding, large file names). (10) Schema compliance (JSON serialization, required fields). (11) Stress (extreme payloads, deep nesting). (12) Mutation (operator flips, condition negation). (13) Exit code semantics (per-tool exit code meanings). (14) Checkpoint assumptions (protocol-level invariants). List target test count per dimension. Implement dimensions in order until target reached. Log test count per dimension in checkpoint."
+  **reason:** Systematic dimension enumeration prevents cognitive overload and ensures comprehensive coverage. Checkpoint documentation enables AC Gatekeeper to verify coverage is complete."
+
+### Workflow Improvements
+
+1. **Planning-Spec-Test triple-checkpoint validation:** After Planning Agent produces checkpoint, require Spec Agent to review planning decisions and document agreement or escalation. After Spec freeze, require Test Designer and Test Breaker to review spec decision sections and verify test coverage maps to decisions. Creates explicit traceability: Decision → Spec Section → Test(s).
+
+2. **Specification freeze gate (spec-exit-gate skill):** Automatically validate spec completeness before advancing to Test Design. Checklist: (1) All tool versions pinned. (2) JSON input/output examples present. (3) Severity mappings complete. (4) Numeric thresholds defined. (5) Error handling documented. (6) Schema examples provided. (7) Determinism approach explained. (8) M902-01 compliance (if gate). If checklist fails, route back to Spec Agent; do not advance.
+
+3. **Test dimension coverage matrix:** After Test Breaker completes, automatically generate a matrix (dimensions × test count) and compare to target. Alert if coverage is low (<20% of expected dimension tests). This prevents "looks comprehensive" gates that miss edge cases.
+
+### Keep / Reinforce
+
+1. **practice:** Planning Agent freeze + checkpoint produces reusable design decisions. M902-16 Planning froze 8 decisions with rationale; Spec Agent did not re-debate them. Future gates (security scanning, linting, performance testing) can reuse tool selection decisions from M902-16 checkpoint.
+  **reason:** Decisions frozen in checkpoints become team norms. M902-16's "gitleaks + bandit + semgrep + pip-audit + npm audit" became the reference for future security gates, eliminating re-evaluation."
+
+2. **practice:** Detailed specification (834 lines with 8 requirements, examples, severity tables, error handling) creates clear contracts for Implementation and Test Breaker agents. M902-16 spec was frozen v1.0 without revision, suggesting contracts were clear enough.
+  **reason:** Contrast with M902-12 spec that required v1.0 → v1.1 revision after test contradictions. M902-16's detailed spec prevented contradictions. Invest time in spec detail to save rework downstream."
+
+3. **practice:** AC Gatekeeper evidence-driven validation (code path citations + test citations + objective measurements) creates confidence in completion. M902-16 AC Gatekeeper's detailed evidence report (273 lines) enabled clean COMPLETE transition.
+  **reason:** Evidence-driven validation is trustworthy. Narrative validation ("AC-1 looks satisfied") is not. Require citations."
+
+---
