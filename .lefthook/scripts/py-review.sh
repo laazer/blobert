@@ -54,10 +54,10 @@ if [ "${#rel_args[@]}" -eq 0 ]; then
   exit 0
 fi
 
-echo "pre-commit: running Ruff (from pyproject.toml) on staged files..."
+echo "pre-commit: running Ruff with auto-fix (from pyproject.toml) on staged files..."
 cd "$PY_ROOT"
 if [ "${RUFF_CMD[0]}" = "uv" ]; then
-  uv run --extra dev ruff check --config pyproject.toml "${rel_args[@]}"
+  uv run --extra dev ruff check --fix --config pyproject.toml "${rel_args[@]}"
 else
-  "${RUFF_CMD[@]}" check --config pyproject.toml "${rel_args[@]}"
+  "${RUFF_CMD[@]}" check --fix --config pyproject.toml "${rel_args[@]}"
 fi
