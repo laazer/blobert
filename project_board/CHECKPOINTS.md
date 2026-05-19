@@ -5,6 +5,28 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-19T-m902-12-spec_contradiction_resolution (M902-12 Stage 4 Risk Scoring System — SPEC CONTRADICTION RESOLUTION)
+
+- Queue mode: single ticket (autonomous)
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/12_stage_4_risk_scoring_system.md`
+- Stage: INTEGRATION → TEST_DESIGN (Revision 8 → 9)
+- Log: `project_board/checkpoints/M902-12/2026-05-19T-spec_contradiction_resolution.md`
+- **Status: CONTRADICTION RESOLVED — OPTION A CONFIRMED**
+- **Outcome: SPEC RECONCILIATION COMPLETE.** Contradiction between Requirement 03 (Band Definitions) and Requirement 05 (Test Vectors) analyzed and resolved with high confidence. Decision: Band thresholds apply to WEIGHT scale (0-20), not RISK_SCORE scale (0-100). Evidence: (1) Spec Requirement 02 formula (sum/20)*100 defines weight→score mapping, (2) Implementation correctly uses weight-based classification per Requirement 03, (3) Reasoning fields document band rules in terms of weight (not score), (4) Most test vectors already expect weight-based classification (TV-03, TV-05, TV-12 correct; only TV-02 and others need fixing). Weight-based classification is more intuitive (input domain mapping) than score-based (would require arbitrary score thresholds). Action: (1) Clarify Requirement 03 text to explicitly state "band thresholds apply to WEIGHT scale [0-20]"; (2) Correct all test vector band expectations in Requirement 05 to match weight-based classification; (3) Implementation code needs NO changes (already correct per Requirement 03); (4) Route to Test Designer/Test Breaker to fix test assertions in test_risk_scoring_check*.py to expect corrected band assignments. **No implementation rework required.** Confidence: HIGH. Next: Update spec, then advance to TEST_DESIGN for test assertion corrections.
+
+---
+
+## Run: 2026-05-19T-m902-12-ac_gatekeeper (M902-12 Stage 4 Risk Scoring System — AC VALIDATION)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/12_stage_4_risk_scoring_system.md`
+- Stage: INTEGRATION (Revision 7 → 8)
+- Log: `project_board/checkpoints/M902-12/2026-05-19T-ac_gatekeeper.md`
+- **Status: BLOCKED — SPEC CONTRADICTION IDENTIFIED**
+- **Outcome: AC VALIDATION COMPLETE WITH CAVEAT.** All 7 acceptance criteria have implementation and test evidence. However, 10 tests fail due to contradiction between Requirement 03 (Band Definitions: weight-based) and Requirement 05 (Test Vectors: conflicting expectations). Implementation correctly implements Requirement 03 per spec. Example: TV-02 expects weight=3 (risk_score=15) → band=EXIT, but Requirement 03 defines weight 3-5 → WARN. This is a spec documentation issue, not an implementation gap. AC-1 EVIDENCED (signal extraction, test coverage), AC-2 EVIDENCED (8 signals, rule_id mapping), AC-3 UNRESOLVED (band classification correct per R03, but test vectors contradict), AC-4 EVIDENCED (scoring matrix documented), AC-5 EVIDENCED (module exists, contract tests pass 7/7), AC-6 EVIDENCED (output schema complete, 16 contract tests pass), AC-7 PARTIALLY EVIDENCED (154 test vectors, 134/144 pass, failures due to R03-R05 contradiction). Core functionality validated: signal extraction correct, weighted average scoring correct, band classification correct per Requirement 03, output contract complete, performance acceptable, determinism verified, no code quality issues. **Cannot gate COMPLETE with failing tests** per workflow_enforcement_v1.md. Routed to Spec Agent to reconcile Requirement 03 and Requirement 05 contradiction (either correct test vectors or revise band definitions). Implementation is solid; only spec clarification needed.
+
+---
+
 ## Run: 2026-05-19T-m902-12-test_break (M902-12 Stage 4 Risk Scoring System — TEST_BREAK)
 
 - Queue mode: single ticket

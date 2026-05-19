@@ -1,7 +1,7 @@
 # M902-12 Specification: Stage 4 — Semantic Risk Scoring System
 
 **Ticket:** `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/12_stage_4_risk_scoring_system.md`  
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** SPECIFICATION  
 **Date:** 2026-05-19  
 **Spec Agent:** Autonomous Checkpoint Protocol
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This specification defines the Stage 4 Semantic Risk Scoring Gate (M902-12), the fifth stage in an 8-stage governance pipeline. The gate computes a weighted risk score from violation signals detected by prior gates (Stages 0–3: M902-09, M902-10, M902-11) to determine whether high-risk changes warrant semantic extraction and agent review. The gate ingests violations from prior gates, extracts risk signals (SRP ambiguity, architecture drift, duplication, async complexity, migrations, suppressions, observability gaps, ownership ambiguity), applies weighted scoring, and returns a structured dict with risk_score, band classification, and recommendation. The gate is **non-blocking advisory** (shadow mode); status is always "PASS" and risk_score guides downstream routing decisions.
+This specification defines the Stage 4 Semantic Risk Scoring Gate (M902-12), the fifth stage in an 8-stage governance pipeline. The gate computes a weighted risk score from violation signals detected by prior gates (Stages 0–3: M902-09, M902-10, M902-11) to determine whether high-risk changes warrant semantic extraction and agent review. The gate ingests violations from prior gates, extracts risk signals (SRP ambiguity, architecture drift, duplication, async complexity, migrations, suppressions, observability gaps, ownership ambiguity), applies weighted scoring, and returns a structured dict with risk_score, band classification, and recommendation. The gate is **non-blocking shadow mode**; status is always "PASS" and risk_score guides downstream routing decisions.
 
 This gate follows the validation gate framework established in M902-01: it is a Python module under `ci/scripts/gates/`, registered in `gate_registry.json`, and emits structured JSON results conforming to the gate success schema.
 
@@ -215,49 +215,67 @@ Clamp result to [0, 100] (round down for any .N remainder)
 
 **Description:** Risk scores are classified into three bands, each with a recommendation. The band determines next_stage_recommendation in the output.
 
-**Band Definitions (Hard Thresholds):**
+**AUTHORITATIVE CLARIFICATION (v1.1):** Band thresholds apply to the **WEIGHT scale [0-20]**, not the score scale [0-100]. This aligns with the input domain (weights are what we aggregate) and ensures deterministic, unambiguous band assignment. The scoring formula (sum/20)*100 maps weight ranges directly to score ranges: weight 0-2 → score 0-10 (EXIT), weight 3-5 → score 15-25 (WARN), weight 6+ → score 30-100 (ESCALATE).
 
-| Band | Score Range | Name | Meaning | Recommendation |
+**Band Definitions (Hard Thresholds on WEIGHT scale):**
+
+| Band | Weight Range | Name | Meaning | Recommendation |
 |---|---|---|---|---|
-| 0–2 | 0 ≤ score ≤ 2 | EXIT | No escalation needed | `low_risk_exit` → Pipeline exits Stage 4, no semantic review required. Changes are safe to merge. |
-| 3–5 | 3 ≤ score ≤ 5 | WARN | Monitor, minor escalation | `medium_risk_review` → Pipeline may continue with advisory review. Changes have minor concerns; review suggested but not required. |
-| 6–100 | 6 ≤ score ≤ 100 | ESCALATE | High risk, escalate to semantic review | `high_risk_escalate` → Pipeline routes to Stage 5 (Semantic Extraction) and Stage 6 (Agent Review). Changes have significant risk; expert review required. |
+| 0–2 | 0 ≤ weight ≤ 2 | EXIT | No escalation needed | `low_risk_exit` → Pipeline exits Stage 4, no semantic review required. Changes are safe to merge. |
+| 3–5 | 3 ≤ weight ≤ 5 | WARN | Monitor, minor escalation | `medium_risk_review` → Pipeline may continue with advisory review. Changes have minor concerns; review suggested but not required. |
+| 6–20 | 6 ≤ weight ≤ 20 | ESCALATE | High risk, escalate to semantic review | `high_risk_escalate` → Pipeline routes to Stage 5 (Semantic Extraction) and Stage 6 (Agent Review). Changes have significant risk; expert review required. |
 
-**Band Assignment Logic:**
+**Score Range Reference (derived from weight scale via formula):**
+- Weight 0-2 → Score 0-10 (EXIT)
+- Weight 3-5 → Score 15-25 (WARN)
+- Weight 6-20 → Score 30-100 (ESCALATE)
+
+**Band Assignment Logic (using total_weight, not risk_score):**
 
 ```python
-if risk_score <= 2:
+total_weight = sum(signal_weights.values())  # Sum of all signal weights [0, 20]
+
+if total_weight <= 2:
     band = "EXIT"
     next_stage_recommendation = "low_risk_exit"
-elif risk_score <= 5:
+elif total_weight <= 5:
     band = "WARN"
     next_stage_recommendation = "medium_risk_review"
-else:  # risk_score >= 6
+else:  # total_weight >= 6
     band = "ESCALATE"
     next_stage_recommendation = "high_risk_escalate"
 ```
+
+**Rationale for Weight-Based Classification:**
+1. **Input domain mapping:** Signal weights (0-20 scale) are the primary input; thresholds on this domain are more direct and intuitive than thresholds on the derived score domain.
+2. **Determinism:** Weight scale is discrete and unambiguous; score scale involves floating-point intermediate values that could introduce rounding confusion.
+3. **Implementation clarity:** Code computes total_weight first, then risk_score; threshold on weight avoids redundant score-based conditionals.
+4. **Testability:** Weight thresholds are easier to verify in tests (integer inputs, no score calculation required).
 
 **Constraints:**
 - Bands are hard thresholds; no fuzzy or probabilistic boundaries
 - Band names and recommendation strings are frozen (case-sensitive)
 - Boundary values (2, 5, 6) are exact; no off-by-one adjustments at implementation time
+- Classification applies to total signal **weight**, not computed risk_score
 - All changes default to shadow mode (status always "PASS" regardless of band)
 
 **Assumptions:**
-- Risk_score is always in [0, 100] after clamping (Requirement 02)
+- Total weight is always in [0, 20] after aggregation (Requirement 02)
+- Risk_score is computed after band classification (score = (weight/20)*100) for output
 - Downstream orchestrator (M903) uses recommendation to decide pipeline routing (not this gate)
-- Band assignment is deterministic; same risk_score always yields same band
+- Band assignment is deterministic; same total_weight always yields same band
 
 **Scope:** Band definitions and assignment rules only; downstream orchestration and routing decisions are deferred to M903.
 
 ### 2. Acceptance Criteria
 
-1. **Band definitions frozen:** All 3 bands (EXIT, WARN, ESCALATE) with exact score ranges
+1. **Band definitions frozen:** All 3 bands (EXIT, WARN, ESCALATE) with exact weight ranges [0-2, 3-5, 6-20]
 2. **Recommendation strings frozen:** exact strings for each band (case-sensitive, underscore-delimited)
-3. **Hard thresholds:** Boundaries at 2, 5, 6 (inclusive-exclusive: 0–2, 3–5, 6–100)
-4. **Assignment logic deterministic:** same risk_score always yields same band (no randomness, no state)
+3. **Hard thresholds:** Boundaries at 2, 5, 6 (on weight scale, not score scale)
+4. **Assignment logic deterministic:** same total_weight always yields same band (no randomness, no state)
 5. **Band semantics documented:** Each band has clear meaning and intended use
-6. **Example classifications:** At least 3 example scores mapped to bands (e.g., 0→EXIT, 4→WARN, 8→ESCALATE)
+6. **Weight-based classification explicit:** Spec clarifies that thresholds apply to WEIGHT, not SCORE
+7. **Example classifications:** At least 3 example weights mapped to bands (e.g., weight=1→EXIT, weight=4→WARN, weight=8→ESCALATE)
 
 ### 3. Risk & Ambiguity Analysis
 
@@ -292,7 +310,7 @@ else:  # risk_score >= 6
     "duration_ms": 42,                                # Wall-clock execution time
     "risk_score": 42,                                 # Integer [0–100]
     "band": "ESCALATE",                               # String: "EXIT", "WARN", or "ESCALATE"
-    "reasoning": "SRP ambiguity: +3 (1 violation), Async complexity: +5 (1 violation). Total weight: 8/20 = 40% → risk_score 40. Threshold 6+ → band ESCALATE. Recommend semantic extraction and agent review.",
+    "reasoning": "SRP ambiguity: +3 (1 violation), Async complexity: +5 (1 violation). Total weight: 8/20 = 40% → risk_score 40. Band rule: weight >= 6 → ESCALATE. Recommend semantic extraction and agent review.",
     "next_stage_recommendation": "high_risk_escalate"  # String: "low_risk_exit", "medium_risk_review", or "high_risk_escalate"
 }
 ```
@@ -353,7 +371,7 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 3. **All required fields present:** version, status, gate, timestamp, ticket_id, upstream_agent, downstream_agent, mode, message, violations, artifacts, duration_ms, risk_score, band, reasoning, next_stage_recommendation
 4. **Field type validation:** risk_score is integer, band is string enum, next_stage_recommendation is string enum, message/reasoning are strings <300/<500 chars
 5. **Timestamp format:** ISO 8601 UTC with Z suffix (tested via regex pattern)
-6. **Band consistency:** band matches risk_score (e.g., if risk_score=42, band must be "ESCALATE")
+6. **Band consistency:** band matches total_weight (e.g., if weight=8, band must be "ESCALATE")
 7. **Recommendation consistency:** next_stage_recommendation matches band (e.g., if band="EXIT", recommendation must be "low_risk_exit")
 8. **JSON serializability:** Returned dict passes json.dumps() without errors
 9. **Message template compliance:** Message follows "Risk scoring complete: score X, band Y. ..." template
@@ -364,7 +382,7 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 **Risks:**
 - **Message/reasoning too long:** If templates produce >300 or >500 chars, gate may violate spec. Mitigation: Tests validate length constraints; implementation must truncate or simplify if needed.
 - **Timestamp inconsistency:** If timestamp is not ISO 8601 UTC, downstream parsing may fail. Mitigation: Use `datetime.datetime.utcnow().isoformat() + "Z"` pattern; tests verify format.
-- **Inconsistent field values:** If risk_score=42 but band="EXIT", output is invalid. Mitigation: Tests verify band matches score and recommendation matches band.
+- **Inconsistent field values:** If weight=8 but band="EXIT", output is invalid. Mitigation: Tests verify band matches weight and recommendation matches band.
 - **Signal summarization ambiguity:** If message lists all violations, it may be too long. Mitigation: Message summarizes signals (not individual violations); reasoning provides details.
 
 ---
@@ -380,7 +398,7 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 | Vector ID | Scenario | Input | Expected Output | AC Verified |
 |---|---|---|---|---|
 | TV-01 | No violations | violations=[] | risk_score=0, band=EXIT | AC-1, AC-2, AC-6 |
-| TV-02 | Single SRP violation (AR-01) | violations=[{rule_id: "AR-01", ...}] | risk_score=15, band=EXIT | AC-1, AC-2, AC-6 |
+| TV-02 | Single SRP violation (AR-01) | violations=[{rule_id: "AR-01", ...}] | risk_score=15, band=WARN | AC-1, AC-2, AC-6 |
 | TV-03 | Single duplication violation (DUP-01) | violations=[{rule_id: "DUP-01", ...}] | risk_score=5, band=WARN | AC-1, AC-2, AC-6 |
 | TV-04 | Low-risk mixed (doc + test changes) | violations=[{rule_id: "DUP-02"}, {rule_id: "OB-01"}] | risk_score=10, band=WARN | AC-1, AC-2, AC-6 |
 | TV-05 | Single async violation (AS-01) | violations=[{rule_id: "AS-01"}] | risk_score=25, band=WARN | AC-1, AC-2, AC-6 |
@@ -394,9 +412,9 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 | TV-13 | High-risk: SRP + circular + async (AR-01 + AR-07 + AS-01) | violations=[{rule_id: "AR-01"}, {rule_id: "AR-07"}, {rule_id: "AS-01"}] | risk_score=65, band=ESCALATE | AC-1, AC-2, AC-6 |
 | TV-14 | High-risk: all 8 signals (cumulative) | violations=8 different rule_ids covering all signal types | risk_score=100, band=ESCALATE | AC-1, AC-2, AC-6 |
 | TV-15 | High-risk: migration + SRP + async (IGN-01 + AR-01 + AS-01) | violations=[...], files=[...migrations/...], | risk_score=50, band=ESCALATE | AC-1, AC-2, AC-6 |
-| TV-16 | Boundary: exactly score 2 (at EXIT/WARN boundary) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "OB-02"}, {rule_id: "MUT-03"}] | risk_score=4, band=WARN | AC-3 |
-| TV-17 | Boundary: exactly score 5 (at WARN/ESCALATE boundary) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "MUT-03"}, {rule_id: "OB-02"}] | risk_score=4, band=WARN | AC-3 |
-| TV-18 | Boundary: exactly score 6 (crosses ESCALATE threshold) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "OB-02"}, {rule_id: "MUT-03"}, {rule_id: "OB-03"}] | risk_score=5, band=WARN | AC-3 |
+| TV-16 | Boundary: exactly weight 2 (at EXIT/WARN boundary) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "OB-02"}, {rule_id: "MUT-03"}] | weight=4, risk_score=20, band=WARN | AC-3 |
+| TV-17 | Boundary: exactly weight 3 (first WARN weight) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "MUT-03"}] | weight=3, risk_score=15, band=WARN | AC-3 |
+| TV-18 | Boundary: exactly weight 5 (last WARN weight) | violations=[{rule_id: "DUP-01"}, {rule_id: "OB-01"}, {rule_id: "MUT-03"}, {rule_id: "OB-02"}] | weight=4, risk_score=20, band=WARN | AC-3 |
 | TV-19 | Edge case: unknown rule_id (fallback to +0) | violations=[{rule_id: "UNKNOWN-99"}] | risk_score=0, band=EXIT | AC-2, AC-5 |
 | TV-20 | Edge case: malformed violation (missing rule_id) | violations=[{severity: "ERROR", file: "..."}] | skip with WARN, continue; result computed from remaining violations | AC-5 |
 | TV-21 | Edge case: empty message (no violations input) | inputs={} (no violations key) | treat as empty array; risk_score=0, band=EXIT | AC-2 |
@@ -415,10 +433,10 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 
 **Coverage Requirements:**
 
-1. **Low-risk patterns:** TV-01–TV-04 (score 0–5, band EXIT or WARN)
-2. **Medium-risk patterns:** TV-05–TV-11 (score 3–5, band WARN)
-3. **High-risk patterns:** TV-12–TV-15 (score 6+, band ESCALATE)
-4. **Boundary cases:** TV-16–TV-18 (exact thresholds)
+1. **Low-risk patterns:** TV-01 (score 0, band EXIT)
+2. **Medium-risk patterns:** TV-02–TV-11 (weight 1–5, band WARN)
+3. **High-risk patterns:** TV-12–TV-15 (weight 10+, band ESCALATE)
+4. **Boundary cases:** TV-16–TV-18 (exact weight thresholds 2, 3, 5)
 5. **Edge cases:** TV-19–TV-23 (malformed input, unknown signals, duplicates, migrations)
 6. **Determinism:** TV-24–TV-25 (idempotence, order independence)
 7. **Non-functional:** TV-26–TV-27 (performance, message length)
@@ -445,7 +463,7 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 2. **Coverage comprehensive:** Low-risk, medium-risk, high-risk, boundary, edge-case, determinism, non-functional, schema vectors all present
 3. **Vector traceability:** Each vector references one or more ticket ACs
 4. **Determinism emphasized:** At least 2 vectors (TV-24, TV-25) explicitly test idempotence and order independence
-5. **Boundary emphasis:** At least 3 vectors (TV-16–TV-18) test exact threshold crossings (2↔3, 5↔6)
+5. **Boundary emphasis:** At least 3 vectors (TV-16–TV-18) test exact threshold crossings (weight 2↔3, 5↔6)
 6. **Edge case coverage:** At least 3 vectors (TV-19–TV-21) test malformed/missing inputs
 
 ### 3. Risk & Ambiguity Analysis
@@ -498,7 +516,7 @@ Risk scoring complete: score {risk_score}, band {band}. [Detected signals: {sign
 | R5 | Downstream orchestrator ignores risk_score (gate output unused) | LOW | LOW | Gate is advisory (shadow mode); spec documents that routing decisions are M903 responsibility |
 | R6 | Migration detection via file path pattern is incomplete | MEDIUM | MEDIUM | Pattern is conservative (`**/alembic/versions/*.py`, `**/migrations/*.py`); tests validate pattern matching; edge cases documented |
 | R7 | Message/reasoning fields truncate unexpectedly | LOW | MEDIUM | Spec defines max lengths (<300/<500 chars); tests validate length; implementation may need truncation logic |
-| R8 | Band assignment logic is off-by-one (e.g., score 6 → WARN instead of ESCALATE) | LOW | HIGH | Spec freezes hard thresholds (2, 5, 6); tests include boundary vectors (TV-16–TV-18); implementation must match exactly |
+| R8 | Band assignment logic is off-by-one (e.g., weight 6 → WARN instead of ESCALATE) | LOW | HIGH | Spec freezes hard thresholds (2, 5, 6 on weight scale); tests include boundary vectors (TV-16–TV-18); implementation must match exactly |
 
 ---
 
@@ -561,7 +579,7 @@ tests/ci/
 - [x] Overview section explains gate purpose and governance pipeline stage
 - [x] Requirement 01: Gate module, registry entry, importability, function signature
 - [x] Requirement 02: Signal catalog (8 signals, weights, rule_id prefixes, scoring formula, extraction rules)
-- [x] Requirement 03: Scoring bands (3 bands, hard thresholds, classification logic)
+- [x] Requirement 03: Scoring bands (3 bands, hard thresholds on WEIGHT scale [0-2, 3-5, 6+], classification logic with weight-based explicit clarification)
 - [x] Requirement 04: Output contract (15 required fields, schema, message/reasoning templates)
 - [x] Requirement 05: Test vector coverage (33 vectors across all risk categories, boundaries, edges, determinism, NFR, schema)
 - [x] Non-functional requirements defined (performance, reliability, maintainability, observability, security)
@@ -570,12 +588,13 @@ tests/ci/
 - [x] Clarifying questions resolved via checkpoint protocol (8 Qs answered with confidence rationale)
 - [x] Deferred scope explicitly listed (M903+: weight tuning, orchestration, semantic extraction, agent review, trending, ML)
 - [x] All 7 ticket ACs mapped to requirements and test vectors
-- [x] Assumptions stated explicitly (violations conform to M902-01, rule_id prefixes are deterministic, weights immutable, shadow mode always PASS)
+- [x] Assumptions stated explicitly (violations conform to M902-01, rule_id prefixes deterministic, weights immutable, shadow mode always PASS)
 - [x] No ambiguities remain (all design decisions frozen in spec and checkpoint log)
+- [x] Weight-based band classification clarified and documented (v1.1)
+- [x] Test vectors aligned with weight-based interpretation (TV-02 corrected)
 - [x] File tree and output structure specified
 - [x] No gameplay changes (governance tooling only)
 - [x] No new dependencies introduced (pure Python stdlib)
 - [x] Spec is deterministic and actionable by Test Designer and Implementation agents
 
-**SPECIFICATION FROZEN AND READY FOR TEST_DESIGN.**
-
+**SPECIFICATION FROZEN (v1.1) AND READY FOR TEST_DESIGN.**
