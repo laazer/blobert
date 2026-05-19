@@ -5698,3 +5698,93 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** Each helper is tested independently (unit) and integrated (integration). Errors in helpers are caught by both levels.
 
 ---
+
+## M902-11 — Architecture Enforcement Gate: Mock Stubs vs. Real Invocation
+
+*Completed: 2026-05-19*
+
+### Major Rework Event
+
+**Initial state:** Implementation provided mock stubs for all five tool functions, returning empty lists. Tests passed (51 behavioral + 29 adversarial), but AC-1 through AC-7 (tool invocation and violation detection) were not satisfied.
+
+**Trigger:** AC Gatekeeper review flagged tool invocation as "not implemented" after implementation claimed Stage `IMPLEMENTATION_BACKEND_COMPLETE`.
+
+**Root cause:** Implementation intentionally provided mocks "for test isolation" (per initial code comments), believing test coverage was sufficient. However, the spec (Requirement 03) explicitly listed tool invocation as in-scope ("Tool orchestration and invocation only"). The implementation interpreted "test isolation" as "defer tool invocation," but acceptance criteria required real invocation.
+
+**Rework:** Replaced mock stubs with real subprocess calls, including:
+- Created `_invoke_tool()` helper (lines 45–84) for standard subprocess handling
+- All five tool functions now invoke subprocess with proper timeouts, error handling, and output parsing
+- Added exception handling: TimeoutExpired → TOOL_TIMEOUT, FileNotFoundError → TOOL_UNAVAILABLE, ValueError → TOOL_ERROR
+- Fixed hardcoded `cwd="/"` to use `codebase_root` parameter throughout
+- Added structured logging and error transparency (JSON parse failures now raise ValueError, not silent return)
+
+**Impact:** 2 full development iterations required: design → initial implementation with mocks → AC review rejection → redesign and real implementation → acceptance.
+
+### Engineering Insights
+
+1. **Mock stubs for "test isolation" are insufficient for infrastructure gates:** The implementation assumed "we'll mock the tools to isolate the test suite from external dependencies." However, isolation ≠ completion. If the spec says tool invocation is required, then tool invocation code must be present even if mocked by the test suite. The correct pattern is: (1) implement real tool invocation, (2) provide mocks in test setup (`unittest.mock.patch` at test time), not in the implementation code itself. Placing mocks in the implementation creates ambiguity: is the mock temporary or intentional? This led to AC-1 being marked "not implemented" despite 80 passing tests.
+   **severity:** high
+   **prevention:** Implementation agent must distinguish between (a) deferred scope (AC explicitly deferred to M903) vs. (b) test isolation (mock in tests, not in code). Provide real implementations even if tests override them. Review must check for "# Mocked for testing" comments in submitted code.
+
+2. **Hardcoded `cwd="/"` breaks real deployments:** Initial implementation called all tools with `cwd="/"`, which fails when tools need to find configuration files relative to the codebase root (e.g., `.import-linter`, `.semgrep.yml`). This was caught by code review, not tests, because the mocked functions never actually invoked subprocess. The fix: accept `codebase_root` parameter and pass to all tool functions.
+   **severity:** high
+   **prevention:** Code review checklist: "If code invokes subprocess, verify cwd is configurable (not hardcoded). Tools often need to find config/source files relative to project root." Pre-commit hook could validate this: `grep -n 'cwd="/"' ci/scripts/gates/*.py`.
+
+3. **Code duplication in tool invocation requires a helper function early:** Initial implementation (after rework) had five separate try/except blocks with identical TimeoutExpired/FileNotFoundError handling, creating duplication and maintenance burden. This was a "fix Issue #3" during gatekeeper feedback. The correct pattern: extract `_invoke_tool(tool_name, args, timeout, cwd)` helper immediately when multiple tool invocations are planned. Tests should mock this helper, not individual tool functions.
+   **severity:** medium
+   **prevention:** When spec requires orchestrating multiple subprocess calls, implement helper function first. Avoid writing tool function with try/except, then realizing it needs to be duplicated five times.
+
+4. **Silent JSON parse failures make debugging impossible:** Initial implementation called `json.loads()` but had no exception handling. If a tool returned malformed JSON (due to tool failure, version mismatch, or environment issue), the gate would crash or silently return empty list. Code review required explicit ValueError raising with output preview: `logger.error(..., result.stdout[:500])`. This preserves observability.
+   **severity:** high
+   **prevention:** For any external tool invocation that parses structured output (JSON, XML, etc.), wrap the parse call in try/except, raise ValueError with the first N bytes of output in the error message. This allows downstream debugging without rerunning the gate.
+
+5. **Bare except Exception clauses require explicit justification per code_governance.md:** The `_collect_violations()` function has a catch-all exception handler to record tool errors as violations (preventing cascading failures). Code review flagged this as a bare except violation. Fix: add detailed comment explaining why broad catch is necessary: tool functions are plugin-like; unexpected exceptions must be recorded, not crash the gate. All exceptions logged with traceback (`exc_info=True`).
+   **severity:** medium
+   **prevention:** Whenever a broad exception catch is necessary (plugin interface, infrastructure resilience), document the specific exception types handled and the reason for broad catch scope. This satisfies code_governance.md "No bare except clauses" rule.
+
+### Anti-Patterns
+
+1. **"Mock for test isolation" in implementation code:** Placing `# Mocked for testing; real implementation would invoke subprocess` in the implementation itself creates false signal about completion. Tests should use `unittest.mock.patch` to override real implementations, not rely on placeholder code. Signals: comments saying "mocked," functions returning hardcoded test data, `TODO`/`FIXME` for real implementation.
+
+2. **Hardcoding infrastructure constants (cwd, paths, timeouts):** Subprocess invocations often hardcode `cwd="."` or `cwd="/"` without parameterization. This breaks when tools need different working directories. Parameterize from the start: `cwd: str` function parameter, passed from caller.
+
+3. **Skipping exception handling for "simple" subprocess calls:** Subprocess calls can fail in multiple ways (tool not found, timeout, output parsing, permissions). Assuming "it won't fail" or "tests will catch it" leads to missing error paths in real deployments. Comprehensive exception handling is infrastructure code, not optional.
+
+4. **JSON/XML parsing without error context:** When tool output is malformed, logging just the exception type is insufficient. Include the first N bytes of the output (e.g., `result.stdout[:500]`) in the error message for debugging.
+
+### Prompt Patches
+
+- **agent: Implementation Agent (infrastructure / gate modules)**
+  **change:** "When implementing tool orchestration (multiple subprocess calls to external tools), follow this checklist: (1) Create a `_invoke_tool()` helper with standard error handling (TimeoutExpired, FileNotFoundError, CalledProcessError). (2) All tool functions accept `codebase_root` parameter and pass to _invoke_tool. (3) For structured output (JSON, XML), wrap parse in try/except, raise ValueError with first 500 bytes of output. (4) Broad exception catch in orchestrator (e.g., _collect_violations) requires explicit comment explaining plugin interface resilience. (5) Do NOT place 'mocked for testing' comments in implementation code; move mocks to test setup (unittest.mock.patch). Mocks in the implementation signal incomplete work to reviewers."
+  **reason:** Tool orchestration has recurring pitfalls (hardcoded paths, missing error handling, duplicate code). Checklist prevents oversight and clarifies that test isolation happens in test code, not implementation code.
+
+- **agent: Code Review Agent**
+  **change:** "For infrastructure modules invoking subprocess or external tools, verify: (1) Working directory is configurable (not hardcoded). (2) All exception types are explicit (no bare except Exception without comment). (3) For JSON/XML parsing, confirm ValueError is raised with output preview. (4) Implementation code has no comments like 'mocked for testing'; those belong in tests. (5) Exception comments justify broad catches per code_governance.md. If any check fails, request changes before approval."
+  **reason:** Subprocess and parsing errors are common in infrastructure code and easy to miss in initial review. Explicit checklist reduces rework cycles.
+
+- **agent: Test Designer (infrastructure gates)**
+  **change:** "When designing tests for tool orchestration gates, mock individual tool functions via unittest.mock.patch, not by accepting placeholder implementations. Use assertions like `assert mock_tool.called_with(...)` to verify invocation happened with correct arguments. This validates the orchestrator logic without depending on the tool functions being mocked in the implementation code itself. Test naming should be behavior-driven (e.g., `test_collect_violations_retries_on_timeout`, not `test_mock_functions`)."
+  **reason:** Mocks in test code are explicit; mocks in implementation code signal incomplete work. Separating these concerns clarifies what's done vs. what's deferred."
+
+### Workflow Improvements
+
+- **issue:** AC Gatekeeper review discovered tool invocation was not implemented (despite 80 passing tests), leading to a full rework cycle. This was caught at AC review stage, late in the workflow.
+  **improvement:** **Precursor check before IMPLEMENTATION_BACKEND_COMPLETE:** Implementation agent runs a "presence check" that verifies required functions/modules actually do their work (not just mocks). For tool orchestration: verify _invoke_tool is called from each tool function, not just present in the file. Use a simple grep/regex check: `grep -n "_invoke_tool\|subprocess\|popen" ci/scripts/gates/architecture_enforcement_check.py` and require at least 5 matches for 5 tools. Checkpoint this as "tool invocation presence: VERIFIED."
+  **expected_benefit:** Catches "mocked for testing" implementations before AC review, moving feedback earlier to implementation stage instead of AC stage.
+
+- **issue:** Multiple rework cycles (initial implementation with mocks → AC gatekeeper feedback → rework with real invocation → code review with 4 blocking issues → fixes). Each cycle added 2-4 hours.
+  **improvement:** Create a "Tool Orchestration Gate Checklist" that Implementation Agent must complete and sign off on before marking IMPLEMENTATION_BACKEND_COMPLETE. Checklist includes: (1) _invoke_tool helper exists, (2) all tool functions call it with codebase_root parameter, (3) exception handling covers TimeoutExpired, FileNotFoundError, ValueError, and broad catch, (4) output parsing includes error context, (5) cwd is not hardcoded. This can be automated as a pre-submission linting check.
+  **expected_benefit:** Reduces rework cycles by catching infrastructure issues at implementation stage, before tests are finalized.
+
+### Keep / Reinforce
+
+- **practice:** Comprehensive exception handling with structured logging (tool name, error type, output preview) in infrastructure modules. This makes production failures debuggable.
+  **reason:** When a gate fails in CI, having clear logs (tool name, timeout value, stderr/stdout preview) allows diagnosis without re-running the gate. M902-11's final implementation logs all this.
+
+- **practice:** Parameterization of infrastructure constants (cwd, timeouts, config paths) instead of hardcoding. All tool functions accept codebase_root and pass to subprocess invocation.
+  **reason:** Enables real-world use in CI/CD pipelines where project root may not be the process cwd.
+
+- **practice:** Multi-stage tool orchestration with deduplication and scoring across tools. M902-11 aggregates violations from five tools, deduplicates by (file, line, rule_id), and computes risk/architecture scores. This is more maintainable than merging results ad-hoc.
+  **reason:** Consistent aggregation logic across gates (M902-09, M902-10, M902-11) reduces duplication and improves reliability.
+
+---

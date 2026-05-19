@@ -79,5 +79,15 @@
     "default_mode": "shadow",
     "description": "Structural architecture enforcement: detects SRP violations, dependency direction violations, circular imports, duplication clusters, and complexity spikes. Orchestrates import-linter, eslint-plugin-boundaries, semgrep, jscpd, and radon with aggregated risk and architecture scoring.",
     "category": "governance"
+  },
+  {
+    "name": "risk_scoring_check",
+    "module": "ci.scripts.gates.risk_scoring_check",
+    "run_function": "run",
+    "required_inputs": [],
+    "optional_inputs": ["violations", "mode", "ticket_id", "upstream_agent", "downstream_agent"],
+    "default_mode": "shadow",
+    "description": "Computes weighted risk score from violation signals (SRP, architecture drift, duplication, async, migration, suppression, observability, ownership) to determine escalation need",
+    "category": "governance"
   }
 ]
