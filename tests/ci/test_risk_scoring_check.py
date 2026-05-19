@@ -110,25 +110,25 @@ class TestRequirement02SignalCatalogAndScoring:
         assert result["band"] == "EXIT"
 
     def test_tv_02_single_srp_violation(self) -> None:
-        """TV-02: Single SRP violation (AR-01) → risk_score=15, band=EXIT."""
+        """TV-02: Single SRP violation (AR-01) → risk_score=15, band=WARN."""
         from ci.scripts.gates import risk_scoring_check
 
         violations = [{"rule_id": "AR-01", "severity": "ERROR", "file": "test.py", "line": 10, "message": "SRP violation"}]
         result = risk_scoring_check.run({"violations": violations})
         assert result["risk_score"] == 15, f"Expected 15, got {result['risk_score']}"
-        assert result["band"] == "EXIT"
+        assert result["band"] == "WARN"
 
     def test_tv_03_single_duplication_violation(self) -> None:
-        """TV-03: Single duplication violation (DUP-01) → risk_score=5, band=WARN."""
+        """TV-03: Single duplication violation (DUP-01) → risk_score=5, band=EXIT."""
         from ci.scripts.gates import risk_scoring_check
 
         violations = [{"rule_id": "DUP-01", "severity": "WARN", "file": "test.py", "line": 10, "message": "Duplication"}]
         result = risk_scoring_check.run({"violations": violations})
         assert result["risk_score"] == 5
-        assert result["band"] == "WARN"
+        assert result["band"] == "EXIT"
 
     def test_tv_04_low_risk_mixed(self) -> None:
-        """TV-04: Low-risk mixed (DUP-02 + OB-01) → risk_score=10, band=WARN."""
+        """TV-04: Low-risk mixed (DUP-02 + OB-01) → risk_score=10, band=EXIT."""
         from ci.scripts.gates import risk_scoring_check
 
         violations = [
@@ -137,7 +137,7 @@ class TestRequirement02SignalCatalogAndScoring:
         ]
         result = risk_scoring_check.run({"violations": violations})
         assert result["risk_score"] == 10
-        assert result["band"] == "WARN"
+        assert result["band"] == "EXIT"
 
     def test_tv_05_single_async_violation(self) -> None:
         """TV-05: Single async violation (AS-01) → risk_score=25, band=WARN."""
@@ -182,7 +182,7 @@ class TestRequirement02SignalCatalogAndScoring:
         assert result["band"] == "WARN"
 
     def test_tv_09_two_srp_violations(self) -> None:
-        """TV-09: Two SRP violations (AR-03 + AR-04) → risk_score=30, band=WARN."""
+        """TV-09: Two SRP violations (AR-03 + AR-04) → risk_score=30, band=ESCALATE."""
         from ci.scripts.gates import risk_scoring_check
 
         violations = [
@@ -191,7 +191,7 @@ class TestRequirement02SignalCatalogAndScoring:
         ]
         result = risk_scoring_check.run({"violations": violations})
         assert result["risk_score"] == 30  # 3 + 3 = 6, (6/20)*100 = 30
-        assert result["band"] == "WARN"
+        assert result["band"] == "ESCALATE"
 
     def test_tv_12_circular_import_plus_async(self) -> None:
         """TV-12: High-risk: circular import + async (AR-07 + AS-01) → risk_score=50, band=ESCALATE."""
@@ -230,9 +230,10 @@ class TestRequirement02SignalCatalogAndScoring:
             {"rule_id": "IGN-01", "severity": "WARN", "file": "e.py", "line": 1, "message": ""},  # Suppression +2
             {"rule_id": "OB-01", "severity": "WARN", "file": "f.py", "line": 1, "message": ""},  # Observability +1
             {"rule_id": "MUT-03", "severity": "WARN", "file": "g.py", "line": 1, "message": ""},  # Ownership +1
+            {"rule_id": "DUP-02", "severity": "WARN", "file": "alembic/versions/001_migration.py", "line": 1, "message": ""},  # Migration +2
         ]
         result = risk_scoring_check.run({"violations": violations})
-        assert result["risk_score"] == 100  # 3+5+1+5+2+1+1 = 18, but need migration; with migration all 8 = 20
+        assert result["risk_score"] == 100  # 3+5+1+5+2+1+1+2 = 20, (20/20)*100 = 100
         assert result["band"] == "ESCALATE"
 
     def test_tv_22_duplicate_violations_same_rule_id(self) -> None:
@@ -363,7 +364,7 @@ class TestRequirement03ScoringBands:
         assert result["band"] == "WARN"
 
     def test_band_escalate_six(self) -> None:
-        """AC-3: risk_score=6 → band=ESCALATE (boundary, inclusive)."""
+        """AC-3: risk_score=30 → band=ESCALATE (boundary, inclusive)."""
         from ci.scripts.gates import risk_scoring_check
 
         violations = [
@@ -375,7 +376,7 @@ class TestRequirement03ScoringBands:
             {"rule_id": "IGN-01", "severity": "WARN", "file": "f.py", "line": 1, "message": ""}
         ]
         result = risk_scoring_check.run({"violations": violations})
-        assert result["risk_score"] == 30  # 1+1+1+1+1+2 = 7, (7/20)*100 = 35
+        assert result["risk_score"] == 35  # 1+1+1+1+1+2 = 7, (7/20)*100 = 35
         assert result["band"] == "ESCALATE"
 
     def test_band_escalate_high_score(self) -> None:
@@ -540,6 +541,7 @@ class TestRequirement04OutputContract:
         violations_warn = [
             {"rule_id": "DUP-01", "severity": "WARN", "file": "a.py", "line": 1, "message": ""},
             {"rule_id": "OB-01", "severity": "WARN", "file": "b.py", "line": 1, "message": ""},
+            {"rule_id": "OB-02", "severity": "WARN", "file": "c.py", "line": 1, "message": ""},
         ]
         result_warn = risk_scoring_check.run({"violations": violations_warn})
         assert result_warn["next_stage_recommendation"] == "medium_risk_review"
@@ -693,7 +695,7 @@ class TestRequirement07HighMediumLowRiskPatterns:
             {"rule_id": "DUP-01", "severity": "WARN", "file": "a.py", "line": 1, "message": ""}
         ]
         result = risk_scoring_check.run({"violations": violations})
-        assert result["band"] == "WARN"
+        assert result["band"] == "EXIT"
         assert result["risk_score"] <= 10
 
     def test_medium_risk_pattern_minor_srp(self) -> None:
@@ -713,7 +715,8 @@ class TestRequirement07HighMediumLowRiskPatterns:
 
         violations = [
             {"rule_id": "DUP-01", "severity": "WARN", "file": "a.py", "line": 1, "message": ""},
-            {"rule_id": "OB-01", "severity": "WARN", "file": "b.py", "line": 1, "message": ""}
+            {"rule_id": "OB-01", "severity": "WARN", "file": "b.py", "line": 1, "message": ""},
+            {"rule_id": "OB-02", "severity": "WARN", "file": "c.py", "line": 1, "message": ""}
         ]
         result = risk_scoring_check.run({"violations": violations})
         assert result["band"] == "WARN"

@@ -928,7 +928,8 @@ class TestOutputFieldConsistency:
 
         violations = [
             {"rule_id": "DUP-01", "severity": "WARN", "file": "a.py", "line": 1, "message": ""},
-            {"rule_id": "OB-01", "severity": "WARN", "file": "b.py", "line": 1, "message": ""}
+            {"rule_id": "OB-01", "severity": "WARN", "file": "b.py", "line": 1, "message": ""},
+            {"rule_id": "OB-02", "severity": "WARN", "file": "c.py", "line": 1, "message": ""}
         ]
         result = risk_scoring_check.run({"violations": violations})
         assert result["band"] == "WARN"
