@@ -5951,4 +5951,67 @@ Both fixes were applied at the spec phase (before test design), not discovered a
 
 ---
 
+## [M902-14] — Specification Scope Deferral Resolves Architectural Constraints Cleanly
+
+*Completed: 2026-05-19*
+
+### Critical Learning
+
+**When a specification anticipates ambiguity and explicitly defers resolution to post-implementation analysis, structured constraint documentation during implementation prevents false blockers and clarifies architectural reality.** M902-14's AC-5 location requirement appeared to conflict with git version control constraints, but the specification's explicit deferral language ("if directory structure differs, clarified post-implementation") enabled a clean resolution that satisfied intent while respecting technical constraints.
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Symbolic links to external directories (like CloudDocs) create a git security boundary that version control systems enforce automatically. Files placed beyond this boundary cannot be tracked, committed, or reviewed in CI/CD pipelines, regardless of implementation intent.
+  **impact:** AC-5 requirement stated "agent implementation at `agent_context/agents/`", but `agent_context/` is a symlink to an external cloud directory. Git refuses to track files beyond symlinks for security reasons. Implementation at this location would be untraceable, untestable in CI, and unreviable. Resolution: move implementation to `ci/scripts/agents/semantic_reviewer.py` (git-trackable), which mirrors the gate wrapper pattern and satisfies the architectural intent.
+  **prevention:** When specifying file locations, validate that the target directory is within the git repository boundary. Avoid symlink targets in specification requirements. Document architectural constraints (like "this directory is external" or "this is a symlink to cloud storage") in requirements that reference them.
+  **severity:** high
+
+- **category: process**
+  **insight:** Specification language that anticipates ambiguity and explicitly defers resolution ("if X differs from expected, clarified post-implementation") is a legitimate design pattern, not a spec deficiency. This pattern works well when: (1) the specification documents the anticipated ambiguity, (2) implementation is checked against constraints, (3) constraint analysis is documented as a checkpoint.
+  **impact:** M902-14 specification included explicit deferral language ("Agent instruction sets in `agent_context/agents/` (if directory structure differs) clarified post-implementation"). This anticipation of location ambiguity meant the post-implementation constraint analysis (symlink boundary documentation in AC5_location_constraint.md) was expected and legitimate. No spec revision was needed; only post-implementation clarification.
+  **prevention:** When writing specifications for infrastructure components with potential environmental variation, use deferral language explicitly: "if [constraint differs], [decision] clarified post-implementation during [agent stage]". Document which constraint is expected to vary and which agent will resolve it. This prevents false alarms at AC Gatekeeper when the anticipated deferral occurs.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Comprehensive test coverage (235 tests covering all 8 signals, decision outcomes, edge cases, determinism, performance) provides confidence that implementation logic is correct even when the implementation location differs from specification requirements. Tests validate intent, not location.
+  **impact:** AC-5 location mismatch did not trigger a full rework because tests validated that the agent correctly evaluates bundles, makes decisions, and integrates with gates. Whether the module is at `agent_context/agents/semantic_reviewer.py` or `ci/scripts/agents/semantic_reviewer.py`, the behavioral contract is the same. Tests ensured intent satisfaction regardless of location.
+  **prevention:** Separate acceptance criteria into: (1) behavioral AC (what the agent does), (2) structural AC (where it is located or how it is packaged). Behavioral ACs should be validated by tests; structural ACs by constraints analysis. This allows structural requirements to be reinterpreted post-implementation if constraints change, while behavioral intent remains testable.
+  **severity:** medium
+
+- **category: process**
+  **insight:** AC Gatekeeper review that systematically documents architectural constraints and deferred decisions (like the symlink boundary analysis) prevents future confusion about why implementation locations differ from initial requirements.
+  **impact:** AC Gatekeeper's decision checkpoint (Decision 1, page 127 of checkpoint) explicitly documents: (1) specification language anticipated the deferral, (2) git symlink boundary is a hard constraint, (3) alternate location is architecturally sound, (4) all 235 tests pass, (5) AC intent is satisfied. This documentation will inform future agents reading the AC record that the location choice was deliberate and justified, not a deviation.
+  **prevention:** When accepting AC deviations due to constraints, always document in AC Gatekeeper checkpoint: (1) what constraint forced the deviation, (2) what specification language anticipated it, (3) how intent is still satisfied, (4) what evidence validates the choice. Avoid logging "AC-5 accepted as SATISFIED despite location difference" without explanation; always explain the constraint and rationale.
+  **severity:** low
+
+### Anti-Patterns
+
+1. **"Specification requirement doesn't match reality" → immediate redesign:** When a spec requirement conflicts with technical constraints (like git version control boundaries), the impulse is to revise the spec. Better approach: check if spec anticipated the ambiguity. If it did (via explicit deferral language), constraint analysis is sufficient; no revision needed.
+
+2. **"Move requirements to post-implementation deferral without anticipating constraints":** Adding deferral language to spec *after* discovering a conflict (vs. *before* during spec writing) signals incomplete spec review. Deferral should be intentional, not reactive.
+
+3. **"Accept structural deviation without documenting rationale":** If AC-5 location differs, failing to document why (git boundary, symlink constraint) makes the deviation appear arbitrary to future readers. Documentation prevents the same conflict from arising in similar tickets.
+
+### Prompt Patches
+
+- **agent: Specification Agent**
+  **change:** "When specifying file locations or directory structures for code artifacts, validate that the target is within the git repository boundary. If a directory is external (symlink, mounted, cloud-based), include explicit deferral language: 'Agent implementation in [directory] (if directory structure differs from expected, location clarified post-implementation per [stage] constraints analysis).' Document the constraint in the requirements section."
+  **reason:** Prevents specification requirements from conflicting with version control constraints. Anticipatory deferral language provides legitimate scope for post-implementation clarification without requiring spec revision.
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "When accepting AC deviations due to technical constraints: (1) Document the constraint in checkpoint (what external system enforces it—git, OS, CI pipeline), (2) Cite specification language that anticipated the deviation (if present), (3) Validate that implementation intent is satisfied via tests or other evidence, (4) Recommend future specifications include explicit deferral language if the constraint is environmental or system-dependent."
+  **reason:** Provides traceability for why structural requirements were reinterpreted. Prevents false reports of 'spec violations' when constraints are documented and anticipated.
+
+### Keep / Reinforce
+
+- **practice:** Specification deferral language ("if X differs, clarified post-implementation") for anticipated ambiguities is legitimate and reduces revision cycles. Use it intentionally in specifications with environmental or system-dependent requirements.
+  **reason:** M902-14's anticipatory deferral allowed clean resolution of the AC-5 location constraint without spec revision. Specification intent (agent implementation, tested, integrated) was satisfied, and constraint analysis was documented.
+
+- **practice:** Test-driven AC validation decouples behavioral intent from structural implementation. Tests can validate "agent correctly evaluates bundles" regardless of whether the module is at `agent_context/` or `ci/scripts/`.
+  **reason:** M902-14's 235 tests ensured behavioral correctness independent of location. AC Gatekeeper could confidently accept the alternate location because intent was tested and validated.
+
+- **practice:** Comprehensive checkpoint documentation in AC Gatekeeper review (including constraint analysis, rationale, evidence) provides future traceability for why structural requirements were reinterpreted.
+  **reason:** The AC5_location_constraint.md and AC Gatekeeper checkpoint decision logs explain the symlink boundary, architectural intent, and evidence. Future agents can understand why the location choice was correct without repeating the analysis.
+
 ---
