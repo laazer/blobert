@@ -19,7 +19,92 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
+
+
+# ---------------------------------------------------------------------------
+# TypedDict Definitions (Fixed-Schema Structures)
+# ---------------------------------------------------------------------------
+
+
+class ParsedSuppression(TypedDict):
+    """Parsed suppression comment metadata.
+
+    Fields extracted from the # blobert-ignore-next-line comment.
+    """
+
+    reason: str
+    ticket: str
+    until_date: Optional[str]
+
+
+class SuppressionFileRecord(TypedDict):
+    """Intermediate suppression record found in file scan.
+
+    Contains file location, line number, and parsed metadata from comment.
+    """
+
+    file: str
+    line: int
+    parsed: ParsedSuppression
+    rule_id: Optional[str]
+
+
+class SuppressionRecord(TypedDict):
+    """Audit log suppression record (fixed-schema).
+
+    Complete record with validation results and escalation details.
+    """
+
+    file: str
+    line: int
+    rule_id: Optional[str]
+    reason: str
+    ticket: str
+    expiration_date: Optional[str]
+    first_seen: str
+    repeat_count: int
+    escalation_reasons: list[str]
+    validation_errors: Optional[list[str]]
+
+
+class AuditLogEntry(TypedDict):
+    """Audit log JSON root structure."""
+
+    version: str
+    timestamp: str
+    total_suppressions: int
+    total_escalations: int
+    total_files_scanned: int
+    suppressions: list[SuppressionRecord]
+
+
+class GateViolation(TypedDict):
+    """Gate output violation record (M902-01 schema)."""
+
+    file: str
+    line: int
+    rule: str
+    message: str
+    severity: str
+
+
+class GateResult(TypedDict):
+    """Gate result conforming to M902-01 schema."""
+
+    version: str
+    status: str
+    gate: str
+    upstream_agent: str
+    downstream_agent: str
+    ticket_id: str
+    timestamp: str
+    duration_ms: int
+    message: str
+    artifacts: list[dict[str, str]]
+    violations: list[GateViolation]
+    mode: str
+
 
 # Suppression syntax regex from spec AC-01.1
 SUPPRESSION_REGEX = re.compile(
@@ -162,7 +247,7 @@ def _get_current_timestamp_iso() -> str:
 
 def _parse_suppression(
     comment: str,
-) -> tuple[bool, Optional[dict[str, Any]]]:
+) -> tuple[bool, Optional[ParsedSuppression]]:
     """Parse suppression comment.
 
     Args:
@@ -179,16 +264,16 @@ def _parse_suppression(
     ticket = match.group(2)
     until_date = match.group(4)
 
-    return True, {
-        "reason": reason,
-        "ticket": ticket,
-        "until_date": until_date,
-    }
+    return True, ParsedSuppression(
+        reason=reason,
+        ticket=ticket,
+        until_date=until_date,
+    )
 
 
 def _find_suppressions_in_file(
     file_path: str,
-) -> list[dict[str, Any]]:
+) -> list[SuppressionFileRecord]:
     """Find all suppressions in a file.
 
     Args:
@@ -198,16 +283,17 @@ def _find_suppressions_in_file(
         List of suppression records with file, line, and parsed metadata
     """
     lines = _read_file_lines(file_path)
-    suppressions = []
+    suppressions: list[SuppressionFileRecord] = []
 
     for i, line in enumerate(lines):
         is_valid, parsed = _parse_suppression(line)
         if is_valid and parsed:
-            suppressions.append({
-                "file": file_path,
-                "line": i + 1,  # 1-indexed
-                "parsed": parsed,
-            })
+            suppressions.append(SuppressionFileRecord(
+                file=file_path,
+                line=i + 1,  # 1-indexed
+                parsed=parsed,
+                rule_id=None,
+            ))
 
     return suppressions
 
@@ -227,8 +313,8 @@ def _classify_high_risk(rule_id: Optional[str]) -> bool:
 
 
 def _count_repeated_in_window(
-    suppressions: list[dict[str, Any]],
-    rule_id: str,
+    suppressions: list[SuppressionFileRecord],
+    rule_id: Optional[str],
     file_path: str,
     target_line: int,
 ) -> int:
@@ -249,7 +335,7 @@ def _count_repeated_in_window(
     count = 0
     for sup in suppressions:
         if (sup["file"] == file_path and
-            sup.get("rule_id") == rule_id and
+            sup["rule_id"] == rule_id and
             window_start <= sup["line"] <= window_end):
             count += 1
 
@@ -257,15 +343,15 @@ def _count_repeated_in_window(
 
 
 def _build_suppression_record(
-    suppression: dict[str, Any],
+    suppression: SuppressionFileRecord,
     violations: list[dict[str, Any]],
-    all_suppressions: list[dict[str, Any]],
-) -> dict[str, Any]:
+    all_suppressions: list[SuppressionFileRecord],
+) -> SuppressionRecord:
     """Build a suppression record for the audit log.
 
     Args:
         suppression: Suppression with file, line, parsed metadata
-        violations: Violations array from upstream
+        violations: Violations array from upstream (JSON boundary, remains dict[str, Any])
         all_suppressions: All suppressions found (for repeat counting)
 
     Returns:
@@ -325,27 +411,23 @@ def _build_suppression_record(
     escalation_reasons = list(set(escalation_reasons))
     escalation_reasons.sort()  # For determinism
 
-    record = {
-        "file": file_path,
-        "line": line,
-        "rule_id": rule_id,
-        "reason": reason,
-        "ticket": ticket,
-        "expiration_date": until_date,
-        "first_seen": _get_current_timestamp_iso(),
-        "repeat_count": repeat_count,
-        "escalation_reasons": escalation_reasons,
-    }
-
-    if validation_errors:
-        record["validation_errors"] = validation_errors
-    else:
-        record["validation_errors"] = None
+    record: SuppressionRecord = SuppressionRecord(
+        file=file_path,
+        line=line,
+        rule_id=rule_id,
+        reason=reason,
+        ticket=ticket,
+        expiration_date=until_date,
+        first_seen=_get_current_timestamp_iso(),
+        repeat_count=repeat_count,
+        escalation_reasons=escalation_reasons,
+        validation_errors=validation_errors if validation_errors else None,
+    )
 
     return record
 
 
-def _sort_suppressions(suppressions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _sort_suppressions(suppressions: list[SuppressionRecord]) -> list[SuppressionRecord]:
     """Sort suppressions by file path then line number for determinism.
 
     Args:
@@ -357,11 +439,12 @@ def _sort_suppressions(suppressions: list[dict[str, Any]]) -> list[dict[str, Any
     return sorted(suppressions, key=lambda s: (s["file"], s["line"]))
 
 
-def run(inputs: dict[str, Any]) -> dict[str, Any]:
+def run(inputs: dict[str, Any]) -> GateResult:
     """Gate entry point.
 
     Args:
         inputs: Gate input dict with optional changed_files, violations, etc.
+                (JSON boundary, remains dict[str, Any])
 
     Returns:
         Gate result dict conforming to M902-01 schema
@@ -370,7 +453,7 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
 
     # Extract inputs
     changed_files = _get_changed_files(inputs)
-    violations = inputs.get("violations", [])
+    violations: list[dict[str, Any]] = inputs.get("violations", [])
     issue_id = inputs.get("issue_id", "M902-15")
     ticket_id = inputs.get("ticket_id", "M902-15")
     upstream_agent = inputs.get("upstream_agent", "Agent Review")
@@ -378,8 +461,8 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
     mode = inputs.get("mode", "shadow")
 
     # Scan changed files for suppressions
-    all_suppressions: list[dict[str, Any]] = []
-    scanned_files = set()
+    all_suppressions: list[SuppressionFileRecord] = []
+    scanned_files: set[str] = set()
 
     for file_path in changed_files:
         scanned_files.add(file_path)
@@ -398,7 +481,7 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
         all_suppressions.extend(file_suppressions)
 
     # Build audit log
-    audit_log_suppressions = []
+    audit_log_suppressions: list[SuppressionRecord] = []
     total_escalations = 0
 
     for suppression in all_suppressions:
@@ -412,14 +495,14 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
     audit_log_suppressions = _sort_suppressions(audit_log_suppressions)
 
     # Build audit log JSON
-    audit_log = {
-        "version": "1.0",
-        "timestamp": _get_current_timestamp_iso(),
-        "total_suppressions": len(audit_log_suppressions),
-        "total_escalations": total_escalations,
-        "total_files_scanned": len(scanned_files),
-        "suppressions": audit_log_suppressions,
-    }
+    audit_log: AuditLogEntry = AuditLogEntry(
+        version="1.0",
+        timestamp=_get_current_timestamp_iso(),
+        total_suppressions=len(audit_log_suppressions),
+        total_escalations=total_escalations,
+        total_files_scanned=len(scanned_files),
+        suppressions=audit_log_suppressions,
+    )
 
     # Write audit log artifact
     audit_log_path = "ci/scripts/gates/override_audit_log.json"
@@ -437,16 +520,16 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
     timestamp = _get_current_timestamp_iso()
 
     # Build violations array for escalations
-    violations_out = []
+    violations_out: list[GateViolation] = []
     for record in audit_log_suppressions:
         if record["escalation_reasons"]:
-            violations_out.append({
-                "file": record["file"],
-                "line": record["line"],
-                "rule": "SUPPRESSION_ESCALATION",
-                "message": f"Suppression escalated: {', '.join(record['escalation_reasons'])}",
-                "severity": "WARN",
-            })
+            violations_out.append(GateViolation(
+                file=record["file"],
+                line=record["line"],
+                rule="SUPPRESSION_ESCALATION",
+                message=f"Suppression escalated: {', '.join(record['escalation_reasons'])}",
+                severity="WARN",
+            ))
 
     # Determine status
     status = "WARN" if total_escalations > 0 else "PASS"
@@ -454,24 +537,24 @@ def run(inputs: dict[str, Any]) -> dict[str, Any]:
     message = f"Suppression validation complete. {total_escalations} escalation(s) detected."
 
     # Build gate result
-    result = {
-        "version": "1.0",
-        "status": status,
-        "gate": "override_and_escalation_check",
-        "upstream_agent": upstream_agent,
-        "downstream_agent": downstream_agent,
-        "ticket_id": ticket_id,
-        "timestamp": timestamp,
-        "duration_ms": duration_ms,
-        "message": message,
-        "artifacts": [
+    result: GateResult = GateResult(
+        version="1.0",
+        status=status,
+        gate="override_and_escalation_check",
+        upstream_agent=upstream_agent,
+        downstream_agent=downstream_agent,
+        ticket_id=ticket_id,
+        timestamp=timestamp,
+        duration_ms=duration_ms,
+        message=message,
+        artifacts=[
             {
                 "path": audit_log_path,
                 "sha256": audit_log_sha256,
             }
         ],
-        "violations": violations_out,
-        "mode": mode,
-    }
+        violations=violations_out,
+        mode=mode,
+    )
 
     return result
