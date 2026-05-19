@@ -69,5 +69,15 @@
     "default_mode": "shadow",
     "description": "Auto-formats staged code using black, ruff format, prettier, and gdformat. Re-stages formatted code and returns PASS. Non-blocking (shadow mode).",
     "category": "workflow"
+  },
+  {
+    "name": "architecture_enforcement_check",
+    "module": "ci.scripts.gates.architecture_enforcement_check",
+    "run_function": "run",
+    "required_inputs": [],
+    "optional_inputs": ["mode", "ticket_id", "codebase_root"],
+    "default_mode": "shadow",
+    "description": "Structural architecture enforcement: detects SRP violations, dependency direction violations, circular imports, duplication clusters, and complexity spikes. Orchestrates import-linter, eslint-plugin-boundaries, semgrep, jscpd, and radon with aggregated risk and architecture scoring.",
+    "category": "governance"
   }
 ]
