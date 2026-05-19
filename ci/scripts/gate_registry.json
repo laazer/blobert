@@ -109,5 +109,15 @@
     "default_mode": "shadow",
     "description": "Evaluates semantic bundles (code, imports, ownership, violations) using rule-based agent logic; renders approve/warn/reject decision with confidence score. 8 signals: SRP, abstraction, hierarchy, ownership, observability, async safety, exception handling, suppression justification.",
     "category": "governance"
+  },
+  {
+    "name": "override_and_escalation_check",
+    "module": "ci.scripts.gates.override_and_escalation_check",
+    "run_function": "run",
+    "required_inputs": [],
+    "optional_inputs": ["changed_files", "violations", "issue_id", "ticket_id", "upstream_agent", "downstream_agent", "mode"],
+    "default_mode": "shadow",
+    "description": "Validates code suppressions (# blobert-ignore-next-line) for proper justification, expiration, and escalates repeated/architecture/security bypasses for human review. Produces audit log and escalation violations.",
+    "category": "governance"
   }
 ]
