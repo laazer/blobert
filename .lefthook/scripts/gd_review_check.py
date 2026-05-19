@@ -13,6 +13,33 @@ CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 TRAILING_WS_RE = re.compile(r"[ \t]+$")
 
 
+def auto_fix_file(path: Path) -> None:
+    """Auto-fix trailing whitespace and missing EOF newline."""
+    if not path.exists():
+        return
+
+    text = path.read_text(encoding="utf-8", errors="replace")
+    lines = text.splitlines(keepends=True)
+
+    # Remove trailing whitespace from each line.
+    fixed_lines = []
+    for line in lines:
+        line_without_newline = line.rstrip("\n\r")
+        line_stripped = TRAILING_WS_RE.sub("", line_without_newline)
+        fixed_lines.append(line_stripped + "\n")
+
+    # Reconstruct content.
+    fixed_text = "".join(fixed_lines)
+
+    # Ensure file ends with newline (only if non-empty).
+    if fixed_text and not fixed_text.endswith("\n"):
+        fixed_text += "\n"
+
+    # Write back if changed.
+    if fixed_text != text:
+        path.write_text(fixed_text, encoding="utf-8")
+
+
 def check_file(path: Path) -> List[str]:
     errors: List[str] = []
     if not path.exists():
@@ -43,6 +70,10 @@ def main(argv: List[str]) -> int:
     if not files:
         return 0
 
+    # Auto-fix trailing whitespace and EOF newlines.
+    for file_path in files:
+        auto_fix_file(file_path)
+
     errors: List[str] = []
     for file_path in files:
         errors.extend(check_file(file_path))
@@ -61,7 +92,7 @@ def main(argv: List[str]) -> int:
             print(f" - {err}")
         return 1
 
-    print("pre-commit: Godot reviewer checks passed.")
+    print("pre-commit: Godot reviewer checks passed (auto-fixed trailing whitespace and EOF newlines).")
     return 0
 
 
