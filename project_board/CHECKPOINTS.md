@@ -5,6 +5,35 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-19T-m902-17-specification (M902-17 Final Validation & Stage Integration — SPECIFICATION COMPLETE)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/17_final_validation_and_stage_integration.md`
+- Stage: SPECIFICATION (Revision 2 → 3)
+- Log: `project_board/checkpoints/M902-17/2026-05-19T-m902-17-specification.md`
+- **Status: SPECIFICATION COMPLETE**
+- **Outcome:** Comprehensive validation spec frozen for M902-17 final validation & stage integration. Spec file: `project_board/specs/902_17_final_validation_spec.md` (6 Requirements, 9 ACs per requirement, ~200 AC-level criteria mapped from original 27 ticket ACs). AC traceability matrix: `project_board/specs/902_17_ac_traceability_matrix.md` (27 ACs × 35 test cases, all mapped to test files + evidence artifact paths). Scope validated: M902-01 through M902-16 (16 completed tickets, 8-stage pipeline); M902-18 through M902-27 explicitly excluded (remain in backlog). Gate registry schema formalized (JSON structure, validation rules, 8-stage coverage). Audit methodology specified (5 phases: structural, behavioral, adversarial, integration, code quality, AC evidence). Pipeline sequence documented (strict ordering Stages 0–8, early exits for docs-only/tests-only, risk-based routing for Stages 5–6). Test matrix: 30+ test cases (12 behavioral + 15 adversarial + 3 integration). Evidence artifacts defined (24 gate outputs [8 stages × 3 paths] + 5+ reports [schema, registry, code quality, performance, AC validation]). All 27 ticket ACs explicitly mapped to test cases + evidence paths. All assumptions documented (no hidden surprises). All risks identified (R1–R7) with mitigations. Decision freeze (D1–D6): scope, traceability, test matrix, gate registry, evidence, pipeline routing. Confidence: HIGH. Ready for Test Designer (Task 2) to write behavioral tests.
+- Specification: `project_board/specs/902_17_final_validation_spec.md`
+- Traceability Matrix: `project_board/specs/902_17_ac_traceability_matrix.md`
+- Checkpoints: `project_board/checkpoints/M902-17/2026-05-19T-m902-17-specification.md`
+- Next: Test Designer creates behavioral tests (Task 2 via execution plan Task 2)
+
+---
+
+## Run: 2026-05-19T-m902-17-planning (M902-17 Final Validation & Stage Integration — PLANNING COMPLETE)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/17_final_validation_and_stage_integration.md`
+- Stage: PLANNING → SPECIFICATION (Revision 1 → 2)
+- Log: `project_board/checkpoints/M902-17/2026-05-19T-m902-17-planning.md`
+- **Status: PLANNING COMPLETE**
+- **Outcome:** Execution plan frozen for M902-17 final validation & stage integration. Scope clarified: validates M902-01 through M902-16 (16 completed tickets, 8-stage pipeline). M902-18 through M902-27 remain in backlog (not validated here). 8-task execution plan (Spec → Test Design → Test Break → Implementation → Static QA → AC Gatekeeper → Documentation → Archive) with clear dependencies, success criteria, risk register (7 risks mitigated), and decision freeze (D1–D5). Validation strategy: triple-layer verification (structural validation of specs/modules, integration validation via gate_runner.py, AC evidence mapping). All gating dependencies complete (M902-01 through M902-16 in `02_complete/`). Test matrix covers all 8 stages × 3 routing paths (docs-only, tests-only, runtime code) + 27 ACs + 15+ adversarial tests. Confidence: HIGH. Ready for Spec Agent (Task 1).
+- Execution Plan: `project_board/execution_plans/M902-17_final_validation_and_stage_integration.md`
+- Checkpoints: `project_board/checkpoints/M902-17/2026-05-19T-m902-17-planning.md`
+- Next: Spec Agent freezes comprehensive validation spec at `project_board/specs/902_17_final_validation_spec.md`
+
+---
+
 ## Run: 2026-05-19T-m902-16-complete (M902-16 Stage 8 — Security Gate Integration — AUTOPILOT COMPLETE)
 
 - Queue mode: single ticket
