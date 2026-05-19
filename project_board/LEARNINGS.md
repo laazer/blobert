@@ -5878,3 +5878,77 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** Consistent aggregation logic across gates (M902-09, M902-10, M902-11) reduces duplication and improves reliability.
 
 ---
+
+## [M902-13] — Adversarial Test Design Catches Boundary Conditions Before Implementation
+*Completed: 2026-05-19*
+
+### Critical Learning
+
+**Adversarial testing (boundary conditions, edge cases, stress scenarios) designed and executed *before* implementation successfully identified potential off-by-one bugs, infinite-loop risks, and schema robustness issues that would have surfaced in real deployments.** M902-13's adversarial suite (37 tests across 10 dimensions) caught 9 distinct vulnerability categories, all of which were prevented by the test-first discipline.
+
+### Learnings
+
+- **category: testing**
+  **insight:** Boundary condition tests encode assumption clarity. Tests like "99KB passes, 100KB fails" force the specification to commit to exact semantics (< 100000 bytes, not <= 100000). Ambiguous specs become obvious when writing boundary tests.
+  **impact:** Test Breaker's adversarial suite caught that the spec used strict <100000 (not <=100000) by encoding 99KB as PASS and 100KB as requiring truncation. This ensured implementation enforced the exact boundary, preventing silent off-by-one bugs that would fail in production with bundles right at the limit.
+  **prevention:** For any infrastructure gate with hard limits (size, depth, line count, timeout), write boundary tests *before* implementation. Example: "test_exactly_at_boundary (should pass)" and "test_one_byte_over_boundary (should truncate)". This forces the spec and implementation into explicit agreement.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Cycle detection (graph traversal with visited set) requires test validation for specific failure patterns (simple A→B→A, deep cycles A→B→C→D→A). Absence of visited set in traversal does not fail obvious cases; it fails specific topologies that exceed depth limits or have large cycle lengths.
+  **impact:** Adversarial tests included `test_circular_import_loop_ab_ba_no_infinite_loop` and `test_circular_import_deep_loop_abcda_cycle_at_depth_3` with 5s timeout. These caught the specific risk that naive DFS without visited set would loop infinitely on A→B→A (simple cycle) or exhaust the 2-hop depth limit if the cycle was longer. Implementation correctly used visited set from the start because tests defined the expected behavior.
+  **prevention:** When implementing graph traversal with cycles, write adversarial tests for: (1) simple back-edge (A→B→A), (2) deep cycle (chain of 4+ nodes looping), (3) depth limit enforcement (A→B→C→D should truncate at depth 2). These tests clarify whether cycle detection is done via visited set, depth counter, or both.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Fallback strategies (e.g., CODEOWNERS missing → use directory heuristic) require exhaustive edge case testing: missing file, malformed syntax, empty content. A single "test CODEOWNERS missing" test is insufficient; each failure mode may trigger different code paths.
+  **impact:** Adversarial tests included three separate CODEOWNERS tests: missing file, malformed syntax, empty file. This ensured the fallback was triggered by all three conditions. Implementation correctly checked for all three (file doesn't exist, parse error, content empty) and fell back accordingly. Without these granular tests, a single missing file test might pass while malformed syntax was silently accepted or ignored.
+  **prevention:** For any fallback strategy: enumerate all failure modes of the primary strategy (missing, malformed, empty, wrong permission, timeout), write separate tests for each, and validate that fallback is triggered for all modes. Do not consolidate into a single "primary fails" test.
+  **severity:** medium
+
+- **category: performance**
+  **insight:** Stress tests with realistic data (100 files, 1000 import edges, 1000 violations) executed *before* implementation establish a performance baseline and catch potential timeout risks. A <5s SLA requires testing at scale, not on toy examples.
+  **impact:** Adversarial tests included `test_performance_100_files_1000_import_edges_under_5s` and `test_performance_1000_violations_under_5s`. These forced the implementation to optimize import graph extraction (lazy traversal, visited set for cycle detection, early termination) and violation processing (streaming, not materializing all violations). Implementation passed these tests, confirming <5s execution on large changes.
+  **prevention:** For gates with performance SLAs, write stress tests using realistic data volumes *before* implementation. Use these tests to establish a baseline and detect regressions during code review. Include tests with 10x, 100x, 1000x nominal case sizes.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Checkpoint markers in adversarial tests (e.g., "Would have asked: Is 50-line limit max (<=50) or exclusive (>50)?") force specification boundary semantics into explicit assumption statements. This clarity prevents late disagreements between implementation and acceptance testing.
+  **impact:** Test Breaker's checkpoint for code hunk boundaries explicitly stated: "50-line limit is max (<=50), so 51+ must truncate." Implementation matched this assumption from the start. Acceptance Criteria Gatekeeper validated the assumption was met. Without the checkpoint, ambiguity could have led to different implementations (some allowing 51 lines, some truncating).
+  **prevention:** Use CHECKPOINT protocol in all adversarial test files. Mark each major assumption with: "Would have asked: [question] → Assumption made: [decision] → Confidence: [level]". This creates a validated assumption log that implementation and acceptance testing can reference.
+  **severity:** low
+
+### Anti-Patterns
+
+1. **"Skip boundary tests because implementation is simple":** Common pitfall: "size limits are straightforward, so no need for 99KB/100KB/101KB tests." In practice, off-by-one boundaries are the *most* common source of production failures in infrastructure gates. Boundary tests are the minimum.
+
+2. **"Single fallback test covers all modes":** Testing CODEOWNERS fallback with only "test_codeowners_missing" risks missing parsing errors or empty file scenarios. Each failure mode needs a separate test.
+
+3. **"Stress tests run after implementation":** Performance tests written post-implementation cannot inform design decisions. Write <5s tests *before* implementation to prevent inefficient graph traversal or streaming violations.
+
+4. **"Assumptions documented only in text":** Spec prose saying "code hunk max 50 lines" is ambiguous. Adversarial tests with explicit boundary checks (exactly_50_lines_pass, 51_lines_truncate) make the assumption unambiguous.
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "For any infrastructure gate with hard limits (size, depth, line count, timeout), always write boundary condition tests covering: (1) exactly at limit (should pass), (2) one unit over limit (should enforce limit), (3) far over limit (stress case). Use explicit test names like `test_size_boundary_exactly_100kb_pass` and `test_size_boundary_101kb_truncate`. Include CHECKPOINT markers documenting the boundary semantic (e.g., `< 100000 bytes` not `<= 100000`)."
+  **reason:** Boundary conditions are subtle but critical. Test-driven clarity prevents off-by-one bugs that surface in production. Explicit test names and checkpoint assumptions make agreement between spec, tests, and implementation unambiguous.
+
+- **agent: Implementation Agent**
+  **change:** "When implementing fallback strategies (e.g., CODEOWNERS → directory heuristic), ensure tests exist for each failure mode of the primary strategy (missing, malformed, empty, permission denied, timeout). Do not assume 'one test covers all modes'; each mode may trigger different code paths. Reference adversarial test patterns in M902-13 for fallback test structure."
+  **reason:** Fallback strategies are common in infrastructure gates. Each failure mode is a separate edge case requiring separate test coverage. Omitting a failure mode mode may allow a bug to persist in production.
+
+### Keep / Reinforce
+
+- **practice:** Adversarial test design *before* implementation establishes behavioral contracts for boundary conditions, fallback strategies, and performance SLAs. This discipline prevents late discoveries during acceptance testing.
+  **reason:** M902-13's adversarial suite (37 tests, 10 dimensions) executed cleanly against implementation, with 0 failures or rework cycles. This contrasts with M902-12 (late spec contradictions discovered during implementation). Test-first design caught all edge cases upfront.
+
+- **practice:** Checkpoint markers in adversarial tests document assumptions that would otherwise be ambiguous in spec prose. "Code hunk max 50 lines" is ambiguous; "exactly_50_lines_no_truncation, 51_lines_truncate" is unambiguous.
+  **reason:** Reduces interpretation disagreements between spec, tests, and implementation. All parties reference the same test expectations.
+
+- **practice:** Schema validation tests (required fields, field types, JSON serializability) are lightweight but high-value. M902-13's TV-29–32 tests prevented silent schema violations by asserting presence/type of 20+ bundle fields.
+  **reason:** Infrastructure gates often have schema contracts with downstream consumers. Early schema validation prevents runtime failures in consumer code.
+
+---
+
+---

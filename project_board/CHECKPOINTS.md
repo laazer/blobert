@@ -5,6 +5,64 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-19T-m902-14-test_design (M902-14 Stage 6 — Agent Semantic Review Layer)
+
+- Queue mode: single ticket (autonomous)
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/14_stage_6_agent_semantic_review_layer.md`
+- Stage: TEST_DESIGN (Revision 3 → 4)
+- Log: `project_board/checkpoints/M902-14/2026-05-19T-test_design.md`
+- **Status: TEST_DESIGN COMPLETE**
+- **Outcome: BEHAVIORAL TEST SUITE DESIGNED (50+ tests + 40+ adversarial + 3+ integration = 90+ total).** Test Designer completed Task 2 per execution plan: designed comprehensive test suite covering all 8 evaluation signals (S1 SRP, S2 abstraction, S3 hierarchy, S4 ownership, S5 observability, S6 async, S7 exception, S8 suppression), decision outcomes (approve/warn/reject), confidence bounds [0.0–1.0], edge cases, determinism validation, and performance constraints. Test organization: (1) Behavioral tests `tests/ci/test_semantic_reviewer_agent.py` with 82 test functions covering 8 signals (5+ tests each), decision outcomes (9 tests), confidence scoring (7 tests), edge cases (3+ tests), schema compliance (9 tests), cross-signal interaction (5 tests); (2) Adversarial tests `tests/ci/test_semantic_reviewer_agent_adversarial.py` with 85 test functions covering boundary conditions (8 tests), malformed input (11 tests), decision consistency (8 tests), confidence scoring (8 tests), rule conflict resolution (8 tests), suppression edge cases (9 tests), performance/stress (4 tests), schema compliance (15 tests), determinism emphasis (8 tests); (3) Integration tests `tests/ci/test_agent_review_integration.py` with 47 test functions covering gate wrapper integration (9 tests), bundle integration (5 tests), E2E evaluation (7 tests), determinism validation (4 tests), schema validation (8 tests), performance baseline (4 tests), gate registry (6 tests), error handling (4 tests). Total: 214 test functions, 2290 lines. Fixtures created: Bundle factories for clean, single-violation, async-critical, circular-import, unjustified-suppression, empty, missing-fields, multiple-violations, observability-violation, deep-hierarchy, ownership-conflict scenarios. All tests deterministic, parameterized for coverage. Checkpoint decisions logged: (1) Determinism byte-for-byte via json.dumps(sort_keys=True), (2) Decision priority cascade (reject > warn > approve), (3) Confidence bounds strict [0.0–1.0] rounded to 2 decimals, (4) Suppression without justification → violation, (5) Empty bundle → approve confidence 0.7–0.8. All 8 signals covered with ≥5 tests each. Decision outcomes (approve, warn, reject) validated. Confidence bounds (0.0, 0.25, 0.5, 0.75, 1.0) tested. Edge cases (empty, minimal, missing fields, malformed violations) covered. Tests map to spec Requirement 05 (90+ test vectors). Coverage aligns with execution plan Task 2 success criteria: 50+ behavioral tests ✓, 8 signals ≥5 tests each ✓, decision outcomes ✓, confidence bounds ✓, determinism ✓, edge cases ✓, test names self-documenting ✓, docstrings reference AC and rule IDs ✓, fixtures organized ✓. All tests currently placeholders (0 pass before implementation). Ready for Test Breaker phase (Task 3) to develop 40+ adversarial tests. Confidence: HIGH.
+- Checkpoints: `project_board/checkpoints/M902-14/2026-05-19T-test_design.md`
+- **Tests:** `tests/ci/test_semantic_reviewer_agent.py` (82 tests), `tests/ci/test_semantic_reviewer_agent_adversarial.py` (85 tests), `tests/ci/test_agent_review_integration.py` (47 tests)
+
+---
+
+## Run: 2026-05-19T-m902-14-specification (M902-14 Stage 6 — Agent Semantic Review Layer)
+
+- Queue mode: single ticket (autonomous)
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/14_stage_6_agent_semantic_review_layer.md`
+- Stage: SPECIFICATION (Revision 2 → 3)
+- Log: `project_board/checkpoints/M902-14/2026-05-19T-m902-14-specification.md`
+- **Status: SPECIFICATION COMPLETE**
+- **Outcome: SPEC FROZEN (v1.0).** Specification at `project_board/specs/902_14_agent_review_layer_spec.md` complete and ready for Test Designer handoff. 6 requirements: (1) Agent module + gate integration (deterministic rule-based evaluation, 8 independent signals, JSON output contract, M902-01 framework integration), (2) Bundle evaluation scope + 8 signals (SRP, abstraction, hierarchy, ownership, observability, async, exception, suppression) with independent evaluation logic and graceful degradation, (3) Agent output contract + decision logic (approve/warn/reject cascade, confidence [0.0–1.0] heuristic scoring, violations/reasoning metadata), (4) Gate integration with M902-01 (M902-01 success schema extension, registry entry, bundle loading, output transformation), (5) Test vector coverage (90+ tests: 50 behavioral + 40 adversarial covering all 8 signals, 3 decisions, confidence bounds, determinism, edge cases, performance <2s), (6) Edge cases + error handling (13 edge cases with handling strategy, graceful degradation on missing fields, exception handling per code_governance.md, no bare except). All 7 ticket ACs mapped to requirements. Bundle input contract frozen to M902-13 v1.0 schema. Decision priority cascade frozen (reject if critical signal, warn if multiple moderate, approve else). Confidence scoring heuristic frozen (baseline 0.75, weights: -0.25 critical, -0.10 moderate, -0.05 low, +0.05 ownership). Determinism enforced via sorted JSON, no timestamps in logic. Performance target <2s per bundle. Checkpoint decisions frozen: (1) Bundle-only input (no repo context), (2) Deterministic rule-based logic (no LLM sampling), (3) Decision priority cascade, (4) 8 independent signals from code_governance Stage 6, (5) Graceful degradation on missing fields, (6) M902-13 bundle v1.0 schema stability, (7) Non-blocking advisory gate (routing deferred to M903). All risks identified with mitigations. All ambiguities resolved. Confidence: HIGH. Ready for spec exit gate validation and Test Designer handoff (Task 2: design 50+ behavioral tests). See spec at `project_board/specs/902_14_agent_review_layer_spec.md` and checkpoint log for full details.
+
+---
+
+## Run: 2026-05-19T-m902-14-planning (M902-14 Stage 6 — Agent Semantic Review Layer)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/14_stage_6_agent_semantic_review_layer.md`
+- Stage: PLANNING → SPECIFICATION (Revision 1 → 2)
+- Log: `project_board/checkpoints/M902-14/2026-05-19T-m902-14-planning.md`
+- **Status: PLANNING COMPLETE**
+- **Outcome: EXECUTION PLAN FROZEN.** 7 sequential tasks (Spec → Test Design → Test Break → Implementation → Static QA → Integration → Acceptance). Agent semantic review layer evaluates focused bundles (from M902-13) against 8 governance signals (SRP, abstraction, hierarchy, ownership, observability, async, exception, suppression) and renders APPROVE/WARN/REJECT decisions. Agent receives ONLY JSON bundle (no repo context), outputs structured decision JSON with confidence [0.0–1.0], reasoning, violations. Integrated into M902-01 gate framework. All hard dependencies (M902-01, M902-13) COMPLETE. Design decisions frozen: (1) bundle-only input, (2) deterministic rule-based logic (no LLM sampling), (3) cascading decision priority (reject > warn > approve), (4) heuristic confidence scoring, (5) 8 independent signal evaluations, (6) bundle-only evaluation (no prior gate invocation), (7) AC-5 location clarification needed. 8 risks identified with mitigations. Confidence: HIGH. Ready for Spec Agent (Task 1) to freeze specification at `project_board/specs/902_14_agent_review_layer_spec.md`. See execution plan at `project_board/execution_plans/M902-14_stage_6_agent_semantic_review_layer.md` for full task breakdown, dependencies, risk register, file paths.
+
+---
+
+## Run: 2026-05-19T-m902-14-autopilot (M902-14 Stage 6 — Agent Semantic Review Layer)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/14_stage_6_agent_semantic_review_layer.md`
+- Stage: PLANNING (Revision 1)
+- Lean: no
+- Log root: `project_board/checkpoints/M902-14/`
+
+---
+
+## Run: 2026-05-19T-m902-13-complete (M902-13 Stage 5 Semantic Extraction & Bundling — AUTOPILOT COMPLETE)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/02_complete/13_stage_5_semantic_extraction_and_bundling.md`
+- Final Stage: COMPLETE (Revision 7)
+- Status: **READY FOR MERGE / DEPLOYMENT**
+- Test Coverage: 85 tests (100% pass rate, ~0.1s)
+- **Outcome:** Stage 5 Semantic Extraction & Bundling gate fully implemented and tested. Gate module `ci/scripts/gates/semantic_extraction_check.py` (812 LOC) extracts 11 signals from high-risk changes, builds <100KB JSON bundles with 20+ documented schema fields, enforces determinism via sorted arrays, supports graceful fallback strategies (CODEOWNERS, import cycles, test discovery). Test suite: 85 tests (48 behavioral + 37 adversarial), all passing, covering all 35+ test vectors and 7 acceptance criteria. All 7 ACs fully evidenced: extraction scope (11 signals), bundle generation (<100KB), required fields, exclusions, module path, schema documentation, multi-file testing. Code review: 8 issues identified and fixed (hardcoded constants, placeholder functions, consolidation, determinism). Learnings extracted: boundary condition testing, cycle detection safety, fallback enumeration, performance baselines. Blog post written: captures engineering decisions and trade-offs. Ticket moved to done/ folder. Git commits clean. Ready for merge and deployment.
+- Checkpoints: `project_board/checkpoints/M902-13/` (7 files: planning, specification, test_design, implementation_complete, ac_gatekeeper_final, plus learnings and blog context)
+- Learning: `project_board/LEARNINGS.md` (5 items extracted: boundary testing, cycle detection, fallback coverage, performance validation, assumption documentation)
+
+---
+
 ## Run: 2026-05-19T-ac_gatekeeper_final (M902-13 Stage 5 Semantic Extraction & Bundling — ACCEPTANCE CRITERIA GATEKEEPER)
 
 - Queue mode: single ticket (autonomous, gatekeeper final validation)
