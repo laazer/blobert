@@ -89,5 +89,15 @@
     "default_mode": "shadow",
     "description": "Computes weighted risk score from violation signals (SRP, architecture drift, duplication, async, migration, suppression, observability, ownership) to determine escalation need",
     "category": "governance"
+  },
+  {
+    "name": "semantic_extraction_check",
+    "module": "ci.scripts.gates.semantic_extraction_check",
+    "run_function": "run",
+    "required_inputs": [],
+    "optional_inputs": ["risk_score", "risk_band", "violations", "issue_id", "ticket_id", "upstream_agent", "downstream_agent", "change_summary", "mode"],
+    "default_mode": "shadow",
+    "description": "Extracts focused review bundles (code hunks, imports, ownership, tests, violations) from high-risk changes for agent semantic review (Stage 6). Builds <100KB JSON bundles with dependency neighborhoods (1-2 hop imports), CODEOWNERS assignments, related test code, and violation summaries",
+    "category": "governance"
   }
 ]
