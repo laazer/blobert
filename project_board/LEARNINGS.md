@@ -5625,3 +5625,76 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** Caught actual git integration bugs (path normalization, subprocess output parsing) that mocks would have missed.
 
 ---
+
+## M902-10 — Error handling distinction in graceful degradation vs. hard failures
+
+*Completed: 2026-05-19*
+
+### Learnings
+
+1. **Error category distinction is critical in gate implementation:** The spec defined three error categories (formatter unavailable = WARN/skip, formatter failed = FAIL, git failed = FAIL), but the implementation must distinguish between them at the subprocess level. The test suite (adversarial tests) revealed that simply checking `if "not found" in error_msg.lower()` is insufficient for reliable detection. Formatters may output error messages in different formats (FileNotFoundError exception vs. OSError vs. returncode != 0 with stderr). The implementation uses exception type matching (`OSError, FileNotFoundError` in try/except) to reliably distinguish unavailable formatters from failures.
+   **impact:** Without clear error category boundaries, the gate could misclassify a missing formatter (graceful degrade) as a formatter error (hard fail), blocking users unnecessarily. Mutation tests specifically checked that inverted error checks would cause this bug.
+   **severity:** high
+
+2. **Git diff parsing must handle two formats: name-only and unified diff:** Initial assumption was that `git diff --name-only` returns only filenames. However, when testing with output parsing, the implementation discovered that if `--name-only` is omitted, git returns unified diff format (lines starting with `---` and `+++`). The implementation's `_detect_formatting_changes()` function includes fallback parsing logic to handle both formats (e.g., extracting filenames from `--- a/path` and `+++ b/path` prefixes). Adversarial tests with malformed git output caught this edge case.
+   **impact:** Without dual-format parsing, the change detection logic would fail on unexpected git output formats, causing false negatives (missing detection of formatting changes) or exceptions.
+   **severity:** medium
+
+3. **Duration tracking must use max(1, ...):** Initial implementation calculated `duration_ms = int((time.time() - start_time) * 1000)`, which can produce 0 on very fast runs. The spec and adversarial tests require `duration_ms > 0` (timestamp milliseconds must always have a value). Boundary tests caught this: fast operations completed in <1ms. Fixed by using `max(1, int(...))` to ensure minimum 1ms.
+   **impact:** Zero-duration gates confuse downstream consumers and violate the schema contract. Boundary and schema validation tests caught this.
+   **severity:** low
+
+4. **Message formatting for mixed formatter scenarios requires consistent delimiters:** The `_format_message()` function handles cases where some formatters apply and others are unavailable. Test vectors (TV-15, TV-18) required different message templates: "Re-staged for review" when changes detected, vs. separate formatting for applied/unavailable formatters. Initial implementation used inconsistent delimiters (comma vs. semicolon). Spec-driven tests validated exact message text for determinism. This matters because downstream tools may parse these messages.
+   **impact:** Inconsistent message formatting makes parsing unreliable for automation. Tests that checked exact message text caught this.
+   **severity:** low
+
+5. **Graceful degradation: WARN violations should still result in PASS status when no formatters fail:** The spec clearly stated "non-blocking errors must record WARN violations but return PASS." Initial assumption was that if any formatter is unavailable, return FAIL. Mutation tests specifically inverted this: `if all_formatters_unavailable: return FAIL` was the bug caught. The correct behavior is: unavailable formatters produce WARN violations, but gate still returns PASS. The implementation now correctly checks `if not success and "not found" in error: skip and warn; otherwise fail`.
+   **impact:** Misclassifying "formatter unavailable" as a blocker (FAIL) would break legitimate workflows where users have only some formatters installed. Mutation tests caught this inversion bug.
+   **severity:** high
+
+### Anti-Patterns
+
+1. **String-based error classification (e.g., `"not found" in error_msg.lower()`) is fragile:** Formatters output errors in different locales and formats. Exception type matching (OSError, FileNotFoundError) is more reliable. String-based error detection relies on exact message content, which varies by OS and formatter version.
+
+2. **Assuming git diff output format is static:** Different git options (--name-only, unified, stat) produce different formats. Code that parses git output should handle multiple formats or explicitly validate the format.
+
+3. **Skipping minimum value validation in timing calculations:** Times that can be zero (fast operations) require explicit `max(1, ...)` guards. This is easy to miss in code review but catches boundary conditions.
+
+4. **Message templates without version/format control:** If downstream tools parse gate output messages, format changes can break parsing. Better to have structured fields (violations array, flags) than to rely on message text.
+
+### Prompt Patches
+
+- **agent: Implementation Agent (infrastructure gates)**
+  **change:** "When implementing error handling in subprocess-based gates, distinguish errors by exception type (OSError, FileNotFoundError, subprocess.TimeoutExpired, etc.) rather than string matching on error messages. Errors messages vary by OS, locale, and tool version. Document the three categories: (1) tool unavailable = graceful skip + WARN, (2) tool failed = hard FAIL, (3) git/env error = hard FAIL. Implement each with explicit exception matching and separate code paths."
+  **reason:** Exception type is deterministic; error messages are fragile. Prevents misclassification of missing tools as failures, avoiding false blocking of users.
+
+- **agent: Test Designer (formatting/linting gates)**
+  **change:** "For gates that parse tool output (git diff, formatter stderr), include adversarial tests that feed multiple output formats: well-formed, malformed whitespace, alternate formats (git unified vs. name-only), locale-specific error messages, non-UTF8 characters. Verify the parser handles format variation gracefully or fails explicitly (not crash)."
+  **reason:** Tool output varies. Parsers must be robust to variation or fail fast with clear errors. Malformed output tests reveal fragility.
+
+- **agent: Test Designer (timing/performance tests)**
+  **change:** "For any duration or timing metric calculated from elapsed time, explicitly test the boundary case: very fast operations (< 1ms). Verify minimum thresholds (duration_ms >= 1, latency > 0, etc.) are enforced. Use assertions like `assert result['duration_ms'] >= 1` to catch zero-value bugs."
+  **reason:** Fast operations complete in microseconds; rounding to milliseconds can produce zero. Schema contracts often require positive values. Boundary tests catch this.
+
+### Workflow Improvements
+
+- **issue:** The gap between what the spec says ("error category") and what the implementation does (try/except or string matching) isn't validated until test execution. String-based error detection is a common pitfall.
+  **improvement:** In Spec Agent output, add an "Implementation Checkpoints" section that defines how each error category will be detected at code level: "Category 1 (unavailable) will be caught by `except FileNotFoundError` and `except OSError`; Category 2 (failed) will be caught by `returncode != 0`; etc." Implementation Agent must follow this and code reviewer validates alignment.
+  **expected_benefit:** Bridges the spec-to-code gap. Reduces surprises when tests run. Makes error handling explicit and reviewable.
+
+- **issue:** Mutation tests caught the "inverted graceful degradation" bug (if unavailable: fail instead of skip), but this is easy to introduce in future gates.
+  **improvement:** Add a mutation test template to the Test Breaker toolkit: "For each graceful degradation path in spec, include a mutation test that inverts the condition and verifies the test suite catches it." Document this as a standard pattern for infrastructure gates.
+  **expected_benefit:** Ensures graceful degradation logic is tested consistently across M902-11, M902-12, etc.
+
+### Keep / Reinforce
+
+- **practice:** Three-category error handling framework (unavailable, failed, env-failed) with distinct code paths and WARN/FAIL outcomes. Clear, auditable, testable. Prevents logic bugs where categories bleed into one another.
+  **reason:** This structure, combined with mutation tests that invert each category, creates high confidence in error path correctness.
+
+- **practice:** Comprehensive adversarial test suite with 100+ test cases including mutation tests specifically designed to catch inverted conditions, omitted operations, and wrong return values. The mutation tests in M902-10 caught real bugs (graceful degradation, git diff parsing, duration rounding).
+  **reason:** Mutation testing is not just a validation technique; it's a design tool. It forces implementation to be explicit about decision points.
+
+- **practice:** Separation of concerns in helper functions (`_run_formatter()`, `_detect_formatting_changes()`, `_git_add_files()`) with clear return contracts (`(success, error_msg) -> tuple`). Makes error handling testable in isolation.
+  **reason:** Each helper is tested independently (unit) and integrated (integration). Errors in helpers are caught by both levels.
+
+---

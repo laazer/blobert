@@ -39,16 +39,16 @@ Gate must aggregate violations from multiple analysis tools and report findings 
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Designed (51 tests, 0 failures expected until implementation)
+- Tests: Designed and broken (80 tests: 51 behavioral + 29 adversarial, all fail until implementation)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -63,10 +63,10 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Generalist (Backend)
 
 ## Status
 Proceed
 
 ## Reason
-Comprehensive behavioral test suite completed (51 tests across 8 test classes, covering all 13 requirements and 30+ test vectors). Test file: tests/ci/test_architecture_enforcement_gate.py (1,100+ LOC). Checkpoint log: project_board/checkpoints/M902-11/2026-05-19T00-00-00Z-test_design.md. All tests fail as expected (gate module not yet implemented). Mocking strategy documented (internal _run_*() functions mocked for isolation). Five checkpoint protocol decisions logged. Ready for Test Breaker Agent (Task 3) to design adversarial, mutation, and boundary tests.
+Adversarial test suite completed (29 new tests covering mutation testing, boundary conditions, combinatorial failures, type violations, order dependency, mock exposure, and spec gap detection). Total test count: 80 (51 behavioral + 29 adversarial, 1,980+ LOC). Test files: tests/ci/test_architecture_enforcement_gate.py (51 tests) + tests/ci/test_architecture_enforcement_gate_adversarial.py (29 tests). Checkpoint log: project_board/checkpoints/M902-11/2026-05-19T-test_break.md. All 80 tests fail as expected (gate module not yet implemented). Adversarial tests target: score computation (weighted average, clamping, AR-only counting), status determination (ERROR/CRITICAL checks, shadow override), deduplication (fingerprint, severity, cross-tool), boundaries (zero/max violations, duration), combinatorics (mixed failures), types (validation), determinism (sorting), mock exposure (validation, null handling), spec gaps (defaults, constraints, invalid modes). Tests are deterministic and reproducible. Key implementation requirements: (1) risk_score = weighted average (CRITICAL=100, ERROR=80, WARN=50, INFO=10), clamped [0,100]; (2) architecture_score = 100 - (AR_violations * 10), clamped [0,100]; (3) status = ESCALATE if CRITICAL or score<=30, FAIL if ERROR or score>90, PASS otherwise, shadow mode forces PASS override; (4) deduplication by (file, line, rule_id), keep most severe; (5) mode defaults to 'shadow', ticket_id defaults to 'M902-11'. Ready for Implementation Generalist to create ci/scripts/gates/architecture_enforcement_check.py with proper tool orchestration, score computation, and error handling.

@@ -5,6 +5,18 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-19T-m902-11-test-break (M902-11 Stage 3 Architecture Enforcement Gate — TEST_BREAK)
+
+- Queue mode: single ticket
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_active/11_stage_3_architecture_enforcement_gate.md`
+- Stage: TEST_BREAK (Revision 5)
+- Log: `project_board/checkpoints/M902-11/2026-05-19T-test_break.md`
+- Test files: `tests/ci/test_architecture_enforcement_gate_adversarial.py` (29 tests, 880+ LOC)
+- **Status: TEST_BREAK COMPLETE** (ready for IMPLEMENTATION_BACKEND)
+- **Outcome:** Adversarial test suite delivered. New file: `tests/ci/test_architecture_enforcement_gate_adversarial.py` (880+ LOC, 29 tests). Total suite: 80 tests (51 behavioral + 29 adversarial). Adversarial coverage: 4 mutation tests on score computation (weighted average, clamping, AR-only), 3 mutation tests on status determination (ERROR/CRITICAL checks, shadow override), 3 mutation tests on deduplication (fingerprint, severity, cross-tool), 5 boundary tests (zero/one/max violations, duration, message length), 3 combinatorial tests (mixed failures, parse errors, multiple severities), 2 type violation tests (wrong types, missing fields), 2 order dependency tests (determinism, sorting), 2 mock exposure tests (structure validation, null handling), 5 spec gap tests (defaults, constraints, invalid inputs). All tests deterministic; use proper mocking (tool functions, not gate module); catch code regressions, edge failures, assumption violations. Implementation prerequisite: `ci/scripts/gates/architecture_enforcement_check.py` must correctly implement score computation (weighted average CRITICAL=100/ERROR=80/WARN=50/INFO=10, clamped [0,100]), status determination (ESCALATE if CRITICAL/score<=30, FAIL if ERROR/score>90, shadow forces PASS), deduplication (by file+line+rule_id, keep most severe), and defaults (mode=shadow, ticket_id=M902-11).
+
+---
+
 ## Run: 2026-05-19T-m902-11-test-design (M902-11 Stage 3 Architecture Enforcement Gate — TEST_DESIGN)
 
 - Queue mode: single ticket
