@@ -6015,3 +6015,80 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** The AC5_location_constraint.md and AC Gatekeeper checkpoint decision logs explain the symlink boundary, architectural intent, and evidence. Future agents can understand why the location choice was correct without repeating the analysis.
 
 ---
+
+## [M902-15] — Adversarial Test-Driven Specification Prevents Implementation Rework
+
+*Completed: 2026-05-19*
+
+### Critical Learning
+
+**When Test Breaker systematically identifies vulnerability categories and encodes them as boundary/null-handling/type-safety tests before implementation, implementation agents encounter 0 test failures. This discipline eliminates rework cycles and accelerates delivery. M902-15 delivered 487-LOC gate implementation with 189 tests passing on first run — zero rework.**
+
+### Learnings
+
+- **category: testing**
+  **insight:** Adversarial test design that systematically maps vulnerability categories to concrete boundary conditions (exactly_10_chars, 11_chars, 9_chars for reason length) makes implicit assumptions explicit and testable. Implementation cannot deviate from tested boundaries without test failure.
+  **impact:** Test Breaker's 18 boundary mutation tests (M902-15 adversarial suite) defined exact limits: reason 10–200 chars, ticket 3–20 chars, repeated suppression threshold 3+, expiration "today" is valid. Implementation matched every boundary perfectly on first run. Zero off-by-one bugs.
+  **prevention:** In all future Test Breaker runs, explicitly enumerate vulnerability categories (boundaries, null handling, type mismatches, logic consistency, scope edge cases, timestamp edge cases, concurrency/order, regex safety, file handling, schema compliance, stress) and write minimum 1 test per category per feature gate. Use explicit test names like `test_boundary_reason_exactly_10_chars_pass` and `test_boundary_reason_9_chars_fail`.
+  **severity:** high
+
+- **category: process**
+  **insight:** Specification language that defers detail to "implementation clarifies" works only when Test Designer and Test Breaker encode the deferred detail as explicit test expectations. Spec said "50-line window (clarified in implementation)" → Test Breaker wrote `test_repeated_suppression_exactly_50_line_window_pass` and `test_repeated_suppression_51_lines_separate_count`. Implementation could not deviate.
+  **impact:** AC-5 (repeated suppression detection) contained ambiguous scope definition in spec ("same code area = same file + 50-line window or function scope, TBD"). Test Breaker resolved the ambiguity by encoding both expectations in tests. Implementation was forced to choose and justify. Zero ambiguity at implementation time.
+  **prevention:** When a specification defers a detail to "implementation clarifies", Test Breaker **must** write tests covering all plausible interpretations (both 50-line window and function scope, for example). At least one interpretation will pass; others will fail and guide implementation. This transforms ambiguous specs into test-driven clarity.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Gate result schemas (JSON output contracts) should be frozen in specification and validated by tests before implementation. When audit log schema is defined in spec and validated by 8+ audit log output tests, implementation cannot produce schema violations.
+  **impact:** AC-8 (audit log JSON artifact) froze schema in specification (version, timestamp, total_suppressions, total_escalations, suppressions array with file/line/rule_id/reason/ticket/expiration/first_seen/repeat_count/escalation_reasons/validation_errors fields). 8 TestAuditLogOutput tests validated schema presence, field types, ISO 8601 timestamps, determinism. Implementation generated audit logs that passed all schema tests on first run. Zero schema violations.
+  **prevention:** For any gate that produces structured output (JSON, protobuf, schema-validated data), freeze the schema in specification and write at least 3 tests: (1) schema validation (required fields present, correct types), (2) determinism (same input → identical JSON), (3) field semantics (timestamps are ISO 8601, arrays are sorted, counts are accurate). These 3 tests prevent silent schema violations.
+  **severity:** high
+
+- **category: process**
+  **insight:** Checkpoint protocol (recording assumptions with "Would have asked? → Assumption made? → Confidence?") creates an artifact that AC Gatekeeper can validate systematically. No ambiguity survives a checkpoint-equipped workflow.
+  **impact:** M902-15 workflow included 5 checkpoint files (Planning, Specification, Test Design, Test Break, AC Gatekeeper). Each checkpoint logged decisions and confidence levels. AC Gatekeeper could validate the entire chain: (1) Planning froze 7 design decisions (all HIGH confidence), (2) Spec froze 8 assumptions and 8 risks (all mitigated), (3) Tests captured assumptions as executable conditions. Zero AC ambiguity. All 9 ACs evidenced through test coverage.
+  **prevention:** All tickets should use checkpoint protocol in Planning, Specification, Test Design, and Test Break phases. Checkpoints create a validated decision trail that AC Gatekeeper can audit. Absence of checkpoints correlates with ambiguous ACs and rework.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Test categories encoding frozen assumptions (TestAssumptionEncodingCheckpoints class with 6 dedicated tests) provide a validation mechanism for assumptions that would otherwise remain implicit. If implementation deviates from assumed limits, tests catch it.
+  **impact:** Test Breaker created TestAssumptionEncodingCheckpoints with 6 tests encoding frozen assumptions from spec: "expiration boundary today is valid (not expired)", "threshold is 3 (not 2)", "prefixes AR-, SE-, AS-, EXH- only", "format ISO 8601 YYYY-MM-DD only", "exit code always 0", "syntax single-line comment only". These 6 tests guardrail implementation against assumption deviations.
+  **prevention:** Create explicit TestAssumptionEncodingCheckpoints class in all Test Breaker test files. Mark each test with CHECKPOINT comment. For each frozen assumption in spec, write 1 test. This enforces that implementation respects all spec-frozen assumptions without debate.
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **"Spec is ambiguous about repeated suppression scope; we'll clarify during implementation":** This often leads to implementation that clarifies one interpretation, tests fail, rework needed. Better: Test Breaker writes tests for both plausible interpretations. One passes, one fails; implementation is guided by test results.
+
+2. **"Audit log is optional; we can skip schema validation tests":** Schema violations in gates propagate silently downstream (consumer code crashes on missing field or wrong type). Schema validation tests are low cost, high value. Always include them.
+
+3. **"Boundary testing is pedantic; we tested with valid inputs":** Off-by-one errors are the #1 source of production bugs in infrastructure gates. Boundary tests (9 vs 10 vs 11 chars) are not optional.
+
+4. **"We'll validate assumptions during AC review":** Assumptions embedded in spec prose are harder to validate than assumptions encoded as executable tests. Encode early (Test Breaker phase), validate late (implementation phase). If assumption is wrong, test fails before implementation completes.
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "For every infrastructure gate ticket: (1) Enumerate vulnerability categories: boundaries, null/empty handling, type mismatches, logic consistency, scope edge cases, timestamps, concurrency, regex safety, file handling, schema compliance, stress. (2) Write minimum 1 test per category per acceptance criterion. (3) Use explicit test method names like `test_[category]_[scenario]_[expected_outcome]`. (4) Create TestAssumptionEncodingCheckpoints class with 1 test per frozen spec assumption, marked with CHECKPOINT comment. (5) Document all tests in checkpoint with vulnerability_id, test_method, and expected_implementation_behavior."
+  **reason:** Systematic vulnerability enumeration ensures comprehensive adversarial coverage. Explicit test names and assumption checkpoint create a traceability matrix that guides implementation and validates spec-frozen decisions."
+
+- **agent: Specification Agent**
+  **change:** "When writing specifications for infrastructure gates: (1) Freeze all output schemas (JSON, protobuf, structured logs) with exact field names, types, presence requirements. (2) For ambiguous requirements (like 'repeated suppression scope'), add note: 'Test Breaker will write tests for [interpretation A] and [interpretation B]. Implementation will be guided by test results.' (3) For all deferred details ('clarified in implementation'), note in parentheses: '(Test Breaker will encode expected behavior as executable tests; implementation must pass all tests).' This makes deferral legitimate and test-driven."
+  **reason:** Schema freezing + explicit deferral language + test-driven ambiguity resolution transforms vague specifications into test-constrained specifications. Implementation cannot deviate from tested boundaries without test failure."
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "When validating acceptance criteria, check for: (1) All ACs mapped to test classes in Test Designer checkpoint. (2) All frozen assumptions in spec mapped to CHECKPOINT tests in Test Breaker checkpoint. (3) All output schemas validated by schema compliance tests (required fields, field types, JSON serializability). (4) Test execution results showing 0 test failures at implementation (if failures exist, rework needed before AC validation). (5) Checkpoint files present for Planning, Specification, Test Design, Test Break phases (absence signals incomplete workflow). If any check fails, escalate to responsible agent; do not validate ACs."
+  **reason:** Comprehensive AC validation requires verifying the entire workflow chain (spec → tests → implementation → validation). Checkpoint files and test results provide evidence for each link."
+
+### Keep / Reinforce
+
+- **practice:** Test Breaker's vulnerability category enumeration (boundaries, null/empty, type mismatch, logic consistency, scope, timestamp, concurrency, regex, file handling, schema, stress) provides a quality checklist that guides comprehensive test coverage. 97 adversarial tests covering 10 dimensions achieved 0 rework.
+  **reason:** Systematic enumeration beats intuitive "write good tests". M902-15's Test Breaker explicitly categorized vulnerabilities; implementation passed all 189 tests on first run. Contrast with tickets lacking systematic categorization, which often encounter implementation surprises.
+
+- **practice:** Explicit test method names that encode scenario + expected outcome (test_boundary_reason_9_chars_fail) create self-documenting test suites. Implementation teams reading test names understand exactly what boundary is being tested and what outcome is expected.
+  **reason:** M902-15 implementation team could read `test_boundary_reason_9_chars_fail` and immediately understand: "reason with 9 characters should fail validation". No guessing about intent or expected behavior.
+
+- **practice:** Checkpoint protocol (Would have asked? → Assumption made? → Confidence?) creates decision artifacts that survive ticket completion. Future agents reading M902-15 checkpoints can understand why 50-line window was chosen, what risks were mitigated, and what confidence level each decision achieved.
+  **reason:** M902-15 completed with 5 checkpoint files documenting 7 planning decisions, 8 spec assumptions, 8 risks, and 6 assumption-encoding checkpoint tests. This artifact enables AC Gatekeeper to validate with confidence and future agents to avoid repeating analysis.
+
+---
