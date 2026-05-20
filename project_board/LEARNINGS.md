@@ -6786,3 +6786,20 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-23] — Atomic Handoff Checkpoint
+
+### Root causes
+
+1. **YAML `schema_version` parsed as float** — Fixture dumps `1.0` without quotes; PyYAML loads `1.0` float; strict string compare failed. **Fix:** accept `"1.0"`, `"1"`, and float forms in structure validation.
+2. **Empty `checklist:` key → `None`** — Test fixture serializer emitted `checklist:` with no items; PyYAML sets `checklist: null`. **Fix:** treat `None` as `handoff_artifact_invalid`, not only empty list.
+3. **Discover helper returned `"yaml"` as payload** — Second tuple element was mistaken for inline YAML; parser read literal `"yaml"`. **Fix:** empty string payload when loading from file path.
+4. **Symlink `handoff-latest.yaml`** — `Path.resolve()` followed symlink and validated external target as PASS. **Fix:** reject any symlink on primary artifact (`path_traversal`).
+
+### Keep / reinforce
+
+- Mirror `todo_validation_check` for path confinement, `GateResult` shape, and registry wiring.
+- Quote evidence in test YAML fixtures when whitespace/tabs present (adversarial `_yaml_dump`).
+- Seven frozen pair catalogs in code (`PAIR_CATALOGS`) — single source for tests and gate.
+
+---
+
