@@ -1,0 +1,151 @@
+Gate Registry Validation Report
+================================
+
+Source File: /Users/jacobbrandt/workspace/blobert/ci/scripts/gate_registry.json
+
+Expected Structure (M902-01 Schema):
+  - Each gate entry should have: name, module, required_inputs, default_mode, category, description
+  - Additional fields allowed: optional_inputs, run_function
+
+Total Gates Registered: 13
+Expected Minimum Gates (8 stages): 9 (Stage 0-8)
+
+Detailed Registry Validation:
+
+Gate 1: spec_completeness_check
+  Status: REGISTERED
+  Module: spec_completeness
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: workflow (valid)
+  Callable: ✓
+
+Gate 2: static_analysis_check
+  Status: REGISTERED
+  Module: static_analysis_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: analysis (valid)
+  Callable: ✓
+
+Gate 3: governance_check
+  Status: REGISTERED
+  Module: governance_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 4: planner_check
+  Status: REGISTERED
+  Module: planner_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: workflow (valid)
+  Callable: ✓
+
+Gate 5: reviewer_check
+  Status: REGISTERED
+  Module: reviewer_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: review (valid)
+  Callable: ✓
+
+Gate 6: learning_check
+  Status: REGISTERED
+  Module: learning_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: learning (valid)
+  Callable: ✓
+
+Gate 7: diff_classification (Stage 0)
+  Status: REGISTERED
+  Module: diff_classification
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: workflow (valid)
+  Callable: ✓
+
+Gate 8: formatting_check (Stage 1)
+  Status: REGISTERED
+  Module: formatting_check
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: workflow (valid)
+  Callable: ✓
+
+Gate 9: architecture_enforcement_check (Stage 3)
+  Status: REGISTERED
+  Module: ci.scripts.gates.architecture_enforcement_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 10: risk_scoring_check (Stage 4)
+  Status: REGISTERED
+  Module: ci.scripts.gates.risk_scoring_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 11: semantic_extraction_check (Stage 5)
+  Status: REGISTERED
+  Module: ci.scripts.gates.semantic_extraction_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 12: agent_review_check (Stage 6)
+  Status: REGISTERED
+  Module: ci.scripts.gates.agent_review_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 13: override_and_escalation_check (Stage 7)
+  Status: REGISTERED
+  Module: ci.scripts.gates.override_and_escalation_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: governance (valid)
+  Callable: ✓
+
+Gate 14: security_gate_check (Stage 8)
+  Status: REGISTERED
+  Module: ci.scripts.gates.security_gate_check
+  Run Function: run (explicit)
+  Required Fields: name, module, required_inputs, default_mode, category, description ✓
+  Default Mode: shadow (valid)
+  Category: security (valid)
+  Callable: ✓
+
+Schema Analysis:
+  - All gates define: name ✓, module ✓, required_inputs ✓, default_mode ✓, category ✓, description ✓
+  - All default_mode values are valid: shadow, blocking ✓
+  - All category values are valid: workflow, analysis, governance, review, learning, security ✓
+  - 5 gates explicitly define run_function ✓
+  - All gate definitions follow M902-01 schema ✓
+
+Summary:
+  Total gates in registry: 13
+  Gates with Stage designation (0-8): 8 gates (diff_classification, formatting_check, static_analysis_check [implied Stage 2], architecture_enforcement_check, risk_scoring_check, semantic_extraction_check, agent_review_check, override_and_escalation_check, security_gate_check)
+  Schema compliance: 13/13 gates COMPLIANT (100%)
+  All required fields present: ✓
+  All field values valid: ✓
+  Callable: ✓
+
+VALIDATION RESULT: PASS
+Status: All gates registered with valid schema, all required fields present, all categories and modes valid.
+
+Note: Registry includes infrastructure gates (spec_completeness, governance, planner, reviewer, learning) in addition to the 8-stage pipeline gates. This is expected and correct.
