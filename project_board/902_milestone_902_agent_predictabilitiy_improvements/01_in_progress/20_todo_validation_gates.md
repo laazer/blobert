@@ -69,47 +69,51 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-ACCEPTANCE_CRITERIA_GATEKEEPER
+INTEGRATION
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Implementation Agent (Generalist)
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Green (66/66 — test_todo_validation_gate.py + adversarial)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Green — `python -m pytest tests/ci/test_todo_validation_gate.py tests/ci/test_todo_validation_gate_adversarial.py -q` → **66 passed** (AC gatekeeper re-run 2026-05-20). Evidence: `validate_todos` API (`test_validate_todos_all_completed_passes`, `test_validate_todos_one_in_progress_fails`, `test_validate_todos_three_in_progress_sorted`, `test_validate_todos_no_artifacts_vacuous_pass`, `test_validate_todos_empty_todos_passes`); registry (`test_gate_registry_contains_todo_validation_check`); adversarial path/attribution/schema cases in `test_todo_validation_gate_adversarial.py`.
+- Static QA: Not Run (CI gate module only; no Godot/asset_generation Python diff in scope).
+- Integration: **Partial** — core gate + registry evidenced by tests; **runbook deliverable missing** (`project_board/checkpoints/M902-20/TODO_VALIDATION_RUNBOOK.md` per spec Req 10 / execution plan Task 8; ticket AC “Runbook”). Spec Req 10 summary exists in `project_board/specs/902_20_todo_validation_spec.md` but standalone agent-facing runbook not present; `todo_validation_check` not documented in milestone README gate reference.
+- Optional timing AC: PASS — `_compute_timing_diagnostics` + adversarial slow-task tests.
+- Git closure (workflow mandatory): **FAIL** — dirty working tree (`ci/scripts/gates/todo_validation_check.py`, both test modules, `project_board/LEARNINGS.md`); branch `main` **ahead of origin/main by 7 commits**, not pushed.
 
 ## Blocking Issues
-- None
+- Work not committed/pushed. Dirty tree and unpushed commits block Stage COMPLETE per `workflow_enforcement_v1.md` (Commit and Push BEFORE COMPLETE Closure). Implementation Agent must commit M902-20 artifacts and push before re-gate.
+- Runbook AC unmet: missing `project_board/checkpoints/M902-20/TODO_VALIDATION_RUNBOOK.md` (spec AC-10.1–10.3 / ticket AC “Runbook”). Route Documentation Agent or Integration Agent per execution plan Task 8.
 
 ## Escalation Notes
-- None
+- Code ACs (validator, FAIL payload, registry, 5+ scenarios, optional timing) satisfied by pytest evidence. COMPLETE deferred for documentation + git hygiene only.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Implementation Agent (Generalist)
 
 ## Required Input Schema
 ```json
 {
-  "spec_path": "project_board/specs/902_20_todo_validation_spec.md",
-  "test_paths": [
-    "tests/ci/test_todo_validation_gate.py",
-    "tests/ci/test_todo_validation_gate_adversarial.py"
+  "actions": [
+    "git add ci/scripts/gates/todo_validation_check.py tests/ci/test_todo_validation_gate.py tests/ci/test_todo_validation_gate_adversarial.py",
+    "git commit with Conventional Commit for M902-20",
+    "git push origin main"
   ],
-  "gate_module": "ci/scripts/gates/todo_validation_check.py",
-  "registry": "ci/scripts/gate_registry.json"
+  "then_route": "Documentation Agent or Integration Agent",
+  "runbook_path": "project_board/checkpoints/M902-20/TODO_VALIDATION_RUNBOOK.md",
+  "spec_runbook_ref": "project_board/specs/902_20_todo_validation_spec.md#requirement-10-agent-runbook--fail-interpretation-and-retry"
 }
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Implementation complete: `todo_validation_check` gate module + registry entry; behavioral and adversarial suites green (66/66).
+Gatekeeper re-verified 66/66 pytest PASS for code ACs; cannot set COMPLETE: (1) dirty/unpushed git, (2) runbook artifact missing per ticket AC and spec Req 10. After commit/push + runbook, re-invoke Acceptance Criteria Gatekeeper for COMPLETE and `git mv` to `02_complete/`.

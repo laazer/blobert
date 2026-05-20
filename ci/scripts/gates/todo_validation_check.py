@@ -119,21 +119,43 @@ def _is_unsafe_ticket_id(ticket_id: str) -> bool:
     return False
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
 def _is_unsafe_checkpoints_dir(checkpoints_dir: str) -> bool:
     if ".." in checkpoints_dir:
         return True
     return False
 
 
+def _resolve_checkpoints_root(checkpoints_dir: str) -> Path:
+    """Resolve checkpoints root: prefer cwd for relative paths (test sandboxes), else repo root."""
+    path = Path(checkpoints_dir)
+    if path.is_absolute():
+        return path.resolve()
+    cwd_candidate = (Path.cwd() / path).resolve()
+    try:
+        cwd_candidate.relative_to(Path.cwd().resolve())
+        return cwd_candidate
+    except ValueError:
+        pass
+    return (_repo_root() / path).resolve()
+
+
 def _checkpoints_dir_allowed(checkpoints_dir: str) -> bool:
-    if checkpoints_dir == DEFAULT_CHECKPOINTS_DIR:
-        return True
     if _is_unsafe_checkpoints_dir(checkpoints_dir):
         return False
-    path = Path(checkpoints_dir)
-    if path.is_absolute() and path.name != "checkpoints":
-        return False
-    return True
+    resolved = _resolve_checkpoints_root(checkpoints_dir)
+    repo_root = _repo_root().resolve()
+    cwd = Path.cwd().resolve()
+    for anchor in (repo_root, cwd):
+        try:
+            resolved.relative_to(anchor)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def _artifact_entry(path: Path) -> dict[str, str]:
@@ -436,7 +458,7 @@ def validate_todos(
 
     normalized_ticket = _normalize_ticket_id(ticket_id)
     result = _base_result(normalized_ticket, start_time)
-    checkpoints_root = Path(checkpoints_dir)
+    checkpoints_root = _resolve_checkpoints_root(checkpoints_dir)
 
     ticket_dir = checkpoints_root / normalized_ticket
     expected_key = _normalize_agent_name(expected_agent)

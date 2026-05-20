@@ -11,6 +11,7 @@ Executable behavior only — no ticket markdown prose assertions. Prefer tmp_pat
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -102,14 +103,22 @@ def _run_with_checkpoints(
     ticket_id: str = TICKET_ID,
     extra_inputs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    inputs: dict[str, Any] = {
-        "ticket_id": ticket_id,
-        "expected_agent": expected_agent,
-        "checkpoints_dir": str(_checkpoints_parent(tmp_path)),
-    }
-    if extra_inputs:
-        inputs.update(extra_inputs)
-    return gate_run(inputs)
+    import os
+
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(tmp_path)
+        _checkpoints_parent(tmp_path).mkdir(parents=True, exist_ok=True)
+        inputs: dict[str, Any] = {
+            "ticket_id": ticket_id,
+            "expected_agent": expected_agent,
+            "checkpoints_dir": "checkpoints",
+        }
+        if extra_inputs:
+            inputs.update(extra_inputs)
+        return gate_run(inputs)
+    finally:
+        os.chdir(old_cwd)
 
 
 # ---------------------------------------------------------------------------
@@ -465,16 +474,21 @@ class TestTodoValidationPathTraversalAdversarial:
         assert result["violations"]
 
     def test_absolute_checkpoints_dir_outside_repo_rejected(self, tmp_path: Path) -> None:
-        outside = tmp_path / "outside-checkpoints"
-        outside.mkdir()
-        result = gate_run(
-            {
-                "ticket_id": TICKET_ID,
-                "expected_agent": SPEC_AGENT,
-                "checkpoints_dir": str(outside.resolve()),
-            }
-        )
+        import tempfile
+
+        outside = Path(tempfile.mkdtemp(prefix="todo-gate-outside-"))
+        try:
+            result = gate_run(
+                {
+                    "ticket_id": TICKET_ID,
+                    "expected_agent": SPEC_AGENT,
+                    "checkpoints_dir": str(outside.resolve()),
+                }
+            )
+        finally:
+            outside.rmdir()
         assert result["status"] == "FAIL"
+        assert any(v.get("rule") == "path_traversal" for v in result["violations"])
 
     def test_ticket_id_with_path_separator_rejected(self, tmp_path: Path) -> None:
         result = _run_with_checkpoints(tmp_path, ticket_id="M902/20")

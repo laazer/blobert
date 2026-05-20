@@ -10,6 +10,7 @@ No assertions on ticket markdown prose.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -105,14 +106,20 @@ def _run_with_checkpoints(
     ticket_id: str = TICKET_ID,
     extra_inputs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    inputs: dict[str, Any] = {
-        "ticket_id": ticket_id,
-        "expected_agent": expected_agent,
-        "checkpoints_dir": str(_checkpoints_parent(tmp_path)),
-    }
-    if extra_inputs:
-        inputs.update(extra_inputs)
-    result = gate_run(inputs)
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(tmp_path)
+        _checkpoints_parent(tmp_path).mkdir(parents=True, exist_ok=True)
+        inputs: dict[str, Any] = {
+            "ticket_id": ticket_id,
+            "expected_agent": expected_agent,
+            "checkpoints_dir": "checkpoints",
+        }
+        if extra_inputs:
+            inputs.update(extra_inputs)
+        result = gate_run(inputs)
+    finally:
+        os.chdir(old_cwd)
     _assert_gate_envelope(result)
     return result
 
@@ -451,12 +458,22 @@ class TestTodoValidationRunContract:
         assert result["gate"] == GATE_NAME
 
     def test_run_missing_ticket_id_fails(self, tmp_path: Path) -> None:
-        result = gate_run({"expected_agent": SPEC_AGENT, "checkpoints_dir": str(_checkpoints_parent(tmp_path))})
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = gate_run({"expected_agent": SPEC_AGENT, "checkpoints_dir": "checkpoints"})
+        finally:
+            os.chdir(old_cwd)
         assert result["status"] == "FAIL"
         assert any(v.get("rule") == "missing_required_input" for v in result["violations"])
 
     def test_run_missing_expected_agent_fails(self, tmp_path: Path) -> None:
-        result = gate_run({"ticket_id": TICKET_ID, "checkpoints_dir": str(_checkpoints_parent(tmp_path))})
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = gate_run({"ticket_id": TICKET_ID, "checkpoints_dir": "checkpoints"})
+        finally:
+            os.chdir(old_cwd)
         assert result["status"] == "FAIL"
         assert any(v.get("rule") == "missing_required_input" for v in result["violations"])
 
@@ -520,27 +537,34 @@ class TestTodoValidationPathSecurity:
     """Reject traversal in ticket_id and checkpoints_dir (NFR-3)."""
 
     def test_ticket_id_with_dotdot_rejected(self, tmp_path: Path) -> None:
-        result = gate_run(
-            {
-                "ticket_id": "../etc",
-                "expected_agent": SPEC_AGENT,
-                "checkpoints_dir": str(_checkpoints_parent(tmp_path)),
-            }
-        )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = gate_run(
+                {
+                    "ticket_id": "../etc",
+                    "expected_agent": SPEC_AGENT,
+                    "checkpoints_dir": "checkpoints",
+                }
+            )
+        finally:
+            os.chdir(old_cwd)
         assert result["status"] == "FAIL"
-        assert any(
-            v.get("rule") in ("path_traversal", "todo_artifact_invalid", "missing_required_input")
-            for v in result["violations"]
-        )
+        assert any(v.get("rule") == "path_traversal" for v in result["violations"])
 
     def test_checkpoints_dir_traversal_rejected(self, tmp_path: Path) -> None:
-        result = gate_run(
-            {
-                "ticket_id": TICKET_ID,
-                "expected_agent": SPEC_AGENT,
-                "checkpoints_dir": str(tmp_path / ".." / "secrets"),
-            }
-        )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = gate_run(
+                {
+                    "ticket_id": TICKET_ID,
+                    "expected_agent": SPEC_AGENT,
+                    "checkpoints_dir": str(tmp_path / ".." / "secrets"),
+                }
+            )
+        finally:
+            os.chdir(old_cwd)
         assert result["status"] == "FAIL"
 
 
