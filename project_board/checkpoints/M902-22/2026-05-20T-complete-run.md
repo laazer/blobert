@@ -15,6 +15,16 @@
 - `ci/scripts/agent_invocation_middleware.py` — `_maybe_record_early_stop_iteration`
 - `project_board/checkpoints/M902-22/EARLY_STOP_RUNBOOK.md`
 
+## Context Budget Summary
+
+```
+Context Budget Summary — run
+Totals: 13 tokens across 2 ticket(s)
+Top stages: implementation=10, spec=3
+Top tickets: M902-22(10), M902-21(3)
+Outliers: None
+```
+
 ## Notes
 
 - Fixed primary tests that reused `diff_hash` across iterations (false `repeated_diff` triggers).

@@ -6689,3 +6689,100 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-22] — Early-Stop: Fixture Signal Isolation, Scoped JSONL Dedupe, Fail-Closed Evaluate
+*Completed: 2026-05-20*
+
+### Learnings
+
+- **category: testing**
+  **insight:** Streak-detection tests must vary each signal dimension independently; reusing the same `diff_hash` across iterations while varying only `error` still satisfies `repeated_diff` (3× identical hash) and produces false positives unrelated to the scenario under test.
+  **impact:** Primary behavioral suite (`test_early_stop_detection.py`) initially triggered `repeated_diff` in tests aimed at error repetition or alternation; implementation rework required unique per-iteration `diff_hash` fixtures (e.g. `f"{i:064x}"[:64]`) except in tests that explicitly assert `repeated_diff`.
+  **prevention:** Test Designer: for each heuristic (error / diff / no-op / max-iter), document which fields are held constant vs varied per iteration. Test Breaker: add a matrix row “varying error only — diff_hash must differ each iteration unless testing diff stall.”
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Module-level idempotency caches keyed only by event content (e.g. escalation reason + iteration) leak across logical tenants when pytest uses multiple `tmp_path` checkpoint roots in one process.
+  **impact:** Process-global `_last_jsonl_event_key` suppressed JSONL writes under a second checkpoints root; adversarial `test_jsonl_lines_are_valid_json_objects` failed with `FileNotFoundError` for `early_stop_events.jsonl`. Fix: include `checkpoints_root` (resolved path) in the dedupe key; autouse fixture clears cache between tests.
+  **prevention:** Any append-only side-effect log with in-process dedupe must scope the key by `(checkpoints_root, ticket_id, …)` not global content hash alone. Test Breaker: require `test_escalate_writes_jsonl_under_each_checkpoints_root` when dedupe exists.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Evaluators that walk persisted iteration lists must validate element types before streak logic; corrupt on-disk `iterations` (e.g. JSON array of strings) must fail closed per spec (`incomplete_iterations: true`, `should_escalate: false`), not raise through internal helpers.
+  **impact:** `evaluate_early_stop` crashed in `_tail_streak` with `AttributeError: 'str' object has no attribute 'get'` on adversarial `test_iterations_wrong_type_on_disk_blocks_evaluate`; violated AC-07.4 until implementation guarded schema before streak comparison.
+  **prevention:** Implementation: treat load/parse + per-element dict contract as a single gate before heuristics. Test Breaker: always pair “corrupt/mistyped artifact” with assert on `incomplete_iterations` and no unhandled exception.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Adversarial CI modules for checkpoint-backed trackers should run collection independently of implementation (skip/gate on missing module) while still executing type/corruption tests once the module exists—catches evaluate crashes and global-state bugs behavioral happy paths miss.
+  **impact:** Test Break run: 2 failed / 13 passed / 2 skipped before implementation fixes; failures were real contract gaps (JSONL path isolation, evaluate crash), not flaky env. Post-fix: 45 passed behavioral + adversarial.
+  **prevention:** Keep separate `*_adversarial.py` for persistence gates; include rows: wrong `iterations` element type, concurrent append, JSONL idempotency per root, process-global state reset fixture.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Multi-signal loop detectors (error + diff + no-op + max-iter) need explicit spec severity per signal (e.g. no-op flag-only vs error/diff escalate); planning ambiguities on `diff_hash` source and no-op break behavior should freeze in spec assumptions before test vectors encode wrong expectations.
+  **impact:** Planning checkpoint A1/A2 (diff source, no-op ≠ solo escalate) carried to spec A1–A3; reduced spec revision during implementation. Remaining test bugs were fixture isolation, not spec contradiction.
+  **prevention:** Planner + Spec: assumption table entries for each detection dimension’s escalate vs flag-only behavior and hash contract before Test Designer authors T1–T10.
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **Shared diff_hash in non–diff-stall tests:** Using one constant `_DIFF_HASH_A` for every `record_iteration` in tests about error repetition, alternation, or max-iter.
+   **detection_signal:** Unexpected `reason == "repeated_diff"` or escalation before the third identical error; evidence shows matching `diff_hashes` across iterations the test narrative claims differ.
+   **prevention:** Vary `diff_hash` per iteration by default; only hold hash constant in `TestRepeatedDiffEscalation` (or equivalent).
+
+2. **Global dedupe without tenant scope:** Idempotency key omits checkpoints root / ticket path; second test root never receives side-effect files.
+   **detection_signal:** Adversarial JSONL test passes in isolation, fails in full suite order; `FileNotFoundError` on `early_stop_events.jsonl` under `tmp_path` B after escalation under `tmp_path` A.
+   **prevention:** Scope dedupe keys to resolved checkpoints directory; reset module globals in pytest autouse fixture.
+
+3. **Streak logic on unvalidated JSON:** Assuming `iterations[]` elements are dicts because schema_version is present.
+   **detection_signal:** `AttributeError` on `.get` during evaluate; AC expects `incomplete_iterations` but process raises.
+   **prevention:** Validate list element types after `json.load`; return incomplete payload without running `_tail_streak`.
+
+4. **Behavioral-only coverage for persistence modules:** Happy-path append + escalate tests without corrupt-type and multi-root JSONL cases.
+   **detection_signal:** 100% green behavioral suite while adversarial fails on first implementation pass.
+   **prevention:** Test Breaker adversarial matrix mandatory for `ci/scripts/*_tracker.py` pattern (mirror M902-20/M902-21).
+
+### Prompt Patches
+
+- **agent: Test Designer Agent**
+  **change:** "For loop-detection tests (repeated error, diff, no-op, max-iter): unless the test name explicitly targets that signal, use a distinct `diff_hash` per iteration (e.g. indexed 64-char hex). Document in the test class docstring which dimensions are intentionally held constant. Do not reuse a single fixture hash across T2/T5/T7 scenarios."
+  **reason:** Prevents false `repeated_diff` triggers that force implementation rework.
+
+- **agent: Test Breaker Agent**
+  **change:** "For checkpoint append + JSONL escalation trackers: (1) add `test_escalate_writes_jsonl_under_each_checkpoints_root` when module uses in-process dedupe; (2) add corrupt `iterations` wrong element type → `evaluate_early_stop` returns `incomplete_iterations: true`, no exception; (3) autouse-clear any module-level `_last_*` caches between tests."
+  **reason:** Caught JSONL path leak and evaluate crash before AC gate.
+
+- **agent: Implementation Agent (Generalist)**
+  **change:** "Before streak/heuristic logic in `evaluate_*`: validate loaded artifact schema (iterations list elements are dicts with required keys). On violation return spec-defined incomplete payload (`incomplete_iterations: true`, `should_escalate: false`). For idempotent JSONL writes, include resolved `checkpoints_root` in dedupe key, not event body alone."
+  **reason:** Satisfies AC-07.4 fail-closed and multi-root test isolation.
+
+- **agent: Spec Agent**
+  **change:** "For multi-heuristic detectors, table each signal: detection rule, consecutive count, escalate vs flag-only, and evidence fields. Freeze `diff_hash` contract (injected vs git-computed, empty sentinel) in Assumptions before Requirement test contract (T1–T10)."
+  **reason:** Aligns test vectors with severity split (no-op flag vs error/diff escalate).
+
+### Workflow Improvements
+
+1. **Fixture signal checklist at TEST_DESIGN handoff**
+   - **issue:** Behavioral tests encoded accidental cross-signal correlation (same hash everywhere).
+   - **improvement:** Test Design checkpoint lists, per test class, which of `{error, diff_hash, modified_files, tools_invoked}` vary across the N iterations.
+   - **expected_benefit:** Fewer false-red cycles during implementation.
+
+2. **Adversarial gate before IMPLEMENTATION complete**
+   - **issue:** Evaluate crash and JSONL isolation found only when adversarial module ran against first implementation.
+   - **improvement:** Require Test Break checkpoint to cite failing adversarial test names + expected contract before Implementation marks tracker done.
+   - **expected_benefit:** Implementation lands fail-closed evaluate and scoped dedupe in one pass.
+
+3. **Process-global state inventory for new CI modules**
+   - **issue:** Hidden module globals break pytest isolation.
+   - **improvement:** Planning task for persistence modules: list module-level caches/locks; Test Breaker adds autouse reset or per-tenant keys.
+   - **expected_benefit:** Full-suite green matches isolated-module green.
+
+### Keep / Reinforce
+
+1. **Planning assumption table → spec A1–A6** — `diff_hash` two-tier contract, no-op flag-only vs escalate, orchestrator-direct evaluate, `loop_mode` gating resolved before test design.
+2. **45-test behavioral + adversarial closure** — Red collection until `early_stop_tracker.py` exists; adversarial skips when module missing; 2 expected failures documented in test-break checkpoint drove targeted fixes.
+3. **Sibling middleware hook pattern** — `_maybe_record_early_stop_iteration` mirrors context budget hook; exceptions swallowed so tracking never breaks invocations.
+4. **Standalone runbook at checkpoint path** — `EARLY_STOP_RUNBOOK.md` maps `repeated_error` / `repeated_diff` / no-op to Human-first escalation; satisfies agent-facing AC without spec-only prose.
+
+---
+
