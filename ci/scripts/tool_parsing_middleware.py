@@ -20,8 +20,25 @@ from __future__ import annotations
 
 import json
 import logging
+import xml.etree.ElementTree as ET
+import yaml
 from difflib import get_close_matches
-from typing import Any
+from typing import Any, TypedDict
+
+
+# Type definitions for better clarity
+class ToolCallDict(TypedDict, total=False):
+    """Tool call representation: tool name + parameters."""
+    name: str
+    arguments: dict[str, Any]
+
+
+class ParamInfo(TypedDict, total=False):
+    """Parameter schema info from tool definition."""
+    type: str
+    required: bool
+    default: Any
+    description: str
 
 
 # Type mapping: schema stores types as strings, convert to Python types
@@ -50,7 +67,9 @@ def parse_tool_call(tool_call_str: str) -> dict[str, Any]:
         tool_call_str: Tool call output (string)
 
     Returns:
-        Parsed dict representation of tool call
+        dict[str, Any]: Parsed tool call with "name" and "arguments" keys,
+        or XML tag representation if parsed from XML.
+        Example: {"name": "run_command", "arguments": {"command": "ls"}}
 
     Raises:
         json.JSONDecodeError: If JSON parsing fails with details
@@ -63,20 +82,16 @@ def parse_tool_call(tool_call_str: str) -> dict[str, Any]:
     try:
         return json.loads(tool_call_str)
     except json.JSONDecodeError as e:
-        # JSON failed; try YAML if available
+        # JSON failed; try YAML (module-level import at top)
         try:
-            import yaml
-
             result = yaml.safe_load(tool_call_str)
             if isinstance(result, dict):
                 return result
             # YAML parsed but not a dict
             raise ValueError(f"YAML parsing returned non-dict: {type(result)}")
         except Exception:
-            # YAML failed; try XML if available
+            # YAML failed; try XML (module-level import at top)
             try:
-                import xml.etree.ElementTree as ET
-
                 root = ET.fromstring(tool_call_str)
                 # Convert XML to dict (simple conversion)
                 result_dict: dict[str, Any] = {"_tag": root.tag}
@@ -101,15 +116,59 @@ def parse_tool_call(tool_call_str: str) -> dict[str, Any]:
 # =============================================================================
 
 
+def _coerce_primitive_value(value: Any, param_info: dict[str, Any]) -> tuple[Any, bool, str]:
+    """Shared helper for type coercion of primitive values (bool, int, float, str).
+
+    Attempts to repair type mismatches by coercing strings to the expected type.
+    Returns (repaired_value, was_repaired, description).
+    Used by both top-level and nested parameter repair.
+
+    Args:
+        value: Parameter value (may be string or wrong type)
+        param_info: Parameter schema dict with "type" key
+
+    Returns:
+        (repaired_value, was_repaired, repair_description)
+    """
+    schema_type_str = param_info.get("type")
+    schema_type = TYPE_MAP.get(schema_type_str) if schema_type_str else None
+
+    # Try bool coercion
+    if schema_type is bool and isinstance(value, str):
+        lower_value = value.lower()
+        if lower_value in ("true", "false"):
+            repaired = lower_value == "true"
+            return (repaired, True, f"string {repr(value)} → bool {repaired}")
+        return (value, False, f"invalid bool string {repr(value)} (must be 'true'/'false')")
+
+    # Try int coercion
+    if schema_type is int and isinstance(value, str):
+        try:
+            repaired = int(value)
+            # Validate it's actually an integer format (not float string)
+            if str(repaired) != value:
+                return (value, False, f"cannot convert {repr(value)} to int (float string or invalid format)")
+            return (repaired, True, f"string {repr(value)} → int {repaired}")
+        except ValueError:
+            return (value, False, f"cannot convert {repr(value)} to int (non-numeric)")
+
+    # No coercion needed
+    return (value, False, "")
+
+
 def repair_string_bool(value: Any, schema_type: type | None) -> tuple[Any, bool, str]:
     """Repair string→bool type coercion.
 
     Converts "true"/"false" (case-insensitive) to True/False.
     Rejects ambiguous values like "1", "yes", "maybe".
 
+    This function wraps the shared _coerce_primitive_value helper and provides
+    the schema_type directly. For nested structures, use _coerce_primitive_value
+    with param_info dict instead.
+
     Args:
         value: Parameter value (may be string)
-        schema_type: Expected type from schema
+        schema_type: Expected type from schema (bool, int, str, etc.)
 
     Returns:
         (repaired_value, was_repaired, repair_description)
@@ -120,10 +179,10 @@ def repair_string_bool(value: Any, schema_type: type | None) -> tuple[Any, bool,
     lower_value = value.lower()
     if lower_value in ("true", "false"):
         repaired = lower_value == "true"
-        return (repaired, True, f"string '{value}' → bool {repaired}")
+        return (repaired, True, f"string {repr(value)} → bool {repaired}")
 
     # Ambiguous or invalid bool string
-    return (value, False, f"invalid bool string '{value}' (must be 'true'/'false')")
+    return (value, False, f"invalid bool string {repr(value)} (must be 'true'/'false')")
 
 
 def repair_string_int(value: Any, schema_type: type | None) -> tuple[Any, bool, str]:
@@ -132,9 +191,13 @@ def repair_string_int(value: Any, schema_type: type | None) -> tuple[Any, bool, 
     Converts numeric strings like "42" to 42.
     Rejects float strings like "3.14" and non-numeric strings like "abc".
 
+    This function wraps the shared _coerce_primitive_value helper and provides
+    the schema_type directly. For nested structures, use _coerce_primitive_value
+    with param_info dict instead.
+
     Args:
         value: Parameter value (may be string)
-        schema_type: Expected type from schema
+        schema_type: Expected type from schema (bool, int, str, etc.)
 
     Returns:
         (repaired_value, was_repaired, repair_description)
@@ -146,10 +209,10 @@ def repair_string_int(value: Any, schema_type: type | None) -> tuple[Any, bool, 
         repaired = int(value)
         # Validate it's actually an integer format (not float string)
         if str(repaired) != value:
-            return (value, False, f"cannot convert '{value}' to int (float string or invalid format)")
-        return (repaired, True, f"string '{value}' → int {repaired}")
+            return (value, False, f"cannot convert {repr(value)} to int (float string or invalid format)")
+        return (repaired, True, f"string {repr(value)} → int {repaired}")
     except ValueError:
-        return (value, False, f"cannot convert '{value}' to int (non-numeric)")
+        return (value, False, f"cannot convert {repr(value)} to int (non-numeric)")
 
 
 def repair_missing_required_fields(
@@ -162,10 +225,13 @@ def repair_missing_required_fields(
 
     Args:
         call_dict: Tool call dict (may be missing fields)
-        schema: Tool schema with parameters definition
+        schema: Tool schema with "parameters" key containing parameter info dicts
 
     Returns:
-        (repaired_dict, repair_descriptions, missing_required_list)
+        (repaired_dict, repair_descriptions, missing_required_list):
+        - repaired_dict: Updated call_dict with missing optional fields filled
+        - repair_descriptions: List of added optional parameter messages
+        - missing_required_list: Names of required parameters that are still missing
     """
     repairs: list[str] = []
     missing_required: list[str] = []
@@ -194,11 +260,13 @@ def repair_parameter_name_typo(
     Uses difflib.get_close_matches with 80% similarity threshold.
 
     Args:
-        call_dict: Tool call dict (may have typos)
-        schema: Tool schema with valid parameter names
+        call_dict: Tool call dict (may have typos in parameter names)
+        schema: Tool schema with "parameters" key containing valid parameter names
 
     Returns:
-        (repaired_dict, repair_descriptions)
+        (repaired_dict, repair_descriptions):
+        - repaired_dict: Updated call_dict with typo names fixed
+        - repair_descriptions: List of corrected typo messages
     """
     repairs: list[str] = []
     valid_params = set(schema.get("parameters", {}).keys())
@@ -226,10 +294,13 @@ def repair_quoted_string_path(value: Any, schema_type: type | None) -> tuple[Any
 
     Args:
         value: Parameter value (may be quoted)
-        schema_type: Expected type from schema
+        schema_type: Expected type from schema (typically str)
 
     Returns:
-        (repaired_value, was_repaired, repair_description)
+        (repaired_value, was_repaired, repair_description):
+        - repaired_value: Unwrapped string or original if no repair needed
+        - was_repaired: True if unwrapping occurred
+        - repair_description: Explanation message
     """
     if schema_type is not str or not isinstance(value, str):
         return (value, False, "")
@@ -242,7 +313,7 @@ def repair_quoted_string_path(value: Any, schema_type: type | None) -> tuple[Any
         # Only unwrap if inner doesn't start with quote (idempotency check)
         # This prevents double-unwrapping like ""/path"" → "/path" → /path
         if inner and inner[0] != '"':
-            return (inner, True, f"unwrapped quoted path '{value}' → '{inner}'")
+            return (inner, True, f"unwrapped quoted path {repr(value)} → {repr(inner)}")
 
     return (value, False, "")
 
@@ -252,16 +323,19 @@ def repair_nested_structure(
 ) -> tuple[dict[str, Any], list[str], list[str]]:
     """Repair nested structures (dicts and lists) up to 2 levels deep.
 
-    Applies type coercion, missing field, and typo repairs to nested values.
-    Rejects structures deeper than 2 levels.
+    Applies type coercion (via _coerce_primitive_value), missing field, and typo
+    repairs to nested values. Rejects structures deeper than 2 levels.
 
     Args:
         call_dict: Tool call dict (may contain nested dicts/lists)
-        schema: Tool schema with nested type definitions
+        schema: Tool schema with "parameters" containing nested type definitions
         depth: Current nesting depth (incremented recursively)
 
     Returns:
-        (repaired_dict, repair_descriptions, depth_limit_violations)
+        (repaired_dict, repair_descriptions, depth_limit_violations):
+        - repaired_dict: Updated call_dict with nested repairs applied
+        - repair_descriptions: List of nested repair messages
+        - depth_limit_violations: List of depth limit errors
     """
     repairs: list[str] = []
     violations: list[str] = []
@@ -308,21 +382,12 @@ def repair_nested_structure(
             nested_params = param_schema.get("schema", {})
             for nested_key, nested_value in param_value.items():
                 nested_param_info = nested_params.get(nested_key, {})
-                nested_type_str = nested_param_info.get("type")
-                nested_type = TYPE_MAP.get(nested_type_str) if nested_type_str else None
-
-                # Try bool coercion
-                repaired, was_repaired, desc = repair_string_bool(nested_value, nested_type)
-                if was_repaired:
-                    param_value[nested_key] = repaired
-                    repairs.append(f"nested bool: {nested_key}: {desc}")
-                    continue
-
-                # Try int coercion
-                repaired, was_repaired, desc = repair_string_int(nested_value, nested_type)
-                if was_repaired:
-                    param_value[nested_key] = repaired
-                    repairs.append(f"nested int: {nested_key}: {desc}")
+                if nested_param_info:
+                    # Use shared helper for consistent coercion logic
+                    repaired, was_repaired, desc = _coerce_primitive_value(nested_value, nested_param_info)
+                    if was_repaired:
+                        param_value[nested_key] = repaired
+                        repairs.append(f"nested coercion: {nested_key}: {desc}")
 
     return (call_dict, repairs, violations)
 
@@ -337,20 +402,24 @@ def validate_repair_safety(
 
     Args:
         call_dict: Repaired tool call dict
-        tool_schema: Tool schema with safe_parameters whitelist
+        tool_schema: Tool schema with safe_parameters whitelist and optional dangerous flag
 
     Returns:
-        (is_valid, error_messages)
+        (is_valid, error_messages):
+        - is_valid: True if all validations passed
+        - error_messages: List of validation errors (empty if valid)
     """
     errors: list[str] = []
 
+    # Extract tool name from schema for error messages
+    tool_name = tool_schema.get("name", "<unknown>")
     safe_params = tool_schema.get("safe_parameters", [])
     is_dangerous = tool_schema.get("dangerous", False)
 
     # Check all parameters against whitelist
     for param_name in call_dict.keys():
         if param_name not in safe_params:
-            errors.append(f"parameter '{param_name}' not in safe_parameters for tool '{tool_name}'")
+            errors.append(f"parameter {repr(param_name)} not in safe_parameters for tool {repr(tool_name)}")
 
     # For dangerous tools, reject if command content is suspicious
     if is_dangerous:
@@ -359,7 +428,7 @@ def validate_repair_safety(
             if isinstance(param_value, str):
                 for pattern in dangerous_patterns:
                     if pattern in param_value:
-                        errors.append(f"dangerous tool '{tool_name}': suspicious pattern '{pattern}' in parameter '{param_name}'")
+                        errors.append(f"dangerous tool {repr(tool_name)}: suspicious pattern {repr(pattern)} in parameter {repr(param_name)}")
                         break
 
     return (len(errors) == 0, errors)
@@ -430,7 +499,7 @@ def repair_tool_call(
         repaired, was_repaired, desc = repair_string_bool(param_value, param_type)
         if was_repaired:
             call_dict[param_name] = repaired
-            logger.warning(f"Repaired type_coercion on '{param_name}': {desc}")
+            logger.warning(f"Repaired type_coercion on {repr(param_name)}: {desc}")
             repair_history.append(f"type_coercion: {desc}")
             continue
 
@@ -438,7 +507,7 @@ def repair_tool_call(
         repaired, was_repaired, desc = repair_string_int(param_value, param_type)
         if was_repaired:
             call_dict[param_name] = repaired
-            logger.warning(f"Repaired type_coercion on '{param_name}': {desc}")
+            logger.warning(f"Repaired type_coercion on {repr(param_name)}: {desc}")
             repair_history.append(f"type_coercion: {desc}")
             continue
 
@@ -446,7 +515,7 @@ def repair_tool_call(
         repaired, was_repaired, desc = repair_quoted_string_path(param_value, param_type)
         if was_repaired:
             call_dict[param_name] = repaired
-            logger.warning(f"Repaired quoted_path on '{param_name}': {desc}")
+            logger.warning(f"Repaired quoted_path on {repr(param_name)}: {desc}")
             repair_history.append(f"quoted_path: {desc}")
 
     # 2b: Missing required fields and defaults
