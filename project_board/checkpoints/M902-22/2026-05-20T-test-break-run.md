@@ -34,8 +34,23 @@ Initial run exposed middleware test running before hook existed (patch import er
 
 ```text
 $ python -m pytest tests/ci/test_early_stop_detection_adversarial.py -q
-17 skipped in 0.04s
+2 failed, 13 passed, 2 skipped in 0.28s
 ```
+
+Failures (implementation gaps — expected red until fixed):
+
+```text
+FAILED test_jsonl_lines_are_valid_json_objects
+FileNotFoundError: .../early_stop_events.jsonl
+(cause: process-global _last_jsonl_event_key dedupes across tmp_path roots)
+
+FAILED test_iterations_wrong_type_on_disk_blocks_evaluate
+AttributeError: 'str' object has no attribute 'get'
+ci/scripts/early_stop_tracker.py:239 in _tail_streak
+(expected: evaluate_early_stop returns incomplete_iterations=True per AC-07.4)
+```
+
+Post-fix collection: 18 tests; autouse dedupe reset + `test_escalate_writes_jsonl_under_each_checkpoints_root` added.
 
 ```text
 $ python -m pytest tests/ci/test_early_stop_detection_adversarial.py --collect-only -q

@@ -82,6 +82,14 @@ def tracker() -> Any:
     return _import_ci_script("early_stop_tracker")
 
 
+@pytest.fixture(autouse=True)
+def _reset_process_jsonl_dedupe(tracker: Any) -> Any:
+    """Isolate tests from module-level JSONL dedupe cache (Req 07 AC-07.3)."""
+    tracker._last_jsonl_event_key.clear()
+    yield
+    tracker._last_jsonl_event_key.clear()
+
+
 @pytest.fixture(scope="module")
 def middleware() -> Any:
     if not (_CI_SCRIPTS / "agent_invocation_middleware.py").is_file():
@@ -462,6 +470,17 @@ class TestEscalationJsonlIdempotency:
         event = json.loads(lines[0])
         assert event["should_escalate"] is True
         assert event["reason"] == "repeated_error"
+
+    def test_escalate_writes_jsonl_under_each_checkpoints_root(
+        self, tracker: Any, tmp_path: Path
+    ) -> None:
+        """Process-global dedupe must not suppress JSONL for a new checkpoints root."""
+        root_a = tmp_path / "checkpoints-a"
+        root_b = tmp_path / "checkpoints-b"
+        _escalate_fixture(tracker, root_a, "M902-22")
+        assert _events_path(root_a, "M902-22", tracker).is_file()
+        _escalate_fixture(tracker, root_b, "M902-22")
+        assert _events_path(root_b, "M902-22", tracker).is_file()
 
     def test_jsonl_lines_are_valid_json_objects(
         self, tracker: Any, tmp_path: Path
