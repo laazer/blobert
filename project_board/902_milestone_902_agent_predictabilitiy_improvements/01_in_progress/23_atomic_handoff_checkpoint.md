@@ -1,6 +1,6 @@
 # M902-23: Atomic Handoff Checkpoint
 
-**Status:** PENDING  
+**Status:** IN PROGRESS  
 **Target:** 2026-08-05
 
 ## Overview
@@ -77,3 +77,53 @@ See: `project_board/specs/902_23_atomic_handoff_spec.md`
 - M902-01 (Validation Gate Framework)
 - M902-20 (TODO Validation Gates)
 - Checkpoint infrastructure
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+IMPLEMENTATION_GENERALIST
+
+## Revision
+5
+
+## Last Updated By
+Test Breaker Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: Not Run
+- Integration: Not Run
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Implementation Agent (Generalist)
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/23_atomic_handoff_checkpoint.md",
+  "spec_path": "project_board/specs/902_23_atomic_handoff_spec.md",
+  "execution_plan": "project_board/execution_plans/M902-23_atomic_handoff_checkpoint.md",
+  "checkpoint_log": "project_board/checkpoints/M902-23/2026-05-20T-test-break-run.md",
+  "test_output": "tests/ci/test_handoff_validation_gate.py",
+  "adversarial_test_output": "tests/ci/test_handoff_validation_gate_adversarial.py",
+  "implementation_target": "ci/scripts/gates/handoff_validation_check.py"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Test-break complete. Adversarial suite `tests/ci/test_handoff_validation_gate_adversarial.py` adds 22 cases (evidence bypass, deferral/counter tricks, malformed YAML/schema, discovery/fenced-md precedence, path traversal, symlink escape, torn writes, unknown pair). Mirrors `test_todo_validation_gate_adversarial.py`. Pytest collection still red until `ci/scripts/gates/handoff_validation_check.py` and registry entry (Tasks 4–6).
