@@ -94,6 +94,113 @@ Before a spec is handed off to Test Designer:
 
 ---
 
+## [M902-18-T5] — Framework Integration at External Boundaries Requires Test-Driven Middleware Isolation
+*Completed: 2026-05-20*
+
+### Critical Learning
+
+**When integrating with external (unmodifiable) frameworks, test-driven development with mock isolation and determinism-focused adversarial testing prevents silent failures at the invocation boundary. Regex-based extraction, tool schema assumptions, and parameter-naming contracts are high-risk seams that must be validated before production use.**
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Framework integration patterns differ fundamentally from internal refactoring. When framework code is external and not modifiable within project scope, the integration layer must be wrapped as middleware with clear contracts (function signatures, parameter names, return types) rather than attempting to hook into or modify the framework itself.
+  **impact:** Middleware approach (`invoke_agent_with_category_filtering()`) at the blobert → framework boundary enabled testability without access to Claude Code SDK internals. This decoupling allowed 72 deterministic tests to validate the contract before production use.
+  **prevention:** For external framework integration: (1) Create middleware wrapper at logical invocation boundary, (2) Define explicit function signature with full type hints, (3) Mock the external framework for testing, (4) Test all contracts without depending on real external system.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Regex extraction patterns for configuration/declaration require fine-grained adversarial mutation testing to prevent silent failures. A regex that appears correct (passes happy-path tests) can have subtle vulnerabilities in keyword specificity, colon requirements, whitespace handling, and multiline behavior.
+  **impact:** Test Break phase revealed 8 regex mutation vulnerabilities: colon requirement, keyword precision ("I declare tool category" vs partial matches), whitespace variations (spaces vs tabs after colon), and multiline prompt handling. These mutations would create silent false positives or false negatives in production.
+  **prevention:** For any regex-based extraction (especially configuration parsing): (1) Create mutation tests that flip each regex requirement (remove colon, loosen keyword, change whitespace tolerance), (2) Verify each mutation causes a test failure, (3) Test boundary cases (empty categories, multiline prompts, case sensitivity). At least 8 mutation tests per regex pattern.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Tool schema type assumptions (string vs list, missing keys, empty structures) create silent bug vectors. Tools passed through filtering pipelines must have explicit type validation tests for malformed schemas.
+  **impact:** Test Break phase added boundary-condition tests for schema variations: tools missing 'categories' key (KeyError without .get() check), categories as string instead of list (substring match works differently), empty categories list (orphaned tools), case sensitivity mismatches. These would cause runtime failures or incorrect tool selection if not caught.
+  **prevention:** For tool filtering pipelines: (1) Define ToolDefinition TypedDict with required fields, (2) Add tests for each missing/wrong-type field variant, (3) Test empty structures and boundary values, (4) Validate that your filtering logic matches the actual tool schema you're receiving.
+  **severity:** high
+
+- **category: process**
+  **insight:** Zero-flake determinism validation requires 5-invocation loops and repeated full test runs (4+ runs minimum). This level of rigor is necessary for infrastructure-critical code paths (middleware, frameworks, tool filtering).
+  **impact:** M902-18-T5 verified determinism by running same test suite 4 consecutive times (38 original tests, then 72 total after adversarial additions). All 72/72 tests passed all 4 runs with zero flakes. This confidence is necessary for framework-integration code that will be used by downstream agents.
+  **prevention:** For all middleware and framework-integration code: (1) Require 5-invocation determinism loops within tests, (2) Run full test suite 4+ consecutive times before accepting, (3) Checkpoint flake rate explicitly, (4) Log execution time and variance. Only accept when variance <5% across runs.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Parameter naming and order in framework delegation are a high-risk contract seam. Framework expects specific parameter names (tools, not tool), types (list not dict), and order. These are easy to get wrong and create silent failures.
+  **impact:** Test Break phase included 4 parameter-variation tests: wrong parameter name ('tool' vs 'tools'), wrong parameter type (single dict vs list), order preservation, kwargs passthrough. Implementation correctly used tools=tools_to_use; these tests would catch any deviation.
+  **prevention:** When delegating to external frameworks: (1) Document framework signature explicitly (parameter names, types, order), (2) Test each parameter variant (wrong name, wrong type, order change), (3) Add a pass-through test for framework kwargs, (4) Type-hint everything in your wrapper.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Backward compatibility requires more than "agents without category declaration work." It requires scale testing (100+ agents) and evolution testing (category filtering can be toggled off and on without breaking existing flows).
+  **impact:** Backward compatibility tests included 100-agent stress test confirming all agents without category declarations receive all tools unchanged. This proves zero impact on existing agent behavior when feature is added.
+  **prevention:** For any framework feature addition with backward-compatibility requirements: (1) Add scale test (100+ no-category agents), (2) Verify old-behavior codepath unchanged, (3) Test feature can be disabled/enabled without state pollution, (4) Explicit checkpoint: "Existing agents receive identical tool sets with/without feature."
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **External framework integration without isolation:** Attempting to modify or hook into external frameworks directly creates scope creep and blocks testing. Always wrap with middleware at the boundary.
+
+2. **Regex pattern validation with happy-path tests only:** A regex that passes "normal" test cases can have subtle keyword/whitespace/multiline vulnerabilities. Mutation-based adversarial tests are necessary.
+
+3. **Type assumptions in tool filtering:** Assuming tools always have a 'categories' key as a list, or that the framework always passes tools in a specific format. These assumptions create silent failures. Use TypedDict, explicit validation, and schema tests.
+
+4. **Single-run determinism validation:** Running tests once and assuming determinism. Infrastructure-critical code requires 4+ full runs with zero variance. Flakes are easy to miss on single runs.
+
+5. **Parameter contract drift in framework delegation:** Framework expects tools=..., but implementation passes tool=... or passes wrong type. These slip through code review. Parameterized tests catch this.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "When specifying framework integration at external boundaries, define a mandatory 'Integration Contract' section that names: (1) exact function signature with parameter names and types, (2) framework invocation protocol, (3) error handling fallback behavior, (4) backward compatibility requirements. If framework code is external/unmodifiable, assume middleware-wrapper approach and document integration point at blobert → framework boundary."
+  **reason:** Prevents integration design ambiguity and forces explicit contract definition before Test Designer and Implementation agents begin.
+
+- **agent: Test Designer Agent**
+  **change:** "For regex-based extraction patterns, require at least 8 mutation tests per pattern covering: keyword specificity, colon requirement, whitespace variations, multiline handling, case sensitivity, empty/malformed input. Each mutation test should flip one regex requirement and verify test failure. Do not accept regex without mutation coverage."
+  **reason:** Catches hidden regex vulnerabilities that happy-path tests miss and prevents false positives/negatives in production.
+
+- **agent: Test Designer Agent**
+  **change:** "For tool filtering / schema-manipulation code, add boundary-condition tests for each required field in the tool schema: missing key, wrong type (string vs list), empty structure, case sensitivity. If schema is not explicitly validated in implementation, create TypedDict definition and contract tests. Assume worst-case malformed input."
+  **reason:** Tool schemas are often externally-sourced and may not match implementation assumptions. Explicit schema validation prevents silent filtering failures.
+
+- **agent: Test Breaker Agent**
+  **change:** "For infrastructure-critical code (middleware, frameworks, tool filtering), require determinism validation at 5-invocation granularity within tests, plus full test suite execution 4+ consecutive times before accepting zero-flake claim. Log execution time and variance. Flake rate acceptance threshold: zero flakes across all 4 runs."
+  **reason:** Flakes in infrastructure code create downstream cascading failures. Aggressive determinism validation prevents false confidence.
+
+- **agent: Implementation Agent**
+  **change:** "When implementing framework delegation or middleware invocation, explicitly document: (1) framework parameter names and types via type hints, (2) error handling fallback logic, (3) logging levels and message fields, (4) backward-compatibility code paths. Use TypedDict for tool schemas. Add comments on high-risk seams (parameter names, tool schema assumptions)."
+  **reason:** Makes contract dependencies explicit and auditable. Reduces silent failures when framework behavior or tool schema changes.
+
+### Workflow Improvements
+
+- **issue:** External framework integration creates scope ambiguity about what's testable without framework source code access.
+  **improvement:** Add a required SPECIFICATION section "Integration Boundary & Testability" that declares: (1) Is framework external/unmodifiable? (2) If so, middleware-wrapper approach with mock framework in tests. (3) Define exact function contracts. (4) Identify high-risk seams (regex, parameter names, tool schema) requiring adversarial testing. (5) Document backward-compatibility strategy.
+  **expected_benefit:** Eliminates scope drift and forces test strategy decisions early. Framework integrators know what's safe to test without real framework access.
+
+- **issue:** Determinism validation for infrastructure code can be weak ("tests passed") without explicit multi-run protocol.
+  **improvement:** Add a required "Determinism Evidence" section in TEST_BREAK checkpoint for any infrastructure-critical code: (1) 5-invocation loops within tests, (2) Full suite execution count and flake rate, (3) Execution time variance, (4) Acceptance threshold (zero flakes across 4+ runs). Checkpoint failure if flake rate > 0%.
+  **expected_benefit:** Creates explicit determinism standards and prevents shipping flaky infrastructure code.
+
+- **issue:** Backward compatibility can appear satisfied ("tests pass") without proving non-impact on existing agents/flows.
+  **improvement:** For any feature addition with backward-compatibility requirements, require explicit scale test (100+ agents without new feature) and comparison test (identical behavior with/without feature). Checkpoint evidence of both before acceptance.
+  **expected_benefit:** Prevents silent regressions in existing agent behavior when new features are added.
+
+### Keep / Reinforce
+
+1. **Middleware-wrapper approach for external framework integration:** Instead of trying to modify or hook into external frameworks, wrap at a logical boundary with explicit contracts. This is testable, maintainable, and isolates blobert from framework changes.
+
+2. **Adversarial mutation testing for regex patterns:** M902-18-T5 added 8 regex mutation tests as part of adversarial phase. This approach should be standard for any regex-based extraction (configuration parsing, declarations, headers, etc.).
+
+3. **TypedDict enforcement for tool schemas:** Implementation defined `ToolDefinition` TypedDict and used it consistently. This makes schema expectations explicit and testable. Schema validation should be a standard tool-manipulation contract.
+
+4. **Test-first evidence for infrastructure code:** All 8 acceptance criteria were verified by concrete test evidence (line numbers, test class names, explicit assertions). This evidence-first approach makes infrastructure code auditable and reproducible.
+
+5. **Multi-run determinism validation:** Running test suite 4+ consecutive times is expensive but necessary for infrastructure code. Zero-flake evidence is worth the extra test execution cost because infrastructure failures have cascading impact.
+
+---
+
 ## [M902-18] — Deferred Work Requires Explicit Downstream Ticket Updates
 *Completed: 2026-05-18*
 
