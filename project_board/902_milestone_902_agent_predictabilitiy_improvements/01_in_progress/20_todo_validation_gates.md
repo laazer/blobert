@@ -69,16 +69,16 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+ACCEPTANCE_CRITERIA_GATEKEEPER
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Implementation Agent (Generalist)
 
 ## Validation Status
-- Tests: Red (collection — missing `gates.todo_validation_check`)
+- Tests: Green (66/66 — test_todo_validation_gate.py + adversarial)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -93,7 +93,7 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Agent (Generalist)
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
@@ -104,8 +104,7 @@ Implementation Agent (Generalist)
     "tests/ci/test_todo_validation_gate_adversarial.py"
   ],
   "gate_module": "ci/scripts/gates/todo_validation_check.py",
-  "registry": "ci/scripts/gate_registry.json",
-  "checkpoint_log": "project_board/checkpoints/M902-20/2026-05-20T-test-break-run.md"
+  "registry": "ci/scripts/gate_registry.json"
 }
 ```
 
@@ -113,4 +112,4 @@ Implementation Agent (Generalist)
 Proceed
 
 ## Reason
-Behavioral + adversarial suites ready (58+ cases). Implement `todo_validation_check` gate module and registry entry; run pytest until green.
+Implementation complete: `todo_validation_check` gate module + registry entry; behavioral and adversarial suites green (66/66).

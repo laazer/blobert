@@ -520,7 +520,13 @@ class TestTodoValidationPathSecurity:
     """Reject traversal in ticket_id and checkpoints_dir (NFR-3)."""
 
     def test_ticket_id_with_dotdot_rejected(self, tmp_path: Path) -> None:
-        result = _run_with_checkpoints(tmp_path, ticket_id="../etc")
+        result = gate_run(
+            {
+                "ticket_id": "../etc",
+                "expected_agent": SPEC_AGENT,
+                "checkpoints_dir": str(_checkpoints_parent(tmp_path)),
+            }
+        )
         assert result["status"] == "FAIL"
         assert any(
             v.get("rule") in ("path_traversal", "todo_artifact_invalid", "missing_required_input")

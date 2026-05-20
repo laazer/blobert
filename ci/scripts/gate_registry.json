@@ -129,5 +129,14 @@
     "default_mode": "shadow",
     "description": "Stage 8 Final Security Gate: runs gitleaks (secrets), bandit + semgrep (Python security), pip-audit + npm audit (dependencies). Hard-fails on secrets, unsafe deserialization, auth bypass, CVSS >=7.0; soft-fails on medium/low CVEs. Shadow mode (non-blocking); enforcement deferred to M903.",
     "category": "security"
+  },
+  {
+    "name": "todo_validation_check",
+    "module": "todo_validation_check",
+    "required_inputs": ["ticket_id", "expected_agent"],
+    "optional_inputs": ["checkpoints_dir", "upstream_agent", "downstream_agent", "mode"],
+    "default_mode": "shadow",
+    "description": "Validates TodoWrite checkpoint snapshots: blocks handoff when todos attributed to the finishing agent remain in_progress.",
+    "category": "workflow"
   }
 ]
