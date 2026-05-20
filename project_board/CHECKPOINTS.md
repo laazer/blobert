@@ -25,6 +25,10 @@ Log: `project_board/checkpoints/M902-21/2026-05-20T-spec-run.md`
 Behavioral tests `tests/ci/test_context_budget_tracking.py` (22 methods, T1–T11); collection red until tracker/reporter modules land.
 Log: `project_board/checkpoints/M902-21/2026-05-20T-test-design-run.md`
 
+### M902-21 — OUTCOME: TEST_BREAK COMPLETE → IMPLEMENTATION_GENERALIST
+Adversarial tests `tests/ci/test_context_budget_tracking_adversarial.py` (26 methods); 21 skipped until impl, 2 vacuous pass on middleware skip paths.
+Log: `project_board/checkpoints/M902-21/2026-05-20T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-20T-m902-20-ac-gatekeeper (M902-20 — INTEGRATION, not COMPLETE)

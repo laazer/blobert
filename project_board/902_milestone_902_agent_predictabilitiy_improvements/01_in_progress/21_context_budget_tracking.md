@@ -81,16 +81,16 @@ See: `project_board/specs/902_21_context_budget_tracking_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Adversarial suite added (23 skipped / 3 vacuous pass until impl); behavioral module collection red
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -105,15 +105,18 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (Generalist)
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/21_context_budget_tracking.md",
   "spec_path": "project_board/specs/902_21_context_budget_tracking_spec.md",
-  "test_module": "tests/ci/test_context_budget_tracking.py",
-  "test_checkpoint": "project_board/checkpoints/M902-21/2026-05-20T-test-design-run.md"
+  "test_modules": [
+    "tests/ci/test_context_budget_tracking.py",
+    "tests/ci/test_context_budget_tracking_adversarial.py"
+  ],
+  "test_checkpoint": "project_board/checkpoints/M902-21/2026-05-20T-test-break-run.md"
 }
 ```
 
@@ -121,4 +124,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Behavioral test suite authored (Revision 4): `tests/ci/test_context_budget_tracking.py` maps spec Test Contract T1–T11 (22 test methods). Collection fails until `ci/scripts/context_budget_tracker.py` and `ci/scripts/context_budget_report.py` exist (expected red). Handoff to Test Breaker Agent for adversarial pass.
+Adversarial pass complete (Revision 5): `tests/ci/test_context_budget_tracking_adversarial.py` adds 26 tests (merge races, malformed JSON, reporter edges, middleware bypass, path traversal, outlier math). Implement tracker, reporter, and middleware hook; run both test modules green.
