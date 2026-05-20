@@ -617,7 +617,7 @@ class TestMiddlewareAdversarialPaths:
             with patch.dict(os.environ, {"EARLY_STOP_DETECTION": "1"}, clear=False):
                 with patch.object(
                     early_stop_middleware_hook,
-                    "_maybe_record_early_stop_iteration",
+                    "record_early_stop_iteration",
                     side_effect=RuntimeError("tracker blew up"),
                 ):
                     out = early_stop_middleware_hook.invoke_agent_with_category_filtering(

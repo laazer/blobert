@@ -27,6 +27,8 @@ from typing import Any, Callable, TypedDict
 # Relative import per module convention (collocated service modules).
 # Tests and dynamic imports are mocked/patched; no fallback needed.
 from .context_budget_tracker import record_stage_usage
+from .early_stop_tracker import evaluate_early_stop
+from .early_stop_tracker import record_iteration as record_early_stop_iteration
 from .tool_category_manager import get_tools_for_category, VALID_CATEGORIES
 
 
@@ -54,6 +56,7 @@ _CATEGORY_EXTRACTION_PATTERN = re.compile(
 # Configure module-level logger
 _logger = logging.getLogger(__name__)
 _context_budget_skip_logged = False
+_early_stop_skip_logged = False
 
 
 def extract_category_from_prompt(prompt: str) -> str | None:
@@ -223,6 +226,12 @@ def invoke_agent_with_category_filtering(
         framework_kwargs=framework_kwargs,
     )
 
+    _maybe_record_early_stop_iteration(
+        agent_type=agent_type,
+        framework_result=result,
+        framework_kwargs=framework_kwargs,
+    )
+
     # Step 4: Return framework result unchanged
     return result
 
@@ -282,3 +291,59 @@ def _maybe_record_context_budget(
         )
     except Exception:  # noqa: BLE001 — tracking must not break invocations
         _logger.exception("context budget tracking failed for ticket %s", ticket_id)
+
+
+def _maybe_record_early_stop_iteration(
+    *,
+    agent_type: str,
+    framework_result: Any,
+    framework_kwargs: dict[str, Any],
+) -> None:
+    """Post-invocation early-stop hook (M902-22). Opt-out: EARLY_STOP_DETECTION=0."""
+    global _early_stop_skip_logged  # noqa: PLW0603
+
+    if os.environ.get("EARLY_STOP_DETECTION") == "0":
+        return
+
+    if framework_kwargs.get("loop_mode") is not True:
+        if not _early_stop_skip_logged:
+            _logger.debug("early stop skipped: loop_mode not active")
+            _early_stop_skip_logged = True
+        return
+
+    ticket_id = framework_kwargs.get("ticket_id")
+    agent_run_id = framework_kwargs.get("agent_run_id")
+    loop_run_id = framework_kwargs.get("loop_run_id")
+    if not ticket_id or not agent_run_id or not loop_run_id:
+        if not _early_stop_skip_logged:
+            _logger.debug("early stop skipped: missing ticket_id, agent_run_id, or loop_run_id")
+            _early_stop_skip_logged = True
+        return
+
+    checkpoints_root = framework_kwargs.get("checkpoints_root")
+    root_path = Path(checkpoints_root) if checkpoints_root is not None else None
+    iteration_context = framework_kwargs.get("iteration_context")
+    ctx = iteration_context if isinstance(iteration_context, dict) else {}
+
+    try:
+        record_early_stop_iteration(
+            str(ticket_id),
+            agent_type=agent_type,
+            agent_run_id=str(agent_run_id),
+            loop_run_id=str(loop_run_id),
+            iteration_context=ctx,
+            framework_result=framework_result,
+            checkpoints_root=root_path,
+            ticket_path=framework_kwargs.get("ticket_path"),
+            framework_kwargs=framework_kwargs,
+        )
+        eval_result = evaluate_early_stop(
+            str(ticket_id),
+            checkpoints_root=root_path,
+        )
+        if eval_result.should_escalate:
+            callback = framework_kwargs.get("on_early_stop")
+            if callable(callback):
+                callback(eval_result)
+    except Exception:  # noqa: BLE001 — tracking must not break invocations
+        _logger.exception("early stop tracking failed for ticket %s", ticket_id)

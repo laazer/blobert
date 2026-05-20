@@ -404,12 +404,15 @@ class TestMaxIterations:
         monkeypatch.setenv("EARLY_STOP_MAX_ITERATIONS", "3")
         root = tmp_path / "checkpoints"
         ticket = "M902-22"
-        for run_id in (_RUN_001, _RUN_002, _RUN_003):
+        for i, run_id in enumerate((_RUN_001, _RUN_002, _RUN_003), start=1):
             _record(
                 root,
                 ticket,
                 agent_run_id=run_id,
-                iteration_context=_ctx(error=f"e-{run_id}", diff_hash=_DIFF_HASH_A),
+                iteration_context=_ctx(
+                    error=f"e-{run_id}",
+                    diff_hash=f"{i:064x}"[:64],
+                ),
             )
         result = _evaluate(root, ticket)
         assert result["should_escalate"] is True
@@ -450,12 +453,15 @@ class TestAlternatingErrors:
         root = tmp_path / "checkpoints"
         ticket = "M902-22"
         pattern = [_SAME_ERROR, _ALT_ERROR, _SAME_ERROR, _ALT_ERROR]
-        for run_id, err in zip((_RUN_001, _RUN_002, _RUN_003, _RUN_004), pattern, strict=True):
+        for i, (run_id, err) in enumerate(
+            zip((_RUN_001, _RUN_002, _RUN_003, _RUN_004), pattern, strict=True),
+            start=1,
+        ):
             _record(
                 root,
                 ticket,
                 agent_run_id=run_id,
-                iteration_context=_ctx(error=err, diff_hash=_DIFF_HASH_A),
+                iteration_context=_ctx(error=err, diff_hash=f"{i:064x}"[:64]),
             )
         data = _load_iterations(_iterations_path(root, ticket))
         assert data["rollup"]["error_repeat_streak"] == 1
