@@ -20,14 +20,26 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 
-try:
-    # Try relative import first (when imported as module)
-    from .tool_category_manager import get_tools_for_category, VALID_CATEGORIES
-except ImportError:
-    # Fall back to direct import (when run as script or in test context)
-    from tool_category_manager import get_tools_for_category, VALID_CATEGORIES
+# Relative import per module convention (collocated service modules).
+# Tests and dynamic imports are mocked/patched; no fallback needed.
+from .tool_category_manager import get_tools_for_category, VALID_CATEGORIES
+
+
+# Tool definition schema: enforces required fields for all tool dicts.
+# Each tool MUST have name, categories, and rationale for filtering and logging.
+class ToolDefinition(TypedDict):
+    """Tool definition with semantic categorization.
+
+    Fields:
+        name: Tool identifier (e.g., 'read', 'write', 'bash').
+        categories: List of semantic categories (subset of 'parse', 'modify', 'test', 'plan', 'think').
+        rationale: Human-readable description of the tool's purpose.
+    """
+    name: str
+    categories: list[str]
+    rationale: str
 
 
 # Compile regex pattern once at module level for performance (NFR-2)
@@ -95,7 +107,7 @@ def extract_category_from_prompt(prompt: str) -> str | None:
 def invoke_agent_with_category_filtering(
     agent_type: str,
     prompt: str,
-    all_tools: list[dict[str, Any]],
+    all_tools: list[ToolDefinition],
     framework_invocation_fn: Callable[..., Any],
     **framework_kwargs: Any,
 ) -> Any:
@@ -121,7 +133,8 @@ def invoke_agent_with_category_filtering(
                     Used for logging context.
         prompt: Agent input prompt. May contain category declaration. Passed unchanged
                 to framework.
-        all_tools: All available tools before filtering. Must be a list of dicts.
+        all_tools: All available tools before filtering. Each tool MUST conform to
+                   ToolDefinition schema (name, categories, rationale).
                    Passed unchanged to framework if no valid category is declared.
         framework_invocation_fn: Callable (function or method) that invokes the
                                  external framework. Must accept at minimum:
@@ -142,7 +155,7 @@ def invoke_agent_with_category_filtering(
         >>> result = invoke_agent_with_category_filtering(
         ...     agent_type="spec",
         ...     prompt="I declare tool category: parse\n\nWrite spec...",
-        ...     all_tools=[{"name": "read"}, {"name": "write"}],
+        ...     all_tools=[{"name": "read", "categories": ["parse"], "rationale": "Read"}],
         ...     framework_invocation_fn=mock_framework
         ... )
         >>> result["status"]
