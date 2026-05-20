@@ -6587,3 +6587,105 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-28] — Lefthook Parallel Hooks: Safety Matrix, Scope Boundaries, and Config-Contract Tests
+
+*Completed: 2026-05-20*
+
+### Learnings
+
+- **category: infra**
+  **insight:** Enabling hook parallelism requires a frozen shared-resource matrix (write paths, git index, ports) per command pair—not a single `parallel: true` flip. Pairs marked UNKNOWN must stay UNSAFE until Integration evidence upgrades them.
+  **impact:** Spec Appendix B classified `godot-tests` ∥ `py-tests` as **SAFE** only after documenting disjoint writes (`.godot/` vs `asset_generation/python/coverage.xml`). Static tests (T4/T5) and an adversarial concurrent-`coverage.xml` case prevent accidental cross-writes before parallel pre-push ships.
+  **prevention:** Spec Agent: deliver normative safety matrix before Implementation. Test Breaker: add mutation tests for script write paths and same-file races when matrix claims SAFE.
+  **severity:** high
+
+- **category: process**
+  **insight:** Developer-hook scheduling (Lefthook) and canonical CI ordering (`ci/scripts/run_tests.sh`) are separate contracts; parallelizing hooks must not imply parallelizing the full suite without an explicit ticket.
+  **impact:** Planning checkpoint and spec A4 kept MAINT-TSGR sequential Godot→Python in CI while only flipping `pre-push.parallel` in `lefthook.yml`. Avoided scope creep into pytest-xdist, parallel Ruff, or `run_tests.sh` reordering.
+  **prevention:** Planner/Spec: state “Lefthook only” vs “CI canonical” in assumptions table; Test Designer: assert `run_tests.sh` order unchanged (T6). Defer inner-script parallelism (Ruff→pytest→diff-cover) unless profiled and ticket-scoped.
+  **severity:** medium
+
+- **category: infra**
+  **insight:** Lefthook 1.x parallel scheduling is config-only (`parallel:` in `lefthook.yml`); upstream does not document `LEFTHOOK_PARALLEL` or project-specific env kill-switches. Opt-out is `LEFTHOOK=0`, `LEFTHOOK_EXCLUDE`, or temporary `parallel: false`.
+  **impact:** Planner medium-confidence question on `LEFTHOOK_PARALLEL` was resolved in spec Requirement 05—no invented `BLOBERT_HOOKS_PARALLEL`. Documented real opt-outs in `CLAUDE.md` and `lefthook.yml` header instead of non-functional env vars.
+  **prevention:** Spec Agent: verify parallel/opt-out against the repo’s Lefthook version docs before freezing Requirement 05; adversarial tests assert no phantom env vars in the implementation tree.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Hook-scheduling tickets can close on YAML + shell **config-contract** tests in CI; full dual-suite wall-clock overlap belongs in Integration/Human follow-up, not pytest-in-CI.
+  **impact:** 30/30 PASS (11 behavioral + 19 adversarial) with one expected red on `pre-push.parallel: false` before Implementation. T7 overlap timing stub deferred; AC Gatekeeper noted Human may confirm with `LEFTHOOK_VERBOSE=1 git push` on mixed `.gd` + Python changes.
+  **prevention:** Test Designer: parse `lefthook.yml` and `.lefthook/scripts/*` only—no markdown golden-output assertions. Spec: separate “contract tests” (Req 10) from “baseline wall-clock” (Req 02) with explicit owner (Integration checkpoint vs Human).
+  **severity:** medium
+
+- **category: infra**
+  **insight:** `parallel: true` in YAML does not prove effective concurrency; pre-commit already had `parallel: true` while pre-push was the real bottleneck at `parallel: false`. Verification needs `LEFTHOOK_VERBOSE=1` log overlap or ≥25% wall-clock reduction vs sequential single-hook runs on the same staged set.
+  **impact:** Ticket’s largest win was flipping pre-push, not re-litigating pre-commit. Spec Requirement 06 defines evidence bar so agents do not mark “parallelism verified” from config alone.
+  **prevention:** Integration/AC Gatekeeper: when AC says “confirm parallelism,” require verbose logs or timed before/after table in checkpoint—not YAML inspection only.
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **Inventing parallel kill-switch env vars** — Documenting `LEFTHOOK_PARALLEL` or `BLOBERT_HOOKS_PARALLEL` without upstream Lefthook support.
+   **detection_signal:** Docs mention env override but `lefthook.yml` is the only lever; adversarial test finds env var in tree without Lefthook reference.
+   **prevention:** Spec negative finding + `LEFTHOOK=0` / `LEFTHOOK_EXCLUDE` / config `parallel: false` only.
+
+2. **CI suite parallelism by analogy** — Changing `ci/scripts/run_tests.sh` to overlap Godot and Python because pre-push hooks were parallelized.
+   **detection_signal:** `run_tests.sh` order tests fail; MAINT-TSGR contract drift.
+   **prevention:** Explicit ticket for CI scheduling; keep hook ticket scope to `lefthook.yml` and hook scripts.
+
+3. **YAML-as-proof of concurrency** — Treating `pre-commit.parallel: true` as sufficient without overlap evidence when AC requires “true concurrency.”
+   **detection_signal:** No baseline table; no `LEFTHOOK_VERBOSE` excerpt in checkpoint.
+   **prevention:** Requirement 06 evidence protocol in spec; Human/Integration timing follow-up for dual-suite pre-push.
+
+4. **Inner-script parallelism scope creep** — Parallelizing Ruff, pytest, and diff-cover inside `py-tests.sh` in the same ticket as cross-command Godot∥Python.
+   **detection_signal:** Implementation edits `py-tests.sh` flow without safety matrix row; single `coverage.xml` writer races.
+   **prevention:** Spec marks P15/P16 as N/A; deferrals point to M902-07/M903 for lint caching and xdist.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "For Lefthook/scheduling tickets: (1) Verify parallel and opt-out mechanisms against the repo’s Lefthook version—document negative findings (e.g. no `LEFTHOOK_PARALLEL`). (2) Freeze Appendix safety matrix: every concurrent command pair → shared writes, git index, ports → SAFE/UNSAFE/N/A. (3) State explicitly: `ci/scripts/run_tests.sh` order unchanged unless ticket AC requires CI changes."
+  **reason:** Resolved A1 env-var myth and A4 CI boundary before test design; prevented invented kill-switches.
+
+- **agent: Planner Agent**
+  **change:** "When ticket mentions ‘parallel hooks,’ decompose: cross-command (Lefthook `parallel:`) vs inner-script (shell pipeline) vs canonical CI (`run_tests.sh`). Default scope to Lefthook only; flag inner/CI parallelism as out-of-scope or follow-on unless trivial and matrix-approved."
+  **reason:** Planning checkpoints kept py-tests internal steps and MAINT-TSGR sequential out of M902-28.
+
+- **agent: Test Designer Agent**
+  **change:** "Hook config tickets: assert `lefthook.yml` keys, glob delegation, and hook script write paths (no cross-suite artifacts). Do not assert markdown spec/ticket bodies as golden output. Leave full Godot+Python wall-clock overlap to Integration checkpoint or Human; one expected-red test on the flag Implementation will flip."
+  **reason:** 30-test suite closed without Godot-in-CI timing; clean red→green on `pre-push.parallel`.
+
+- **agent: Test Breaker Agent**
+  **change:** "For parallel hook specs: adversarial matrix must include—missing/duplicate `parallel` YAML keys, string `'false'` vs bool, concurrent write to shared `coverage.xml`, `run_tests.sh` ordering regression, and governance that `lefthook.yml` stays monitored. If matrix row is SAFE, add at least one test that would fail if scripts converged write paths."
+  **reason:** 19 adversarial tests caught YAML drift and coverage races without live hook runs in CI.
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "For parallelism ACs: accept config-contract pytest PASS + implementation checkpoint baseline table template. If dual-suite pre-push wall-clock was not measured (no mixed `.gd`+Python push), note in escalation as Human follow-up—do not FAIL solely for missing local timing when Req 10 tests pass."
+  **reason:** Ticket completed with contract evidence; timing explicitly deferred per spec/checkpoint.
+
+### Workflow Improvements
+
+1. **Safety matrix before Implementation flip**
+   - **issue:** Flipping `parallel: true` without documented pair-level resource analysis risks flaky hooks or corrupt artifacts.
+   - **improvement:** Spec Requirement 01 + Appendix B complete before Test Design; Implementation changes only pairs marked SAFE.
+   - **expected_benefit:** Rollback criterion (Requirement 05) is evidence-based, not reactive guesswork.
+
+2. **Contract tests vs Integration timing split**
+   - **issue:** Agents block COMPLETE waiting for full Godot+pytest overlap in CI, or skip timing entirely with only YAML edits.
+   - **improvement:** Req 10 → pytest contract; Req 02 → checkpoint baseline table; Human optional `LEFTHOOK_VERBOSE=1` confirmation on mixed changes.
+   - **expected_benefit:** Predictable closure in agent CI; real wall-clock proof where machines have Godot.
+
+3. **Expected-red handoff for single-config tickets**
+   - **issue:** Unclear whether failing `pre-push.parallel` test means broken tests or correct pre-implementation state.
+   - **improvement:** Test Design checkpoint documents verbatim failure (`assert False is True`); Test Break reports “1 expected red”; Implementation flips one key → 30/30.
+   - **expected_benefit:** No false rework cycles on intentional red.
+
+### Keep / Reinforce
+
+1. **Planning assumption table → spec A1–A6** — `LEFTHOOK_PARALLEL`, inner py-tests, CI sequential, and `.godot/` contention resolved before test design; no spec revision cycle.
+2. **30-test red-green on one YAML flag** — Behavioral + adversarial suites; Implementation changed `pre-push.parallel` + docs only; `verify_tsgr_runner_contract.sh` OK.
+3. **Disjoint-write static contracts** — Godot hook must not touch `coverage.xml`; Python hook writes only under `PY_ROOT`; enforced in T4/T5 and adversarial race test.
+4. **No markdown prose as test oracle** — `TestNoMarkdownProseContract` + YAML/script parsing only; stable CI without reading ticket bodies.
+
+---
+
