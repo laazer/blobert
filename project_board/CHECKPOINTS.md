@@ -5,6 +5,28 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-22-autopilot (M902-22 Early-Stop Detection)
+
+- Queue mode: single ticket
+- Queue scope: `00_backlog/22_early_stop_detection.md` → `01_in_progress/`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-22 — OUTCOME: PLANNING COMPLETE → SPECIFICATION
+Execution plan and planning checkpoint logged; Spec Agent owns `902_22_early_stop_spec.md`.
+Log: `project_board/checkpoints/M902-22/2026-05-20T-planning-run.md`
+Plan: `project_board/execution_plans/M902-22_early_stop_detection.md`
+
+### M902-22 — OUTCOME: SPECIFICATION COMPLETE → TEST_DESIGN
+Spec `902_22_early_stop_spec.md` (13 requirements); generic spec exit gate PASS.
+Log: `project_board/checkpoints/M902-22/2026-05-20T-spec-run.md`
+
+### M902-22 — OUTCOME: TEST_DESIGN COMPLETE → TEST_BREAK
+Behavioral tests `tests/ci/test_early_stop_detection.py` (T1–T10); collection red until tracker module.
+Log: `project_board/checkpoints/M902-22/2026-05-20T-test-design-run.md`
+
+---
+
 ## Run: 2026-05-20T-m902-28-autopilot (M902-28 Parallel Hook Execution)
 
 - Queue mode: single ticket
