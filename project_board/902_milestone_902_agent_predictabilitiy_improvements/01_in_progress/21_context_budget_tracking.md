@@ -81,13 +81,13 @@ See: `project_board/specs/902_21_context_budget_tracking_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -105,15 +105,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/21_context_budget_tracking.md",
   "spec_path": "project_board/specs/902_21_context_budget_tracking_spec.md",
-  "execution_plan": "project_board/execution_plans/M902-21_context_budget_tracking.md",
-  "spec_checkpoint": "project_board/checkpoints/M902-21/2026-05-20T-spec-run.md"
+  "test_module": "tests/ci/test_context_budget_tracking.py",
+  "test_checkpoint": "project_board/checkpoints/M902-21/2026-05-20T-test-design-run.md"
 }
 ```
 
@@ -121,4 +121,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete (Revision 3). Spec at `project_board/specs/902_21_context_budget_tracking_spec.md`; `spec_completeness_check.py --type generic` PASS. Author behavioral tests per spec Test Contract (`tests/ci/test_context_budget_tracking.py`).
+Behavioral test suite authored (Revision 4): `tests/ci/test_context_budget_tracking.py` maps spec Test Contract T1–T11 (22 test methods). Collection fails until `ci/scripts/context_budget_tracker.py` and `ci/scripts/context_budget_report.py` exist (expected red). Handoff to Test Breaker Agent for adversarial pass.

@@ -21,6 +21,10 @@ Plan: `project_board/execution_plans/M902-21_context_budget_tracking.md`
 Spec `902_21_context_budget_tracking_spec.md` (12 requirements); generic spec exit gate PASS.
 Log: `project_board/checkpoints/M902-21/2026-05-20T-spec-run.md`
 
+### M902-21 — OUTCOME: TEST_DESIGN COMPLETE → TEST_BREAK
+Behavioral tests `tests/ci/test_context_budget_tracking.py` (22 methods, T1–T11); collection red until tracker/reporter modules land.
+Log: `project_board/checkpoints/M902-21/2026-05-20T-test-design-run.md`
+
 ---
 
 ## Run: 2026-05-20T-m902-20-ac-gatekeeper (M902-20 — INTEGRATION, not COMPLETE)
