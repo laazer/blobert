@@ -69,13 +69,13 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -93,14 +93,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md",
-  "execution_plan_path": "project_board/execution_plans/M902-20_todo_validation_gates.md",
-  "spec_output_path": "project_board/specs/902_20_todo_validation_spec.md"
+  "spec_path": "project_board/specs/902_20_todo_validation_spec.md",
+  "test_output_path": "tests/ci/test_todo_validation_gate.py",
+  "reference_tests": ["tests/ci/test_per_stage_gates.py", "tests/ci/test_gate_runner_cli.py"]
 }
 ```
 
@@ -108,4 +108,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete. Execution plan and checkpoint logged. Spec Agent must freeze TodoWrite checkpoint artifact contract, agent attribution rules, and M902-01-aligned FAIL payload before TEST_DESIGN.
+Specification complete. `902_20_todo_validation_spec.md` freezes snapshot contract, `validate_todos` / `run()` contracts, M902-01 FAIL payload, registry entry, T1–T7 scenarios, and runbook. Test Designer must author red behavioral tests before implementation.

@@ -14,6 +14,17 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-20-specification (M902-20 TODO Validation Gates — SPECIFICATION COMPLETE)
+
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
+- Stage: SPECIFICATION → TEST_DESIGN (Revision 2 → 3)
+- Log: `project_board/checkpoints/M902-20/2026-05-20T-specification-run.md`
+- Spec: `project_board/specs/902_20_todo_validation_spec.md`
+- Outcome: 10 requirements; todos-latest.json contract; 7 test scenarios; runbook section; M902-01 FAIL dual payload.
+- Next: Test Designer Agent — `tests/ci/test_todo_validation_gate.py`
+
+---
+
 ## Run: 2026-05-20T-m902-20-planning (M902-20 TODO Validation Gates — PLANNING COMPLETE)
 
 - Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
