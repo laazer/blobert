@@ -18,9 +18,13 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ## Run: 2026-05-20T-m902-20-autopilot (M902-20 TODO Validation Gates)
 
 - Queue mode: single ticket
-- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/20_todo_validation_gates.md` → `01_in_progress/`
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/20_todo_validation_gates.md` → `02_complete/`
 - Lean: no
 - Log root: project_board/checkpoints/
+
+### M902-20 — OUTCOME: COMPLETE
+Todo validation gate (`validate_todos`, `todo_validation_check`) with 66 pytest scenarios, registry entry, agent runbook, and NFR-3 path confinement fix.
+Log: project_board/checkpoints/M902-20/
 
 ---
 

@@ -279,6 +279,109 @@ When an agent defers acceptance criteria, implementation, or testing to a future
 
 ---
 
+## [M902-19] — Multi-Format Parsing + Layered Repairs Require Mutation Testing and Idempotency Proof
+*Completed: 2026-05-20*
+
+### Critical Learning
+
+**Tool error recovery middleware requires adversarial mutation testing to ensure repair logic is not over-permissive, and idempotency validation to guarantee repair(repair(X)) == repair(X). Type safety via TypedDict and tuple-based error returns prevent silent type corruption. Code review findings (5 MEDIUM issues caught pre-deployment) and layered validation (parsing → repair → whitelist gate) are load-bearing patterns.**
+
+### Learnings
+
+- **category: testing**
+  **insight:** Repair logic appears "correct" on happy-path tests but can fail under mutation: repair skips type checks, over-coerces values (accepting "yes"/"no" for bool), returns wrong types, or applies repairs when disabled. Mutation tests flip each assumption and verify tests fail, catching over-permissive implementations.
+  **impact:** Test Break phase added 11 mutation tests (test_mutation_repair_skips_bool_type_check, test_mutation_validator_always_approves, etc.) that would have escaped happy-path validation. Example: test_mutation_coercion_too_permissive verifies that accepting "yes" → bool is caught as a violation.
+  **prevention:** For any multi-step repair or validation logic: (1) Create explicit mutation tests that flip each repair assumption (disable type check, omit defaults, invert validation logic), (2) Verify each mutation causes test failure, (3) Add "negative mutation" tests where mutation should NOT cause failure (e.g., disabled-for-reason cases). Target: at least 10 mutation tests per repair category.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Layered validation (parse → repair → validate → execute) is safer than monolithic repair. Each layer isolates responsibility: parser handles syntax, repair handles type/structure, validation gate handles semantic safety. Violations at any layer are caught and logged separately.
+  **impact:** Implementation defined 3 distinct functions: `parse_tool_call()` (format detection), `repair_tool_call()` (orchestration + repair logic), `validate_repair_safety()` (whitelist + dangerous pattern rejection). Logging at each layer provides audit trail granularity (INFO for attempts, WARNING for success, ERROR for rejection). This separation enabled 78 tests to target each layer independently.
+  **prevention:** For error recovery systems: (1) Define discrete repair categories (type coercion, missing fields, typo, quoting, nesting), (2) Create separate functions per category, (3) Validate input at layer entry, (4) Log before/after at each layer, (5) Combine with middleware orchestrator that calls layers in order and combines results.
+  **severity:** high
+
+- **category: code-quality**
+  **insight:** Code review findings (5 MEDIUM issues) were caught before deployment and prevented shipping bugs. Review flagged: (1) lazy-import anti-pattern (fixed with inline import + documentation), (2) untyped dict for tool schema (enforced via TypedDict), (3) missing docstring on helper, (4) type hint on return tuple, (5) error message clarity. These are not blocking issues but represent code-quality debt that compounds in infrastructure code.
+  **impact:** Python Reviewer Agent found 5 MEDIUM findings; all were fixed before AC Gatekeeper approval. Implementation went from COMPLETE to code-quality-compliant in one iteration. This prevents accumulating tech debt in infrastructure-critical middleware.
+  **prevention:** For infrastructure code (middleware, frameworks, validation): (1) Code review is mandatory before AC Gatekeeper (add to workflow), (2) Type hints on all functions (no bare Any), (3) TypedDict for dict-based contracts (no untyped dicts), (4) Docstrings with Args/Returns/Raises, (5) Explicit error messages with context. Consider: require code review before STATIC_QA → COMPLETE transition.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Idempotency (repair(repair(X)) == repair(X)) is critical for destructive operations or retry-safe code, but easy to violate. Quoted-path repair must check if inner string starts with quote to avoid double-unwrapping. Tests must verify idempotency explicitly: apply repair 5+ times, assert identical output.
+  **impact:** Idempotency is validated in implementation via comment: "idempotent: checks if inner starts with quote to avoid double-unwrap." Tests include explicit idempotency loops: `for _ in range(5): result = repair_quoted_string_path(result, schema)` followed by assertion that results are identical. This prevents silent double-unwrapping bugs.
+  **prevention:** For any repair function that might be called multiple times (retry loops, cascading repairs): (1) Add idempotency validation explicitly in tests (5+ invocation loops), (2) Document idempotency assumption in implementation docstring, (3) For stateful repairs, add checks to detect "already repaired" condition (e.g., "path already unwrapped, skip"). (4) Benchmark: idempotency must hold at both single and 1000+ sequential calls.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** TypedDict for tool schemas enables static type checking and explicit contract validation. Implementation defined `ToolCallDict` and `ParamInfo` TypedDict classes to represent tool-call structure and parameter metadata. This prevents silent failures from missing keys or wrong types in tool schema.
+  **impact:** Tool schemas are externally-sourced (from M902-18 tool categorization) and may not match implementation assumptions. TypedDict provides explicit contracts: which keys are required, which types are expected, which are optional with defaults. Type checking catches schema mismatches early.
+  **prevention:** For any external data contracts (tool schemas, API payloads, config files): (1) Define TypedDict with explicit required/optional fields, (2) Use total=False for optional, (3) Type-hint all schema-handling functions with TypedDict, (4) Add contract tests for missing/wrong-type fields, (5) Assume worst-case malformed input and validate at entry points.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Tuple-based error returns `(dict | None, list[str])` prevent silent type corruption. Implementation returns repaired dict (or None on failure) + list of error messages. Caller must check for None before using dict, preventing downstream silent failures from "unrepaired" calls treated as repaired.
+  **impact:** Function signature `repair_tool_call(...) -> tuple[dict | None, list[str]]` forces caller to pattern-match on error. Tests verify both success and error paths explicitly. Logging tuple messages ensure audit trail is always captured. This is safer than returning modified dict with side-effect logging.
+  **prevention:** For error-recovery functions: (1) Return explicit error/success indicators (None for failure, not empty dict or falsy value), (2) Combine with error messages in tuple, (3) Require caller to check return value before using (no implicit truthy checks), (4) Type-hint the tuple explicitly, (5) Log all error messages to audit trail. Consider: ban silent failures (missing None check = type error at review stage).
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **Happy-path-only testing for repair logic:** Repairs work on normal inputs but fail under mutation (type checks disabled, over-permissive coercion). Happy-path tests don't catch these. Adversarial mutation layer is necessary.
+
+2. **Monolithic repair function:** Single function handles parsing, type coercion, typo correction, validation, logging. Changes to one repair category risk breaking others. Layered, single-responsibility functions are safer.
+
+3. **Over-permissive type coercion:** Accepting "1"/"0" or "yes"/"no" for bool coercion seems helpful but creates ambiguity. Spec constraint: only "true"/"false" (case-insensitive). Overly permissive repairs invite injection vectors.
+
+4. **Idempotency not tested:** Repair functions look idempotent (no side effects) but double-unwrapping or repeated coercion can fail. Idempotency must be validated explicitly with 5+ invocation loops.
+
+5. **Untyped dicts in schema handling:** Tool schemas as plain `dict` without TypedDict contract. Missing keys, wrong types, and malformed schemas silently slip through. TypedDict makes contracts explicit and testable.
+
+### Prompt Patches
+
+- **agent: Test Designer Agent**
+  **change:** "For any multi-step repair or validation middleware, require mutation testing as a standard suite: flip each assumption (disable type check, omit defaults, invert validation), verify tests fail. Minimum 10 mutation tests per repair category. All mutation tests should document what assumption they flip and why the flip should cause failure."
+  **reason:** Catches over-permissive logic that happy-path tests miss. Mutation tests are the strongest validation for deterministic repair functions.
+
+- **agent: Test Designer Agent**
+  **change:** "For any function that might be called multiple times or in retry loops, include explicit idempotency validation tests: invoke 5+ times with identical input, assert identical output. For destructive operations (repairs, modifications), idempotency is a requirement, not optional."
+  **reason:** Prevents silent double-unwrapping, repeated coercion, or compounding state changes. Idempotency testing is cheap insurance for high-impact bugs.
+
+- **agent: Implementation Agent**
+  **change:** "For error-recovery functions, use tuple returns `(result | None, errors: list[str])` instead of throwing exceptions or side-effect logging. Type-hint the tuple explicitly. In docstring, document: (1) what causes None return, (2) what errors list contains, (3) idempotency assumptions, (4) mutation safeguards. Use TypedDict for all dict-based contracts."
+  **reason:** Tuple returns force caller to handle both success and error paths. TypedDict makes schema expectations explicit. Documentation prevents misuse.
+
+- **agent: Python Reviewer Agent**
+  **change:** "For infrastructure code (middleware, frameworks, tool handling), enforce: (1) all functions have type hints (no bare Any unless documented), (2) TypedDict for dict schemas, (3) docstrings with Args/Returns/Raises, (4) explicit error messages with context. Code review is MANDATORY before AC Gatekeeper approval. Report MEDIUM findings as blocking for infrastructure code."
+  **reason:** Infrastructure code is used by downstream agents and systems. Code quality debt accumulates quickly. Type safety and documentation prevent misuse and bugs.
+
+### Workflow Improvements
+
+- **issue:** Repair logic appears correct without mutation testing; over-permissive implementations escape detection.
+  **improvement:** Add required "Adversarial Testing" section in TEST_BREAK checkpoint for middleware/repair code: (1) Define 10+ mutation tests per repair category, (2) For each mutation, document which assumption is flipped and why test should fail, (3) Verify all mutations cause test failure, (4) Add "negative mutation" tests (mutations that should NOT break tests). Require mutation test coverage documented in checkpoint.
+  **expected_benefit:** Prevents shipping over-permissive or disabled-logic bugs. Adversarial testing is standard for security-sensitive and infrastructure-critical code.
+
+- **issue:** Code review findings for infrastructure code are caught post-implementation, requiring iteration.
+  **improvement:** Require code review (Python Reviewer Agent) as mandatory gate before STATIC_QA → COMPLETE transition. For infrastructure code (middleware, frameworks, validation), code review findings at MEDIUM+ severity block AC Gatekeeper approval. Document review findings in checkpoint.
+  **expected_benefit:** Infrastructure code quality is verified before shipping. Prevents accumulating tech debt in code used by downstream systems.
+
+- **issue:** Idempotency assumptions are implicit; double-unwrapping or repeated coercion bugs can slip through.
+  **improvement:** For any repair or modification function, add explicit idempotency contract in spec and tests: (1) Documented assumption in implementation docstring, (2) Explicit idempotency tests with 5+ invocation loops in test suite, (3) If not idempotent, document reason and expected failure mode. Checkpoint evidence: function docstring + test class + invocation count.
+  **expected_benefit:** Idempotency failures are caught early. Repair functions are proven safe for retry loops and cascading repairs.
+
+### Keep / Reinforce
+
+1. **Layered validation pattern (parse → repair → validate):** Clear separation of concerns, enables independent testing of each layer, provides granular audit trail. Use this pattern for any multi-step error recovery.
+
+2. **TypedDict for external contracts:** Tool schemas, API payloads, config structures should be defined with TypedDict. This makes expectations explicit and testable. Prevents silent failures from schema mismatches.
+
+3. **Tuple-based error returns:** `(result | None, errors)` is safer than exceptions or silent failures. Forces caller to handle both paths. Combined with type hints, this is a high-confidence pattern.
+
+4. **Mutation testing for repair logic:** Adversarial mutation layer (11 tests) is more valuable than adding more happy-path tests. Each mutation should flip one assumption and cause test failure.
+
+5. **Code review as mandatory infrastructure gate:** Python Reviewer Agent findings (5 MEDIUM issues) prevent shipping code quality debt. Code review before AC Gatekeeper approval is worth the iteration cost for infrastructure-critical code.
+
+---
+
 ## [body-part-image-not-applied] — Preserve identity fields across UI-to-payload boundaries
 *Completed: 2026-04-27*
 
@@ -6383,6 +6486,104 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 3. **Schema-First Implementation:** M902-01 schema was the contract (status, violations, remediation_hints, metadata). Every gate output was validated against this schema. Tests verified schema compliance. No gate was allowed to return custom JSON. Reinforce schema-first design: define schema before implementation, test against schema, validate outputs in tests.
 
 4. **Evidence-Driven AC Gatekeeper:** AC Gatekeeper did not read source code or run tests independently; it read systematic evidence artifacts. This made AC Gatekeeper's review objective, auditable, and efficient. Reinforce evidence-artifact-first approach for all validation tickets.
+
+---
+
+## [M902-20] — Todo Gate: Artifact Contract, Runbook AC, and Attribution-Scoped Handoff Validation
+
+*Completed: 2026-05-20*
+
+### Learnings
+
+- **category: process**
+  **insight:** Ticket AC that names a standalone deliverable (e.g. runbook file) cannot be satisfied by equivalent prose in the spec alone; AC Gatekeeper must verify the file exists at the documented path.
+  **impact:** First AC Gatekeeper pass routed to INTEGRATION with 8/9 ACs PASS because `TODO_VALIDATION_RUNBOOK.md` was missing despite Req 10 text in `902_20_todo_validation_spec.md`. Required a follow-up commit before COMPLETE.
+  **prevention:** Implementation Agent checklist: for every AC bullet that names a path, create that file before requesting AC review. AC Gatekeeper: FAIL the AC if the path is absent even when spec duplicates the content.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Handoff gates that read agent-written checkpoints need a frozen primary artifact (`todos-latest.json`), explicit fail-closed on invalid primary data (no silent fallback), and secondary fallbacks only when primary is absent—not corrupt.
+  **impact:** Spec/checkpoints resolved A1/A5: invalid `todos-latest.json` → `FAIL` with `todo_artifact_invalid`; vacuous PASS only when no artifacts or empty `todos[]`. Adversarial suite (28+ tests) encoded merge/mtime/fenced-JSON precedence so implementation could not “helpfully” pass on stale or wrong snapshots.
+  **prevention:** Spec Agent: document discovery order and “no fallback on corrupt primary” in requirements table. Test Breaker: add tests for corrupt primary + valid older `todos-*.json` (must still FAIL).
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Multi-agent todo validation must scope FAIL to todos attributed to the finishing `expected_agent`; prior-agent `in_progress` rows are noise, not blockers.
+  **impact:** Without attribution filtering, every handoff would fail on leftover todos from earlier stages. Spec A6 + tests (`prior-agent ignore`) made the contract executable.
+  **prevention:** Any gate validating per-agent work lists must define attribution rules (envelope `agent`, per-todo `agent`, normalization table) and test cross-agent `in_progress` rows do not appear in `incomplete_tasks[]`.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Checkpoint-reading gates need path-traversal and repo-root anchoring tests in the adversarial suite, not only happy-path fixture layout.
+  **impact:** Test design/break phases added 6+ path-security cases; ticket closure notes NFR-3 repo/cwd anchor and path confinement fix after review—security behavior was test-driven, not discovered at AC time.
+  **prevention:** Test Breaker: for every gate that resolves `project_board/checkpoints/<ticket_id>/`, include `..`, absolute-outside-repo, and symlink/override injection cases. Implementation: anchor paths to detected repo root, never trust raw `ticket_id` segments.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Deliver gate module + registry + runbook in the ticket; defer autopilot invocation to a follow-on ticket (M902-23) with explicit out-of-scope language in planning/spec.
+  **impact:** Avoided expanding M902-20 into full orchestrator wiring while still shipping a testable `todo_validation_check` in shadow mode. Runbook documents shadow exit-code behavior so agents remediate on FAIL even when CI exits 0.
+  **prevention:** Planning checkpoint: state “module-only vs wired” with Medium confidence; Spec: repeat in Executive Summary out-of-scope. Do not block M902-20 COMPLETE on M902-23 unless ticket AC explicitly requires wiring.
+  **severity:** medium
+
+### Anti-Patterns
+
+1. **Spec-as-runbook:** Writing runbook content only in the spec and skipping `project_board/checkpoints/<ticket_id>/TODO_VALIDATION_RUNBOOK.md` when the ticket AC requires a runbook file.
+   **detection_signal:** AC Gatekeeper marks runbook AC FAIL while implementation and registry tests pass.
+   **prevention:** Copy or generate the standalone runbook from spec Req 10 before AC review; link path in implementation checkpoint.
+
+2. **Fallback on corrupt primary:** When `todos-latest.json` is invalid JSON, falling back to an older `todos-*.json` or fenced markdown block to obtain PASS.
+   **detection_signal:** Adversarial test `invalid latest + valid older snapshot` expects FAIL; gate returns PASS.
+   **prevention:** Fail-closed on primary parse/schema errors; fallbacks only when primary file is missing.
+
+3. **Global in_progress sweep:** Failing handoff if *any* todo in the snapshot is `in_progress`, regardless of `expected_agent`.
+   **detection_signal:** FAIL payloads list todos attributed to Spec Agent when validating Implementation Agent handoff.
+   **prevention:** Filter by normalized agent attribution before building `incomplete_tasks[]`.
+
+4. **Shadow-mode complacency:** Treating shadow registry mode (exit 0 on FAIL) as permission to hand off with open todos.
+   **detection_signal:** Orchestrator advances stage while `incomplete_tasks[]` non-empty; agents never write `todos-latest.json`.
+   **prevention:** Runbook + agent prompts: remediate FAIL before handoff regardless of exit code until M903 blocking mode.
+
+### Prompt Patches
+
+- **agent: Implementation Agent (Generalist)**
+  **change:** "Before AC Gatekeeper: (1) For each ticket AC that names a file path (runbook, registry entry, gate module), verify the file exists at that path. (2) Write TodoWrite snapshots to `project_board/checkpoints/<ticket_id>/todos-latest.json` with `schema_version` `1.0` before handoff. (3) On gate FAIL, read `incomplete_tasks[]` and `remediation_hints[]`; update snapshot and re-run gate with same `expected_agent`."
+  **reason:** Prevents INTEGRATION hold for missing runbook and vacuous PASS from missing snapshots.
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "For deliverable ACs that specify a path (e.g. `TODO_VALIDATION_RUNBOOK.md`): require `test -f <path>` or equivalent; do not accept spec section duplication as evidence. For gate tickets in shadow mode: still require runbook and PASS/FAIL contract tests; note shadow exit-code behavior in escalation notes only."
+  **reason:** Caught missing runbook on first pass; keeps shadow rollout from skipping agent-facing docs.
+
+- **agent: Test Breaker Agent**
+  **change:** "For checkpoint-reading gates: add adversarial matrix rows—corrupt primary + valid backup (must FAIL), path traversal on `ticket_id`, fenced JSON precedence in `.md` logs, attribution bypass (prior-agent `in_progress` must not fail current agent), empty/vacuous PASS cases. Emit handoff checklist in checkpoint for Implementation."
+  **reason:** 66/66 first-close tests including path and fallback cases reduced implementation rework.
+
+- **agent: Spec Agent**
+  **change:** "Freeze TodoWrite on-disk contract in Assumptions table: primary file name, schema_version, discovery order, fail-closed rules, attribution rules, and dual payload (`incomplete_tasks[]` + `violations[]` with `rule`). State orchestrator wiring explicitly out-of-scope with ticket id (e.g. M902-23) if deferred."
+  **reason:** Planning ambiguities (A1 format, A4 wiring) were resolved once in spec and not re-debated in implementation.
+
+### Workflow Improvements
+
+1. **Runbook path in AC traceability**
+   - **issue:** Runbook AC treated as documentation satisfied by spec prose.
+   - **improvement:** Map runbook AC to exact path `project_board/checkpoints/<ticket_id>/TODO_VALIDATION_RUNBOOK.md` in spec traceability; Implementation checkpoint must cite path.
+   - **expected_benefit:** Eliminates INTEGRATION rework for “invisible” deliverables.
+
+2. **INTEGRATION stage for missing operational artifacts**
+   - **issue:** 8/9 ACs pass but ticket cannot close.
+   - **improvement:** AC Gatekeeper → INTEGRATION (not COMPLETE) when only operational/docs ACs fail; Implementation fixes artifacts without re-running full test suite unless code changed.
+   - **expected_benefit:** Clear separation between code-complete and workflow-complete.
+
+3. **Todo snapshot write before stage transition**
+   - **issue:** Vacuous PASS when agents never persist TodoWrite.
+   - **improvement:** Document in M902-23 orchestrator: refresh `todos-latest.json` immediately before `todo_validation_check`; until then, agents must write snapshot in implementation checkpoint step.
+   - **expected_benefit:** Gate validates real handoff state, not empty directories.
+
+### Keep / Reinforce
+
+1. **Dual FAIL payload (`incomplete_tasks[]` + `violations[]`)** — Agent-readable rows plus M902-01 audit rules; planning checkpoint A2 carried through spec and tests.
+2. **Planning assumption table → spec A1–A7** — Medium-confidence format questions (snapshot format, wiring scope) frozen before test design; no spec revision cycle reported.
+3. **66-test red-green handoff** — Behavioral + adversarial suites collected red with `ModuleNotFoundError` until gate module landed; single implementation pass to green.
+4. **Vacuous PASS semantics** — No artifacts and empty `todos[]` PASS with explicit messages; prevents false blocks on tickets that do not use TodoWrite yet.
 
 ---
 
