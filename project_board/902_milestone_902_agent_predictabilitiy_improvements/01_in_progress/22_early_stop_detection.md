@@ -76,16 +76,16 @@ See: `project_board/specs/902_22_early_stop_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Red (module not implemented)
+- Tests: Red (behavioral + adversarial; `early_stop_tracker.py` not implemented)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -100,7 +100,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (Generalist) — `ci/scripts`
 
 ## Required Input Schema
 ```json
@@ -108,11 +108,16 @@ Test Breaker Agent
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/22_early_stop_detection.md",
   "execution_plan_path": "project_board/execution_plans/M902-22_early_stop_detection.md",
   "spec_path": "project_board/specs/902_22_early_stop_spec.md",
-  "test_module": "tests/ci/test_early_stop_detection.py",
-  "adversarial_module": "tests/ci/test_early_stop_detection_adversarial.py",
-  "reference_modules": [
-    "ci/scripts/context_budget_tracker.py",
+  "test_modules": [
+    "tests/ci/test_early_stop_detection.py",
+    "tests/ci/test_early_stop_detection_adversarial.py"
+  ],
+  "implementation_targets": [
+    "ci/scripts/early_stop_tracker.py",
     "ci/scripts/agent_invocation_middleware.py"
+  ],
+  "reference_modules": [
+    "ci/scripts/context_budget_tracker.py"
   ]
 }
 ```
@@ -121,4 +126,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Behavioral test contract at `tests/ci/test_early_stop_detection.py` (T1–T10 + normalization/diff/evaluate side effects). Suite red until `early_stop_tracker.py` and middleware hook land. Test Breaker adds adversarial module per Requirement 13.
+Adversarial suite `tests/ci/test_early_stop_detection_adversarial.py` covers corrupt JSON, schema mismatch, huge errors, concurrent append, JSONL idempotency, one-byte diff hash sensitivity, whitespace vacuity, and middleware fail-safe paths. Implement `early_stop_tracker.py` + middleware hook until both test modules pass.
