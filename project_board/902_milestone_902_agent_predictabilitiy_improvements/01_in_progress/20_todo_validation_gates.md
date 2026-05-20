@@ -69,16 +69,16 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Red (collection — missing `gates.todo_validation_check`)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -93,14 +93,19 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (Generalist)
 
 ## Required Input Schema
 ```json
 {
   "spec_path": "project_board/specs/902_20_todo_validation_spec.md",
-  "test_path": "tests/ci/test_todo_validation_gate.py",
-  "reference_tests": ["tests/ci/test_per_stage_gates.py", "tests/ci/test_gate_runner_cli.py"]
+  "test_paths": [
+    "tests/ci/test_todo_validation_gate.py",
+    "tests/ci/test_todo_validation_gate_adversarial.py"
+  ],
+  "gate_module": "ci/scripts/gates/todo_validation_check.py",
+  "registry": "ci/scripts/gate_registry.json",
+  "checkpoint_log": "project_board/checkpoints/M902-20/2026-05-20T-test-break-run.md"
 }
 ```
 
@@ -108,4 +113,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Red behavioral suite in `tests/ci/test_todo_validation_gate.py` (30+ cases: T1–T7, attribution, discovery, run() contract, FAIL payload, path security, registry). Collection fails with `ModuleNotFoundError: gates.todo_validation_check` until implementation. Test Breaker adds adversarial coverage.
+Behavioral + adversarial suites ready (58+ cases). Implement `todo_validation_check` gate module and registry entry; run pytest until green.
