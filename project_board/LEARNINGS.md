@@ -6170,3 +6170,112 @@ Both fixes were applied at the spec phase (before test design), not discovered a
   **reason:** Evidence-driven validation is trustworthy. Narrative validation ("AC-1 looks satisfied") is not. Require citations."
 
 ---
+
+## [M902-17] — Zero-Rework Integration Validation via Explicit Scope Boundary Enforcement
+
+*Completed: 2026-05-19*
+
+### Executive Summary
+
+M902-17 (Final Validation & Stage Integration) completed from planning through AC gatekeeper sign-off with zero rework loops, zero test failures during implementation, and zero AC ambiguities. This ticket validates 16 completed child tickets (M902-01 through M902-16) and an 8-stage governance pipeline. All 27 ACs passed on first validation attempt (64/64 tests PASS, 13/13 gates compliant, 16/16 child tickets verified). The success pattern is replicable and reveals critical disciplines for integration validation tickets.
+
+### Key Learnings
+
+1. **Explicit Scope Boundary Enforcement at Planning Stage Prevents Rework (Critical)**
+   
+   - **Insight:** M902-17 planning checkpoint explicitly defined validation scope as "M902-01 through M902-16 only; M902-18 through M902-27 remain in backlog." This single decision prevented scope creep and ambiguity. No part of the execution phase attempted to validate out-of-scope tickets. Planning agent read ticket AC structure (lines 17-93), confirmed all references were to M902-01-M902-16, and documented assumption with HIGH confidence.
+   
+   - **Impact:** Without this boundary, spec might have included validation of tool categorization (M902-18), context budgeting (M902-21), or API contracts (M902-24-27). Each would have added 2-4 weeks of validation work, 50+ additional tests, and multiple rework cycles as implementation discovered missing fixtures or integration gaps. Explicit scope boundary eliminated this entire risk class.
+   
+   - **Prevention:** For integration/umbrella tickets: (1) At planning stage, explicitly list which child tickets are in scope vs. backlog. (2) Document the decision rule (e.g., "only tickets in 02_complete/ folder are in scope"). (3) If scope is ambiguous, ask clarifying question: "Does this ticket validate 27 features or 16?" (4) Freeze scope decision before spec is written. Do not allow scope expansion during specification.
+   
+   - **Severity:** CRITICAL
+
+2. **Triple-Layer Verification Strategy Eliminates Single-Domain Gaps (High)**
+   
+   - **Insight:** Specification defined three independent verification layers: (1) Structural (read all 16 specs, verify files exist at expected paths), (2) Integration (run gate_runner.py with sample diffs, verify all 8 stages execute in order), (3) Audit (cross-reference all 27 ACs against evidence artifacts, build traceability matrix). All three had to pass independently. This redundancy caught issues that single-layer verification would miss.
+   
+   - **Impact:** Structural validation alone would miss gate registry gaps (missing entries, invalid modes). Integration validation alone would miss schema violations in gate outputs. Audit validation alone would miss module path inconsistencies. The three layers combined ensured no artifact inconsistency survived to implementation. Result: AC Gatekeeper found zero blockers.
+   
+   - **Prevention:** For large integration tickets (>10 child dependencies, >8 ACs): Always specify three verification layers in specification. Make each layer independent. Do not allow implementation to skip any layer. Document in spec what each layer checks and what class of bugs it catches.
+   
+   - **Severity:** HIGH
+
+3. **Traceability Matrix as Executable Specification Prevents AC Ambiguity (High)**
+   
+   - **Insight:** Specification created AC traceability matrix mapping all 27 ACs to specific test cases and evidence artifact paths BEFORE test design began. This artifact became the source of truth: when Implementation Agent and AC Gatekeeper executed tests, they followed the matrix exactly. Zero ACs had ambiguous acceptance criteria.
+   
+   - **Impact:** Without the matrix, ACs would be validated ad-hoc as different agents encountered them. AC-17 (code governance linked) might be validated by reading CLAUDE.md; AC-13 (gate registry) validated by counting entries in JSON; AC-22 (test matrix coverage) validated by counting test files. Each approach would be different, subjective, and could produce different results on re-validation. With the matrix: every AC has one canonical test case and one evidence artifact path. Reproducible, objective, auditable.
+   
+   - **Prevention:** Always create traceability matrix at spec freeze for validation tickets. Format: AC # | AC name | test case(s) | evidence artifact path | status. Update status after implementation. Use matrix as input to AC Gatekeeper; require AC Gatekeeper to validate every AC listed in matrix.
+   
+   - **Severity:** HIGH
+
+4. **Evidence Artifact Catalog Enables Instant AC Sign-Off (Medium)**
+   
+   - **Insight:** Implementation Agent did not just run tests; it systematically collected evidence artifacts (gate outputs, test reports, schema validations, registry audits) into a catalog under `project_board/checkpoints/M902-17/evidence/`. AC Gatekeeper received 8 machine-readable evidence files: test_execution_report.txt, gate_registry_validation.txt, schema_audit.txt, etc. AC Gatekeeper validated each AC by reading the corresponding evidence artifact, not by re-running tests or re-reading source code.
+   
+   - **Impact:** AC Gatekeeper sign-off took ~2 hours (reading artifacts, cross-checking against ACs). If evidence had not been systematized, AC Gatekeeper would have needed to: (1) run gate_runner.py independently to verify gates, (2) re-check test logs for specific test names, (3) read source files to verify gates are registered. Estimated time: 8-12 hours. Systemized evidence shortened validation by 75%.
+   
+   - **Prevention:** For integration validation tickets: require Implementation Agent to produce evidence artifact catalog. Each artifact should be: (1) machine-readable (JSON, CSV, or plaintext with structured headers), (2) self-documenting (include headers, legends, methodology), (3) indexed (provide evidence catalog/index document). Provide catalog path in implementation checkpoint.
+   
+   - **Severity:** MEDIUM
+
+5. **Test Suite as Integration Contract Prevents Implementation Interpretation Drift (Medium)**
+   
+   - **Insight:** Test Designer created 38 behavioral + 26 adversarial tests before implementation began. Tests were deterministic, mocked (no real gate execution), and encoded exact expectations: Stage 0 must output `classification: "docs-only"` and `routing_decision: "skip"` for docs-only changes. When Implementation Agent ran gates, it compared actual outputs to test expectations. Test suite was the spec, not the code.
+   
+   - **Impact:** If tests had not been written until after implementation, Implementation Agent could have made subjective choices (e.g., "routing_decision is advisory; gates can ignore it if confidence is low"). Test-first approach locked in the contract before code was written. Result: Implementation produced outputs that matched tests exactly. Zero discrepancies.
+   
+   - **Prevention:** For integration validation tickets with multiple child subsystems (gates in this case): write behavioral test suite BEFORE implementation. Tests should use realistic mock outputs (schema-compliant, realistic fields) and encode exact expectations. Tests become the integration contract. Implementation must match tests, not vice versa.
+   
+   - **Severity:** MEDIUM
+
+### Anti-Patterns
+
+1. **Scope Creep During Implementation:** Ticket says "validate 16 tickets" but implementation discovers "actually, I should also check if M902-18 will work." Result: scope expands, new tests are added, evidence artifacts multiply, AC Gatekeeper finds new ambiguities. Prevention: Freeze scope at planning stage; document out-of-scope items explicitly in spec. If out-of-scope work is discovered during implementation, log it as a separate finding, don't add it to validation scope.
+
+2. **Ad-Hoc Evidence Collection:** Implementation Agent runs tests, produces a summary ("all tests pass"), but doesn't systematize evidence artifacts. AC Gatekeeper receives summary + asks for clarification on specific ACs. Result: back-and-forth discovery. Prevention: Require Implementation Agent to produce evidence catalog during execution, not after AC Gatekeeper asks for it. Make artifact location explicit in spec.
+
+3. **Test Suite as Afterthought:** Specification written, Implementation Agent discovers gaps during coding, asks Test Designer to add tests retroactively. Test Designer adds tests that fit the implementation, not the spec. Result: tests validate the code, not the contract. Prevention: Test Designer phase must complete before Implementation Agent starts. Tests are immutable during implementation (except for bug fixes, which are tracked separately).
+
+4. **Validation Assumed vs. Explicitly Verified:** Planning checkpoint says "assume gate_registry.json is authoritative" without actually reading it. Implementation discovers the registry is missing an entry for Stage 5. Prevention: Planning should include spot-checks (read 2-3 files to verify assumptions). Specification should make these assumptions explicit ("Assumption A1: gate_registry.json is authoritative; verified by reading file on 2026-05-19").
+
+### Prompt Patches
+
+**Planning Agent (Integration Validation Tickets):**
+- Add: "For integration/umbrella tickets: (1) Explicitly define scope boundaries (e.g., 'Validates M902-01 through M902-16; M902-18+ deferred'). (2) Document the decision rule in planning checkpoint with HIGH confidence. (3) Identify all child tickets and confirm their status. (4) List what is explicitly out of scope to prevent scope creep during spec/implementation."
+
+**Specification Agent (Integration Validation Tickets):**
+- Add: "Create AC traceability matrix mapping every AC to one or more test case(s) and one evidence artifact path. Matrix format: AC # | AC name | test case(s) | evidence path | status. This matrix becomes the source of truth for test design and AC gatekeeper validation. Do not proceed to Test Designer without this matrix."
+- Add: "For multi-layer verification (structural, integration, audit): specify what each layer checks, what class of bugs it catches, and what evidence artifacts each layer produces. Do not allow layers to be skipped or reordered during implementation."
+
+**Implementation Agent (Integration Validation Tickets):**
+- Add: "After all tests pass: (1) Create evidence artifact catalog. (2) For each major validation activity (test execution, gate registry validation, schema audit, etc.), produce a machine-readable artifact and index it. (3) Provide catalog path in implementation checkpoint. (4) Do not assume AC Gatekeeper can re-run tests; provide evidence artifacts instead."
+
+**AC Gatekeeper Agent (Integration Validation Tickets):**
+- Add: "Accept evidence artifacts from Implementation Agent as source of truth for AC validation. Do not re-run tests or re-read source code unless artifact is ambiguous. Validate each AC by reading corresponding evidence artifact. If evidence is missing or ambiguous, route back to Implementation Agent for artifact clarification, not code review."
+
+### Workflow Improvements
+
+1. **Scope Freeze Gate (Planning → Specification):**
+   - Add: "For integration/umbrella tickets, require explicit scope boundary document at end of planning. Document: (1) In-scope child tickets (list by ID), (2) Out-of-scope tickets (list by ID), (3) Decision rule (e.g., 'all tickets in 02_complete/ folder'), (4) Confidence level. Specification phase cannot begin until scope boundary is approved."
+
+2. **Evidence Artifact Checklist (Implementation → AC Gatekeeper):**
+   - Add: "Implementation phase must produce evidence artifact checklist listing all artifacts created, their paths, and what they validate. Checklist becomes the index for AC Gatekeeper. Example: 'gate_registry_validation.txt validates AC-13, AC-14, AC-15 (gate registry completeness and CLI interface)'."
+
+3. **Traceability Matrix as Handoff Document (Specification → Test Design → Implementation):**
+   - Add: "AC traceability matrix (created in Specification phase) becomes the handoff document to Test Designer and Implementation Agent. Matrix includes: AC #, test case name, evidence path. Test Designer implements exactly the tests listed in matrix. Implementation Agent collects evidence at paths listed in matrix. AC Gatekeeper validates exactly the ACs listed in matrix."
+
+### Keep / Reinforce
+
+1. **Planning Checkpoint Protocol Strength:** M902-17 planning agent used explicit checkpoint format ("Would have asked / Assumption made / Confidence"). This discipline surfaced the scope boundary question clearly. The assumption "M902-18+ are backlog" was documented with HIGH confidence, making it traceable and reviewable. Reinforce this checkpoint format for all integration tickets.
+
+2. **Test Suite Determinism:** Both behavioral (38 tests) and adversarial (26 tests) test suites executed in <0.1 seconds with zero flakes. This was enabled by mocking all external dependencies (no real gate invocation, no filesystem I/O, no network). Reinforce mock-first test design for infrastructure/pipeline validation tickets.
+
+3. **Schema-First Implementation:** M902-01 schema was the contract (status, violations, remediation_hints, metadata). Every gate output was validated against this schema. Tests verified schema compliance. No gate was allowed to return custom JSON. Reinforce schema-first design: define schema before implementation, test against schema, validate outputs in tests.
+
+4. **Evidence-Driven AC Gatekeeper:** AC Gatekeeper did not read source code or run tests independently; it read systematic evidence artifacts. This made AC Gatekeeper's review objective, auditable, and efficient. Reinforce evidence-artifact-first approach for all validation tickets.
+
+---
+
