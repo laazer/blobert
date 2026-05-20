@@ -63,16 +63,16 @@ See: `project_board/specs/902_28_parallel_hook_execution_spec.md` (to be written
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Red (1/11) — `test_t1_pre_push_parallel_is_true` until `pre-push.parallel: true`
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -87,14 +87,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "spec": "project_board/specs/902_28_parallel_hook_execution_spec.md",
   "execution_plan": "project_board/execution_plans/M902-28_parallel_hook_execution.md",
-  "test_module": "tests/ci/test_parallel_hook_execution.py"
+  "test_module": "tests/ci/test_parallel_hook_execution.py",
+  "checkpoint": "project_board/checkpoints/M902-28/2026-05-20T-test-design-run.md"
 }
 ```
 
@@ -102,4 +103,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Spec complete (10 requirements, safety matrix, baseline protocol, Lefthook parallel contract, opt-out). Generic spec exit gate PASS. Test Designer owns behavioral scheduling/isolation tests per Requirement 10.
+`tests/ci/test_parallel_hook_execution.py` delivers T1–T6 behavioral contract (11 tests). Expected red: `pre-push.parallel` still false. Checkpoint: `project_board/checkpoints/M902-28/2026-05-20T-test-design-run.md`. Test Breaker adds adversarial YAML/isolation cases per execution plan Task 3.
