@@ -5,6 +5,26 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-20-autopilot (M902-20 TODO Validation Gates)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/20_todo_validation_gates.md` → `01_in_progress/`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+---
+
+## Run: 2026-05-20T-m902-20-planning (M902-20 TODO Validation Gates — PLANNING COMPLETE)
+
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
+- Stage: PLANNING → SPECIFICATION (Revision 1 → 2)
+- Log: `project_board/checkpoints/M902-20/2026-05-20T-planning-run.md`
+- Plan: `project_board/execution_plans/M902-20_todo_validation_gates.md`
+- Outcome: 8-task execution plan; M902-01 dependency satisfied; 4 planning assumptions logged (artifact format, FAIL shape, optional timing, orchestrator scope).
+- Next: Spec Agent — `project_board/specs/902_20_todo_validation_spec.md`
+
+---
+
 ## Run: 2026-05-20T-m902-19-gatekeeper (M902-19 Forgiving Tool Parsing Middleware — AC GATEKEEPER COMPLETE)
 
 - Queue mode: single ticket

@@ -63,3 +63,49 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 
 - M902-01 (Validation Gate Framework)
 - TodoWrite tool integration
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+SPECIFICATION
+
+## Revision
+2
+
+## Last Updated By
+Planner Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: Not Run
+- Integration: Not Run
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Spec Agent
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md",
+  "execution_plan_path": "project_board/execution_plans/M902-20_todo_validation_gates.md",
+  "spec_output_path": "project_board/specs/902_20_todo_validation_spec.md"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Planning complete. Execution plan and checkpoint logged. Spec Agent must freeze TodoWrite checkpoint artifact contract, agent attribution rules, and M902-01-aligned FAIL payload before TEST_DESIGN.
