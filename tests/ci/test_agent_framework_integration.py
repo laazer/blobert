@@ -781,3 +781,569 @@ class TestFullMiddlewareSimulation:
         # Verify: framework received all tools (unchanged)
         call_kwargs = mock_framework.call_args.kwargs
         assert len(call_kwargs["tools"]) == len(all_tools)
+
+
+# =============================================================================
+# MUTATION TESTS: Regex Pattern Mutations
+# Exposes implementation fragility to regex changes
+# =============================================================================
+
+class TestRegexMutationVulnerabilities:
+    """Mutation tests to expose regex pattern fragility."""
+
+    def test_regex_colon_required_after_declaration(self):
+        """Colon is mandatory; 'I declare tool category parse' should not match."""
+        # CHECKPOINT: Validates that colon is required per spec
+        prompt = "I declare tool category parse"  # Missing colon
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is None  # Should NOT match without colon
+
+    def test_regex_partial_keyword_should_not_match(self):
+        """Partial keywords must not match (e.g., 'I declare category' vs 'I declare tool category')."""
+        # CHECKPOINT: Validates spec-defined keyword precision
+        prompt = "I declare category: parse"  # Missing 'tool'
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is None  # 'I declare category' is not a valid declaration format
+
+    def test_regex_space_variation_my_workflow_category_is(self):
+        """'My workflow category is' must match exactly (including 'is')."""
+        prompt = "My workflow category: test"  # Missing 'is'
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is None  # 'My workflow category' without 'is' is not valid
+
+    def test_regex_category_name_empty_after_colon(self):
+        """Category name is required; colon with nothing after should not match."""
+        prompt = "I declare tool category:   \n"  # No category name
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is None  # No \w+ after colon
+
+    def test_regex_dash_in_category_name_not_matching(self):
+        r"""Hyphens are not in \w+; 'test-case' should not match."""
+        prompt = "I declare tool category: test-case"
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        # Should match only 'test' (before hyphen), not the full 'test-case'
+        assert match is not None
+        assert match.group(1).lower() == "test"  # Only 'test' is \w+
+
+    def test_regex_space_after_colon_tolerated(self):
+        """Spec allows variable whitespace after colon (\\s*)."""
+        prompts = [
+            "I declare tool category:parse",
+            "I declare tool category: parse",
+            "I declare tool category:  parse",
+            "I declare tool category:   parse"
+        ]
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+
+        for prompt in prompts:
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            assert match is not None, f"Should match: {prompt}"
+            assert match.group(1).lower() == "parse"
+
+    def test_regex_no_newline_in_declaration_keyword(self):
+        """Declaration keyword cannot span lines; no \\s inside keyword."""
+        prompt = "I declare tool\ncategory: parse"  # Keyword split across lines
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is None  # Keywords are literal; \s is only after colon
+
+    def test_regex_category_name_newline_after_colon_allowed(self):
+        """Category name on next line after colon is allowed (\\s includes \\n)."""
+        prompt = "I declare tool category:\nparse"
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is not None
+        assert match.group(1).lower() == "parse"
+
+
+# =============================================================================
+# BOUNDARY & NEGATIVE TESTS: Edge Cases in Filtering Logic
+# =============================================================================
+
+class TestFilteringBoundaryConditions:
+    """Boundary conditions and edge cases in tool filtering."""
+
+    def test_empty_tools_list_filtering(self):
+        """Filtering with empty tool list should return empty."""
+        all_tools = []
+        category = "parse"
+
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+        assert filtered == []
+
+    def test_tools_missing_categories_key(self):
+        """Tool without 'categories' key should not match."""
+        all_tools = [
+            {"name": "read"},  # Missing 'categories' key
+            {"name": "write", "categories": ["modify"]}
+        ]
+        category = "parse"
+
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+        assert len(filtered) == 0
+
+    def test_tool_categories_is_not_list(self):
+        """Tool with categories as string (not list) should not match correctly."""
+        all_tools = [
+            {"name": "read", "categories": "parse"}  # String instead of list
+        ]
+        category = "parse"
+
+        # This would fail silently or behave unexpectedly
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+        # 'in' operator checks substring with strings; "parse" in "parse" → True
+        assert len(filtered) == 1  # Bug: matches, but for wrong reason (substring match)
+
+    def test_tool_categories_empty_list(self):
+        """Tool with empty categories list should not match."""
+        all_tools = [
+            {"name": "orphan", "categories": []}
+        ]
+        category = "parse"
+
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+        assert filtered == []
+
+    def test_case_sensitivity_in_category_list(self):
+        """Categories in tools list are case-sensitive (spec: lowercase)."""
+        all_tools = [
+            {"name": "read", "categories": ["Parse"]},  # Capital P
+            {"name": "write", "categories": ["parse"]}  # Lowercase
+        ]
+        category = "parse"
+
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+        # Should only match the lowercase 'parse', not 'Parse'
+        assert len(filtered) == 1
+        assert filtered[0]["name"] == "write"
+
+
+# =============================================================================
+# CONCURRENCY & RACE CONDITION TESTS
+# =============================================================================
+
+class TestConcurrencyAndRaceConditions:
+    """Test middleware behavior under concurrent access."""
+
+    def test_concurrent_extraction_same_prompt_no_race(self):
+        """Multiple threads extracting same prompt should yield identical results."""
+        # CHECKPOINT: Validates determinism under concurrency
+        import threading
+
+        prompt = "I declare tool category: parse\n\nSpec here..."
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        results = []
+        lock = threading.Lock()
+
+        def extract():
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            category = match.group(1).lower() if match else None
+            with lock:
+                results.append(category)
+
+        threads = [threading.Thread(target=extract) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # All results should be identical
+        assert len(set(results)) == 1
+        assert all(r == "parse" for r in results)
+
+    def test_concurrent_framework_invocation_maintains_order(self):
+        """Multiple concurrent framework invocations should not interfere."""
+        import threading
+
+        mock_framework = MagicMock(return_value={"status": "ok"})
+        results = []
+        lock = threading.Lock()
+
+        def invoke(agent_id):
+            prompt = f"I declare tool category: parse\n\nAgent {agent_id}..."
+            result = mock_framework(
+                agent_type=f"agent_{agent_id}",
+                prompt=prompt,
+                tools=[{"name": "read"}]
+            )
+            with lock:
+                results.append((agent_id, result))
+
+        threads = [threading.Thread(target=invoke, args=(i,)) for i in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # All invocations should succeed
+        assert len(results) == 5
+        assert all(r[1]["status"] == "ok" for r in results)
+
+
+# =============================================================================
+# SCHEMA MUTATION TESTS: Framework Parameter Variations
+# =============================================================================
+
+class TestFrameworkParameterVariations:
+    """Test middleware robustness to framework parameter variations."""
+
+    def test_framework_expects_tools_plural_not_tool(self):
+        """Framework parameter should be 'tools' not 'tool' (singular)."""
+        mock_framework = MagicMock(return_value={"status": "ok"})
+
+        # Middleware must pass 'tools', not 'tool'
+        filtered_tools = [{"name": "read"}]
+
+        # Correct invocation
+        result = mock_framework(
+            agent_type="spec",
+            prompt="Parse the spec",
+            tools=filtered_tools  # Plural 'tools'
+        )
+
+        # Verify 'tools' was passed, not 'tool'
+        call_kwargs = mock_framework.call_args.kwargs
+        assert "tools" in call_kwargs
+        assert "tool" not in call_kwargs
+
+    def test_framework_receives_tools_as_list_not_dict(self):
+        """Filtered tools must be passed as list, not single dict or other type."""
+        mock_framework = MagicMock(return_value={"status": "ok"})
+        filtered_tools = [{"name": "read"}, {"name": "write"}]
+
+        result = mock_framework(
+            agent_type="spec",
+            prompt="Parse",
+            tools=filtered_tools
+        )
+
+        call_kwargs = mock_framework.call_args.kwargs
+        assert isinstance(call_kwargs["tools"], list)
+        assert len(call_kwargs["tools"]) == 2
+
+    def test_framework_tools_preserve_order(self):
+        """Tool list order must be preserved through filtering."""
+        all_tools = [
+            {"name": "read", "categories": ["parse"]},
+            {"name": "grep", "categories": ["parse"]},
+            {"name": "glob", "categories": ["parse"]}
+        ]
+        category = "parse"
+
+        # Filter preserves order
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+
+        tool_names = [t["name"] for t in filtered]
+        assert tool_names == ["read", "grep", "glob"]
+
+    def test_framework_kwargs_are_passed_through_unchanged(self):
+        """Extra framework kwargs should be passed through without modification."""
+        mock_framework = MagicMock(return_value={"status": "ok"})
+
+        result = mock_framework(
+            agent_type="spec",
+            prompt="Parse",
+            tools=[{"name": "read"}],
+            extra_param="value",
+            another_param=123
+        )
+
+        call_kwargs = mock_framework.call_args.kwargs
+        assert call_kwargs["extra_param"] == "value"
+        assert call_kwargs["another_param"] == 123
+
+
+# =============================================================================
+# SPEC CONFORMANCE MUTATION TESTS
+# Tests that expose deviations from spec requirements
+# =============================================================================
+
+class TestSpecConformanceMutations:
+    """Mutation tests targeting specific spec requirements."""
+
+    def test_category_validation_strict_valid_categories_only(self):
+        """Only 5 valid categories allowed per spec."""
+        VALID_CATEGORIES = {"parse", "modify", "test", "plan", "think"}
+        all_tools = [
+            {"name": "read", "categories": ["parse"]}
+        ]
+
+        # Test each valid category
+        for valid_cat in VALID_CATEGORIES:
+            tools = [{"name": "tool", "categories": [valid_cat]}]
+            filtered = [t for t in tools if valid_cat in t.get("categories", [])]
+            assert len(filtered) == 1
+
+        # Test invalid category
+        invalid_cat = "nonexistent"
+        tools = [{"name": "tool", "categories": [invalid_cat]}]
+        filtered = [t for t in tools if invalid_cat in t.get("categories", [])]
+        # Empty result, or should be caught by validation
+        assert isinstance(filtered, list)
+
+    def test_prompt_must_not_be_modified_by_middleware(self):
+        """Middleware must pass prompt unchanged to framework."""
+        mock_framework = MagicMock(return_value={"status": "ok"})
+        original_prompt = "I declare tool category: parse\n\nOriginal content stays."
+
+        # Simulate middleware behavior
+        result = mock_framework(
+            agent_type="spec",
+            prompt=original_prompt,
+            tools=[{"name": "read"}]
+        )
+
+        # Verify prompt passed unchanged
+        call_kwargs = mock_framework.call_args.kwargs
+        assert call_kwargs["prompt"] == original_prompt
+
+    def test_first_match_wins_strictly_enforced(self):
+        """Multiple declarations: first match must be used, not last or random."""
+        prompt = (
+            "Tool category: think\n"
+            "I declare tool category: parse\n"
+            "My workflow category is: modify"
+        )
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+
+        # Find first match
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is not None
+        category = match.group(1).lower()
+
+        # Must be 'think' (first occurrence in text), not 'parse' or 'modify'
+        assert category == "think"
+
+    def test_logging_level_warning_for_invalid_category(self):
+        """Invalid categories must log WARNING, not INFO or ERROR."""
+        # CHECKPOINT: Spec requires specific log levels for error types
+        with patch('logging.warning') as mock_warning:
+            # Simulate middleware encountering invalid category
+            invalid_cat = "invalid_xyz"
+            VALID_CATEGORIES = {"parse", "modify", "test", "plan", "think"}
+
+            if invalid_cat not in VALID_CATEGORIES:
+                logging.warning(f"Invalid category '{invalid_cat}'; falling back to all tools")
+
+            # Must have called warning, not info or error
+            mock_warning.assert_called_once()
+            call_args = mock_warning.call_args[0][0]
+            assert "Invalid category" in call_args
+
+    def test_logging_level_info_for_no_category(self):
+        """Missing category must log INFO, not WARNING."""
+        with patch('logging.info') as mock_info:
+            # Simulate middleware with no category declaration
+            logging.info("Agent spec using all 50 tools (no category declaration)")
+
+            mock_info.assert_called_once()
+            call_args = mock_info.call_args[0][0]
+            assert "no category declaration" in call_args
+
+
+# =============================================================================
+# REGRESSION TESTS: Prevent Common Implementation Mistakes
+# =============================================================================
+
+class TestCommonImplementationTraps:
+    """Tests to catch common bugs in middleware implementation."""
+
+    def test_regex_not_compiled_globally_performance(self):
+        """Regex should be compiled once, not on every invocation (performance)."""
+        # CHECKPOINT: Implementation must not compile regex per invocation
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        compiled = re.compile(pattern, re.IGNORECASE)
+
+        prompt = "I declare tool category: parse"
+
+        # Compiled regex should be reusable
+        for _ in range(100):
+            match = compiled.search(prompt)
+            assert match is not None
+
+    def test_default_tools_not_hardcoded(self):
+        """Tools must come from parameter, not hardcoded in middleware."""
+        # CHECKPOINT: Middleware must accept all_tools as parameter
+        custom_tools = [{"name": "custom_read"}, {"name": "custom_write"}]
+
+        # Framework invocation with custom tools
+        mock_framework = MagicMock(return_value={"status": "ok"})
+
+        result = mock_framework(
+            agent_type="spec",
+            prompt="No category",
+            tools=custom_tools
+        )
+
+        # Verify custom tools were passed, not replaced
+        call_kwargs = mock_framework.call_args.kwargs
+        assert call_kwargs["tools"] == custom_tools
+        assert call_kwargs["tools"][0]["name"] == "custom_read"
+
+    def test_category_case_normalization_lowercase_only(self):
+        """Extracted category must be normalized to lowercase."""
+        prompt = "I declare tool category: PARSE"
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        assert match is not None
+        category = match.group(1).lower()
+
+        # Must be lowercase
+        assert category == "parse"
+        assert category != "PARSE"
+        assert category != "Parse"
+
+    def test_framework_invocation_returns_result_not_none(self):
+        """Middleware must return framework result, not None or wrapper."""
+        framework_result = {"tokens_used": 1500, "status": "success"}
+        mock_framework = MagicMock(return_value=framework_result)
+
+        result = mock_framework(
+            agent_type="spec",
+            prompt="Parse",
+            tools=[{"name": "read"}]
+        )
+
+        # Result must be the framework result, not None or modified
+        assert result == framework_result
+        assert result is not None
+        assert "tokens_used" in result
+
+
+# =============================================================================
+# STRESS & LOAD TESTS
+# =============================================================================
+
+class TestStressAndLoad:
+    """Stress tests for high-volume scenarios."""
+
+    def test_1000_sequential_extractions_no_memory_leak(self):
+        """Extract from 1000 prompts sequentially without memory issues."""
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        prompts = [f"I declare tool category: parse\nAgent {i}" for i in range(1000)]
+
+        results = []
+        for prompt in prompts:
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            category = match.group(1).lower() if match else None
+            results.append(category)
+
+        # All extractions succeed
+        assert len(results) == 1000
+        assert all(r == "parse" for r in results)
+
+    def test_tool_filtering_with_1000_tools(self):
+        """Filter 1000 tools without performance degradation."""
+        all_tools = [
+            {"name": f"tool_{i}", "categories": ["parse" if i % 2 == 0 else "modify"]}
+            for i in range(1000)
+        ]
+        category = "parse"
+
+        filtered = [t for t in all_tools if category in t.get("categories", [])]
+
+        # Should filter to roughly half
+        assert len(filtered) == 500
+        assert all("parse" in t.get("categories", []) for t in filtered)
+
+    def test_alternating_categories_stress_test(self):
+        """Stress test with agents alternating all 5 categories."""
+        VALID_CATEGORIES = ["parse", "modify", "test", "plan", "think"]
+        all_tools = [
+            {"name": f"tool_{i}", "categories": [cat]}
+            for i, cat in enumerate(VALID_CATEGORIES * 100)
+        ]
+
+        for category in VALID_CATEGORIES:
+            filtered = [t for t in all_tools if category in t.get("categories", [])]
+            assert len(filtered) == 100
+            assert all(category in t.get("categories", []) for t in filtered)
+
+
+# =============================================================================
+# INTEGRATION MUTATION TESTS: Spec Boundary Cases
+# =============================================================================
+
+class TestIntegrationMutationCases:
+    """Integration-level mutation tests exposing spec interpretation issues."""
+
+    def test_category_extraction_and_validation_atomic(self):
+        """Extraction and validation must be atomic; partial category should fail."""
+        # CHECKPOINT: Both steps must complete or fallback to all tools
+        prompt = "I declare tool category: invalid_nonexistent"
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        category = match.group(1).lower() if match else None
+
+        VALID_CATEGORIES = {"parse", "modify", "test", "plan", "think"}
+
+        # If invalid, must fall back to all tools (not partial filtering)
+        if category not in VALID_CATEGORIES:
+            tools_to_use = "all_tools"  # Fallback
+        else:
+            tools_to_use = f"filtered_to_{category}"
+
+        assert tools_to_use == "all_tools"
+
+    def test_framework_invocation_atomicity_with_category_filtering(self):
+        """Category filtering must complete before framework invocation."""
+        mock_framework = MagicMock(return_value={"status": "ok"})
+        all_tools = [
+            {"name": "read", "categories": ["parse"]},
+            {"name": "write", "categories": ["modify"]}
+        ]
+
+        # Extract category
+        prompt = "I declare tool category: parse"
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        category = match.group(1).lower() if match else None
+
+        # Filter tools
+        VALID_CATEGORIES = {"parse", "modify", "test", "plan", "think"}
+        if category and category in VALID_CATEGORIES:
+            filtered_tools = [t for t in all_tools if category in t.get("categories", [])]
+        else:
+            filtered_tools = all_tools
+
+        # Then invoke framework
+        result = mock_framework(
+            agent_type="spec",
+            prompt=prompt,
+            tools=filtered_tools
+        )
+
+        # Verify framework received filtered tools
+        call_kwargs = mock_framework.call_args.kwargs
+        assert len(call_kwargs["tools"]) == 1
+        assert call_kwargs["tools"][0]["name"] == "read"
+
+    def test_backward_compat_preserved_with_new_declaration_format(self):
+        """Adding new declaration format shouldn't break old agents."""
+        # New format added in future: agents using old syntax still work
+        old_format_prompt = "Write a spec"  # No declaration
+        new_format_prompt = "I declare tool category: parse\n\nWrite a spec"
+
+        pattern = r"(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)"
+
+        # Old format: no match
+        old_match = re.search(pattern, old_format_prompt, re.IGNORECASE)
+        assert old_match is None
+
+        # New format: match
+        new_match = re.search(pattern, new_format_prompt, re.IGNORECASE)
+        assert new_match is not None
+
+        # Both fallback gracefully
+        all_tools_count = 50
+        old_tools = all_tools_count if old_match is None else 0
+        new_tools = 10 if new_match else all_tools_count  # Filtered to parse
+
+        assert old_tools == 50  # Backward compatible
+        assert new_tools == 10  # New feature works

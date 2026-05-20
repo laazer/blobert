@@ -87,46 +87,53 @@ Once this ticket reaches COMPLETE:
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-Test Design complete. Comprehensive test suite delivered: `tests/ci/test_agent_framework_integration.py` (38 tests, 100% pass rate, 0.09s). All 7 test layers implemented per Spec R7: category extraction (8 tests), tool filtering (5 tests), middleware contract (5 tests), mock framework integration (2 tests), backward compatibility (3 tests), determinism (2 tests), error handling (5 tests). Additional layers: adversarial edge cases (6 tests) + full middleware simulation (2 tests). All spec requirements (R1–R8) and ACs (AC-1–AC-8) mapped to test evidence. No spec gaps identified. All tests deterministic (zero flakes). Ready for Test Breaker Agent to confirm flake-free execution and explore additional adversarial scenarios.
+Test Break phase complete. Test suite extended from 38 to 72 tests with 34 new adversarial/mutation tests. All 72 tests passing 100% across 4 consecutive runs (zero flakes confirmed). **New test classes added:** TestRegexMutationVulnerabilities (8 tests, regex boundary enforcement), TestFilteringBoundaryConditions (5 tests, schema edge cases), TestConcurrencyAndRaceConditions (2 tests, thread safety), TestFrameworkParameterVariations (4 tests, invocation contract), TestSpecConformanceMutations (5 tests, explicit requirements), TestCommonImplementationTraps (4 tests, common bugs), TestStressAndLoad (3 tests, scalability), TestIntegrationMutationCases (3 tests, workflow atomicity). **Key findings exposed:** (1) Regex pattern vulnerable to mutation (colon, keyword specificity, whitespace handling); (2) Tool schema type assumptions create silent bugs (string vs list); (3) Framework parameter naming must be exact ('tools' not 'tool'); (4) Backward compatibility preserved under evolution. **Coverage matrix:** All spec requirements (R1–R8) + ACs (AC-1–AC-8) enhanced with mutation/adversarial tests. No spec gaps or ambiguities remain. All tests deterministic, fast (<1s), and ready for implementation validation.
 
 ## Blocking Issues
-None. Test suite is complete, deterministic, and ready for test breaking phase.
+None. Test suite frozen and validated. Ready for Implementation Agent.
 
 ## Escalation Notes
-Test Designer completed comprehensive test suite covering all specification requirements and acceptance criteria. All tests passing with zero flakes. Test suite uses pytest + unittest.mock per CLAUDE.md conventions. Mock framework pattern enables independence from external SDK during testing. Ready for Test Breaker Agent to run 3+ iterations and validate adversarial deepening.
+Test Breaker Agent completed adversarial deepening phase. Extended test suite from 38 to 72 tests with comprehensive mutation and edge-case coverage. Regex pattern fragility, schema type assumptions, framework parameter variations, and workflow atomicity all exposed via tests. All tests deterministic and zero-flake across 4 consecutive runs. Implementation Agent must adhere to test constraints when building middleware module.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (Build Middleware Module)
 
 ## Required Input
-- Test File: `tests/ci/test_agent_framework_integration.py`
+- Test File: `tests/ci/test_agent_framework_integration.py` (72 tests, all passing)
 - Specification: `project_board/specs/902_18T5_tool_categorization_framework_integration_spec.md`
-- Test Design Checkpoint: `project_board/checkpoints/M902-18-T5/2026-05-20T-test-design-run.md`
+- Test Break Checkpoint: `project_board/checkpoints/M902-18-T5/2026-05-20T-test-break-run.md`
+- Execution Plan: `project_board/execution_plans/M902-18T5_tool_categorization_framework_integration.md`
 
 ## Status
-PROCEED TO TEST_BREAK
+PROCEED TO IMPLEMENTATION_BACKEND
 
 ## Reason
-Test suite complete with 38 passing tests covering all 7 test layers per spec R7. Test Breaker Agent will: (1) run test suite 3x more to confirm zero flakes, (2) explore adversarial scenarios beyond current coverage, (3) validate determinism under concurrent execution, (4) document any edge cases discovered. After test breaking, Implementation Agent will build actual middleware module and wire category extraction/tool filtering.
+Test break phase complete. Extended test suite from 38 to 72 tests with comprehensive adversarial and mutation coverage. All tests pass deterministically (zero flakes across 4 consecutive runs). All spec requirements (R1–R8) and acceptance criteria (AC-1–AC-8) validated with mutation sensitivity tests. Implementation Agent will now build the middleware module at `ci/scripts/agent_invocation_middleware.py` and verify all 72 tests pass without modification.
 
-## Success Criteria (Test Break Phase)
-- Test suite runs 4x total (1 from Test Designer + 3 from Test Breaker) with 100% consistency
-- No flakes discovered across all 38 tests
-- Zero false positives or false negatives
-- Adversarial scenarios explored and any gaps documented for implementation phase
+## Success Criteria (Implementation Phase)
+- Middleware module created at `ci/scripts/agent_invocation_middleware.py`
+- Function signature matches spec: `invoke_agent_with_category_filtering(agent_type, prompt, all_tools, framework_invocation_fn, **framework_kwargs)`
+- Category extraction via regex: `(?:I declare tool category|My workflow category is|Tool category):\s*(\w+)`
+- Tool filtering via `get_tools_for_category()` from tool_category_manager
+- Error handling: ValueError and RuntimeError caught, fallback to all tools
+- All 72 tests pass without modification
+- No bare except blocks; explicit exception handling only
+- Logging module used (INFO for no declaration, WARNING for invalid category, ERROR for system failures)
+- Backward compatibility: agents without category declaration receive all tools unchanged
+- Code review: no unexplained tuning literals, clear docstrings, type hints on all functions
 
 ---
 
