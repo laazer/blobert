@@ -32,6 +32,8 @@ _RUN_SPEC = "550e8400-e29b-41d4-a716-446655440000"
 _RUN_IMPL = "660e8400-e29b-41d4-a716-446655440001"
 _RUN_ALT = "770e8400-e29b-41d4-a716-446655440002"
 
+_chdir_lock = threading.Lock()
+
 
 def _ensure_ci_scripts_package() -> None:
     if "ci.scripts" in sys.modules:
@@ -111,22 +113,23 @@ def _record(
     tools: list[dict[str, Any]] | None = None,
 ) -> Path:
     sandbox_cwd, root_arg = _sandbox_root(root)
-    old_cwd = os.getcwd()
-    try:
-        os.chdir(sandbox_cwd)
-        tracker_mod.record_stage_usage(
-            ticket_id,
-            agent_type=agent_type,
-            prompt=prompt,
-            tools=tools or [],
-            framework_result=framework_result,
-            agent_run_id=agent_run_id,
-            workflow_stage=workflow_stage,
-            stage_key=stage_key,
-            checkpoints_root=Path(root_arg),
-        )
-    finally:
-        os.chdir(old_cwd)
+    with _chdir_lock:
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(sandbox_cwd)
+            tracker_mod.record_stage_usage(
+                ticket_id,
+                agent_type=agent_type,
+                prompt=prompt,
+                tools=tools or [],
+                framework_result=framework_result,
+                agent_run_id=agent_run_id,
+                workflow_stage=workflow_stage,
+                stage_key=stage_key,
+                checkpoints_root=Path(root_arg),
+            )
+        finally:
+            os.chdir(old_cwd)
     path = _usage_path(root, ticket_id)
     assert path.is_file()
     return path

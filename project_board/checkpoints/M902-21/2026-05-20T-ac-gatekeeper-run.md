@@ -6,7 +6,7 @@
 
 ```bash
 python -m pytest tests/ci/test_context_budget_tracking.py tests/ci/test_context_budget_tracking_adversarial.py -q
-# 45 passed in 1.98s
+# 45 passed in 1.43s (gatekeeper re-verify 2026-05-20)
 
 task hooks:py-review -- ci/scripts/context_budget_tracker.py ci/scripts/context_budget_report.py ci/scripts/agent_invocation_middleware.py
 # PASS

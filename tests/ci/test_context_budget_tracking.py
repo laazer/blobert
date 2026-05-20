@@ -15,6 +15,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -79,6 +80,8 @@ _RUN_SPEC = "550e8400-e29b-41d4-a716-446655440000"
 _RUN_TEST_DESIGNER = "660e8400-e29b-41d4-a716-446655440001"
 _RUN_RETRY = "770e8400-e29b-41d4-a716-446655440002"
 
+_chdir_lock = threading.Lock()
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -126,24 +129,25 @@ def _record(
     ticket_type: str | None = None,
 ) -> Path:
     sandbox_cwd, root_arg = _sandbox_checkpoints_root(checkpoints_root)
-    old_cwd = os.getcwd()
-    try:
-        os.chdir(sandbox_cwd)
-        record_stage_usage(
-            ticket_id,
-            agent_type=agent_type,
-            prompt=prompt,
-            tools=tools or [],
-            framework_result=framework_result,
-            agent_run_id=agent_run_id,
-            workflow_stage=workflow_stage,
-            stage_key=stage_key,
-            ticket_path=ticket_path,
-            ticket_type=ticket_type,
-            checkpoints_root=Path(root_arg),
-        )
-    finally:
-        os.chdir(old_cwd)
+    with _chdir_lock:
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(sandbox_cwd)
+            record_stage_usage(
+                ticket_id,
+                agent_type=agent_type,
+                prompt=prompt,
+                tools=tools or [],
+                framework_result=framework_result,
+                agent_run_id=agent_run_id,
+                workflow_stage=workflow_stage,
+                stage_key=stage_key,
+                ticket_path=ticket_path,
+                ticket_type=ticket_type,
+                checkpoints_root=Path(root_arg),
+            )
+        finally:
+            os.chdir(old_cwd)
     normalized_id = normalize_ticket_id(ticket_id)
     path = _usage_path(checkpoints_root, normalized_id)
     assert path.is_file(), f"expected token_usage.json at {path}"
