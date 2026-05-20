@@ -75,3 +75,50 @@ See: `project_board/specs/902_21_context_budget_tracking_spec.md`
 - M902-01 (Validation Gate Framework)
 - Agent SDK token counting hooks
 - M902-18 (Tool Categorization, for effectiveness measurement)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+TEST_DESIGN
+
+## Revision
+3
+
+## Last Updated By
+Spec Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: Not Run
+- Integration: Not Run
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Test Designer Agent
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/21_context_budget_tracking.md",
+  "spec_path": "project_board/specs/902_21_context_budget_tracking_spec.md",
+  "execution_plan": "project_board/execution_plans/M902-21_context_budget_tracking.md",
+  "spec_checkpoint": "project_board/checkpoints/M902-21/2026-05-20T-spec-run.md"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Specification complete (Revision 3). Spec at `project_board/specs/902_21_context_budget_tracking_spec.md`; `spec_completeness_check.py --type generic` PASS. Author behavioral tests per spec Test Contract (`tests/ci/test_context_budget_tracking.py`).

@@ -5,6 +5,24 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-21-autopilot (M902-21 Context Budget Tracking)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/21_context_budget_tracking.md` → `01_in_progress/`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-21 — OUTCOME: PLANNING COMPLETE → SPECIFICATION
+Execution plan and planning checkpoint logged; Spec Agent owns `902_21_context_budget_tracking_spec.md`.
+Log: `project_board/checkpoints/M902-21/2026-05-20T-planning-run.md`
+Plan: `project_board/execution_plans/M902-21_context_budget_tracking.md`
+
+### M902-21 — OUTCOME: SPECIFICATION COMPLETE → TEST_DESIGN
+Spec `902_21_context_budget_tracking_spec.md` (12 requirements); generic spec exit gate PASS.
+Log: `project_board/checkpoints/M902-21/2026-05-20T-spec-run.md`
+
+---
+
 ## Run: 2026-05-20T-m902-20-ac-gatekeeper (M902-20 — INTEGRATION, not COMPLETE)
 
 - Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
