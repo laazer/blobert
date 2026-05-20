@@ -1,0 +1,26 @@
+# BAD: required spec_edge_cases left incomplete — gate FAIL handoff_item_missing
+handoff:
+  schema_version: "1.0"
+  ticket_id: M902-23
+  from_agent: spec
+  to_agent: test_designer
+  validated_at: "2026-05-20T18:00:00Z"
+  required_items_met: 2
+  total_required_items: 3
+  checklist:
+    - item_key: spec_acceptance_criteria
+      item: Acceptance criteria defined
+      required: true
+      status: complete
+      evidence: project_board/specs/902_23_atomic_handoff_spec.md
+      evidence_type: path
+    - item_key: spec_test_strategy
+      item: Test strategy documented
+      required: true
+      status: complete
+      evidence: project_board/specs/902_23_atomic_handoff_spec.md section Test
+    - item_key: spec_edge_cases
+      item: Edge cases listed
+      required: true
+      status: incomplete
+      evidence: ""

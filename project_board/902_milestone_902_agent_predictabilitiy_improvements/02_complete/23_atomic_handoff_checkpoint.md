@@ -1,6 +1,6 @@
 # M902-23: Atomic Handoff Checkpoint
 
-**Status:** IN PROGRESS  
+**Status:** COMPLETE  
 **Target:** 2026-08-05
 
 ## Overview
@@ -9,20 +9,20 @@ Formalize the contract between agents at each handoff point. Each agent must pro
 
 ## Acceptance Criteria
 
-- [ ] Define per-agent handoff checklist (what must be done before handoff):
-  - [ ] **Planner** → **Spec:** ticket decomposed, dependencies clear, timeline estimated
-  - [ ] **Spec** → **Test Designer:** acceptance criteria defined, test strategy documented, edge cases listed
-  - [ ] **Test Designer** → **Test Breaker:** test suite complete, coverage > 80%, all tests runnable
-  - [ ] **Test Breaker** → **Implementation:** all discovered gaps documented, implementation notes created
-  - [ ] **Implementation** → **Review:** code complete, all tests passing, no linter violations, checkpoint logged
-  - [ ] **Review** → **Learning:** feedback incorporated, code reviewed, merge-ready
-  - [ ] **Learning** → **Complete:** insights documented, decision rationale recorded, checklist validated
-- [ ] Checklist format: YAML in checkpoint, structured for validation
-- [ ] Gate function: `validate_handoff_checklist(ticket_id, from_agent, to_agent) -> GateResult`
-- [ ] FAIL if any required item missing; includes list of gaps
-- [ ] Tested with 3+ agent pairs; checklists validated end-to-end
-- [ ] Agent runbook: expected checklist items for each handoff
-- [ ] Documentation: examples of good/bad checkpoints at each stage
+- [x] Define per-agent handoff checklist (what must be done before handoff):
+  - [x] **Planner** → **Spec:** ticket decomposed, dependencies clear, timeline estimated
+  - [x] **Spec** → **Test Designer:** acceptance criteria defined, test strategy documented, edge cases listed
+  - [x] **Test Designer** → **Test Breaker:** test suite complete, coverage > 80%, all tests runnable
+  - [x] **Test Breaker** → **Implementation:** all discovered gaps documented, implementation notes created
+  - [x] **Implementation** → **Review:** code complete, all tests passing, no linter violations, checkpoint logged
+  - [x] **Review** → **Learning:** feedback incorporated, code reviewed, merge-ready
+  - [x] **Learning** → **Complete:** insights documented, decision rationale recorded, checklist validated
+- [x] Checklist format: YAML in checkpoint, structured for validation
+- [x] Gate function: `validate_handoff_checklist(ticket_id, from_agent, to_agent) -> GateResult`
+- [x] FAIL if any required item missing; includes list of gaps
+- [x] Tested with 3+ agent pairs; checklists validated end-to-end
+- [x] Agent runbook: expected checklist items for each handoff
+- [x] Documentation: examples of good/bad checkpoints at each stage
 
 ## Handoff Checklist Schema
 
@@ -83,18 +83,18 @@ See: `project_board/specs/902_23_atomic_handoff_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+COMPLETE
 
 ## Revision
-5
+8
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Not Run
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: 51/51 PASS (`test_handoff_validation_gate.py` + adversarial)
+- Static QA: Ruff `task hooks:py-review` on `handoff_validation_check.py` — PASS
+- Integration: `validate_handoff_checklist`, registry entry, HANDOFF_RUNBOOK, examples/
 
 ## Blocking Issues
 - None
@@ -107,18 +107,13 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Agent (Generalist)
+Human
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/23_atomic_handoff_checkpoint.md",
-  "spec_path": "project_board/specs/902_23_atomic_handoff_spec.md",
-  "execution_plan": "project_board/execution_plans/M902-23_atomic_handoff_checkpoint.md",
-  "checkpoint_log": "project_board/checkpoints/M902-23/2026-05-20T-test-break-run.md",
-  "test_output": "tests/ci/test_handoff_validation_gate.py",
-  "adversarial_test_output": "tests/ci/test_handoff_validation_gate_adversarial.py",
-  "implementation_target": "ci/scripts/gates/handoff_validation_check.py"
+  "action": "push",
+  "note": "main ahead of origin; push when ready"
 }
 ```
 
@@ -126,4 +121,4 @@ Implementation Agent (Generalist)
 Proceed
 
 ## Reason
-Test-break complete. Adversarial suite `tests/ci/test_handoff_validation_gate_adversarial.py` adds 22 cases (evidence bypass, deferral/counter tricks, malformed YAML/schema, discovery/fenced-md precedence, path traversal, symlink escape, torn writes, unknown pair). Mirrors `test_todo_validation_gate_adversarial.py`. Pytest collection still red until `ci/scripts/gates/handoff_validation_check.py` and registry entry (Tasks 4–6).
+All acceptance criteria evidenced. Run `handoff_validation_check` after `todo_validation_check` on each stage transition.

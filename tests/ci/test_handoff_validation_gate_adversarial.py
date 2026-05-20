@@ -109,7 +109,7 @@ def _handoff_root(
 
 def _yaml_dump(handoff: dict[str, Any]) -> str:
     def _quote(s: str) -> str:
-        if any(c in s for c in ':"\\#\n'):
+        if not s.strip() or any(c in s for c in ':"\\#\n\t'):
             escaped = s.replace("\\", "\\\\").replace('"', '\\"')
             return f'"{escaped}"'
         return s
@@ -136,7 +136,7 @@ def _yaml_dump(handoff: dict[str, Any]) -> str:
         lines.append(f"      item: {_quote(str(entry['item']))}")
         lines.append(f"      required: {str(entry['required']).lower()}")
         lines.append(f"      status: {entry['status']}")
-        lines.append(f"      evidence: {_quote(str(entry.get('evidence', '')))}")
+        lines.append(f"      evidence: {_quote(str(entry.get('evidence', '')))}")  # always quoted (tabs/empty)
         if entry.get("evidence_type"):
             lines.append(f"      evidence_type: {entry['evidence_type']}")
         if entry.get("defer_reason"):
@@ -552,6 +552,7 @@ class TestHandoffValidationDiscoveryBypass:
     ) -> None:
         monkeypatch.chdir(tmp_path)
         ticket_dir = _repo_layout(tmp_path)
+        ticket_dir.mkdir(parents=True, exist_ok=True)
         block = _yaml_dump(
             _handoff_root(
                 [

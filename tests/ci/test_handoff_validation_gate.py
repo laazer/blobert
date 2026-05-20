@@ -123,7 +123,7 @@ def _yaml_dump(handoff: dict[str, Any]) -> str:
     """Minimal YAML serializer for fixtures (no PyYAML dependency in tests)."""
 
     def _quote(s: str) -> str:
-        if any(c in s for c in ':"\\#\n'):
+        if not s.strip() or any(c in s for c in ':"\\#\n\t'):
             escaped = s.replace("\\", "\\\\").replace('"', '\\"')
             return f'"{escaped}"'
         return s
