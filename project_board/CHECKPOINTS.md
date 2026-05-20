@@ -25,6 +25,10 @@ Log: `project_board/checkpoints/M902-28/2026-05-20T-spec-run.md`
 `tests/ci/test_parallel_hook_execution.py` (11 tests, T1–T6); 1 expected red (`pre-push.parallel`).
 Log: `project_board/checkpoints/M902-28/2026-05-20T-test-design-run.md`
 
+### M902-28 — OUTCOME: TEST_BREAK COMPLETE → IMPLEMENTATION_GENERALIST
+Behavioral + adversarial modules (30 tests); 29 pass, 1 expected red until `pre-push.parallel: true`.
+Log: `project_board/checkpoints/M902-28/2026-05-20T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-20T-m902-21-autopilot (M902-21 Context Budget Tracking)

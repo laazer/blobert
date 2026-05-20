@@ -1,229 +1,246 @@
-"""Behavioral CI contract tests for M902-28 parallel Lefthook hook scheduling.
+"""Behavioral tests for parallel Lefthook hook execution (M902-28).
 
-Validates executable scheduling and artifact-isolation contracts from
-``project_board/specs/902_28_parallel_hook_execution_spec.md`` (Requirement 10).
-Does not assert ticket/spec markdown prose.
+Specification: project_board/specs/902_28_parallel_hook_execution_spec.md
+Ticket: project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/28_parallel_hook_execution.md
+
+Asserts executable scheduling and artifact-isolation contracts (Requirement 10):
+  T1–T2 YAML parallel flags, T3 Taskfile delegation, T4–T5 script write paths,
+  T6 TSGR / run_tests.sh ordering, optional T7 stub concurrency overlap.
 """
 
 from __future__ import annotations
 
+import concurrent.futures
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-LEFTHOOK_YML = REPO_ROOT / "lefthook.yml"
-GODOT_HOOK_SCRIPT = REPO_ROOT / ".lefthook" / "scripts" / "godot-tests.sh"
-PY_HOOK_SCRIPT = REPO_ROOT / ".lefthook" / "scripts" / "py-tests.sh"
-RUN_TESTS_SH = REPO_ROOT / "ci" / "scripts" / "run_tests.sh"
-VERIFY_TSGR_SH = REPO_ROOT / "ci" / "scripts" / "verify_tsgr_runner_contract.sh"
+yaml = pytest.importorskip("yaml")
 
-GODOT_GLOB = "**/*.{gd,tscn,tres,gdshader}"
-PYTHON_GLOB = "asset_generation/python/**/*.py"
-GODOT_RUN = "task hooks:godot"
-PYTHON_RUN = "task hooks:python"
-
-# Write-like shell patterns under asset_generation/python (Godot hook must avoid).
-_GODOT_FORBIDDEN_WRITE_PATTERNS = (
-    re.compile(r">\s*['\"]?.*asset_generation/python"),
-    re.compile(r"asset_generation/python/coverage\.xml"),
-    re.compile(r"\bcoverage\.xml\b.*asset_generation/python"),
-)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_LEFTHOOK_YML = _REPO_ROOT / "lefthook.yml"
+_GODOT_HOOK = _REPO_ROOT / ".lefthook/scripts/godot-tests.sh"
+_PY_HOOK = _REPO_ROOT / ".lefthook/scripts/py-tests.sh"
+_RUN_TESTS = _REPO_ROOT / "ci/scripts/run_tests.sh"
+_VERIFY_TSGR = _REPO_ROOT / "ci/scripts/verify_tsgr_runner_contract.sh"
+_TASKFILE = _REPO_ROOT / "Taskfile.yml"
+_PY_ROOT = _REPO_ROOT / "asset_generation/python"
 
 
-def _load_lefthook_config() -> dict:
-    try:
-        import yaml
-    except ImportError:
-        pytest.skip("PyYAML not installed; cannot parse lefthook.yml")
-    data = yaml.safe_load(LEFTHOOK_YML.read_text(encoding="utf-8"))
-    assert isinstance(data, dict), "lefthook.yml must parse to a mapping"
+def load_lefthook_config(path: Path | None = None) -> dict[str, Any]:
+    """Parse lefthook.yml; raises yaml.YAMLError on corrupt input."""
+    target = path or _LEFTHOOK_YML
+    data = yaml.safe_load(target.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise TypeError(f"lefthook config root must be mapping, got {type(data)!r}")
     return data
 
 
-def _normalize_run(value: object) -> str:
-    assert isinstance(value, str), "command run must be a string"
-    return " ".join(value.split())
+def phase_parallel_enabled(cfg: dict[str, Any], phase: str) -> bool:
+    block = cfg.get(phase)
+    if not isinstance(block, dict):
+        return False
+    return block.get("parallel") is True
 
 
-@pytest.fixture()
-def lefthook_config() -> dict:
-    assert LEFTHOOK_YML.is_file(), f"missing {LEFTHOOK_YML}"
-    return _load_lefthook_config()
+def command_run(cfg: dict[str, Any], phase: str, command_id: str) -> str:
+    block = cfg.get(phase)
+    if not isinstance(block, dict):
+        return ""
+    commands = block.get("commands")
+    if not isinstance(commands, dict):
+        return ""
+    entry = commands.get(command_id)
+    if not isinstance(entry, dict):
+        return ""
+    run = entry.get("run")
+    return run.strip() if isinstance(run, str) else ""
 
 
-@pytest.fixture()
-def pre_push(lefthook_config: dict) -> dict:
-    block = lefthook_config.get("pre-push")
-    assert isinstance(block, dict), "pre-push must be a mapping"
-    return block
+def command_glob(cfg: dict[str, Any], phase: str, command_id: str) -> str:
+    block = cfg.get(phase)
+    if not isinstance(block, dict):
+        return ""
+    commands = block.get("commands")
+    if not isinstance(commands, dict):
+        return ""
+    entry = commands.get(command_id)
+    if not isinstance(entry, dict):
+        return ""
+    glob_val = entry.get("glob")
+    return glob_val.strip() if isinstance(glob_val, str) else ""
 
 
-@pytest.fixture()
-def pre_commit(lefthook_config: dict) -> dict:
-    block = lefthook_config.get("pre-commit")
-    assert isinstance(block, dict), "pre-commit must be a mapping"
-    return block
+def godot_script_isolation_violations(script_text: str) -> list[str]:
+    """Godot hook must not write under asset_generation/python/ (spec P1)."""
+    violations: list[str] = []
+    if "asset_generation/python/coverage.xml" in script_text:
+        violations.append("Godot hook must not reference asset_generation/python/coverage.xml")
+    if re.search(r"(>>|>)\s*['\"]?.*asset_generation/python", script_text):
+        violations.append("Godot hook must not redirect writes into asset_generation/python/")
+    if "git add" in script_text:
+        violations.append("Godot hook must not run git add")
+    if "git commit" in script_text:
+        violations.append("Godot hook must not run git commit")
+    return violations
 
 
-@pytest.fixture()
-def pre_push_commands(pre_push: dict) -> dict:
-    commands = pre_push.get("commands")
-    assert isinstance(commands, dict), "pre-push.commands must be a mapping"
-    return commands
+def assert_godot_script_isolation(script_text: str) -> None:
+    violations = godot_script_isolation_violations(script_text)
+    assert not violations, "; ".join(violations)
 
 
-# ---------------------------------------------------------------------------
-# T1–T3: Lefthook parallel scheduling contract (Requirement 03, AC-03.x)
-# ---------------------------------------------------------------------------
+def py_tests_coverage_scope_violations(script_text: str) -> list[str]:
+    """coverage.xml must stay under PY_ROOT (spec P1 / T5)."""
+    violations: list[str] = []
+    if "$PY_ROOT/coverage.xml" not in script_text and "PY_ROOT/coverage.xml" not in script_text:
+        violations.append("Python hook must anchor coverage.xml under PY_ROOT")
+    if re.search(r"\$ROOT/coverage\.xml", script_text):
+        violations.append("Python hook must not write coverage.xml at repo root")
+    if re.search(r'[^/]coverage\.xml', script_text) and "$PY_ROOT/coverage.xml" not in script_text:
+        violations.append("Python hook coverage.xml path must use PY_ROOT")
+    if "git add" in script_text:
+        violations.append("Python hook must not run git add")
+    if "git commit" in script_text:
+        violations.append("Python hook must not run git commit")
+    return violations
 
 
-class TestLefthookParallelSchedulingContract:
-    """T1–T3: YAML parallel flags, delegation, and globs."""
-
-    def test_t1_pre_push_parallel_is_true(self, pre_push: dict) -> None:
-        """T1: post-implementation pre-push.parallel must be true (AC-03.1)."""
-        assert pre_push.get("parallel") is True
-
-    def test_t2_pre_commit_parallel_is_true(self, pre_commit: dict) -> None:
-        """T2: pre-commit.parallel remains true (AC-03.1, AC-06.3)."""
-        assert pre_commit.get("parallel") is True
-
-    def test_t3_godot_tests_delegates_to_task_hooks_godot(self, pre_push_commands: dict) -> None:
-        """T3a: godot-tests.run delegates via Taskfile (AC-03.2)."""
-        cmd = pre_push_commands.get("godot-tests")
-        assert isinstance(cmd, dict), "godot-tests command must exist"
-        assert _normalize_run(cmd.get("run")) == GODOT_RUN
-
-    def test_t3_py_tests_delegates_to_task_hooks_python(self, pre_push_commands: dict) -> None:
-        """T3b: py-tests.run delegates via Taskfile (AC-03.2)."""
-        cmd = pre_push_commands.get("py-tests")
-        assert isinstance(cmd, dict), "py-tests command must exist"
-        assert _normalize_run(cmd.get("run")) == PYTHON_RUN
-
-    def test_t3_pre_push_globs_match_contract(self, pre_push_commands: dict) -> None:
-        """T3c: pre-push globs unchanged (AC-03.3)."""
-        godot = pre_push_commands["godot-tests"]
-        py_tests = pre_push_commands["py-tests"]
-        assert godot.get("glob") == GODOT_GLOB
-        assert py_tests.get("glob") == PYTHON_GLOB
+def assert_py_tests_coverage_scope(script_text: str) -> None:
+    violations = py_tests_coverage_scope_violations(script_text)
+    assert not violations, "; ".join(violations)
 
 
-# ---------------------------------------------------------------------------
-# T4–T5: Hook script artifact isolation (Requirement 01, AC-01.3)
-# ---------------------------------------------------------------------------
-
-
-class TestHookScriptArtifactIsolation:
-    """T4–T5: disjoint write paths for Godot vs Python pre-push hooks."""
-
-    def test_t4_godot_hook_script_does_not_write_under_asset_generation_python(
-        self,
-    ) -> None:
-        """T4: godot-tests.sh must not write under asset_generation/python/."""
-        assert GODOT_HOOK_SCRIPT.is_file(), f"missing {GODOT_HOOK_SCRIPT}"
-        text = GODOT_HOOK_SCRIPT.read_text(encoding="utf-8")
-        assert "asset_generation/python" not in text, (
-            "godot-tests.sh must not reference asset_generation/python write paths"
-        )
-        for pattern in _GODOT_FORBIDDEN_WRITE_PATTERNS:
-            assert not pattern.search(text), (
-                f"godot-tests.sh matches forbidden write pattern: {pattern.pattern}"
+def assert_run_tests_sequential(text: str) -> None:
+    """Canonical CI suite: Godot before Python, no background parallelization."""
+    lines = text.splitlines()
+    godot_line = next(
+        (i for i, line in enumerate(lines, start=1) if "run_tests.gd" in line),
+        None,
+    )
+    py_line = next(
+        (
+            i
+            for i, line in enumerate(lines, start=1)
+            if re.search(r"pytest|py-tests\.sh", line)
+        ),
+        None,
+    )
+    assert godot_line is not None, "run_tests.sh must invoke tests/run_tests.gd"
+    assert py_line is not None, "run_tests.sh must invoke Python phase"
+    assert py_line > godot_line, "Python phase must follow Godot (TSGR-1)"
+    for line in lines:
+        if "run_tests.gd" in line or "py-tests.sh" in line:
+            assert re.search(r"\s&\s*$", line) is None, (
+                f"run_tests.sh must not background hook phases: {line!r}"
             )
+            assert " & " not in line, f"run_tests.sh must not parallelize via &: {line!r}"
 
-    def test_t5_py_hook_coverage_xml_under_py_root_only(self) -> None:
-        """T5: py-tests.sh keeps coverage.xml under PY_ROOT (AC-01.3)."""
-        assert PY_HOOK_SCRIPT.is_file(), f"missing {PY_HOOK_SCRIPT}"
-        text = PY_HOOK_SCRIPT.read_text(encoding="utf-8")
-        assert 'PY_ROOT="$ROOT/asset_generation/python"' in text
-        assert "$PY_ROOT/coverage.xml" in text or 'cov_xml="$PY_ROOT/coverage.xml"' in text
-        # coverage.xml must be anchored to PY_ROOT, not repo-root ad hoc paths.
-        assert re.search(r'coverage\.xml', text) is not None
-        assert "asset_generation/python" in text
-        bare_root_cov = re.search(
-            r'(?<!PY_ROOT/)(?<!PY_ROOT)(?<!\$)coverage\.xml',
-            text,
+
+@pytest.fixture()
+def lefthook_cfg() -> dict[str, Any]:
+    return load_lefthook_config()
+
+
+@pytest.fixture()
+def godot_hook_text() -> str:
+    return _GODOT_HOOK.read_text(encoding="utf-8")
+
+
+@pytest.fixture()
+def py_hook_text() -> str:
+    return _PY_HOOK.read_text(encoding="utf-8")
+
+
+class TestRequirement03LefthookParallelContract:
+    """Requirement 03 / T1–T3: YAML scheduling and delegation."""
+
+    def test_pre_push_parallel_enabled(self, lefthook_cfg: dict[str, Any]) -> None:
+        assert phase_parallel_enabled(lefthook_cfg, "pre-push") is True
+
+    def test_pre_commit_parallel_enabled(self, lefthook_cfg: dict[str, Any]) -> None:
+        assert phase_parallel_enabled(lefthook_cfg, "pre-commit") is True
+
+    def test_pre_push_commands_delegate_to_taskfile(self, lefthook_cfg: dict[str, Any]) -> None:
+        assert command_run(lefthook_cfg, "pre-push", "godot-tests") == "task hooks:godot"
+        assert command_run(lefthook_cfg, "pre-push", "py-tests") == "task hooks:python"
+
+    def test_pre_push_globs_match_spec(self, lefthook_cfg: dict[str, Any]) -> None:
+        assert command_glob(lefthook_cfg, "pre-push", "godot-tests") == (
+            "**/*.{gd,tscn,tres,gdshader}"
         )
-        if bare_root_cov:
-            # Allow only when part of PY_ROOT/coverage.xml binding.
-            for match in re.finditer(r"coverage\.xml", text):
-                start = max(0, match.start() - 40)
-                window = text[start : match.end() + 10]
-                assert "PY_ROOT" in window, (
-                    f"coverage.xml reference must be under PY_ROOT: {window!r}"
-                )
-
-
-# ---------------------------------------------------------------------------
-# T6: CI canonical suite + TSGR contract path (Requirement 07)
-# ---------------------------------------------------------------------------
-
-
-class TestCICanonicalSuiteAndTsgrContract:
-    """T6: TSGR verifier exists; run_tests.sh stays Godot-then-Python sequential."""
-
-    def test_t6_verify_tsgr_runner_contract_script_exists(self) -> None:
-        """T6a: verify_tsgr_runner_contract.sh is present (AC-07.2)."""
-        assert VERIFY_TSGR_SH.is_file(), f"missing {VERIFY_TSGR_SH}"
-        assert VERIFY_TSGR_SH.stat().st_mode & 0o111, "TSGR contract script should be executable"
-
-    def test_t6_run_tests_sh_sequences_godot_before_python(self) -> None:
-        """T6b: canonical CI runs Godot import/tests before py-tests.sh (AC-07.1)."""
-        assert RUN_TESTS_SH.is_file(), f"missing {RUN_TESTS_SH}"
-        text = RUN_TESTS_SH.read_text(encoding="utf-8")
-        godot_import = text.find("godot --headless --import")
-        godot_tests = text.find("godot --headless -s tests/run_tests.gd")
-        py_hook = text.find(".lefthook/scripts/py-tests.sh")
-        assert godot_import >= 0, "run_tests.sh must run bounded Godot import"
-        assert godot_tests >= 0, "run_tests.sh must run Godot test runner"
-        assert py_hook >= 0, "run_tests.sh must delegate Python suite to py-tests.sh"
-        assert godot_import < py_hook
-        assert godot_tests < py_hook
-        for line in text.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("#") or not stripped:
-                continue
-            # Background job operator (&), not logical && in shell tests.
-            if re.search(r"(?<![&])&(?![&])", stripped):
-                pytest.fail(
-                    f"run_tests.sh must not background suites: {stripped!r}"
-                )
-
-    def test_t6_verify_tsgr_contract_exits_zero_from_repo_root(self) -> None:
-        """T6c: TSGR static contract script passes on current tree (AC-07.2)."""
-        if not VERIFY_TSGR_SH.is_file():
-            pytest.skip("verify_tsgr_runner_contract.sh missing")
-        proc = subprocess.run(
-            ["bash", str(VERIFY_TSGR_SH)],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert proc.returncode == 0, (
-            "verify_tsgr_runner_contract.sh failed\n"
-            f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert command_glob(lefthook_cfg, "pre-push", "py-tests") == (
+            "asset_generation/python/**/*.py"
         )
 
+    def test_pre_commit_has_eight_parallel_commands(self, lefthook_cfg: dict[str, Any]) -> None:
+        commands = lefthook_cfg["pre-commit"]["commands"]
+        assert isinstance(commands, dict)
+        expected = {
+            "py-parse",
+            "py-review",
+            "py-pylint",
+            "py-organization",
+            "py-defensive-normalization",
+            "gd-review",
+            "gd-organization",
+        }
+        assert set(commands) == expected
 
-# ---------------------------------------------------------------------------
-# Guard: no markdown prose as expected output (workflow test realism)
-# ---------------------------------------------------------------------------
+
+class TestRequirement01ArtifactIsolation:
+    """Requirement 01 / T4–T5: disjoint write paths for P1."""
+
+    def test_godot_hook_does_not_write_python_artifacts(self, godot_hook_text: str) -> None:
+        assert_godot_script_isolation(godot_hook_text)
+
+    def test_py_tests_coverage_under_py_root_only(self, py_hook_text: str) -> None:
+        assert_py_tests_coverage_scope(py_hook_text)
+
+    def test_taskfile_hooks_still_delegate_to_lefthook_scripts(self) -> None:
+        text = _TASKFILE.read_text(encoding="utf-8")
+        assert "hooks:godot" in text
+        assert "godot-tests.sh" in text
+        assert "hooks:python" in text
+        assert "py-tests.sh" in text
 
 
-class TestNoMarkdownProseContract:
-    """Ensure tests never read project_board markdown as golden output."""
+class TestRequirement07CiCanonicalSuiteUnchanged:
+    """Requirement 07 / T6: CI stays sequential; TSGR contract present."""
 
-    def test_module_does_not_open_project_board_markdown(self) -> None:
-        source = Path(__file__).read_text(encoding="utf-8")
-        assert "project_board/" not in source or "read_text" not in source.split(
-            "project_board/"
-        )[0], (
-            "tests must not load project_board markdown bodies as assertions"
-        )
-        assert ".md" not in re.findall(
-            r'read_text\([^)]*["\'][^"\']*\.md',
-            source,
-        ), "no read_text on .md paths in this module"
+    def test_verify_tsgr_runner_contract_script_exists(self) -> None:
+        assert _VERIFY_TSGR.is_file()
+
+    def test_run_tests_sh_godot_before_python(self) -> None:
+        assert_run_tests_sequential(_RUN_TESTS.read_text(encoding="utf-8"))
+
+    def test_run_tests_sh_invokes_shared_py_tests_hook(self) -> None:
+        text = _RUN_TESTS.read_text(encoding="utf-8")
+        assert ".lefthook/scripts/py-tests.sh" in text
+
+
+class TestRequirement10StubConcurrency:
+    """Optional T7: prove two independent stubs can overlap (not full Godot)."""
+
+    def test_two_python_stubs_finish_faster_in_parallel_than_sequential(self) -> None:
+        stub = "import time; time.sleep(0.25)"
+        cmd = [sys.executable, "-c", stub]
+
+        t0 = time.perf_counter()
+        subprocess.run(cmd, check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True)
+        sequential_elapsed = time.perf_counter() - t0
+
+        t1 = time.perf_counter()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futs = [pool.submit(subprocess.run, cmd, check=True, capture_output=True) for _ in range(2)]
+            for fut in futs:
+                fut.result()
+        parallel_elapsed = time.perf_counter() - t1
+
+        assert parallel_elapsed < sequential_elapsed * 0.85

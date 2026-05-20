@@ -63,16 +63,16 @@ See: `project_board/specs/902_28_parallel_hook_execution_spec.md` (to be written
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Red (1/11) — `test_t1_pre_push_parallel_is_true` until `pre-push.parallel: true`
+- Tests: 29/30 PASS (1 expected red: `test_pre_push_parallel_enabled` until `pre-push.parallel: true`)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -87,15 +87,18 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (Generalist)
 
 ## Required Input Schema
 ```json
 {
   "spec": "project_board/specs/902_28_parallel_hook_execution_spec.md",
   "execution_plan": "project_board/execution_plans/M902-28_parallel_hook_execution.md",
-  "test_module": "tests/ci/test_parallel_hook_execution.py",
-  "checkpoint": "project_board/checkpoints/M902-28/2026-05-20T-test-design-run.md"
+  "test_modules": [
+    "tests/ci/test_parallel_hook_execution.py",
+    "tests/ci/test_parallel_hook_execution_adversarial.py"
+  ],
+  "checkpoint": "project_board/checkpoints/M902-28/2026-05-20T-test-break-run.md"
 }
 ```
 
@@ -103,4 +106,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-`tests/ci/test_parallel_hook_execution.py` delivers T1–T6 behavioral contract (11 tests). Expected red: `pre-push.parallel` still false. Checkpoint: `project_board/checkpoints/M902-28/2026-05-20T-test-design-run.md`. Test Breaker adds adversarial YAML/isolation cases per execution plan Task 3.
+Behavioral + adversarial suites (30 tests, 19 adversarial). Expected red until `pre-push.parallel: true` in `lefthook.yml`. Then `bash ci/scripts/verify_tsgr_runner_contract.sh` and CLAUDE.md/header docs per Req 05.
