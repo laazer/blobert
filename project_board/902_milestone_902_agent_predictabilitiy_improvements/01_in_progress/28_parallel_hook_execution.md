@@ -63,13 +63,13 @@ See: `project_board/specs/902_28_parallel_hook_execution_spec.md` (to be written
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -87,14 +87,14 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
+  "spec": "project_board/specs/902_28_parallel_hook_execution_spec.md",
   "execution_plan": "project_board/execution_plans/M902-28_parallel_hook_execution.md",
-  "spec_output": "project_board/specs/902_28_parallel_hook_execution_spec.md",
-  "ticket_type": "generic"
+  "test_module": "tests/ci/test_parallel_hook_execution.py"
 }
 ```
 
@@ -102,4 +102,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete. Execution plan and checkpoint logged. Spec Agent owns safety matrix, baseline protocol, and Lefthook parallel contract before TEST_DESIGN.
+Spec complete (10 requirements, safety matrix, baseline protocol, Lefthook parallel contract, opt-out). Generic spec exit gate PASS. Test Designer owns behavioral scheduling/isolation tests per Requirement 10.
