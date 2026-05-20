@@ -152,6 +152,14 @@ task hooks:gd-organization -- {staged_files}
 
 ### Hooks / Pre-Push Equivalents
 
+Lefthook (`lefthook.yml`) runs **pre-commit** and **pre-push** commands in parallel when multiple commands match:
+
+- **pre-commit:** `parallel: true` — staged Python and Godot linters run concurrently.
+- **pre-push:** `parallel: true` — `godot-tests` and `py-tests` run concurrently when both globs match (disjoint artifacts: `.godot/` vs `asset_generation/python/coverage.xml`).
+- **Skip all hooks:** `LEFTHOOK=0 git commit` / `git push`
+- **Skip one command:** `LEFTHOOK_EXCLUDE=godot-tests git push` (see [Lefthook docs](https://github.com/evilmartians/lefthook))
+- **Force sequential pre-push:** set `pre-push.parallel: false` in `lefthook.yml` (debugging or low-core machines). `ci/scripts/run_tests.sh` remains sequential.
+
 ```bash
 task hooks:godot
 task hooks:python

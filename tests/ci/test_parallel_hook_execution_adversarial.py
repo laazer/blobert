@@ -78,7 +78,7 @@ class TestYamlParallelRegression:
     def test_parallel_false_string_is_not_enabled(self, tmp_path: Path) -> None:
         """VULNERABILITY: parallel: 'false' is a non-empty string → truthy in YAML bool coercion."""
         mutated = _LEFTHOOK_YML.read_text(encoding="utf-8").replace(
-            "pre-push:\n  parallel: false",
+            "pre-push:\n  parallel: true",
             "pre-push:\n  parallel: 'false'",
             1,
         )

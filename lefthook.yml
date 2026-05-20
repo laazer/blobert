@@ -20,9 +20,10 @@
 #   - py-organization: package/init/DRY; getattr/setattr forbidden on newly staged lines outside tests/
 #   - gd-review: hygiene + unexplained literals on added .gd lines (excludes tests/, reference_projects/)
 #
-# pre-push — full test suites:
+# pre-push — full test suites (parallel: true — godot-tests and py-tests run concurrently when both globs match):
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
 #   - py-tests:    pytest + coverage.xml + diff-cover (DIFF_COVER_FAIL_UNDER, default 85; optional DIFF_COVER_COMPARE_BRANCH)
+#   - Opt-out: LEFTHOOK=0 skips all hooks; LEFTHOOK_EXCLUDE=<command> skips one command; set parallel: false in this file to force sequential pre-push
 #
 # Requires:
 #   - Godot.app at /Applications/ (macOS) — see bin/godot wrapper
@@ -74,7 +75,7 @@ pre-commit:
       run: task hooks:gd-organization -- {staged_files}
 
 pre-push:
-  parallel: false
+  parallel: true
   commands:
     godot-tests:
       name: Godot test suite
