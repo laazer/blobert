@@ -69,13 +69,13 @@ See: `project_board/specs/902_20_todo_validation_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -93,13 +93,13 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "spec_path": "project_board/specs/902_20_todo_validation_spec.md",
-  "test_output_path": "tests/ci/test_todo_validation_gate.py",
+  "test_path": "tests/ci/test_todo_validation_gate.py",
   "reference_tests": ["tests/ci/test_per_stage_gates.py", "tests/ci/test_gate_runner_cli.py"]
 }
 ```
@@ -108,4 +108,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete. `902_20_todo_validation_spec.md` freezes snapshot contract, `validate_todos` / `run()` contracts, M902-01 FAIL payload, registry entry, T1–T7 scenarios, and runbook. Test Designer must author red behavioral tests before implementation.
+Red behavioral suite in `tests/ci/test_todo_validation_gate.py` (30+ cases: T1–T7, attribution, discovery, run() contract, FAIL payload, path security, registry). Collection fails with `ModuleNotFoundError: gates.todo_validation_check` until implementation. Test Breaker adds adversarial coverage.

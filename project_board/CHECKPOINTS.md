@@ -14,6 +14,16 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-20-test-design (M902-20 TODO Validation Gates — TEST_DESIGN COMPLETE)
+
+- Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
+- Stage: TEST_DESIGN → TEST_BREAK (Revision 3 → 4)
+- Log: `project_board/checkpoints/M902-20/2026-05-20T-test-design-run.md`
+- Tests: `tests/ci/test_todo_validation_gate.py` (red: missing `gates.todo_validation_check`)
+- Next: Test Breaker Agent
+
+---
+
 ## Run: 2026-05-20T-m902-20-specification (M902-20 TODO Validation Gates — SPECIFICATION COMPLETE)
 
 - Ticket: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/20_todo_validation_gates.md`
