@@ -110,17 +110,23 @@ def _record(
     prompt: str = "prompt",
     tools: list[dict[str, Any]] | None = None,
 ) -> Path:
-    tracker_mod.record_stage_usage(
-        ticket_id,
-        agent_type=agent_type,
-        prompt=prompt,
-        tools=tools or [],
-        framework_result=framework_result,
-        agent_run_id=agent_run_id,
-        workflow_stage=workflow_stage,
-        stage_key=stage_key,
-        checkpoints_root=root,
-    )
+    sandbox_cwd, root_arg = _sandbox_root(root)
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(sandbox_cwd)
+        tracker_mod.record_stage_usage(
+            ticket_id,
+            agent_type=agent_type,
+            prompt=prompt,
+            tools=tools or [],
+            framework_result=framework_result,
+            agent_run_id=agent_run_id,
+            workflow_stage=workflow_stage,
+            stage_key=stage_key,
+            checkpoints_root=Path(root_arg),
+        )
+    finally:
+        os.chdir(old_cwd)
     path = _usage_path(root, ticket_id)
     assert path.is_file()
     return path
@@ -181,10 +187,23 @@ def _write_fixture(
     (ticket_dir / "token_usage.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def _sandbox_root(root: Path) -> tuple[Path, str]:
+    resolved = root.resolve()
+    repo = _REPO_ROOT.resolve()
+    for anchor in (repo, Path.cwd().resolve()):
+        try:
+            resolved.relative_to(anchor)
+            return anchor, str(resolved.relative_to(anchor))
+        except ValueError:
+            continue
+    return resolved.parent, resolved.name
+
+
 def _run_reporter_json(report_cli: Path, root: Path, *extra: str) -> tuple[int, dict[str, Any], str, str]:
+    sandbox_cwd, root_arg = _sandbox_root(root)
     proc = subprocess.run(
-        [sys.executable, str(report_cli), "--checkpoints-root", str(root), "--json", *extra],
-        cwd=_REPO_ROOT,
+        [sys.executable, str(report_cli), "--checkpoints-root", root_arg, "--json", *extra],
+        cwd=str(sandbox_cwd),
         capture_output=True,
         text=True,
     )
@@ -410,15 +429,20 @@ class TestMiddlewareTrackingBypass:
         def _framework(**_kwargs: Any) -> dict[str, Any]:
             return _exact_usage(3, 2)
 
-        with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
-            out = middleware.invoke_agent_with_category_filtering(
-                agent_type="spec",
-                prompt="no ticket",
-                all_tools=[],
-                framework_invocation_fn=_framework,
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
+                out = middleware.invoke_agent_with_category_filtering(
+                    agent_type="spec",
+                    prompt="no ticket",
+                    all_tools=[],
+                    framework_invocation_fn=_framework,
+                    agent_run_id=_RUN_SPEC,
+                    checkpoints_root=Path("checkpoints"),
+                )
+        finally:
+            os.chdir(old_cwd)
 
         assert out == _exact_usage(3, 2)
         assert not (root / "M902-21").exists()
@@ -431,15 +455,20 @@ class TestMiddlewareTrackingBypass:
         def _framework(**_kwargs: Any) -> dict[str, Any]:
             return _exact_usage(1, 1)
 
-        with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
-            middleware.invoke_agent_with_category_filtering(
-                agent_type="spec",
-                prompt="no run id",
-                all_tools=[],
-                framework_invocation_fn=_framework,
-                ticket_id="M902-21",
-                checkpoints_root=root,
-            )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
+                middleware.invoke_agent_with_category_filtering(
+                    agent_type="spec",
+                    prompt="no run id",
+                    all_tools=[],
+                    framework_invocation_fn=_framework,
+                    ticket_id="M902-21",
+                    checkpoints_root=Path("checkpoints"),
+                )
+        finally:
+            os.chdir(old_cwd)
 
         assert not _usage_path(root, "M902-21").exists()
 
@@ -452,34 +481,39 @@ class TestMiddlewareTrackingBypass:
         def _framework(**_kwargs: Any) -> dict[str, Any]:
             return _exact_usage(9, 1)
 
-        for env_value in ("false", "", "off", "no"):
-            env = {k: v for k, v in os.environ.items() if k != "CONTEXT_BUDGET_TRACKING"}
-            env["CONTEXT_BUDGET_TRACKING"] = env_value
-            with patch.dict(os.environ, env, clear=True):
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            for env_value in ("false", "", "off", "no"):
+                env = {k: v for k, v in os.environ.items() if k != "CONTEXT_BUDGET_TRACKING"}
+                env["CONTEXT_BUDGET_TRACKING"] = env_value
+                with patch.dict(os.environ, env, clear=True):
+                    middleware.invoke_agent_with_category_filtering(
+                        agent_type="spec",
+                        prompt="should record",
+                        all_tools=[],
+                        framework_invocation_fn=_framework,
+                        ticket_id="M902-21",
+                        agent_run_id=_RUN_SPEC,
+                        checkpoints_root=Path("checkpoints"),
+                    )
+                assert _usage_path(root, "M902-21").is_file(), (
+                    f"env={env_value!r} must not disable tracking (only '0' does)"
+                )
+                _usage_path(root, "M902-21").unlink()
+
+            with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "0"}, clear=False):
                 middleware.invoke_agent_with_category_filtering(
                     agent_type="spec",
-                    prompt="should record",
+                    prompt="disabled",
                     all_tools=[],
                     framework_invocation_fn=_framework,
                     ticket_id="M902-21",
                     agent_run_id=_RUN_SPEC,
-                    checkpoints_root=root,
+                    checkpoints_root=Path("checkpoints"),
                 )
-            assert _usage_path(root, "M902-21").is_file(), (
-                f"env={env_value!r} must not disable tracking (only '0' does)"
-            )
-            _usage_path(root, "M902-21").unlink()
-
-        with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "0"}, clear=False):
-            middleware.invoke_agent_with_category_filtering(
-                agent_type="spec",
-                prompt="disabled",
-                all_tools=[],
-                framework_invocation_fn=_framework,
-                ticket_id="M902-21",
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        finally:
+            os.chdir(old_cwd)
         assert not _usage_path(root, "M902-21").exists()
 
 
@@ -505,16 +539,22 @@ class TestPathTraversalAdversarial:
         self, tracker: Any, tmp_path: Path, bad_id: str
     ) -> None:
         root = tmp_path / "checkpoints"
-        with pytest.raises(ValueError, match="invalid ticket_id|path|ticket"):
-            tracker.record_stage_usage(
-                bad_id,
-                agent_type="spec",
-                prompt="x",
-                tools=[],
-                framework_result=_exact_usage(1, 1),
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        sandbox_cwd, root_arg = _sandbox_root(root)
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(sandbox_cwd)
+            with pytest.raises(ValueError, match="invalid ticket_id|path|ticket"):
+                tracker.record_stage_usage(
+                    bad_id,
+                    agent_type="spec",
+                    prompt="x",
+                    tools=[],
+                    framework_result=_exact_usage(1, 1),
+                    agent_run_id=_RUN_SPEC,
+                    checkpoints_root=Path(root_arg),
+                )
+        finally:
+            os.chdir(old_cwd)
         assert list(root.glob("**/token_usage.json")) == []
 
     def test_reporter_rejects_relative_escape_checkpoints_root(

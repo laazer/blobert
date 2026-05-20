@@ -19,11 +19,14 @@ References:
 from __future__ import annotations
 
 import logging
+import os
 import re
+from pathlib import Path
 from typing import Any, Callable, TypedDict
 
 # Relative import per module convention (collocated service modules).
 # Tests and dynamic imports are mocked/patched; no fallback needed.
+from .context_budget_tracker import record_stage_usage
 from .tool_category_manager import get_tools_for_category, VALID_CATEGORIES
 
 
@@ -50,6 +53,7 @@ _CATEGORY_EXTRACTION_PATTERN = re.compile(
 
 # Configure module-level logger
 _logger = logging.getLogger(__name__)
+_context_budget_skip_logged = False
 
 
 def extract_category_from_prompt(prompt: str) -> str | None:
@@ -209,5 +213,72 @@ def invoke_agent_with_category_filtering(
         **framework_kwargs,
     )
 
+    _maybe_record_context_budget(
+        agent_type=agent_type,
+        prompt=prompt,
+        tools_to_use=tools_to_use,
+        all_tools_count=len(all_tools),
+        category=category,
+        framework_result=result,
+        framework_kwargs=framework_kwargs,
+    )
+
     # Step 4: Return framework result unchanged
     return result
+
+
+def _maybe_record_context_budget(
+    *,
+    agent_type: str,
+    prompt: str,
+    tools_to_use: list[ToolDefinition],
+    all_tools_count: int,
+    category: str | None,
+    framework_result: Any,
+    framework_kwargs: dict[str, Any],
+) -> None:
+    """Post-invocation context budget hook (M902-21). Opt-out: CONTEXT_BUDGET_TRACKING=0."""
+    global _context_budget_skip_logged  # noqa: PLW0603
+
+    if os.environ.get("CONTEXT_BUDGET_TRACKING") == "0":
+        return
+
+    ticket_id = framework_kwargs.get("ticket_id")
+    agent_run_id = framework_kwargs.get("agent_run_id")
+    if not ticket_id or not agent_run_id:
+        if not _context_budget_skip_logged:
+            _logger.debug(
+                "context budget tracking skipped: missing ticket_id or agent_run_id"
+            )
+            _context_budget_skip_logged = True
+        return
+
+    checkpoints_root = framework_kwargs.get("checkpoints_root")
+    root_path = Path(checkpoints_root) if checkpoints_root is not None else None
+
+    tool_category_state: dict[str, Any] | None = None
+    if category is not None:
+        tool_category_state = {
+            "categorization_active": True,
+            "category": category,
+            "tools_before": all_tools_count,
+            "tools_after": len(tools_to_use),
+        }
+
+    try:
+        record_stage_usage(
+            str(ticket_id),
+            agent_type=agent_type,
+            prompt=prompt,
+            tools=list(tools_to_use),
+            framework_result=framework_result,
+            agent_run_id=str(agent_run_id),
+            workflow_stage=framework_kwargs.get("workflow_stage"),
+            stage_key=framework_kwargs.get("stage_key"),
+            ticket_path=framework_kwargs.get("ticket_path"),
+            ticket_type=framework_kwargs.get("ticket_type"),
+            checkpoints_root=root_path,
+            tool_category_state=tool_category_state,
+        )
+    except Exception:  # noqa: BLE001 — tracking must not break invocations
+        _logger.exception("context budget tracking failed for ticket %s", ticket_id)

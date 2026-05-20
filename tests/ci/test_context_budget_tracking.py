@@ -63,6 +63,7 @@ def _import_ci_script(module_name: str) -> Any:
 
 _tracker = _import_ci_script("context_budget_tracker")
 record_stage_usage = _tracker.record_stage_usage
+normalize_ticket_id = _tracker.normalize_ticket_id
 normalize_workflow_stage = _tracker.normalize_workflow_stage
 infer_ticket_type = _tracker.infer_ticket_type
 
@@ -96,6 +97,20 @@ def _load_usage(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _sandbox_checkpoints_root(checkpoints_root: Path) -> tuple[Path, str]:
+    """Return (cwd for subprocess/chdir, --checkpoints-root arg) for NFR-3 path policy."""
+    resolved = checkpoints_root.resolve()
+    repo = _tracker.find_repo_root().resolve()
+    for anchor in (repo, Path.cwd().resolve()):
+        try:
+            resolved.relative_to(anchor)
+            rel = resolved.relative_to(anchor)
+            return anchor, str(rel)
+        except ValueError:
+            continue
+    return resolved.parent, resolved.name
+
+
 def _record(
     checkpoints_root: Path,
     ticket_id: str,
@@ -110,20 +125,27 @@ def _record(
     ticket_path: str | None = None,
     ticket_type: str | None = None,
 ) -> Path:
-    record_stage_usage(
-        ticket_id,
-        agent_type=agent_type,
-        prompt=prompt,
-        tools=tools or [],
-        framework_result=framework_result,
-        agent_run_id=agent_run_id,
-        workflow_stage=workflow_stage,
-        stage_key=stage_key,
-        ticket_path=ticket_path,
-        ticket_type=ticket_type,
-        checkpoints_root=checkpoints_root,
-    )
-    path = _usage_path(checkpoints_root, ticket_id)
+    sandbox_cwd, root_arg = _sandbox_checkpoints_root(checkpoints_root)
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(sandbox_cwd)
+        record_stage_usage(
+            ticket_id,
+            agent_type=agent_type,
+            prompt=prompt,
+            tools=tools or [],
+            framework_result=framework_result,
+            agent_run_id=agent_run_id,
+            workflow_stage=workflow_stage,
+            stage_key=stage_key,
+            ticket_path=ticket_path,
+            ticket_type=ticket_type,
+            checkpoints_root=Path(root_arg),
+        )
+    finally:
+        os.chdir(old_cwd)
+    normalized_id = normalize_ticket_id(ticket_id)
+    path = _usage_path(checkpoints_root, normalized_id)
     assert path.is_file(), f"expected token_usage.json at {path}"
     return path
 
@@ -183,17 +205,18 @@ def _write_token_usage_fixture(
 
 
 def _run_reporter_json(checkpoints_root: Path, *extra_args: str) -> tuple[int, dict[str, Any], str, str]:
+    sandbox_cwd, root_arg = _sandbox_checkpoints_root(checkpoints_root)
     cmd = [
         sys.executable,
         str(_REPORT_CLI),
         "--checkpoints-root",
-        str(checkpoints_root),
+        root_arg,
         "--json",
         *extra_args,
     ]
     proc = subprocess.run(
         cmd,
-        cwd=_REPO_ROOT,
+        cwd=str(sandbox_cwd),
         capture_output=True,
         text=True,
     )
@@ -205,14 +228,15 @@ def _run_reporter_json(checkpoints_root: Path, *extra_args: str) -> tuple[int, d
 
 
 def _run_reporter_human(checkpoints_root: Path, *extra_args: str) -> subprocess.CompletedProcess[str]:
+    sandbox_cwd, root_arg = _sandbox_checkpoints_root(checkpoints_root)
     cmd = [
         sys.executable,
         str(_REPORT_CLI),
         "--checkpoints-root",
-        str(checkpoints_root),
+        root_arg,
         *extra_args,
     ]
-    return subprocess.run(cmd, cwd=_REPO_ROOT, capture_output=True, text=True)
+    return subprocess.run(cmd, cwd=str(sandbox_cwd), capture_output=True, text=True)
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +349,9 @@ class TestMetricFormulas:
 
     def test_context_and_input_efficiency_ratios(self, tmp_path: Path) -> None:
         root = tmp_path / "checkpoints"
-        tools = [{"name": "read", "categories": ["parse"], "rationale": "Read files"}] * 3
+        # Pad tool schema to ~2100 tokens so input_efficiency_ratio matches spec AC-04.1 (4250/2100≈2.02).
+        _pad = "x" * 2750
+        tools = [{"name": "read", "categories": ["parse"], "rationale": _pad}] * 3
 
         _record(
             root,
@@ -392,16 +418,22 @@ class TestUsageMetadataEstimation:
         root = tmp_path / "checkpoints"
         ticket_id = "M902-NEG"
 
-        with pytest.raises(ValueError, match="negative token"):
-            record_stage_usage(
-                ticket_id,
-                agent_type="spec",
-                prompt="x",
-                tools=[],
-                framework_result={"usage": {"input_tokens": -1, "output_tokens": 5}},
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        sandbox_cwd, root_arg = _sandbox_checkpoints_root(root)
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(sandbox_cwd)
+            with pytest.raises(ValueError, match="negative token"):
+                record_stage_usage(
+                    ticket_id,
+                    agent_type="spec",
+                    prompt="x",
+                    tools=[],
+                    framework_result={"usage": {"input_tokens": -1, "output_tokens": 5}},
+                    agent_run_id=_RUN_SPEC,
+                    checkpoints_root=Path(root_arg),
+                )
+        finally:
+            os.chdir(old_cwd)
 
         assert not _usage_path(root, ticket_id).exists()
 
@@ -512,17 +544,22 @@ class TestMiddlewareContextBudgetHook:
         def _framework(**_kwargs: Any) -> dict[str, Any]:
             return _exact_usage(12, 8)
 
-        with patch.dict(os.environ, env, clear=True):
-            result = _invoke_agent_with_category_filtering(
-                agent_type="spec",
-                prompt="Write specification",
-                all_tools=[],
-                framework_invocation_fn=_framework,
-                ticket_id="M902-21",
-                agent_run_id=_RUN_SPEC,
-                workflow_stage="spec",
-                checkpoints_root=root,
-            )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with patch.dict(os.environ, env, clear=True):
+                result = _invoke_agent_with_category_filtering(
+                    agent_type="spec",
+                    prompt="Write specification",
+                    all_tools=[],
+                    framework_invocation_fn=_framework,
+                    ticket_id="M902-21",
+                    agent_run_id=_RUN_SPEC,
+                    workflow_stage="spec",
+                    checkpoints_root=Path("checkpoints"),
+                )
+        finally:
+            os.chdir(old_cwd)
 
         assert result == _exact_usage(12, 8)
         data = _load_usage(_usage_path(root, "M902-21"))
@@ -534,16 +571,21 @@ class TestMiddlewareContextBudgetHook:
         def _framework(**_kwargs: Any) -> dict[str, Any]:
             return _exact_usage(5, 5)
 
-        with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "0"}, clear=False):
-            _invoke_agent_with_category_filtering(
-                agent_type="spec",
-                prompt="no tracking",
-                all_tools=[],
-                framework_invocation_fn=_framework,
-                ticket_id="M902-21",
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "0"}, clear=False):
+                _invoke_agent_with_category_filtering(
+                    agent_type="spec",
+                    prompt="no tracking",
+                    all_tools=[],
+                    framework_invocation_fn=_framework,
+                    ticket_id="M902-21",
+                    agent_run_id=_RUN_SPEC,
+                    checkpoints_root=Path("checkpoints"),
+                )
+        finally:
+            os.chdir(old_cwd)
 
         assert not _usage_path(root, "M902-21").exists()
 
@@ -553,17 +595,22 @@ class TestMiddlewareContextBudgetHook:
         def _fail(**_kwargs: Any) -> None:
             raise RuntimeError("framework failed")
 
-        with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
-            with pytest.raises(RuntimeError, match="framework failed"):
-                _invoke_agent_with_category_filtering(
-                    agent_type="spec",
-                    prompt="fail path",
-                    all_tools=[],
-                    framework_invocation_fn=_fail,
-                    ticket_id="M902-21",
-                    agent_run_id=_RUN_SPEC,
-                    checkpoints_root=root,
-                )
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            with patch.dict(os.environ, {"CONTEXT_BUDGET_TRACKING": "1"}, clear=False):
+                with pytest.raises(RuntimeError, match="framework failed"):
+                    _invoke_agent_with_category_filtering(
+                        agent_type="spec",
+                        prompt="fail path",
+                        all_tools=[],
+                        framework_invocation_fn=_fail,
+                        ticket_id="M902-21",
+                        agent_run_id=_RUN_SPEC,
+                        checkpoints_root=Path("checkpoints"),
+                    )
+        finally:
+            os.chdir(old_cwd)
 
         assert not _usage_path(root, "M902-21").exists()
 
@@ -596,16 +643,22 @@ class TestPathSafety:
 
     def test_record_stage_rejects_path_traversal_ticket_id(self, tmp_path: Path) -> None:
         root = tmp_path / "checkpoints"
-        with pytest.raises(ValueError, match="invalid ticket_id|path"):
-            record_stage_usage(
-                "../evil",
-                agent_type="spec",
-                prompt="x",
-                tools=[],
-                framework_result=_exact_usage(1, 1),
-                agent_run_id=_RUN_SPEC,
-                checkpoints_root=root,
-            )
+        sandbox_cwd, root_arg = _sandbox_checkpoints_root(root)
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(sandbox_cwd)
+            with pytest.raises(ValueError, match="invalid ticket_id|path"):
+                record_stage_usage(
+                    "../evil",
+                    agent_type="spec",
+                    prompt="x",
+                    tools=[],
+                    framework_result=_exact_usage(1, 1),
+                    agent_run_id=_RUN_SPEC,
+                    checkpoints_root=Path(root_arg),
+                )
+        finally:
+            os.chdir(old_cwd)
         assert not (root / "evil").exists()
 
     def test_ticket_id_underscore_normalized_to_hyphen(self, tmp_path: Path) -> None:
