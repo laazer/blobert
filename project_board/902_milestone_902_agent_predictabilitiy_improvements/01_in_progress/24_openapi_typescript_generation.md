@@ -69,3 +69,49 @@ See: `project_board/specs/902_24_openapi_typescript_gen_spec.md`
 
 - Backend running with OpenAPI generation (already in FastAPI)
 - Node.js environment
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+TEST_DESIGN
+
+## Revision
+2
+
+## Last Updated By
+Spec Agent
+
+## Validation Status
+- Spec: `project_board/specs/902_24_openapi_typescript_gen_spec.md` (Revision 1)
+- Spec exit gate: orchestrator runs `spec_completeness_check.py --type api` before TEST_DESIGN advance
+- Handoff: `project_board/checkpoints/M902-24/todos-latest.json`, `handoff-latest.yaml` (spec → test_designer)
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Test Designer Agent
+
+## Required Input Schema
+```json
+{
+  "spec_path": "project_board/specs/902_24_openapi_typescript_gen_spec.md",
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/24_openapi_typescript_generation.md",
+  "transition": "spec_to_test_design"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Specification complete per M902-24 execution plan Task 1. Author behavioral tests for `sync-api-types.sh` exit codes, offline cache, and `tsc --noEmit` validation per spec Requirement 07.

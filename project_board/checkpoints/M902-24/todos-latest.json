@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M902-24",
+  "agent": "Spec Agent",
+  "captured_at": "2026-05-21T20:00:00Z",
+  "todos": [
+    {
+      "id": "m902-24-spec-1",
+      "content": "Read ticket, execution plan, and workflow enforcement",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "m902-24-spec-2",
+      "content": "Author 902_24_openapi_typescript_gen_spec.md (api sections, AC mapping, paths)",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "m902-24-spec-3",
+      "content": "Update ticket WORKFLOW STATE to TEST_DESIGN Revision 2",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "m902-24-spec-4",
+      "content": "Write spec→test_designer handoff artifacts (todos-latest, handoff-latest)",
+      "status": "completed",
+      "agent": "Spec Agent"
+    }
+  ]
+}
