@@ -2,7 +2,9 @@
 
 Spec: project_board/specs/902_27_api_contract_precommit_spec.md
 Scenarios H1–H8: hook exit codes, stderr banners, cache fallback warning,
-lefthook.yml registration. Mocks npx/uv via PATH stubs; Step 1 uses
+lefthook.yml registration. Adversarial class (execution plan Task 3): F1–F10
+setup/sync failures, invalid cache, missing tooling, wrong cwd, determinism,
+and step-order isolation. Mocks npx/uv via PATH stubs; Step 1 uses
 sync-api-types.sh with BLOBERT_SYNC_SKIP_FETCH or cache fixtures (no live :8000).
 """
 
@@ -48,8 +50,13 @@ _SUCCESS_FOOTER = "✅ API contract check passed"
 _BLOCKED_SYNC = "❌ Commit blocked: OpenAPI type sync failed. Fix and retry."
 _BLOCKED_TSC = "❌ Commit blocked: Type errors found. Fix and retry."
 _BLOCKED_PYTEST = "❌ Commit blocked: Contract tests failed. Fix and retry."
+_BLOCKED_SETUP = "❌ Commit blocked: Setup error. Fix and retry."
 _CACHE_WARNING = "Backend not reachable; using cached OpenAPI spec"
+_UV_SETUP_MSG = "api-contract-check: uv not found"
+_NODE_MODULES_SETUP_MSG = "api-contract-check: run npm ci in asset_generation/web/frontend"
+_SYNC_SCRIPT_REL = "asset_generation/web/frontend/scripts/sync-api-types.sh"
 _FORBIDDEN_START = ("uvicorn", "task editor", "start.sh")
+_FORBIDDEN_TYPEGEN = ("openapi-typescript",)
 
 
 def load_lefthook_config(path: Path | None = None) -> dict[str, Any]:
@@ -102,7 +109,14 @@ def _write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def _stub_toolchain_bin(tmp_path: Path, *, tsc_exit: int = 0, pytest_exit: int = 0) -> Path:
+def _stub_toolchain_bin(
+    tmp_path: Path,
+    *,
+    tsc_exit: int = 0,
+    pytest_exit: int = 0,
+    uv_marker: Path | None = None,
+    include_uv: bool = True,
+) -> Path:
     """PATH stubs for npx tsc and uv run pytest (spec Req 06 — no live backend)."""
     bindir = tmp_path / "stub-bin"
     bindir.mkdir()
@@ -116,28 +130,67 @@ def _stub_toolchain_bin(tmp_path: Path, *, tsc_exit: int = 0, pytest_exit: int =
         )
     npx_lines.append(f"  exit {tsc_exit}")
     npx_lines.append("fi")
-    npx_lines.append("exit 127")
+    npx_lines.append('exec "$(command -v npx)" "$@"')
     _write_executable(bindir / "npx", "\n".join(npx_lines) + "\n")
-    uv_lines = [
-        "#!/usr/bin/env bash",
-        'if [[ "$1" == "run" && "$2" == "pytest" ]]; then',
-    ]
-    if pytest_exit != 0:
-        uv_lines.append('  echo "FAILED tests/api/test_health_contract.py::test_shape" >&2')
-        uv_lines.append(f"  exit {pytest_exit}")
-    else:
-        uv_lines.append(
-            '  echo "======================== 12 passed in 0.01s ========================"'
-        )
+    if include_uv:
+        uv_lines = [
+            "#!/usr/bin/env bash",
+            'if [[ "$1" == "run" && "$2" == "pytest" ]]; then',
+        ]
+        if uv_marker is not None:
+            uv_lines.append(f'  echo "invoked" >> "{uv_marker}"')
+        if pytest_exit != 0:
+            uv_lines.append('  echo "FAILED tests/api/test_health_contract.py::test_shape" >&2')
+            uv_lines.append(f"  exit {pytest_exit}")
+        else:
+            uv_lines.append(
+                '  echo "======================== 12 passed in 0.01s ========================"'
+            )
+            uv_lines.append("  exit 0")
+        uv_lines.append("fi")
+        uv_lines.append('if [[ "$1" == "--version" ]]; then')
+        uv_lines.append('  echo "uv-stub"')
         uv_lines.append("  exit 0")
-    uv_lines.append("fi")
-    uv_lines.append('if [[ "$1" == "--version" ]]; then')
-    uv_lines.append('  echo "uv-stub"')
-    uv_lines.append("  exit 0")
-    uv_lines.append("fi")
-    uv_lines.append("exit 127")
-    _write_executable(bindir / "uv", "\n".join(uv_lines) + "\n")
+        uv_lines.append("fi")
+        uv_lines.append("exit 127")
+        _write_executable(bindir / "uv", "\n".join(uv_lines) + "\n")
     return bindir
+
+
+def _fake_npx_openapi_typescript_fail(tmp_path: Path) -> Path:
+    """Prepends npx shim that fails openapi-typescript only (sync exit 5 / F4)."""
+    bindir = tmp_path / "fake-npx-bin"
+    bindir.mkdir()
+    npx = bindir / "npx"
+    npx.write_text(
+        """#!/usr/bin/env bash
+for arg in "$@"; do
+  case "$arg" in
+    *openapi-typescript*)
+      echo "generation failed (adversarial mock)" >&2
+      exit 1
+      ;;
+  esac
+done
+exec "$(command -v npx)" "$@"
+""",
+        encoding="utf-8",
+    )
+    npx.chmod(0o755)
+    return bindir
+
+
+def _path_without_command(command: str) -> str:
+    """Drop PATH entries that expose a given executable (missing-tooling tests)."""
+    kept: list[str] = []
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+        candidate = Path(entry) / command
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            continue
+        kept.append(entry)
+    return os.pathsep.join(kept)
 
 
 def _require_hook_script() -> Path:
@@ -230,10 +283,19 @@ class TestRequirement02HookScriptStructure:
         assert "set -euo pipefail" in text
 
     def test_h7_script_forbids_backend_auto_start(self) -> None:
+        """AC-02.6: no backend start invocations; frozen Fix text may mention task editor."""
         assert _HOOK_SCRIPT.is_file(), f"Missing {_HOOK_SCRIPT}"
         text = _HOOK_SCRIPT.read_text(encoding="utf-8")
-        for token in _FORBIDDEN_START:
-            assert token not in text, f"Hook must not invoke {token!r}"
+        assert "uvicorn" not in text
+        assert "start.sh" not in text
+        for line in text.splitlines():
+            if "task editor" not in line:
+                continue
+            stripped = line.strip()
+            assert stripped.startswith("echo "), (
+                "task editor must appear only in user-facing echo text, not as a command: "
+                f"{line!r}"
+            )
 
 
 class TestRequirement03HookPipelineBehavior:
@@ -332,11 +394,14 @@ class TestRequirement03HookPipelineBehavior:
             },
             stub_bin=stub_bin,
         )
-        combined = proc.stdout + proc.stderr
         assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
-        assert "using cached OpenAPI spec" in combined
-        assert _CACHE_WARNING in combined
-        assert combined.index(_CACHE_WARNING) < combined.index(_STEP2_START)
+        assert "using cached OpenAPI spec" in proc.stderr
+        assert _CACHE_WARNING in proc.stderr
+        assert _STEP2_START in proc.stdout
+        script = _HOOK_SCRIPT.read_text(encoding="utf-8")
+        warn_idx = script.index("Backend not reachable; using cached OpenAPI spec")
+        step2_idx = script.index("[2/3] Type-checking frontend...")
+        assert warn_idx < step2_idx, "hook must emit cache warning before Step 2 banner"
 
     def test_h8_skip_fetch_deterministic_step_one(
         self,
@@ -353,4 +418,220 @@ class TestRequirement03HookPipelineBehavior:
         )
         assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
         assert _CACHE_WARNING not in (proc.stdout + proc.stderr)
+
+
+class TestApiContractPrecommitHookAdversarial:
+    """M902-27 execution plan Task 3: adversarial F1–F10 and ordering traps."""
+
+    def test_a1_empty_cache_file_fetch_fail_blocks_before_step_two(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """F2 OPENAPI_UNAVAILABLE: zero-byte cache + dead URL must not reach tsc."""
+        cache = tmp_path / "empty.cache.json"
+        cache.write_text("", encoding="utf-8")
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        proc = _run_hook(
+            extra_env={
+                "BLOBERT_OPENAPI_URL": "http://127.0.0.1:1/openapi.json",
+                "BLOBERT_OPENAPI_CACHE": str(cache),
+                "BLOBERT_OPENAPI_OUTPUT": str(tmp_path / "out.ts"),
+            },
+            stub_bin=stub_bin,
+        )
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 1, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert _STEP1_FAIL_PREFIX in combined
+        assert _BLOCKED_SYNC in combined
+        assert _STEP2_START not in combined
+
+    def test_a2_invalid_cache_skip_fetch_exit_one(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """F3/F4: corrupt cache with BLOBERT_SYNC_SKIP_FETCH must fail Step 1 (sync exit 4)."""
+        cache = tmp_path / "bad.cache.json"
+        cache.write_text("{not-valid-json", encoding="utf-8")
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        proc = _run_hook(
+            extra_env={
+                "BLOBERT_SYNC_SKIP_FETCH": "1",
+                "BLOBERT_OPENAPI_CACHE": str(cache),
+                "BLOBERT_OPENAPI_OUTPUT": str(tmp_path / "out.ts"),
+            },
+            stub_bin=stub_bin,
+        )
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 1, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert _STEP1_FAIL_PREFIX in combined
+        assert _STEP2_START not in combined
+
+    def test_a3_missing_uv_setup_error_before_pipeline(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """F9 SETUP: hook must fail when uv is absent from PATH (no pytest stub reached)."""
+        stub_bin = _stub_toolchain_bin(tmp_path, include_uv=False)
+        uv_marker = tmp_path / "uv.marker"
+        proc = _run_hook(
+            extra_env={
+                **_sync_env_for_skip_fetch(tmp_path),
+                "PATH": f"{stub_bin}{os.pathsep}{_path_without_command('uv')}",
+            },
+            stub_bin=None,
+        )
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 1, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert _UV_SETUP_MSG in combined
+        assert _BLOCKED_SETUP in combined
+        assert _STEP1_START not in combined
+        assert not uv_marker.exists()
+
+    def test_a4_wrong_cwd_repo_root_resolution_still_succeeds(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """Order/cwd trap: hook invoked from frontend/ must still resolve repo ROOT."""
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        script = _require_hook_script()
+        env = {**os.environ, **_sync_env_for_skip_fetch(tmp_path)}
+        env["PATH"] = f"{stub_bin}{os.pathsep}{env.get('PATH', '')}"
+        proc = subprocess.run(
+            ["bash", str(script)],
+            cwd=str(_FRONTEND_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert _SUCCESS_FOOTER in combined
+
+    def test_a5_three_consecutive_runs_identical_exit_and_footer(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """Determinism: three identical env runs must share exit code and success footer."""
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        env = _sync_env_for_skip_fetch(tmp_path)
+        codes: list[int] = []
+        footers: list[bool] = []
+        for _ in range(3):
+            proc = _run_hook(extra_env=env, stub_bin=stub_bin)
+            codes.append(proc.returncode)
+            footers.append(_SUCCESS_FOOTER in proc.stdout + proc.stderr)
+        assert codes == [0, 0, 0], codes
+        assert footers == [True, True, True]
+
+    def test_a6_hook_script_delegates_sync_not_raw_openapi_typescript(self) -> None:
+        """A1 anti-pattern: hook must not invoke openapi-typescript directly (comments OK)."""
+        assert _HOOK_SCRIPT.is_file(), f"Missing {_HOOK_SCRIPT}"
+        text = _HOOK_SCRIPT.read_text(encoding="utf-8")
+        assert _SYNC_SCRIPT.name in text
+        assert str(_SYNC_SCRIPT_REL) in text or "sync-api-types.sh" in text
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            for token in _FORBIDDEN_TYPEGEN:
+                assert token not in line, (
+                    f"Hook must delegate typegen to sync script, not {token!r} in: {line!r}"
+                )
+
+    def test_a7_step_three_uses_contract_test_glob(self) -> None:
+        """A3: Step 3 must target tests/api/test_*_contract.py under asset_generation/python."""
+        assert _HOOK_SCRIPT.is_file(), f"Missing {_HOOK_SCRIPT}"
+        text = _HOOK_SCRIPT.read_text(encoding="utf-8")
+        assert "tests/api/test_*_contract.py" in text
+        assert "asset_generation/python" in text
+
+    def test_a8_sync_typegen_failure_blocks_with_step_one_template(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """F4 TYPEGEN_FAILED: openapi-typescript failure surfaces as Step 1 hook failure."""
+        cache = tmp_path / "openapi.cached.json"
+        cache.write_text(json.dumps(_minimal_openapi()), encoding="utf-8")
+        fake_npx = _fake_npx_openapi_typescript_fail(tmp_path)
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        proc = _run_hook(
+            extra_env={
+                "BLOBERT_SYNC_SKIP_FETCH": "1",
+                "BLOBERT_OPENAPI_CACHE": str(cache),
+                "BLOBERT_OPENAPI_OUTPUT": str(tmp_path / "out.ts"),
+                "PATH": f"{fake_npx}{os.pathsep}{stub_bin}{os.pathsep}{os.environ.get('PATH', '')}",
+            },
+            stub_bin=None,
+        )
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 1, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert _STEP1_FAIL_PREFIX in combined
+        assert _STEP2_START not in combined
+
+    def test_a9_sync_failure_does_not_invoke_pytest_stub(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """Step-order: Step 1 failure must not call uv run pytest (marker file stays empty)."""
+        uv_marker = tmp_path / "uv.invoked"
+        stub_bin = _stub_toolchain_bin(tmp_path, uv_marker=uv_marker)
+        proc = _run_hook(
+            extra_env={
+                "BLOBERT_OPENAPI_URL": "http://127.0.0.1:1/openapi.json",
+                "BLOBERT_OPENAPI_CACHE": str(tmp_path / "missing.cache.json"),
+                "BLOBERT_OPENAPI_OUTPUT": str(tmp_path / "out.ts"),
+            },
+            stub_bin=stub_bin,
+        )
+        assert proc.returncode == 1
+        assert not uv_marker.exists()
+
+    def test_a10_node_modules_prerequisite_documented_in_script(self) -> None:
+        """F7 SETUP: script must check frontend node_modules before pipeline (grep contract)."""
+        assert _HOOK_SCRIPT.is_file(), f"Missing {_HOOK_SCRIPT}"
+        text = _HOOK_SCRIPT.read_text(encoding="utf-8")
+        assert "node_modules" in text
+        assert "npm ci" in text or _NODE_MODULES_SETUP_MSG in text
+
+    def test_a11_backend_glob_includes_core_not_routers_only(
+        self,
+        lefthook_cfg: dict[str, Any],
+    ) -> None:
+        """R4: glob must cover core/ config, not ticket's narrower routers/** example."""
+        entry = pre_commit_command(lefthook_cfg, _CMD_ID)
+        glob_val = entry.get("glob", "")
+        assert glob_val == _BACKEND_GLOB
+        assert "core" in glob_val or "backend/**/*.py" in glob_val
+        assert "routers/**/*.py" != glob_val
+
+    def test_a12_h6_registration_yaml_byte_drift_guards(
+        self,
+        lefthook_cfg: dict[str, Any],
+    ) -> None:
+        """YAML drift: name/stage/run must stay frozen (mutation of any field breaks commit)."""
+        entry = pre_commit_command(lefthook_cfg, _CMD_ID)
+        assert entry.get("name"), "api-contract-check must have human-readable name"
+        assert "API contract" in str(entry.get("name"))
+        assert entry.get("stage") == _STAGE_COMMIT
+        assert entry.get("run") == _RUN_LINE
+
+    def test_a13_npx_stub_must_delegate_openapi_typescript_to_real_npx(
+        self,
+        tmp_path: Path,
+        frontend_has_node_modules: None,
+    ) -> None:
+        """Mock trap: PATH stub that only handles tsc must not break sync Step 1 typegen."""
+        stub_bin = _stub_toolchain_bin(tmp_path)
+        proc = _run_hook(extra_env=_sync_env_for_skip_fetch(tmp_path), stub_bin=stub_bin)
+        combined = proc.stdout + proc.stderr
+        assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        assert "openapi-typescript exited non-zero" not in combined
 
