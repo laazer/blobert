@@ -75,18 +75,18 @@ See: `project_board/specs/902_24_openapi_typescript_gen_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Spec: `project_board/specs/902_24_openapi_typescript_gen_spec.md` (Revision 1)
-- Spec exit gate: orchestrator runs `spec_completeness_check.py --type api` before TEST_DESIGN advance
-- Handoff: `project_board/checkpoints/M902-24/todos-latest.json`, `handoff-latest.yaml` (spec → test_designer)
+- Tests: `tests/web_frontend/test_sync_api_types_script.py`, `asset_generation/web/frontend/src/api/syncApiTypes.test.ts` (red until implementation)
+- Handoff: `project_board/checkpoints/M902-24/todos-latest.json`, `handoff-latest.yaml` (test_designer → test_breaker)
 
 ## Blocking Issues
 - None
@@ -99,14 +99,14 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "spec_path": "project_board/specs/902_24_openapi_typescript_gen_spec.md",
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/24_openapi_typescript_generation.md",
-  "transition": "spec_to_test_design"
+  "transition": "test_design_to_test_break"
 }
 ```
 
@@ -114,4 +114,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete per M902-24 execution plan Task 1. Author behavioral tests for `sync-api-types.sh` exit codes, offline cache, and `tsc --noEmit` validation per spec Requirement 07.
+Primary behavioral tests authored (pytest script contract + vitest integration). Test Breaker adds adversarial cases (exit 5, empty cache, read-only output dir, OpenAPI edge cases) per execution plan Task 3.

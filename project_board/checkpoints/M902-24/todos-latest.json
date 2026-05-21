@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-24",
-  "agent": "Spec Agent",
-  "captured_at": "2026-05-21T20:00:00Z",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-21T21:00:00Z",
   "todos": [
     {
-      "id": "m902-24-spec-1",
-      "content": "Read ticket, execution plan, and workflow enforcement",
+      "id": "m902-24-td-1",
+      "content": "Read spec, ticket, workflow enforcement",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "m902-24-spec-2",
-      "content": "Author 902_24_openapi_typescript_gen_spec.md (api sections, AC mapping, paths)",
+      "id": "m902-24-td-2",
+      "content": "Author tests/web_frontend/test_sync_api_types_script.py",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "m902-24-spec-3",
-      "content": "Update ticket WORKFLOW STATE to TEST_DESIGN Revision 2",
+      "id": "m902-24-td-3",
+      "content": "Author src/api/syncApiTypes.test.ts (vitest)",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "m902-24-spec-4",
-      "content": "Write spec→test_designer handoff artifacts (todos-latest, handoff-latest)",
+      "id": "m902-24-td-4",
+      "content": "Update ticket to TEST_BREAK; handoff test_designer→test_breaker",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     }
   ]
 }
