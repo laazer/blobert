@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M902-27",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-21T20:00:00Z",
+  "todos": [
+    {
+      "id": "td-1",
+      "content": "Author tests/ci/test_api_contract_precommit_hook.py (H1–H8)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "td-2",
+      "content": "Run pytest RED evidence (12 fail, 1 pass)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "td-3",
+      "content": "Write test_designer→test_breaker handoff artifacts",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    }
+  ]
+}

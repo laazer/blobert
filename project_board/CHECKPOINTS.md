@@ -5,6 +5,27 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-22T-m902-27-autopilot (M902-27 API Contract Pre-Commit Hook)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/27_api_contract_precommit_hook.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-27 — OUTCOME: PLANNING → SPECIFICATION
+Execution plan + planner handoff; M902-24/25/26 deps satisfied.
+Log: `project_board/checkpoints/M902-27/2026-05-21T-planning-run.md`
+
+### M902-27 — OUTCOME: SPECIFICATION → TEST_DESIGN
+API pre-commit spec frozen (glob, 3-step hook, stderr, runbook, dry-run protocol).
+Log: `project_board/checkpoints/M902-27/2026-05-21T-spec-run.md`
+
+### M902-27 — OUTCOME: TEST_DESIGN → TEST_BREAK
+RED hook tests (13 scenarios H1–H8); 12 fail until hook + lefthook land.
+Log: `project_board/checkpoints/M902-27/2026-05-21T-test-design-run.md`
+
+---
+
 ## Run: 2026-05-22T-m902-26-autopilot (M902-26 API Contract Testing)
 
 - Queue mode: single ticket

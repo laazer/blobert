@@ -127,3 +127,49 @@ See: `project_board/specs/902_27_api_contract_precommit_spec.md`
 - M902-25 (Pydantic + Zod Dual Validation)
 - M902-26 (API Contract Testing)
 - Lefthook (already in project)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+TEST_BREAK
+
+## Revision
+4
+
+## Last Updated By
+Test Designer Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: N/A
+- Integration: N/A
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Test Breaker Agent
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/27_api_contract_precommit_hook.md",
+  "spec_path": "project_board/specs/902_27_api_contract_precommit_spec.md",
+  "test_module": "tests/ci/test_api_contract_precommit_hook.py"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+RED tests at `tests/ci/test_api_contract_precommit_hook.py` (H1–H8, lefthook registration, PATH stubs for npx/uv). Pytest: 12 failed / 1 passed (pre-implementation). Handoff: `project_board/checkpoints/M902-27/handoff-latest.yaml` (test_designer→test_breaker). Orchestrator: `run_workflow_transition_gates.py --transition test_design_to_test_break`.
