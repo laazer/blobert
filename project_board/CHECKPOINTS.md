@@ -12,9 +12,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: project_board/checkpoints/
 
-### M902-27 — OUTCOME: PLANNING → SPECIFICATION
-Execution plan + planner handoff; M902-24/25/26 deps satisfied.
-Log: `project_board/checkpoints/M902-27/2026-05-21T-planning-run.md`
+### M902-27 — OUTCOME: COMPLETE
+Pre-commit `api-contract-check`: sync-api-types → tsc → contract pytest on `backend/**/*.py`; 26 CI + 87 contract tests PASS.
+Log: `project_board/checkpoints/M902-27/2026-05-21T-implementation-run.md`
+Commits: `1bb39d8`, `a34f3e1`
 
 ### M902-27 — OUTCOME: SPECIFICATION → TEST_DESIGN
 API pre-commit spec frozen (glob, 3-step hook, stderr, runbook, dry-run protocol).
