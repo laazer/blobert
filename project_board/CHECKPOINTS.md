@@ -5,6 +5,19 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-20T-m902-24-autopilot (M902-24 OpenAPI TypeScript Generation)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/24_openapi_typescript_generation.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-24 — OUTCOME: TEST_BREAK COMPLETE → IMPLEMENTATION_FRONTEND
+Adversarial suite `tests/web_frontend/test_sync_api_types_adversarial.py` (12 cases); script/cache/types pending.
+Log: `project_board/checkpoints/M902-24/2026-05-21T-test-break-run.md`
+
+---
+
 ## Run: 2026-05-20T-m902-23-autopilot (M902-23 Atomic Handoff Checkpoint)
 
 - Queue mode: single ticket

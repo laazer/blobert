@@ -1,27 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-24
-  from_agent: test_designer
-  to_agent: test_breaker
-  validated_at: "2026-05-21T21:00:00Z"
-  required_items_met: 3
-  total_required_items: 3
+  from_agent: test_breaker
+  to_agent: implementation
+  validated_at: "2026-05-21T22:00:00Z"
+  required_items_met: 2
+  total_required_items: 2
   checklist:
-    - item_key: test_suite_complete
-      item: Test suite complete per spec test plan
+    - item_key: breaker_gaps_documented
+      item: All discovered gaps documented
       required: true
       status: complete
-      evidence: tests/web_frontend/test_sync_api_types_script.py
+      evidence: tests/web_frontend/test_sync_api_types_adversarial.py
       evidence_type: path
-    - item_key: test_coverage_threshold
-      item: Coverage threshold met (>80% proxy)
+    - item_key: breaker_impl_notes
+      item: Implementation notes created
       required: true
       status: complete
-      evidence: "Requirement 07 T1–T6 behavioral cases in pytest + vitest; adversarial exit 5/npm left to Test Breaker"
-      evidence_type: attestation
-    - item_key: test_all_runnable
-      item: All tests runnable
-      required: true
-      status: complete
-      evidence: "pytest tests/web_frontend/ ; cd asset_generation/web/frontend && npm test -- src/api/syncApiTypes.test.ts"
+      evidence: "Spec Req 02 Failure Taxonomy exit 3–5; checkpoint project_board/checkpoints/M902-24/2026-05-21T-test-break-run.md Implementation notes"
       evidence_type: attestation

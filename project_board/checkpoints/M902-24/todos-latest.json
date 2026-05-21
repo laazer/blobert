@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-24",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-21T21:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-21T22:00:00Z",
   "todos": [
     {
-      "id": "m902-24-td-1",
-      "content": "Read spec, ticket, workflow enforcement",
+      "id": "m902-24-tb-1",
+      "content": "Read spec and behavioral tests",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "m902-24-td-2",
-      "content": "Author tests/web_frontend/test_sync_api_types_script.py",
+      "id": "m902-24-tb-2",
+      "content": "Author test_sync_api_types_adversarial.py",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "m902-24-td-3",
-      "content": "Author src/api/syncApiTypes.test.ts (vitest)",
+      "id": "m902-24-tb-3",
+      "content": "Checkpoint + handoff test_breaker→implementation",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "m902-24-td-4",
-      "content": "Update ticket to TEST_BREAK; handoff test_designer→test_breaker",
+      "id": "m902-24-tb-4",
+      "content": "Update ticket IMPLEMENTATION_FRONTEND",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     }
   ]
 }
