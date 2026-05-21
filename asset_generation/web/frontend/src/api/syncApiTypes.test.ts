@@ -2,7 +2,7 @@
  * M902-24 — sync-api-types.sh integration (Vitest, node env).
  * Spec: project_board/specs/902_24_openapi_typescript_gen_spec.md (Requirement 07).
  */
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -59,23 +59,17 @@ function minimalOpenApi(): OpenApiFixture {
 
 function runSync(env: Record<string, string>): { status: number; stderr: string; stdout: string } {
   const merged = { ...process.env, ...env };
-  try {
-    const stdout = execSync(`bash "${SYNC_SCRIPT}"`, {
-      cwd: FRONTEND_ROOT,
-      env: merged,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 120_000,
-    });
-    return { status: 0, stderr: "", stdout };
-  } catch (err: unknown) {
-    const e = err as { status?: number; stderr?: string; stdout?: string };
-    return {
-      status: typeof e.status === "number" ? e.status : 1,
-      stderr: e.stderr ?? "",
-      stdout: e.stdout ?? "",
-    };
-  }
+  const result = spawnSync("bash", [SYNC_SCRIPT], {
+    cwd: FRONTEND_ROOT,
+    env: merged,
+    encoding: "utf-8",
+    timeout: 120_000,
+  });
+  return {
+    status: result.status ?? 1,
+    stderr: result.stderr ?? "",
+    stdout: result.stdout ?? "",
+  };
 }
 
 describe("sync-api-types.sh (M902-24)", () => {

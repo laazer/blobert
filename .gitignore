@@ -88,3 +88,4 @@ gate-results/
 
 # CI/Artifacts (audit logs, generated test artifacts)
 ci/artifacts/audit-logs/
+jscpd-report.json
