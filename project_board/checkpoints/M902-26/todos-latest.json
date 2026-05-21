@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-26",
-  "agent": "Planner Agent",
-  "captured_at": "2026-05-21T12:00:00Z",
+  "agent": "Spec Agent",
+  "captured_at": "2026-05-21T18:00:00Z",
   "todos": [
     {
-      "id": "plan-1",
-      "content": "Inventory public router endpoints (28 + health)",
+      "id": "spec-1",
+      "content": "Author 902_26_api_contract_testing_spec.md",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     },
     {
-      "id": "plan-2",
-      "content": "Author execution plan M902-26_api_contract_testing.md",
+      "id": "spec-2",
+      "content": "Endpoint freeze + mutation/error schema sections",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     },
     {
-      "id": "plan-3",
-      "content": "Dependency matrix M902-24/M902-25 satisfied",
+      "id": "spec-3",
+      "content": "SSE/binary contract policies documented",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     },
     {
-      "id": "plan-4",
-      "content": "Planner handoff artifacts (todos + yaml)",
+      "id": "spec-4",
+      "content": "Spec handoff artifacts (yaml + todos)",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     }
   ]
 }

@@ -12,6 +12,11 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: project_board/checkpoints/
 
+### M902-26 — OUTCOME: SPECIFICATION → TEST_DESIGN
+Normative API contract spec (OpenAPI harness, 29 endpoints, mutation/error/SSE/binary); spec exit gate PASS.
+Log: `project_board/checkpoints/M902-26/2026-05-21T-spec-run.md`
+Spec: `project_board/specs/902_26_api_contract_testing_spec.md`
+
 ### M902-26 — OUTCOME: PLANNING → SPECIFICATION
 Execution plan for OpenAPI+jsonschema contract tests (28 router handlers + health); handoff to Spec Agent.
 Log: `project_board/checkpoints/M902-26/2026-05-21T-planning-run.md`

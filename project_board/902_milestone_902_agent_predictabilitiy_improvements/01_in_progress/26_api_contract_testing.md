@@ -136,13 +136,13 @@ See: `project_board/specs/902_26_api_contract_testing_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -160,15 +160,15 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md",
+  "spec_path": "project_board/specs/902_26_api_contract_testing_spec.md",
   "execution_plan_path": "project_board/execution_plans/M902-26_api_contract_testing.md",
-  "spec_output_path": "project_board/specs/902_26_api_contract_testing_spec.md",
-  "spec_exit_type": "api"
+  "test_root": "asset_generation/python/tests/api/"
 }
 ```
 
@@ -176,4 +176,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete: execution plan decomposes OpenAPI+jsonschema contract tests for all public backend routes; dependencies M902-24/M902-25 satisfied. Spec Agent authors normative contract architecture before TEST_DESIGN.
+Specification complete: OpenAPI+jsonschema harness, endpoint freeze (29 handlers), mutation/error schema contracts, SSE/binary policies, CI path, and runbook documented in `project_board/specs/902_26_api_contract_testing_spec.md`. Ready for failing contract test design.

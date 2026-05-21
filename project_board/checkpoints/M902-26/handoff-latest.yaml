@@ -1,27 +1,27 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-26
-  from_agent: planner
-  to_agent: spec
-  validated_at: "2026-05-21T12:00:00Z"
+  from_agent: spec
+  to_agent: test_designer
+  validated_at: "2026-05-21T18:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: planner_ticket_decomposed
-      item: Ticket decomposed into execution plan tasks
+    - item_key: spec_acceptance_criteria
+      item: Acceptance criteria defined
       required: true
       status: complete
-      evidence: project_board/execution_plans/M902-26_api_contract_testing.md
+      evidence: project_board/specs/902_26_api_contract_testing_spec.md
       evidence_type: path
-    - item_key: planner_dependencies_clear
-      item: Dependencies clear (acyclic or documented WARN)
+    - item_key: spec_test_strategy
+      item: Test strategy documented
       required: true
       status: complete
-      evidence: project_board/execution_plans/M902-26_api_contract_testing.md section Dependency Matrix
+      evidence: "project_board/specs/902_26_api_contract_testing_spec.md section Test Strategy (Test Designer)"
       evidence_type: attestation
-    - item_key: planner_timeline_estimated
-      item: Timeline estimated
+    - item_key: spec_edge_cases
+      item: Edge cases listed
       required: true
       status: complete
-      evidence: project_board/execution_plans/M902-26_api_contract_testing.md
-      evidence_type: path
+      evidence: "project_board/specs/902_26_api_contract_testing_spec.md Risk & Ambiguity + SSE/binary + Failure Taxonomy"
+      evidence_type: attestation
