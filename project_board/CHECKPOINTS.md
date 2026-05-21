@@ -5,6 +5,17 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-22T-m902-18-closure (M902-18 Tool Categorization — unblock)
+
+- Queue mode: manual closure (M902-18a prerequisite satisfied)
+- Log: `project_board/checkpoints/M902-18/2026-05-22T-m902-18-closure.md`
+
+### M902-18 — OUTCOME: COMPLETE
+Backend + framework integration (via 18a); 128 tests PASS; runbook in milestone README.
+Ticket: `02_complete/18_tool_categorization_layer.md`
+
+---
+
 ## Run: 2026-05-22T-m902-27-autopilot (M902-27 API Contract Pre-Commit Hook)
 
 - Queue mode: single ticket

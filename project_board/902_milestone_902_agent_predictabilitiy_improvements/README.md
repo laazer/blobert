@@ -1,43 +1,39 @@
 # Milestone 902: Agent Predictability Improvements
 
-**Status:** IN PROGRESS  
-**Target Completion:** 2026-05-31
+**Status:** COMPLETE (gatekeeper sign-off M902-17, 2026-05-22)  
+**Closed:** M902-18 parent unblocked after M902-18a framework integration (2026-05-22)
 
 ---
 
 ## Overview
 
-Milestone 902 implements a multi-agent validation framework and mandatory static analysis gates to improve deterministic behavior, cross-agent handoff quality, and code governance in the blobert project.
+Milestone 902 delivered an eight-stage governance pipeline, context-optimization middleware, and API contract safety gates for multi-agent workflows in blobert.
 
-**Key objectives:**
-1. Establish validation gate framework for multi-agent workflows (M902-01)
-2. Implement static analysis bundle and orchestrator (M902-02, current)
-3. Enforce policies via gates in future milestones (M903+)
+**Outcomes:**
+1. Validation gate framework and per-stage gates (M902-01–08, 09–16)
+2. Static analysis orchestration in **shadow** mode (blocking enforcement → M903)
+3. Tool categorization, forgiving parsing, todo/handoff/budget/early-stop tooling (M902-18–23)
+4. OpenAPI → TypeScript, Pydantic + Zod pilot, contract tests, pre-commit hook (M902-24–27)
 
----
-
-## Tickets
-
-### M902-01: Validation Gate Framework ✓ COMPLETE
-
-**Status:** COMPLETE (2026-05-14)
-
-Implemented core gate runner (`ci/scripts/gate_runner.py`), gate registry schema, and 220+ behavioral tests.
+**Authoritative closure checklist:** [17_final_validation_and_stage_integration.md](02_complete/17_final_validation_and_stage_integration.md) (M902-17).  
+**Checkpoint index:** [project_board/CHECKPOINTS.md](../CHECKPOINTS.md).
 
 ---
 
-### M902-02: Static Analysis Gate Tooling (IN PROGRESS)
+## Tickets (all in `02_complete/`)
 
-**Status:** IMPLEMENTATION (as of 2026-05-14)
+| ID | Topic |
+|----|--------|
+| 01 | Validation gate framework |
+| 02 | Static analysis gate tooling (shadow) |
+| 03–08 | Handoff governance, PreToolUse, audit, visualization, per-stage gates |
+| 09–16 | Stages 0–8 (diff classify → security) |
+| 17 | Final validation & stage integration |
+| 18 / 18a | Tool categorization layer + framework integration |
+| 19–23 | Forgiving tool parsing, todo validation, context budget, early-stop, atomic handoff |
+| 24–27 | OpenAPI → TS, Pydantic + Zod pilot, API contract tests, pre-commit hook |
 
-Mandatory static analysis bundle integrating Python, TypeScript/React, Godot, and cross-repo duplication analysis.
-
-**Tools Integrated:**
-
-**Python:** ruff, mypy, bandit, vulture, import-linter, semgrep, wemake-python-styleguide  
-**TypeScript:** eslint, @typescript-eslint, eslint-plugin-react-hooks, eslint-plugin-sonarjs, eslint-plugin-boundaries  
-**Godot:** gdformat, gdlint (optional)  
-**Cross-repo:** jscpd (duplication detection)
+`00_backlog/`, `01_in_progress/`, and `03_blocked/` contain no open M902 tickets (`.keepfile` only).
 
 ---
 
@@ -327,46 +323,6 @@ Each gate is designed as an enforcement point in the multi-agent pipeline. Gates
 
 ---
 
-### M902-01: Validation Gate Framework ✓ COMPLETE
-
-**Status:** COMPLETE (2026-05-14)
-
-Implemented core gate runner (`ci/scripts/gate_runner.py`), gate registry schema, and 220+ behavioral tests.
-
----
-
-### M902-02: Static Analysis Gate Tooling (IN PROGRESS)
-
-**Status:** IMPLEMENTATION (as of 2026-05-14)
-
-Mandatory static analysis bundle integrating Python, TypeScript/React, Godot, and cross-repo duplication analysis.
-
-**Tools Integrated:**
-
-**Python:** ruff, mypy, bandit, vulture, import-linter, semgrep, wemake-python-styleguide  
-**TypeScript:** eslint, @typescript-eslint, eslint-plugin-react-hooks, eslint-plugin-sonarjs, eslint-plugin-boundaries  
-**Godot:** gdformat, gdlint (optional)  
-**Cross-repo:** jscpd (duplication detection)
-
----
-
-## Running Static Analysis Gate
-
-### Shadow Mode (Advisory, Non-Blocking)
-
-```bash
-# Via Taskfile (recommended)
-task hooks:static-analysis
-
-# Via gate runner
-python ci/scripts/gate_runner.py static_analysis_check --mode shadow
-
-# Direct invocation
-python ci/scripts/gates/static_analysis_check.py
-```
-
----
-
 ## Configuration
 
 - **Python tools:** `asset_generation/python/pyproject.toml`
@@ -382,6 +338,46 @@ python ci/scripts/gates/static_analysis_check.py
 - `.venv/`, `node_modules/`, `.godot/`, `__pycache__/`
 - `reference_projects/` (read-only)
 - Build artifacts: `dist/`, `build/`, `.next/`, `out/`
+
+---
+
+## Tool Categorization: When & How to Declare Category (M902-18)
+
+Agents may declare a workflow category so invocation middleware passes a smaller tool schema (~15–25% reduction vs. all tools). **Optional** — omitting a declaration receives all tools (backward compatible).
+
+**Implementation:** `ci/scripts/tool_category_manager.py`, `ci/scripts/agent_invocation_middleware.py` (`invoke_agent_with_category_filtering`), config `ci/scripts/tool_categories.json`.
+
+### Choose a category
+
+| Goal | Category |
+|------|----------|
+| Read code, explore, write specs | `parse` |
+| Edit or write files | `modify` |
+| Run tests, verify behavior | `test` |
+| Decompose work, todos, git history | `plan` |
+| Analysis, subagents, broad read | `think` |
+
+### Prompt syntax (any one format)
+
+```text
+I declare tool category: parse
+My workflow category is: modify
+Tool category: test
+```
+
+### Examples
+
+- **Spec Agent (parse):** `I declare tool category: parse` — read/explore before writing the spec.
+- **Implementation Agent (modify):** `My workflow category is: modify` — edit/write implementation files.
+- **Test Designer (test):** `Tool category: test` — run test harnesses and validate behavior.
+
+### Fallback and troubleshooting
+
+- If a category hides a tool you need, declare a broader category (e.g. `think`) and note the constraint in the scoped checkpoint log.
+- Invalid or missing category names log a warning and fall back to **all tools** (fail-safe).
+- Measure reduction locally: `uv run python -c "from ci.scripts.tool_category_manager import measure_tool_schema_reduction; print(measure_tool_schema_reduction('parse'))"` from repo root with `UV_PROJECT=asset_generation/python`.
+
+**Spec:** [902_18_tool_categorization_spec.md](project_board/specs/902_18_tool_categorization_spec.md) · **Integration guide:** [checkpoints/M902-18/INTEGRATION_GUIDE.md](project_board/checkpoints/M902-18/INTEGRATION_GUIDE.md)
 
 ---
 
