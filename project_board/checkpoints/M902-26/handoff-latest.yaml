@@ -1,27 +1,42 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-26
-  from_agent: spec
-  to_agent: test_designer
-  validated_at: "2026-05-21T18:00:00Z"
+  from_agent: test_designer
+  to_agent: test_breaker
+  validated_at: "2026-05-21T20:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: spec_acceptance_criteria
-      item: Acceptance criteria defined
+    - item_key: contract_tests_authored
+      item: Contract tests under asset_generation/python/tests/api/
       required: true
       status: complete
-      evidence: project_board/specs/902_26_api_contract_testing_spec.md
+      evidence: asset_generation/python/tests/api/
       evidence_type: path
-    - item_key: spec_test_strategy
-      item: Test strategy documented
+    - item_key: happy_error_per_endpoint
+      item: Happy + error path per endpoint freeze row
       required: true
       status: complete
-      evidence: "project_board/specs/902_26_api_contract_testing_spec.md section Test Strategy (Test Designer)"
+      evidence: "65 pytest cases; 6 modules + resolver unit tests"
       evidence_type: attestation
-    - item_key: spec_edge_cases
-      item: Edge cases listed
+    - item_key: baseline_pytest_pass
+      item: Baseline pytest pass
       required: true
       status: complete
-      evidence: "project_board/specs/902_26_api_contract_testing_spec.md Risk & Ambiguity + SSE/binary + Failure Taxonomy"
+      evidence: "uv run pytest tests/api/ -q — 65 passed in 0.84s"
       evidence_type: attestation
+  notes:
+    harness: asset_generation/python/tests/api/openapi_contract.py
+    tier_a: "GET /api/health, GET /api/registry/model, GET /api/meta/enemies"
+    tier_b: "legacy JSONResponse routes with empty OpenAPI {} schemas"
+    sse_happy: "test_run_stream_done_event_happy_contract parses done event shape (ASGI+sse-starlette loop issue avoided)"
+    sse_http_error: test_run_stream_invalid_cmd_error_contract
+    seed_fixture: registry_with_player_version for player slot/delete/patch contracts
+    adversarial_targets:
+      - Tier A extra top-level response keys
+      - live vs openapi.cached.json path set drift
+      - malformed JSON POST bodies
+      - unicode path segments on files/assets
+    known_gaps:
+      - Req 11 runbook in backend AGENTS.md deferred to implementation
+      - OpenAPI cache adversarial test not yet added

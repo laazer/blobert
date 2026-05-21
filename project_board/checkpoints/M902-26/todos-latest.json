@@ -1,32 +1,50 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-26",
-  "agent": "Spec Agent",
-  "captured_at": "2026-05-21T18:00:00Z",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-21T20:00:00Z",
   "todos": [
     {
-      "id": "spec-1",
-      "content": "Author 902_26_api_contract_testing_spec.md",
+      "id": "td-1",
+      "content": "openapi_contract.py harness (live spec, $ref inline, Tier A/B)",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-2",
-      "content": "Endpoint freeze + mutation/error schema sections",
+      "id": "td-2",
+      "content": "conftest.py ASGI client + python_root + process mocks",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-3",
-      "content": "SSE/binary contract policies documented",
+      "id": "td-3",
+      "content": "Per-router contract modules (health, meta, files, registry, run, assets)",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-4",
-      "content": "Spec handoff artifacts (yaml + todos)",
+      "id": "td-4",
+      "content": "jsonschema dev dependency in pyproject.toml",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "td-5",
+      "content": "Baseline pytest tests/api/ (65 passed)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "td-6",
+      "content": "Adversarial contract tests (extra keys, cache drift, unicode)",
+      "status": "pending",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "td-7",
+      "content": "Backend AGENTS.md runbook section (Req 11)",
+      "status": "pending",
+      "agent": "Implementation Agent"
     }
   ]
 }

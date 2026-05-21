@@ -12,6 +12,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: project_board/checkpoints/
 
+### M902-26 — OUTCOME: TEST_DESIGN → TEST_BREAK
+65 pytest contract cases (live OpenAPI + jsonschema); baseline green under `asset_generation/python/tests/api/`.
+Log: `project_board/checkpoints/M902-26/2026-05-21T-test-design-run.md`
+
 ### M902-26 — OUTCOME: SPECIFICATION → TEST_DESIGN
 Normative API contract spec (OpenAPI harness, 29 endpoints, mutation/error/SSE/binary); spec exit gate PASS.
 Log: `project_board/checkpoints/M902-26/2026-05-21T-spec-run.md`

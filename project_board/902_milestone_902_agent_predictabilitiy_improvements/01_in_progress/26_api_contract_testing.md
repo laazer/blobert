@@ -136,16 +136,16 @@ See: `project_board/specs/902_26_api_contract_testing_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: Pass (`uv run pytest tests/api/ -q` — 65 passed)
 - Static QA: N/A
 - Integration: N/A
 
@@ -160,15 +160,15 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md",
   "spec_path": "project_board/specs/902_26_api_contract_testing_spec.md",
-  "execution_plan_path": "project_board/execution_plans/M902-26_api_contract_testing.md",
-  "test_root": "asset_generation/python/tests/api/"
+  "test_root": "asset_generation/python/tests/api/",
+  "harness": "asset_generation/python/tests/api/openapi_contract.py"
 }
 ```
 
@@ -176,4 +176,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Specification complete: OpenAPI+jsonschema harness, endpoint freeze (29 handlers), mutation/error schema contracts, SSE/binary policies, CI path, and runbook documented in `project_board/specs/902_26_api_contract_testing_spec.md`. Ready for failing contract test design.
+Contract suite authored: 65 pytest cases (happy+error per endpoint freeze row), live OpenAPI+jsonschema harness, fixtures for tmp python_root/SSE/process mocks. Baseline green locally; Test Breaker should add adversarial cases (extra keys, stale cache drift, malformed JSON).

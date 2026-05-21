@@ -26,6 +26,7 @@ dev = [
     "pylint>=3.3",
     # MCP stdio server (ticket M23-03); also in optional group `mcp` for minimal installs.
     "fastmcp>=3.2.3",
+    "jsonschema>=4.23,<5",
     # Type stubs for bpy — enables IDE completion without a full Blender install.
     # Match the stub version to your installed Blender version, e.g.:
     #   pip install fake-bpy-module-4-3   (Blender 4.3)
