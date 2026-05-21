@@ -1,35 +1,27 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-26
-  from_agent: test_breaker
-  to_agent: implementation
-  validated_at: "2026-05-21T21:30:00Z"
-  required_items_met: 2
-  total_required_items: 2
+  from_agent: static_qa
+  to_agent: learning
+  validated_at: "2026-05-22T00:15:00Z"
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: breaker_gaps_documented
-      item: All discovered gaps documented
+    - item_key: review_feedback_incorporated
+      item: Feedback incorporated
       required: true
       status: complete
-      evidence: project_board/checkpoints/M902-26/2026-05-21T-test-break-run.md
-      evidence_type: path
-    - item_key: breaker_impl_notes
-      item: Implementation notes created
+      evidence: "No CRITICAL findings; SSE httpx pattern documented in test-break checkpoint"
+      evidence_type: attestation
+    - item_key: review_code_reviewed
+      item: Code reviewed
       required: true
       status: complete
-      evidence: project_board/checkpoints/M902-26/2026-05-21T-test-break-run.md
+      evidence: project_board/checkpoints/M902-26/2026-05-21T-static-qa-run.md
       evidence_type: path
-  notes:
-    adversarial_module: asset_generation/python/tests/api/test_api_contract_adversarial.py
-    new_cases: 22
-    total_api_tests: "87 passed (uv run pytest tests/api/ -q)"
-    tier_a: extra-key mutation, live response strictness on health/registry/meta
-    cache_drift: live vs openapi.cached.json path-key symmetry (strict both directions)
-    transport: malformed JSON on files PUT and registry load_existing/open
-    unicode: files read/write under src/, assets texture + GLB paths
-    sse: parser edges + _run_stream log/busy/done (avoid httpx SSE loop pollution)
-    impl_followups:
-      - Backend AGENTS.md API contract runbook (Req 11)
-      - Consider migrating test_run_stream_invalid_cmd_error_contract to _run_stream pattern
-    gaps:
-      - sse_starlette AppStatus event-loop bleed when multiple httpx SSE tests run in one session
+    - item_key: review_merge_ready
+      item: Merge-ready
+      required: true
+      status: complete
+      evidence: "pytest tests/api/ 87 PASS 2026-05-22T00:15:00Z; commit pending AC gatekeeper"
+      evidence_type: attestation

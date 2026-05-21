@@ -1,50 +1,14 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-26",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-21T21:30:00Z",
+  "agent": "Static QA Agent",
+  "captured_at": "2026-05-22T00:15:00Z",
   "todos": [
     {
-      "id": "td-1",
-      "content": "openapi_contract.py harness (live spec, $ref inline, Tier A/B)",
+      "id": "qa-1",
+      "content": "Review contract test modules",
       "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-2",
-      "content": "conftest.py ASGI client + python_root + process mocks",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-3",
-      "content": "Per-router contract modules (health, meta, files, registry, run, assets)",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-4",
-      "content": "jsonschema dev dependency in pyproject.toml",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-5",
-      "content": "Baseline pytest tests/api/ (65 passed)",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-6",
-      "content": "Adversarial contract tests (extra keys, cache drift, unicode)",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "td-7",
-      "content": "Backend AGENTS.md runbook section (Req 11)",
-      "status": "pending",
-      "agent": "Implementation Agent"
+      "agent": "Static QA Agent"
     }
   ]
 }

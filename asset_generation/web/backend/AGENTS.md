@@ -72,6 +72,40 @@ task editor
 bash asset_generation/web/start.sh
 ```
 
+## API contract tests (M902-26)
+
+Contract tests live under `asset_generation/python/tests/api/`. They assert HTTP **shape** (status, JSON schema, SSE/binary headers) against the **live** FastAPI OpenAPI document (`app.openapi()` via ASGI client). They complement unit tests in `tests/web/` and `backend/tests/` (behavior, disk writes, spawn logic).
+
+### Schema authority
+
+| Source | Path / URL | Role |
+|--------|------------|------|
+| **Live (normative)** | `app.openapi()` at pytest session start | All `jsonschema` validation |
+| **Committed cache** | `asset_generation/web/frontend/scripts/fixtures/openapi.cached.json` | Drift detection only (M902-24); regen with frontend `npm run sync-api-types` |
+| **Running server (optional)** | `http://127.0.0.1:8000/openapi.json` | Human/debug reference; not required in CI |
+
+Harness: `asset_generation/python/tests/api/openapi_contract.py`. Shared fixtures: `conftest.py`. Per-router modules: `test_*_contract.py`, `test_api_contract_adversarial.py`.
+
+Spec: `project_board/specs/902_26_api_contract_testing_spec.md`. Related: M902-24 (OpenAPI → TypeScript), M902-25 (Pydantic `response_model` pilots).
+
+### When you add or change an endpoint
+
+1. Implement the route in `routers/` (prefer Pydantic `response_model` / request models so OpenAPI is non-empty).
+2. Regenerate the frontend cache: `cd asset_generation/web/frontend && npm run sync-api-types`.
+3. Add contract tests under `asset_generation/python/tests/api/`:
+   - At least one **happy-path** test (expected status + schema validation).
+   - At least one **error-path** test (400/404/422/etc. + `detail` or `HTTPValidationError` per spec).
+   - Use `contract.validate_response(...)` from the session fixture; do not hand-write JSON Schemas.
+4. Run the contract suite:
+
+```bash
+cd asset_generation/python && uv run pytest tests/api/ -q
+```
+
+5. Run full Python CI locally if needed: `bash .lefthook/scripts/py-tests.sh` (includes `tests/api/` via `pytest tests/`).
+
+Tier **A** routes (pilot GETs + strict OpenAPI) enforce full schema + `additionalProperties: false` when declared. Tier **B** legacy `JSONResponse` routes use status + JSON anchors until models land.
+
 ## NOTES
 
 - **Port**: 8000; CORS configured for frontend port 5173

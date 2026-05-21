@@ -7,7 +7,6 @@ import pytest
 from tests.api.openapi_contract import (
     OpenAPIResolutionError,
     _merge_allof,
-    _normalize_schema,
     _resolve_ref,
     load_live_spec,
     resolve_component_schema,

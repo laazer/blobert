@@ -6904,3 +6904,108 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-26] — OpenAPI contract suite: path ambiguity, hybrid transports, cache symmetry
+*Completed: 2026-05-22*
+
+### Learnings
+
+- **category: process**
+  **insight:** Ticket AC paths like `tests/api/test_registry_contract.py` must be resolved to the directory `pytest tests/` actually collects before TEST_DESIGN, not at implementation.
+  **impact:** Planning assumed `asset_generation/python/tests/api/` so `py-tests.sh` / `run_tests.sh` picked up the suite without a new runner or glob.
+  **prevention:** Planner checkpoint records AC path → CI discovery path mapping; spec cites the resolved tree in Req 10/CI evidence.
+  **severity:** medium
+
+- **category: architecture**
+  **insight:** Not every public route is a JSON document contract—SSE and binary responses need a hybrid policy (jsonschema on event JSON / Tier rules; status + Content-Type + headers only for GLB).
+  **impact:** Spec froze SSE happy via `done` event shape + `_run_stream` generator; binary routes skip full body schema validation.
+  **prevention:** API contract specs label each endpoint transport class (JSON Tier A/B, SSE, binary) and forbid applying JSON harness helpers to non-JSON bodies.
+  **severity:** high
+
+- **category: testing**
+  **insight:** OpenAPI-derived jsonschema validation requires inlining nested `$ref` before validate; live `components` alone fail on deeply nested registry/meta responses.
+  **impact:** Test Designer added `_inline_all_refs` in harness after MetaEnemiesResponse / ModelRegistryResponse refs blocked validation.
+  **prevention:** Contract harness checklist: “refs inlined or bundled schema” as a red-phase gate before per-router modules.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Strict bidirectional OpenAPI path-set checks (live ⊆ cache and cache-only paths fail) catch snapshot drift earlier than one-direction subset tests.
+  **impact:** Test Breaker added cache symmetry adversarial cases; medium-confidence planning assumption became enforced CI behavior.
+  **prevention:** When M902-24 cached OpenAPI is authority, adversarial suite must assert symmetric path keys unless spec documents intentional cache lag.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** httpx SSE client tests against `sse-starlette` are order-dependent and can bleed event-loop state across the session; generator-based `_run_stream` stays stable.
+  **impact:** `test_run_stream_invalid_cmd_error_contract` failed when httpx SSE ran earlier; adversarial SSE coverage moved to `_run_stream` with httpx marked fragile in gaps table.
+  **prevention:** Prefer ASGI/generator SSE contract tests; if httpx SSE is kept, isolate session/fixture or document as optional hardening, not baseline CI.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Placing contract tests at repo-root `tests/api/` because ticket AC says so, without verifying `asset_generation/python` pytest roots.
+  **detection_signal:** New `tests/api/` at repo root while `py-tests.sh` only runs `cd asset_generation/python && pytest tests/`.
+  **prevention:** Planning assumption table maps every AC file path to discovered pytest path; implementation handoff cites `py-tests.sh` line evidence.
+
+- **description:** Running full jsonschema validation on SSE streams or GLB bodies like JSON Tier A routes.
+  **detection_signal:** Contract test calls `validate_response` on `text/event-stream` or `model/gltf-binary` without transport branch.
+  **prevention:** Spec endpoint freeze table includes transport column; Test Designer splits `test_run_contract` (SSE) vs `test_assets_contract` (binary header-only).
+
+- **description:** Relying on default registry fixtures with empty `player.versions` for DELETE/PATCH player contract cases.
+  **detection_signal:** Happy-path registry tests pass but player mutation tests 404/422 on “need ≥2 slotted versions.”
+  **prevention:** Document required fixtures in test-design checkpoint (`registry_with_player_version`, confirm text for enemy draft delete).
+
+- **description:** Using httpx SSE integration as the only SSE contract signal in a large shared pytest session.
+  **detection_signal:** Single SSE failure after unrelated tests pass; reordering tests changes outcome.
+  **prevention:** Generator `_run_stream` for contract + adversarial; httpx SSE only in isolated module or marked experimental.
+
+### Prompt Patches
+
+- **agent: Planner Agent**
+  **change:** "For API contract tickets, map each AC test path to the pytest root CI uses (`asset_generation/python/tests/` via `py-tests.sh`). Record the resolved directory in the execution plan before Spec; flag repo-root `tests/` AC lines as WARN."
+  **reason:** Prevents suites that never run in canonical CI.
+
+- **agent: Spec Agent**
+  **change:** "Endpoint freeze table must include Transport: `json-tier-a`, `json-tier-b`, `sse`, or `binary`. For SSE, specify per-event JSON schema or parser test; for binary, specify status + Content-Type + header assertions only—no full-body jsonschema."
+  **reason:** Keeps contract scope aligned with wire reality.
+
+- **agent: Test Designer Agent**
+  **change:** "OpenAPI contract harness: require `$ref` inlining (or bundled schema) before jsonschema.validate; list registry/meta fixtures that need non-default manifests (`registry_with_player_version`, enemy draft delete confirm string). Do not use httpx SSE for baseline contract tests—use `_run_stream` or ASGI generator."
+  **reason:** Avoids red churn on nested refs, player routes, and flaky SSE ordering.
+
+- **agent: Test Breaker Agent**
+  **change:** "Add adversarial OpenAPI cache symmetry (live paths ⊆ cache AND no cache-only paths). For SSE, test malformed/empty/done/log via generator; document httpx SSE fragility if any httpx cases remain."
+  **reason:** Catches M902-24 snapshot drift and transport flakiness before implementation handoff.
+
+- **agent: Implementation Agent (Backend)**
+  **change:** "Req 11 runbook in `asset_generation/web/backend/AGENTS.md` must state schema authority order (live `app.openapi()`, committed cache, optional live server URL), `pytest tests/api/ -q`, and steps when routes change (regen cache per M902-24). Confirm suite is under `asset_generation/python/tests/api/` collected by `pytest tests/`—no separate CI glob."
+  **reason:** Closes runbook gap Test Break flagged; documents CI discovery for future endpoint edits.
+
+### Workflow Improvements
+
+- **issue:** Ticket AC implied a single `test_registry_contract.py` at an ambiguous path while CI collects all of `asset_generation/python/tests/`.
+  **improvement:** PLANNING → SPEC gate item: "contract test root path + pytest collect evidence" in checkpoint before test design files land.
+  **expected_benefit:** Zero misplaced suites and no duplicate runners.
+
+- **issue:** SSE contract strategy was medium-confidence at planning but httpx fragility surfaced only at TEST_BREAK.
+  **improvement:** TEST_DESIGN handoff lists transport per module; TEST_BREAK checkpoint must cite generator vs httpx decision before IMPLEMENTATION marks SSE complete.
+  **expected_benefit:** Stable 87-test baseline without order-dependent flakes.
+
+- **issue:** Req 11 runbook was pending while contract code was green—operators could change routes without cache regen steps.
+  **improvement:** Block IMPLEMENTATION → STATIC_QA until `AGENTS.md` contract section exists with schema-authority order and links to M902-24/25/26 specs.
+  **expected_benefit:** Human and agent edits stay paired with OpenAPI cache updates.
+
+### Keep / Reinforce
+
+- **practice:** Contract layer additive to `tests/web/test_registry_api.py` and backend service tests—no mass deletion of behavioral/delegation coverage.
+  **reason:** OpenAPI shape enforcement complements, not replaces, registry delegation and process mocks.
+
+- **practice:** Live OpenAPI + committed cache as dual authority with symmetric path adversarial tests.
+  **reason:** Catches both stale cache and undocumented new routes before merge.
+
+- **practice:** Tier A full jsonschema on M902-25 pilot GETs; Tier B anchor `type: object` until `response_model` backlog—explicit deferred boundary in spec and checkpoint.
+  **reason:** Delivers full contract CI without blocking on ~28 remaining JSONResponse routes.
+
+- **practice:** 65 → 87 tests after Test Break adversarial module; single `pytest tests/api/ -q` evidence in implementation and static QA checkpoints.
+  **reason:** One command proves harness + routers + adversarial closure for gatekeepers.
+
+---
+

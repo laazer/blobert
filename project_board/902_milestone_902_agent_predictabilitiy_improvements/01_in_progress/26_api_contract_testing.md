@@ -136,40 +136,45 @@ See: `project_board/specs/902_26_api_contract_testing_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+INTEGRATION
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Pass (`uv run pytest tests/api/ -q` — 87 passed)
-- Static QA: N/A
+- Tests: PASS — gatekeeper re-run 2026-05-21: `uv run pytest tests/api/ -q` → 87 passed; log `project_board/checkpoints/M902-26/pytest-api-2026-05-21.txt`
+- Static QA: PASS — Ruff clean (`ruff-impl-2026-05-21.txt`); review `project_board/checkpoints/M902-26/2026-05-21T-static-qa-run.md`; live OpenAPI harness (no hand-written normative schemas)
 - Integration: N/A
+- AC coverage (spec Req 01–12): `asset_generation/python/tests/api/` harness + per-router modules including `test_registry_contract.py`; 29 contract targets with happy+error paths; `jsonschema>=4.23,<5` in dev deps; module docstring + OpenAPI cache links in `tests/api/__init__.py`; runbook § in `asset_generation/web/backend/AGENTS.md`; CI via `ci/scripts/run_tests.sh` → `.lefthook/scripts/py-tests.sh` (`pytest tests/`); Tier B anchor deviations in `project_board/checkpoints/M902-26/2026-05-21T-implementation-run.md`; pre-commit optional per spec A8
+- Testing checklist (ticket §): addressed by contract + `test_api_contract_adversarial.py` suite
 
 ## Blocking Issues
-- None
+- **COMPLETE gate (workflow_enforcement_v1.md):** Working tree not clean — uncommitted `asset_generation/web/backend/AGENTS.md` API contract runbook (~34 lines), minor `test_openapi_contract_resolver.py` edit, and M902-26 checkpoint artifacts. Branch `main` is **ahead 40** of `origin/main`; push required before Stage COMPLETE.
+- Implementation commits on branch: `cdec959` (contract suite), `fd3b555` (adversarial tests). Functional AC evidence is complete; hold is git hygiene only.
 
 ## Escalation Notes
-- None
+- Do not move to `02_complete/` until commit + push succeed and Stage is set COMPLETE on a subsequent gatekeeper pass.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Agent (backend)
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md",
-  "spec_path": "project_board/specs/902_26_api_contract_testing_spec.md",
-  "test_root": "asset_generation/python/tests/api/",
-  "harness": "asset_generation/python/tests/api/openapi_contract.py",
-  "adversarial_module": "asset_generation/python/tests/api/test_api_contract_adversarial.py"
+  "commits_to_include": [
+    "asset_generation/web/backend/AGENTS.md",
+    "project_board/checkpoints/M902-26/"
+  ],
+  "then": "git push origin main",
+  "then_rerun": "Acceptance Criteria Gatekeeper Agent"
 }
 ```
 
@@ -177,4 +182,4 @@ Implementation Agent (backend)
 Proceed
 
 ## Reason
-Adversarial suite added (22 cases): Tier A extra-key rejection, live/cache OpenAPI path symmetry, malformed JSON POST, unicode path segments, SSE parser + _run_stream edges. 87 tests green. Implementation: Req 11 runbook in backend AGENTS.md; optional SSE httpx test hardening per checkpoint gaps.
+All acceptance criteria have objective test/static/CI evidence (87 contract tests, runbook content, jsonschema harness). Stage held at INTEGRATION because runbook and checkpoints are uncommitted and branch is unpushed; Human must commit and push, then re-run gatekeeper for COMPLETE + `02_complete/` move.
