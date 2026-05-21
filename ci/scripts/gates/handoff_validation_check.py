@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -586,70 +587,41 @@ def _validate_item_evidence(
     return violations
 
 
-def validate_handoff_checklist(
-    ticket_id: str,
-    from_agent: str,
-    to_agent: str,
+def _handoff_opt_out_forbidden(result: dict[str, Any], handoff_optional: bool) -> bool:
+    """Return True when handoff_optional is used without break-glass env (result is FAIL)."""
+    if not handoff_optional or os.environ.get("BLOBERT_ALLOW_GATE_OPT_OUT") == "1":
+        return False
+    result["status"] = "FAIL"
+    result["message"] = (
+        "handoff_optional is forbidden unless BLOBERT_ALLOW_GATE_OPT_OUT=1 (tests only)"
+    )
+    result["violations"] = [
+        _make_violation(
+            file="",
+            rule="handoff_opt_out_forbidden",
+            message=(
+                "Orchestrators must use run_workflow_transition_gates.py "
+                "without handoff_optional"
+            ),
+        )
+    ]
+    return True
+
+
+def _load_handoff_artifact(
+    result: dict[str, Any],
+    ticket_dir: Path,
+    source: Path | None,
+    payload: str,
     *,
-    checkpoints_dir: str = DEFAULT_CHECKPOINTS_DIR,
-    handoff_optional: bool = False,
-) -> GateResult:
-    start = time.perf_counter()
-    normalized_ticket = _normalize_ticket_id(ticket_id)
-    result: dict[str, Any] = _base_result(normalized_ticket, start)
-    from_key = _normalize_agent_name(from_agent)
-    to_key = _normalize_agent_name(to_agent)
-    result["from_agent"] = from_key
-    result["to_agent"] = to_key
-
-    if _is_unsafe_ticket_id(ticket_id):
-        result["status"] = "FAIL"
-        result["message"] = "Invalid ticket_id"
-        result["violations"] = [
-            _make_violation(file="", rule="path_traversal", message="Unsafe ticket_id")
-        ]
-        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
-        return result  # type: ignore[return-value]
-
-    if not _checkpoints_dir_allowed(checkpoints_dir):
-        result["status"] = "FAIL"
-        result["message"] = "checkpoints_dir not allowed"
-        result["violations"] = [
-            _make_violation(
-                file="",
-                rule="path_traversal",
-                message="checkpoints_dir must resolve under repository or cwd",
-            )
-        ]
-        return result  # type: ignore[return-value]
-
-    if from_key not in AGENT_ALIAS_MAP.values() and from_key == _normalize_agent_name(from_agent):
-        if from_agent.strip().lower() not in AGENT_ALIAS_MAP:
-            pass
-    pair = (from_key, to_key)
-    if pair not in VALID_PAIRS:
-        result["status"] = "FAIL"
-        result["message"] = f"Unknown handoff pair: {from_key} → {to_key}"
-        result["violations"] = [
-            _make_violation(
-                file="",
-                rule="handoff_pair_unknown",
-                message=f"Pair ({from_key}, {to_key}) is not in the frozen pair table",
-            )
-        ]
-        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
-        return result  # type: ignore[return-value]
-
-    catalog = PAIR_CATALOGS[pair]
-    root = _resolve_checkpoints_root(checkpoints_dir)
-    ticket_dir = root / normalized_ticket
-    source, payload = _discover_handoff_source(ticket_dir)
-
+    handoff_optional: bool,
+) -> tuple[dict[str, Any] | None, str, list[dict[str, Any]]] | None:
+    """Load handoff document; return None if result was set for early exit."""
     if source is None and not payload:
         if handoff_optional:
             result["status"] = "PASS"
             result["message"] = "No handoff artifact; vacuous PASS (handoff_optional)."
-            return result  # type: ignore[return-value]
+            return None
         result["status"] = "FAIL"
         result["message"] = "Handoff artifact missing"
         result["violations"] = [
@@ -660,7 +632,7 @@ def validate_handoff_checklist(
             )
         ]
         result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
-        return result  # type: ignore[return-value]
+        return None
 
     if source is not None and payload == "":
         if source.is_symlink():
@@ -674,13 +646,15 @@ def validate_handoff_checklist(
                 )
             ]
             result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
-            return result  # type: ignore[return-value]
+            return None
         resolved_source = source.resolve()
         raw = resolved_source.read_text(encoding="utf-8")
         source_label = str(source)
         doc, parse_violations = _load_handoff_document(source, raw, source_label=source_label)
         result["artifacts"] = [_artifact_entry(resolved_source)]
-    elif payload:
+        return doc, source_label, parse_violations
+
+    if payload:
         source_label = str(source) if source else str(ticket_dir)
         doc, parse_violations = _load_handoff_document(None, payload, source_label=source_label)
         if source is not None and source.is_file():
@@ -688,46 +662,29 @@ def validate_handoff_checklist(
                 result["artifacts"] = [_artifact_entry(source)]
             except OSError:
                 pass
-    else:
-        doc, parse_violations = None, []
+        return doc, source_label, parse_violations
 
-    violations: list[dict[str, Any]] = list(parse_violations)
-    gaps: list[dict[str, Any]] = []
+    return None, str(ticket_dir), []
 
-    if doc is None:
-        result["status"] = "FAIL"
-        result["message"] = "Handoff artifact invalid"
-        result["violations"] = violations
-        result["gaps"] = gaps
-        result["missing_items"] = gaps
-        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
-        return result  # type: ignore[return-value]
 
-    handoff = doc["handoff"]
-    violations.extend(
-        _validate_handoff_structure(handoff, expected_ticket_id=normalized_ticket, source_label=source_label)
-    )
-
-    doc_from = _normalize_agent_name(str(handoff.get("from_agent", "")))
-    doc_to = _normalize_agent_name(str(handoff.get("to_agent", "")))
-    if doc_from != from_key or doc_to != to_key:
-        violations.append(
-            _make_violation(
-                file=source_label,
-                rule="handoff_pair_mismatch",
-                message=(
-                    f"Document pair {doc_from}→{doc_to} does not match "
-                    f"requested {from_key}→{to_key}"
-                ),
-            )
-        )
-
-    checklist_raw = handoff.get("checklist") or []
+def _checklist_entries_by_key(handoff: dict[str, Any]) -> dict[str, dict[str, Any]]:
     by_key: dict[str, dict[str, Any]] = {}
+    checklist_raw = handoff.get("checklist") or []
     if isinstance(checklist_raw, list):
         for entry in checklist_raw:
             if isinstance(entry, dict) and isinstance(entry.get("item_key"), str):
                 by_key[entry["item_key"]] = entry
+    return by_key
+
+
+def _audit_catalog_checklist_entries(
+    catalog: dict[str, CatalogItem],
+    by_key: dict[str, dict[str, Any]],
+    *,
+    source_label: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    violations: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
 
     for item_key, cat in catalog.items():
         entry = by_key.get(item_key)
@@ -835,6 +792,17 @@ def validate_handoff_checklist(
                 )
             )
 
+    return violations, gaps
+
+
+def _audit_handoff_required_counters(
+    handoff: dict[str, Any],
+    catalog: dict[str, CatalogItem],
+    by_key: dict[str, dict[str, Any]],
+    gaps: list[dict[str, Any]],
+    *,
+    source_label: str,
+) -> list[dict[str, Any]]:
     required_total = sum(1 for c in catalog.values() if c.required)
     failing_keys = {
         g["item_key"]
@@ -855,7 +823,7 @@ def validate_handoff_checklist(
     declared_met = handoff.get("required_items_met")
     declared_total = handoff.get("total_required_items")
     if declared_met != met_computed or declared_total != required_total:
-        violations.append(
+        return [
             _make_violation(
                 file=source_label,
                 rule="handoff_counter_mismatch",
@@ -864,8 +832,92 @@ def validate_handoff_checklist(
                     f"computed {met_computed}/{required_total}"
                 ),
             )
+        ]
+    return []
+
+
+def _audit_handoff_catalog(
+    handoff: dict[str, Any],
+    catalog: dict[str, CatalogItem],
+    *,
+    source_label: str,
+    from_key: str,
+    to_key: str,
+    normalized_ticket: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    violations: list[dict[str, Any]] = []
+    violations.extend(
+        _validate_handoff_structure(handoff, expected_ticket_id=normalized_ticket, source_label=source_label)
+    )
+
+    doc_from = _normalize_agent_name(str(handoff.get("from_agent", "")))
+    doc_to = _normalize_agent_name(str(handoff.get("to_agent", "")))
+    if doc_from != from_key or doc_to != to_key:
+        violations.append(
+            _make_violation(
+                file=source_label,
+                rule="handoff_pair_mismatch",
+                message=(
+                    f"Document pair {doc_from}→{doc_to} does not match "
+                    f"requested {from_key}→{to_key}"
+                ),
+            )
         )
 
+    by_key = _checklist_entries_by_key(handoff)
+    entry_violations, gaps = _audit_catalog_checklist_entries(
+        catalog, by_key, source_label=source_label
+    )
+    violations.extend(entry_violations)
+    violations.extend(
+        _audit_handoff_required_counters(
+            handoff, catalog, by_key, gaps, source_label=source_label
+        )
+    )
+    return violations, gaps
+
+
+def _evaluate_handoff_pair_checklist(
+    result: dict[str, Any],
+    *,
+    normalized_ticket: str,
+    from_key: str,
+    to_key: str,
+    pair: tuple[str, str],
+    checkpoints_dir: str,
+    handoff_optional: bool,
+) -> dict[str, Any]:
+    catalog = PAIR_CATALOGS[pair]
+    root = _resolve_checkpoints_root(checkpoints_dir)
+    ticket_dir = root / normalized_ticket
+    source, payload = _discover_handoff_source(ticket_dir)
+
+    loaded = _load_handoff_artifact(
+        result, ticket_dir, source, payload, handoff_optional=handoff_optional
+    )
+    if loaded is None:
+        return result
+
+    doc, source_label, parse_violations = loaded
+    violations: list[dict[str, Any]] = list(parse_violations)
+    if doc is None:
+        result["status"] = "FAIL"
+        result["message"] = "Handoff artifact invalid"
+        result["violations"] = violations
+        result["gaps"] = []
+        result["missing_items"] = []
+        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
+        return result
+
+    catalog_violations, gaps = _audit_handoff_catalog(
+        doc["handoff"],
+        catalog,
+        source_label=source_label,
+        from_key=from_key,
+        to_key=to_key,
+        normalized_ticket=normalized_ticket,
+    )
+    violations.extend(catalog_violations)
     result["gaps"] = gaps
     result["missing_items"] = gaps
 
@@ -881,12 +933,80 @@ def validate_handoff_checklist(
             normalized_ticket,
             len(violations),
         )
-        return result  # type: ignore[return-value]
+        return result
 
     result["status"] = "PASS"
     result["message"] = f"Handoff checklist valid for {from_key}→{to_key}."
     logger.info("PASS: handoff %s→%s ticket %s", from_key, to_key, normalized_ticket)
-    return result  # type: ignore[return-value]
+    return result
+
+
+def validate_handoff_checklist(
+    ticket_id: str,
+    from_agent: str,
+    to_agent: str,
+    *,
+    checkpoints_dir: str = DEFAULT_CHECKPOINTS_DIR,
+    handoff_optional: bool = False,
+) -> GateResult:
+    start = time.perf_counter()
+    normalized_ticket = _normalize_ticket_id(ticket_id)
+    result: dict[str, Any] = _base_result(normalized_ticket, start)
+    from_key = _normalize_agent_name(from_agent)
+    to_key = _normalize_agent_name(to_agent)
+    result["from_agent"] = from_key
+    result["to_agent"] = to_key
+
+    if _handoff_opt_out_forbidden(result, handoff_optional):
+        return result  # type: ignore[return-value]
+
+    if _is_unsafe_ticket_id(ticket_id):
+        result["status"] = "FAIL"
+        result["message"] = "Invalid ticket_id"
+        result["violations"] = [
+            _make_violation(file="", rule="path_traversal", message="Unsafe ticket_id")
+        ]
+        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
+        return result  # type: ignore[return-value]
+
+    if not _checkpoints_dir_allowed(checkpoints_dir):
+        result["status"] = "FAIL"
+        result["message"] = "checkpoints_dir not allowed"
+        result["violations"] = [
+            _make_violation(
+                file="",
+                rule="path_traversal",
+                message="checkpoints_dir must resolve under repository or cwd",
+            )
+        ]
+        return result  # type: ignore[return-value]
+
+    if from_key not in AGENT_ALIAS_MAP.values() and from_key == _normalize_agent_name(from_agent):
+        if from_agent.strip().lower() not in AGENT_ALIAS_MAP:
+            pass
+    pair = (from_key, to_key)
+    if pair not in VALID_PAIRS:
+        result["status"] = "FAIL"
+        result["message"] = f"Unknown handoff pair: {from_key} → {to_key}"
+        result["violations"] = [
+            _make_violation(
+                file="",
+                rule="handoff_pair_unknown",
+                message=f"Pair ({from_key}, {to_key}) is not in the frozen pair table",
+            )
+        ]
+        result["remediation_hints"] = list(FAIL_REMEDIATION_HINTS)
+        return result  # type: ignore[return-value]
+
+    return _evaluate_handoff_pair_checklist(  # type: ignore[return-value]
+        result,
+        normalized_ticket=normalized_ticket,
+        from_key=from_key,
+        to_key=to_key,
+        pair=pair,
+        checkpoints_dir=checkpoints_dir,
+        handoff_optional=handoff_optional,
+    )
 
 
 def run(inputs: dict[str, Any]) -> dict[str, Any]:

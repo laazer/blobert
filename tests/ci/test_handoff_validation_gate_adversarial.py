@@ -418,6 +418,7 @@ class TestHandoffValidationMalformedArtifacts:
         ticket_dir = _repo_layout(tmp_path)
         ticket_dir.mkdir(parents=True, exist_ok=True)
         (ticket_dir / "handoff-latest.yaml").write_text("{not yaml", encoding="utf-8")
+        monkeypatch.setenv("BLOBERT_ALLOW_GATE_OPT_OUT", "1")
         result = validate_handoff_checklist(
             TICKET_ID,
             "spec",

@@ -135,7 +135,7 @@
     "module": "todo_validation_check",
     "required_inputs": ["ticket_id", "expected_agent"],
     "optional_inputs": ["checkpoints_dir", "upstream_agent", "downstream_agent", "mode"],
-    "default_mode": "shadow",
+    "default_mode": "blocking",
     "description": "Validates TodoWrite checkpoint snapshots: blocks handoff when todos attributed to the finishing agent remain in_progress.",
     "category": "workflow"
   },
@@ -144,7 +144,7 @@
     "module": "handoff_validation_check",
     "required_inputs": ["ticket_id", "from_agent", "to_agent"],
     "optional_inputs": ["checkpoints_dir", "handoff_optional", "upstream_agent", "downstream_agent", "mode"],
-    "default_mode": "shadow",
+    "default_mode": "blocking",
     "description": "Validates atomic handoff YAML checklists in checkpoint dirs before agent stage transitions.",
     "category": "workflow"
   }

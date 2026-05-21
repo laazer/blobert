@@ -529,10 +529,23 @@ class TestHandoffValidationH6MissingArtifact:
         assert result["status"] == "FAIL"
         assert any(v.get("rule") == "handoff_artifact_missing" for v in result["violations"])
 
-    def test_handoff_optional_vacuous_pass_when_missing(
+    def test_handoff_optional_forbidden_without_break_glass_env(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BLOBERT_ALLOW_GATE_OPT_OUT", raising=False)
+        (_repo_layout(tmp_path)).mkdir(parents=True, exist_ok=True)
+        result = validate_handoff_checklist(
+            TICKET_ID, "planner", "spec", handoff_optional=True
+        )
+        assert result["status"] == "FAIL"
+        assert any(v.get("rule") == "handoff_opt_out_forbidden" for v in result["violations"])
+
+    def test_handoff_optional_vacuous_pass_when_missing_with_break_glass(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("BLOBERT_ALLOW_GATE_OPT_OUT", "1")
         (_repo_layout(tmp_path)).mkdir(parents=True, exist_ok=True)
         result = validate_handoff_checklist(
             TICKET_ID, "planner", "spec", handoff_optional=True
@@ -989,7 +1002,7 @@ class TestHandoffValidationRegistry:
         assert "ticket_id" in entry["required_inputs"]
         assert "from_agent" in entry["required_inputs"]
         assert "to_agent" in entry["required_inputs"]
-        assert entry.get("default_mode") == "shadow"
+        assert entry.get("default_mode") == "blocking"
         assert entry.get("category") == "workflow"
 
 

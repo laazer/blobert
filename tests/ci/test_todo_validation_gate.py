@@ -584,7 +584,7 @@ class TestTodoValidationRegistry:
         assert entry["module"] == "todo_validation_check"
         assert "ticket_id" in entry["required_inputs"]
         assert "expected_agent" in entry["required_inputs"]
-        assert entry.get("default_mode") == "shadow"
+        assert entry.get("default_mode") == "blocking"
         assert entry.get("category") == "workflow"
 
 
