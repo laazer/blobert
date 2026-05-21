@@ -1346,25 +1346,5 @@ class TestPerformanceStress:
         assert is_valid_length is False, "500 char reason should fail validation"
 
 
-# ---------------------------------------------------------------------------
-# MARKERS FOR FUTURE TESTS (Test Breaker)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skip(reason="Adversarial tests created by Test Breaker Agent (Task 3)")
-class TestAdversarialCases:
-    """Placeholder for adversarial test suite (40+ tests in separate file).
-
-    Tests include:
-    - Boundary conditions (expiration date = today, repeat count = 3, etc.)
-    - Malformed input (missing fields, invalid JSON in violations)
-    - Decision consistency (idempotence, determinism emphasis)
-    - Error handling (file not found, git diff unavailable)
-    """
-
-    def test_placeholder_adversarial_tests(self) -> None:
-        pytest.skip("Adversarial tests in test_override_and_escalation_check_adversarial.py")
-
-
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -517,33 +517,32 @@ class TestGateReferenceCompletenesFSections:
 
     def test_gate_reference_subsection_formatting_inconsistent(self) -> None:
         """
-        CHECKPOINT: Gate sections must use consistent heading levels for subsections.
-        Mutation: Mix #, ##, ### for Purpose, Inputs, etc. across gates.
+        CHECKPOINT: Gate sections use consistent #### gate_name headings and bold field labels.
+        Mutation: Mix heading levels for gates or drop **Purpose:** / **Inputs:** labels.
         """
         if not README.exists():
             pytest.skip("README not yet implemented")
 
         content = README.read_text()
-        gate_ref_match = re.search(
-            r'#+\s+Gate Reference.*?\n(.*?)(?=\n#+|\Z)',
-            content,
-            re.DOTALL | re.IGNORECASE
-        )
-        if not gate_ref_match:
+        section_start = re.search(r"^## Gate Reference\s*$", content, re.MULTILINE | re.IGNORECASE)
+        if not section_start:
             pytest.skip("No gate reference section found")
+        begin = section_start.start()
+        section_end = re.search(r"^## Configuration\s*$", content[begin:], re.MULTILINE)
+        gate_ref = content[begin : begin + section_end.start()] if section_end else content[begin:]
 
-        gate_ref = gate_ref_match.group(1)
+        gate_headings = re.findall(r"^(#+)\s+([a-z_]+_check)\b", gate_ref, re.MULTILINE)
+        assert len(gate_headings) >= 6, (
+            f"Gate Reference should document at least six gates; found {len(gate_headings)}"
+        )
+        gate_levels = {level for level, _ in gate_headings}
+        assert len(gate_levels) == 1, f"Inconsistent gate heading levels: {gate_levels}"
 
-        # Find all subsection headers (Purpose, Inputs, etc.)
-        subsection_headers = re.findall(r'^(#+)\s+(Purpose|Inputs|Outputs|Artifacts|Decision|Troubleshooting)\b', gate_ref, re.MULTILINE)
-
-        if not subsection_headers:
-            pytest.skip("No subsection headers found")
-
-        # Check consistency: all subsections should use same heading level
-        levels = {level for level, _ in subsection_headers}
-        assert len(levels) <= 2, \
-            f"Inconsistent subsection heading levels: {levels}"
+        required_fields = ("Purpose", "Inputs", "Outputs", "Decision Logic")
+        for field in required_fields:
+            assert re.search(rf"\*\*{re.escape(field)}:\*\*", gate_ref), (
+                f"Gate Reference missing bold field label **{field}:**"
+            )
 
     def test_gate_reference_missing_all_six_gates_sections(self) -> None:
         """
