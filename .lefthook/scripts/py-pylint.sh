@@ -9,6 +9,8 @@ fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY_ROOT="$ROOT/asset_generation/python"
+# shellcheck source=py-staged-paths.sh
+source "$(dirname "$0")/py-staged-paths.sh"
 # Keep Pylint stats/cache inside the project (avoids $HOME/Caches and sandbox issues in CI).
 export PYLINTHOME="${PYLINTHOME:-$PY_ROOT/.pylint_home}"
 
@@ -19,19 +21,10 @@ fi
 
 rel_args=()
 for f in "$@"; do
-  case "$f" in
-    "$PY_ROOT"/*)
-      rel_args+=("${f#"$PY_ROOT"/}")
-      ;;
-    */asset_generation/python/*)
-      rel_args+=("${f##*asset_generation/python/}")
-      ;;
-    asset_generation/python/*)
-      rel_args+=("${f#asset_generation/python/}")
-      ;;
-    *)
-      ;;
-  esac
+  mapped="$(py_staged_ruff_rel "$f" "$PY_ROOT" || true)"
+  if [ -n "${mapped:-}" ]; then
+    rel_args+=("$mapped")
+  fi
 done
 
 if [ "${#rel_args[@]}" -eq 0 ]; then

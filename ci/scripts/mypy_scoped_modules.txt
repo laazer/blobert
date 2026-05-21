@@ -1,0 +1,7 @@
+# Paths relative to asset_generation/python/ — strict mypy gate (py-tests.sh + contract test).
+# One module path per line; blank lines and # comments are ignored.
+src/generator.py
+src/materials/gradient_generator.py
+src/model_registry/migrations.py
+src/model_registry/schema.py
+src/model_registry/service.py

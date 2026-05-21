@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 import re
 from pathlib import Path
+from typing import cast
 
 import bpy  # type: ignore[import-not-found]
 
@@ -65,7 +66,7 @@ def sanitize_image_label(label: str) -> str:
 
 def _create_png(width: int, height: int, pixels: list[float]) -> bytes:
     """Compatibility shim for callers importing from this module."""
-    return _png_encoding.create_png(width, height, pixels)
+    return cast(bytes, _png_encoding.create_png(width, height, pixels))
 
 
 def write_rgba_buffer_to_gradients_png(

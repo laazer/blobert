@@ -13,6 +13,8 @@ fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY_ROOT="$ROOT/asset_generation/python"
+# shellcheck source=py-staged-paths.sh
+source "$(dirname "$0")/py-staged-paths.sh"
 
 if [ ! -f "$PY_ROOT/pyproject.toml" ]; then
   echo "pre-commit: missing Ruff config at $PY_ROOT/pyproject.toml" >&2
@@ -34,20 +36,10 @@ fi
 
 rel_args=()
 for f in "$@"; do
-  case "$f" in
-    "$PY_ROOT"/*)
-      rel_args+=("${f#"$PY_ROOT"/}")
-      ;;
-    */asset_generation/python/*)
-      rel_args+=("${f##*asset_generation/python/}")
-      ;;
-    asset_generation/python/*)
-      rel_args+=("${f#asset_generation/python/}")
-      ;;
-    *)
-      # Staged Python outside asset_generation/python (e.g. web backend) uses its own tooling.
-      ;;
-  esac
+  mapped="$(py_staged_ruff_rel "$f" "$PY_ROOT" || true)"
+  if [ -n "${mapped:-}" ]; then
+    rel_args+=("$mapped")
+  fi
 done
 
 if [ "${#rel_args[@]}" -eq 0 ]; then

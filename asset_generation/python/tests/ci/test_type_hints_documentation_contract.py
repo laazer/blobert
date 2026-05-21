@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import ast
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
+
+MYPY_SCOPED_MANIFEST = (
+    Path(__file__).resolve().parents[4] / "ci" / "scripts" / "mypy_scoped_modules.txt"
+)
 
 
 def _repo_root() -> Path:
@@ -16,13 +18,21 @@ def _python_root() -> Path:
     return _repo_root() / "asset_generation" / "python"
 
 
-_SCOPED_MODULES: tuple[Path, ...] = (
-    _python_root() / "src" / "generator.py",
-    _python_root() / "src" / "materials" / "gradient_generator.py",
-    _python_root() / "src" / "model_registry" / "migrations.py",
-    _python_root() / "src" / "model_registry" / "schema.py",
-    _python_root() / "src" / "model_registry" / "service.py",
-)
+def _load_mypy_scoped_module_paths() -> tuple[Path, ...]:
+    """Load paths from ci/scripts/mypy_scoped_modules.txt (enforced in py-tests.sh)."""
+    lines = MYPY_SCOPED_MANIFEST.read_text(encoding="utf-8").splitlines()
+    rel_paths: list[str] = []
+    for line in lines:
+        stripped = line.split("#", 1)[0].strip()
+        if stripped:
+            rel_paths.append(stripped)
+    if not rel_paths:
+        raise AssertionError(f"mypy manifest is empty: {MYPY_SCOPED_MANIFEST}")
+    py_root = _python_root()
+    return tuple(py_root / rel for rel in rel_paths)
+
+
+_SCOPED_MODULES: tuple[Path, ...] = _load_mypy_scoped_module_paths()
 
 
 def _parse(path: Path) -> ast.Module:
@@ -173,19 +183,11 @@ def test_generator_build_options_parser_isolated_by_enemy_type(monkeypatch: pyte
     assert out == {"enemy_type": "slug", "raw_keys": ["imp", "slug"]}
 
 
-def test_mypy_strict_passes_for_scoped_modules() -> None:
-    if shutil.which("mypy") is None:
-        pytest.skip("mypy is not installed in this environment")
-    cmd = [
-        "mypy",
-        "--strict",
-        *[str(path.relative_to(_python_root())) for path in _SCOPED_MODULES],
-    ]
-    run = subprocess.run(
-        cmd,
-        cwd=_python_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert run.returncode == 0, run.stdout + run.stderr
+def test_mypy_scoped_manifest_paths_exist() -> None:
+    """Contract: manifest matches files on disk; strict mypy runs in pre-push (mypy-scoped-check.sh)."""
+    assert MYPY_SCOPED_MANIFEST.is_file()
+    for path in _SCOPED_MODULES:
+        assert path.is_file(), f"missing scoped module: {path}"
+    rels = [str(p.relative_to(_python_root())) for p in _SCOPED_MODULES]
+    assert "src/generator.py" in rels
+    assert "src/model_registry/service.py" in rels

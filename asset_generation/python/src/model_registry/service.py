@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import unquote
 
 from .migrations import (
@@ -95,11 +95,11 @@ def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
 
 def _get_family_block(data: dict[str, Any], family: str) -> dict[str, Any]:
     if family == "player":
-        return data["player"]
+        return cast(dict[str, Any], data["player"])
     fam = data["enemies"].get(family)
     if fam is None:
         raise KeyError(f"unknown family: {family!r}")
-    return fam
+    return cast(dict[str, Any], fam)
 
 
 def _evict_from_slots(fam_block: dict[str, Any], version_id: str) -> None:

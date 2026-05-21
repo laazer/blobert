@@ -22,6 +22,7 @@ dev = [
     # chardet 7 ships darwin .so helpers; mixed-arch venvs (e.g. Rosetta) can ImportError. Stay on 5.x.
     "chardet>=5.2,<6",
     "ruff>=0.8",
+    "mypy>=1.13",
     # Pre-commit: function size (too-many-statements / R0915); see [tool.pylint].
     "pylint>=3.3",
     # MCP stdio server (ticket M23-03); also in optional group `mcp` for minimal installs.
