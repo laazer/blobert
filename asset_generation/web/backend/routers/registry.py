@@ -8,7 +8,8 @@ from typing import Any
 from core.config import settings
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from models.responses import ModelRegistryResponse
+from pydantic import BaseModel, Field, ValidationError
 from services.error_mapping import ErrorMappingRule, map_exception_to_http
 from services.python_bridge import bootstrap_python_runtime
 from services import registry_mutation
@@ -163,8 +164,8 @@ async def open_load_existing(body: LoadExistingOpenRequest) -> JSONResponse:
         ) from e
 
 
-@router.get("/model")
-async def get_model_registry() -> JSONResponse:
+@router.get("/model", response_model=ModelRegistryResponse)
+async def get_model_registry() -> ModelRegistryResponse:
     try:
         reg = _load_service()
         data = reg.load_effective_manifest(settings.python_root)
@@ -180,7 +181,11 @@ async def get_model_registry() -> JSONResponse:
             logger=logger,
             rules=(ErrorMappingRule(ImportError, 503, lambda err: f"registry unavailable: {err}"),),
         ) from e
-    return JSONResponse(data)
+    try:
+        return ModelRegistryResponse.model_validate(data)
+    except ValidationError as e:
+        logger.warning("registry get: response model validation failed — %s", e)
+        raise HTTPException(status_code=500, detail="invalid registry manifest shape") from e
 
 
 @router.patch("/model/enemies/{family}/versions/{version_id}")

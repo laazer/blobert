@@ -1,7 +1,8 @@
 import logging
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from models.responses import MetaEnemiesResponse
+from models.responses.meta import EnemyMetaRowResponse
 from services.python_bridge import import_asset_module
 
 logger = logging.getLogger(__name__)
@@ -52,37 +53,37 @@ def _get_canonical_enemies() -> list[dict[str, str]]:
         ]
 
 
-@router.get("/enemies")
-async def get_enemies() -> JSONResponse:
+@router.get("/enemies", response_model=MetaEnemiesResponse, response_model_exclude_none=True)
+async def get_enemies() -> MetaEnemiesResponse:
     """Enemy list + procedural build controls from ``asset_generation/python`` (introspects enemy ClassVars)."""
     try:
         build_options_module = import_asset_module("src.utils.build_options")
-        config_module = import_asset_module("src.utils.config")
+        import_asset_module("src.utils.config")
 
         enemies = _get_canonical_enemies()
         build_controls = build_options_module.animated_build_controls_for_api()
     except ImportError as e:
         logger.warning("meta/enemies: ImportError loading build controls — %s", e, exc_info=True)
-        return JSONResponse(
-            status_code=200,
-            content={
-                "enemies": _get_canonical_enemies(),
-                "animated_build_controls": {},
-                "meta_backend": "fallback",
-                "meta_error": f"ImportError: {e}",
-            },
+        return MetaEnemiesResponse(
+            enemies=[
+                EnemyMetaRowResponse(slug=row["slug"], label=row["label"])
+                for row in _get_canonical_enemies()
+            ],
+            animated_build_controls={},
+            meta_backend="fallback",
+            meta_error=f"ImportError: {e}",
         )
 
-    return JSONResponse(
-        {
-            "enemies": enemies,
-            "animated_build_controls": build_controls,
-            "meta_backend": "ok",
-        }
+    return MetaEnemiesResponse(
+        enemies=[
+            EnemyMetaRowResponse(slug=row["slug"], label=row["label"]) for row in enemies
+        ],
+        animated_build_controls=build_controls,
+        meta_backend="ok",
     )
 
 
 @router.get("/animations")
-async def get_animations() -> JSONResponse:
+async def get_animations() -> dict[str, list[str]]:
     """Return animation export names from canonical config module."""
-    return JSONResponse({"animations": _get_canonical_animation_export_names()})
+    return {"animations": _get_canonical_animation_export_names()}

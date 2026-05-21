@@ -1,0 +1,7 @@
+{
+  "enemies": [{ "slug": "spider", "label": "Spider" }],
+  "animated_build_controls": {
+    "spider": [{ "key": "eye_count", "label": "Eyes" }]
+  },
+  "meta_backend": "ok"
+}

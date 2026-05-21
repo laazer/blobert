@@ -1,3 +1,4 @@
+import { getMetaEnemies, getModelRegistry } from "../api-client";
 import {
   AnimatedBuildControlDef,
   AnimatedEnemyMeta,
@@ -143,26 +144,13 @@ function migrateLegacyGlobalTextureToZones(slug: string, merged: Record<string, 
 
 /** GET /api/meta/enemies — enemies list + procedural build controls per slug. */
 export async function fetchEnemyPreviewMeta(): Promise<EnemyPreviewMeta> {
-  const res = await fetch(`${BASE}/meta/enemies`);
-  if (!res.ok) throw new Error(await res.text());
-  const data = await res.json();
-  const raw = data.enemies as unknown;
-  let enemies: AnimatedEnemyMeta[] = [];
-  if (Array.isArray(raw) && raw.length > 0) {
-    if (typeof raw[0] === "string") {
-      enemies = (raw as string[]).map((slug) => ({
-        slug: normalizeAnimatedSlug(slug),
-        label: titleCaseSnake(slug),
-      }));
-    } else {
-      enemies = (raw as AnimatedEnemyMeta[]).map((row) => ({
-        ...row,
-        slug: normalizeAnimatedSlug(row.slug),
-      }));
-    }
-  }
+  const data = await getMetaEnemies();
+  const enemies: AnimatedEnemyMeta[] = data.enemies.map((row) => ({
+    slug: normalizeAnimatedSlug(row.slug),
+    label: row.label,
+  }));
   const animatedBuildControls = parseBuildControls(data.animated_build_controls);
-  const metaBackend = data.meta_backend as "ok" | "fallback" | undefined;
+  const metaBackend = data.meta_backend;
   const metaError =
     typeof data.meta_error === "string" && data.meta_error.trim()
       ? data.meta_error
@@ -226,9 +214,8 @@ export function replaceAnimatedSlugBuildOptionsRow(
 }
 
 export async function fetchModelRegistry(): Promise<ModelRegistryPayload> {
-  const res = await fetch(`${BASE}/registry/model`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json() as Promise<ModelRegistryPayload>;
+  const data = await getModelRegistry();
+  return data as ModelRegistryPayload;
 }
 
 export async function patchRegistryEnemyVersion(

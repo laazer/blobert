@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "enemies": {
+    "spider": {
+      "versions": [
+        {
+          "id": "v001",
+          "path": "secrets/spider_animated_00.glb",
+          "draft": false,
+          "in_use": true
+        }
+      ]
+    }
+  },
+  "player": {
+    "versions": [],
+    "slots": []
+  },
+  "player_active_visual": null
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "enemies": {
+    "spider": {
+      "versions": [
+        {
+          "id": "v001",
+          "path": "animated_exports/spider_animated_00.glb",
+          "in_use": true
+        }
+      ]
+    }
+  },
+  "player": {
+    "versions": [],
+    "slots": []
+  },
+  "player_active_visual": null
+}

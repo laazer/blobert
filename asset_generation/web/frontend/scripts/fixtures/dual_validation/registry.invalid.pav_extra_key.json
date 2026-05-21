@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "enemies": {},
+  "player": {
+    "versions": [],
+    "slots": []
+  },
+  "player_active_visual": {
+    "path": "exports/x.glb",
+    "draft": false,
+    "extra": 1
+  }
+}

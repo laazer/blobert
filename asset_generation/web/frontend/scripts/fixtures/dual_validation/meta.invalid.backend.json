@@ -1,0 +1,5 @@
+{
+  "enemies": [{ "slug": "spider", "label": "Spider" }],
+  "animated_build_controls": {},
+  "meta_backend": "error"
+}

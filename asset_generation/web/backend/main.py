@@ -4,6 +4,7 @@ from __future__ import annotations
 from core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from models.responses import HealthResponse
 from routers import assets, files, meta, registry, run
 from services.python_bridge import bootstrap_python_runtime
 
@@ -26,6 +27,6 @@ app.include_router(meta.router)
 app.include_router(registry.router)
 
 
-@app.get("/api/health")
-async def health():
-    return {"status": "ok"}
+@app.get("/api/health", response_model=HealthResponse, response_model_exclude_none=True)
+async def health() -> HealthResponse:
+    return HealthResponse(status="ok")

@@ -1,0 +1,27 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M902-25
+  from_agent: static_qa
+  to_agent: learning
+  validated_at: "2026-05-21T23:50:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: review_feedback_incorporated
+      item: Feedback incorporated
+      required: true
+      status: complete
+      evidence: "fill_picker/hint union fix from meta_router failure; no open CRITICAL findings"
+      evidence_type: attestation
+    - item_key: review_code_reviewed
+      item: Code reviewed
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/M902-25/2026-05-21T-static-qa-run.md
+      evidence_type: path
+    - item_key: review_merge_ready
+      item: Merge-ready
+      required: true
+      status: complete
+      evidence: "git status: uncommitted pilot changes present; tests PASS 2026-05-21T23:50:00Z — commit pending AC Gatekeeper COMPLETE"
+      evidence_type: attestation

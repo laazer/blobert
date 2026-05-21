@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M902-25",
+  "agent": "Test Designer",
+  "captured_at": "2026-05-21T20:00:00Z",
+  "todos": [
+    {
+      "id": "td-1",
+      "content": "Read spec 902_25 and existing backend/frontend test patterns",
+      "status": "completed",
+      "agent": "Test Designer"
+    },
+    {
+      "id": "td-2",
+      "content": "Create dual_validation JSON fixtures (valid + invalid per spec)",
+      "status": "completed",
+      "agent": "Test Designer"
+    },
+    {
+      "id": "td-3",
+      "content": "Author test_response_models_pilot.py (Pydantic drift + TestClient)",
+      "status": "completed",
+      "agent": "Test Designer"
+    },
+    {
+      "id": "td-4",
+      "content": "Author schemas.pilot.test.ts and api-client.pilot.test.ts (Zod + fetch mocks)",
+      "status": "completed",
+      "agent": "Test Designer"
+    },
+    {
+      "id": "td-5",
+      "content": "Write handoff test_designer→test_breaker with coverage: >=80",
+      "status": "completed",
+      "agent": "Test Designer"
+    }
+  ]
+}

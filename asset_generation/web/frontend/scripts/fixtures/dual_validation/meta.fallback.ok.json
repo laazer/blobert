@@ -1,0 +1,6 @@
+{
+  "enemies": [{ "slug": "spider", "label": "Spider" }],
+  "animated_build_controls": {},
+  "meta_backend": "fallback",
+  "meta_error": "ImportError: simulated"
+}
