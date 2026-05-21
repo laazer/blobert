@@ -5,6 +5,20 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-22T-m902-26-autopilot (M902-26 API Contract Testing)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-26 — OUTCOME: PLANNING → SPECIFICATION
+Execution plan for OpenAPI+jsonschema contract tests (28 router handlers + health); handoff to Spec Agent.
+Log: `project_board/checkpoints/M902-26/2026-05-21T-planning-run.md`
+Plan: `project_board/execution_plans/M902-26_api_contract_testing.md`
+
+---
+
 ## Run: 2026-05-21T-m902-25-autopilot (M902-25 Pydantic + Zod Dual Validation)
 
 - Queue mode: single ticket

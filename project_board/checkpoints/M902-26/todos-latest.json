@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M902-26",
+  "agent": "Planner Agent",
+  "captured_at": "2026-05-21T12:00:00Z",
+  "todos": [
+    {
+      "id": "plan-1",
+      "content": "Inventory public router endpoints (28 + health)",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-2",
+      "content": "Author execution plan M902-26_api_contract_testing.md",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-3",
+      "content": "Dependency matrix M902-24/M902-25 satisfied",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-4",
+      "content": "Planner handoff artifacts (todos + yaml)",
+      "status": "completed",
+      "agent": "Planner Agent"
+    }
+  ]
+}

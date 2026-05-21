@@ -130,3 +130,50 @@ See: `project_board/specs/902_26_api_contract_testing_spec.md`
 - M902-24 (OpenAPI → TypeScript Generation) — provides schema
 - M902-25 (Pydantic + Zod Dual Validation) — ensures models are well-defined
 - Backend with Pydantic response models
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+SPECIFICATION
+
+## Revision
+2
+
+## Last Updated By
+Planner Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: N/A
+- Integration: N/A
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Spec Agent
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md",
+  "execution_plan_path": "project_board/execution_plans/M902-26_api_contract_testing.md",
+  "spec_output_path": "project_board/specs/902_26_api_contract_testing_spec.md",
+  "spec_exit_type": "api"
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Planning complete: execution plan decomposes OpenAPI+jsonschema contract tests for all public backend routes; dependencies M902-24/M902-25 satisfied. Spec Agent authors normative contract architecture before TEST_DESIGN.
