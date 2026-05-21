@@ -5,6 +5,20 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-21T-m902-25-autopilot (M902-25 Pydantic + Zod Dual Validation)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/902_milestone_902_agent_predictabilitiy_improvements/00_backlog/25_pydantic_zod_dual_validation.md`
+- Lean: no
+- Log root: project_board/checkpoints/
+
+### M902-25 — OUTCOME: COMPLETE
+Pilot dual validation: Pydantic `response_model` + Zod `validatedFetch` on health, registry/model, meta/enemies; drift fixtures; commit `15c1395`.
+Log: `project_board/checkpoints/M902-25/2026-05-21T-implementation-run.md`
+Spec: `project_board/specs/902_25_pydantic_zod_validation_spec.md`
+
+---
+
 ## Run: 2026-05-20T-m902-24-autopilot (M902-24 OpenAPI TypeScript Generation)
 
 - Queue mode: single ticket
@@ -12,9 +26,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: project_board/checkpoints/
 
-### M902-24 — OUTCOME: TEST_BREAK COMPLETE → IMPLEMENTATION_FRONTEND
-Adversarial suite `tests/web_frontend/test_sync_api_types_adversarial.py` (12 cases); script/cache/types pending.
-Log: `project_board/checkpoints/M902-24/2026-05-21T-test-break-run.md`
+### M902-24 — OUTCOME: COMPLETE
+OpenAPI→TS sync (`sync-api-types.sh`, cached spec, `api.types.ts`, `healthCheck.ts`, README). Pytest 20/22; Vitest 6/6.
+Log: `project_board/checkpoints/M902-24/2026-05-21T-implementation-run.md`
+Spec: `project_board/specs/902_24_openapi_typescript_gen_spec.md`
 
 ---
 

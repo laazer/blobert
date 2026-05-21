@@ -6803,3 +6803,104 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-25] — Dual validation: live API beats stale TS unions; minimal drift fixtures miss production variants
+*Completed: 2026-05-21*
+
+### Learnings
+
+- **category: testing**
+  **insight:** Shared JSON drift fixtures prove Pydantic/Zod parity on synthetic shapes, but empty or minimal nested payloads do not exercise discriminated unions the live route actually emits.
+  **impact:** `meta.ok.minimal.json` used `animated_build_controls: {}`; 18 drift cases passed while `test_meta_router` (live stub pipeline) still returned `fill_picker` and `select_str.hint` controls that failed strict unions until Static QA expanded the schema.
+  **prevention:** For meta/build-control endpoints, require at least one valid drift fixture with a real control per `type` literal from the Python producer (`animated_build_options`) or a checkpoint attestation that route-level integration tests cover every union arm.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** When mirroring backend unions to Zod/Pydantic, the producer module and one live GET snapshot outrank hand-maintained frontend types that may lag the wire format.
+  **impact:** Spec Req 04 cited `src/types/index.ts` `AnimatedBuildControlDef`, which omitted `fill_picker` even though the API and zone-texture integration tests already depended on it; implementation initially matched the stale list.
+  **prevention:** Spec and implementation should enumerate `type` literals from `animated_build_options` (or OpenAPI components post–M902-24), then diff against TS types; treat index.ts mismatch as a spec defect, not “frontend-only.”
+  **severity:** high
+
+- **category: process**
+  **insight:** Ambitious ticket prose (“100% runtime coverage”, “all API response types”) must be collapsed to a pilot table before TEST_DESIGN so gatekeepers do not block on out-of-scope `JSONResponse` routes.
+  **impact:** Spec run logged pilot = 3 GET endpoints + Req 12 backlog table (~28 remaining routes); AC Gatekeeper completed without forcing full-router conversion.
+  **prevention:** At spec freeze, add explicit “pilot vs deferred” mapping (ticket AC row → spec requirement → verification command); reference Req 12-style tables for all partial-coverage API tickets.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Dual-layer validation needs both fixture drift (offline) and route contracts (mocked or stubbed live pipeline) on the same endpoints.
+  **impact:** Red phase showed registry invalid manifest returning 200 instead of 500 and missing `models` package; green drift suite alone would not have caught manifest validation ordering without TestClient cases in `test_response_models_pilot.py`.
+  **prevention:** Test Designer checklist per pilot route: (1) ≥1 valid + invalid shared fixture, (2) ≥1 TestClient assertion on HTTP status/body shape, (3) for meta, reuse or extend `test_meta_router.py` when controls are discriminated unions.
+  **severity:** medium
+
+- **category: infra**
+  **insight:** Manual Pydantic↔Zod sync is viable for a pilot when `extra="forbid"` / Zod `.strict()` and a documented README checklist exist; OpenAPI regen (M902-24) is a compile-time backstop, not a substitute for runtime Zod on fetch boundaries.
+  **impact:** Delivered `validatedFetch`, `ApiValidationError` user-safe messaging, `scripts/fixtures/dual_validation/`, and sync checklist in frontend README; remaining routes listed in spec Req 12 for a follow-up ticket.
+  **prevention:** Follow-up tickets should extend the fixture directory and client wrapper per route cluster, not re-litigate pilot patterns; run `sync-api-types.sh` whenever `response_model` changes.
+  **severity:** low
+
+### Anti-Patterns
+
+- **description:** Treating minimal drift fixtures as proof that production meta controls validate end-to-end.
+  **detection_signal:** Valid meta fixture has empty `animated_build_controls` while `test_meta_router` asserts non-empty spider/slug/player control lists.
+  **prevention:** Add fixture `meta.ok.controls_sample.json` sliced from a recorded GET or built from canonical defs with one arm per `type`.
+
+- **description:** Using stale `AnimatedBuildControlDef` in `types/index.ts` as the union source of truth for backend/Zod mirrors.
+  **detection_signal:** Python API or integration tests reference control `type` values absent from Pydantic `Literal` unions.
+  **prevention:** Spec lists literals from Python producer first; file follow-up to align OpenAPI/TS types when drift is intentional.
+
+- **description:** Deferring “valid nested control” coverage called out in test-design checkpoint until Static QA or AC gatekeeper.
+  **detection_signal:** Test Designer “Spec gaps” section lists missing AnimatedBuildControlDef valid arms; drift suite only tests `{}` or missing `type`.
+  **prevention:** Test Breaker or Implementation first PR must close the gap or document explicit waiver with route-test substitute.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "For `AnimatedBuildControlDef`-style unions, list every `type` literal from the Python control producer (`animated_build_options` / router assembly), not only `src/types/index.ts`. If TS types omit a live wire variant, note it as a defect and include that variant in Pydantic/Zod requirements."
+  **reason:** Prevents spec-approved schemas that reject real API responses.
+
+- **agent: Test Designer Agent**
+  **change:** "For dual-validation pilots: (1) parametrize shared fixtures under `scripts/fixtures/dual_validation/` for both pytest and Vitest; (2) per discriminated-union endpoint, require either a valid fixture with one object per union arm or an existing route test (`test_meta_router`) cited in the handoff; (3) do not rely solely on empty nested objects for valid cases."
+  **reason:** Catches fill_picker/hint gaps before Static QA.
+
+- **agent: Implementation Agent (Generalist)**
+  **change:** "Before STATIC_QA on web validation tickets: run `pytest tests/test_meta_router.py` and pilot drift tests when `/api/meta/enemies` is in scope; fix union literals before handoff. After adding `response_model`, run M902-24 `sync-api-types.sh` and note output in checkpoint."
+  **reason:** Surfaces live-wire union gaps during implementation, not review.
+
+- **agent: Static QA Agent**
+  **change:** "When reviewing discriminated unions on live GET routes, diff Pydantic/Zod `type` literals against one successful TestClient GET (stubbed python_root). Flag any control `type` present in JSON but missing from unions as CRITICAL."
+  **reason:** Formalizes the fill_picker fix pattern for future pilots.
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "If ticket AC claims full API coverage but spec defines a pilot + Req 12 backlog, PASS only when backlog table is cited and pilot trio has fixture + route + frontend client evidence; do not fail on non-pilot `JSONResponse` routes."
+  **reason:** Aligns gate with spec-scoped interpretation used at COMPLETE.
+
+### Workflow Improvements
+
+- **issue:** Union completeness was discovered in Static QA via `meta_router` failure, after drift tests were already green.
+  **improvement:** Add IMPLEMENTATION → STATIC_QA gate item: “meta pilot: `test_meta_router.py` + drift valid fixture with ≥1 non-empty control map” with checkpoint path evidence.
+  **expected_benefit:** Eliminates rework on discriminated unions before review.
+
+- **issue:** Test Designer documented missing valid nested control fixtures but no stage owner closed them before QA.
+  **improvement:** Test Break checkpoint must either add the fixture or explicitly assign to Implementation with test name; Implementation handoff cannot cite “deferred to QA.”
+  **expected_benefit:** Reduces spec-gap carryover on schema-heavy tickets.
+
+- **issue:** Manual Pydantic/Zod sync without codegen risks recurring literal drift.
+  **improvement:** Follow-up ticket should extend Req 12 route table incrementally (registry cluster, then files/assets), each tranche adding drift files + `validatedFetch` wrapper—same checklist as pilot README.
+  **expected_benefit:** Predictable expansion without renegotiating pilot scope.
+
+### Keep / Reinforce
+
+- **practice:** Shared `scripts/fixtures/dual_validation/*.json` parametrized in pytest and Vitest—single source for cross-runtime pass/fail.
+  **reason:** Proved backend and frontend validators agree on invalid keys, wrong literals, and extra fields.
+
+- **practice:** `ConfigDict(extra="forbid")` on Pydantic response models paired with Zod `.strict()` on mirrored objects.
+  **reason:** Catches wire drift at both boundaries with the same failure semantics as fixtures.
+
+- **practice:** Pilot trio + Req 12 explicit backlog table in spec before implementation.
+  **reason:** Prevented scope explosion on ~28 remaining `JSONResponse` routes while delivering measurable dual validation.
+
+- **practice:** `client.ts` delegating registry/meta fetch to `validatedFetch` while keeping pre-parse shims out of Zod.
+  **reason:** Preserves legacy wire handling without weakening runtime validation on pilot paths.
+
+---
+
