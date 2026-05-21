@@ -106,6 +106,30 @@ cd asset_generation/python && uv run pytest tests/api/ -q
 
 Tier **A** routes (pilot GETs + strict OpenAPI) enforce full schema + `additionalProperties: false` when declared. Tier **B** legacy `JSONResponse` routes use status + JSON anchors until models land.
 
+## API contract pre-commit (M902-27)
+
+Lefthook command `api-contract-check` runs on pre-commit when staged files match `asset_generation/web/backend/**/*.py`.
+
+| Step | Command |
+|------|---------|
+| 1 | `bash asset_generation/web/frontend/scripts/sync-api-types.sh` (live OpenAPI or cache; no backend auto-start) |
+| 2 | `cd asset_generation/web/frontend && npx tsc --noEmit` |
+| 3 | `cd asset_generation/python && uv run pytest tests/api/test_*_contract.py -v` |
+
+Passing hook may auto-stage regenerated `src/api.types.ts` via Lefthook `stage: commit`.
+
+### Failure runbook
+
+| Symptom | Action |
+|---------|--------|
+| Type mismatch / `tsc` failed | `cd asset_generation/web/frontend && npx tsc --noEmit`; fix call sites or revert backend OpenAPI change; re-run `npm run sync-api-types` if backend was up |
+| Backend unreachable (cache warning) | Expected without `task editor`; refresh cache with `npm run sync-api-types` after starting backend for large router changes |
+| OpenAPI unavailable | Start backend or restore `scripts/fixtures/openapi.cached.json`; run `npm run sync-api-types` once |
+| Contract tests failed | `cd asset_generation/python && uv run pytest tests/api/test_*_contract.py -v` (see M902-26 section above) |
+| Setup (`uv` / `node_modules`) | `uv sync --extra dev` in `asset_generation/python`; `npm ci` in frontend |
+
+Bypass (temporary): `LEFTHOOK_EXCLUDE=api-contract-check git commit`, `LEFTHOOK=0 git commit`, or `git commit --no-verify`. Full spec runbook: `project_board/specs/902_27_api_contract_precommit_spec.md` (Appendix C).
+
 ## NOTES
 
 - **Port**: 8000; CORS configured for frontend port 5173

@@ -154,6 +154,7 @@ task hooks:gd-organization -- {staged_files}
 
 Lefthook (`lefthook.yml`) runs **pre-commit** and **pre-push** commands in parallel when multiple commands match:
 
+- **API contract pre-commit (`api-contract-check`):** Runs when staged files match `asset_generation/web/backend/**/*.py`. Steps: `sync-api-types.sh` → `npx tsc --noEmit` in `asset_generation/web/frontend` → `uv run pytest tests/api/test_*_contract.py -v` in `asset_generation/python`. If port 8000 is down, the hook uses cached OpenAPI and prints `Backend not reachable; using cached OpenAPI spec`; it does **not** start the backend. Fix type errors: `cd asset_generation/web/frontend && npx tsc --noEmit`. Fix contract tests: `cd asset_generation/python && uv run pytest tests/api/test_*_contract.py -v`. Bypass (temporary only; must pass hook before merge): `LEFTHOOK=0`, `LEFTHOOK_EXCLUDE=api-contract-check`, or `git commit --no-verify`. Prerequisites: `cd asset_generation/python && uv sync --extra dev`; `cd asset_generation/web/frontend && npm ci`. Runbook: `project_board/specs/902_27_api_contract_precommit_spec.md` (Appendix C) and `asset_generation/web/backend/AGENTS.md`.
 - **pre-commit:** `parallel: true` — staged Python and Godot linters run concurrently.
 - **pre-push:** `parallel: true` — `godot-tests` and `py-tests` run concurrently when both globs match (disjoint artifacts: `.godot/` vs `asset_generation/python/coverage.xml`).
 - **Skip all hooks:** `LEFTHOOK=0 git commit` / `git push`

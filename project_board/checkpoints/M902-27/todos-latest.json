@@ -1,32 +1,14 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-27",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-21T22:00:00Z",
+  "agent": "Static QA Agent",
+  "captured_at": "2026-05-22T01:05:00Z",
   "todos": [
     {
-      "id": "tb-1",
-      "content": "Extend test_api_contract_precommit_hook.py adversarially (A1–A13)",
+      "id": "qa-1",
+      "content": "Review api-contract-check.sh",
       "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "tb-2",
-      "content": "Fix brittle mocks/grep traps (H7, A6, npx stub, H5 ordering)",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "tb-3",
-      "content": "Three consecutive green pytest runs + checkpoint log",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "tb-4",
-      "content": "test_breaker→implementation handoff artifacts",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Static QA Agent"
     }
   ]
 }

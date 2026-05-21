@@ -24,6 +24,10 @@ Log: `project_board/checkpoints/M902-27/2026-05-21T-spec-run.md`
 RED hook tests (13 scenarios H1–H8); 12 fail until hook + lefthook land.
 Log: `project_board/checkpoints/M902-27/2026-05-21T-test-design-run.md`
 
+### M902-27 — OUTCOME: IMPLEMENTATION → STATIC_QA
+api-contract-check hook + lefthook; 26 CI hook tests + 87 contract tests green.
+Log: `project_board/checkpoints/M902-27/2026-05-21T-implementation-run.md`
+
 ---
 
 ## Run: 2026-05-22T-m902-26-autopilot (M902-26 API Contract Testing)

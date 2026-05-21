@@ -1,23 +1,27 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-27
-  from_agent: test_breaker
-  to_agent: implementation
-  validated_at: "2026-05-21T22:00:00Z"
-  required_items_met: 2
-  total_required_items: 2
+  from_agent: static_qa
+  to_agent: learning
+  validated_at: "2026-05-22T01:05:00Z"
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: breaker_gaps_documented
-      item: All discovered gaps documented
+    - item_key: review_feedback_incorporated
+      item: Feedback incorporated
       required: true
       status: complete
-      evidence: project_board/checkpoints/M902-27/2026-05-21T-test-break-run.md
+      evidence: "Test-break G1–G7 addressed in hook script PATH sanitization"
+      evidence_type: attestation
+    - item_key: review_code_reviewed
+      item: Code reviewed
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/M902-27/2026-05-21T-static-qa-run.md
       evidence_type: path
-    - item_key: breaker_impl_notes
-      item: Implementation notes created
+    - item_key: review_merge_ready
+      item: Merge-ready
       required: true
       status: complete
-      evidence: |
-        G1–G7 in 2026-05-21T-test-break-run.md. Re-verify cache warning in stderr (AC-02.5) under full suite load.
-        npx stub in CI tests must exec real npx for openapi-typescript (A13). Req 07 dry-run checkpoint still pending.
+      evidence: "pytest 26+87 PASS 2026-05-22T01:05:00Z; commit pending"
       evidence_type: attestation

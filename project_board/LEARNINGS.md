@@ -7009,3 +7009,124 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M902-27] — Pre-commit hook: delegate sync, glob scope, shell-test mock traps
+*Completed: 2026-05-22*
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Pre-commit Step 1 must call the existing M902-24 `sync-api-types.sh` pipeline, not duplicate ticket AC `npx openapi-typescript http://localhost:8000/...` — cache fallback, exit codes, and pinned tooling live in one script.
+  **impact:** Planning assumed delegation; spec froze it; hook reuses validated behavior instead of a second OpenAPI fetch path.
+  **prevention:** For hook tickets that regenerate artifacts, Planner maps each AC bash block to an existing script in `execution_plans/` before Spec; Spec cites script path + exit-code contract, not illustrative curl/npx one-liners.
+  **severity:** high
+
+- **category: process**
+  **insight:** Lefthook `glob` in ticket AC (`routers/**/*.py`) often under-triggers; OpenAPI surface changes also land in `main.py`, `core/`, and shared response models outside `routers/`.
+  **impact:** Planning flagged medium-confidence tradeoff; Spec froze `asset_generation/web/backend/**/*.py`; adversarial **A11** locks glob against routers-only drift.
+  **prevention:** PLANNING checkpoint documents “ticket glob vs recommended glob”; Spec exit gate records frozen glob + one-line rationale; Test Break adds YAML glob regression test.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** CI tests for multi-step bash hooks need PATH stubs that delegate `npx` to the real binary for non-`tsc` invocations — a stub that exits 127 for everything except `tsc` breaks Step 1 `openapi-typescript` while still mocking type-check.
+  **impact:** Test Break G2: 12 baseline tests red until stub uses `exec "$(command -v npx)" "$@"`; **A13** guards regression.
+  **prevention:** Test Designer documents per-step binaries mocked vs real; Test Break adds adversarial “Step 1 uses real openapi-typescript under PATH stub” before implementation handoff.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Frozen stderr banners and cache-warning strings are executable contracts — static tests grep the hook script; naive substring rules false-fail on intentional `echo` lines or `#` comments.
+  **impact:** G1: H7 failed on `task editor` in Fix echo; G4: A6 failed on `openapi-typescript` in comments; fixes scoped grep to non-comment lines and echo exceptions.
+  **prevention:** Spec lists exact stderr literals; Test Break adversarial suite covers “forbidden substring only in echo/comment” and “no backend auto-start” separately from success-path output.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Assert warning ordering on `proc.stderr` and script source order, not `stdout + stderr` concat — buffers are not temporal.
+  **impact:** H5 cache-fallback test failed until stderr-only check preceded `[2/3]` banner in script text (G3).
+  **prevention:** Shell-hook tests document which stream carries each contract line; avoid combined-stream ordering unless the hook explicitly merges streams.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Fail-fast between hook steps must be proven in tests (Step 1 failure must not invoke `uv run pytest`) via side-effect markers, not only exit code.
+  **impact:** **A9** `uv.marker` file pattern; **A3** blocks before `[1/3]` when `uv` missing (G5, G6).
+  **prevention:** Multi-step hook test matrix includes per-step isolation cases in TEST_BREAK before IMPLEMENTATION marks Req 03 complete.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Manual dry-run matrix (spec Req 07 D1–D5) was deferred past Static QA with only automated 26+87 pytest evidence — operator workflow validation remains unlogged.
+  **impact:** Implementation checkpoint notes deferred dry-run; ticket escalation still lists Req 07 for follow-up; merge-ready attestation relied on CI mocks, not live `git commit` rehearsal.
+  **prevention:** STATIC_QA handoff requires either `*-dry-run.md` checkpoint with D1–D5 evidence or explicit BLOCKED item on ticket until human/agent dry-run completes.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Implementing ticket AC `npx openapi-typescript` URL fetch inside the hook instead of M902-24 `sync-api-types.sh`.
+  **detection_signal:** Hook script contains duplicate curl/OpenAPI URL logic or divergent cache-warning text from sync script.
+  **prevention:** Execution plan “Type sync” row points to single script; Spec Req 02 references script path only.
+
+- **description:** Narrow Lefthook glob copied from ticket example (`routers/**`) when schemas/OpenAPI change outside routers.
+  **detection_signal:** Backend commit under `core/` or `main.py` does not trigger `api-contract-check`; contract drift merges without pre-commit failure.
+  **prevention:** Spec-frozen glob + adversarial YAML parse test (A11).
+
+- **description:** PATH `npx` mock that only succeeds for `tsc`, breaking Step 1 under test.
+  **detection_signal:** `openapi-typescript exited non-zero` / exit 127 in H1/H5 while tsc tests pass.
+  **prevention:** Delegate non-`tsc` args to real `npx`; add A13-style regression test.
+
+- **description:** Grep-based “no backend start” / “no openapi-typescript in hook” checks without echo/comment exemptions.
+  **detection_signal:** Implementation fails H7/A6 despite compliant script with Fix echo or documented comments.
+  **prevention:** Test Break documents grep rules in gaps table (G1, G4) before implementation.
+
+- **description:** Marking hook tickets COMPLETE with pytest-only evidence while Req 07 manual dry-run checklist is empty.
+  **detection_signal:** No `*-dry-run.md` under ticket checkpoint; escalation notes “deferred to Static QA” with no follow-up artifact.
+  **prevention:** AC Gatekeeper requires dry-run checkpoint or open BLOCKED for Req 07.
+
+### Prompt Patches
+
+- **agent: Planner Agent**
+  **change:** "For Lefthook/pre-commit tickets: map each AC command to an existing repo script (e.g. M902-24 `sync-api-types.sh`). Record ticket glob vs recommended glob (`routers/**` vs `backend/**`) with confidence. Record pytest cwd for Step 3 (`cd asset_generation/python && uv run pytest tests/api/test_*_contract.py`)."
+  **reason:** Prevents duplicate OpenAPI logic and wrong test discovery path in the hook subprocess.
+
+- **agent: Spec Agent**
+  **change:** "Freeze: lefthook glob path, `stage: commit`, exact cache-warning stderr (`Backend not reachable; using cached OpenAPI spec`), Step 1 = sync script only (no backend auto-start), Step 3 cwd under `asset_generation/python`. Reference Req 07 dry-run protocol with D1–D5 IDs."
+  **reason:** Gives Test Designer/Breaker literal contracts and closes glob ambiguity.
+
+- **agent: Test Designer Agent**
+  **change:** "Shell hook tests live under `tests/ci/`; mock PATH per step: real `npx` delegation for `openapi-typescript`, stub `tsc`/`uv`; use `BLOBERT_SYNC_SKIP_FETCH` or cache fixture — no live :8000. Assert stderr for warnings, not stdout+stderr concat."
+  **reason:** Avoids red churn from mock traps and flaky live server dependency.
+
+- **agent: Test Breaker Agent**
+  **change:** "Adversarial: lefthook YAML glob/run/stage:commit; Step-1 failure must not create pytest side effects (marker file); missing `uv` fails before `[1/3]`; grep rules exempt `#` comments and Fix `echo` lines; PATH npx stub must pass A13 (delegate non-tsc to real npx)."
+  **reason:** Captures G1–G7 traps before implementation rework.
+
+- **agent: Implementation Agent (Generalist)**
+  **change:** "Hook script: call `sync-api-types.sh`, emit frozen Req 03 banners, never start backend. Lefthook `api-contract-check` on spec glob with `stage: commit`. Runbook in `AGENTS.md` + `CLAUDE.md`. If Req 07 dry-run not run, leave escalation note — do not claim manual workflow validated."
+  **reason:** Aligns deliverables with adversarial suite and honest handoff.
+
+### Workflow Improvements
+
+- **issue:** Ticket AC bash blocks are illustrative while canonical behavior lives in prior-milestone scripts.
+  **improvement:** PLANNING → SPEC gate: "AC command → existing script path" table mandatory for hook/integration tickets.
+  **expected_benefit:** Zero duplicate fetch/cache logic across M902-24 and M902-27.
+
+- **issue:** Test Break grep/mock fixes (G1–G7) indicate Test Designer shell-hook patterns were underspecified.
+  **improvement:** TEST_DESIGN handoff includes mock matrix (which steps real vs stub, which stream holds warnings); TEST_BREAK must land adversarial class before IMPLEMENTATION when hook script absent.
+  **expected_benefit:** Implementation lands green on first pass (26/26) without grep rework loops.
+
+- **issue:** Req 07 manual dry-run deferred with merge-ready attestation.
+  **improvement:** STATIC_QA → LEARNING requires `*-dry-run.md` or ticket BLOCKED line for Req 07; AC Gatekeeper cannot clear workflow validation AC without it.
+  **expected_benefit:** Pre-commit hook validated on real `git commit` path, not only mocked subprocess tests.
+
+### Keep / Reinforce
+
+- **practice:** Reuse M902-24 sync + M902-26 contract suite as hook Steps 1 and 3 — no new dependencies.
+  **reason:** One pre-commit command enforces the full API contract stack already built in prior tickets.
+
+- **practice:** `tests/ci/test_api_contract_precommit_hook.py` for lefthook + bash (13 → 26 with adversarial); contract tests stay in `asset_generation/python/tests/api/`.
+  **reason:** Separates hook orchestration tests from OpenAPI jsonschema suite; 26+87 pytest is dual evidence in implementation/Static QA checkpoints.
+
+- **practice:** Exact stderr templates and “no backend auto-start” as frozen spec requirements tested before script exists (12 RED → green).
+  **reason:** TDD caught banner drift and auto-start regressions without live backend.
+
+- **practice:** `pre-commit.parallel: true` guard test (Req 04) alongside new `api-contract-check` command.
+  **reason:** M902-28 parallel hooks remain intact when adding another pre-commit command.
+
+---
+

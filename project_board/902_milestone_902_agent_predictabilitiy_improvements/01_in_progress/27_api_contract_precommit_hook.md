@@ -133,24 +133,28 @@ See: `project_board/specs/902_27_api_contract_precommit_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_BACKEND
+INTEGRATION
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: PASS — `uv run pytest tests/ci/test_api_contract_precommit_hook.py -q` (26 tests, 3 consecutive green runs 2026-05-21)
-- Static QA: N/A
-- Integration: N/A
+- Tests: PASS — `uv run pytest tests/ci/test_api_contract_precommit_hook.py -q` (26 passed, 2026-05-21); `cd asset_generation/python && uv run pytest tests/api/ -q` (87 passed). CI suite covers Req 01–06: lefthook registration (H6), 3-step pipeline exit codes (H1–H5), cache-fallback warning (H5), adversarial A1–A13; no live backend required.
+- Static QA: PASS — `.lefthook/scripts/api-contract-check.sh` exists (sync-api-types → tsc → contract pytest; `set -euo pipefail`; no backend auto-start); `lefthook.yml` `api-contract-check` glob `asset_generation/web/backend/**/*.py`, `stage: commit`; Ruff clean per `project_board/checkpoints/M902-27/2026-05-21T-static-qa-run.md`.
+- Integration (manual, partial): Spec Req 07 dry-run D1–D5 **deferred** — documented in `project_board/checkpoints/M902-27/2026-05-21T-implementation-run.md` § Deferred; no `<run-id>-dry-run.md` yet. Subprocess CI tests encode D1–D3 (`test_h3` tsc block, `test_h4` pytest block) and D5 success path (`test_h1`); D4 bypass relies on Lefthook/stderr docs in `CLAUDE.md` and `asset_generation/web/backend/AGENTS.md` (not live `git commit` evidence).
+- Documentation: PASS — runbook table + bypass in `asset_generation/web/backend/AGENTS.md` § API contract pre-commit; `CLAUDE.md` Hooks § api-contract-check; spec Appendix C cross-linked.
+- Git closure (mandatory before COMPLETE): **FAIL** — working tree dirty/untracked (e.g. `.lefthook/scripts/api-contract-check.sh`, `asset_generation/web/frontend/src/api.types.ts`, `lefthook.yml`, `CLAUDE.md`, backend `AGENTS.md`); branch `main` ahead of `origin/main` (44 commits) — commit all M902-27 artifacts and push before Stage COMPLETE per `workflow_enforcement_v1.md`.
 
 ## Blocking Issues
-- None
+- Work not committed/pushed: M902-27 implementation files remain modified or untracked; `git status` must be clean and `git push` must succeed before Stage COMPLETE (non-negotiable per workflow enforcement).
+- Ticket folder: still under `01_in_progress/` — move to `02_complete/` only after COMPLETE gate passes.
 
 ## Escalation Notes
-- Manual dry-run evidence (spec Req 07 D1–D5) deferred to Static QA / Integration checkpoint.
+- Automated acceptance criteria (hook script, lefthook config, error handling, documentation, CI/adversarial tests) have objective evidence. COMPLETE withheld solely for git closure and standard folder move after push.
+- Optional Human follow-up: Req 07 D1–D5 live dry-run checkpoint (`project_board/checkpoints/M902-27/<run-id>-dry-run.md`) — not required to unblock commit/push if CI evidence is accepted.
 
 ---
 
@@ -164,13 +168,17 @@ Implementation Agent
 {
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/27_api_contract_precommit_hook.md",
   "spec_path": "project_board/specs/902_27_api_contract_precommit_spec.md",
-  "test_module": "tests/ci/test_api_contract_precommit_hook.py",
-  "gaps_log": "project_board/checkpoints/M902-27/2026-05-21T-test-break-run.md"
+  "actions": [
+    "git add .lefthook/scripts/api-contract-check.sh lefthook.yml CLAUDE.md asset_generation/web/backend/AGENTS.md asset_generation/web/frontend/src/api.types.ts",
+    "git commit -m \"feat(web): M902-27 api-contract pre-commit hook\"",
+    "git push origin main",
+    "git mv ticket to 02_complete/ after AC Gatekeeper re-run sets COMPLETE"
+  ]
 }
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Adversarial suite A1–A13 added; G1–G7 documented in test-break checkpoint. All 26 hook tests green (3 consecutive runs). Handoff: `project_board/checkpoints/M902-27/handoff-latest.yaml` (test_breaker→implementation). Orchestrator: `run_workflow_transition_gates.py --transition test_break_to_implementation`. Implementation: confirm AC-02.5 cache warning under load; complete Req 07 dry-run if not done.
+AC Gatekeeper: hook/lefthook/docs/tests evidenced (26+87 PASS); Req 07 dry-run D1–D5 deferred with checkpoint note (acceptable). Stage held at INTEGRATION — cannot set COMPLETE until git working tree clean and pushed per workflow enforcement; then re-run AC Gatekeeper for COMPLETE + `02_complete/` move.

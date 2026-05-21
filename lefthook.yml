@@ -14,6 +14,7 @@
 #   - Hook commands delegate to Taskfile targets so local/manual and hook flows share one entry point.
 #
 # pre-commit — fast checks on staged files only:
+#   - api-contract-check: when asset_generation/web/backend/**/*.py staged — sync-api-types, tsc, contract pytest (runbook: project_board/specs/902_27_api_contract_precommit_spec.md Appendix C)
 #   - py-parse: syntax-check staged Python files in asset_generation/python/
 #   - py-review: Ruff (E9/F/I from asset_generation/python/pyproject.toml) on staged asset_generation/**/*.py
 #   - py-pylint: Pylint too-many-statements (max 50) on staged asset_generation/python/**/*.py
@@ -73,6 +74,11 @@ pre-commit:
       name: Godot script organization guardrails
       glob: "**/*.gd"
       run: task hooks:gd-organization -- {staged_files}
+    api-contract-check:
+      name: API contract (OpenAPI sync, tsc, contract tests)
+      glob: "asset_generation/web/backend/**/*.py"
+      run: bash .lefthook/scripts/api-contract-check.sh
+      stage: commit
 
 pre-push:
   parallel: true
