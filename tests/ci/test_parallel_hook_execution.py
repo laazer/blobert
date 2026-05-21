@@ -175,13 +175,14 @@ class TestRequirement03LefthookParallelContract:
             "**/*.{gd,tscn,tres,gdshader}"
         )
         assert command_glob(lefthook_cfg, "pre-push", "py-tests") == (
-            "asset_generation/python/**/*.py"
+            "{asset_generation/python/**/*.py,ci/scripts/**/*.py,tests/ci/**/*.py}"
         )
 
     def test_pre_commit_has_eight_parallel_commands(self, lefthook_cfg: dict[str, Any]) -> None:
         commands = lefthook_cfg["pre-commit"]["commands"]
         assert isinstance(commands, dict)
         expected = {
+            "api-contract-check",
             "py-parse",
             "py-review",
             "py-pylint",

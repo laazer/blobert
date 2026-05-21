@@ -429,8 +429,8 @@ class TestStaticAnalysisScriptEdgeCases:
     """Test static_analysis_check.py for structural weaknesses."""
 
     def test_script_not_importable_as_module(self, repo_root: Path) -> None:
-        """Test that script at ci/scripts/static_analysis_check.py can be imported."""
-        script_path = repo_root / "ci" / "scripts" / "static_analysis_check.py"
+        """Test that script at ci/scripts/gates/static_analysis_check.py can be imported."""
+        script_path = repo_root / "ci" / "scripts" / "gates" / "static_analysis_check.py"
         if not script_path.exists():
             pytest.skip("static_analysis_check.py not found")
 
@@ -445,7 +445,7 @@ class TestStaticAnalysisScriptEdgeCases:
 
     def test_script_run_function_signature(self, repo_root: Path) -> None:
         """Test run() function has correct signature."""
-        script_path = repo_root / "ci" / "scripts" / "static_analysis_check.py"
+        script_path = repo_root / "ci" / "scripts" / "gates" / "static_analysis_check.py"
         if not script_path.exists():
             pytest.skip("static_analysis_check.py not found")
 
@@ -931,14 +931,17 @@ class TestAssertionChallenges:
         """CHECKPOINT: Gate assumes tool output is valid JSON — test malformed output."""
         # Mutation: tool outputs invalid JSON
         invalid_outputs = [
-            '{invalid json}',
+            "{invalid json}",
             '{"violations": [',  # Truncated
             '{"violations": undefined}',  # JavaScript undefined
-            '{"violations": NaN}',  # Invalid JSON number
         ]
         for invalid in invalid_outputs:
             with pytest.raises(json.JSONDecodeError):
                 json.loads(invalid)
+        # stdlib json.loads accepts NaN by default; gate parsers must not assume strict JSON.
+        import math
+
+        assert math.isnan(json.loads('{"violations": NaN}')["violations"])
 
     def test_assume_violations_array_challenges_it(self, tmp_path: Path) -> None:
         """CHECKPOINT: Gate assumes violations is always array — test null."""

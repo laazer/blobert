@@ -15,8 +15,8 @@ Milestone 902 delivered an eight-stage governance pipeline, context-optimization
 3. Tool categorization, forgiving parsing, todo/handoff/budget/early-stop tooling (M902-18–23)
 4. OpenAPI → TypeScript, Pydantic + Zod pilot, contract tests, pre-commit hook (M902-24–27)
 
-**Authoritative closure checklist:** [17_final_validation_and_stage_integration.md](02_complete/17_final_validation_and_stage_integration.md) (M902-17).  
-**Checkpoint index:** [project_board/CHECKPOINTS.md](../CHECKPOINTS.md).
+**Authoritative closure checklist:** [17_final_validation_and_stage_integration.md](project_board/902_milestone_902_agent_predictabilitiy_improvements/02_complete/17_final_validation_and_stage_integration.md) (M902-17).  
+**Checkpoint index:** [CHECKPOINTS.md](project_board/CHECKPOINTS.md).
 
 ---
 

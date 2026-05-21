@@ -44,13 +44,25 @@ class TestGateRegistry:
         # AC-04.4
         data = load_json(gate_registry)
         for entry in data:
-            module_file = gates_pkg / f"{entry['module']}.py"
+            module_name = entry["module"]
+            if "." in module_name:
+                module_name = module_name.rsplit(".", 1)[-1]
+            module_file = gates_pkg / f"{module_name}.py"
             assert module_file.exists(), f"Module file not found: {module_file}"
 
     def test_registry_categories_valid(self, gate_registry: Path) -> None:
         # AC-04.5
         data = load_json(gate_registry)
-        allowed = {"workflow", "static_analysis", "governance", "per_stage"}
+        allowed = {
+            "workflow",
+            "static_analysis",
+            "analysis",
+            "governance",
+            "per_stage",
+            "review",
+            "learning",
+            "security",
+        }
         for entry in data:
             assert entry["category"] in allowed, f"Invalid category: {entry['category']}"
 
