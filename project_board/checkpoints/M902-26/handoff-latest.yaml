@@ -1,42 +1,35 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M902-26
-  from_agent: test_designer
-  to_agent: test_breaker
-  validated_at: "2026-05-21T20:00:00Z"
-  required_items_met: 3
-  total_required_items: 3
+  from_agent: test_breaker
+  to_agent: implementation
+  validated_at: "2026-05-21T21:30:00Z"
+  required_items_met: 2
+  total_required_items: 2
   checklist:
-    - item_key: contract_tests_authored
-      item: Contract tests under asset_generation/python/tests/api/
+    - item_key: breaker_gaps_documented
+      item: All discovered gaps documented
       required: true
       status: complete
-      evidence: asset_generation/python/tests/api/
+      evidence: project_board/checkpoints/M902-26/2026-05-21T-test-break-run.md
       evidence_type: path
-    - item_key: happy_error_per_endpoint
-      item: Happy + error path per endpoint freeze row
+    - item_key: breaker_impl_notes
+      item: Implementation notes created
       required: true
       status: complete
-      evidence: "65 pytest cases; 6 modules + resolver unit tests"
-      evidence_type: attestation
-    - item_key: baseline_pytest_pass
-      item: Baseline pytest pass
-      required: true
-      status: complete
-      evidence: "uv run pytest tests/api/ -q — 65 passed in 0.84s"
-      evidence_type: attestation
+      evidence: project_board/checkpoints/M902-26/2026-05-21T-test-break-run.md
+      evidence_type: path
   notes:
-    harness: asset_generation/python/tests/api/openapi_contract.py
-    tier_a: "GET /api/health, GET /api/registry/model, GET /api/meta/enemies"
-    tier_b: "legacy JSONResponse routes with empty OpenAPI {} schemas"
-    sse_happy: "test_run_stream_done_event_happy_contract parses done event shape (ASGI+sse-starlette loop issue avoided)"
-    sse_http_error: test_run_stream_invalid_cmd_error_contract
-    seed_fixture: registry_with_player_version for player slot/delete/patch contracts
-    adversarial_targets:
-      - Tier A extra top-level response keys
-      - live vs openapi.cached.json path set drift
-      - malformed JSON POST bodies
-      - unicode path segments on files/assets
-    known_gaps:
-      - Req 11 runbook in backend AGENTS.md deferred to implementation
-      - OpenAPI cache adversarial test not yet added
+    adversarial_module: asset_generation/python/tests/api/test_api_contract_adversarial.py
+    new_cases: 22
+    total_api_tests: "87 passed (uv run pytest tests/api/ -q)"
+    tier_a: extra-key mutation, live response strictness on health/registry/meta
+    cache_drift: live vs openapi.cached.json path-key symmetry (strict both directions)
+    transport: malformed JSON on files PUT and registry load_existing/open
+    unicode: files read/write under src/, assets texture + GLB paths
+    sse: parser edges + _run_stream log/busy/done (avoid httpx SSE loop pollution)
+    impl_followups:
+      - Backend AGENTS.md API contract runbook (Req 11)
+      - Consider migrating test_run_stream_invalid_cmd_error_contract to _run_stream pattern
+    gaps:
+      - sse_starlette AppStatus event-loop bleed when multiple httpx SSE tests run in one session

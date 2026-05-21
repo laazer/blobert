@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-26",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-21T20:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-21T21:30:00Z",
   "todos": [
     {
       "id": "td-1",
@@ -37,7 +37,7 @@
     {
       "id": "td-6",
       "content": "Adversarial contract tests (extra keys, cache drift, unicode)",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Breaker Agent"
     },
     {

@@ -136,16 +136,16 @@ See: `project_board/specs/902_26_api_contract_testing_spec.md`
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_BACKEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Pass (`uv run pytest tests/api/ -q` — 65 passed)
+- Tests: Pass (`uv run pytest tests/api/ -q` — 87 passed)
 - Static QA: N/A
 - Integration: N/A
 
@@ -160,7 +160,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Agent (backend)
 
 ## Required Input Schema
 ```json
@@ -168,7 +168,8 @@ Test Breaker Agent
   "ticket_path": "project_board/902_milestone_902_agent_predictabilitiy_improvements/01_in_progress/26_api_contract_testing.md",
   "spec_path": "project_board/specs/902_26_api_contract_testing_spec.md",
   "test_root": "asset_generation/python/tests/api/",
-  "harness": "asset_generation/python/tests/api/openapi_contract.py"
+  "harness": "asset_generation/python/tests/api/openapi_contract.py",
+  "adversarial_module": "asset_generation/python/tests/api/test_api_contract_adversarial.py"
 }
 ```
 
@@ -176,4 +177,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Contract suite authored: 65 pytest cases (happy+error per endpoint freeze row), live OpenAPI+jsonschema harness, fixtures for tmp python_root/SSE/process mocks. Baseline green locally; Test Breaker should add adversarial cases (extra keys, stale cache drift, malformed JSON).
+Adversarial suite added (22 cases): Tier A extra-key rejection, live/cache OpenAPI path symmetry, malformed JSON POST, unicode path segments, SSE parser + _run_stream edges. 87 tests green. Implementation: Req 11 runbook in backend AGENTS.md; optional SSE httpx test hardening per checkpoint gaps.
