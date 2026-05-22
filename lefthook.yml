@@ -1,6 +1,8 @@
 # Git hooks for blobert (Godot 4 game + Blender asset pipeline).
 # Install:  lefthook install
 # Skip:     LEFTHOOK=0 git commit / git push
+# Agent/CI: bash hooks source .lefthook/scripts/hook-noninteractive.sh (no prompts; npx --yes; /bin/cp -f).
+#          Do not use interactive `cp` or bare `npx` without --yes in hook paths.
 # Blog script is currently disabled from git hooks.
 # Manual run (still available): BLOG_HOOK_PHASE=pre-push .lefthook/scripts/blog-post-on-push.sh
 #

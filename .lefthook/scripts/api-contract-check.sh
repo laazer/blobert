@@ -2,6 +2,9 @@
 # M902-27: API contract pre-commit — OpenAPI sync, tsc, contract tests (no backend auto-start).
 set -euo pipefail
 
+# shellcheck source=hook-noninteractive.sh
+source "$(cd "$(dirname "$0")" && pwd)/hook-noninteractive.sh"
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)" || {
   echo "api-contract-check: could not resolve repo root" >&2
   exit 1
@@ -84,7 +87,7 @@ fi
 echo "[2/3] Type-checking frontend..."
 tsc_stderr="$(mktemp)"
 tsc_rc=0
-if (cd "${FRONTEND_ROOT}" && npx tsc --noEmit) 2>"${tsc_stderr}"; then
+if (cd "${FRONTEND_ROOT}" && npx --yes tsc --noEmit) 2>"${tsc_stderr}"; then
   tsc_rc=0
 else
   tsc_rc=$?

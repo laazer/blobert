@@ -7,6 +7,9 @@
 # this script does not invoke pytest — env vars pass through from your shell when hooks run.
 set -e
 
+# shellcheck source=hook-noninteractive.sh
+source "$(cd "$(dirname "$0")" && pwd)/hook-noninteractive.sh"
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 

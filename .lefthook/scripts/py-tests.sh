@@ -6,6 +6,9 @@
 # origin/main). Override: DIFF_COVER_COMPARE_BRANCH=origin/my-base DIFF_COVER_FAIL_UNDER=85
 set -e
 
+# shellcheck source=hook-noninteractive.sh
+source "$(cd "$(dirname "$0")" && pwd)/hook-noninteractive.sh"
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PY_ROOT="$ROOT/asset_generation/python"
 GIT_ROOT="$ROOT"

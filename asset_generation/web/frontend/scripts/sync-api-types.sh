@@ -2,6 +2,11 @@
 # Sync FastAPI OpenAPI document → src/api.types.ts (M902-24).
 set -euo pipefail
 
+# Non-interactive defaults for lefthook / agent runs (npx install prompts, git, etc.).
+export CI="${CI:-1}"
+export GIT_TERMINAL_PROMPT=0
+export NPM_CONFIG_YES="${NPM_CONFIG_YES:-true}"
+
 die() {
   echo "$1" >&2
   exit "${2:-1}"
@@ -130,7 +135,7 @@ mkdir -p "$(dirname "$OUTPUT_PATH")" 2>/dev/null || true
 
 trap - ERR
 set +e
-npx openapi-typescript@7.13.0 "$SPEC_INPUT" -o "$OUT_TMP" 2>"$GEN_TMP"
+npx --yes openapi-typescript@7.13.0 "$SPEC_INPUT" -o "$OUT_TMP" 2>"$GEN_TMP"
 gen_rc=$?
 set -e
 trap on_err ERR
