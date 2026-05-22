@@ -69,7 +69,7 @@ function parseBuildControls(raw: unknown): Record<string, AnimatedBuildControlDe
 export function defaultValuesForDefs(defs: readonly AnimatedBuildControlDef[]): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   for (const d of defs) {
-    row[d.key] = d.default;
+    row[d.key] = "default" in d ? d.default : undefined;
   }
   return row;
 }
@@ -172,7 +172,7 @@ export function mergeBuildOptionValues(
     migrateLegacyGlobalTextureToZones(slug, next[slug]);
     for (const d of defs) {
       if (next[slug][d.key] === undefined) {
-        next[slug][d.key] = d.default;
+        next[slug][d.key] = "default" in d ? d.default : undefined;
       }
     }
   }
@@ -221,7 +221,7 @@ export async function fetchModelRegistry(): Promise<ModelRegistryPayload> {
 export async function patchRegistryEnemyVersion(
   family: string,
   versionId: string,
-  body: { draft?: boolean; in_use?: boolean; name?: string | null },
+  body: { draft?: boolean; in_use?: boolean; name?: string | null; tags?: string[] },
 ): Promise<ModelRegistryPayload> {
   const encFamily = encodeURIComponent(family);
   const encVid = encodeURIComponent(versionId);
@@ -433,18 +433,19 @@ export async function fetchTextureAssets(): Promise<TextureAsset[]> {
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   const textures = Array.isArray(data.textures) ? data.textures : [];
-  return textures.filter((texture): texture is TextureAsset => {
+  return textures.filter((texture: unknown): texture is TextureAsset => {
+    if (!texture || typeof texture !== "object") return false;
+    const row = texture as Record<string, unknown>;
     return (
-      texture &&
-      typeof texture.id === "string" &&
-      typeof texture.filename === "string" &&
-      typeof texture.display_name === "string" &&
-      typeof texture.description === "string" &&
-      typeof texture.layout === "string" &&
-      typeof texture.url === "string" &&
-      typeof texture.width === "number" &&
-      typeof texture.height === "number" &&
-      typeof texture.tiling_supported === "boolean"
+      typeof row.id === "string" &&
+      typeof row.filename === "string" &&
+      typeof row.display_name === "string" &&
+      typeof row.description === "string" &&
+      typeof row.layout === "string" &&
+      typeof row.url === "string" &&
+      typeof row.width === "number" &&
+      typeof row.height === "number" &&
+      typeof row.tiling_supported === "boolean"
     );
   });
 }

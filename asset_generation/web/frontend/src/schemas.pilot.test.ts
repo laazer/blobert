@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 
 import {
   HealthResponseSchema,
@@ -23,14 +23,14 @@ function loadFixture(name: string): unknown {
   return JSON.parse(fs.readFileSync(filePath, "utf-8"));
 }
 
-const VALID_CASES: Array<{ file: string; schema: typeof HealthResponseSchema }> = [
+const VALID_CASES: Array<{ file: string; schema: z.ZodTypeAny }> = [
   { file: "health.ok.json", schema: HealthResponseSchema },
   { file: "registry.minimal.ok.json", schema: ModelRegistryResponseSchema },
   { file: "meta.ok.minimal.json", schema: MetaEnemiesResponseSchema },
   { file: "meta.fallback.ok.json", schema: MetaEnemiesResponseSchema },
 ];
 
-const INVALID_CASES: Array<{ file: string; schema: typeof HealthResponseSchema }> = [
+const INVALID_CASES: Array<{ file: string; schema: z.ZodTypeAny }> = [
   { file: "health.invalid.wrong_status.json", schema: HealthResponseSchema },
   { file: "health.invalid.empty.json", schema: HealthResponseSchema },
   { file: "health.invalid.extra_key.json", schema: HealthResponseSchema },
@@ -48,6 +48,27 @@ const INVALID_CASES: Array<{ file: string; schema: typeof HealthResponseSchema }
 ];
 
 describe("pilot Zod schemas (M902-25 drift fixtures)", () => {
+  it("coerces null enemy slots to an empty array (registry families without slot assignments)", () => {
+    const parsed = ModelRegistryResponseSchema.parse({
+      schema_version: 1,
+      enemies: {
+        acid_spitter: {
+          versions: [
+            {
+              id: "acid_spitter_animated_00",
+              path: "animated_exports/acid_spitter_animated_00.glb",
+              draft: false,
+              in_use: true,
+            },
+          ],
+          slots: null,
+        },
+      },
+      player_active_visual: null,
+    });
+    expect(parsed.enemies.acid_spitter.slots).toEqual([]);
+  });
+
   it.each(VALID_CASES)("parses valid fixture $file", ({ file, schema }) => {
     const payload = loadFixture(file);
     const parsed = schema.parse(payload);

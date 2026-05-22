@@ -1,7 +1,7 @@
 /**
  * Validated fetch layer for pilot API endpoints (M902-25).
  */
-import type { ZodError, ZodType } from "zod";
+import type { ZodError, ZodType, ZodTypeDef } from "zod";
 
 import {
   HealthResponseSchema,
@@ -47,7 +47,7 @@ export class ApiValidationError extends Error {
 
 export async function validatedFetch<T>(
   url: string,
-  schema: ZodType<T>,
+  schema: ZodType<T, ZodTypeDef, unknown>,
   init?: RequestInit,
 ): Promise<T> {
   let response: Response;

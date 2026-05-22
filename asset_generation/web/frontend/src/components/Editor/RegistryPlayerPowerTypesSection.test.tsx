@@ -12,6 +12,13 @@ const noopFlags = vi.fn();
 const noopPreview = vi.fn();
 const noopScan = vi.fn();
 const noopRename = vi.fn();
+const noopPatchTags = vi.fn();
+
+const tagProps = {
+  knownTags: ["player", "combat", "wip"],
+  hideDisplayTags: new Set(["player"]),
+  onPatchTags: noopPatchTags,
+};
 
 const draftVersion: RegistryEnemyVersion = {
   id: "player_slime_blue_00",
@@ -40,6 +47,7 @@ function renderSection(
       onApplyFlags={noopFlags}
       onPreviewVersion={noopPreview}
       onRenameVersion={noopRename}
+      {...tagProps}
     />,
   );
 }

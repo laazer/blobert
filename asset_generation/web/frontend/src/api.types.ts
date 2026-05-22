@@ -430,6 +430,36 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BoolControlResponse */
+        BoolControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "bool";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Default */
+            default: boolean;
+        };
+        /**
+         * EnemyMetaRowResponse
+         * @description Enemy slug and display label.
+         */
+        EnemyMetaRowResponse: {
+            /**
+             * Slug
+             * @description Enemy family slug.
+             */
+            slug: string;
+            /**
+             * Label
+             * @description Human-readable enemy label.
+             */
+            label: string;
+        };
         /** EnemySlotsPut */
         EnemySlotsPut: {
             /**
@@ -472,16 +502,103 @@ export interface components {
              * @description Optional display name; omit for no change, null or empty string clears.
              */
             name?: string | null;
+            /**
+             * Tags
+             * @description Full tag list for the version; family slug is always injected on save.
+             */
+            tags?: string[] | null;
+        };
+        /**
+         * FamilyBlockResponse
+         * @description Enemy or player family block with versions and optional slot order.
+         */
+        FamilyBlockResponse: {
+            /**
+             * Versions
+             * @description Version rows for this family.
+             */
+            versions?: components["schemas"]["VersionRowResponse"][];
+            /**
+             * Slots
+             * @description Ordered slot version ids; empty when the family has no slot assignments.
+             */
+            slots?: string[];
         };
         /** FileWrite */
         FileWrite: {
             /** Content */
             content: string;
         };
+        /** FillPickerControlResponse */
+        FillPickerControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "fill_picker";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /** FloatControlResponse */
+        FloatControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Step */
+            step: number;
+            /** Default */
+            default: number;
+            /** Unit */
+            unit?: string | null;
+            /** Hint */
+            hint?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HealthResponse
+         * @description Liveness probe for the asset editor API.
+         */
+        HealthResponse: {
+            /**
+             * Status
+             * @description Health status; only ok is defined.
+             * @constant
+             */
+            status: "ok";
+        };
+        /** IntControlResponse */
+        IntControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "int";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Default */
+            default: number;
         };
         /** LoadExistingOpenRequest */
         LoadExistingOpenRequest: {
@@ -497,6 +614,57 @@ export interface components {
             /** Path */
             path?: string | null;
         };
+        /**
+         * MetaEnemiesResponse
+         * @description Enemy catalog and procedural build controls.
+         */
+        MetaEnemiesResponse: {
+            /**
+             * Enemies
+             * @description Enemy slug/label rows.
+             */
+            enemies: components["schemas"]["EnemyMetaRowResponse"][];
+            /**
+             * Animated Build Controls
+             * @description Build control definitions keyed by enemy slug.
+             */
+            animated_build_controls?: {
+                [key: string]: (components["schemas"]["IntControlResponse"] | components["schemas"]["SelectControlResponse"] | components["schemas"]["FloatControlResponse"] | components["schemas"]["StrControlResponse"] | components["schemas"]["SelectStrControlResponse"] | components["schemas"]["BoolControlResponse"] | components["schemas"]["FillPickerControlResponse"])[];
+            };
+            /**
+             * Meta Backend
+             * @description Whether Python introspection succeeded.
+             * @enum {string}
+             */
+            meta_backend: "ok" | "fallback";
+            /**
+             * Meta Error
+             * @description Error detail when meta_backend is fallback.
+             */
+            meta_error?: string | null;
+        };
+        /**
+         * ModelRegistryResponse
+         * @description Effective model registry manifest (MRVC).
+         */
+        ModelRegistryResponse: {
+            /**
+             * Schema Version
+             * @description Manifest schema version (>= 1).
+             */
+            schema_version: number;
+            /**
+             * Enemies
+             * @description Enemy families keyed by slug.
+             */
+            enemies: {
+                [key: string]: components["schemas"]["FamilyBlockResponse"];
+            };
+            /** @description Player family block when present. */
+            player?: components["schemas"]["FamilyBlockResponse"] | null;
+            /** @description Active player visual row or null. */
+            player_active_visual?: components["schemas"]["PlayerActiveVisualResponse"] | null;
+        };
         /** PlayerActiveVisualDeleteRequest */
         PlayerActiveVisualDeleteRequest: {
             /**
@@ -504,6 +672,22 @@ export interface components {
              * @default false
              */
             confirm: boolean;
+        };
+        /**
+         * PlayerActiveVisualResponse
+         * @description Player active visual selection row.
+         */
+        PlayerActiveVisualResponse: {
+            /**
+             * Path
+             * @description Allowlisted path to the active player visual GLB.
+             */
+            path: string;
+            /**
+             * Draft
+             * @description Draft flag for the active visual.
+             */
+            draft: boolean;
         };
         /** PlayerVisualPatch */
         PlayerVisualPatch: {
@@ -515,6 +699,56 @@ export interface components {
              */
             path?: string | null;
         };
+        /** SelectControlResponse */
+        SelectControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Options */
+            options: number[];
+            /** Default */
+            default: number;
+        };
+        /** SelectStrControlResponse */
+        SelectStrControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select_str";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Options */
+            options: string[];
+            /** Default */
+            default: string;
+            /** Segmented */
+            segmented?: boolean | null;
+            /** Hint */
+            hint?: string | null;
+        };
+        /** StrControlResponse */
+        StrControlResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "str";
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Default */
+            default: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -523,6 +757,42 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VersionRowResponse
+         * @description One version row under a family block.
+         */
+        VersionRowResponse: {
+            /**
+             * Id
+             * @description Stable version identifier within the family.
+             */
+            id: string;
+            /**
+             * Path
+             * @description Registry-relative GLB path under an allowlisted prefix.
+             */
+            path: string;
+            /**
+             * Draft
+             * @description Draft flag; draft rows are not spawn-eligible.
+             */
+            draft: boolean;
+            /**
+             * In Use
+             * @description In-use flag for spawn pool eligibility.
+             */
+            in_use: boolean;
+            /**
+             * Name
+             * @description Optional display name (max 128 chars).
+             */
+            name?: string | null;
+            /**
+             * Tags
+             * @description Normalized tags; first entry is always the model family slug.
+             */
+            tags?: string[];
         };
     };
     responses: never;
@@ -859,7 +1129,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MetaEnemiesResponse"];
                 };
             };
         };
@@ -879,7 +1149,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: string[];
+                    };
                 };
             };
         };
@@ -952,7 +1224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ModelRegistryResponse"];
                 };
             };
         };
@@ -1311,7 +1583,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["HealthResponse"];
                 };
             };
         };

@@ -255,6 +255,7 @@ def test_validate_player_branch_preserves_valid():
         "path": "player_exports/p_00.glb",
         "draft": True,
         "in_use": False,
+        "tags": ["player"],
     }
     assert out["player"].get("slots") == []
     assert out["player_active_visual"] is None
@@ -524,6 +525,7 @@ def test_sync_discovered_animated_glb_versions_adds_on_disk_stems(tmp_path: Path
         "path": "animated_exports/imp_animated_01.glb",
         "draft": True,
         "in_use": False,
+        "tags": ["imp"],
     }
 
 

@@ -36,13 +36,20 @@ const VersionRowSchema = z
     draft: z.boolean(),
     in_use: z.boolean(),
     name: z.string().max(128).nullable().optional(),
+    /** Normalized tags; first entry is the model family slug (Godot-ready manifest field). */
+    tags: z.array(z.string().min(1)).optional(),
   })
   .strict();
+
+const SlotsArraySchema = z
+  .array(z.string())
+  .nullish()
+  .transform((value) => value ?? []);
 
 const FamilyBlockSchema = z
   .object({
     versions: z.array(VersionRowSchema),
-    slots: z.array(z.string().min(1)).optional(),
+    slots: SlotsArraySchema.optional(),
   })
   .strict();
 

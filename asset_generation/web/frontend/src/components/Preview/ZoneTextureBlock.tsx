@@ -278,7 +278,6 @@ export function carryPatternColorPaletteOnModeChange(
     hexKey: `${p}hex`,
     colorAKey: `${p}grad_a`,
     colorBKey: `${p}grad_b`,
-    colorDirKey: `${p}grad_direction`,
     legacySingleKey: `feat_${zone}_texture_${colorField}`,
   });
 }

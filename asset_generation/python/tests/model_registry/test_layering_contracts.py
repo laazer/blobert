@@ -135,9 +135,9 @@ def test_private_migration_helpers_alias_between_service_and_migrations() -> Non
 
     assert (
         service._derive_player_active_visual_from_block
-        is migrations_mod._derive_player_active_visual_from_block
+        is migrations_mod.derive_player_active_visual_from_block
     )
-    assert service._legacy_pav_to_player_block is migrations_mod._legacy_pav_to_player_block
+    assert service._legacy_pav_to_player_block is migrations_mod.legacy_pav_to_player_block
 
 
 def test_schema_defines_at_least_one_public_typeddict() -> None:

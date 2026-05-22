@@ -1,9 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
+import { REGISTRY_ENEMY_FAMILY_LS } from "../../utils/registryFamilyNav";
+import { REGISTRY_TAG_FILTER_LS, REGISTRY_TAG_GROUP_LS } from "../../utils/registryTags";
 import { ModelRegistryPane } from "./ModelRegistryPane";
+
+function slotVersionSelectsForFamily(family: string): HTMLSelectElement[] {
+  const panel = screen.getByTestId(`registry-enemy-family-panel-${family}`);
+  return within(panel)
+    .getAllByTestId(/^registry-slot-select-/)
+    .map((el) => el as HTMLSelectElement);
+}
 
 const baseVersions: RegistryEnemyVersion[] = [
   {
@@ -45,10 +54,16 @@ import * as client from "../../api/client";
 
 describe("ModelRegistryPane Add slot", () => {
   afterEach(() => {
+    localStorage.removeItem(REGISTRY_ENEMY_FAMILY_LS);
+    localStorage.removeItem(REGISTRY_TAG_FILTER_LS);
+    localStorage.removeItem(REGISTRY_TAG_GROUP_LS);
     cleanup();
   });
 
   beforeEach(() => {
+    localStorage.removeItem(REGISTRY_ENEMY_FAMILY_LS);
+    localStorage.removeItem(REGISTRY_TAG_FILTER_LS);
+    localStorage.removeItem(REGISTRY_TAG_GROUP_LS);
     vi.mocked(client.fetchLoadExistingCandidates).mockResolvedValue({ candidates: [] });
     vi.mocked(client.patchRegistryEnemyVersion).mockReset();
     vi.mocked(client.postSyncDiscoveredAnimatedGlbVersions).mockImplementation(() =>
@@ -92,7 +107,7 @@ describe("ModelRegistryPane Add slot", () => {
     fireEvent.click(screen.getByTestId("registry-add-empty-slot-spider"));
 
     await waitFor(() => {
-      const selects = screen.getAllByRole("combobox");
+      const selects = slotVersionSelectsForFamily("spider");
       expect(selects).toHaveLength(3);
       expect(selects[2]).toHaveValue("");
     });
@@ -141,7 +156,7 @@ describe("ModelRegistryPane Add slot", () => {
     fireEvent.click(screen.getByTestId("registry-add-slot-pick-spider_animated_01"));
 
     await waitFor(() => {
-      const slotSelects = screen.getAllByRole("combobox");
+      const slotSelects = slotVersionSelectsForFamily("spider");
       expect(slotSelects).toHaveLength(2);
       expect(slotSelects[1]).toHaveValue("spider_animated_01");
     });
@@ -190,7 +205,7 @@ describe("ModelRegistryPane Add slot", () => {
     fireEvent.click(screen.getByTestId("registry-add-slot-pick-spider_animated_01"));
 
     await waitFor(() => {
-      const slotSelects = screen.getAllByRole("combobox");
+      const slotSelects = slotVersionSelectsForFamily("spider");
       expect(slotSelects).toHaveLength(2);
       expect(slotSelects[1]).toHaveValue("spider_animated_01");
     });

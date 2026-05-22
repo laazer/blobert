@@ -14,12 +14,16 @@ from typing import Any, cast
 from urllib.parse import unquote
 
 from .migrations import (
-    _derive_player_active_visual_from_block,
-    _legacy_pav_to_player_block,
     default_migrated_manifest,
+    derive_player_active_visual_from_block,
+    legacy_pav_to_player_block,
 )
+
+_derive_player_active_visual_from_block = derive_player_active_visual_from_block
+_legacy_pav_to_player_block = legacy_pav_to_player_block
 from .schema import _MAX_VERSION_NAME_LEN, _path_is_allowlisted, validate_manifest
 from .store import read_registry_object, registry_path, write_registry_json_atomic
+from .tags import canonical_version_tags
 
 _MAX_URL_DECODE_PASSES = 3
 _WINDOWS_DRIVE_PATH_RE = re.compile(r"^[a-zA-Z]:[/\\]")
@@ -112,6 +116,8 @@ def _apply_version_patches(
     fam_block: dict[str, Any],
     version_id: str,
     patches: dict[str, Any],
+    *,
+    family_slug: str,
 ) -> None:
     versions: list[dict[str, Any]] = fam_block["versions"]
     found = next((v for v in versions if v["id"] == version_id), None)
@@ -142,6 +148,11 @@ def _apply_version_patches(
                 found["name"] = s
         else:
             raise ValueError("patch name must be string or null")
+    if "tags" in patches:
+        t = patches["tags"]
+        if not isinstance(t, list):
+            raise ValueError("patch tags must be an array")
+        found["tags"] = canonical_version_tags(family_slug, t)
 
     _coerce_version_row_draft_in_use(found)
     if found.get("draft"):
@@ -168,13 +179,13 @@ def patch_enemy_version(
 ) -> dict[str, Any]:
     if not patches:
         raise ValueError("at least one patch field is required")
-    bad = set(patches) - frozenset({"draft", "in_use", "name"})
+    bad = set(patches) - frozenset({"draft", "in_use", "name", "tags"})
     if bad:
         raise ValueError(f"unsupported patch keys: {sorted(bad)}")
 
     data = load_effective_manifest(python_root)
     fam = _get_family_block(data, family)
-    _apply_version_patches(fam, version_id, patches)
+    _apply_version_patches(fam, version_id, patches, family_slug=family)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)
     return validated
@@ -450,13 +461,13 @@ def patch_player_version(
 ) -> dict[str, Any]:
     if not patches:
         raise ValueError("at least one patch field is required")
-    bad = set(patches) - frozenset({"draft", "in_use", "name"})
+    bad = set(patches) - frozenset({"draft", "in_use", "name", "tags"})
     if bad:
         raise ValueError(f"unsupported patch keys: {sorted(bad)}")
 
     data = load_effective_manifest(python_root)
     fam = _get_family_block(data, "player")
-    _apply_version_patches(fam, version_id, patches)
+    _apply_version_patches(fam, version_id, patches, family_slug="player")
     data.pop("player_active_visual", None)
     validated = validate_manifest(data)
     save_manifest_atomic(python_root, validated)

@@ -20,14 +20,29 @@ import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
 import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
 import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
 import {
+  REGISTRY_ENEMY_FAMILY_LS,
+  pickRegistryEnemyFamily,
+  registryFamilyTabLabel,
+} from "../../utils/registryFamilyNav";
+import {
   enemyRegistryRowKey,
   parseEnemyRegistryRowKey,
   pruneEnemyVersionSelectionKeys,
 } from "../../utils/registryVersionSelection";
+import {
+  REGISTRY_TAG_FILTER_LS,
+  REGISTRY_TAG_GROUP_LS,
+  collectRegistryTagCatalog,
+  filterFamiliesByTags,
+  groupFamiliesByTag,
+  parseSavedTagFilter,
+  parseSavedTagGroup,
+} from "../../utils/registryTags";
 import { AddEnemySlotModal } from "./AddEnemySlotModal";
-import { RegistryEnemyFamiliesSection } from "./RegistryEnemyFamiliesSection";
+import { RegistryEnemyFamilyPanel } from "./RegistryEnemyFamilyPanel";
 import { RegistryEnemyLoadExistingSection } from "./RegistryEnemyLoadExistingSection";
 import { RegistryPlayerPowerTypesSection } from "./RegistryPlayerPowerTypesSection";
+import { RegistryTagOrganizerBar } from "./RegistryTagOrganizerBar";
 import type { EnemyDeletePlan } from "./registryEnemyTypes";
 import { loadExistingCandidateKey, toOpenExistingRequest } from "./registryLoadExisting";
 import {
@@ -125,12 +140,16 @@ export function ModelRegistryPane() {
   const [addSlotBusyFamily, setAddSlotBusyFamily] = useState<string | null>(null);
   const [addSlotPreparingFamily, setAddSlotPreparingFamily] = useState<string | null>(null);
   const [registrySubtab, setRegistrySubtab] = useState<RunCmd>(() => parseSavedRegistrySubtab() ?? "animated");
+  const [selectedEnemyFamily, setSelectedEnemyFamily] = useState<string | null>(null);
   const [selectedEnemyVersionKeys, setSelectedEnemyVersionKeys] = useState<Set<string>>(() => new Set());
   const [bulkEnemyBusyFamily, setBulkEnemyBusyFamily] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<Set<string>>(() => new Set(parseSavedTagFilter()));
+  const [groupByTag, setGroupByTag] = useState<string | null>(() => parseSavedTagGroup());
 
   const selectAssetByPath = useAppStore((s) => s.selectAssetByPath);
   const activeGlbUrl = useAppStore((s) => s.activeGlbUrl);
   const registryReloadSeq = useAppStore((s) => s.registryReloadSeq);
+  const commandContext = useAppStore((s) => s.commandContext);
 
   const loadEnemySlots = useCallback(async (registry: ModelRegistryPayload) => {
     const families = Object.keys(registry.enemies);
@@ -192,6 +211,64 @@ export function ModelRegistryPane() {
     () => (data ? Object.keys(data.enemies).sort() : []),
     [data],
   );
+
+  const commandEnemyForFamily =
+    commandContext.cmd === "animated" ? commandContext.enemy : undefined;
+
+  const tagCatalog = useMemo(
+    () => (data ? collectRegistryTagCatalog(data) : []),
+    [data],
+  );
+
+  const visibleFamilies = useMemo(
+    () => (data ? filterFamiliesByTags(families, data.enemies, [...tagFilter]) : []),
+    [families, data, tagFilter],
+  );
+
+  const familyGroups = useMemo(() => {
+    if (!groupByTag || !data) return null;
+    return groupFamiliesByTag(visibleFamilies, data.enemies, groupByTag);
+  }, [groupByTag, visibleFamilies, data]);
+
+  const hideDisplayTags = useMemo(() => {
+    const hidden = new Set<string>();
+    if (selectedEnemyFamily) hidden.add(selectedEnemyFamily);
+    if (groupByTag) hidden.add(groupByTag);
+    return hidden;
+  }, [selectedEnemyFamily, groupByTag]);
+
+  useEffect(() => {
+    if (registrySubtab !== "animated" || visibleFamilies.length === 0) return;
+    setSelectedEnemyFamily((prev) =>
+      pickRegistryEnemyFamily(visibleFamilies, prev, commandEnemyForFamily),
+    );
+  }, [visibleFamilies, registrySubtab, commandEnemyForFamily]);
+
+  useEffect(() => {
+    if (registrySubtab !== "animated" || !selectedEnemyFamily) return;
+    try {
+      localStorage.setItem(REGISTRY_ENEMY_FAMILY_LS, selectedEnemyFamily);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [registrySubtab, selectedEnemyFamily]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(REGISTRY_TAG_FILTER_LS, JSON.stringify([...tagFilter]));
+    } catch {
+      /* ignore */
+    }
+  }, [tagFilter]);
+
+  useEffect(() => {
+    try {
+      if (groupByTag) localStorage.setItem(REGISTRY_TAG_GROUP_LS, groupByTag);
+      else localStorage.removeItem(REGISTRY_TAG_GROUP_LS);
+    } catch {
+      /* ignore */
+    }
+  }, [groupByTag]);
 
   const familyAddSlotDisabled = useMemo(() => {
     if (!data) return {} as Record<string, boolean>;
@@ -337,6 +414,20 @@ export function ModelRegistryPane() {
     try {
       const use = nextDraft ? false : nextInUse;
       const updated = await patchRegistryEnemyVersion("player", v.id, { draft: nextDraft, in_use: use });
+      await syncFromRegistry(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function patchVersionTags(family: string, v: RegistryEnemyVersion, tags: string[]) {
+    const key = `${family}:${v.id}`;
+    setBusyKey(key);
+    setError(null);
+    try {
+      const updated = await patchRegistryEnemyVersion(family, v.id, { tags });
       await syncFromRegistry(updated);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -510,6 +601,33 @@ export function ModelRegistryPane() {
 
   const playerVersions = data.player?.versions ?? [];
 
+  const familyTabListStyle: CSSProperties = {
+    display: "flex",
+    gap: 6,
+    marginBottom: 10,
+    flexWrap: "nowrap",
+    overflowX: "auto",
+    paddingBottom: 2,
+  };
+
+  const renderFamilyTab = (family: string) => (
+    <button
+      key={family}
+      type="button"
+      role="tab"
+      aria-selected={selectedEnemyFamily === family}
+      id={`registry-family-tab-${family}`}
+      data-testid={`registry-family-tab-${family}`}
+      style={{
+        ...centerPanelTabBtnStyle(selectedEnemyFamily === family),
+        flexShrink: 0,
+      }}
+      onClick={() => setSelectedEnemyFamily(family)}
+    >
+      {registryFamilyTabLabel(family)}
+    </button>
+  );
+
   return (
     <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
       <div
@@ -534,40 +652,96 @@ export function ModelRegistryPane() {
 
       {registrySubtab === "animated" ? (
         <>
-          <RegistryEnemyFamiliesSection
-            families={families}
-            enemies={data.enemies}
-            slotVersionIdsByFamily={slotVersionIdsByFamily}
-            familyAddSlotDisabled={familyAddSlotDisabled}
-            addSlotPreparingFamily={addSlotPreparingFamily}
-            slotSaveBusyFamily={slotSaveBusyFamily}
-            busyKey={busyKey}
-            deleteBusyKey={deleteBusyKey}
-            onAddSlot={requestAddSlotModal}
-            onAddEmptySlot={addEmptyEnemySlot}
-            onRemoveSlot={removeEnemySlot}
-            onUpdateSlotVersion={updateEnemySlotVersion}
-            onSaveSlots={saveEnemySlots}
-            onApplyFlags={applyFlags}
-            onPreviewVersion={previewVersion}
-            onDeleteVersion={deleteEnemyVersion}
-            getEnemyDeletePlan={buildEnemyDeletePlan}
-            selectedEnemyVersionKeys={selectedEnemyVersionKeys}
-            onToggleEnemyVersionSelect={toggleEnemyVersionSelect}
-            onEnemyFamilySelectAllVersions={setEnemyFamilySelectAllVersions}
-            bulkEnemyBusyFamily={bulkEnemyBusyFamily}
-            onBulkEnemySetDraft={(family) => bulkEnemyApplyFlags(family, true, false)}
-            onBulkEnemySetInPool={(family) => bulkEnemyApplyFlags(family, false, true)}
-            onBulkEnemyDeleteSelected={bulkDeleteEnemyVersions}
-            onRenameVersion={renameRegistryVersion}
-          />
-          <RegistryEnemyLoadExistingSection
-            loadExistingCandidates={loadExistingCandidates}
-            loadExistingSelection={loadExistingSelection}
-            onLoadExistingSelectionChange={setLoadExistingSelection}
-            loadExistingBusy={loadExistingBusy}
-            onLoadExistingInPreview={openExistingSelection}
-          />
+          {families.length > 0 ? (
+            <RegistryTagOrganizerBar
+              catalog={tagCatalog}
+              filterTags={tagFilter}
+              groupByTag={groupByTag}
+              onToggleFilter={(tag) => {
+                setTagFilter((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(tag)) next.delete(tag);
+                  else next.add(tag);
+                  return next;
+                });
+              }}
+              onClearFilters={() => setTagFilter(new Set())}
+              onGroupByChange={setGroupByTag}
+            />
+          ) : null}
+          {visibleFamilies.length > 0 ? (
+            familyGroups ? (
+              familyGroups.map((group) => (
+                <div key={group.tag} style={{ marginBottom: 8 }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#888",
+                      marginBottom: 4,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {group.label}
+                  </div>
+                  <div style={familyTabListStyle} role="tablist" aria-label={`Families: ${group.label}`}>
+                    {group.families.map((family) => renderFamilyTab(family))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={familyTabListStyle} role="tablist" aria-label="Enemy families">
+                {visibleFamilies.map((family) => renderFamilyTab(family))}
+              </div>
+            )
+          ) : families.length > 0 ? (
+            <div style={{ color: "#d7ba7d", fontSize: 11, marginBottom: 10 }}>
+              No enemy families match the current tag filters.
+            </div>
+          ) : null}
+          {selectedEnemyFamily && data.enemies[selectedEnemyFamily] ? (
+            <>
+              <RegistryEnemyFamilyPanel
+                family={selectedEnemyFamily}
+                versions={data.enemies[selectedEnemyFamily].versions}
+                slotVersionIds={slotVersionIdsByFamily[selectedEnemyFamily] ?? []}
+                addSlotDisabled={familyAddSlotDisabled[selectedEnemyFamily] ?? true}
+                addSlotPreparing={addSlotPreparingFamily === selectedEnemyFamily}
+                slotSaveBusy={slotSaveBusyFamily === selectedEnemyFamily}
+                busyKey={busyKey}
+                deleteBusyKey={deleteBusyKey}
+                onAddSlot={requestAddSlotModal}
+                onAddEmptySlot={addEmptyEnemySlot}
+                onRemoveSlot={removeEnemySlot}
+                onUpdateSlotVersion={updateEnemySlotVersion}
+                onSaveSlots={saveEnemySlots}
+                onApplyFlags={applyFlags}
+                onPreviewVersion={previewVersion}
+                onDeleteVersion={deleteEnemyVersion}
+                getEnemyDeletePlan={buildEnemyDeletePlan}
+                selectedEnemyVersionKeys={selectedEnemyVersionKeys}
+                onToggleEnemyVersionSelect={toggleEnemyVersionSelect}
+                onEnemyFamilySelectAllVersions={setEnemyFamilySelectAllVersions}
+                bulkEnemyBusy={bulkEnemyBusyFamily === selectedEnemyFamily}
+                onBulkEnemySetDraft={(family) => bulkEnemyApplyFlags(family, true, false)}
+                onBulkEnemySetInPool={(family) => bulkEnemyApplyFlags(family, false, true)}
+                onBulkEnemyDeleteSelected={bulkDeleteEnemyVersions}
+                onRenameVersion={renameRegistryVersion}
+                knownTags={tagCatalog}
+                hideDisplayTags={hideDisplayTags}
+                onPatchTags={patchVersionTags}
+              />
+              <RegistryEnemyLoadExistingSection
+                loadExistingCandidates={loadExistingCandidates}
+                loadExistingSelection={loadExistingSelection}
+                onLoadExistingSelectionChange={setLoadExistingSelection}
+                loadExistingBusy={loadExistingBusy}
+                onLoadExistingInPreview={openExistingSelection}
+                activeFamily={selectedEnemyFamily}
+              />
+            </>
+          ) : (
+            <div style={{ color: "#9d9d9d", fontSize: 11, marginBottom: 12 }}>No enemy families in the registry.</div>
+          )}
         </>
       ) : null}
 
@@ -580,6 +754,9 @@ export function ModelRegistryPane() {
           onApplyFlags={applyPlayerVersionFlags}
           onPreviewVersion={(v) => selectAssetByPath(v.path)}
           onRenameVersion={(v, trimmed) => void renameRegistryVersion("player", v, trimmed)}
+          knownTags={tagCatalog}
+          hideDisplayTags={new Set(["player"])}
+          onPatchTags={(v, tags) => patchVersionTags("player", v, tags)}
         />
       ) : null}
 

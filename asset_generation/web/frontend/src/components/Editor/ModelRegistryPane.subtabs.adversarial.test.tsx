@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import type { ModelRegistryPayload } from "../../types";
 import { PLAYER_POWER_TYPES_HEADING } from "./RegistryPlayerPowerTypesSection";
+import { REGISTRY_ENEMY_FAMILY_LS } from "../../utils/registryFamilyNav";
 import { ModelRegistryPane } from "./ModelRegistryPane";
 
 const registryFixture: ModelRegistryPayload = {
@@ -37,6 +38,7 @@ import * as client from "../../api/client";
 describe("ModelRegistryPane registry sub-tabs (adversarial)", () => {
   afterEach(() => {
     localStorage.removeItem("blobert.registry.subtab");
+    localStorage.removeItem(REGISTRY_ENEMY_FAMILY_LS);
     cleanup();
   });
 

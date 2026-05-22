@@ -12,6 +12,7 @@ import {
   savePlayerPowerTypes,
   type PlayerPowerType,
 } from "../../utils/playerPowerTypes";
+import { RegistryTagEditor } from "./RegistryTagEditor";
 import { RegistryVersionNameInput } from "./RegistryVersionNameInput";
 
 export const PLAYER_POWER_TYPES_HEADING = "Player power types";
@@ -113,6 +114,9 @@ export type RegistryPlayerPowerTypesSectionProps = {
   onApplyFlags: (v: RegistryEnemyVersion, nextDraft: boolean, nextInUse: boolean) => void | Promise<void>;
   onPreviewVersion: (v: RegistryEnemyVersion) => void;
   onRenameVersion: (v: RegistryEnemyVersion, trimmedDisplayName: string) => void | Promise<void>;
+  knownTags: readonly string[];
+  hideDisplayTags: ReadonlySet<string>;
+  onPatchTags: (v: RegistryEnemyVersion, tags: string[]) => void | Promise<void>;
 };
 
 export function RegistryPlayerPowerTypesSection({
@@ -123,6 +127,9 @@ export function RegistryPlayerPowerTypesSection({
   onApplyFlags,
   onPreviewVersion,
   onRenameVersion,
+  knownTags,
+  hideDisplayTags,
+  onPatchTags,
 }: RegistryPlayerPowerTypesSectionProps) {
   const [powerTypes, setPowerTypesState] = useState<PlayerPowerType[]>(() => loadPlayerPowerTypes());
   const [sectionSlots, setSectionSlotsState] = useState<Record<string, string[]>>(() => {
@@ -429,8 +436,9 @@ export function RegistryPlayerPowerTypesSection({
                     />
                   </th>
                   <th style={th}>Version id</th>
+                  <th style={th}>Tags</th>
                   <th style={th}>Name</th>
-                  <th style={{ ...th, maxWidth: 180 }}>Path</th>
+                  <th style={{ ...th, maxWidth: 140 }}>Path</th>
                   <th style={th}>Spawn state</th>
                   <th style={th}>Preview</th>
                 </tr>
@@ -460,6 +468,16 @@ export function RegistryPlayerPowerTypesSection({
                         />
                       </td>
                       <td style={td}>{row.id}</td>
+                      <td style={{ ...td, minWidth: 120, maxWidth: 220 }}>
+                        <RegistryTagEditor
+                          family="player"
+                          version={row}
+                          knownTags={knownTags}
+                          hideDisplayTags={hideDisplayTags}
+                          disabled={pending}
+                          onCommit={(tags) => onPatchTags(row, tags)}
+                        />
+                      </td>
                       <td style={td}>
                         <RegistryVersionNameInput
                           versionId={row.id}

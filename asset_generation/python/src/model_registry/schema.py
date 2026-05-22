@@ -6,9 +6,10 @@ from typing import Any, TypedDict
 
 from .migrations import (
     SCHEMA_VERSION,
-    _derive_player_active_visual_from_block,
-    _legacy_pav_to_player_block,
+    derive_player_active_visual_from_block,
+    legacy_pav_to_player_block,
 )
+from .tags import canonical_version_tags
 
 ALLOWLIST_PREFIXES: tuple[str, ...] = (
     "animated_exports/",
@@ -26,6 +27,7 @@ class VersionRow(TypedDict, total=False):
     draft: bool
     in_use: bool
     name: str
+    tags: list[str]
 
 
 class FamilyBlock(TypedDict, total=False):
@@ -56,6 +58,66 @@ def _coerce_version_row_draft_in_use(row: dict[str, Any]) -> None:
         row["in_use"] = False
 
 
+def _family_slug_for_tags(context: str) -> str:
+    if context == "player":
+        return "player"
+    prefix = "enemies["
+    if context.startswith(prefix) and context.endswith("]"):
+        inner = context[len(prefix) : -1]
+        if len(inner) >= 2 and inner[0] == inner[-1] and inner[0] in ("'", '"'):
+            return inner[1:-1]
+    raise ValueError(f"cannot derive family slug from context {context!r}")
+
+
+def _normalize_version_row(
+    context: str,
+    index: int,
+    row: dict[str, Any],
+    seen_ids: set[str],
+) -> dict[str, Any]:
+    allowed_keys = {"id", "path", "draft", "in_use", "name", "tags"}
+    extra = set(row.keys()) - allowed_keys
+    if extra:
+        raise ValueError(f"{context}.versions[{index}] unexpected keys: {sorted(extra)}")
+    for k in ("id", "path", "draft", "in_use"):
+        if k not in row:
+            raise ValueError(f"{context}.versions[{index}] missing {k!r}")
+    vid = row["id"]
+    path = row["path"]
+    draft = row["draft"]
+    in_use = row["in_use"]
+    if not isinstance(vid, str) or not vid.strip():
+        raise ValueError(f"{context}.versions[{index}].id invalid")
+    if vid in seen_ids:
+        raise ValueError(f"duplicate version id {vid!r} in {context}")
+    seen_ids.add(vid)
+    if not isinstance(path, str) or not _path_is_allowlisted(path):
+        raise ValueError(f"invalid path for {context} / {vid!r}: {path!r}")
+    if not isinstance(draft, bool) or not isinstance(in_use, bool):
+        raise ValueError(f"draft/in_use must be booleans for {context} / {vid!r}")
+    use = in_use
+    if draft and in_use:
+        use = False
+    if not draft and not use:
+        draft = True
+        use = False
+    out_row: dict[str, Any] = {"id": vid, "path": path, "draft": draft, "in_use": use}
+    if "name" in row and row["name"] is not None:
+        nraw = row["name"]
+        if not isinstance(nraw, str):
+            raise ValueError(f"{context}.versions[{index}].name must be a string")
+        nstrip = nraw.strip()
+        if len(nstrip) > _MAX_VERSION_NAME_LEN:
+            raise ValueError(
+                f"{context}.versions[{index}].name exceeds max length {_MAX_VERSION_NAME_LEN}",
+            )
+        if nstrip:
+            out_row["name"] = nstrip
+    family_slug = _family_slug_for_tags(context)
+    out_row["tags"] = canonical_version_tags(family_slug, row.get("tags"))
+    return out_row
+
+
 def _normalize_registry_family_block(context: str, fam_val: Any) -> dict[str, Any]:
     """Validate and canonicalize one family block (`versions` + optional `slots`)."""
     if not isinstance(fam_val, dict):
@@ -72,45 +134,7 @@ def _normalize_registry_family_block(context: str, fam_val: Any) -> dict[str, An
     for i, row in enumerate(versions_raw):
         if not isinstance(row, dict):
             raise ValueError(f"{context}.versions[{i}] must be an object")
-        allowed_keys = {"id", "path", "draft", "in_use", "name"}
-        extra = set(row.keys()) - allowed_keys
-        if extra:
-            raise ValueError(f"{context}.versions[{i}] unexpected keys: {sorted(extra)}")
-        for k in ("id", "path", "draft", "in_use"):
-            if k not in row:
-                raise ValueError(f"{context}.versions[{i}] missing {k!r}")
-        vid = row["id"]
-        path = row["path"]
-        draft = row["draft"]
-        in_use = row["in_use"]
-        if not isinstance(vid, str) or not vid.strip():
-            raise ValueError(f"{context}.versions[{i}].id invalid")
-        if vid in seen_ids:
-            raise ValueError(f"duplicate version id {vid!r} in {context}")
-        seen_ids.add(vid)
-        if not isinstance(path, str) or not _path_is_allowlisted(path):
-            raise ValueError(f"invalid path for {context} / {vid!r}: {path!r}")
-        if not isinstance(draft, bool) or not isinstance(in_use, bool):
-            raise ValueError(f"draft/in_use must be booleans for {context} / {vid!r}")
-        use = in_use
-        if draft and in_use:
-            use = False
-        if not draft and not use:
-            draft = True
-            use = False
-        out_row: dict[str, Any] = {"id": vid, "path": path, "draft": draft, "in_use": use}
-        if "name" in row and row["name"] is not None:
-            nraw = row["name"]
-            if not isinstance(nraw, str):
-                raise ValueError(f"{context}.versions[{i}].name must be a string")
-            nstrip = nraw.strip()
-            if len(nstrip) > _MAX_VERSION_NAME_LEN:
-                raise ValueError(
-                    f"{context}.versions[{i}].name exceeds max length {_MAX_VERSION_NAME_LEN}",
-                )
-            if nstrip:
-                out_row["name"] = nstrip
-        versions_out.append(out_row)
+        versions_out.append(_normalize_version_row(context, i, row, seen_ids))
 
     family_out: dict[str, Any] = {"versions": versions_out}
     slots_raw = fam_val.get("slots")
@@ -185,14 +209,14 @@ def validate_manifest(data: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f"invalid player_active_visual.path: {pp!r}")
         if not isinstance(pd, bool):
             raise ValueError("player_active_visual.draft must be boolean")
-        player_block_in = _legacy_pav_to_player_block(pav_legacy)
+        player_block_in = legacy_pav_to_player_block(pav_legacy)
     elif isinstance(player_raw, dict):
         player_block_in = player_raw
     else:
         player_block_in = {"versions": [], "slots": []}
 
     player_normalized = _normalize_registry_family_block("player", player_block_in)
-    pav_derived = _derive_player_active_visual_from_block(player_normalized)
+    pav_derived = derive_player_active_visual_from_block(player_normalized)
 
     return {
         "schema_version": SCHEMA_VERSION,

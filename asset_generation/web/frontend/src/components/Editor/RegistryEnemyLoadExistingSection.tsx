@@ -40,6 +40,8 @@ export type RegistryEnemyLoadExistingSectionProps = {
   onLoadExistingSelectionChange: (key: string) => void;
   loadExistingBusy: boolean;
   onLoadExistingInPreview: () => void;
+  /** When set, filter candidates to this registry family and hide the family filter control. */
+  activeFamily?: string | null;
 };
 
 export function RegistryEnemyLoadExistingSection({
@@ -48,8 +50,10 @@ export function RegistryEnemyLoadExistingSection({
   onLoadExistingSelectionChange,
   loadExistingBusy,
   onLoadExistingInPreview,
+  activeFamily = null,
 }: RegistryEnemyLoadExistingSectionProps) {
   const [enemyFamilyFilter, setEnemyFamilyFilter] = useState<string | null>(null);
+  const effectiveFamilyFilter = activeFamily ?? enemyFamilyFilter;
 
   const enemyFamiliesInCandidates = useMemo(() => {
     const s = new Set<string>();
@@ -60,8 +64,8 @@ export function RegistryEnemyLoadExistingSection({
   }, [loadExistingCandidates]);
 
   const visibleLoadExistingCandidates = useMemo(
-    () => filterLoadExistingCandidates(loadExistingCandidates, "enemy", enemyFamilyFilter),
-    [loadExistingCandidates, enemyFamilyFilter],
+    () => filterLoadExistingCandidates(loadExistingCandidates, "enemy", effectiveFamilyFilter),
+    [loadExistingCandidates, effectiveFamilyFilter],
   );
 
   useEffect(() => {
@@ -85,7 +89,7 @@ export function RegistryEnemyLoadExistingSection({
         <div style={{ color: "#d7ba7d", fontSize: 11 }}>{LOAD_EXISTING_EMPTY_COPY}</div>
       ) : (
         <>
-          {enemyFamiliesInCandidates.length > 0 ? (
+          {activeFamily == null && enemyFamiliesInCandidates.length > 0 ? (
             <div style={{ marginBottom: 8 }}>
               <label style={labelStyle} htmlFor="load-existing-enemy-family-animated-tab">
                 Enemy family

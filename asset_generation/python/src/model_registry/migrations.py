@@ -44,7 +44,7 @@ def default_migrated_manifest() -> dict[str, Any]:
     }
 
 
-def _legacy_pav_to_player_block(pav: dict[str, Any]) -> dict[str, Any]:
+def legacy_pav_to_player_block(pav: dict[str, Any]) -> dict[str, Any]:
     pp = pav["path"]
     pd = bool(pav["draft"])
     name = Path(pp).name
@@ -58,7 +58,7 @@ def _legacy_pav_to_player_block(pav: dict[str, Any]) -> dict[str, Any]:
     return {"versions": [row], "slots": slots}
 
 
-def _derive_player_active_visual_from_block(player_block: dict[str, Any]) -> dict[str, Any] | None:
+def derive_player_active_visual_from_block(player_block: dict[str, Any]) -> dict[str, Any] | None:
     slots = player_block.get("slots")
     if not isinstance(slots, list) or len(slots) == 0:
         return None

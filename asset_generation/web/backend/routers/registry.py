@@ -70,6 +70,10 @@ class EnemyVersionPatch(BaseModel):
         default=None,
         description="Optional display name; omit for no change, null or empty string clears.",
     )
+    tags: list[str] | None = Field(
+        default=None,
+        description="Full tag list for the version; family slug is always injected on save.",
+    )
 
 
 class PlayerVisualPatch(BaseModel):

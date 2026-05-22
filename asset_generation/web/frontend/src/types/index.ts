@@ -75,6 +75,11 @@ export type AnimatedBuildControlDef =
       label: string;
       type: "bool";
       default: boolean;
+    }
+  | {
+      key: string;
+      label: string;
+      type: "fill_picker";
     };
 
 /** One row under ``enemies[slug].versions`` (MRVC-2). */
@@ -85,6 +90,8 @@ export type RegistryEnemyVersion = {
   in_use: boolean;
   /** Optional display name (editor / tooling). */
   name?: string;
+  /** Normalized tags; first entry is always the model family slug (Godot-ready manifest field). */
+  tags?: string[];
 };
 
 /** GET /api/registry/model payload. */

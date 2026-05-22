@@ -28,6 +28,10 @@ class VersionRowResponse(BaseModel):
     draft: bool = Field(..., description="Draft flag; draft rows are not spawn-eligible.")
     in_use: bool = Field(..., description="In-use flag for spawn pool eligibility.")
     name: str | None = Field(default=None, description="Optional display name (max 128 chars).")
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Normalized tags; first entry is always the model family slug.",
+    )
 
     @field_validator("id", "path")
     @classmethod
@@ -63,16 +67,21 @@ class FamilyBlockResponse(BaseModel):
         default_factory=list,
         description="Version rows for this family.",
     )
-    slots: list[str] | None = Field(
-        default=None,
-        description="Ordered slot version ids when present.",
+    slots: list[str] = Field(
+        default_factory=list,
+        description="Ordered slot version ids; empty when the family has no slot assignments.",
     )
+
+    @field_validator("slots", mode="before")
+    @classmethod
+    def _coerce_slots(cls, value: list[str] | None) -> list[str]:
+        if value is None:
+            return []
+        return value
 
     @field_validator("slots")
     @classmethod
-    def _slots_non_empty(cls, value: list[str] | None) -> list[str] | None:
-        if value is None:
-            return None
+    def _slots_non_empty(cls, value: list[str]) -> list[str]:
         for entry in value:
             if not isinstance(entry, str) or not entry.strip():
                 raise ValueError("slot entries must be non-empty strings")
