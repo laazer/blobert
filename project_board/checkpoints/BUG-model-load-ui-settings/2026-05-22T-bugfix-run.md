@@ -62,3 +62,16 @@ npm test -- --run src/components/Preview/BuildControls.previewSync.test.tsx src/
 **Full suite note:** `npm test -- --run` exit 1 with 16 failures across 5 files (includes this regression test + unrelated `ImageMode`, `BuildControlRow.concurrency`, `ModelRegistryPane.family_tabs`, `BuildControls.texture`). Not introduced by test file alone; implementation handoff should not treat those as REQ-5 blockers unless reproducing on clean branch.
 
 **Deferred:** REQ-2 import-path test, REQ-3 CommandPanel sync, REQ-4 ColorsPane preview-only — minimum scope per ticket handoff; implementation may extend.
+
+**Workflow gate (orchestrator):** `test_design_to_test_break` not run for this handoff (ticket advanced to IMPLEMENTATION_FRONTEND per bugfix pipeline). If invoked:
+
+```
+--- handoff_validation_check FAIL ---
+Handoff validation failed for test_designer→test_breaker (3 gap(s))
+  - Complete all required checklist items with status: complete and non-empty evidence.
+transition=test_design_to_test_break ticket_id=BUG-MODEL-LOAD-UI-SETTINGS
+  todo_validation_check: PASS
+  handoff_validation_check: FAIL
+```
+
+Handoff YAML targets `implementation_frontend`; orchestrator should use implementation transition or human override.
