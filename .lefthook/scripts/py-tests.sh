@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run Python test suites: asset_generation/python (cov + diff-cover) and repo-root tests/ci.
-# Triggered by pre-push when Python under asset_generation/python/, ci/scripts/, or tests/ci/ changed.
+# Run asset_generation/python tests (cov + diff-cover). Repo-root tests/ci: py-tests-ci.sh.
+# Triggered by pre-push when asset_generation/python/**/*.py changed.
 #
 # After pytest + coverage XML, diff-cover gates changed lines vs a compare branch (default
 # origin/main). Override: DIFF_COVER_COMPARE_BRANCH=origin/my-base DIFF_COVER_FAIL_UNDER=85
@@ -104,11 +104,6 @@ _run_pytest_run_contract_no_cov() {
   _py_invoke -m pytest tests/api/test_run_contract.py -q
 }
 
-_run_pytest_ci_scripts() {
-  echo "pre-push: running repo-root tests/ci (gate + ci/scripts contracts)..."
-  (cd "$GIT_ROOT" && _py_invoke -m pytest tests/ci -q)
-}
-
 _run_mypy_scoped() {
   bash "$MYPY_CHECK"
 }
@@ -119,7 +114,6 @@ _run_all() {
   _ensure_pytest_cov
   _ensure_diff_cover
   _run_pytest_run_contract_no_cov
-  _run_pytest_ci_scripts
   _run_pytest_cov
   _run_diff_cover
 }

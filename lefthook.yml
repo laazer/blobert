@@ -25,7 +25,8 @@
 #
 # pre-push — full test suites (parallel: true — godot-tests and py-tests run concurrently when both globs match):
 #   - godot-tests: full Godot test suite (any .gd/.tscn/.tres change)
-#   - py-tests:    Ruff (asset_generation) + mypy manifest + tests/ci + pytest/cov + diff-cover
+#   - py-tests:    Ruff (asset_generation) + mypy manifest + pytest/cov + diff-cover
+#   - py-tests-ci: repo-root tests/ci when ci/scripts or tests/ci change (see py-tests-ci.sh)
 #   - Opt-out: LEFTHOOK=0 skips all hooks; LEFTHOOK_EXCLUDE=<command> skips one command; set parallel: false in this file to force sequential pre-push
 #
 # Requires:
@@ -90,6 +91,10 @@ pre-push:
       glob: "**/*.{gd,tscn,tres,gdshader}"
       run: task hooks:godot
     py-tests:
-      name: Python tests (asset_generation, ci/scripts, tests/ci)
-      glob: "{asset_generation/python/**/*.py,ci/scripts/**/*.py,tests/ci/**/*.py}"
+      name: Python tests (asset_generation)
+      glob: "asset_generation/python/**/*.py"
       run: task hooks:python
+    py-tests-ci:
+      name: Python tests (repo-root tests/ci)
+      glob: "{ci/scripts/**/*.py,tests/ci/**/*.py}"
+      run: bash .lefthook/scripts/py-tests-ci.sh
