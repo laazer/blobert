@@ -1,0 +1,27 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: BUG-model-load-ui-settings
+  from_agent: test_designer
+  to_agent: implementation_frontend
+  validated_at: "2026-05-22T17:00:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: regression_test_authored
+      item: REQ-1 regression test fails on current behavior
+      required: true
+      status: complete
+      evidence: asset_generation/web/frontend/src/store/useAppStore.selectAssetByPath.previewOnly.test.ts
+      evidence_type: path
+    - item_key: named_non_regression_green
+      item: BuildControls.previewSync and ColorsPane tests pass
+      required: true
+      status: complete
+      evidence: "npm test --run BuildControls.previewSync.test.tsx ColorsPane.test.tsx — 9 passed"
+      evidence_type: attestation
+    - item_key: checkpoint_logged
+      item: Checkpoint logged with verbatim fail output
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/BUG-model-load-ui-settings/2026-05-22T-bugfix-run.md
+      evidence_type: path

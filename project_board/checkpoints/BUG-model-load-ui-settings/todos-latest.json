@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "BUG-model-load-ui-settings",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-22T17:00:00Z",
+  "todos": [
+    {
+      "id": "td-1",
+      "content": "Author REQ-1 regression test (preview-only selectAssetByPath)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "td-2",
+      "content": "Confirm regression fails; BuildControls.previewSync + ColorsPane pass",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "impl-1",
+      "content": "Decouple selectAssetByPath hydration; explicit import for REQ-2",
+      "status": "pending",
+      "agent": "IMPLEMENTATION_FRONTEND"
+    },
+    {
+      "id": "impl-2",
+      "content": "REQ-3 CommandPanel + REQ-4 ColorsPane as needed for AC",
+      "status": "pending",
+      "agent": "IMPLEMENTATION_FRONTEND"
+    }
+  ]
+}

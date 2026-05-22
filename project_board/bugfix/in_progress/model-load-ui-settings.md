@@ -172,13 +172,17 @@ sequenceDiagram
 | Meta controls empty for slug | Import no-op for build row (existing guard); preview still works |
 | User on Colors tab, preview-only | Zone colors unchanged (REQ-4) |
 
+## NEXT ACTION
+
+Implementation frontend agent: decouple `selectAssetByPath` from unconditional `hydrateBuildOptionsFromPreviewGlbPath`; add explicit import flag for REQ-2 paths; make regression test `BUG-model-load-ui-settings-preview-select-does-not-import-sidecar` pass.
+
 ## WORKFLOW STATE
 
 | Field | Value |
 |---|---|
-| Stage | TEST_DESIGN |
-| Revision | 2 |
-| Last Updated By | Spec Agent |
-| Next Responsible Agent | Test Designer Agent |
-| Validation Status | Not started |
+| Stage | IMPLEMENTATION_FRONTEND |
+| Revision | 3 |
+| Last Updated By | Test Designer Agent |
+| Next Responsible Agent | IMPLEMENTATION_FRONTEND |
+| Validation Status | Regression test authored (fails on current code); REQ-3/4 tests deferred to implementation |
 | Blocking Issues | None |
