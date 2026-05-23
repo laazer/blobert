@@ -5,6 +5,20 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-23T-studio-01-autopilot
+
+- Queue mode: single ticket
+- Queue scope: `project_board/43_milestone_43_studio_editor_redesign/in_progress/STUDIO-01_studio_shell_tokens.md`
+- Lean: no
+- Spec: `project_board/specs/studio_editor_redesign_spec.md` (pre-authored)
+- Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-plan-run.md`
+- Log root: `project_board/checkpoints/STUDIO-01/`
+
+### STUDIO-01 — OUTCOME: PLANNING COMPLETE
+Ten-task execution plan in ticket + execution plan file. Stage → SPECIFICATION; handoff to Spec Agent.
+
+---
+
 ## Run: 2026-05-23T-m11-01-autopilot (M11 Player State Machine)
 
 - Queue mode: single ticket

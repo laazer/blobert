@@ -1,0 +1,26 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: STUDIO-01
+  from_agent: planner
+  to_agent: spec
+  validated_at: "2026-05-23T12:00:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: planner_ticket_decomposed
+      item: Ticket decomposed into execution plan tasks
+      required: true
+      status: complete
+      evidence: project_board/execution_plans/STUDIO-01_studio_shell_tokens.md
+      evidence_type: path
+    - item_key: planner_dependencies_clear
+      item: Dependencies clear (acyclic or documented WARN)
+      required: true
+      status: complete
+      evidence: project_board/execution_plans/STUDIO-01_studio_shell_tokens.md section Dependency Matrix
+    - item_key: planner_timeline_estimated
+      item: Timeline estimated
+      required: true
+      status: complete
+      evidence: project_board/execution_plans/STUDIO-01_studio_shell_tokens.md
+      evidence_type: path

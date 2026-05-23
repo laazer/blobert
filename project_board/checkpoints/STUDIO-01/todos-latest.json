@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "STUDIO-01",
+  "agent": "Planner Agent",
+  "captured_at": "2026-05-23T12:00:00Z",
+  "todos": [
+    {
+      "id": "plan-1",
+      "content": "Read ticket, spec §6–§9, and frontend layout patterns",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-2",
+      "content": "Decompose ten-task execution plan with dependency matrix and estimated effort",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-3",
+      "content": "Embed Tasks table in ticket; write execution_plans/STUDIO-01_studio_shell_tokens.md",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-4",
+      "content": "Update ticket workflow state to SPECIFICATION; handoff planner_to_spec artifacts",
+      "status": "completed",
+      "agent": "Planner Agent"
+    }
+  ]
+}
