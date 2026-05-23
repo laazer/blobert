@@ -123,13 +123,13 @@ Make `_physics_process` in `PlayerController3D` follow a frozen, documented six-
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -149,25 +149,17 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "spec_path": "project_board/specs/player_physics_frame_order_spec.md",
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md",
-  "primary_files": [
-    "scripts/player/player_controller_3d.gd",
-    "scripts/movement/movement_simulation.gd",
-    "scripts/fx/slime_visual_state.gd",
-    "scripts/player/player_export_animation_controller_3d.gd",
-    "scenes/levels/sandbox/test_one_way_platform_3d.tscn"
-  ],
-  "test_files": [
-    "tests/scripts/player/test_player_physics_frame_order.gd",
-    "tests/scripts/player/test_player_physics_frame_order_adversarial.gd"
-  ],
-  "spec_exit_type": "generic"
+  "primary_test_file": "tests/scripts/player/test_player_physics_frame_order.gd",
+  "adversarial_test_file": "tests/scripts/player/test_player_physics_frame_order_adversarial.gd",
+  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-test-design-run.md",
+  "red_evidence": "13/13 failures in test_player_physics_frame_order.gd"
 }
 ```
 
@@ -175,4 +167,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Normative PFO-2 ten-step pipeline spec complete (jump buffer, coyote ownership, one-way mask, renderer sync, M11-01 hook preservation). Stage advanced to TEST_DESIGN for behavior-based red tests.
+Primary PFO behavioral tests authored and RED (13 failures). Handoff to Test Breaker for adversarial suite and boundary cases.

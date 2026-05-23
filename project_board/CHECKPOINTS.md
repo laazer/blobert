@@ -20,6 +20,10 @@ Eleven-task execution plan in ticket (revision 2). Stage → SPECIFICATION; hand
 PFO-2 pipeline frozen: jump buffer (0.1s), coyote in sim, one-way layers/mask, renderer sync pre-slide, FSM hooks preserved.
 Log: `project_board/checkpoints/M11-02/2026-05-23T-spec-run.md`
 
+### M11-02 — OUTCOME: TEST_DESIGN → TEST_BREAK
+Primary suite `test_player_physics_frame_order.gd` — 13 RED failures (jump buffer, mask, fixture, pipeline methods).
+Log: `project_board/checkpoints/M11-02/2026-05-23T-test-design-run.md`
+
 ---
 
 ## Run: 2026-05-23T-studio-01-autopilot

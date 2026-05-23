@@ -1,27 +1,35 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-02
-  from_agent: spec
-  to_agent: test_designer
-  validated_at: "2026-05-23T14:00:00Z"
+  from_agent: test_designer
+  to_agent: test_breaker
+  validated_at: "2026-05-23T16:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: spec_acceptance_criteria
-      item: Acceptance criteria defined
+    - item_key: primary_tests_authored
+      item: Primary behavioral tests authored
       required: true
       status: complete
-      evidence: project_board/specs/player_physics_frame_order_spec.md
+      evidence: tests/scripts/player/test_player_physics_frame_order.gd
       evidence_type: path
-    - item_key: spec_test_strategy
-      item: Test strategy documented
+    - item_key: tests_red_before_impl
+      item: Tests fail (red) before implementation
       required: true
       status: complete
-      evidence: "PFO Test Strategy: test_player_physics_frame_order.gd + adversarial; fixture test_one_way_platform_3d.tscn"
+      evidence: "13/13 failures in test_player_physics_frame_order.gd (godot run_tests.gd)"
       evidence_type: attestation
-    - item_key: spec_edge_cases
-      item: Edge cases listed
+    - item_key: runtime_only_assertions
+      item: Runtime behavior assertions only
       required: true
       status: complete
-      evidence: "EC-1..EC-14 in player_physics_frame_order_spec.md Edge Cases section"
+      evidence: "No project_board prose asserts; position/velocity/mask/is_on_floor only"
       evidence_type: attestation
+  test_evidence:
+    command: "timeout 300 godot --headless --path . -s tests/run_tests.gd"
+    suite: test_player_physics_frame_order.gd
+    passed: 0
+    failed: 13
+  next_work:
+    - Author test_player_physics_frame_order_adversarial.gd
+    - Buffer boundary 0.1s, mask flip at vy==0, buffer+coyote interaction
