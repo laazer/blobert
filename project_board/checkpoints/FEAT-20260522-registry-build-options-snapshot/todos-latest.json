@@ -1,56 +1,50 @@
 {
   "schema_version": "1.0",
   "ticket_id": "FEAT-20260522-registry-build-options-snapshot",
-  "agent": "Spec Agent",
-  "captured_at": "2026-05-23T01:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-23T09:00:00Z",
   "todos": [
-    {
-      "id": "spec-1",
-      "content": "Author FEAT-20260522_registry_build_options_snapshot_spec.md",
-      "status": "completed",
-      "agent": "Spec Agent"
-    },
-    {
-      "id": "spec-2",
-      "content": "Log spec ambiguities to scoped checkpoint",
-      "status": "completed",
-      "agent": "Spec Agent"
-    },
-    {
-      "id": "spec-3",
-      "content": "Write handoff-latest.yaml and todos-latest.json",
-      "status": "completed",
-      "agent": "Spec Agent"
-    },
     {
       "id": "td-py-1",
       "content": "Python: schema allowlist + coerce_validate + sync backfill idempotency",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "td-py-2",
       "content": "Python: export/post-run attach snapshot tests",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "td-be-1",
       "content": "Backend: GET /model and load_existing/open build_options contract",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "td-fe-1",
       "content": "Frontend: registry-first hydrate, sidecar fallback, preview-only regression",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "tb-1",
-      "content": "Test Breaker: malformed/oversized snapshots, player/enemy parity gaps",
-      "status": "pending",
+      "content": "Test Breaker: malformed/oversized snapshots, PATCH rejection, dual-miss, player parity",
+      "status": "completed",
       "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "impl-py-1",
+      "content": "Phase 1 Generalist: schema + service + backend OpenAPI (green Python/backend RED)",
+      "status": "pending",
+      "agent": "Implementation Agent (Generalist)"
+    },
+    {
+      "id": "impl-fe-1",
+      "content": "Phase 2 Frontend: registry-first hydrate + sync-api-types",
+      "status": "pending",
+      "agent": "Implementation Frontend Agent"
     }
   ]
 }

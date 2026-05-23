@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M11-01",
+  "agent": "Planner Agent",
+  "captured_at": "2026-05-23T12:00:00Z",
+  "todos": [
+    {
+      "id": "plan-1",
+      "content": "Read ticket, workflow enforcement, and player controller codebase",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-2",
+      "content": "Decompose M11-01 into staged execution plan with agent assignments",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-3",
+      "content": "Update ticket Execution Plan and WORKFLOW STATE for Spec handoff",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-4",
+      "content": "Write checkpoint log and handoff artifacts under project_board/checkpoints/M11-01/",
+      "status": "completed",
+      "agent": "Planner Agent"
+    }
+  ]
+}

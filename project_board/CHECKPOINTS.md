@@ -5,6 +5,33 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-23T-m11-01-autopilot (M11 Player State Machine)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/backlog/01_player_state_machine.md`
+- Lean: no
+- Log: `project_board/checkpoints/M11-01/2026-05-23T-plan-run.md`
+- Log root: project_board/checkpoints/
+
+### M11-01 — OUTCOME: PLANNING COMPLETE
+Execution plan in ticket (10 tasks). Stage → SPECIFICATION; handoff to Spec Agent.
+
+---
+
+## Run: 2026-05-22T-feat-registry-build-options (FEAT-20260522-registry-build-options-snapshot)
+
+- Ticket: `project_board/inbox/00_backlog/FEAT-20260522-registry-build-options-snapshot.md`
+- Log: `project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/2026-05-22T-feature-run.md`
+
+---
+
+## Run: 2026-05-22T-bugfix-model-load-ui-settings
+
+- Ticket: `project_board/bugfix/in_progress/model-load-ui-settings.md`
+- Log: `project_board/checkpoints/BUG-model-load-ui-settings/2026-05-22T-bugfix-run.md`
+
+---
+
 ## Run: 2026-05-22T-m902-18-closure (M902-18 Tool Categorization — unblock)
 
 - Queue mode: manual closure (M902-18a prerequisite satisfied)

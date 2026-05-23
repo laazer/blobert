@@ -90,16 +90,16 @@ We recently fixed preview-only loads so `selectAssetByPath` does not hydrate fro
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+IMPLEMENTATION_BACKEND
 
 ## Revision
-2
+4
 
 ## Last Updated By
-Spec Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: RED adversarial + designer suite (targeted pytest/npm); preview-only regression green; service PATCH rejects `build_options` key (green)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -114,15 +114,44 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Implementation Agent (Generalist)
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/inbox/00_backlog/FEAT-20260522-registry-build-options-snapshot.md",
   "spec_path": "project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md",
-  "spec_completeness_types": "api,load-open",
-  "checkpoint_log": "project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/2026-05-22T-feature-run.md"
+  "checkpoint_log": "project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/2026-05-22T-feature-run.md",
+  "handoff_path": "project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/handoff-latest.yaml",
+  "phase_1_surfaces": [
+    "asset_generation/python/src/model_registry/",
+    "asset_generation/web/backend/models/responses/registry.py",
+    "asset_generation/web/backend/routers/registry.py"
+  ],
+  "phase_2_agent": "Implementation Frontend Agent",
+  "phase_2_surfaces": [
+    "asset_generation/web/frontend/src/store/useAppStore.ts",
+    "asset_generation/web/frontend/src/components/Editor/ModelRegistryPane.tsx"
+  ],
+  "red_test_paths": [
+    "asset_generation/python/tests/model_registry/test_version_row_build_options_schema.py",
+    "asset_generation/python/tests/model_registry/test_version_row_build_options_adversarial.py",
+    "asset_generation/python/tests/model_registry/test_sync_discovered_build_options_backfill.py",
+    "asset_generation/python/tests/model_registry/test_sync_discovered_build_options_adversarial.py",
+    "asset_generation/python/tests/model_registry/test_attach_build_options_to_version.py",
+    "asset_generation/python/tests/api/test_registry_build_options_contract.py",
+    "asset_generation/python/tests/api/test_registry_build_options_contract_adversarial.py",
+    "asset_generation/web/backend/tests/test_registry_build_options_exposure.py",
+    "asset_generation/web/backend/tests/test_registry_build_options_exposure_adversarial.py",
+    "asset_generation/web/backend/tests/test_registry_build_options_patch_adversarial.py",
+    "asset_generation/web/frontend/src/store/useAppStore.buildOptionsHydration.test.ts",
+    "asset_generation/web/frontend/src/store/useAppStore.buildOptionsHydration.adversarial.test.ts"
+  ],
+  "green_regression": [
+    "asset_generation/web/frontend/src/store/useAppStore.selectAssetByPath.previewOnly.test.ts",
+    "asset_generation/python/tests/model_registry/test_version_row_build_options_adversarial.py::test_patch_enemy_version_rejects_client_build_options_key",
+    "asset_generation/python/tests/model_registry/test_version_row_build_options_adversarial.py::test_patch_player_version_rejects_client_build_options_key"
+  ]
 }
 ```
 
@@ -130,4 +159,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Spec complete (R1–R9, api/load-open gates). Orchestrator must run spec_completeness_check.py before test authoring proceeds.
+Adversarial RED suite added (malformed types, 256KiB cap, PATCH HTTP preservation, dual-miss sync/open, player parity). Phase 1: Python + backend until schema/service/OpenAPI green; Phase 2: Frontend Agent after `sync-api-types.sh`.

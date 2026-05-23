@@ -1,37 +1,50 @@
 handoff:
   schema_version: "1.0"
   ticket_id: FEAT-20260522-registry-build-options-snapshot
-  from_agent: spec
-  to_agent: test_design
-  validated_at: "2026-05-23T01:00:00Z"
-  required_items_met: 4
-  total_required_items: 4
+  from_agent: test_breaker
+  to_agent: implementation
+  validated_at: "2026-05-23T09:00:00Z"
+  required_items_met: 2
+  total_required_items: 2
+  implementation_phases:
+    - phase: 1
+      agent: Implementation Agent (Generalist)
+      surfaces:
+        - asset_generation/python/src/model_registry/schema.py
+        - asset_generation/python/src/model_registry/service.py
+        - asset_generation/python/src/enemies/base_enemy.py
+        - asset_generation/python/src/player/player_builder.py
+        - asset_generation/python/src/model_registry/path_layout.py
+        - asset_generation/web/backend/models/responses/registry.py
+        - asset_generation/web/backend/routers/registry.py
+        - asset_generation/web/backend/services/registry_query.py
+      red_test_globs:
+        - asset_generation/python/tests/model_registry/test_version_row_build_options*.py
+        - asset_generation/python/tests/model_registry/test_sync_discovered_build_options*.py
+        - asset_generation/python/tests/model_registry/test_attach_build_options_to_version.py
+        - asset_generation/python/tests/api/test_registry_build_options_contract*.py
+        - asset_generation/web/backend/tests/test_registry_build_options*.py
+    - phase: 2
+      agent: Implementation Frontend Agent
+      surfaces:
+        - asset_generation/web/frontend/src/store/useAppStore.ts
+        - asset_generation/web/frontend/src/components/Editor/ModelRegistryPane.tsx
+        - asset_generation/web/frontend/scripts/sync-api-types.sh
+        - asset_generation/web/frontend/src/api.types.ts
+      red_test_globs:
+        - asset_generation/web/frontend/src/store/useAppStore.buildOptionsHydration*.test.ts
+      green_regression:
+        - asset_generation/web/frontend/src/store/useAppStore.selectAssetByPath.previewOnly.test.ts
   checklist:
-    - item_key: spec_authored
-      item: Feature spec written with api and load-open sections
-      required: true
-      status: complete
-      evidence: project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md
-      evidence_type: path
-    - item_key: schema_version_decided
-      item: schema_version remains 1; build_options field defined
-      required: true
-      status: complete
-      evidence: "project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md — Schema version decision"
-      evidence_type: attestation
-    - item_key: checkpoint_ambiguities
-      item: Spec ambiguities logged to scoped checkpoint
+    - item_key: breaker_gaps_documented
+      item: All discovered gaps documented
       required: true
       status: complete
       evidence: project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/2026-05-22T-feature-run.md
       evidence_type: path
-    - item_key: handoff_artifacts
-      item: todos-latest.json and handoff-latest.yaml updated
+    - item_key: breaker_impl_notes
+      item: Implementation notes created
       required: true
       status: complete
-      evidence: project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/
-      evidence_type: path
-  spec_path: project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md
-  spec_completeness_types: "api,load-open"
-  player_field_name: build_options
-  manifest_schema_version: 1
+      evidence: "Phase 1 Generalist: schema allowlist+validate_manifest, sync backfill, attach helper, VersionRowResponse.build_options, load_open snapshot, EnemyVersionPatch extra=forbid or preserve-on-patch. Phase 2 Frontend: hydrateBuildOptionsFromPreviewGlbPath(registrySnapshot?), selectAssetByPath registryBuildOptions, openExisting pass-through; run sync-api-types after OpenAPI."
+      evidence_type: attestation
