@@ -5,6 +5,19 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-23T-m11-02-autopilot (M11 Physics Frame Order)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md`
+- Lean: no
+- Log: `project_board/checkpoints/M11-02/2026-05-23T-plan-run.md`
+- Log root: `project_board/checkpoints/M11-02/`
+
+### M11-02 — OUTCOME: PLANNING COMPLETE
+Eleven-task execution plan in ticket (revision 2). Stage → SPECIFICATION; handoff to Spec Agent.
+
+---
+
 ## Run: 2026-05-23T-studio-01-autopilot
 
 - Queue mode: single ticket

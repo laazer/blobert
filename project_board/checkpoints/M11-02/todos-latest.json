@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M11-02",
+  "agent": "Planner Agent",
+  "captured_at": "2026-05-23T12:00:00Z",
+  "todos": [
+    {
+      "id": "plan-1",
+      "content": "Decompose ticket into execution plan with dependency matrix",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-2",
+      "content": "Write planning checkpoint and handoff artifacts",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-3",
+      "content": "Advance ticket WORKFLOW STATE to SPECIFICATION",
+      "status": "completed",
+      "agent": "Planner Agent"
+    }
+  ]
+}
