@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { AnimatedBuildControlDef } from "../../types";
 import { readHexFromClipboard } from "../../utils/clipboardHex";
 import { ColorPickerUniversal, type ColorPickerValue } from "../ColorPicker/ColorPickerUniversal";
@@ -75,22 +75,39 @@ function HexStrControlRow({
 }) {
   const strVal = typeof value === "string" ? value : String(def.default ?? "");
   const [pasteHint, setPasteHint] = useState<string | null>(null);
+  const pasteHintTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const pickerValue: ColorPickerValue = { type: "single", color: strVal };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
-    if (!pasteHint) return;
-    const timeoutId = window.setTimeout(() => setPasteHint(null), 2000);
-    return () => window.clearTimeout(timeoutId);
-  }, [pasteHint]);
+    return () => {
+      if (pasteHintTimeoutRef.current !== null) {
+        window.clearTimeout(pasteHintTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function schedulePasteHintClear() {
+    if (pasteHintTimeoutRef.current !== null) {
+      window.clearTimeout(pasteHintTimeoutRef.current);
+    }
+    pasteHintTimeoutRef.current = window.setTimeout(() => {
+      pasteHintTimeoutRef.current = null;
+      setPasteHint(null);
+    }, 2000);
+  }
 
   async function pasteColor() {
     const parsed = await readHexFromClipboard();
     if (parsed) {
+      if (pasteHintTimeoutRef.current !== null) {
+        window.clearTimeout(pasteHintTimeoutRef.current);
+        pasteHintTimeoutRef.current = null;
+      }
       onChange(parsed);
       setPasteHint(null);
     } else {
       setPasteHint("No #RRGGBB in clipboard");
+      schedulePasteHintClear();
     }
   }
 

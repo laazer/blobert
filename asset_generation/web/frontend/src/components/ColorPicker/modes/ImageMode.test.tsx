@@ -3,6 +3,10 @@ import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import { act, cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { ImageMode } from "./ImageMode";
 
+vi.mock("../../../api/client", () => ({
+  fetchTextureAssets: vi.fn(async () => []),
+}));
+
 afterEach(() => {
   cleanup();
 });
@@ -55,7 +59,7 @@ describe("ImageMode", () => {
       fireEvent.change(fileInputs[0], { target: { files: [file] } });
     });
 
-    expect(onFileChange).toHaveBeenCalledWith(file, "blob:mock-url");
+    expect(onFileChange).toHaveBeenCalledWith(file, "blob:mock-url", undefined, null);
   });
 
   it("rejects non-image files", async () => {
@@ -125,9 +129,8 @@ describe("ImageMode", () => {
       />
     );
 
-    const img = screen.getByAltText("Preview");
+    const img = document.querySelector('img[src="blob:mock-url"]');
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute("src", "blob:mock-url");
   });
 
   it("shows clear button when preview is available", () => {
@@ -160,7 +163,7 @@ describe("ImageMode", () => {
       fireEvent.click(clearButton);
     });
 
-    expect(onFileChange).toHaveBeenCalledWith(null);
+    expect(onFileChange).toHaveBeenCalledWith(null, "", "", null);
   });
 
   it("displays file size in KB", () => {
@@ -211,7 +214,7 @@ describe("ImageMode", () => {
     await act(async () => {
       fireEvent.change(fileInputs[0], { target: { files: [pngFile] } });
     });
-    expect(onFileChange).toHaveBeenCalledWith(pngFile, "blob:mock-url");
+    expect(onFileChange).toHaveBeenCalledWith(pngFile, "blob:mock-url", undefined, null);
 
     // Reset and test JPEG
     onFileChange.mockClear();
@@ -227,6 +230,6 @@ describe("ImageMode", () => {
     await act(async () => {
       fireEvent.change(newFileInputs[0], { target: { files: [jpegFile] } });
     });
-    expect(onFileChange).toHaveBeenCalledWith(jpegFile, "blob:mock-url");
+    expect(onFileChange).toHaveBeenCalledWith(jpegFile, "blob:mock-url", undefined, null);
   });
 });

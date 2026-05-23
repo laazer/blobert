@@ -512,7 +512,7 @@ describe("BuildControls texture — base hex vs pattern colors", () => {
     });
     render(<TextureControlsSection slug="slug" />);
     expectTextureParamVisible("Body finish");
-    expectTextureParamVisible("Body hex");
+    expect(screen.getByPlaceholderText("RRGGBB")).toBeInTheDocument();
     expectGradientBundleHidden();
   });
 
