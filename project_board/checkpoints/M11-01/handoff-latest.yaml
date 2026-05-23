@@ -1,27 +1,26 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-01
-  from_agent: planner
-  to_agent: spec
-  validated_at: "2026-05-23T12:00:00Z"
+  from_agent: test_designer
+  to_agent: test_breaker
+  validated_at: "2026-05-23T16:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: planner_ticket_decomposed
-      item: Ticket decomposed into execution plan tasks
+    - item_key: test_suite_complete
+      item: Test suite complete per spec test plan
       required: true
       status: complete
-      evidence: project_board/11_milestone_11_base_mutation_attacks/backlog/01_player_state_machine.md
+      evidence: tests/scripts/player/test_player_state_machine.gd
       evidence_type: path
-    - item_key: planner_dependencies_clear
-      item: Dependencies clear (acyclic or documented WARN)
+    - item_key: test_coverage_threshold
+      item: Coverage threshold met (>80% proxy)
       required: true
       status: complete
-      evidence: project_board/11_milestone_11_base_mutation_attacks/backlog/01_player_state_machine.md
-      evidence_type: path
-    - item_key: planner_timeline_estimated
-      item: Timeline estimated
+      evidence: "coverage: 100 — 34 primary test functions cover PSM-1..PSM-9 ACs; adversarial file assigned to Test Breaker per spec"
+    - item_key: test_all_runnable
+      item: All tests runnable
       required: true
       status: complete
-      evidence: project_board/11_milestone_11_base_mutation_attacks/backlog/01_player_state_machine.md
-      evidence_type: path
+      evidence: "godot --headless -s tests/run_tests.gd — test_player_state_machine.gd loads; 49 FAIL RED (missing player_state_machine.gd)"
+      evidence_type: attestation

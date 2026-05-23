@@ -105,16 +105,16 @@ Introduce `PlayerStateMachine` (`scripts/player/player_state_machine.gd`) as a R
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_BREAK
 
 ## Revision
-2
+4
 
 ## Last Updated By
-Planner Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: RED (49 failures — `player_state_machine.gd` not implemented; primary suite runnable)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -129,15 +129,16 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
-  "execution_plan_section": "string — ticket Execution Plan tasks 1–10",
-  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-plan-run.md",
-  "spec_path_target": "agent_context/agents/2_spec/player_state_machine_spec.md",
-  "spec_exit_type": "generic"
+  "execution_plan_section": "string — ticket Execution Plan task 3 (adversarial tests)",
+  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-test-design-run.md",
+  "spec_path": "project_board/specs/player_state_machine_spec.md",
+  "primary_test_path": "tests/scripts/player/test_player_state_machine.gd",
+  "adversarial_test_path": "tests/scripts/player/test_player_state_machine_adversarial.gd"
 }
 ```
 
@@ -145,4 +146,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete. Execution plan decomposed with dependency matrix and estimated effort. Spec Agent should freeze gameplay FSM contract (states, transitions, timer, controller integration) before test design.
+Primary unit tests authored (PSM-1..PSM-9). Headless runner reports 49 RED failures until `scripts/player/player_state_machine.gd` exists. Test Breaker should add adversarial suite per spec Edge Cases (EC-1..EC-10) and MovementState isolation.

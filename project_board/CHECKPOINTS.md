@@ -16,6 +16,14 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ### M11-01 — OUTCOME: PLANNING COMPLETE
 Execution plan in ticket (10 tasks). Stage → SPECIFICATION; handoff to Spec Agent.
 
+### M11-01 — OUTCOME: SPECIFICATION → TEST_DESIGN
+Player state machine spec frozen (10 states, guards, timer, derivation, controller wiring).
+Log: `project_board/checkpoints/M11-01/2026-05-23T-spec-run.md`
+
+### M11-01 — OUTCOME: TEST_DESIGN → TEST_BREAK
+Primary FSM unit tests RED (49 failures); handoff to Test Breaker for adversarial suite.
+Log: `project_board/checkpoints/M11-01/2026-05-23T-test-design-run.md`
+
 ---
 
 ## Run: 2026-05-22T-feat-registry-build-options (FEAT-20260522-registry-build-options-snapshot)

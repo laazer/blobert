@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-01",
-  "agent": "Planner Agent",
-  "captured_at": "2026-05-23T12:00:00Z",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-23T16:00:00Z",
   "todos": [
     {
-      "id": "plan-1",
-      "content": "Read ticket, workflow enforcement, and player controller codebase",
+      "id": "td-1",
+      "content": "Read ticket, spec, workflow enforcement, and enemy/scene FSM test patterns",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "plan-2",
-      "content": "Decompose M11-01 into staged execution plan with agent assignments",
+      "id": "td-2",
+      "content": "Author test_player_state_machine.gd covering PSM-1..PSM-9 (runtime FSM API)",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "plan-3",
-      "content": "Update ticket Execution Plan and WORKFLOW STATE for Spec handoff",
+      "id": "td-3",
+      "content": "Run headless suite; capture verbatim RED failure output",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "plan-4",
-      "content": "Write checkpoint log and handoff artifacts under project_board/checkpoints/M11-01/",
+      "id": "td-4",
+      "content": "Write checkpoint, handoff/todos, update ticket to TEST_BREAK",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Test Designer Agent"
     }
   ]
 }
