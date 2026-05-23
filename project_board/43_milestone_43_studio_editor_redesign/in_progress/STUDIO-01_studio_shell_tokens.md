@@ -105,13 +105,13 @@ Phase 1 Studio shell in `asset_generation/web/frontend`: feature-flagged `Studio
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -129,7 +129,7 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
@@ -137,7 +137,7 @@ Spec Agent
   "ticket_path": "project_board/43_milestone_43_studio_editor_redesign/in_progress/STUDIO-01_studio_shell_tokens.md",
   "spec_path": "project_board/specs/studio_editor_redesign_spec.md",
   "execution_plan_path": "project_board/execution_plans/STUDIO-01_studio_shell_tokens.md",
-  "scope": "STUDIO-01 Phase 1 only (spec §6–§9)"
+  "scope": "STUDIO-01 Phase 1 only (spec §6–§9, §10, §12, §15–§16); tests §8 T-1..T-6"
 }
 ```
 
@@ -145,4 +145,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete. Ten-task execution plan embedded; handoff to Spec Agent to validate/freeze pre-authored spec before TEST_DESIGN.
+Spec frozen for Phase 1: Studio center = preview + animation rail only (CommandPanel/Terminal deferred). Handoff to Test Designer for red Vitest suite per §8.

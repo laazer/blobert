@@ -17,6 +17,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ### STUDIO-01 — OUTCOME: PLANNING COMPLETE
 Ten-task execution plan in ticket + execution plan file. Stage → SPECIFICATION; handoff to Spec Agent.
 
+### STUDIO-01 — OUTCOME: SPECIFICATION → TEST_DESIGN
+Phase 1 spec frozen: Studio center = preview + animation rail only (no CommandPanel/Terminal). T-1..T-6; FR↔AC traceability §15.
+Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-spec-run.md`
+
 ---
 
 ## Run: 2026-05-23T-m11-01-autopilot (M11 Player State Machine)
