@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { mergeBuildOptionValues } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
@@ -140,5 +140,28 @@ describe("ColorsPane", () => {
     });
 
     expect(useAppStore.getState().animatedBuildOptionValues.spider?.feat_body_finish).toBe("glossy");
+  });
+
+  it("studio advanced lists only the selected part and uses studio pickers", () => {
+    const controls = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
+    useAppStore.setState({
+      commandContext: { cmd: "animated", enemy: "spider" },
+      animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
+      animatedBuildControls: controls,
+      animatedBuildOptionValues: mergeBuildOptionValues(controls, {}),
+      centerPanel: "code",
+    });
+
+    render(<ColorsPane studioSurface />);
+    const advanced = screen.getByTestId("studio-look-advanced");
+    fireEvent.click(advanced.querySelector("summary")!);
+
+    expect(screen.getByTestId("studio-advanced-texture-body")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-advanced-texture-head")).not.toBeInTheDocument();
+    expect(screen.getByTestId("studio-color-picker-tabs")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-look-part-chip-head"));
+    expect(screen.queryByTestId("studio-advanced-texture-body")).not.toBeInTheDocument();
+    expect(screen.getByTestId("studio-advanced-texture-head")).toBeInTheDocument();
   });
 });

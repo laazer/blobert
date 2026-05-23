@@ -19,6 +19,12 @@ describe("buildStudioPatternTiles", () => {
     expect(tileIdFromTextureMode("stripes", tiles)).toBe("stripes");
     expect(textureModeFromTileId("dots", tiles)).toBe("spots");
   });
+
+  it("omits assets from studio pattern tiles even when in def options", () => {
+    const tiles = buildStudioPatternTiles(["none", "spots", "assets", "stripes"]);
+    expect(tiles.map((t) => t.textureMode)).toEqual(["none", "spots", "stripes"]);
+    expect(tiles.find((t) => t.textureMode === "assets")).toBeUndefined();
+  });
 });
 
 describe("patternTileHuePreviewStyle", () => {

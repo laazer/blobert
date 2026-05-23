@@ -1,6 +1,11 @@
 import type { CoarseZoneKey } from "../../utils/elementColorPalettes";
-import { readZoneHex, shadeHex, tintHex, zoneToPartLabel } from "../../utils/studioLookMaterial";
+import { normalizedColorMode } from "../Preview/ZoneTextureBlock";
+import type { GradientDirection } from "../ColorPicker/common/DirectionSelector";
+import { readZoneHex, zoneToPartLabel } from "../../utils/studioLookMaterial";
 import { STUDIO_SURFACE_PANEL } from "../../styles/studioTokens";
+import { gradientPreviewCss } from "./studioMaterialSphere";
+import { StudioMaterialSpherePreview } from "./StudioMaterialSpherePreview";
+import type { MaterialSphereVariant } from "./studioMaterialSphere";
 
 type Props = {
   zones: readonly CoarseZoneKey[];
@@ -26,9 +31,22 @@ export function StudioPartPicker({ zones, activeZone, elementHue, values, onSele
         const label = zoneToPartLabel(zone);
         const active = activeZone === zone;
         const hex = readZoneHex(values, zone) || "#888888";
-        const dotColor = active ? hex : hex;
-        const lighter = tintHex(dotColor, 0.35);
-        const darker = shadeHex(dotColor, 0.4);
+        const colorMode = normalizedColorMode(zone, values);
+        const materialVariant: MaterialSphereVariant =
+          colorMode === "image" ? "image" : colorMode === "gradient" ? "gradient" : "solid";
+        const gradA = values[`feat_${zone}_color_a`];
+        const gradB = values[`feat_${zone}_color_b`];
+        const gradDir = values[`feat_${zone}_color_direction`];
+        const gradientCss =
+          materialVariant === "gradient" &&
+          typeof gradA === "string" &&
+          typeof gradB === "string"
+            ? gradientPreviewCss(
+                gradA,
+                gradB,
+                (typeof gradDir === "string" ? gradDir : "horizontal") as GradientDirection,
+              )
+            : undefined;
 
         return (
           <button
@@ -51,14 +69,13 @@ export function StudioPartPicker({ zones, activeZone, elementHue, values, onSele
               boxShadow: active ? `0 4px 14px ${elementHue}30` : "none",
             }}
           >
-            <div
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: "50%",
-                background: `radial-gradient(circle at 30% 25%, ${lighter}, ${dotColor} 60%, ${darker})`,
-                boxShadow: `inset -2px -2px 4px ${darker}, 0 0 0 1px rgba(255,255,255,0.08)`,
-              }}
+            <StudioMaterialSpherePreview
+              variant={materialVariant}
+              color={hex.startsWith("#") ? hex : `#${hex.replace(/^#/, "")}`}
+              gradientCss={gradientCss}
+              accentHue={elementHue}
+              size={26}
+              title={`${label} material`}
             />
             <div
               style={{

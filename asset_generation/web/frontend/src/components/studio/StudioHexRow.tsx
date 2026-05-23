@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { copyHexToClipboard, hexForColorInput, sanitizeHex } from "../../utils/clipboardHex";
-import { STUDIO_INK_MUTED, STUDIO_INK_PRIMARY } from "../../styles/studioTokens";
+import { STUDIO_INK_PRIMARY } from "../../styles/studioTokens";
+import { studioChipButtonStyle } from "./studioFillStyles";
 
 type Props = {
   color: string;
@@ -65,15 +66,3 @@ export function StudioHexRow({ color, onChange, disabled = false }: Props) {
     </div>
   );
 }
-
-const studioChipButtonStyle = {
-  fontSize: 10,
-  color: STUDIO_INK_MUTED,
-  background: "transparent",
-  border: "1px solid rgba(255,255,255,0.06)",
-  borderRadius: 4,
-  padding: "2px 7px",
-  cursor: "pointer",
-  fontFamily: "var(--font-mono, monospace)",
-  fontWeight: 600,
-} as const;

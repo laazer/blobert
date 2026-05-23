@@ -4,6 +4,7 @@ import type { AnimatedBuildControlDef } from "../../types";
 import type { GradientDirection } from "../ColorPicker/common/DirectionSelector";
 import { parseImageUvRect, stringifyImageUvRect } from "../ColorPicker/imageUvRect";
 import { ColorPickerTabs, type ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
+import { StudioColorPickerTabs } from "../studio/StudioColorPickerTabs";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
 import type { PatternFill } from "../../types/zoneTexture";
 import { readZoneTextureSettingsFromStore } from "../../utils/zoneTextureConverter";
@@ -374,19 +375,26 @@ export function shouldShowTextureParam(
   return false;
 }
 
+type StudioAdvancedPicker = {
+  accentHue: string;
+  paletteColors?: readonly string[];
+};
+
 type Props = {
   zone: string;
   slug: string;
   defs: readonly AnimatedBuildControlDef[];
   /** Per-zone finish + hex (``feat_{zone}_finish`` / ``feat_{zone}_hex``). */
   finishHexDefs?: readonly AnimatedBuildControlDef[];
+  /** Studio advanced strip: studio tabs; omit fields duplicated on the Look tab. */
+  studioAdvanced?: StudioAdvancedPicker;
 };
 
 /**
  * Per-zone surface: texture mode first, then base finish/hex when mode is ``none``, else pattern colors for the selected mode.
  * Preview shows the loaded GLB; values apply on regeneration.
  */
-export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props) {
+export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [], studioAdvanced }: Props) {
   const animatedBuildOptionValues = useAppStore((st) => st.animatedBuildOptionValues);
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
   const applyAnimatedBuildOptionsForSlug = useAppStore((st) => st.applyAnimatedBuildOptionsForSlug);
@@ -520,22 +528,47 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
 
     const pickerValue = buildColorPickerValue(colorMode, values, pickerKeys);
 
+    const onModeChange = (newColorMode: PickerMode) => {
+      updateColorModeWithCarry(
+        modeKey,
+        colorMode,
+        newColorMode,
+        (from, to) => carryPatternColorPaletteOnModeChange(zone, colorFieldName, from, to, values),
+      );
+    };
+
+    const onPalettePick =
+      studioAdvanced?.paletteColors && studioAdvanced.paletteColors.length > 0
+        ? (pickHex: string) => {
+            const normalized = pickHex.replace(/^#/, "");
+            setAnimatedBuildOption(slug, hexKey, normalized);
+          }
+        : undefined;
+
     return (
       <div key={modeKey} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <ColorPickerTabs
-          mode={pickerValue.type}
-          value={pickerValue}
-          label={label}
-          onModeChange={(newColorMode) => {
-            updateColorModeWithCarry(
-              modeKey,
-              colorMode,
-              newColorMode,
-              (from, to) => carryPatternColorPaletteOnModeChange(zone, colorFieldName, from, to, values),
-            );
-          }}
-          onChange={(v) => updatePickerValue(v, pickerKeys)}
-        />
+        {studioAdvanced ? (
+          <>
+            <span style={{ ...sectionTitle, marginBottom: 2 }}>{label}</span>
+            <StudioColorPickerTabs
+              accentHue={studioAdvanced.accentHue}
+              mode={pickerValue.type}
+              value={pickerValue}
+              paletteColors={studioAdvanced.paletteColors}
+              onPaletteColorPick={onPalettePick}
+              onModeChange={onModeChange}
+              onChange={(v) => updatePickerValue(v, pickerKeys)}
+            />
+          </>
+        ) : (
+          <ColorPickerTabs
+            mode={pickerValue.type}
+            value={pickerValue}
+            label={label}
+            onModeChange={onModeChange}
+            onChange={(v) => updatePickerValue(v, pickerKeys)}
+          />
+        )}
       </div>
     );
   };
@@ -559,30 +592,41 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
       : modeDef;
 
   const partTitle = zonePartDisplayName(zone);
+  const studioAdv = studioAdvanced;
+  const unifiedPatternKey = `feat_${zone}_texture_pattern`;
+  const unifiedBackgroundKey = `feat_${zone}_texture_background`;
 
   return (
     <div
+      data-testid={studioAdv ? `studio-advanced-texture-${zone}` : undefined}
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        marginTop: 6,
-        paddingTop: 8,
-        borderTop: "1px solid #2d2d2d",
+        marginTop: studioAdv ? 0 : 6,
+        paddingTop: studioAdv ? 0 : 8,
+        borderTop: studioAdv ? undefined : "1px solid #2d2d2d",
       }}
     >
       <span style={sectionTitle}>
-        Surface &amp; color — {partTitle}
+        {studioAdv ? `Advanced — ${partTitle}` : `Surface & color — ${partTitle}`}
       </span>
-      <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
-        Choose <strong style={{ color: "#bbb" }}>color mode</strong> first (single or gradient). Then optionally add a <strong style={{ color: "#bbb" }}>pattern</strong> overlay.
-        Both are independent. Values apply when you regenerate the asset.
-      </p>
+      {!studioAdv ? (
+        <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
+          Choose <strong style={{ color: "#bbb" }}>color mode</strong> first (single or gradient). Then
+          optionally add a <strong style={{ color: "#bbb" }}>pattern</strong> overlay. Both are independent.
+          Values apply when you regenerate the asset.
+        </p>
+      ) : (
+        <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
+          Pattern tuning and per-mode color overrides for the selected part. Base fill and pattern shape are
+          on the Look tab above.
+        </p>
+      )}
 
-      {/* Finish selection (moved above color picker for clarity) */}
-      {finishDefsOrdered.map(row)}
+      {!studioAdv ? finishDefsOrdered.map(row) : null}
 
-      {showBaseColorPicker ? (
+      {!studioAdv && showBaseColorPicker ? (
         <ColorPickerTabs
           mode={colorPickerValue.type}
           value={colorPickerValue}
@@ -595,8 +639,7 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
         />
       ) : null}
 
-      {/* Texture mode selector (independent) */}
-      {modeSelectDef ? (
+      {!studioAdv && modeSelectDef ? (
         <ControlRow
           key={textureModeKey}
           def={modeSelectDef}
@@ -617,13 +660,15 @@ export function ZoneTextureBlock({ zone, slug, defs, finishHexDefs = [] }: Props
         />
       ) : null}
 
-      {orphanFinishHex.map(row)}
+      {!studioAdv ? orphanFinishHex.map(row) : null}
       {visibleNonFloatRows.map((def) => {
-        // Detect unified pattern/background fields and render with full 3-mode support
-        if (def.key === `feat_${zone}_texture_pattern`) {
+        if (studioAdv && (def.key === unifiedPatternKey || def.key === unifiedBackgroundKey)) {
+          return null;
+        }
+        if (def.key === unifiedPatternKey) {
           return renderPatternColorPicker("pattern", def.label);
         }
-        if (def.key === `feat_${zone}_texture_background`) {
+        if (def.key === unifiedBackgroundKey) {
           return renderPatternColorPicker("background", def.label);
         }
         // For all other controls (pattern density, width, etc.), use generic ControlRow

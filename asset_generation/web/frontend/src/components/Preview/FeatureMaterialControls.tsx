@@ -12,25 +12,43 @@ const EMPTY_VALUES: Readonly<Record<string, unknown>> = {};
 
 const titleStyle = rowStyles.label;
 
+type StudioAdvancedPicker = {
+  accentHue: string;
+  paletteColors?: readonly string[];
+};
+
 type Props = {
   slug: string;
   /** Tighter heading when embedded in a compact strip */
   compactTitle?: boolean;
   /** When no feat_* controls exist, show a short hint instead of rendering nothing */
   showEmptyHint?: boolean;
+  /** Studio Look: only render controls for this coarse zone */
+  zoneFilter?: string;
+  /** Studio Look advanced: use ``StudioColorPickerTabs`` and hide fields covered by the main Look tab */
+  studioAdvanced?: StudioAdvancedPicker;
 };
 
 /**
  * Per-slot material finish + hex (feat_* keys from meta). Shared by Build panel and Command panel.
  */
-export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: Props) {
+export function FeatureMaterialControls({
+  slug,
+  compactTitle,
+  showEmptyHint,
+  zoneFilter,
+  studioAdvanced,
+}: Props) {
   const defs = useAppStore((st) => st.animatedBuildControls[slug] ?? EMPTY_DEFS);
   const values = useAppStore((st) => st.animatedBuildOptionValues[slug] ?? EMPTY_VALUES);
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
 
   const { featureDefs, zoneDefs, limbPartDefs, jointPartDefs } = partitionAnimatedFeatureDefs(defs);
   const zoneTextureDefs = defs.filter((d) => ZONE_TEXTURE_CONTROL_RE.test(d.key));
-  const zones = FEATURE_ZONES_BY_SLUG[normalizeAnimatedSlug(slug)] ?? [];
+  const allZones = FEATURE_ZONES_BY_SLUG[normalizeAnimatedSlug(slug)] ?? [];
+  const zones = zoneFilter ? allZones.filter((z) => z === zoneFilter) : allZones;
+  const showLimbOverrides = !zoneFilter || zoneFilter === "limbs";
+  const showJointOverrides = !zoneFilter || zoneFilter === "joints";
 
   if (featureDefs.length === 0) {
     if (!showEmptyHint) return null;
@@ -76,10 +94,14 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
       }}
     >
       <span style={{ ...titleStyle, fontWeight: compactTitle ? 600 : undefined }}>
-        Part materials (zones + limb / joint overrides)
+        {studioAdvanced && zoneFilter
+          ? `Advanced parameters — ${zoneFilter}`
+          : "Part materials (zones + limb / joint overrides)"}
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ ...titleStyle, fontSize: 10, color: "#858585" }}>Zones</span>
+        {!studioAdvanced ? (
+          <span style={{ ...titleStyle, fontSize: 10, color: "#858585" }}>Zones</span>
+        ) : null}
         {zones.map((zone) => {
           const zFinish = zoneDefs.filter((d) => {
             const m = ZONE_FINISH_HEX_RE.exec(d.key);
@@ -93,16 +115,22 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                paddingBottom: 8,
-                marginBottom: 4,
-                borderBottom: "1px solid #2d2d2d",
+                paddingBottom: studioAdvanced ? 0 : 8,
+                marginBottom: studioAdvanced ? 0 : 4,
+                borderBottom: studioAdvanced ? undefined : "1px solid #2d2d2d",
               }}
             >
-              <ZoneTextureBlock zone={zone} slug={slug} defs={zTex} finishHexDefs={zFinish} />
+              <ZoneTextureBlock
+                zone={zone}
+                slug={slug}
+                defs={zTex}
+                finishHexDefs={zFinish}
+                studioAdvanced={studioAdvanced}
+              />
             </div>
           );
         })}
-        {limbPartDefs.length > 0 ? (
+        {showLimbOverrides && limbPartDefs.length > 0 ? (
           <details style={{ marginTop: 2 }}>
             <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
               Per-limb overrides ({limbPartDefs.length})
@@ -112,7 +140,7 @@ export function FeatureMaterialControls({ slug, compactTitle, showEmptyHint }: P
             </div>
           </details>
         ) : null}
-        {jointPartDefs.length > 0 ? (
+        {showJointOverrides && jointPartDefs.length > 0 ? (
           <details style={{ marginTop: 2 }}>
             <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
               Per-joint overrides ({jointPartDefs.length})

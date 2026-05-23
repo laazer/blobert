@@ -1,7 +1,7 @@
 import type { ColorPickerValue } from "../ColorPicker/ColorPickerTabs";
 export type { ColorPickerValue };
-import { GradientMode } from "../ColorPicker/modes/GradientMode";
-import { ImageMode } from "../ColorPicker/modes/ImageMode";
+import { StudioGradientMode } from "./StudioGradientMode";
+import { StudioImageMode } from "./StudioImageMode";
 import { StudioHexRow } from "./StudioHexRow";
 import { StudioPaletteRow } from "./StudioPaletteRow";
 import {
@@ -80,10 +80,11 @@ export function StudioColorPickerTabs({
         ) : null}
 
         {mode === "gradient" && value.type === "gradient" ? (
-          <GradientMode
+          <StudioGradientMode
             colorA={value.colorA}
             colorB={value.colorB}
             direction={value.direction}
+            paletteColors={paletteColors}
             onChange={(colorA, colorB, direction) =>
               onChange({ type: "gradient", colorA, colorB, direction })
             }
@@ -92,7 +93,8 @@ export function StudioColorPickerTabs({
         ) : null}
 
         {mode === "image" && value.type === "image" ? (
-          <ImageMode
+          <StudioImageMode
+            accentHue={accentHue}
             file={value.file ?? null}
             preview={value.preview}
             assetId={value.assetId}

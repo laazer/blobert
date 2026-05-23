@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
 import { mergeBuildOptionValues } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
@@ -57,6 +57,7 @@ describe("StudioLookPanel (redesign_v2 IA)", () => {
     expect(screen.getByTestId("studio-look-pattern-body-checkerboard")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-look-pattern-body-swirl")).not.toBeInTheDocument();
     expect(screen.queryByTestId("studio-look-pattern-body-cracks")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-look-pattern-body-assets")).not.toBeInTheDocument();
   });
 
   it("exposes Color / Gradient / Image tabs on background fill", () => {
@@ -73,5 +74,13 @@ describe("StudioLookPanel (redesign_v2 IA)", () => {
     fireEvent.click(screen.getByTestId("studio-look-part-chip-head"));
     expect(screen.getByTestId("studio-zone-fill-head-background")).toBeInTheDocument();
     expect(screen.getByText(/Background · Head/)).toBeInTheDocument();
+  });
+
+  it("supports controlled activeZone from parent", () => {
+    const onZone = vi.fn();
+    render(<StudioLookPanel slug="spider" activeZone="head" onActiveZoneChange={onZone} />);
+    expect(screen.getByTestId("studio-zone-fill-head-background")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("studio-look-part-chip-body"));
+    expect(onZone).toHaveBeenCalledWith("body");
   });
 });

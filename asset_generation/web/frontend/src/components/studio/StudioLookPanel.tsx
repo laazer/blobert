@@ -29,11 +29,15 @@ import { StudioPartContextBar } from "./StudioPartContextBar";
 import { StudioPartPicker } from "./StudioPartPicker";
 import { StudioZoneFill } from "./StudioZoneFill";
 
-type Props = { slug: string };
+type Props = {
+  slug: string;
+  activeZone?: CoarseZoneKey;
+  onActiveZoneChange?: (zone: CoarseZoneKey) => void;
+};
 
 const sectionGap: CSSProperties = { display: "flex", flexDirection: "column", gap: 18 };
 
-export function StudioLookPanel({ slug }: Props) {
+export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZoneChange }: Props) {
   const defs = useAppStore((s) => s.animatedBuildControls[slug] ?? []);
   const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
   const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
@@ -41,7 +45,9 @@ export function StudioLookPanel({ slug }: Props) {
   const commandEnemy = useAppStore((s) => s.commandContext.enemy);
 
   const [pickedElement, setPickedElement] = useState<ElementId | null>(null);
-  const [activeZone, setActiveZone] = useState<CoarseZoneKey>("body");
+  const [internalActiveZone, setInternalActiveZone] = useState<CoarseZoneKey>("body");
+  const activeZone = activeZoneProp ?? internalActiveZone;
+  const setActiveZone = onActiveZoneChange ?? setInternalActiveZone;
 
   const knownDefKeys = useMemo(() => new Set(defs.map((d) => d.key)), [defs]);
   const hasCoarseZones = defs.some((d) => ZONE_FINISH_HEX_RE.test(d.key));

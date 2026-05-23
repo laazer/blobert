@@ -13,13 +13,16 @@ const TEXTURE_MODE_TILE_META: Record<string, { id: string; label: string }> = {
   spots: { id: "dots", label: "dots" },
   stripes: { id: "stripes", label: "stripes" },
   checkerboard: { id: "checkerboard", label: "checker" },
-  assets: { id: "assets", label: "assets" },
 };
+
+/** Modes supported by the pipeline but not exposed in Studio Look pattern tiles. */
+const STUDIO_HIDDEN_TEXTURE_MODES = new Set(["assets"]);
 
 /** Build pattern shape tiles from the active enemy's ``feat_{zone}_texture_mode`` options. */
 export function buildStudioPatternTiles(textureModeOptions: readonly string[]): PatternTileDef[] {
   const out: PatternTileDef[] = [];
   for (const mode of textureModeOptions) {
+    if (STUDIO_HIDDEN_TEXTURE_MODES.has(mode)) continue;
     const meta = TEXTURE_MODE_TILE_META[mode];
     if (meta) {
       out.push({ id: meta.id, label: meta.label, textureMode: mode });
@@ -66,12 +69,6 @@ export function patternTileHuePreviewStyle(textureMode: string, elementHue: stri
         backgroundImage: `linear-gradient(45deg, ${elementHue} 25%, transparent 25%, transparent 75%, ${elementHue} 75%), linear-gradient(45deg, ${elementHue} 25%, transparent 25%, transparent 75%, ${elementHue} 75%)`,
         backgroundSize: "8px 8px",
         backgroundPosition: "0 0, 4px 4px",
-      };
-    case "assets":
-      return {
-        flex: 1,
-        backgroundColor: preview,
-        backgroundImage: `repeating-linear-gradient(0deg, ${elementHue}55, ${elementHue}55 2px, transparent 2px, transparent 6px)`,
       };
     default:
       return { flex: 1, backgroundColor: preview };

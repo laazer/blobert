@@ -1,7 +1,16 @@
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { ELEMENTS, type ElementId } from "../../constants/elements";
 import { useAppStore } from "../../store/useAppStore";
+import {
+  DEFAULT_ELEMENT_PALETTES,
+  defaultElementForSlug,
+  type CoarseZoneKey,
+  type ElementId as PaletteElementId,
+} from "../../utils/elementColorPalettes";
 import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
 import { buildZoneColorHydrationFromCommandBar } from "../../utils/hydrateZoneColorsFromCommandBar";
+import { inferFamilyElementId } from "../../utils/inferFamilyElement";
+import { paletteSwatchColors } from "../../utils/studioLookMaterial";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { StudioLookPanel } from "../studio/StudioLookPanel";
 import { ElementPalettesSection } from "./ElementPalettesSection";
@@ -36,6 +45,19 @@ export function ColorsPane({ studioSurface = false }: ColorsPaneProps) {
     animatedEnemyMeta.some((m) => m.slug === animatedSlug);
   const isPlayerSlimeColors = cmd === "player" && PLAYER_COLORS.includes(playerColor);
   const slug = isPlayerSlimeColors ? PLAYER_PROCEDURAL_BUILD_SLUG : animatedSlug;
+  const [activeZone, setActiveZone] = useState<CoarseZoneKey>("body");
+
+  const studioAccent = useMemo(() => {
+    const suggested = defaultElementForSlug(slug);
+    const elementId: ElementId = suggested
+      ? (suggested as ElementId)
+      : enemy.trim()
+        ? inferFamilyElementId(enemy, [])
+        : "physical";
+    const token = ELEMENTS[elementId];
+    const palette = DEFAULT_ELEMENT_PALETTES[elementId as PaletteElementId];
+    return { hue: token.hue, paletteColors: paletteSwatchColors(palette) };
+  }, [slug, enemy]);
 
   /**
    * Push command-bar `--finish` / `--hex-color` into per-zone `feat_*` keys for zones still at defaults.
@@ -122,7 +144,7 @@ export function ColorsPane({ studioSurface = false }: ColorsPaneProps) {
       ) : null}
       {studioSurface ? (
         <>
-          <StudioLookPanel slug={slug} />
+          <StudioLookPanel slug={slug} activeZone={activeZone} onActiveZoneChange={setActiveZone} />
           <details data-testid="studio-look-advanced" style={{ marginTop: 4 }}>
             <summary
               style={{
@@ -136,8 +158,21 @@ export function ColorsPane({ studioSurface = false }: ColorsPaneProps) {
               Advanced zone controls
             </summary>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-              <FeatureMaterialControls slug={slug} showEmptyHint compactTitle />
-              <ExtraZoneMaterialControls slug={slug} />
+              <FeatureMaterialControls
+                slug={slug}
+                showEmptyHint
+                compactTitle
+                zoneFilter={activeZone}
+                studioAdvanced={{
+                  accentHue: studioAccent.hue,
+                  paletteColors: studioAccent.paletteColors,
+                }}
+              />
+              <ExtraZoneMaterialControls
+                slug={slug}
+                zoneFilter={activeZone}
+                useStudioPicker
+              />
             </div>
           </details>
         </>

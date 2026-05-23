@@ -57,13 +57,48 @@ function clientToImagePx(
   return { u, v };
 }
 
-function AtlasOverlay(props: {
+function centerPanInViewport(
+  viewportW: number,
+  viewportH: number,
+  imageW: number,
+  imageH: number,
+): { x: number; y: number } {
+  return { x: (viewportW - imageW) / 2, y: (viewportH - imageH) / 2 };
+}
+
+export type AtlasOverlayVariant = "default" | "hero";
+
+export type AtlasOverlayProps = {
   previewUrl: string;
   uvRect: ImageUvRect | null | undefined;
   onUvRectChange: (r: ImageUvRect | null) => void;
   disabled: boolean;
-}) {
-  const { previewUrl, uvRect, onUvRectChange, disabled } = props;
+  /** ``hero`` fills parent width with a fixed-height viewport (studio Look preview). */
+  variant?: AtlasOverlayVariant;
+  heroHeight?: number;
+};
+
+const heroToolbarBtnStyle = {
+  background: "transparent",
+  color: "#7a7a86",
+  border: "1px solid rgba(255,255,255,0.06)",
+  borderRadius: 4,
+  padding: "2px 7px",
+  fontSize: 10,
+  fontWeight: 600,
+  cursor: "pointer",
+} as const;
+
+export function AtlasOverlay(props: AtlasOverlayProps) {
+  const {
+    previewUrl,
+    uvRect,
+    onUvRectChange,
+    disabled,
+    variant = "default",
+    heroHeight = 120,
+  } = props;
+  const isHero = variant === "hero";
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const applyZoomAtClientRef = useRef<(cx: number, cy: number, factor: number) => void>(() => {});
@@ -140,11 +175,28 @@ function AtlasOverlay(props: {
 
   const onImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    const maxW = 280;
-    const scale = Math.min(1, maxW / img.naturalWidth);
-    const w = Math.round(img.naturalWidth * scale);
-    const h = Math.round(img.naturalHeight * scale);
-    setSize({ w, h });
+    let w: number;
+    let h: number;
+    if (isHero) {
+      const vp = viewportRef.current;
+      const cw = vp?.clientWidth ?? 280;
+      const ch = heroHeight;
+      const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight);
+      w = Math.round(img.naturalWidth * scale);
+      h = Math.round(img.naturalHeight * scale);
+      setSize({ w, h });
+      const centered = centerPanInViewport(cw, ch, w, h);
+      panRef.current = centered;
+      setPan(centered);
+      zoomRef.current = 1;
+      setZoom(1);
+    } else {
+      const maxW = 280;
+      const scale = Math.min(1, maxW / img.naturalWidth);
+      w = Math.round(img.naturalWidth * scale);
+      h = Math.round(img.naturalHeight * scale);
+      setSize({ w, h });
+    }
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.width = w;
@@ -202,8 +254,16 @@ function AtlasOverlay(props: {
 
   const resetView = () => {
     zoomRef.current = 1;
-    panRef.current = { x: 0, y: 0 };
     setZoom(1);
+    if (isHero && sizeRef.current.w > 0) {
+      const vp = viewportRef.current;
+      const cw = vp?.clientWidth ?? 0;
+      const centered = centerPanInViewport(cw, heroHeight, sizeRef.current.w, sizeRef.current.h);
+      panRef.current = centered;
+      setPan(centered);
+      return;
+    }
+    panRef.current = { x: 0, y: 0 };
     setPan({ x: 0, y: 0 });
   };
 
@@ -289,50 +349,58 @@ function AtlasOverlay(props: {
   const innerTransform =
     size.w > 0 ? { transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "0 0" as const } : {};
 
+  const toolbarBtnStyle = isHero
+    ? heroToolbarBtnStyle
+    : {
+        background: "#3c3c3c",
+        color: "#d4d4d4",
+        border: "1px solid #555555",
+        borderRadius: 3,
+        padding: "2px 8px",
+        fontSize: isHero ? 10 : 12,
+        cursor: disabled ? "not-allowed" : "pointer",
+      };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", gap: isHero ? 4 : 6 }}
+      data-testid={isHero ? "studio-image-hero-crop" : undefined}
+    >
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: 6,
           alignItems: "center",
+          padding: isHero ? "6px 8px 0" : undefined,
         }}
       >
-        <span style={{ color: "#9d9d9d", fontSize: 11 }}>Zoom</span>
+        {!isHero ? <span style={{ color: "#9d9d9d", fontSize: 11 }}>Zoom</span> : null}
         <button
           type="button"
           disabled={disabled || zoom <= MIN_ZOOM}
           onClick={() => zoomAroundViewportCenter(1 / BTN_ZOOM_FACTOR)}
-          style={{
-            background: "#3c3c3c",
-            color: "#d4d4d4",
-            border: "1px solid #555555",
-            borderRadius: 3,
-            padding: "2px 8px",
-            fontSize: 12,
-            cursor: disabled ? "not-allowed" : "pointer",
-          }}
+          style={toolbarBtnStyle}
           aria-label="Zoom out"
         >
           −
         </button>
-        <span style={{ color: "#c8c8c8", fontSize: 11, minWidth: 44, textAlign: "center" }}>
+        <span
+          style={{
+            color: isHero ? "#7a7a86" : "#c8c8c8",
+            fontSize: 10,
+            minWidth: 40,
+            textAlign: "center",
+            fontFamily: "var(--font-mono, monospace)",
+          }}
+        >
           {Math.round(zoom * 100)}%
         </span>
         <button
           type="button"
           disabled={disabled || zoom >= MAX_ZOOM}
           onClick={() => zoomAroundViewportCenter(BTN_ZOOM_FACTOR)}
-          style={{
-            background: "#3c3c3c",
-            color: "#d4d4d4",
-            border: "1px solid #555555",
-            borderRadius: 3,
-            padding: "2px 8px",
-            fontSize: 12,
-            cursor: disabled ? "not-allowed" : "pointer",
-          }}
+          style={toolbarBtnStyle}
           aria-label="Zoom in"
         >
           +
@@ -341,18 +409,11 @@ function AtlasOverlay(props: {
           type="button"
           disabled={disabled || (zoom <= MIN_ZOOM && pan.x === 0 && pan.y === 0)}
           onClick={resetView}
-          style={{
-            background: "#3c3c3c",
-            color: "#d4d4d4",
-            border: "1px solid #555555",
-            borderRadius: 3,
-            padding: "2px 8px",
-            fontSize: 11,
-            cursor: disabled ? "not-allowed" : "pointer",
-          }}
+          style={toolbarBtnStyle}
         >
-          Reset view
+          Reset
         </button>
+        {isHero ? <div style={{ flex: 1 }} /> : null}
       </div>
 
       <div
@@ -360,11 +421,12 @@ function AtlasOverlay(props: {
         style={{
           position: "relative",
           overflow: "hidden",
-          width: size.w || undefined,
-          height: size.h || undefined,
-          maxWidth: 280,
-          borderRadius: 3,
-          outline: "1px solid #444",
+          width: isHero ? "100%" : size.w || undefined,
+          height: isHero ? heroHeight : size.h || undefined,
+          maxWidth: isHero ? undefined : 280,
+          borderRadius: isHero ? 0 : 3,
+          outline: isHero ? undefined : "1px solid #444",
+          background: isHero ? "#0a0a10" : undefined,
         }}
       >
         <div style={{ ...innerTransform, width: size.w, height: size.h, position: "relative" }}>
@@ -405,6 +467,19 @@ function AtlasOverlay(props: {
           />
         </div>
       </div>
+      {isHero ? (
+        <p
+          style={{
+            margin: 0,
+            padding: "0 8px 6px",
+            color: "#7a7a86",
+            fontSize: 9,
+            lineHeight: 1.35,
+          }}
+        >
+          Wheel zoom · drag to select · Alt-drag or middle-click to pan
+        </p>
+      ) : null}
     </div>
   );
 }

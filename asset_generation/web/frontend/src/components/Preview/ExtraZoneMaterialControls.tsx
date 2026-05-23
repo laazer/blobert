@@ -1,6 +1,7 @@
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { SingleColorMode } from "../ColorPicker/modes/SingleColorMode";
+import { StudioHexRow } from "../studio/StudioHexRow";
 import { ControlRow, rowStyles } from "./BuildControlRow";
 import { zonePartDisplayName } from "./ZoneTextureBlock";
 import {
@@ -13,6 +14,10 @@ const EMPTY_VALUES: Readonly<Record<string, unknown>> = {};
 
 type Props = {
   slug: string;
+  /** Studio Look: only show extras for this coarse zone */
+  zoneFilter?: string;
+  /** Use studio hex row instead of legacy single-color mode */
+  useStudioPicker?: boolean;
 };
 
 function hexFromStore(raw: unknown): string {
@@ -23,7 +28,7 @@ function hexFromStore(raw: unknown): string {
 /**
  * Per-zone finish + hex for geometry extras (``extra_zone_*``). Shown on Colors only (single color, no patterns).
  */
-export function ExtraZoneMaterialControls({ slug }: Props) {
+export function ExtraZoneMaterialControls({ slug, zoneFilter, useStudioPicker = false }: Props) {
   const defs = useAppStore((st) => st.animatedBuildControls[slug] ?? EMPTY_DEFS);
   const values = useAppStore((st) => st.animatedBuildOptionValues[slug] ?? EMPTY_VALUES);
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
@@ -33,6 +38,7 @@ export function ExtraZoneMaterialControls({ slug }: Props) {
   if (!hasAny) return null;
 
   const zonesWithColor = zones.filter((zone) => {
+    if (zoneFilter && zone !== zoneFilter) return false;
     const zdefs = byZone[zone] ?? [];
     return zdefs.some((d) => isExtraZoneAppearanceDefKey(d.key));
   });
@@ -81,10 +87,17 @@ export function ExtraZoneMaterialControls({ slug }: Props) {
                 onChange={(v) => setAnimatedBuildOption(slug, finishDef.key, v)}
               />
             ) : null}
-            <SingleColorMode
-              color={hexFromStore(values[hexKey])}
-              onChange={(h) => setAnimatedBuildOption(slug, hexKey, h)}
-            />
+            {useStudioPicker ? (
+              <StudioHexRow
+                color={hexFromStore(values[hexKey])}
+                onChange={(h) => setAnimatedBuildOption(slug, hexKey, h)}
+              />
+            ) : (
+              <SingleColorMode
+                color={hexFromStore(values[hexKey])}
+                onChange={(h) => setAnimatedBuildOption(slug, hexKey, h)}
+              />
+            )}
           </div>
         );
       })}
