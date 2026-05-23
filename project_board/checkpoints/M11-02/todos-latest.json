@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-02",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-23T16:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-23T18:00:00Z",
   "todos": [
     {
       "id": "td-1",
@@ -17,20 +17,32 @@
       "agent": "Test Designer Agent"
     },
     {
-      "id": "td-3",
-      "content": "Write checkpoint + handoff artifacts",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
       "id": "tb-1",
       "content": "Author test_player_physics_frame_order_adversarial.gd",
-      "status": "pending",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "tb-2",
+      "content": "Run adversarial suite RED evidence + checkpoint",
+      "status": "completed",
       "agent": "Test Breaker Agent"
     },
     {
       "id": "impl-1",
       "content": "Implement PFO-2 pipeline in player_controller_3d.gd",
+      "status": "pending",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl-2",
+      "content": "Create test_one_way_platform_3d.tscn + project.godot layers",
+      "status": "pending",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl-3",
+      "content": "Green 25 PFO tests (primary + adversarial)",
       "status": "pending",
       "agent": "Gameplay Systems Agent"
     }

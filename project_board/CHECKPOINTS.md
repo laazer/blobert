@@ -24,6 +24,10 @@ Log: `project_board/checkpoints/M11-02/2026-05-23T-spec-run.md`
 Primary suite `test_player_physics_frame_order.gd` — 13 RED failures (jump buffer, mask, fixture, pipeline methods).
 Log: `project_board/checkpoints/M11-02/2026-05-23T-test-design-run.md`
 
+### M11-02 — OUTCOME: TEST_BREAK → IMPLEMENTATION_GENERALIST
+Adversarial suite `test_player_physics_frame_order_adversarial.gd` — 12 RED failures (buffer/coyote boundaries, mask vy=0, reorder regressions). Combined 25 RED.
+Log: `project_board/checkpoints/M11-02/2026-05-23T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-23T-studio-01-autopilot

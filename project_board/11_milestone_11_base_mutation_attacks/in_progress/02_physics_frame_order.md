@@ -123,16 +123,16 @@ Make `_physics_process` in `PlayerController3D` follow a frozen, documented six-
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: RED (25 PFO failures — 13 primary + 12 adversarial)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -141,15 +141,15 @@ Test Designer Agent
 
 ## Escalation Notes
 - M11-01 dependency satisfied (`done/01_player_state_machine.md`).
-- Planning complete (revision 2): execution plan embedded; handoff to Spec Agent.
-- **WARN:** Branch `run_tests.sh` may still exit 1 from unrelated failures (see M11-01 ac-gatekeeper); does not block spec work; blocks COMPLETE until green.
+- Adversarial suite authored: buffer/coyote boundaries, mask at vy=0, reorder regressions (TB-PFO-001..012).
+- **WARN:** Branch `run_tests.sh` may still exit 1 from unrelated failures; blocks COMPLETE until green.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Required Input Schema
 ```json
@@ -158,8 +158,8 @@ Test Breaker Agent
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md",
   "primary_test_file": "tests/scripts/player/test_player_physics_frame_order.gd",
   "adversarial_test_file": "tests/scripts/player/test_player_physics_frame_order_adversarial.gd",
-  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-test-design-run.md",
-  "red_evidence": "13/13 failures in test_player_physics_frame_order.gd"
+  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-test-break-run.md",
+  "red_evidence": "25/25 failures (13 primary + 12 adversarial PFO tests)"
 }
 ```
 
@@ -167,4 +167,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary PFO behavioral tests authored and RED (13 failures). Handoff to Test Breaker for adversarial suite and boundary cases.
+Adversarial PFO tests authored and RED. Implement PFO-2 pipeline, jump buffer, one-way mask, fixture scene; green all 25 tests.
