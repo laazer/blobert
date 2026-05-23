@@ -1,26 +1,26 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-02",
-  "agent": "Planner Agent",
-  "captured_at": "2026-05-23T12:00:00Z",
+  "agent": "Spec Agent",
+  "captured_at": "2026-05-23T14:00:00Z",
   "todos": [
     {
-      "id": "plan-1",
-      "content": "Decompose ticket into execution plan with dependency matrix",
+      "id": "spec-1",
+      "content": "Author player_physics_frame_order_spec.md with PFO requirements",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     },
     {
-      "id": "plan-2",
-      "content": "Write planning checkpoint and handoff artifacts",
+      "id": "spec-2",
+      "content": "Write spec checkpoint and handoff artifacts",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     },
     {
-      "id": "plan-3",
-      "content": "Advance ticket WORKFLOW STATE to SPECIFICATION",
+      "id": "spec-3",
+      "content": "Advance ticket WORKFLOW STATE to TEST_DESIGN",
       "status": "completed",
-      "agent": "Planner Agent"
+      "agent": "Spec Agent"
     }
   ]
 }

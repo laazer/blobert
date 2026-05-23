@@ -16,6 +16,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ### M11-02 — OUTCOME: PLANNING COMPLETE
 Eleven-task execution plan in ticket (revision 2). Stage → SPECIFICATION; handoff to Spec Agent.
 
+### M11-02 — OUTCOME: SPECIFICATION → TEST_DESIGN
+PFO-2 pipeline frozen: jump buffer (0.1s), coyote in sim, one-way layers/mask, renderer sync pre-slide, FSM hooks preserved.
+Log: `project_board/checkpoints/M11-02/2026-05-23T-spec-run.md`
+
 ---
 
 ## Run: 2026-05-23T-studio-01-autopilot

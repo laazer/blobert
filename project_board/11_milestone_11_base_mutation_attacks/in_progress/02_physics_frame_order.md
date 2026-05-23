@@ -123,13 +123,13 @@ Make `_physics_process` in `PlayerController3D` follow a frozen, documented six-
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -149,18 +149,23 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
-  "spec_path": "agent_context/agents/2_spec/player_physics_frame_order_spec.md",
+  "spec_path": "project_board/specs/player_physics_frame_order_spec.md",
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md",
   "primary_files": [
     "scripts/player/player_controller_3d.gd",
     "scripts/movement/movement_simulation.gd",
     "scripts/fx/slime_visual_state.gd",
-    "scripts/player/player_export_animation_controller_3d.gd"
+    "scripts/player/player_export_animation_controller_3d.gd",
+    "scenes/levels/sandbox/test_one_way_platform_3d.tscn"
+  ],
+  "test_files": [
+    "tests/scripts/player/test_player_physics_frame_order.gd",
+    "tests/scripts/player/test_player_physics_frame_order_adversarial.gd"
   ],
   "spec_exit_type": "generic"
 }
@@ -170,4 +175,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planner decomposed M11-02 into 11 tasks with dependency matrix and effort estimate. Stage advanced to SPECIFICATION for normative frame-order, jump buffer, one-way mask, and renderer sync spec.
+Normative PFO-2 ten-step pipeline spec complete (jump buffer, coyote ownership, one-way mask, renderer sync, M11-01 hook preservation). Stage advanced to TEST_DESIGN for behavior-based red tests.
