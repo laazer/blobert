@@ -1,0 +1,37 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: FEAT-20260522-registry-build-options-snapshot
+  from_agent: spec
+  to_agent: test_design
+  validated_at: "2026-05-23T01:00:00Z"
+  required_items_met: 4
+  total_required_items: 4
+  checklist:
+    - item_key: spec_authored
+      item: Feature spec written with api and load-open sections
+      required: true
+      status: complete
+      evidence: project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md
+      evidence_type: path
+    - item_key: schema_version_decided
+      item: schema_version remains 1; build_options field defined
+      required: true
+      status: complete
+      evidence: "project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md — Schema version decision"
+      evidence_type: attestation
+    - item_key: checkpoint_ambiguities
+      item: Spec ambiguities logged to scoped checkpoint
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/2026-05-22T-feature-run.md
+      evidence_type: path
+    - item_key: handoff_artifacts
+      item: todos-latest.json and handoff-latest.yaml updated
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/FEAT-20260522-registry-build-options-snapshot/
+      evidence_type: path
+  spec_path: project_board/specs/FEAT-20260522_registry_build_options_snapshot_spec.md
+  spec_completeness_types: "api,load-open"
+  player_field_name: build_options
+  manifest_schema_version: 1
