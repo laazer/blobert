@@ -105,49 +105,51 @@ Introduce `PlayerStateMachine` (`scripts/player/player_state_machine.gd`) as a R
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+INTEGRATION
 
 ## Revision
-6
+7
 
 ## Last Updated By
-Gameplay Systems Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: PASS (M11-01 primary 40/40 + adversarial 229/229; full Godot suite 18 unrelated pre-existing failures — see implementation checkpoint)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: M11-01 scoped PASS — `test_player_state_machine.gd` 40/40, `test_player_state_machine_adversarial.gd` 229/229 (commits c3b8732, 679103c, bd535cf; implementation checkpoint). Full suite FAIL — `timeout 300 ci/scripts/run_tests.sh` exit **1** (gatekeeper rerun 2026-05-23): Godot `=== FAILURES: 18 test(s) failed ===` in `tests/ui/test_enemy_status_effect_indicators*.gd` (15) + `tests/scripts/test_utils_adversarial.gd` / `test_utils_smoke.gd` harness (3); zero failures in player FSM or player controller paths. Log: `project_board/checkpoints/M11-01/2026-05-23T-ac-gatekeeper-run.md`
+- Static QA: PASS — `task hooks:gd-review` on FSM files; `project_board/checkpoints/M11-01/2026-05-23T-static-qa-run.md`
+- Integration: Not Run (refactor AC; no manual playtest required)
 
 ## Blocking Issues
-- None
+- AC **`run_tests.sh` exits 0** unmet: `ci/scripts/run_tests.sh` returned exit code 1 on 2026-05-23 (18 unrelated Godot failures; see ac-gatekeeper checkpoint).
+- **Push before COMPLETE** unmet: branch `main` was ahead of `origin/main` by 8 commits at gate time (includes bd535cf); must push after suite green per `workflow_enforcement_v1.md`.
 
 ## Escalation Notes
-- None
+- M11-01 implementation deliverable is complete and committed; closure blocked only by branch-level full-suite green + push. Repair ownership: enemy status effect UI tests + test_utils runner counting (not player FSM).
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Acceptance Criteria Gatekeeper Agent
+Bugfix Agent
 
 ## Required Input Schema
 ```json
 {
-  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-implementation-run.md",
-  "spec_path": "project_board/specs/player_state_machine_spec.md",
-  "primary_test_path": "tests/scripts/player/test_player_state_machine.gd",
-  "adversarial_test_path": "tests/scripts/player/test_player_state_machine_adversarial.gd",
-  "implementation_paths": [
-    "scripts/player/player_state_machine.gd",
-    "scripts/player/player_state_derivation_context.gd",
-    "scripts/player/player_controller_3d.gd"
-  ]
+  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-ac-gatekeeper-run.md",
+  "failure_buckets": [
+    "tests/ui/test_enemy_status_effect_indicators.gd",
+    "tests/ui/test_enemy_status_effect_indicators_adversarial.gd",
+    "tests/ui/test_enemy_status_effect_indicators_adversarial_part2.gd",
+    "tests/scripts/test_utils_adversarial.gd",
+    "tests/scripts/test_utils_smoke.gd"
+  ],
+  "verify_command": "timeout 300 ci/scripts/run_tests.sh",
+  "m11_01_regression_command": "timeout 120 godot --headless --path . -s tests/run_tests.gd"
 }
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Implementation complete: FSM + controller wiring; M11-01 unit suites green (40 + 229); `task hooks:gd-review` passed on changed `.gd`. AC Gatekeeper: verify AC matrix, note 18 pre-existing unrelated Godot failures in full suite (see implementation checkpoint); commit/push before COMPLETE.
+Seven of eight AC items have objective test/static-QA evidence; AC **`run_tests.sh` exits 0** is not satisfied (exit 1, 18 Godot failures outside M11-01 paths). Stage held at INTEGRATION; ticket stays in `backlog/` until full suite green and `git push` succeeds, then re-run AC Gatekeeper for COMPLETE + `done/` move.

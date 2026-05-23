@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-01",
-  "agent": "Gameplay Systems Agent",
-  "captured_at": "2026-05-23T20:00:00Z",
+  "agent": "Static QA (gdscript-reviewer)",
+  "captured_at": "2026-05-23T21:30:00Z",
   "todos": [
     {
-      "id": "impl-1",
-      "content": "Implement PlayerStateMachine + PlayerStateDerivationContext per spec",
+      "id": "static-qa-1",
+      "content": "Review player_state_machine.gd + derivation context",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Static QA"
     },
     {
-      "id": "impl-2",
-      "content": "Wire PlayerController3D (PSM-10) without behavior change",
+      "id": "static-qa-2",
+      "content": "Review PlayerController3D FSM wiring (PSM-10)",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Static QA"
     },
     {
-      "id": "impl-3",
-      "content": "Pass test_player_state_machine.gd + adversarial suite",
+      "id": "static-qa-3",
+      "content": "Run hooks:gd-review on changed GDScript",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Static QA"
     },
     {
-      "id": "impl-4",
-      "content": "Checkpoint, handoff, ticket workflow → AC Gatekeeper",
+      "id": "static-qa-4",
+      "content": "Checkpoint static-qa-run.md + handoff static_qa→learning",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Static QA"
     }
   ]
 }

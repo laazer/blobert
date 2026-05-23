@@ -28,6 +28,10 @@ Log: `project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md`
 FSM + controller wired; primary 40/40 + adversarial 229/229 PASS.
 Log: `project_board/checkpoints/M11-01/2026-05-23T-implementation-run.md`
 
+### M11-01 — OUTCOME: AC GATEKEEPER → INTEGRATION (not COMPLETE)
+M11-01 FSM AC evidenced (40+229); `run_tests.sh` exit 1 (18 unrelated Godot failures); push pending.
+Log: `project_board/checkpoints/M11-01/2026-05-23T-ac-gatekeeper-run.md`
+
 ---
 
 ## Run: 2026-05-22T-feat-registry-build-options (FEAT-20260522-registry-build-options-snapshot)

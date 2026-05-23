@@ -71,8 +71,8 @@ All failures stem from missing `scripts/player/player_state_machine.gd` — corr
 
 ## Workflow Transition Gates
 
-```bash
-python ci/scripts/run_workflow_transition_gates.py --ticket-id M11-01 --transition test_design_to_test_break
 ```
-
-(Log gate output below after run.)
+transition=test_design_to_test_break ticket_id=M11-01
+  todo_validation_check: PASS — All todos completed for Test Designer Agent.
+  handoff_validation_check: PASS — Handoff checklist valid for test_designer→test_breaker.
+```
