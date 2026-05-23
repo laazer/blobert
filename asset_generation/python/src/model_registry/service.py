@@ -21,6 +21,11 @@ from .migrations import (
 
 _derive_player_active_visual_from_block = derive_player_active_visual_from_block
 _legacy_pav_to_player_block = legacy_pav_to_player_block
+from src.utils.build_options import (
+    coerce_validate_enemy_build_options,
+    parse_build_options_json,
+)
+
 from .schema import _MAX_VERSION_NAME_LEN, _path_is_allowlisted, validate_manifest
 from .store import read_registry_object, registry_path, write_registry_json_atomic
 from .tags import canonical_version_tags
@@ -393,6 +398,88 @@ def get_enemy_slots(python_root: Path, family: str) -> dict[str, Any]:
     return _slots_payload(fam, family)
 
 
+def _row_has_build_options_snapshot(row: dict[str, Any]) -> bool:
+    snapshot = row.get("build_options")
+    return isinstance(snapshot, dict) and bool(snapshot)
+
+
+def _build_options_sidecar_path(python_root: Path, registry_path_rel: str) -> Path:
+    glb_path = Path(registry_path_rel)
+    return python_root / glb_path.parent / f"{glb_path.stem}.build_options.json"
+
+
+def _read_build_options_from_sidecar(
+    python_root: Path,
+    registry_path_rel: str,
+    *,
+    coercion_slug: str,
+) -> dict[str, Any] | None:
+    sidecar = _build_options_sidecar_path(python_root, registry_path_rel)
+    if not sidecar.is_file():
+        return None
+    try:
+        raw_text = sidecar.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    parsed = parse_build_options_json(raw_text)
+    if not parsed:
+        return None
+    try:
+        coerced = coerce_validate_enemy_build_options(coercion_slug, parsed)
+    except ValueError:
+        return None
+    return coerced or None
+
+
+def _backfill_build_options_for_versions(
+    python_root: Path,
+    versions: list[dict[str, Any]],
+    *,
+    coercion_slug: str,
+) -> bool:
+    changed = False
+    for row in versions:
+        if _row_has_build_options_snapshot(row):
+            continue
+        path = row.get("path")
+        if not isinstance(path, str):
+            continue
+        snapshot = _read_build_options_from_sidecar(python_root, path, coercion_slug=coercion_slug)
+        if snapshot is None:
+            continue
+        row["build_options"] = snapshot
+        changed = True
+    return changed
+
+
+def attach_build_options_to_version_by_path(
+    python_root: Path,
+    registry_path: str,
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist a validated build-options snapshot on the version row for *registry_path*."""
+    canonical_path = normalize_registry_relative_glb_path(registry_path)
+    data = load_effective_manifest(python_root)
+
+    for family, fam_block in data.get("enemies", {}).items():
+        for row in fam_block.get("versions", []):
+            if row.get("path") == canonical_path:
+                row["build_options"] = dict(snapshot)
+                validated = validate_manifest(data)
+                save_manifest_atomic(python_root, validated)
+                return validated
+
+    for row in data.get("player", {}).get("versions", []):
+        if row.get("path") == canonical_path:
+            row["build_options"] = dict(snapshot)
+            data.pop("player_active_visual", None)
+            validated = validate_manifest(data)
+            save_manifest_atomic(python_root, validated)
+            return validated
+
+    raise KeyError(f"unknown registry path {canonical_path!r}")
+
+
 def _discovered_animated_export_rows(
     python_root: Path,
     family: str,
@@ -441,13 +528,18 @@ def sync_discovered_animated_glb_versions(python_root: Path, family: str) -> dic
     fam = data["enemies"].get(family)
     if fam is None:
         raise KeyError(f"unknown family: {family}")
-    versions = fam["versions"]
+    versions = list(fam["versions"])
     existing_ids = {str(row["id"]) for row in versions if isinstance(row.get("id"), str)}
     existing_paths = {str(row["path"]) for row in versions if isinstance(row.get("path"), str)}
     new_rows = _discovered_animated_export_rows(python_root, family, existing_ids, existing_paths)
-    if not new_rows:
+    if new_rows:
+        versions = list(versions) + new_rows
+    changed = bool(new_rows)
+    if _backfill_build_options_for_versions(python_root, versions, coercion_slug=family):
+        changed = True
+    if not changed:
         return data
-    new_fam = {**fam, "versions": list(versions) + new_rows}
+    new_fam = {**fam, "versions": versions}
     new_data = {**data, "enemies": {**data["enemies"], family: new_fam}}
     validated = validate_manifest(new_data)
     save_manifest_atomic(python_root, validated)
@@ -553,13 +645,18 @@ def _discovered_player_export_rows(
 def sync_discovered_player_glb_versions(python_root: Path) -> dict[str, Any]:
     data = load_effective_manifest(python_root)
     fam = data["player"]
-    versions = fam["versions"]
+    versions = list(fam["versions"])
     existing_ids = {str(row["id"]) for row in versions if isinstance(row.get("id"), str)}
     existing_paths = {str(row["path"]) for row in versions if isinstance(row.get("path"), str)}
     new_rows = _discovered_player_export_rows(python_root, existing_ids, existing_paths)
-    if not new_rows:
+    if new_rows:
+        versions = list(versions) + new_rows
+    changed = bool(new_rows)
+    if _backfill_build_options_for_versions(python_root, versions, coercion_slug="player_slime"):
+        changed = True
+    if not changed:
         return data
-    new_fam = {**fam, "versions": list(versions) + new_rows}
+    new_fam = {**fam, "versions": versions}
     new_data = {**data, "player": new_fam}
     new_data.pop("player_active_visual", None)
     validated = validate_manifest(new_data)
@@ -614,6 +711,7 @@ __all__ = [
     "_derive_player_active_visual_from_block",
     "_legacy_pav_to_player_block",
     "_MAX_VERSION_NAME_LEN",
+    "attach_build_options_to_version_by_path",
     "default_migrated_manifest",
     "delete_enemy_version",
     "delete_player_active_visual",

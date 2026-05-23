@@ -1,32 +1,20 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-24",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-21T22:00:00Z",
+  "agent": "Implementation Frontend Agent",
+  "captured_at": "2026-05-21T23:00:00Z",
   "todos": [
     {
-      "id": "m902-24-tb-1",
-      "content": "Read spec and behavioral tests",
+      "id": "impl-1",
+      "content": "sync-api-types.sh + cache + api.types.ts",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Implementation Frontend Agent"
     },
     {
-      "id": "m902-24-tb-2",
-      "content": "Author test_sync_api_types_adversarial.py",
+      "id": "impl-2",
+      "content": "healthCheck.ts + README + package.json scripts",
       "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "m902-24-tb-3",
-      "content": "Checkpoint + handoff test_breaker→implementation",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "m902-24-tb-4",
-      "content": "Update ticket IMPLEMENTATION_FRONTEND",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Implementation Frontend Agent"
     }
   ]
 }

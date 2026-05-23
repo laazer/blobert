@@ -119,4 +119,26 @@ describe("ColorsPane", () => {
 
     expect(useAppStore.getState().animatedBuildOptionValues.spider?.feat_body_finish).toBe("matte");
   });
+
+  it("studioSurface hydrates when center panel is not colors", async () => {
+    const controls = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
+    const merged = mergeBuildOptionValues(controls, {});
+
+    useAppStore.setState({
+      commandContext: { cmd: "animated", enemy: "spider" },
+      animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
+      animatedBuildControls: controls,
+      animatedBuildOptionValues: merged,
+      centerPanel: "code",
+      commandExportFinish: "glossy",
+      commandExportHexColor: "",
+    });
+
+    render(<ColorsPane studioSurface />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(useAppStore.getState().animatedBuildOptionValues.spider?.feat_body_finish).toBe("glossy");
+  });
 });

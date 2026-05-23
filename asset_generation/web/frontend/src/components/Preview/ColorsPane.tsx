@@ -1,15 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
 import { buildZoneColorHydrationFromCommandBar } from "../../utils/hydrateZoneColorsFromCommandBar";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
+import { StudioLookPanel } from "../studio/StudioLookPanel";
 import { ElementPalettesSection } from "./ElementPalettesSection";
+import { ExtraZoneMaterialControls } from "./ExtraZoneMaterialControls";
 import { FeatureMaterialControls } from "./FeatureMaterialControls";
 
+export type ColorsPaneProps = {
+  /**
+   * Studio Look inspector: hydration runs while mounted without requiring centerPanel === "colors".
+   */
+  studioSurface?: boolean;
+};
+
 /**
- * Center column tab: per-zone finish, hex, and surface pattern (feat_* build options).
+ * Center column tab (legacy) or Studio Look tab: per-zone finish, hex, and surface pattern (feat_* build options).
  */
-export function ColorsPane() {
+export function ColorsPane({ studioSurface = false }: ColorsPaneProps) {
   const commandContext = useAppStore((s) => s.commandContext);
   const animatedEnemyMeta = useAppStore((s) => s.animatedEnemyMeta);
   const centerPanel = useAppStore((s) => s.centerPanel);
@@ -35,7 +44,8 @@ export function ColorsPane() {
    */
   useEffect(() => {
     if (!isAnimatedEnemy && !isPlayerSlimeColors) return;
-    if (centerPanel !== "colors") return;
+    const surfaceOpen = studioSurface || centerPanel === "colors";
+    if (!surfaceOpen) return;
 
     // Defer past other useEffects in the same commit. Sibling CommandPanel syncs local UI → store;
     // microtasks run after all passive effects so we read the latest commandExport* values.
@@ -49,6 +59,7 @@ export function ColorsPane() {
       applyAnimatedBuildOptionsForSlug(slug, updates);
     });
   }, [
+    studioSurface,
     centerPanel,
     slug,
     isAnimatedEnemy,
@@ -59,34 +70,37 @@ export function ColorsPane() {
     applyAnimatedBuildOptionsForSlug,
   ]);
 
+  const emptyShellStyle: CSSProperties = {
+    padding: studioSurface ? 0 : "12px 12px",
+    background: studioSurface ? "transparent" : "#1e1e1e",
+    color: studioSurface ? "#7a7a86" : "#9d9d9d",
+    fontSize: 12,
+    flexShrink: 0,
+    lineHeight: 1.5,
+  };
+
   if (!isAnimatedEnemy && !isPlayerSlimeColors) {
     return (
-      <div
-        style={{
-          padding: "12px 12px",
-          background: "#1e1e1e",
-          color: "#9d9d9d",
-          fontSize: 12,
-          flexShrink: 0,
-        }}
-      >
+      <div style={emptyShellStyle} data-testid={studioSurface ? "studio-look-empty" : undefined}>
         Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
-        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit per-zone finishes, hex colors, and surface patterns.
+        &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to edit per-zone finishes, hex colors, geometry-extra tints, and surface patterns.
       </div>
     );
   }
 
   return (
     <div
+      data-testid={studioSurface ? "studio-look-controls" : undefined}
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 8,
-        padding: "8px 10px 12px",
-        background: "#1e1e1e",
+        gap: studioSurface ? 12 : 8,
+        padding: studioSurface ? 0 : "8px 10px 12px",
+        background: studioSurface ? "transparent" : "#1e1e1e",
         flexShrink: 0,
       }}
     >
+      {!studioSurface ? (
       <p style={{ color: "#8f8f8f", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
         Each coarse zone groups <strong style={{ color: "#bbb" }}>finish</strong>, <strong style={{ color: "#bbb" }}>base color</strong>, and{" "}
         <strong style={{ color: "#bbb" }}>pattern</strong> build options (GLB preview shows the last export)
@@ -105,8 +119,35 @@ export function ColorsPane() {
           </>
         )}
       </p>
-      <ElementPalettesSection slug={slug} />
-      <FeatureMaterialControls slug={slug} showEmptyHint />
+      ) : null}
+      {studioSurface ? (
+        <>
+          <StudioLookPanel slug={slug} />
+          <details data-testid="studio-look-advanced" style={{ marginTop: 4 }}>
+            <summary
+              style={{
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#8a8a96",
+                userSelect: "none",
+              }}
+            >
+              Advanced zone controls
+            </summary>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+              <FeatureMaterialControls slug={slug} showEmptyHint compactTitle />
+              <ExtraZoneMaterialControls slug={slug} />
+            </div>
+          </details>
+        </>
+      ) : (
+        <>
+          <ElementPalettesSection slug={slug} />
+          <FeatureMaterialControls slug={slug} showEmptyHint />
+          <ExtraZoneMaterialControls slug={slug} />
+        </>
+      )}
     </div>
   );
 }

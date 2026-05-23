@@ -41,6 +41,7 @@ func set_active_status_effects(effects: Array) -> void:
 """
 	var script = GDScript.new()
 	script.set_source_code(script_code)
+	script.reload()
 	body.set_script(script)
 
 	if body.has_method("set_active_status_effects"):
@@ -131,12 +132,12 @@ func _get_active_effects_from_enemy() -> Array:
 		if result is Array:
 			return result
 
-	if _enemy.get_meta_list().has("active_status_effects"):
+	if _enemy.has_meta("active_status_effects"):
 		var result = _enemy.get_meta("active_status_effects")
 		if result is Array:
 			return result
 
-	if _enemy.has_property("active_status_effects"):
+	if "active_status_effects" in _enemy:
 		var result = _enemy.active_status_effects
 		if result is Array:
 			return result

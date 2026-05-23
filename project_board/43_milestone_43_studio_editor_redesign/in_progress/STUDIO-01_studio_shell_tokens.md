@@ -105,47 +105,54 @@ Phase 1 Studio shell in `asset_generation/web/frontend`: feature-flagged `Studio
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_FRONTEND
+INTEGRATION
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: RED (StudioLayout.test.tsx — 35 cases; import resolution; see `2026-05-23T-test-break-run.md`)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: **STUDIO-01 scoped GREEN** — `StudioLayout.test.tsx` 34/34; legacy `ThreePanelLayout.*` 4/4 (preview_collapse + extras_tab); see `2026-05-23T-implementation-run.md` and `2026-05-23T-ac-gatekeeper-run.md`
+- Tests: **AC-7 full suite RED** — `npm test -- --run` → 14 failed / 849 total in `BuildControlRow.concurrency.test.tsx`, `BuildControls.texture.test.tsx`, `ImageMode.test.tsx` (unrelated to Studio shell; gatekeeper re-run 2026-05-23)
+- Static QA: **Partial** — `npx tsc --noEmit` exit 0; full `npm test -- --run` not green
+- Integration: Not Run (manual studio flag smoke optional for Human)
+- AC coverage: AC-1..AC-6 evidenced by tests + spec §6–§9 alignment; AC-7 incomplete
 
 ## Blocking Issues
-- None
+- **AC-7:** Full frontend `npm test -- --run` must pass per ticket AC and spec NFR-2; 14 failures in 3 non–STUDIO-01 test files (verbatim output in `project_board/checkpoints/STUDIO-01/2026-05-23T-ac-gatekeeper-run.md`).
+- **Git closure:** STUDIO-01 implementation files uncommitted; `workflow_enforcement_v1.md` requires commit + push before Stage `COMPLETE`. No ticket move to `done/` until resolved.
 
 ## Escalation Notes
-- None
+- Scoped STUDIO-01 work appears complete; branch-wide test failures and dirty tree block closure — Human to triage whether failures are pre-existing on branch or regressions from parallel WIP, then commit/push STUDIO-01 paths only or fix suite.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Implementation Frontend Agent
+Human
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/43_milestone_43_studio_editor_redesign/in_progress/STUDIO-01_studio_shell_tokens.md",
-  "spec_path": "project_board/specs/studio_editor_redesign_spec.md",
-  "agent_guide": "agent_context/agents/misc_agents/implementation_frontend_v1.md",
-  "test_file": "asset_generation/web/frontend/src/components/layout/StudioLayout.test.tsx",
-  "checkpoint": "project_board/checkpoints/STUDIO-01/2026-05-23T-test-break-run.md",
-  "handoff": "test_break_to_implementation",
-  "scope": "Implement elements.ts, studioTokens.ts, App flag, StudioLayout + studio/*; satisfy §8 T-1..T-6 and §11 adversarial cases"
+  "checkpoint": "project_board/checkpoints/STUDIO-01/2026-05-23T-ac-gatekeeper-run.md",
+  "actions": [
+    "Fix or waive (with evidence) 14 failing tests in BuildControlRow/BuildControls.texture/ImageMode so npm test -- --run is green",
+    "Commit STUDIO-01 implementation paths; git push",
+    "Re-run AC Gatekeeper for COMPLETE + move to done/"
+  ],
+  "commands": [
+    "cd asset_generation/web/frontend && npm test -- --run",
+    "cd asset_generation/web/frontend && npx tsc --noEmit"
+  ]
 }
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Adversarial Vitest extended (§11 invalid flags, hydration spy on tab interaction, element hex CHECKPOINT). Suite RED until StudioLayout/elements/App flag land. Handoff to Implementation Frontend Agent.
+AC-1..AC-6 satisfied by scoped tests and spec-aligned implementation; AC-7 requires full `npm test -- --run` (currently 14 failures). Git commit/push required before COMPLETE per workflow enforcement. Ticket stays in `in_progress/`; not moved to `done/`.

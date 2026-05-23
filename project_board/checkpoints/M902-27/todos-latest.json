@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-27",
-  "agent": "Static QA Agent",
-  "captured_at": "2026-05-22T01:05:00Z",
+  "agent": "Learning Agent",
+  "captured_at": "2026-05-22T01:15:00Z",
   "todos": [
     {
-      "id": "qa-1",
-      "content": "Review api-contract-check.sh",
+      "id": "learn-1",
+      "content": "Append M902-27 to LEARNINGS.md",
       "status": "completed",
-      "agent": "Static QA Agent"
+      "agent": "Learning Agent"
     }
   ]
 }

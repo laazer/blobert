@@ -12,9 +12,11 @@ import pathlib
 import pytest
 from httpx import AsyncClient
 
+from src.utils.build_options import (
+    coerce_validate_enemy_build_options,
+    options_for_enemy,
+)
 from tests.api.openapi_contract import OpenAPIContract
-
-from src.utils.build_options import coerce_validate_enemy_build_options, options_for_enemy
 
 _BUILD_OPTIONS_MAX_BYTES = 262_144
 
@@ -47,7 +49,7 @@ def _write_oversized_imp_manifest(python_root: pathlib.Path) -> None:
 def _seed_player_open_fixture(python_root: pathlib.Path) -> None:
     snap = coerce_validate_enemy_build_options(
         "player_slime",
-        options_for_enemy("player_slime", {"eye_count": 3}),
+        options_for_enemy("player_slime", {"mouth_shape": "fang"}),
     )
     path = "player_exports/player_open_adv.glb"
     payload = {
@@ -103,4 +105,4 @@ async def test_registry_load_existing_open_player_contract_includes_build_option
         path="/api/registry/model/load_existing/open",
         expected_status=200,
     )
-    assert body["build_options"]["eye_count"] == 3
+    assert body["build_options"]["mouth_shape"] == "fang"

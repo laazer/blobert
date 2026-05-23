@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0.0",
+  "ticket_id": "M902-22",
+  "ticket_path": null,
+  "agent": "implementation",
+  "loop_run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2026-05-20T18:34:18Z",
+  "updated_at": "2026-05-21T19:53:44Z",
+  "iterations": [
+    {
+      "iteration": 1,
+      "agent_run_id": "run-001",
+      "recorded_at": "2026-05-21T19:53:44Z",
+      "error": "",
+      "diff_hash": "5e25ddc7b3293c755763a2c109f8bd05804c742e514b1430d56a2abbadc32d68",
+      "modified_files": [
+        ".semantic_reviews/TEST-100-VIOLATIONS.json",
+        ".semantic_reviews/TEST-1000-VIOLATIONS.json",
+        ".semantic_reviews/TEST-DET-A.json",
+        ".semantic_reviews/TEST-DET-B.json",
+        ".semantic_reviews/TEST-LARGE-CHANGE.json",
+        "asset_generation/web/frontend/src/api/syncApiTypes.test.ts",
+        "ci/scripts/gate_registry.json",
+        "ci/scripts/gates/handoff_validation_check.py",
+        "ci/scripts/run_workflow_transition_gates.py",
+        "jscpd-report.json",
+        "project_board/902_milestone_902_agent_predictabilitiy_improvements/02_complete/24_openapi_typescript_generation.md",
+        "project_board/checkpoints/M902-20/TODO_VALIDATION_RUNBOOK.md",
+        "project_board/checkpoints/M902-21/token_usage.json",
+        "project_board/checkpoints/M902-22/agent_iterations.json",
+        "project_board/checkpoints/M902-22/token_usage.json",
+        "project_board/checkpoints/M902-23/HANDOFF_RUNBOOK.md",
+        "project_board/checkpoints/M902-24/2026-05-21T-implementation-run.md",
+        "project_board/checkpoints/M902-24/handoff-latest.yaml",
+        "project_board/checkpoints/M902-24/todos-latest.json",
+        "project_board/checkpoints/M902-25/2026-05-21T-implementation-run.md",
+        "project_board/checkpoints/M902-25/blog-context-2026-05-21.md",
+        "project_board/checkpoints/M902-25/handoff-latest.yaml",
+        "project_board/checkpoints/M902-25/todos-latest.json",
+        "project_board/checkpoints/M902-26/handoff-latest.yaml",
+        "project_board/checkpoints/M902-26/todos-latest.json",
+        "project_board/checkpoints/M902-27/handoff-latest.yaml",
+        "project_board/checkpoints/M902-27/todos-latest.json",
+        "project_board/execution_plans/M902-24_openapi_typescript_generation.md",
+        "tests/ci/test_handoff_validation_gate.py",
+        "tests/ci/test_handoff_validation_gate_adversarial.py",
+        "tests/ci/test_run_workflow_transition_gates.py",
+        "tests/ci/test_todo_validation_gate.py"
+      ],
+      "tools_invoked": false
+    }
+  ],
+  "rollup": {
+    "iteration_count": 1,
+    "last_error": "",
+    "last_diff_hash": "5e25ddc7b3293c755763a2c109f8bd05804c742e514b1430d56a2abbadc32d68",
+    "error_repeat_streak": 0,
+    "diff_repeat_streak": 1,
+    "no_op_streak": 0,
+    "should_escalate": false,
+    "escalate_reason": null
+  },
+  "last_evaluation": {
+    "should_escalate": false,
+    "break_loop": false,
+    "reason": "",
+    "evidence": {},
+    "no_op_streak": 0,
+    "recommended_handoff": "",
+    "incomplete_iterations": false
+  }
+}

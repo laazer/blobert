@@ -56,7 +56,7 @@ Retry until PASS. Same snapshot bytes → same result (deterministic).
 
 ## Shadow vs blocking
 
-Until M903 enforcement, shadow mode exits `0` even on FAIL. **Still remediate** before handoff; do not rely on exit code alone.
+Orchestrators must use `run_workflow_transition_gates.py` (blocking). Registry `default_mode` is **blocking**; do not pass `--mode shadow` in autopilot/feature flows.
 
 ## Escalation
 

@@ -23,9 +23,9 @@ const btnPrimary: CSSProperties = {
   color: "#fff",
 };
 
-type Props = { slug: string };
+type Props = { slug: string; studioSurface?: boolean };
 
-export function ElementPalettesSection({ slug }: Props) {
+export function ElementPalettesSection({ slug, studioSurface = false }: Props) {
   const meta = useAppStore((s) => s.animatedEnemyMeta);
   const defs = useAppStore((s) => s.animatedBuildControls[slug] ?? []);
   const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
@@ -64,20 +64,37 @@ export function ElementPalettesSection({ slug }: Props) {
 
   return (
     <div
+      data-testid={studioSurface ? "studio-look-element-section" : undefined}
       style={{
-        border: "1px solid #3c3c3c",
-        borderRadius: 4,
-        padding: 10,
-        background: "#252526",
-        marginBottom: 10,
+        border: studioSurface ? "1px solid rgba(255,255,255,0.04)" : "1px solid #3c3c3c",
+        borderRadius: studioSurface ? 10 : 4,
+        padding: studioSurface ? 12 : 10,
+        background: studioSurface ? "#0a0a10" : "#252526",
+        marginBottom: studioSurface ? 0 : 10,
       }}
     >
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#d4d4d4", marginBottom: 4 }}>Element palettes</div>
-      <p style={{ color: "#8f8f8f", fontSize: 11, margin: "0 0 8px", lineHeight: 1.45 }}>
-        Fixed presets (combat + earth, forest, water, lightning) — not editable here. <strong style={{ color: "#bbb" }}>Apply</strong>{" "}
-        sets coarse zone finishes + hexes for this enemy. <strong style={{ color: "#bbb" }}>Click a swatch</strong> to copy{" "}
-        <code style={{ color: "#ccc" }}>#RRGGBB</code>. Limb / joint overrides are unchanged.
-      </p>
+      <div
+        style={{
+          fontSize: studioSurface ? 13 : 12,
+          fontWeight: 700,
+          color: studioSurface ? "#ededf0" : "#d4d4d4",
+          marginBottom: 4,
+        }}
+      >
+        {studioSurface ? "Element" : "Element palettes"}
+      </div>
+      {studioSurface ? (
+        <p style={{ color: "#8a8a96", fontSize: 11, margin: "0 0 10px", lineHeight: 1.45 }}>
+          Drives palette + animation hints. <strong style={{ color: "#bababf" }}>Apply</strong> sets zone finishes and hexes.
+        </p>
+      ) : (
+        <p style={{ color: "#8f8f8f", fontSize: 11, margin: "0 0 8px", lineHeight: 1.45 }}>
+          Fixed presets (combat + earth, forest, water, lightning) — not editable here.{" "}
+          <strong style={{ color: "#bbb" }}>Apply</strong> sets coarse zone finishes + hexes for this enemy.{" "}
+          <strong style={{ color: "#bbb" }}>Click a swatch</strong> to copy <code style={{ color: "#ccc" }}>#RRGGBB</code>. Limb /
+          joint overrides are unchanged.
+        </p>
+      )}
       {copiedLabel ? (
         <p style={{ color: "#89d185", fontSize: 11, margin: "0 0 8px" }} role="status">
           Copied {copiedLabel}

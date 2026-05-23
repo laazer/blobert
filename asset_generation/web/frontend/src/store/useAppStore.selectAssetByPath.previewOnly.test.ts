@@ -43,8 +43,12 @@ describe("selectAssetByPath preview-only (REQ-1)", () => {
     useAppStore.getState().selectAssetByPath(PREVIEW_GLB);
 
     await waitFor(() => {
-      expect(client.fetchBuildOptionsSidecarForGlbPath).toHaveBeenCalledWith(PREVIEW_GLB);
+      expect(useAppStore.getState().activeGlbUrl).toMatch(
+        /\/api\/assets\/animated_exports\/spider_animated_05\.glb\?t=\d+$/,
+      );
     });
+
+    expect(client.fetchBuildOptionsSidecarForGlbPath).not.toHaveBeenCalled();
 
     const state = useAppStore.getState();
     expect(state.activeGlbUrl).toMatch(/\/api\/assets\/animated_exports\/spider_animated_05\.glb\?t=\d+$/);

@@ -3,6 +3,7 @@ import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { ControlRow, FloatControlsTable, rowStyles } from "./BuildControlRow";
 import {
+  isExtraZoneAppearanceDefKey,
   kindOptionsForZone,
   partitionZoneExtraDefs,
 } from "./zoneExtrasPartition";
@@ -65,7 +66,7 @@ export function rowDisabled(kind: string, defKey: string, distribution: string):
 }
 
 /**
- * Per-zone geometry extras (``extra_zone_*``) + finish/hex for extra sub-meshes.
+ * Per-zone geometry extras (``extra_zone_*``). Finish / hex are on the Colors tab.
  */
 export function ZoneExtraControls({ slug, showEmptyHint }: Props) {
   const defs = useAppStore((st) => st.animatedBuildControls[slug] ?? EMPTY_DEFS);
@@ -145,6 +146,7 @@ export function ZoneExtraControls({ slug, showEmptyHint }: Props) {
                 };
                 for (const def of zdefs) {
                   if (def.key === kindKey) continue;
+                  if (isExtraZoneAppearanceDefKey(def.key)) continue;
                   if (def.type === "float") {
                     floatRun.push(def);
                   } else {

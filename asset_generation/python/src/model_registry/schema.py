@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, TypedDict
+
+from src.utils.build_options import coerce_validate_enemy_build_options
 
 from .migrations import (
     SCHEMA_VERSION,
@@ -19,6 +22,7 @@ ALLOWLIST_PREFIXES: tuple[str, ...] = (
 )
 REGISTRY_FILENAME = "model_registry.json"
 _MAX_VERSION_NAME_LEN = 128
+_BUILD_OPTIONS_MAX_BYTES = 262_144
 
 
 class VersionRow(TypedDict, total=False):
@@ -28,6 +32,7 @@ class VersionRow(TypedDict, total=False):
     in_use: bool
     name: str
     tags: list[str]
+    build_options: dict[str, Any]
 
 
 class FamilyBlock(TypedDict, total=False):
@@ -69,13 +74,40 @@ def _family_slug_for_tags(context: str) -> str:
     raise ValueError(f"cannot derive family slug from context {context!r}")
 
 
+def _coercion_slug_for_build_options(context: str) -> str:
+    if context == "player":
+        return "player_slime"
+    return _family_slug_for_tags(context)
+
+
+def _normalize_build_options_field(
+    context: str,
+    index: int,
+    raw: Any,
+) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        raise ValueError(f"{context}.versions[{index}].build_options must be a JSON object")
+    if not raw:
+        return None
+    if "mesh" in raw and not isinstance(raw["mesh"], dict):
+        raise ValueError(f"{context}.versions[{index}].build_options.mesh must be a JSON object")
+    slug = _coercion_slug_for_build_options(context)
+    coerced: dict[str, Any] | None = coerce_validate_enemy_build_options(slug, raw)
+    if not coerced:
+        return None
+    encoded = json.dumps(coerced, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    if len(encoded) > _BUILD_OPTIONS_MAX_BYTES:
+        raise ValueError("build_options too large")
+    return coerced
+
+
 def _normalize_version_row(
     context: str,
     index: int,
     row: dict[str, Any],
     seen_ids: set[str],
 ) -> dict[str, Any]:
-    allowed_keys = {"id", "path", "draft", "in_use", "name", "tags"}
+    allowed_keys = {"id", "path", "draft", "in_use", "name", "tags", "build_options"}
     extra = set(row.keys()) - allowed_keys
     if extra:
         raise ValueError(f"{context}.versions[{index}] unexpected keys: {sorted(extra)}")
@@ -115,6 +147,10 @@ def _normalize_version_row(
             out_row["name"] = nstrip
     family_slug = _family_slug_for_tags(context)
     out_row["tags"] = canonical_version_tags(family_slug, row.get("tags"))
+    if "build_options" in row:
+        snapshot = _normalize_build_options_field(context, index, row["build_options"])
+        if snapshot is not None:
+            out_row["build_options"] = snapshot
     return out_row
 
 

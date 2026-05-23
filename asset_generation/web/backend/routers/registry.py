@@ -14,6 +14,7 @@ from services.error_mapping import ErrorMappingRule, map_exception_to_http
 from services.python_bridge import bootstrap_python_runtime
 from services import registry_mutation
 from services.registry_query import (
+    build_options_snapshot_for_open,
     load_existing_candidates_from_registry,
     normalize_registry_relative_glb_path_for_http,
     resolve_enemy_identity_path,
@@ -128,34 +129,57 @@ async def open_load_existing(body: LoadExistingOpenRequest) -> JSONResponse:
             canonical_path = resolve_enemy_identity_path(settings.python_root, body.family, body.version_id)
             if not safe_is_file_under_python_root(settings.python_root, canonical_path):
                 raise HTTPException(status_code=404, detail="registry target file not found")
-            return JSONResponse(
-                {
-                    "kind": "enemy",
-                    "family": body.family,
-                    "version_id": body.version_id,
-                    "path": canonical_path,
-                },
+            payload: dict[str, Any] = {
+                "kind": "enemy",
+                "family": body.family,
+                "version_id": body.version_id,
+                "path": canonical_path,
+            }
+            snapshot = build_options_snapshot_for_open(
+                settings.python_root,
+                kind="enemy",
+                canonical_path=canonical_path,
+                family=body.family,
+                version_id=body.version_id,
             )
+            if snapshot is not None:
+                payload["build_options"] = snapshot
+            return JSONResponse(payload)
         if body.kind == "player":
             if body.family is not None or body.path is not None or body.version_id is None:
                 raise HTTPException(status_code=400, detail="malformed target payload: player-requires-version-id")
             canonical_path = resolve_player_identity_path(settings.python_root, body.version_id)
             if not safe_is_file_under_python_root(settings.python_root, canonical_path):
                 raise HTTPException(status_code=404, detail="registry target file not found")
-            return JSONResponse(
-                {
-                    "kind": "player",
-                    "version_id": body.version_id,
-                    "path": canonical_path,
-                },
+            payload = {
+                "kind": "player",
+                "version_id": body.version_id,
+                "path": canonical_path,
+            }
+            snapshot = build_options_snapshot_for_open(
+                settings.python_root,
+                kind="player",
+                canonical_path=canonical_path,
+                version_id=body.version_id,
             )
+            if snapshot is not None:
+                payload["build_options"] = snapshot
+            return JSONResponse(payload)
         if body.kind == "path":
             if body.path is None or body.family is not None or body.version_id is not None:
                 raise HTTPException(status_code=400, detail="malformed target payload: path-requires-path-only")
             canonical_path = normalize_registry_relative_glb_path_for_http(body.path)
             if not safe_is_file_under_python_root(settings.python_root, canonical_path):
                 raise HTTPException(status_code=404, detail="registry target file not found")
-            return JSONResponse({"kind": "path", "path": canonical_path})
+            payload = {"kind": "path", "path": canonical_path}
+            snapshot = build_options_snapshot_for_open(
+                settings.python_root,
+                kind="path",
+                canonical_path=canonical_path,
+            )
+            if snapshot is not None:
+                payload["build_options"] = snapshot
+            return JSONResponse(payload)
         raise HTTPException(status_code=400, detail="malformed target payload: unsupported-kind")
     except Exception as e:
         if isinstance(e, HTTPException):

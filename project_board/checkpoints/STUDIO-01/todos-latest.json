@@ -1,26 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "STUDIO-01",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-23T14:30:00Z",
+  "agent": "Implementation Frontend Agent",
+  "captured_at": "2026-05-23T15:00:00Z",
   "todos": [
     {
-      "id": "tb-1",
-      "content": "Extend StudioLayout.test.tsx — §11 invalid flags, hydration on interaction",
+      "id": "impl-1",
+      "content": "elements.ts + studioTokens.ts",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Implementation Frontend Agent"
     },
     {
-      "id": "tb-2",
-      "content": "Checkpoint 2026-05-23T-test-break-run.md with verbatim RED npm output",
+      "id": "impl-2",
+      "content": "StudioLayout + studio/* placeholders",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Implementation Frontend Agent"
     },
     {
-      "id": "tb-3",
-      "content": "Update ticket to IMPLEMENTATION_FRONTEND; handoff test_break_to_implementation",
+      "id": "impl-3",
+      "content": "App flag + README + preview parity",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Implementation Frontend Agent"
+    },
+    {
+      "id": "impl-4",
+      "content": "Vitest 34/34 + tsc --noEmit",
+      "status": "completed",
+      "agent": "Implementation Frontend Agent"
     }
   ]
 }

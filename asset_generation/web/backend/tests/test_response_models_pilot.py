@@ -117,6 +117,32 @@ def test_invalid_fixtures_raise_validation_error(
         model_cls.model_validate(payload)
 
 
+def test_registry_response_accepts_empty_string_slot_placeholder(
+    response_models: dict[str, Type[BaseModel]],
+) -> None:
+    """Manifest slots may use '' for unassigned positions (registry-fix-versions-slots-load)."""
+    model_cls = response_models["ModelRegistryResponse"]
+    payload = {
+        "schema_version": 1,
+        "enemies": {
+            "spider": {
+                "versions": [
+                    {
+                        "id": "spider_animated_00",
+                        "path": "animated_exports/spider_animated_00.glb",
+                        "draft": False,
+                        "in_use": True,
+                    }
+                ],
+                "slots": [""],
+            }
+        },
+        "player_active_visual": None,
+    }
+    instance = model_cls.model_validate(payload)
+    assert instance.enemies["spider"].slots == [""]
+
+
 def test_health_route_returns_valid_fixture(client: TestClient) -> None:
     expected = _load_fixture("health.ok.json")
     response = client.get("/api/health")

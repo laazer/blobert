@@ -26,6 +26,7 @@ function loadFixture(name: string): unknown {
 const VALID_CASES: Array<{ file: string; schema: z.ZodTypeAny }> = [
   { file: "health.ok.json", schema: HealthResponseSchema },
   { file: "registry.minimal.ok.json", schema: ModelRegistryResponseSchema },
+  { file: "registry.with_build_options.ok.json", schema: ModelRegistryResponseSchema },
   { file: "meta.ok.minimal.json", schema: MetaEnemiesResponseSchema },
   { file: "meta.fallback.ok.json", schema: MetaEnemiesResponseSchema },
 ];
@@ -48,6 +49,51 @@ const INVALID_CASES: Array<{ file: string; schema: z.ZodTypeAny }> = [
 ];
 
 describe("pilot Zod schemas (M902-25 drift fixtures)", () => {
+  it("coerces null build_options to undefined on version rows", () => {
+    const parsed = ModelRegistryResponseSchema.parse({
+      schema_version: 1,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: false,
+              in_use: true,
+              build_options: null,
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    });
+    expect(parsed.enemies.spider.versions[0].build_options).toBeUndefined();
+  });
+
+  it("accepts optional build_options on version rows", () => {
+    const parsed = ModelRegistryResponseSchema.parse({
+      schema_version: 1,
+      enemies: {
+        spider: {
+          versions: [
+            {
+              id: "spider_animated_00",
+              path: "animated_exports/spider_animated_00.glb",
+              draft: false,
+              in_use: true,
+              build_options: { eye_count: 4, feat_body_finish: "matte" },
+            },
+          ],
+        },
+      },
+      player_active_visual: null,
+    });
+    expect(parsed.enemies.spider.versions[0].build_options).toEqual({
+      eye_count: 4,
+      feat_body_finish: "matte",
+    });
+  });
+
   it("coerces null enemy slots to an empty array (registry families without slot assignments)", () => {
     const parsed = ModelRegistryResponseSchema.parse({
       schema_version: 1,

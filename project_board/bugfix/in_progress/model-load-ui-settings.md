@@ -174,15 +174,20 @@ sequenceDiagram
 
 ## NEXT ACTION
 
-Implementation frontend agent: decouple `selectAssetByPath` from unconditional `hydrateBuildOptionsFromPreviewGlbPath`; add explicit import flag for REQ-2 paths; make regression test `BUG-model-load-ui-settings-preview-select-does-not-import-sidecar` pass.
+| Field | Value |
+|---|---|
+| Next Responsible Agent | Implementation Frontend Agent |
+| Required Input Schema | Uncommitted frontend diff for `useAppStore.ts`, `CommandPanel.tsx`, `ModelRegistryPane.tsx`, `useAppStore.selectAssetByPath.previewOnly.test.ts`; gatekeeper Vitest log |
+| Status | BLOCKED |
+| Reason | Behavioral AC and targeted Vitest (10 passed) verified; Stage COMPLETE blocked until implementation is committed and pushed per workflow_enforcement_v1 §Commit and Push BEFORE COMPLETE Closure. Re-run Acceptance Criteria Gatekeeper after commit+push. |
 
 ## WORKFLOW STATE
 
 | Field | Value |
 |---|---|
-| Stage | IMPLEMENTATION_FRONTEND |
-| Revision | 3 |
-| Last Updated By | Test Designer Agent |
-| Next Responsible Agent | IMPLEMENTATION_FRONTEND |
-| Validation Status | Regression test authored (fails on current code); REQ-3/4 tests deferred to implementation |
-| Blocking Issues | None |
+| Stage | BLOCKED |
+| Revision | 5 |
+| Last Updated By | Acceptance Criteria Gatekeeper Agent |
+| Validation Status | **Tests:** Gatekeeper re-run 2026-05-22 — `npm test -- --run` previewOnly (1), BuildControls.previewSync (4), ColorsPane (5) — **10 passed**. Regression `BUG-model-load-ui-settings-preview-select-does-not-import-sidecar` passes; asserts sidecar fetch not called and `eye_count`/export fields preserved. **Behavior:** `selectAssetByPath` updates preview only unless `{ importBuildOptions: true }`; `refreshAssetsAndAutoSelect` and `ModelRegistryPane` open-existing use explicit import. **Static QA:** N/A (frontend bugfix). **Integration:** Not run (unit coverage only). **Git:** Implementation delta **uncommitted** on `main` (4 frontend files); COMPLETE closure forbidden until commit + push. |
+| Blocking Issues | Work not committed/pushed (`useAppStore.ts`, `CommandPanel.tsx`, `ModelRegistryPane.tsx`, `useAppStore.selectAssetByPath.previewOnly.test.ts`). REQ-2 import paths (AC-2.1/2.2) have code wiring but no dedicated Vitest in this ticket scope. |
+| Escalation Notes | Top-level AC “all pre-existing tests” not re-verified via full `npm test`; targeted non-regression suites green. |

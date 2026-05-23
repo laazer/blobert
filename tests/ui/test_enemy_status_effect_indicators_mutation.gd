@@ -45,23 +45,22 @@ func get_base_state():
 	return current_state
 
 func get_active_status_effects():
-	return %s
+	return active_status_effects
+
+func set_active_status_effects(effects: Array) -> void:
+	active_status_effects = effects
 
 func get_meta_effects():
 	return %s
-""" % [state, getter_effects, meta_effects]
+""" % [state, meta_effects]
 
 	var script = GDScript.new()
 	script.set_source_code(script_code)
+	script.reload()
 	body.set_script(script)
 	body.set_meta("active_status_effects", meta_effects.duplicate())
 
-	if body.has_method("get_active_status_effects"):
-		# The getter will return getter_effects
-		pass
-
-	# Set the property to array_effects
-	if body.has_property("active_status_effects"):
+	if "active_status_effects" in body:
 		body.active_status_effects = array_effects.duplicate()
 
 	return body as Node3D
@@ -87,6 +86,7 @@ func set_active_status_effects(effects: Array) -> void:
 """
 	var script = GDScript.new()
 	script.set_source_code(script_code)
+	script.reload()
 	body.set_script(script)
 	body.set_meta("active_status_effects", effects.duplicate())
 

@@ -80,8 +80,15 @@ class PlayerSlimeBuilder:
         return list(SLIME_COLORS)
 
 
-def export_player_slime(armature, mesh, filename: str, export_dir: str):
-    """Export the player slime to GLB and write a companion metadata JSON."""
+def export_player_slime(
+    armature,
+    mesh,
+    filename: str,
+    export_dir: str,
+    *,
+    build_options_snapshot: dict | None = None,
+):
+    """Export the player slime to GLB and write companion metadata JSON sidecars."""
     import bpy
 
     os.makedirs(export_dir, exist_ok=True)
@@ -114,8 +121,21 @@ def export_player_slime(armature, mesh, filename: str, export_dir: str):
 
     print(f"Exported: {filepath}")
     _export_player_metadata(filename, export_dir)
+    if build_options_snapshot is not None:
+        _export_player_build_options_json(filename, export_dir, build_options_snapshot)
 
     return filepath
+
+
+def _export_player_build_options_json(
+    filename: str,
+    export_dir: str,
+    build_options: dict,
+) -> None:
+    json_filepath = os.path.join(export_dir, f"{filename}.build_options.json")
+    with open(json_filepath, "w", encoding="utf-8") as json_file:
+        json.dump(dict(build_options), json_file, indent=2, default=str)
+    print(f"Player build options: {json_filepath}")
 
 
 def _export_player_metadata(filename: str, export_dir: str) -> None:

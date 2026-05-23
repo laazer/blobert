@@ -75,3 +75,29 @@ transition=test_design_to_test_break ticket_id=BUG-MODEL-LOAD-UI-SETTINGS
 ```
 
 Handoff YAML targets `implementation_frontend`; orchestrator should use implementation transition or human override.
+
+---
+
+## Checkpoint — Acceptance Criteria Gatekeeper (2026-05-22)
+
+**Verdict:** BLOCKED (not COMPLETE)
+
+**Evidence — targeted Vitest (gatekeeper re-run):**
+
+```
+npm test -- --run \
+  src/store/useAppStore.selectAssetByPath.previewOnly.test.ts \
+  src/components/Preview/BuildControls.previewSync.test.tsx \
+  src/components/Preview/ColorsPane.test.tsx
+
+Test Files  3 passed (3)
+     Tests  10 passed (10)
+```
+
+**Regression test:** `BUG-model-load-ui-settings-preview-select-does-not-import-sidecar` — present in `useAppStore.selectAssetByPath.previewOnly.test.ts`; passes; `fetchBuildOptionsSidecarForGlbPath` not called on preview-only select.
+
+**REQ-1/REQ-2 code:** `selectAssetByPath` gated on `options?.importBuildOptions`; `refreshAssetsAndAutoSelect` and `ModelRegistryPane` open-existing pass `{ importBuildOptions: true }`; registry preview uses preview-only call.
+
+**BLOCK reason:** `workflow_enforcement_v1.md` mandates commit + push before Stage COMPLETE. Working tree has uncommitted frontend implementation (4 files). Ticket remains in `project_board/bugfix/in_progress/`.
+
+**Next:** Implementation Frontend Agent — commit implementation, push, re-invoke gatekeeper.

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "enemies": {
+    "spider": {
+      "versions": [
+        {
+          "id": "spider_animated_00",
+          "path": "animated_exports/spider_animated_00.glb",
+          "draft": false,
+          "in_use": true,
+          "build_options": { "eye_count": 4 }
+        }
+      ]
+    }
+  },
+  "player_active_visual": null
+}

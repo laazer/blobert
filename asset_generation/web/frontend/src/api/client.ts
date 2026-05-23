@@ -10,6 +10,7 @@ import {
 } from "../types";
 import { normalizeAnimatedSlug, titleCaseSnake } from "../utils/enemyDisplay";
 import { FEATURE_ZONES_BY_SLUG } from "../utils/animatedZoneControlsMerge";
+import { expandBuildOptionsSnapshotForEditor } from "../utils/glbBuildOptionsHydration";
 
 const BASE = "/api";
 
@@ -208,7 +209,8 @@ export function replaceAnimatedSlugBuildOptionsRow(
 ): Record<string, Record<string, unknown>> {
   const defs = controls[slug] ?? [];
   const defaults = defaultValuesForDefs(defs);
-  const row: Record<string, unknown> = { ...defaults, ...snapshot };
+  const flatSnapshot = expandBuildOptionsSnapshotForEditor(slug, snapshot);
+  const row: Record<string, unknown> = { ...defaults, ...flatSnapshot };
   migrateLegacyGlobalTextureToZones(slug, row);
   return { ...full, [slug]: row };
 }
@@ -380,6 +382,8 @@ export type OpenExistingRegistryModelResponse = {
   path: string;
   family?: string;
   version_id?: string;
+  /** Validated procedural build snapshot when the registry row has one. */
+  build_options?: Record<string, unknown>;
 };
 
 export async function fetchLoadExistingCandidates(): Promise<LoadExistingCandidatesPayload> {

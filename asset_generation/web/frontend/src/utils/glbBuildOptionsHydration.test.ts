@@ -5,6 +5,7 @@ import type { AnimatedBuildControlDef } from "../types";
 import {
   buildOptionSlugFromPreviewGlbRelativePath,
   commandExportPatchFromBuildSnapshot,
+  expandBuildOptionsSnapshotForEditor,
   playerColorFromPlayerSlimeExportRelativePath,
 } from "./glbBuildOptionsHydration";
 
@@ -36,6 +37,49 @@ describe("playerColorFromPlayerSlimeExportRelativePath", () => {
   });
 });
 
+describe("expandBuildOptionsSnapshotForEditor", () => {
+  it("flattens nested features zone colors into feat_* keys", () => {
+    const flat = expandBuildOptionsSnapshotForEditor("spider", {
+      eye_count: 3,
+      features: {
+        body: { finish: "glossy", hex: "b83228", color_image: { mode: "single", id: null } },
+        head: { finish: "matte", hex: "#e85d2a" },
+      },
+    });
+    expect(flat.eye_count).toBe(3);
+    expect(flat.features).toBeUndefined();
+    expect(flat.feat_body_finish).toBe("glossy");
+    expect(flat.feat_body_hex).toBe("b83228");
+    expect(flat.feat_body_color_hex).toBe("b83228");
+    expect(flat.feat_body_color_mode).toBe("single");
+    expect(flat.feat_head_finish).toBe("matte");
+    expect(flat.feat_head_hex).toBe("e85d2a");
+  });
+
+  it("merges mesh floats to top level", () => {
+    const flat = expandBuildOptionsSnapshotForEditor("spider", {
+      mesh: { eye_count: 5 },
+      features: {},
+    });
+    expect(flat.eye_count).toBe(5);
+  });
+
+  it("flattens nested zone_geometry_extras into extra_zone_* keys", () => {
+    const flat = expandBuildOptionsSnapshotForEditor("spider", {
+      zone_geometry_extras: {
+        body: { kind: "spikes", spike_count: 12, finish: "metallic", hex: "aabbcc" },
+        head: { kind: "none" },
+      },
+    });
+    expect(flat.zone_geometry_extras).toBeUndefined();
+    expect(flat.extra_zone_body_kind).toBe("spikes");
+    expect(flat.extra_zone_body_spike_count).toBe(12);
+    expect(flat.extra_zone_body_finish).toBe("metallic");
+    expect(flat.extra_zone_body_hex).toBe("aabbcc");
+    expect(flat.extra_zone_head_kind).toBe("none");
+  });
+});
+
 describe("commandExportPatchFromBuildSnapshot", () => {
   it("reads body finish and hex keys", () => {
     expect(
@@ -54,6 +98,14 @@ describe("commandExportPatchFromBuildSnapshot", () => {
       }),
     ).toEqual({ finish: "glossy", hexColor: "#010203" });
   });
+
+  it("reads nested features.body when flat keys are absent", () => {
+    expect(
+      commandExportPatchFromBuildSnapshot({
+        features: { body: { finish: "metallic", hex: "aabbcc" } },
+      }),
+    ).toEqual({ finish: "metallic", hexColor: "#aabbcc" });
+  });
 });
 
 describe("replaceAnimatedSlugBuildOptionsRow", () => {
@@ -69,5 +121,36 @@ describe("replaceAnimatedSlugBuildOptionsRow", () => {
     });
     expect(full.spider?.eye_count).toBe(4);
     expect(full.spider?.feat_body_finish).toBe("matte");
+  });
+
+  it("flattens nested features when overlaying snapshot", () => {
+    const defs: AnimatedBuildControlDef[] = [
+      { key: "feat_body_finish", label: "", type: "select_str", options: ["matte", "glossy"], default: "matte" },
+      { key: "feat_body_hex", label: "", type: "text", default: "" },
+      { key: "feat_head_hex", label: "", type: "text", default: "" },
+    ];
+    const controls = { spider: defs };
+    const full = replaceAnimatedSlugBuildOptionsRow(controls, { spider: {} }, "spider", {
+      features: {
+        body: { finish: "glossy", hex: "b83228" },
+        head: { hex: "e85d2a" },
+      },
+    });
+    expect(full.spider?.feat_body_finish).toBe("glossy");
+    expect(full.spider?.feat_body_hex).toBe("b83228");
+    expect(full.spider?.feat_head_hex).toBe("e85d2a");
+  });
+
+  it("flattens nested zone_geometry_extras when overlaying snapshot", () => {
+    const defs: AnimatedBuildControlDef[] = [
+      { key: "extra_zone_body_kind", label: "", type: "select_str", options: ["none", "spikes"], default: "none" },
+      { key: "extra_zone_body_hex", label: "", type: "str", default: "" },
+    ];
+    const controls = { spider: defs };
+    const full = replaceAnimatedSlugBuildOptionsRow(controls, { spider: {} }, "spider", {
+      zone_geometry_extras: { body: { kind: "spikes", hex: "ff00aa" } },
+    });
+    expect(full.spider?.extra_zone_body_kind).toBe("spikes");
+    expect(full.spider?.extra_zone_body_hex).toBe("ff00aa");
   });
 });

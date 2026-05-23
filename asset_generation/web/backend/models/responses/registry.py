@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _ALLOWLIST_PREFIXES: tuple[str, ...] = (
@@ -31,6 +33,10 @@ class VersionRowResponse(BaseModel):
     tags: list[str] = Field(
         default_factory=list,
         description="Normalized tags; first entry is always the model family slug.",
+    )
+    build_options: dict[str, Any] | None = Field(
+        default=None,
+        description="Validated procedural build snapshot for this export, when persisted.",
     )
 
     @field_validator("id", "path")
@@ -69,7 +75,9 @@ class FamilyBlockResponse(BaseModel):
     )
     slots: list[str] = Field(
         default_factory=list,
-        description="Ordered slot version ids; empty when the family has no slot assignments.",
+        description=(
+            "Ordered slot version ids. Empty string '' is a valid placeholder for an unassigned slot."
+        ),
     )
 
     @field_validator("slots", mode="before")
@@ -81,10 +89,12 @@ class FamilyBlockResponse(BaseModel):
 
     @field_validator("slots")
     @classmethod
-    def _slots_non_empty(cls, value: list[str]) -> list[str]:
+    def _slots_entries_valid(cls, value: list[str]) -> list[str]:
         for entry in value:
-            if not isinstance(entry, str) or not entry.strip():
-                raise ValueError("slot entries must be non-empty strings")
+            if not isinstance(entry, str):
+                raise ValueError("slot entries must be strings")
+            if entry != "" and not entry.strip():
+                raise ValueError("slot entries must be '' or a non-empty version id")
         return value
 
 

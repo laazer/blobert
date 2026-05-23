@@ -38,6 +38,11 @@ const VersionRowSchema = z
     name: z.string().max(128).nullable().optional(),
     /** Normalized tags; first entry is the model family slug (Godot-ready manifest field). */
     tags: z.array(z.string().min(1)).optional(),
+    /** Validated procedural build snapshot when persisted on the version row (`null` when absent in manifest). */
+    build_options: z.preprocess(
+      (val) => (val === null ? undefined : val),
+      z.record(z.string(), z.unknown()).optional(),
+    ),
   })
   .strict();
 

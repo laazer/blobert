@@ -7130,3 +7130,302 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [BUG-model-load-ui-settings] — Decouple preview GLB load from sidecar UI import
+*Completed: 2026-05-22*
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Navigation actions (change preview `activeGlbUrl`) must not implicitly import persisted settings from disk. Coupling preview selection with `hydrateBuildOptionsFromPreviewGlbPath` made every registry/build sync overwrite in-session `animatedBuildOptionValues` and command export fields.
+  **impact:** Registry version preview and BuildControls enemy sync reset the editor to the sidecar snapshot (`eye_count` 7 → 2 in regression test) even when the user was only browsing GLBs.
+  **prevention:** Store APIs that change preview URL accept an explicit opt-in (`importBuildOptions: true`); default preview path updates URL, clips, and animation reset only. Document preview-only vs open-with-settings call sites in the ticket spec selector table.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** React component local state that only pushes defaults into a global store on mount/render creates a second source of truth that races async store hydration. CommandPanel `finish`/`hexColor` initialized to `"glossy"`/`""` and effects that wrote local → store could overwrite sidecar-derived `commandExport*` before or after import completed.
+  **impact:** Even when import was intentional, users saw glossy/empty command bar while the store briefly held imported values; ColorsPane then copied stale export fields into `feat_*` via `queueMicrotask`.
+  **prevention:** For fields owned by the store: initialize local state from `useAppStore.getState()`, subscribe with an effect that syncs store → local when store keys change, and push store updates only from explicit user edits (not mount). Treat import completion as a store event CommandPanel must reflect.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Regression tests for “preview must not import” should assert the sidecar fetch boundary is never invoked (`fetchBuildOptionsSidecarForGlbPath` not called), not only final store equality — final state can pass while still doing wasteful or racy fetches.
+  **impact:** TDD test `BUG-model-load-ui-settings-preview-select-does-not-import-sidecar` failed on `eye_count` before fix and passes with `not.toHaveBeenCalled()` after; gives a stable contract for REQ-1.
+  **prevention:** Bugfix frontend tests name the ticket ID, mock the sidecar module, and pair state preservation assertions with “fetch not called” (or dedicated import tests with `importBuildOptions: true` when REQ-2 coverage is in scope).
+  **severity:** medium
+
+- **category: process**
+  **insight:** One-line bug reports that use “current” without naming the domain (in-session editor state vs on-disk export settings) hide product intent and drive wrong fixes (disable all hydration vs fix CommandPanel only).
+  **impact:** Spec Agent logged medium-confidence assumptions: preview = no import; open-existing and post-run auto-select = import. Wrong assumption would have broken post-generation UX.
+  **prevention:** Bugfix Spec stage must publish a selector-mode table (preview-only / open+import / post-run import) and one checkpoint resolving “current settings” before Test Designer authors AC tests.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Async sidecar import plus ColorsPane `queueMicrotask` hydration is order-sensitive; preview-only fix (REQ-1) does not remove REQ-4 risk on import paths without `act` + awaited import in tests.
+  **impact:** REQ-4 and REQ-2 import-path Vitest were deferred; gatekeeper validated REQ-1 + non-regression suites only (10 tests), not full `npm test`.
+  **prevention:** When a ticket splits preview vs import, Test Designer lists deferred REQ IDs on the ticket; Implementation or follow-up adds import-path test before claiming REQ-2 AC complete.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Single `selectAssetByPath(path)` that always hydrates from `*.build_options.json` because hydration utility exists.
+  **detection_signal:** Any registry preview or enemy-sync call mutates `animatedBuildOptionValues`, `commandExport*`, or `commandContext.cmd` when only the canvas GLB should change.
+  **prevention:** Gate hydration behind explicit options; keep `hydrateBuildOptionsFromPreviewGlbPath` as a dedicated import API.
+
+- **description:** Command bar local state with hardcoded defaults and a one-way effect to the store on every render/mount.
+  **detection_signal:** After store import sets `commandExportFinish: "metallic"`, UI still shows `"glossy"` until user touches the control; grep for `useState("glossy")` without store subscription.
+  **prevention:** Store → local sync effect keyed on `commandExportFinish` / `commandExportHexColor`; push to store only from handlers.
+
+- **description:** Inferring import intent from hidden global state (e.g. “we are in registry preview mode”) instead of the call signature.
+  **detection_signal:** Same function behaves differently based on flags set elsewhere; hard to test and easy to regress when adding a new caller.
+  **prevention:** Call-site passes `{ importBuildOptions: true }` for open-existing and `refreshAssetsAndAutoSelect` only.
+
+- **description:** Closing a bugfix ticket on targeted Vitest green while implementation remains uncommitted.
+  **detection_signal:** WORKFLOW STATE BLOCKED with “commit + push before COMPLETE”; learnings still valid for process.
+  **prevention:** AC Gatekeeper re-run after commit; do not move ticket to `done/` until workflow_enforcement commit gate passes.
+
+### Prompt Patches
+
+- **agent: Bugfix / Spec Agent**
+  **change:** "For editor UI bugs involving load/preview/open: define three modes in the spec — (1) preview-only URL, (2) explicit import from sidecar, (3) user edit — with a call-site table. Resolve ambiguous words like ‘current’ in one checkpoint (in-session vs on-disk). Do not freeze spec until preview vs import boundaries are explicit."
+  **reason:** Prevents shipping the wrong interpretation of vague bug reports.
+
+- **agent: Implementation Frontend Agent**
+  **change:** "When fixing store+React dual state: list every consumer that reads/writes the same fields (store, CommandPanel, ColorsPane). Preview navigation must not call sidecar fetch unless `importBuildOptions: true`. CommandPanel: initialize from store, sync store→local on `commandExport*` change, write store only on user input."
+  **reason:** Addresses the actual failure chain (hydrate + one-way local state + Colors microtask).
+
+- **agent: Test Designer Agent**
+  **change:** "For ‘must not import on preview’ AC: mock `fetchBuildOptionsSidecarForGlbPath` and assert `not.toHaveBeenCalled()` in addition to preserved `animatedBuildOptionValues` and `commandExport*`. Name test id `BUG-<ticket>-preview-select-does-not-import-sidecar`. Run failing test before implementation handoff."
+  **reason:** Encodes REQ-1 at the IO boundary, not only post-hoc state.
+
+- **agent: Acceptance Criteria Gatekeeper**
+  **change:** "For split preview/import requirements: verify explicit flag at call sites (grep `importBuildOptions`) and that deferred REQ ACs are listed as open items — do not mark REQ-2 complete without import-path tests if ticket claims full REQ-2 coverage."
+  **reason:** This ticket passed REQ-1 with wiring-only evidence for REQ-2.
+
+### Workflow Improvements
+
+- **issue:** Bugfix pipeline advanced Test Designer → Implementation Frontend without `test_design_to_test_break` handoff validation (orchestrator override).
+  **improvement:** For frontend store contract bugs, still run Test Breaker on the new regression file or document waiver in checkpoint; minimum: adversarial case “preview call with mocked sidecar must not invoke fetch.”
+  **expected_benefit:** Catches weak assertions (state-only) before implementation.
+
+- **issue:** Full `npm test` failures (16 across unrelated files) noted at test-design time but not gated on ticket closure.
+  **improvement:** Ticket WORKFLOW STATE records “targeted suite” vs “full frontend suite” scope; gatekeeper uses the frozen list from spec REQ-5.
+  **expected_benefit:** Avoids false confidence from unrelated red suites while keeping REQ-5.3 explicit.
+
+- **issue:** COMPLETE blocked on uncommitted implementation despite behavioral AC met.
+  **improvement:** Learning extraction can run at gatekeeper BLOCKED; append learnings with status note; Implementation agent commits before ticket moves to `bugfix/done/`.
+  **expected_benefit:** Insights captured without skipping commit discipline.
+
+### Keep / Reinforce
+
+- **practice:** Explicit `selectAssetByPath(path, { importBuildOptions: true })` at post-run auto-select and load-existing open only; registry preview stays preview-only.
+  **reason:** Makes intent visible in code review and grepable for gatekeeper.
+
+- **practice:** RED regression test with ticket-prefixed id and verbatim fail output in checkpoint before implementation.
+  **reason:** Proved `eye_count` 7→2 failure; implementation fix was narrowly scoped.
+
+- **practice:** Mermaid sequence diagram in bugfix diagnosis linking store, sidecar fetch, CommandPanel, and ColorsPane.
+  **reason:** Surfaced race ordering for implementers without re-auditing every call site.
+
+- **practice:** Targeted Vitest bundle for gatekeeper (`previewOnly` + `BuildControls.previewSync` + `ColorsPane`) when full suite has unrelated debt.
+  **reason:** 10/10 passed on fix; scoped evidence documented in WORKFLOW STATE.
+
+---
+
+## [STUDIO-01] — Studio shell scoped green; full-suite AC and git closure blocked COMPLETE
+*Status: INTEGRATION (2026-05-23) — AC-1..AC-6 met; AC-7 full `npm test -- --run` red (14 failures, 3 files); implementation uncommitted on dirty branch*
+
+### Learnings
+
+- **category: process**
+  **insight:** Frontend tickets that list both ticket-scoped Vitest files and AC-7 “full `npm test -- --run`” need an explicit validation split in WORKFLOW STATE: scoped evidence vs full-suite gate. Scoped green (e.g. 34/34 `StudioLayout` + 4/4 `ThreePanelLayout`) does not satisfy AC-7 when parallel branch work leaves unrelated files red.
+  **impact:** AC Gatekeeper held at INTEGRATION despite complete Phase 1 shell; 14 failures in `BuildControlRow.concurrency`, `BuildControls.texture`, and `ImageMode` (e.g. `onFileChange` arity mismatch) were outside STUDIO-01 paths.
+  **prevention:** At SPEC or TEST_DESIGN freeze, record a “full-suite baseline” command output on the branch (pass/fail file list). Gatekeeper marks AC-7 Met only after full suite green or Human waiver with pre-existing-failure inventory dated before implementation started.
+  **severity:** high
+
+- **category: process**
+  **insight:** Implementation → Static QA handoff checklists must not attest “all tests passing” when evidence is only a scoped `npm test <paths>` run. Overstated handoff (`impl_tests_passing` / AC-7 green) delays discovery until AC Gatekeeper re-runs the full suite.
+  **impact:** `handoff-latest.yaml` claimed AC-7 green while checkpoint showed scoped runs only; gatekeeper re-run exposed the gap.
+  **prevention:** Handoff evidence_type must name exact commands; Static QA rejects attestation unless checkpoint includes verbatim `npm test -- --run` summary or ticket AC explicitly allows scoped-only closure.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Feature-flag layout tickets benefit from an adversarial env matrix: only exact `VITE_* === "1"` enables the new shell; trim, booleans, padded strings, and `vi.resetModules` toggle tests prevent accidental loose parsing.
+  **impact:** Test Breaker added 24+ invalid-flag cases; implementation used strict `isStudioLayoutEnabled()` and stayed aligned with spec §11 without product debate at implementation time.
+  **prevention:** Spec §11 should freeze strict equality; Test Designer includes `it.each` invalid values + module reset; Implementation must not add trim/coerce unless spec changes.
+  **severity:** medium
+
+- **category: architecture**
+  **insight:** Parallel layout introductions (legacy + feature-flagged shell) need paired positive/negative mount tests: new subtree mounts preview stack; explicitly omits deferred UI (CommandPanel, Terminal) with dedicated testids absent under `studio-layout`.
+  **impact:** Spec freeze added T-6 after planner ambiguity; prevented Phase 1 scope creep into command/terminal wiring deferred to STUDIO-02+.
+  **prevention:** When legacy layout includes widgets the new shell defers, add FR + Vitest “absence under flag on” before implementation, not only “presence” tests for new components.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** New layout code on branches with preview/hydration invariants should assert IO boundaries (no `selectAssetByPath({ importBuildOptions: true })`, no sidecar fetch on mount/tab cycle), not only final store shape — same pattern as preview-only bugfixes but applied to greenfield mount trees.
+  **impact:** STUDIO-01 T-5/T-5 adversarial cases passed; scoped suite proved Studio subtree does not reintroduce implicit import on navigation.
+  **prevention:** Test Designer lists hydration spies for every new layout entry point; Test Breaker adds tab-cycle and App-integration cases.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Treating scoped Vitest green as proof of AC-7 when the ticket AC names full `npm test -- --run`.
+  **detection_signal:** WORKFLOW STATE cites only `StudioLayout.test.tsx` paths; gatekeeper full run shows failures in unrelated `src/components/**` files.
+  **prevention:** Split AC-7 evidence lines in Validation Status; gatekeeper runs full suite before COMPLETE.
+
+- **description:** Handoff checklist attestation without matching checkpoint command output.
+  **detection_signal:** `impl_tests_passing: complete` but no `Test Files X passed (Y)` block from `npm test -- --run`.
+  **prevention:** Handoff validator compares attestation strings to checkpoint verbatim blocks.
+
+- **description:** Shipping or closing a ticket on a dirty branch with unrelated frontend WIP when workflow requires commit + push of implementation paths.
+  **detection_signal:** `git status` shows STUDIO-01 files mixed with other modified frontend tests; gatekeeper notes uncommitted shell paths.
+  **prevention:** Human triage: fix unrelated reds, stash/cherry-pick, or split commits; re-run gatekeeper after isolated STUDIO-01 commit.
+
+- **description:** Locking visual token shape in tests (`#RRGGBB` hex) when spec only requires non-empty color strings.
+  **detection_signal:** Test Breaker `# CHECKPOINT` comments on `soft` blend math; spec silent on rgba vs hex.
+  **prevention:** Spec Agent freezes token representation in one checkpoint before Test Breaker hardens assertions.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "For frontend layout tickets with AC-7 full-suite requirement: add Validation Scope table — (1) scoped test file list for implementation sign-off, (2) full `npm test -- --run` for gatekeeper COMPLETE. If branch may carry unrelated WIP, require Human to record pre-existing failure file list in ticket Blocking Issues before IMPLEMENTATION."
+  **reason:** Prevents false confidence from scoped-only green and clarifies INTEGRATION vs COMPLETE.
+
+- **agent: Implementation Frontend Agent**
+  **change:** "Checkpoint test evidence must list exact commands. If AC-7 requires full suite, run `npm test -- --run` before Static QA handoff; if red, document failing file paths and do not attest AC-7 complete. For `VITE_*` flags use strict `=== '1'` unless spec says otherwise."
+  **reason:** Fixes handoff overstatement and matches §11 adversarial contract.
+
+- **agent: Test Designer Agent**
+  **change:** "Greenfield layout tickets: T-1 legacy testid when flag off; T-2 grid/preview when flag on; T-6 absence tests for widgets deferred to later phases; T-5 hydration — spy `selectAssetByPath` and sidecar fetch, assert no `importBuildOptions: true` on Studio mount and tab interactions."
+  **reason:** STUDIO-01 traceability map (T-1..T-6) caught scope and hydration regressions early.
+
+- **agent: Acceptance Criteria Gatekeeper**
+  **change:** "When scoped tests pass but full `npm test -- --run` fails: set Stage INTEGRATION (not COMPLETE), list failing files verbatim, state whether failures touch ticket change surface. Do not move to `done/` until AC-7 green AND commit/push per workflow_enforcement. Extract learnings allowed at INTEGRATION."
+  **reason:** Matches STUDIO-01 outcome; separates deliverable quality from branch hygiene.
+
+### Workflow Improvements
+
+- **issue:** Single AC-7 line conflates implementation confidence (scoped) with release gate (full suite).
+  **improvement:** Split into AC-7a (scoped files from spec §8) and AC-7b (full frontend suite), or reference NFR with explicit gatekeeper-only full run.
+  **expected_benefit:** Implementation and Static QA can complete with scoped evidence; gatekeeper failure mode is predictable.
+
+- **issue:** Learning stage scheduled only after COMPLETE though insights are available when gatekeeper blocks on unrelated suite debt.
+  **improvement:** Allow Learning Agent at INTEGRATION with status note; Human fixes suite/commit; gatekeeper re-run for COMPLETE without re-running full pipeline.
+  **expected_benefit:** Captures process lessons (handoff, suite scope) without skipping commit discipline.
+
+- **issue:** Milestone pre-authored spec + greenfield components — planner assumed CommandPanel in studio center until spec freeze.
+  **improvement:** PLANNING checkpoint must resolve “legacy-only vs new-shell” widget parity in one table; Spec Agent confirms before TEST_DESIGN.
+  **expected_benefit:** Avoids mid-pipeline T-6 addition and rework on center-column scope.
+
+### Keep / Reinforce
+
+- **practice:** Validate existing `project_board/specs/studio_editor_redesign_spec.md` (§6–§9) instead of duplicating a new spec file when milestone spec is pre-authored.
+  **reason:** Spec exit gate PASS with FR/NFR/T traceability; Spec Agent focused on freeze decisions (CommandPanel omission, strict flag).
+
+- **practice:** `bot_vault/.../studio.jsx` and `shared.jsx` as design-time IA/color reference only — production code follows `RegistryTagChips` / `ThreePanelLayout` patterns (`CSSProperties`, Zustand, Vitest).
+  **reason:** Avoided 1:1 port of prototype globals and kept preview stack parity via reused components.
+
+- **practice:** Adversarial Test Breaker matrix (invalid flags, hydration, lowercase inspector tab ids, single visible panel) before implementation.
+  **reason:** 34-case `StudioLayout.test.tsx` stayed green through implementation without flag-parsing rework.
+
+- **practice:** `data-testid="legacy-layout"` on `ThreePanelLayout` plus `studio-layout` when flag on — explicit regression hooks for dual-layout era.
+  **reason:** AC-1 regression guard stayed green alongside new shell tests.
+
+---
+
+## [M11-01] — Player FSM scoped green; full `run_tests.sh` and push block COMPLETE
+*Status: INTEGRATION (2026-05-23) — 7/8 AC met; FSM 40+229 PASS; `run_tests.sh` exit 1 (18 unrelated Godot failures); push pending*
+
+### Learnings
+
+- **category: process**
+  **insight:** Refactor tickets that add a scoped Godot contract suite (`test_player_state_machine*.gd`) still list global AC `run_tests.sh` exits 0. Scoped green (269/269 FSM) does not satisfy branch closure when unrelated suites (UI indicators, test harness smoke) are red.
+  **impact:** AC Gatekeeper held INTEGRATION despite committed FSM deliverable; 18 failures in `test_enemy_status_effect_indicators*.gd` (15) and `test_utils_*` (3) had zero references to player paths.
+  **prevention:** At SPEC freeze, add Validation Scope: (1) ticket-scoped Godot paths + command for implementation sign-off, (2) full `ci/scripts/run_tests.sh` for gatekeeper COMPLETE. Record pre-existing failure file list in Blocking Issues before IMPLEMENTATION when branch carries WIP.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Kinematic state (`MovementSimulation.MovementState`) and gameplay state (`PlayerStateMachine.PlayerState`) must stay in separate types/modules with explicit derivation priority (DEAD > HURT > ABSORB > … > kinematic). Conflating names or enums causes silent wrong gating for M11 attacks.
+  **impact:** Planner flagged MovementState trap; spec froze dual layer; Test Breaker `ADV-001` asserts `MovementSimulation` does not define `PlayerState`; implementation kept derivation in `PlayerStateDerivationContext` DTO.
+  **prevention:** Spec Agent documents both layers in one table; Test Breaker adds naming-isolation test before implementation; Gameplay Systems Agent never aliases enums across layers.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Isolation tests for guarded states (e.g. FLOAT, HURT) must reach the state via spec-legal entry paths (JUMP + `MIN_FLOAT_FROM_JUMP_SEC`, `notify_damage_taken`), not shortcuts that bypass guards — otherwise implementation “fixes” violate G-FLOAT/G-HURT.
+  **impact:** Implementation adjusted `test_ec6_same_state_noop_all_states` to enter FLOAT via JUMP + timer after initial adversarial RED assumptions.
+  **prevention:** Test Designer links each guarded-state test to spec transition row; Implementation Agent rejects test changes that weaken guards unless spec checkpoint resolves ambiguity.
+  **severity:** medium
+
+- **category: testing**
+  **insight:** Adversarial EC-1..EC-10 matrix before implementation (229 tests) plus primary PSM-1..PSM-9 (40 tests) gave high confidence for behavior-preserving refactor; controller wiring (PSM-10) relied on static QA + full suite, not duplicate FSM unit coverage.
+  **impact:** No player-controller failures in full Godot run; large adversarial suite caught HURT re-entry, DEAD terminal, epsilon boundaries, and `can_transition_to` ↔ `transition` consistency without manual playtest.
+  **prevention:** For explicit FSM extractions: unit + adversarial EC table in TEST_BREAK; defer integration tests unless spec mandates observable controller wiring beyond FSM API.
+  **severity:** medium
+
+- **category: infra**
+  **insight:** Godot runner counts every `FAIL:` line in `test_utils_*` adversarial/smoke files as suite failures. Intentional failure probes in harness tests block `run_tests.sh` even when product code under test is correct.
+  **impact:** 3 of 18 gatekeeper failures were harness self-tests, not gameplay regressions — same class of debt as unrelated UI indicator tests.
+  **prevention:** AC Gatekeeper buckets failures by path prefix; Bugfix/harness tickets exclude intentional-fail files from `run_tests.gd` discovery or gate them behind env flag. Do not attribute harness red to feature tickets in Escalation Notes.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Closing or attesting “all tests passing” from scoped FSM runs when ticket AC names full `run_tests.sh`.
+  **detection_signal:** WORKFLOW STATE cites 40/40 + 229/229 only; gatekeeper full run shows reds in `tests/ui/` or `tests/scripts/test_utils_*`.
+  **prevention:** Split Validation Status into scoped PASS vs full-suite gate; gatekeeper runs `timeout 300 ci/scripts/run_tests.sh` before COMPLETE.
+
+- **description:** Routing FSM implementation rework when full suite fails on unrelated UI indicator tests.
+  **detection_signal:** Failure messages reference `EnemyStatusEffectIndicators`, not `player_state_machine` or `player_controller_3d`.
+  **prevention:** Gatekeeper supplies `failure_buckets` JSON (as M11-01 NEXT ACTION); Bugfix Agent owns branch health, Gameplay Systems owns scoped regression only.
+
+- **description:** Entering FLOAT/HURT in tests via illegal transitions to make isolation tests shorter.
+  **detection_signal:** Test expects `transition(FLOAT)` from IDLE without JUMP/timer; or `HURT→HURT` without re-entry guard.
+  **prevention:** Map each test to spec guard ID (G-FLOAT, G-HURT); Test Breaker encodes conservative denial per EC table.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "For gameplay FSM refactors: freeze (1) enum separate from any kinematic/movement enum, (2) derivation priority table, (3) which states are explicit-only vs derived (e.g. FLOAT not from `compute_derived_state`), (4) Validation Scope — scoped test paths vs full `run_tests.sh`. Reference `enemy_state_machine.gd` patterns but do not merge enums."
+  **reason:** M11-01 dual-layer and FLOAT explicit-only decisions prevented M1 behavior drift and naming traps.
+
+- **agent: Test Breaker Agent**
+  **change:** "FSM tickets: implement spec Edge Cases EC-1..EC-n as named `test_ecN_*` before implementation; add ADV naming test ensuring movement/kinematic module does not export gameplay enum; for MIN_*_SEC gates use epsilon `MIN - 1e-6` adversarial cases."
+  **reason:** 229-test adversarial suite was the regression contract while branch suite was red.
+
+- **agent: Gameplay Systems Agent**
+  **change:** "Evaluate `can_transition_to` guards before same-state no-op; document hurt latch (`_hurt_pending`, `_hurt_reentry_blocked`) in checkpoint when EC-2 tests exist. Wire controller: single `update(delta)` per physics frame, `sync_from_context` after `move_and_slide`. Do not attest full-suite green without `run_tests.sh` log excerpt."
+  **reason:** Implementation ordering matched adversarial HURT/EC-6 findings; handoff honesty avoids false COMPLETE.
+
+- **agent: Acceptance Criteria Gatekeeper**
+  **change:** "When scoped ticket tests pass but `run_tests.sh` fails: Stage INTEGRATION; list failing files verbatim; confirm zero failures touch ticket change surface; route Bugfix with `failure_buckets`; note push-ahead-of-origin separately. Allow Learning at INTEGRATION."
+  **reason:** M11-01 outcome — deliverable complete, branch hygiene separate.
+
+### Workflow Improvements
+
+- **issue:** Single AC line `run_tests.sh` exits 0 conflates feature contract (FSM suites) with branch health (UI + harness).
+  **improvement:** Split AC into scoped Godot paths (from spec §Test Strategy) and full-suite gatekeeper-only row; optional `m11_01_regression_command` in NEXT ACTION schema for re-verify after bugfix.
+  **expected_benefit:** Implementation/Static QA can finish with 269/269 evidence; gatekeeper failure mode is predictable.
+
+- **issue:** Learning scheduled only after COMPLETE though gatekeeper already documented failure buckets and dual validation split.
+  **improvement:** Run Learning at INTEGRATION when scoped evidence is complete; append LEARNINGS; Bugfix clears branch suite; gatekeeper re-run for COMPLETE without re-spec/implement.
+  **expected_benefit:** Captures FSM/dual-layer lessons while suite debt is fresh (same pattern as STUDIO-01).
+
+- **issue:** `test_utils` adversarial files pollute global failure count.
+  **improvement:** Track harness intentional-fail policy in milestone hygiene ticket; gatekeeper excludes known harness paths from 'blocks feature AC' unless ticket touches `tests/utils/`.
+  **expected_benefit:** Reduces false routing of gameplay agents to fix runner semantics.
+
+### Keep / Reinforce
+
+- **practice:** RefCounted FSM + `PlayerStateDerivationContext` snapshot DTO — no Node/Input in machine module; controller owns sync after physics.
+  **reason:** Static QA PASS; clear PSM-10 wiring boundary for M11-02 frame order.
+
+- **practice:** Spec path `project_board/specs/player_state_machine_spec.md` with generic spec exit; planner path superseded by repo convention.
+  **reason:** Spec completeness PASS; 110+ spec corpus consistency.
+
+- **practice:** Behavior-preserving constants frozen in spec (`MIN_FLOAT_FROM_JUMP_SEC = 0.05`, `MIN_HURT_SEC = 0.0`, `VERTICAL_JUMP_EPSILON`) with matching PSM-6/ADV epsilon tests.
+  **reason:** Adversarial boundaries caught vy threshold without changing M1 feel.
+
+- **practice:** AC Gatekeeper failure bucketing and NEXT ACTION JSON (`failure_buckets`, `verify_command`, scoped regression command).
+  **reason:** Unblocks Bugfix Agent without reopening FSM implementation.
+
+---
+

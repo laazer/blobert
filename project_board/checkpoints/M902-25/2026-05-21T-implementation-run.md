@@ -18,3 +18,12 @@
 ## Scope note
 
 Pilot-only (3 endpoints). Remaining `JSONResponse` routes deferred per spec Req 12.
+
+## Context Budget Summary (orchestrator)
+
+```
+Totals: 13 tokens across 2 ticket(s)
+Top stages: implementation=10, spec=3
+Top tickets: M902-22(10), M902-21(3)
+Outliers: None
+```

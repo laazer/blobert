@@ -45,6 +45,7 @@ func set_active_status_effects(effects: Array) -> void:
 """
 	var script = GDScript.new()
 	script.set_source_code(script_code)
+	script.reload()
 	body.set_script(script)
 	body.set_meta("active_status_effects", effects.duplicate())
 

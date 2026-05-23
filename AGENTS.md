@@ -32,9 +32,9 @@ blobert/
 | Enemy systems | `scripts/enemies/`, `asset_generation/python/src/enemies/` | Runtime: enemy_base, attack hitboxes. Pipeline: procedural generation |
 | Asset pipeline | `asset_generation/python/src/` | Python package `blender-experiments`; uses explicit packaging (__init__.py) |
 | Web editor backend | `asset_generation/web/backend/` | FastAPI app "Blobert Asset Editor API"; port 8000; route-first structure |
-| Web editor frontend | `asset_generation/web/frontend/` | Vite + React + TypeScript; port 5173 dev server |
+| Web editor frontend | `asset_generation/web/frontend/` | Vite + React + TypeScript; Zod pilot validation — see `frontend/AGENTS.md` |
 | Headless tests | `ci/scripts/run_tests.sh`, `tests/run_tests.gd` | Timeout 300s; exits 0=pass, 1=fail |
-| Agent instructions | `CLAUDE.md`, `.claude/agents/` | Project operating manual + specialized subagent definitions |
+| Agent instructions | `CLAUDE.md`, `agent_context/agents/`, `.claude/agents/` | Operating manual + TDD agent roles (`misc_agents/implementation_frontend_v1.md` for web UI) |
 
 ## CODE MAP
 

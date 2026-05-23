@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M902-26",
-  "agent": "Static QA Agent",
-  "captured_at": "2026-05-22T00:15:00Z",
+  "agent": "Learning Agent",
+  "captured_at": "2026-05-22T00:30:00Z",
   "todos": [
     {
-      "id": "qa-1",
-      "content": "Review contract test modules",
+      "id": "learn-1",
+      "content": "Append M902-26 to LEARNINGS.md",
       "status": "completed",
-      "agent": "Static QA Agent"
+      "agent": "Learning Agent"
     }
   ]
 }

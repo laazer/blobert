@@ -1,32 +1,20 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-01",
-  "agent": "Static QA (gdscript-reviewer)",
-  "captured_at": "2026-05-23T21:30:00Z",
+  "agent": "Learning Agent",
+  "captured_at": "2026-05-23T22:00:00Z",
   "todos": [
     {
-      "id": "static-qa-1",
-      "content": "Review player_state_machine.gd + derivation context",
+      "id": "learn-1",
+      "content": "Append M11-01 to LEARNINGS.md",
       "status": "completed",
-      "agent": "Static QA"
+      "agent": "Learning Agent"
     },
     {
-      "id": "static-qa-2",
-      "content": "Review PlayerController3D FSM wiring (PSM-10)",
+      "id": "learn-2",
+      "content": "Update handoff learning→ac_gatekeeper",
       "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "static-qa-3",
-      "content": "Run hooks:gd-review on changed GDScript",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "static-qa-4",
-      "content": "Checkpoint static-qa-run.md + handoff static_qa→learning",
-      "status": "completed",
-      "agent": "Static QA"
+      "agent": "Learning Agent"
     }
   ]
 }

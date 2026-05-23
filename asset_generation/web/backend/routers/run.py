@@ -33,6 +33,42 @@ def _sync_registry_for_family(family: str) -> None:
         logger.warning("post-run registry sync failed for family %r", family, exc_info=True)
 
 
+def _attach_build_options_after_animated_run(
+    family: str,
+    output_file: str | None,
+    build_options: str | None,
+) -> None:
+    """Attach the run's build-options snapshot to the exported GLB registry row (non-fatal)."""
+    if not output_file:
+        return
+    try:
+        bootstrap_python_runtime()
+        build_options_mod = import_asset_module("src.utils.build_options")
+        reg = import_asset_module("src.model_registry.service")
+        raw = build_options_mod.parse_build_options_json(build_options)
+        if not raw:
+            glb_name = output_file.rsplit("/", 1)[-1]
+            sidecar_parent = output_file.rsplit("/", 1)[0]
+            sidecar = settings.python_root / sidecar_parent / f"{glb_name[:-4]}.build_options.json"
+            if sidecar.is_file():
+                raw = build_options_mod.parse_build_options_json(sidecar.read_text(encoding="utf-8"))
+        merged = build_options_mod.options_for_enemy(family, raw)
+        snapshot = build_options_mod.coerce_validate_enemy_build_options(family, merged)
+        if snapshot:
+            reg.attach_build_options_to_version_by_path(
+                settings.python_root,
+                output_file,
+                snapshot,
+            )
+    except Exception:
+        logger.warning(
+            "post-run build_options attach failed for family %r path %r",
+            family,
+            output_file,
+            exc_info=True,
+        )
+
+
 def _bound_log_text(lines: list[str], max_bytes: int) -> str:
     """Join log lines and truncate UTF-8 tail if over *max_bytes* (APMCP-RUN-3)."""
     text = "\n".join(lines)
@@ -103,6 +139,7 @@ async def _run_stream(
     if exit_code == 0:
         if cmd == "animated" and enemy and enemy != "all":
             _sync_registry_for_family(enemy)
+            _attach_build_options_after_animated_run(enemy, output_file, build_options)
         yield {"event": "done", "data": json.dumps({"exit_code": 0, "output_file": output_file})}
     else:
         yield {"event": "error", "data": json.dumps({"exit_code": exit_code, "message": "Process exited with error"})}
@@ -249,6 +286,7 @@ async def run_complete(
     if exit_code == 0:
         if cmd == "animated" and enemy and enemy != "all":
             _sync_registry_for_family(enemy)
+            _attach_build_options_after_animated_run(enemy, output_file, build_options)
         return JSONResponse(
             status_code=200,
             content={

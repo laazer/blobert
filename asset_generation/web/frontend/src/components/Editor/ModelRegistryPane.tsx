@@ -552,7 +552,10 @@ export function ModelRegistryPane() {
     setError(null);
     try {
       const payload = await openExistingRegistryModel(toOpenExistingRequest(row));
-      selectAssetByPath(payload.path);
+      selectAssetByPath(payload.path, {
+        importBuildOptions: true,
+        registryBuildOptions: payload.build_options,
+      });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

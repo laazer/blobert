@@ -18,7 +18,10 @@ from src.model_registry.service import (
     patch_player_version,
     save_manifest_atomic,
 )
-from src.utils.build_options import coerce_validate_enemy_build_options, options_for_enemy
+from src.utils.build_options import (
+    coerce_validate_enemy_build_options,
+    options_for_enemy,
+)
 
 _BUILD_OPTIONS_MAX_BYTES = 262_144
 
@@ -71,7 +74,7 @@ def test_validate_manifest_enemy_and_player_snapshots_use_distinct_coercion_pipe
     spider_snap = _spider_snap(eye_count=6)
     player_snap = coerce_validate_enemy_build_options(
         "player_slime",
-        options_for_enemy("player_slime", {"eye_count": 2}),
+        options_for_enemy("player_slime", {"mouth_shape": "beak"}),
     )
     manifest = default_migrated_manifest()
     manifest["enemies"]["spider"]["versions"][0]["build_options"] = spider_snap
@@ -86,7 +89,7 @@ def test_validate_manifest_enemy_and_player_snapshots_use_distinct_coercion_pipe
     ]
     out = validate_manifest(manifest)
     assert out["enemies"]["spider"]["versions"][0]["build_options"]["eye_count"] == 6
-    assert out["player"]["versions"][0]["build_options"]["eye_count"] == 2
+    assert out["player"]["versions"][0]["build_options"]["mouth_shape"] == "beak"
 
 
 def test_validate_manifest_build_options_exactly_at_utf8_cap_persists() -> None:

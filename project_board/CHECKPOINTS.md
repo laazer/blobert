@@ -58,6 +58,10 @@ Log: `project_board/checkpoints/M11-01/2026-05-23T-implementation-run.md`
 M11-01 FSM AC evidenced (40+229); `run_tests.sh` exit 1 (18 unrelated Godot failures); push pending.
 Log: `project_board/checkpoints/M11-01/2026-05-23T-ac-gatekeeper-run.md`
 
+### M11-01 — OUTCOME: LEARNING → AC GATEKEEPER (re-run)
+Dual-layer FSM lessons appended; handoff learning→ac_gatekeeper; COMPLETE still blocked on full suite + push.
+Learning: `project_board/LEARNINGS.md` § [M11-01]
+
 ---
 
 ## Run: 2026-05-22T-feat-registry-build-options (FEAT-20260522-registry-build-options-snapshot)

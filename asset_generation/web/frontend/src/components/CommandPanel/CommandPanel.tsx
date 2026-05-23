@@ -92,13 +92,15 @@ export function CommandPanel() {
   const metaBackend = useAppStore((state) => state.metaBackend);
   const metaBackendDetail = useAppStore((state) => state.metaBackendDetail);
   const activeGlbUrl = useAppStore((state) => state.activeGlbUrl);
+  const commandExportFinish = useAppStore((state) => state.commandExportFinish);
+  const commandExportHexColor = useAppStore((state) => state.commandExportHexColor);
 
   const [cmd, setCmd] = useState<RunCmd>("animated");
   const [enemy, setEnemy] = useState("spider");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("normal");
-  const [finish, setFinish] = useState("glossy");
-  const [hexColor, setHexColor] = useState("");
+  const [finish, setFinish] = useState(() => useAppStore.getState().commandExportFinish);
+  const [hexColor, setHexColor] = useState(() => useAppStore.getState().commandExportHexColor);
   const [commandPreview, setCommandPreview] = useState("");
   const [commandPreviewDirty, setCommandPreviewDirty] = useState(false);
   const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
@@ -128,8 +130,9 @@ export function CommandPanel() {
 
   useEffect(() => {
     if (cmd !== "animated" && cmd !== "player") return;
-    setCommandExport({ finish, hexColor });
-  }, [cmd, finish, hexColor, setCommandExport]);
+    setFinish(commandExportFinish);
+    setHexColor(commandExportHexColor);
+  }, [cmd, commandExportFinish, commandExportHexColor]);
 
   useEffect(() => {
     const nextEnemy = normalizeEnemyForCmd(cmd, enemy, enemySlugsForCmd);

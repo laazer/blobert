@@ -236,11 +236,11 @@
   },
   "zone_geometry_extras": {
     "body": {
-      "kind": "none",
+      "kind": "bulbs",
       "spike_shape": "cone",
       "spike_count": 8,
       "spike_size": 1.0,
-      "bulb_count": 4,
+      "bulb_count": 8,
       "bulb_size": 1.0,
       "clustering": 0.5,
       "distribution": "uniform",

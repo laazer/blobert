@@ -88,7 +88,13 @@ def generate_player_slime(
             filename = PlayerExportConfig.FILENAME_PATTERN.format(
                 color=color, variant=start + variant_index
             )
-            filepath = export_player_slime(armature, mesh, filename, export_dir)
+            filepath = export_player_slime(
+                armature,
+                mesh,
+                filename,
+                export_dir,
+                build_options_snapshot=build_options,
+            )
             print(f"✅ Exported: {filepath}")
 
         except Exception as error:

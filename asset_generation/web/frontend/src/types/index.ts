@@ -92,6 +92,8 @@ export type RegistryEnemyVersion = {
   name?: string;
   /** Normalized tags; first entry is always the model family slug (Godot-ready manifest field). */
   tags?: string[];
+  /** Validated procedural build snapshot when persisted on the version row. */
+  build_options?: Record<string, unknown>;
 };
 
 /** GET /api/registry/model payload. */

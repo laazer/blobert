@@ -3,6 +3,7 @@ import type { AnimatedBuildControlDef } from "../../types";
 import {
   SUFFIX_ORDER,
   extraZoneFromDefKey,
+  isExtraZoneAppearanceDefKey,
   kindOptionsForZone,
   partitionZoneExtraDefs,
   suffixRank,
@@ -15,6 +16,12 @@ describe("zoneExtrasPartition", () => {
   it("parses zone from def key", () => {
     expect(extraZoneFromDefKey("extra_zone_body_kind")).toBe("body");
     expect(extraZoneFromDefKey("feat_body_finish")).toBeNull();
+  });
+
+  it("detects extra zone finish/hex appearance keys", () => {
+    expect(isExtraZoneAppearanceDefKey("extra_zone_body_finish")).toBe(true);
+    expect(isExtraZoneAppearanceDefKey("extra_zone_body_hex")).toBe(true);
+    expect(isExtraZoneAppearanceDefKey("extra_zone_body_kind")).toBe(false);
   });
 
   it("partitions defs by zone in FEATURE_ZONES_BY_SLUG order for slug", () => {

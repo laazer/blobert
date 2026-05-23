@@ -520,7 +520,7 @@ export interface components {
             versions?: components["schemas"]["VersionRowResponse"][];
             /**
              * Slots
-             * @description Ordered slot version ids; empty when the family has no slot assignments.
+             * @description Ordered slot version ids. Empty string '' is a valid placeholder for an unassigned slot.
              */
             slots?: string[];
         };
@@ -793,6 +793,13 @@ export interface components {
              * @description Normalized tags; first entry is always the model family slug.
              */
             tags?: string[];
+            /**
+             * Build Options
+             * @description Validated procedural build snapshot for this export, when persisted.
+             */
+            build_options?: {
+                [key: string]: unknown;
+            } | null;
         };
     };
     responses: never;

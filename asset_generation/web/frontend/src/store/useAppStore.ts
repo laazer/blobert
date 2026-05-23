@@ -46,6 +46,13 @@ export type CommandPanelContext = {
 /** Center column: code, build, colors, extras, and model registry share this space (one visible at a time; column can be hidden). */
 export type CenterPanel = "none" | "code" | "build" | "colors" | "extras" | "registry";
 
+/** Options for {@link AppState.selectAssetByPath}; import is explicit (REQ-2), not default preview. */
+export type SelectAssetByPathOptions = {
+  importBuildOptions?: boolean;
+  /** Registry snapshot from GET /model or load-existing open; tried before sidecar fetch. */
+  registryBuildOptions?: Record<string, unknown>;
+};
+
 let _lineId = 0;
 
 interface AppState {
@@ -113,9 +120,15 @@ interface AppState {
   isAnimationPaused: boolean;
   loadAssets: () => Promise<void>;
   /** Load a GLB by server path (preview uses paths from `glbVariants.animatedExportRelativePath` for animated enemies). */
-  selectAssetByPath: (path: string) => void;
-  /** When a preview GLB has a companion ``*.build_options.json``, merge it into build/colors/extras state. */
-  hydrateBuildOptionsFromPreviewGlbPath: (relativeGlbPath: string) => Promise<void>;
+  selectAssetByPath: (path: string, options?: SelectAssetByPathOptions) => void;
+  /**
+   * Explicit import: registry snapshot (when provided) → sidecar → no-op.
+   * Preview-only callers must not invoke this (REQ-1).
+   */
+  hydrateBuildOptionsFromPreviewGlbPath: (
+    relativeGlbPath: string,
+    registryBuildOptions?: Record<string, unknown>,
+  ) => Promise<void>;
   setActiveGlbUrl: (url: string | null) => void;
   setAvailableClips: (names: string[]) => void;
   setActiveAnimation: (name: string | null) => void;
@@ -312,7 +325,7 @@ export const useAppStore = create<AppState>()(
       const assets = await fetchAssets();
       set((s) => { s.assets = assets; });
     },
-    selectAssetByPath(path) {
+    selectAssetByPath(path, options) {
       const url = `/api/assets/${path}?t=${Date.now()}`;
       set((s) => {
         s.activeGlbUrl = url;
@@ -320,16 +333,24 @@ export const useAppStore = create<AppState>()(
         s.activeAnimation = "Idle";
         s.isAnimationPaused = false;
       });
-      void get().hydrateBuildOptionsFromPreviewGlbPath(path);
+      if (options?.importBuildOptions) {
+        void get().hydrateBuildOptionsFromPreviewGlbPath(path, options.registryBuildOptions);
+      }
     },
-    async hydrateBuildOptionsFromPreviewGlbPath(relativeGlbPath: string) {
+    async hydrateBuildOptionsFromPreviewGlbPath(relativeGlbPath, registryBuildOptions) {
       const slug = buildOptionSlugFromPreviewGlbRelativePath(relativeGlbPath);
       if (!slug) return;
-      let snap: Record<string, unknown> | null = null;
-      try {
-        snap = await fetchBuildOptionsSidecarForGlbPath(relativeGlbPath);
-      } catch {
-        return;
+      const registrySnap =
+        registryBuildOptions && Object.keys(registryBuildOptions).length > 0
+          ? registryBuildOptions
+          : null;
+      let snap: Record<string, unknown> | null = registrySnap;
+      if (!snap) {
+        try {
+          snap = await fetchBuildOptionsSidecarForGlbPath(relativeGlbPath);
+        } catch {
+          return;
+        }
       }
       if (!snap || Object.keys(snap).length === 0) return;
       const cmdPatch = commandExportPatchFromBuildSnapshot(snap);
@@ -375,7 +396,7 @@ export const useAppStore = create<AppState>()(
       set((s) => { s.assets = assets; });
       if (!outputFile) return;
       const normalized = outputFile.includes("/") ? outputFile : `animated_exports/${outputFile}`;
-      get().selectAssetByPath(normalized);
+      get().selectAssetByPath(normalized, { importBuildOptions: true });
     },
   };
   })

@@ -43,6 +43,7 @@ var _enemy: Node = null
 var _last_seen_effects: Array = []
 var _icon_container: HBoxContainer = null
 var _overflow_badge: Label = null
+var _initialized_max_visible: int = -1
 
 # Effect ID to priority mapping (lower = higher priority)
 var _effect_priority: Dictionary = {
@@ -54,22 +55,33 @@ var _effect_priority: Dictionary = {
 }
 
 
-func _ready() -> void:
-	# Find or create layout container (HBoxContainer for horizontal icon layout)
+func _ensure_initialized() -> void:
+	"""Build icon slots synchronously (headless tests may call update before deferred _ready)."""
+	if (
+		_overflow_badge != null
+		and is_instance_valid(_overflow_badge)
+		and _initialized_max_visible == max_visible_count
+	):
+		return
+
+	_initialized_max_visible = max_visible_count
+	_overflow_badge = null
+	_icon_container = null
+	_last_seen_effects = []
+
 	_icon_container = find_child("IconContainer", false, false) as HBoxContainer
 	if _icon_container == null:
-		# Scene doesn't have IconContainer; create it (for test isolation)
 		_icon_container = HBoxContainer.new()
 		_icon_container.name = "IconContainer"
 		add_child(_icon_container)
 
-	# Clear any pre-existing children and recreate all nodes
-	for child in _icon_container.get_children():
-		child.queue_free()
+	while _icon_container.get_child_count() > 0:
+		var child := _icon_container.get_child(0)
+		_icon_container.remove_child(child)
+		child.free()
 
-	# Create placeholder TextureRect nodes for icons (one per max_visible_count)
 	for i in range(max_visible_count):
-		var tex_rect = TextureRect.new()
+		var tex_rect := TextureRect.new()
 		tex_rect.name = "Icon_%d" % i
 		tex_rect.custom_minimum_size = icon_size
 		tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -77,14 +89,18 @@ func _ready() -> void:
 		tex_rect.visible = false
 		_icon_container.add_child(tex_rect)
 
-	# Create overflow badge label (shows "+N" for hidden effects)
 	_overflow_badge = Label.new()
 	_overflow_badge.name = "OverflowBadge"
 	_overflow_badge.visible = false
 	_icon_container.add_child(_overflow_badge)
 
-	# Start hidden; show when effects present
 	visible = false
+
+
+func _ready() -> void:
+	_ensure_initialized()
+	if _enemy != null:
+		_process_update()
 
 
 func _process(_delta: float) -> void:
@@ -102,11 +118,13 @@ func update_from_enemy(enemy: Node) -> void:
 		return
 
 	_enemy = enemy
+	_ensure_initialized()
 	_process_update()
 
 
 func set_active_effects(effects: Array) -> void:
 	"""Directly set active effects array for testing."""
+	_ensure_initialized()
 	_update_from_effects(effects)
 
 
@@ -128,23 +146,29 @@ func _get_active_effects_from_enemy() -> Array:
 	if _enemy == null:
 		return []
 
-	# Priority 1: Getter method
+	# Priority 1: Getter method when it returns a non-empty array
 	if _enemy.has_method("get_active_status_effects"):
-		var result = _enemy.call("get_active_status_effects")
-		if result is Array:
-			return result
+		var method_result = _enemy.call("get_active_status_effects")
+		if method_result is Array and method_result.size() > 0:
+			return method_result
 
-	# Priority 2: Meta property
-	if _enemy.get_meta_list().has("active_status_effects"):
-		var result = _enemy.get_meta("active_status_effects")
-		if result is Array:
-			return result
+	# Priority 2: Node property (wins over meta when both are set)
+	if "active_status_effects" in _enemy:
+		var prop_result = _enemy.active_status_effects
+		if prop_result is Array and prop_result.size() > 0:
+			return prop_result
 
-	# Priority 3: Property
-	if _enemy.has_property("active_status_effects"):
-		var result = _enemy.active_status_effects
-		if result is Array:
-			return result
+	# Priority 3: Meta
+	if _enemy.has_meta("active_status_effects"):
+		var meta_result = _enemy.get_meta("active_status_effects")
+		if meta_result is Array and meta_result.size() > 0:
+			return meta_result
+
+	# Priority 4: Getter method (allow empty)
+	if _enemy.has_method("get_active_status_effects"):
+		var empty_method_result = _enemy.call("get_active_status_effects")
+		if empty_method_result is Array:
+			return empty_method_result
 
 	# Priority 4: Fallback to EnemyBase state enum
 	if _enemy.has_method("get_base_state"):
@@ -243,13 +267,20 @@ func _get_icon_rects() -> Array:
 
 
 func _sort_effects(effects: Array) -> Array:
-	"""Sort effects by priority (stun > weaken > poison > slow > infection)."""
-	var result = effects.duplicate()
-	result.sort_custom(func(a, b):
-		var priority_a = _get_effect_priority(a)
-		var priority_b = _get_effect_priority(b)
-		return priority_a < priority_b
+	"""Sort effects by priority (stun > weaken > poison > slow > infection); stable for ties."""
+	var indexed: Array = []
+	for i in range(effects.size()):
+		indexed.append({"id": effects[i], "idx": i})
+	indexed.sort_custom(func(a, b):
+		var priority_a := _get_effect_priority(a.id)
+		var priority_b := _get_effect_priority(b.id)
+		if priority_a != priority_b:
+			return priority_a < priority_b
+		return a.idx < b.idx
 	)
+	var result: Array = []
+	for entry in indexed:
+		result.append(entry.id)
 	return result
 
 

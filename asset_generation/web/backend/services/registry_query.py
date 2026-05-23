@@ -154,5 +154,56 @@ def resolve_player_identity_path(python_root: Path, version_id: str) -> str:
     raise KeyError(f"unknown player version id {version_id!r}")
 
 
+def build_options_snapshot_for_open(
+    python_root: Path,
+    *,
+    kind: str,
+    canonical_path: str,
+    family: str | None = None,
+    version_id: str | None = None,
+) -> dict[str, Any] | None:
+    """Return registry ``build_options`` for a load-existing open target, if present."""
+    reg = _load_model_registry_service()
+    manifest = reg.load_effective_manifest(python_root)
+    row: dict[str, Any] | None = None
+    if kind == "enemy":
+        if family is None:
+            return None
+        fam_block = manifest.get("enemies", {}).get(family)
+        if isinstance(fam_block, dict):
+            for candidate in fam_block.get("versions", []):
+                if isinstance(candidate, dict) and candidate.get("id") == version_id:
+                    row = candidate
+                    break
+    elif kind == "player":
+        player_block = manifest.get("player")
+        if isinstance(player_block, dict):
+            for candidate in player_block.get("versions", []):
+                if isinstance(candidate, dict) and candidate.get("id") == version_id:
+                    row = candidate
+                    break
+    elif kind == "path":
+        for fam_block in manifest.get("enemies", {}).values():
+            if not isinstance(fam_block, dict):
+                continue
+            for candidate in fam_block.get("versions", []):
+                if isinstance(candidate, dict) and candidate.get("path") == canonical_path:
+                    row = candidate
+                    break
+            if row is not None:
+                break
+        if row is None:
+            player_block = manifest.get("player")
+            if isinstance(player_block, dict):
+                for candidate in player_block.get("versions", []):
+                    if isinstance(candidate, dict) and candidate.get("path") == canonical_path:
+                        row = candidate
+                        break
+    snapshot = row.get("build_options") if row is not None else None
+    if isinstance(snapshot, dict) and snapshot:
+        return snapshot
+    return None
+
+
 def _load_model_registry_service():
     return import_asset_module("src.model_registry.service")

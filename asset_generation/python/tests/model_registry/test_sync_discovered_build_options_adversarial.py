@@ -16,7 +16,10 @@ from src.model_registry.service import (
     sync_discovered_animated_glb_versions,
     sync_discovered_player_glb_versions,
 )
-from src.utils.build_options import coerce_validate_enemy_build_options, options_for_enemy
+from src.utils.build_options import (
+    coerce_validate_enemy_build_options,
+    options_for_enemy,
+)
 
 
 def test_sync_discovered_row_without_registry_or_sidecar_has_no_build_options(tmp_path: Path) -> None:
@@ -106,10 +109,10 @@ def test_sync_discovered_player_backfill_matches_enemy_semantics(tmp_path: Path)
     (pe / f"{stem}.glb").write_bytes(b"p")
     snap = coerce_validate_enemy_build_options(
         "player_slime",
-        options_for_enemy("player_slime", {"eye_count": 5}),
+        options_for_enemy("player_slime", {"mouth_shape": "grimace"}),
     )
     (pe / f"{stem}.build_options.json").write_text(json.dumps(snap), encoding="utf-8")
 
     out = sync_discovered_player_glb_versions(tmp_path)
     row = next(r for r in out["player"]["versions"] if r["id"] == stem)
-    assert row["build_options"]["eye_count"] == 5
+    assert row["build_options"]["mouth_shape"] == "grimace"
