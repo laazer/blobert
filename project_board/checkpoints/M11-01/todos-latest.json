@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-01",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-23T18:00:00Z",
+  "agent": "Gameplay Systems Agent",
+  "captured_at": "2026-05-23T20:00:00Z",
   "todos": [
     {
-      "id": "tb-1",
-      "content": "Read spec EC-1..EC-10 and primary test suite for overlap gaps",
+      "id": "impl-1",
+      "content": "Implement PlayerStateMachine + PlayerStateDerivationContext per spec",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Gameplay Systems Agent"
     },
     {
-      "id": "tb-2",
-      "content": "Author test_player_state_machine_adversarial.gd (runtime FSM seams)",
+      "id": "impl-2",
+      "content": "Wire PlayerController3D (PSM-10) without behavior change",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Gameplay Systems Agent"
     },
     {
-      "id": "tb-3",
-      "content": "Run headless suite; capture verbatim RED failure output",
+      "id": "impl-3",
+      "content": "Pass test_player_state_machine.gd + adversarial suite",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Gameplay Systems Agent"
     },
     {
-      "id": "tb-4",
-      "content": "Checkpoint, handoff/todos, ticket → IMPLEMENTATION_GENERALIST",
+      "id": "impl-4",
+      "content": "Checkpoint, handoff, ticket workflow → AC Gatekeeper",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Gameplay Systems Agent"
     }
   ]
 }

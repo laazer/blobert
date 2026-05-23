@@ -9,11 +9,16 @@ class_name PlayerController3D
 extends BasePhysicsEntity3D
 
 const MovementSimulation = preload("res://scripts/movement/movement_simulation.gd")
+const PlayerStateMachine = preload("res://scripts/player/player_state_machine.gd")
+const PlayerStateDerivationContext = preload("res://scripts/player/player_state_derivation_context.gd")
+const _MOVE_SPEED_THRESHOLD: float = 0.12
 ## 2D sim uses pixel-like units; 3D uses meters. 1 m = SCALE_2D_TO_3D "pixels".
 const SCALE_2D_TO_3D: float = 100.0
 
 var _simulation: MovementSimulation
 var _current_state: MovementSimulation.MovementState
+var _player_state_machine: PlayerStateMachine
+var _player_state_ctx: PlayerStateDerivationContext
 
 # Per-slot chunk state — index 0 = slot 1 (detach), index 1 = slot 2 (detach_2).
 var _chunks: Array = [null, null]             # RigidBody3D per slot
@@ -127,6 +132,8 @@ func _ready() -> void:
 	_current_state = MovementSimulation.MovementState.new()
 	_current_state.has_chunks[0] = true
 	_current_state.has_chunks[1] = true
+	_player_state_machine = PlayerStateMachine.new()
+	_player_state_ctx = PlayerStateDerivationContext.new()
 	_base_max_speed = _simulation.max_speed
 
 	var root: Node = get_parent()
@@ -191,6 +198,8 @@ func _physics_process(delta: float) -> void:
 
 	if OS.is_debug_build() and Input.is_action_just_pressed("debug_kill"):
 		_current_state.current_hp = _simulation.min_hp
+
+	_player_state_machine.update(delta)
 
 	_current_state.is_on_floor = is_on_floor()
 
@@ -273,6 +282,8 @@ func _physics_process(delta: float) -> void:
 
 	if _enemy_movement_root_remaining > 0.0:
 		_enemy_movement_root_remaining = maxf(0.0, _enemy_movement_root_remaining - delta)
+
+	_sync_player_state_machine()
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
@@ -563,12 +574,46 @@ func _get_audio_manager() -> Node:
 	return root.get_node_or_null("AudioManager")
 
 
+func _is_mutation_active() -> bool:
+	if _fusion_active:
+		return true
+	if _mutation_slot == null:
+		return false
+	if _mutation_slot.has_method("any_filled"):
+		return _mutation_slot.any_filled()
+	if _mutation_slot.has_method("is_filled"):
+		return _mutation_slot.is_filled()
+	return false
+
+
+func _is_any_chunk_stuck() -> bool:
+	for i in _CHUNK_SLOT_COUNT:
+		if _chunk_stuck[i]:
+			return true
+	return false
+
+
+func _sync_player_state_machine() -> void:
+	_player_state_ctx.is_on_floor = is_on_floor()
+	_player_state_ctx.horizontal_speed = absf(velocity.x)
+	_player_state_ctx.vertical_velocity = velocity.y
+	_player_state_ctx.move_speed_threshold = _MOVE_SPEED_THRESHOLD
+	_player_state_ctx.is_wall_clinging = _current_state.is_wall_clinging
+	_player_state_ctx.is_any_chunk_stuck = _is_any_chunk_stuck()
+	_player_state_ctx.is_mutation_active = _is_mutation_active()
+	_player_state_ctx.current_hp = _current_state.current_hp
+	_player_state_ctx.min_hp = _simulation.min_hp
+	_player_state_ctx.hurt_pending = false
+	_player_state_machine.sync_from_context(_player_state_ctx)
+
+
 func get_current_hp() -> float:
 	return _current_state.current_hp
 
 
 func take_damage(amount: float, knockback: Vector3) -> void:
 	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - amount)
+	_player_state_machine.notify_damage_taken()
 	var k := knockback
 	k.z = _PLAY_PLANE_Z
 	velocity.x += k.x
@@ -577,6 +622,7 @@ func take_damage(amount: float, knockback: Vector3) -> void:
 
 func reset_hp() -> void:
 	_current_state.current_hp = _simulation.max_hp
+	_player_state_machine.reset()
 	_enemy_acid_dots.clear()
 	_enemy_movement_root_remaining = 0.0
 
@@ -615,7 +661,15 @@ func has_chunk_2() -> bool:
 
 
 func is_wall_clinging_state() -> bool:
-	return _current_state.is_wall_clinging
+	return _player_state_machine.get_state() == PlayerStateMachine.PlayerState.WALL_CLING
+
+
+func get_player_state() -> PlayerStateMachine.PlayerState:
+	return _player_state_machine.get_state()
+
+
+func get_player_state_machine() -> PlayerStateMachine:
+	return _player_state_machine
 
 
 func is_fusion_active() -> bool:
@@ -647,6 +701,8 @@ func apply_enemy_acid_damage(
 	dot_tick_interval: float = _ENEMY_ACID_DEFAULT_TICK_INTERVAL
 ) -> void:
 	_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - impact_damage)
+	if impact_damage > 0.0:
+		_player_state_machine.notify_damage_taken()
 	var iv: float = maxf(_ENEMY_ACID_MIN_TICK_INTERVAL, dot_tick_interval)
 	var n_ticks: int = int(round(dot_duration_seconds / iv))
 	if n_ticks < 1:
@@ -678,6 +734,8 @@ func _tick_enemy_acid_dots(delta: float) -> void:
 			if use > 0:
 				var dmg: float = float(d["tick"]) * float(use)
 				_current_state.current_hp = maxf(_simulation.min_hp, _current_state.current_hp - dmg)
+				if dmg > 0.0:
+					_player_state_machine.notify_damage_taken()
 				d["accum"] = float(d["accum"]) - float(use) * interval
 				d["ticks_remaining"] = rem - use
 		if int(d["ticks_remaining"]) <= 0:

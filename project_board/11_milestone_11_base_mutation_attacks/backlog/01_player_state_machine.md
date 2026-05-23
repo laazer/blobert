@@ -108,13 +108,13 @@ Introduce `PlayerStateMachine` (`scripts/player/player_state_machine.gd`) as a R
 IMPLEMENTATION_GENERALIST
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Validation Status
-- Tests: RED (primary 31 failures + adversarial 45 failures — `player_state_machine.gd` not implemented; both suites parse and run)
+- Tests: PASS (M11-01 primary 40/40 + adversarial 229/229; full Godot suite 18 unrelated pre-existing failures — see implementation checkpoint)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -129,17 +129,20 @@ Test Breaker Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Gameplay Systems Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Required Input Schema
 ```json
 {
-  "execution_plan_section": "string — ticket Execution Plan tasks 4-6 (FSM + controller wiring)",
-  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md",
+  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-implementation-run.md",
   "spec_path": "project_board/specs/player_state_machine_spec.md",
   "primary_test_path": "tests/scripts/player/test_player_state_machine.gd",
   "adversarial_test_path": "tests/scripts/player/test_player_state_machine_adversarial.gd",
-  "implementation_target": "scripts/player/player_state_machine.gd"
+  "implementation_paths": [
+    "scripts/player/player_state_machine.gd",
+    "scripts/player/player_state_derivation_context.gd",
+    "scripts/player/player_controller_3d.gd"
+  ]
 }
 ```
 
@@ -147,4 +150,4 @@ Gameplay Systems Agent
 Proceed
 
 ## Reason
-Adversarial suite complete (EC-1..EC-10 + stress/naming probes). Primary + adversarial tests RED until `PlayerStateMachine` is implemented. Gameplay Systems Agent should implement FSM and wire `PlayerController3D` per spec without behavior change.
+Implementation complete: FSM + controller wiring; M11-01 unit suites green (40 + 229); `task hooks:gd-review` passed on changed `.gd`. AC Gatekeeper: verify AC matrix, note 18 pre-existing unrelated Godot failures in full suite (see implementation checkpoint); commit/push before COMPLETE.

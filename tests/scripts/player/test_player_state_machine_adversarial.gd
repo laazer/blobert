@@ -262,7 +262,11 @@ func test_ec6_same_state_noop_all_states() -> void:
 		return
 	for state in ALL_STATES:
 		machine.reset()
-		if state != STATE_IDLE:
+		if state == STATE_FLOAT:
+			machine.transition(STATE_JUMP)
+			machine.update(MIN_FLOAT_FROM_JUMP_SEC)
+			machine.transition(STATE_FLOAT)
+		elif state != STATE_IDLE:
 			machine.transition(state)
 		machine.update(0.03)
 		var before_timer: float = _timer_of(machine)

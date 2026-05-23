@@ -24,6 +24,10 @@ Log: `project_board/checkpoints/M11-01/2026-05-23T-spec-run.md`
 Adversarial FSM tests RED (45 failures); EC-1..EC-10 + naming/stress probes; handoff to Gameplay Systems.
 Log: `project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md`
 
+### M11-01 — OUTCOME: IMPLEMENTATION → AC GATEKEEPER (handoff)
+FSM + controller wired; primary 40/40 + adversarial 229/229 PASS.
+Log: `project_board/checkpoints/M11-01/2026-05-23T-implementation-run.md`
+
 ---
 
 ## Run: 2026-05-22T-feat-registry-build-options (FEAT-20260522-registry-build-options-snapshot)
