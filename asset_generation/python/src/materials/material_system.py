@@ -1407,73 +1407,6 @@ def apply_zone_texture_pattern_overrides(
     return out
 
 
-def material_for_zone_part(
-    zone: str,
-    part_id: str | None,
-    slot_materials: dict[str, bpy.types.Material | None],
-    features: FeatureMap | None,
-) -> bpy.types.Material | None:
-    """Resolve material for a sub-part: optional ``features[zone]['parts'][part_id]`` overrides zone slot."""
-    base = slot_materials.get(zone)
-    if base is None or not part_id or not features:
-        return base
-    zone_features = feature_zone_map(features)
-    zf = zone_features.get(zone)
-    if zf is None:
-        return base
-    pf = zf.parts.get(part_id)
-    if pf is None:
-        return base
-    p_hex = _sanitize_hex_input(pf.hex_value)
-    p_fin = str(pf.finish)
-    z_hex = _sanitize_hex_input(zf.hex_value)
-    z_fin = str(zf.finish)
-    wants_override = bool(p_hex) or p_fin != "default"
-    if not wants_override:
-        return base
-    eff_fin = p_fin if p_fin != "default" else z_fin
-    eff_hex = p_hex or z_hex
-    if eff_fin == "default" and not eff_hex:
-        return base
-    base_palette_name = _palette_base_name_from_material(base)
-    safe_part = str(part_id).replace(".", "_")
-    return _material_for_finish_hex(
-        base_palette_name=base_palette_name,
-        finish=eff_fin,
-        hex_str=eff_hex,
-        instance_suffix=f"{zone}_{safe_part}",
-    )
-
-
-def material_for_zone_geometry_extra(
-    zone: str,
-    slot_materials: dict[str, bpy.types.Material | None],
-    features: FeatureMap | None,
-    extra_finish: str,
-    extra_hex: str,
-) -> bpy.types.Material | None:
-    """Material for procedural geometry overlay on ``zone``, using extra finish/hex with feature-zone fallback."""
-    base = slot_materials.get(zone)
-    if base is None:
-        return None
-    xz = _sanitize_hex_input(extra_hex)
-    fin = str(extra_finish or "default")
-    zf = feature_zone_map(features).get(zone)
-    z_hex = _sanitize_hex_input(zf.hex_value) if zf is not None else ""
-    z_fin = str(zf.finish) if zf is not None else "default"
-    eff_fin = fin if fin != "default" else z_fin
-    eff_hex = xz or z_hex
-    if eff_fin == "default" and not eff_hex:
-        return base
-    base_palette_name = _palette_base_name_from_material(base)
-    return _material_for_finish_hex(
-        base_palette_name=base_palette_name,
-        finish=eff_fin,
-        hex_str=eff_hex,
-        instance_suffix=f"{zone}_zgeom_extra",
-    )
-
-
 def apply_material_to_object(obj: Any, material: bpy.types.Material | None) -> None:
     """Apply material to a mesh object"""
     if obj and obj.type == "MESH" and material:
@@ -1481,3 +1414,9 @@ def apply_material_to_object(obj: Any, material: bpy.types.Material | None) -> N
             obj.data.materials.append(material)
         else:
             obj.data.materials[0] = material
+
+
+from src.materials.feature_zones import (  # noqa: E402
+    material_for_zone_geometry_extra,
+    material_for_zone_part,
+)

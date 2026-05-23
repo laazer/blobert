@@ -176,6 +176,28 @@ _EXTRA_ZONE_FLAT_KEY = re.compile(
     r"finish|hex|offset_x|offset_y|offset_z|"
     r"place_top|place_bottom|place_front|place_back|place_left|place_right)$"
 )
+_MATERIAL_FILL_MODES: tuple[str, ...] = ("single", "gradient", "image")
+_MATERIAL_FILL_GRAD_DIRECTIONS: tuple[str, ...] = ("horizontal", "vertical", "radial")
+_MATERIAL_FILL_FLAT_SUFFIXES: tuple[str, ...] = (
+    "mode",
+    "hex",
+    "grad_a",
+    "grad_b",
+    "grad_direction",
+    "image_id",
+    "image_preview",
+    "image_uv_rect",
+)
+_MATERIAL_FILL_SUFFIX_GROUP = "|".join(_MATERIAL_FILL_FLAT_SUFFIXES)
+_EXTRA_ZONE_MATERIAL_FLAT_KEY = re.compile(
+    rf"^extra_zone_(body|head|limbs|joints|extra)_material_({_MATERIAL_FILL_SUFFIX_GROUP})$"
+)
+_FEAT_LIMB_MATERIAL_FLAT_KEY = re.compile(
+    rf"^feat_limb_([a-z0-9_]+)_material_({_MATERIAL_FILL_SUFFIX_GROUP})$"
+)
+_FEAT_JOINT_MATERIAL_FLAT_KEY = re.compile(
+    rf"^feat_joint_([a-z0-9_]+)_material_({_MATERIAL_FILL_SUFFIX_GROUP})$"
+)
 _ZONE_GEOM_EXTRA_PLACE_KEYS: tuple[str, ...] = (
     "place_top",
     "place_bottom",
@@ -310,6 +332,7 @@ def _default_zone_geometry_extras_payload() -> dict[str, Any]:
         "uniform_shape": _DEFAULT_UNIFORM_SHAPE,
         "finish": "default",
         "hex": "",
+        "material_fill": _default_material_fill_payload(),
         "place_top": True,
         "place_bottom": True,
         "place_front": True,
@@ -349,6 +372,137 @@ def _sanitize_hex(raw: str) -> str:
     return s[:6]
 
 
+def _default_material_fill_payload() -> dict[str, Any]:
+    return {
+        "mode": "single",
+        "hex": "",
+        "grad_a": "",
+        "grad_b": "",
+        "grad_direction": "horizontal",
+        "image_id": None,
+        "image_preview": None,
+        "image_uv_rect": None,
+    }
+
+
+def _ensure_material_fill(entry: dict[str, Any]) -> dict[str, Any]:
+    mf = entry.get("material_fill")
+    if not isinstance(mf, dict):
+        mf = dict(_default_material_fill_payload())
+        entry["material_fill"] = mf
+    return mf
+
+
+def _sanitize_material_fill(raw: object) -> dict[str, Any]:
+    out = dict(_default_material_fill_payload())
+    if not isinstance(raw, dict):
+        return out
+    mode = str(raw.get("mode", "single") or "single").strip().lower()
+    out["mode"] = mode if mode in _MATERIAL_FILL_MODES else "single"
+    out["hex"] = _sanitize_hex(raw.get("hex", ""))
+    out["grad_a"] = _sanitize_hex(raw.get("grad_a", ""))
+    out["grad_b"] = _sanitize_hex(raw.get("grad_b", ""))
+    direction = str(raw.get("grad_direction", "horizontal") or "horizontal").strip().lower()
+    out["grad_direction"] = (
+        direction if direction in _MATERIAL_FILL_GRAD_DIRECTIONS else "horizontal"
+    )
+    image_id = raw.get("image_id")
+    out["image_id"] = str(image_id).strip() if image_id else None
+    image_preview = raw.get("image_preview")
+    out["image_preview"] = str(image_preview) if image_preview else None
+    uv_rect = raw.get("image_uv_rect")
+    out["image_uv_rect"] = uv_rect if uv_rect is not None else None
+    return out
+
+
+def _apply_material_fill_field(mf: dict[str, Any], field: str, value: Any) -> None:
+    if field == "mode":
+        mode = str(value or "single").strip().lower()
+        mf["mode"] = mode if mode in _MATERIAL_FILL_MODES else "single"
+    elif field == "hex":
+        mf["hex"] = _sanitize_hex(value)
+    elif field in ("grad_a", "grad_b"):
+        mf[field] = _sanitize_hex(value)
+    elif field == "grad_direction":
+        direction = str(value or "horizontal").strip().lower()
+        mf["grad_direction"] = (
+            direction if direction in _MATERIAL_FILL_GRAD_DIRECTIONS else "horizontal"
+        )
+    elif field == "image_id":
+        mf["image_id"] = str(value).strip() if value else None
+    elif field == "image_preview":
+        mf["image_preview"] = str(value) if value is not None else None
+    elif field == "image_uv_rect":
+        mf["image_uv_rect"] = value if value is not None else None
+
+
+def _sync_legacy_hex_from_material_fill(entry: dict[str, Any]) -> None:
+    mf = entry.get("material_fill")
+    if not isinstance(mf, dict):
+        return
+    mode = str(mf.get("mode", "single") or "single").strip().lower()
+    if mode == "single":
+        hx = _sanitize_hex(mf.get("hex", ""))
+        if hx:
+            entry["hex"] = hx
+    elif mode == "gradient":
+        ga = _sanitize_hex(mf.get("grad_a", ""))
+        if ga:
+            entry["hex"] = ga
+
+
+def _material_fill_control_defs(prefix: str, label: str) -> list[dict[str, Any]]:
+    """Unified color / gradient / image fill controls (``fill_picker`` anchor + sub-keys)."""
+    return [
+        {"key": prefix, "label": label, "type": "fill_picker"},
+        {
+            "key": f"{prefix}_mode",
+            "label": f"{label} — Fill type",
+            "type": "select_str",
+            "options": list(_MATERIAL_FILL_MODES),
+            "default": "single",
+        },
+        {"key": f"{prefix}_hex", "label": f"{label} — Color (hex)", "type": "str", "default": ""},
+        {
+            "key": f"{prefix}_grad_a",
+            "label": f"{label} — Gradient color A",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": f"{prefix}_grad_b",
+            "label": f"{label} — Gradient color B",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": f"{prefix}_grad_direction",
+            "label": f"{label} — Gradient direction",
+            "type": "select_str",
+            "options": list(_MATERIAL_FILL_GRAD_DIRECTIONS),
+            "default": "horizontal",
+        },
+        {
+            "key": f"{prefix}_image_id",
+            "label": f"{label} — Image asset ID",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": f"{prefix}_image_preview",
+            "label": f"{label} — Image preview",
+            "type": "str",
+            "default": "",
+        },
+        {
+            "key": f"{prefix}_image_uv_rect",
+            "label": f"{label} — Image UV rect",
+            "type": "str",
+            "default": "",
+        },
+    ]
+
+
 def _validate_features_map(d: dict[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for zone, inner in d.items():
@@ -367,10 +521,17 @@ def _validate_features_map(d: dict[str, Any]) -> dict[str, Any]:
                 pfin = str(pinner.get("finish", "default"))
                 if pfin not in _VALID_FINISHES:
                     pfin = "default"
-                parts_out[str(pid)] = {
+                part_entry: dict[str, Any] = {
                     "finish": pfin,
                     "hex": _sanitize_hex(pinner.get("hex", "")),
                 }
+                mf = pinner.get("material_fill")
+                if isinstance(mf, dict):
+                    part_entry["material_fill"] = _sanitize_material_fill(mf)
+                else:
+                    part_entry["material_fill"] = _sanitize_material_fill({})
+                _sync_legacy_hex_from_material_fill(part_entry)
+                parts_out[str(pid)] = part_entry
         zd: dict[str, Any] = {"finish": fin, "hex": hx}
         if parts_out:
             zd["parts"] = parts_out
@@ -432,6 +593,11 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                         "finish": str(pdata.get("finish", "default")),
                         "hex": str(pdata.get("hex", "")),
                     }
+                    mf = pdata.get("material_fill")
+                    if isinstance(mf, dict):
+                        parts[str(pid)]["material_fill"] = _sanitize_material_fill(mf)
+                    else:
+                        parts[str(pid)]["material_fill"] = _sanitize_material_fill({})
                 if parts:
                     out[z]["parts"] = parts
         else:
@@ -468,6 +634,10 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                         entry["finish"] = str(pdata["finish"])
                     if "hex" in pdata:
                         entry["hex"] = str(pdata["hex"])
+                    mf = pdata.get("material_fill")
+                    if isinstance(mf, dict):
+                        entry["material_fill"] = _sanitize_material_fill(mf)
+                        _sync_legacy_hex_from_material_fill(entry)
     for k, v in src.items():
         m = _FEAT_ZONE_FLAT_KEY.match(k)
         if m:
@@ -484,6 +654,16 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                 else:
                     out[zone][field] = str(v)
             continue
+        m = _FEAT_LIMB_MATERIAL_FLAT_KEY.match(k)
+        if m:
+            pid, field = m.group(1), m.group(2)
+            if "limbs" in out:
+                parts = _ensure_zone_parts(out, "limbs")
+                entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
+                mf = _ensure_material_fill(entry)
+                _apply_material_fill_field(mf, field, v)
+                _sync_legacy_hex_from_material_fill(entry)
+            continue
         m = _FEAT_LIMB_PART_FLAT_KEY.match(k)
         if m:
             pid, field = m.group(1), m.group(2)
@@ -491,6 +671,19 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                 parts = _ensure_zone_parts(out, "limbs")
                 entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
                 entry[field] = str(v)
+                if field == "hex":
+                    mf = _ensure_material_fill(entry)
+                    mf["hex"] = _sanitize_hex(v)
+            continue
+        m = _FEAT_JOINT_MATERIAL_FLAT_KEY.match(k)
+        if m:
+            pid, field = m.group(1), m.group(2)
+            if "joints" in out:
+                parts = _ensure_zone_parts(out, "joints")
+                entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
+                mf = _ensure_material_fill(entry)
+                _apply_material_fill_field(mf, field, v)
+                _sync_legacy_hex_from_material_fill(entry)
             continue
         m = _FEAT_JOINT_PART_FLAT_KEY.match(k)
         if m:
@@ -499,6 +692,9 @@ def _merge_features_for_slug(  # pylint: disable=too-many-statements
                 parts = _ensure_zone_parts(out, "joints")
                 entry = parts.setdefault(pid, {"finish": "default", "hex": ""})
                 entry[field] = str(v)
+                if field == "hex":
+                    mf = _ensure_material_fill(entry)
+                    mf["hex"] = _sanitize_hex(v)
             continue
     return _validate_features_map(out)
 
@@ -524,6 +720,9 @@ def _merge_zone_geometry_extras(  # pylint: disable=too-many-statements
                             pass
                     else:
                         entry[fk] = val
+            mf = b.get("material_fill")
+            if isinstance(mf, dict):
+                entry["material_fill"] = _sanitize_material_fill(mf)
             out[z] = entry
         else:
             out[z] = dict(_default_zone_geometry_extras_payload())
@@ -545,8 +744,21 @@ def _merge_zone_geometry_extras(  # pylint: disable=too-many-statements
                             pass
                     else:
                         out[zone][fk] = val
+            mf_raw = data.get("material_fill")
+            if isinstance(mf_raw, dict):
+                out[zone]["material_fill"] = _sanitize_material_fill(mf_raw)
+                _sync_legacy_hex_from_material_fill(out[zone])
 
     for k, v in src.items():
+        m = _EXTRA_ZONE_MATERIAL_FLAT_KEY.match(k)
+        if m:
+            zone, field = m.group(1), m.group(2)
+            if zone not in out:
+                continue
+            mf = _ensure_material_fill(out[zone])
+            _apply_material_fill_field(mf, field, v)
+            _sync_legacy_hex_from_material_fill(out[zone])
+            continue
         m = _EXTRA_ZONE_FLAT_KEY.match(k)
         if not m:
             continue
@@ -573,6 +785,10 @@ def _merge_zone_geometry_extras(  # pylint: disable=too-many-statements
                 pass
         elif field in _ZONE_GEOM_EXTRA_PLACE_KEYS:
             out[zone][field] = _coerce_boolish(v, True)
+        elif field == "hex":
+            out[zone][field] = v
+            mf = _ensure_material_fill(out[zone])
+            mf["hex"] = _sanitize_hex(v)
         else:
             out[zone][field] = v
     return out
@@ -646,6 +862,8 @@ def _sanitize_zone_geometry_extras(  # pylint: disable=too-many-statements
             fin = "default"
         entry["finish"] = fin
         entry["hex"] = _sanitize_hex(raw.get("hex", ""))
+        entry["material_fill"] = _sanitize_material_fill(raw.get("material_fill"))
+        _sync_legacy_hex_from_material_fill(entry)
         for axis in ("offset_x", "offset_y", "offset_z"):
             try:
                 ov = float(raw.get(axis, 0.0))
@@ -806,6 +1024,12 @@ def _zone_extra_control_defs(slug: str) -> list[dict[str, Any]]:
                 "options": list(_FINISH_OPTIONS_ORDER),
                 "default": "default",
             }
+        )
+        defs.extend(
+            _material_fill_control_defs(
+                f"extra_zone_{zone}_material",
+                f"{zlabel} extra material",
+            )
         )
         defs.append(
             {
@@ -1818,6 +2042,12 @@ def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
                         "default": "default",
                     }
                 )
+                defs.extend(
+                    _material_fill_control_defs(
+                        f"feat_limb_{pid}_material",
+                        f"{label_base} {side} (limb) material",
+                    )
+                )
                 defs.append(
                     {
                         "key": f"feat_limb_{pid}_hex",
@@ -1837,6 +2067,12 @@ def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
                                 "options": list(_FINISH_OPTIONS_ORDER),
                                 "default": "default",
                             }
+                        )
+                        defs.extend(
+                            _material_fill_control_defs(
+                                f"feat_joint_{jpid}_material",
+                                f"{label_base} {side} joint {ji} material",
+                            )
                         )
                         defs.append(
                             {
@@ -1858,6 +2094,12 @@ def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
                     "default": "default",
                 }
             )
+            defs.extend(
+                _material_fill_control_defs(
+                    f"feat_limb_{pid}_material",
+                    f"Leg {leg} cylinders material",
+                )
+            )
             defs.append(
                 {
                     "key": f"feat_limb_{pid}_hex",
@@ -1876,6 +2118,12 @@ def _part_feature_control_defs(slug: str) -> list[dict[str, Any]]:
                         "options": list(_FINISH_OPTIONS_ORDER),
                         "default": "default",
                     }
+                )
+                defs.extend(
+                    _material_fill_control_defs(
+                        f"feat_joint_{jpid}_material",
+                        f"Leg {leg} joint ({jn}) material",
+                    )
                 )
                 defs.append(
                     {

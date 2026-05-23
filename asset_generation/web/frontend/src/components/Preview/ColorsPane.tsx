@@ -172,6 +172,8 @@ export function ColorsPane({ studioSurface = false }: ColorsPaneProps) {
                 slug={slug}
                 zoneFilter={activeZone}
                 useStudioPicker
+                accentHue={studioAccent.hue}
+                paletteColors={studioAccent.paletteColors}
               />
             </div>
           </details>

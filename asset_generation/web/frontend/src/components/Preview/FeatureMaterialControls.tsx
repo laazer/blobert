@@ -5,6 +5,7 @@ import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { ControlRow, rowStyles } from "./BuildControlRow";
 import { ZONE_FINISH_HEX_RE, ZONE_TEXTURE_CONTROL_RE, partitionAnimatedFeatureDefs } from "./featureMaterialPartition";
 import { ZoneTextureBlock } from "./ZoneTextureBlock";
+import { StudioPartMaterialFill } from "../studio/StudioPartMaterialFill";
 
 /** Stable fallbacks so Zustand `useSyncExternalStore` snapshots do not change every tick (see React #getSnapshot). */
 const EMPTY_DEFS: readonly AnimatedBuildControlDef[] = [];
@@ -73,14 +74,52 @@ export function FeatureMaterialControls({
     );
   }
 
-  const row = (def: AnimatedBuildControlDef) => (
-    <ControlRow
-      key={def.key}
-      def={def}
-      value={values[def.key]}
-      onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
-    />
-  );
+  const row = (def: AnimatedBuildControlDef) => {
+    if (def.type === "fill_picker") return null;
+    return (
+      <ControlRow
+        key={def.key}
+        def={def}
+        value={values[def.key]}
+        onChange={(v) => setAnimatedBuildOption(slug, def.key, v)}
+      />
+    );
+  };
+
+  const knownDefKeys = new Set(defs.map((d) => d.key));
+
+  const renderPartMaterialGroup = (
+    partDefs: AnimatedBuildControlDef[],
+    kind: "limb" | "joint",
+  ) => {
+    const partIds = new Set<string>();
+    for (const d of partDefs) {
+      const m = new RegExp(`^feat_${kind}_([a-z0-9_]+)_(?:finish|hex|material)`).exec(d.key);
+      if (m) partIds.add(m[1]);
+    }
+    return [...partIds].map((pid) => {
+      const prefix = `feat_${kind}_${pid}_material`;
+      const legacyHex = `feat_${kind}_${pid}_hex`;
+      const finishDef = partDefs.find((d) => d.key === `feat_${kind}_${pid}_finish`);
+      if (!finishDef && !knownDefKeys.has(prefix)) return null;
+      return (
+        <div key={`${kind}-${pid}`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {finishDef ? row(finishDef) : null}
+          {studioAdvanced && knownDefKeys.has(prefix) ? (
+            <StudioPartMaterialFill
+              slug={slug}
+              materialPrefix={prefix}
+              legacyHexKey={legacyHex}
+              accentHue={studioAdvanced.accentHue}
+              paletteColors={studioAdvanced.paletteColors}
+              embedded
+              testId={`studio-${kind}-material-${pid}`}
+            />
+          ) : null}
+        </div>
+      );
+    });
+  };
 
   return (
     <div
@@ -131,22 +170,26 @@ export function FeatureMaterialControls({
           );
         })}
         {showLimbOverrides && limbPartDefs.length > 0 ? (
-          <details style={{ marginTop: 2 }}>
+          <details style={{ marginTop: 2 }} open={studioAdvanced ? true : undefined}>
             <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
               Per-limb overrides ({limbPartDefs.length})
             </summary>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {limbPartDefs.map(row)}
+              {studioAdvanced
+                ? renderPartMaterialGroup(limbPartDefs, "limb")
+                : limbPartDefs.map(row)}
             </div>
           </details>
         ) : null}
         {showJointOverrides && jointPartDefs.length > 0 ? (
-          <details style={{ marginTop: 2 }}>
+          <details style={{ marginTop: 2 }} open={studioAdvanced ? true : undefined}>
             <summary style={{ ...titleStyle, fontSize: 10, color: "#858585", cursor: "pointer" }}>
               Per-joint overrides ({jointPartDefs.length})
             </summary>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-              {jointPartDefs.map(row)}
+              {studioAdvanced
+                ? renderPartMaterialGroup(jointPartDefs, "joint")
+                : jointPartDefs.map(row)}
             </div>
           </details>
         ) : null}

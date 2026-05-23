@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
 import { ExtraZoneMaterialControls } from "./ExtraZoneMaterialControls";
@@ -29,10 +29,10 @@ describe("ExtraZoneMaterialControls", () => {
     expect(screen.getByText(/Extra geometry — Body/i)).toBeInTheDocument();
   });
 
-  it("updates extra_zone hex in store", () => {
-    render(<ExtraZoneMaterialControls slug="spider" />);
-    const hexInput = screen.getAllByPlaceholderText("RRGGBB")[0];
-    fireEvent.change(hexInput, { target: { value: "ff0000" } });
-    expect(useAppStore.getState().animatedBuildOptionValues.spider?.extra_zone_body_hex).toBe("ff0000");
+  it("renders studio material fill when useStudioPicker", () => {
+    render(
+      <ExtraZoneMaterialControls slug="spider" useStudioPicker accentHue="210" zoneFilter="body" />,
+    );
+    expect(screen.getByTestId("studio-extra-material-body")).toBeInTheDocument();
   });
 });

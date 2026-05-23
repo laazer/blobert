@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { SingleColorMode } from "../ColorPicker/modes/SingleColorMode";
-import { StudioHexRow } from "../studio/StudioHexRow";
+import { StudioPartMaterialFill } from "../studio/StudioPartMaterialFill";
 import { ControlRow, rowStyles } from "./BuildControlRow";
 import { zonePartDisplayName } from "./ZoneTextureBlock";
 import {
@@ -12,26 +13,36 @@ import {
 const EMPTY_DEFS: readonly AnimatedBuildControlDef[] = [];
 const EMPTY_VALUES: Readonly<Record<string, unknown>> = {};
 
-type Props = {
-  slug: string;
-  /** Studio Look: only show extras for this coarse zone */
-  zoneFilter?: string;
-  /** Use studio hex row instead of legacy single-color mode */
-  useStudioPicker?: boolean;
-};
-
 function hexFromStore(raw: unknown): string {
   if (typeof raw !== "string") return "";
   return raw.trim().replace(/^#/, "").toLowerCase().slice(0, 6);
 }
 
+type Props = {
+  slug: string;
+  /** Studio Look: only show extras for this coarse zone */
+  zoneFilter?: string;
+  /** Use studio material fill picker instead of legacy single-color mode */
+  useStudioPicker?: boolean;
+  accentHue?: string;
+  paletteColors?: readonly string[];
+};
+
 /**
- * Per-zone finish + hex for geometry extras (``extra_zone_*``). Shown on Colors only (single color, no patterns).
+ * Per-zone finish + material fill for geometry extras (``extra_zone_*``). Shown on Colors / Studio advanced.
  */
-export function ExtraZoneMaterialControls({ slug, zoneFilter, useStudioPicker = false }: Props) {
+export function ExtraZoneMaterialControls({
+  slug,
+  zoneFilter,
+  useStudioPicker = false,
+  accentHue = "210",
+  paletteColors,
+}: Props) {
   const defs = useAppStore((st) => st.animatedBuildControls[slug] ?? EMPTY_DEFS);
   const values = useAppStore((st) => st.animatedBuildOptionValues[slug] ?? EMPTY_VALUES);
   const setAnimatedBuildOption = useAppStore((st) => st.setAnimatedBuildOption);
+
+  const knownDefKeys = useMemo(() => new Set(defs.map((d) => d.key)), [defs]);
 
   const extraDefs = defs.filter((d) => d.key.startsWith("extra_zone_"));
   const { zones, byZone, hasAny } = partitionZoneExtraDefs(slug, extraDefs);
@@ -63,8 +74,10 @@ export function ExtraZoneMaterialControls({ slug, zoneFilter, useStudioPicker = 
       {zonesWithColor.map((zone) => {
         const zdefs = byZone[zone] ?? [];
         const finishDef = zdefs.find((d) => d.key === `extra_zone_${zone}_finish`);
-        const hexKey = `extra_zone_${zone}_hex`;
+        const materialPrefix = `extra_zone_${zone}_material`;
+        const legacyHexKey = `extra_zone_${zone}_hex`;
         const title = zonePartDisplayName(zone);
+        const hasMaterialFill = knownDefKeys.has(materialPrefix);
 
         return (
           <div
@@ -87,15 +100,19 @@ export function ExtraZoneMaterialControls({ slug, zoneFilter, useStudioPicker = 
                 onChange={(v) => setAnimatedBuildOption(slug, finishDef.key, v)}
               />
             ) : null}
-            {useStudioPicker ? (
-              <StudioHexRow
-                color={hexFromStore(values[hexKey])}
-                onChange={(h) => setAnimatedBuildOption(slug, hexKey, h)}
+            {hasMaterialFill ? (
+              <StudioPartMaterialFill
+                slug={slug}
+                materialPrefix={materialPrefix}
+                legacyHexKey={legacyHexKey}
+                accentHue={accentHue}
+                paletteColors={useStudioPicker ? paletteColors : undefined}
+                testId={`studio-extra-material-${zone}`}
               />
             ) : (
               <SingleColorMode
-                color={hexFromStore(values[hexKey])}
-                onChange={(h) => setAnimatedBuildOption(slug, hexKey, h)}
+                color={hexFromStore(values[legacyHexKey])}
+                onChange={(h) => setAnimatedBuildOption(slug, legacyHexKey, h)}
               />
             )}
           </div>

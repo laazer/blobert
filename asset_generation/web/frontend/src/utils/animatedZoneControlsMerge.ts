@@ -331,12 +331,88 @@ export function syntheticExtraZoneDefsForSlug(slug: string): AnimatedBuildContro
       options: [...FINISH_OPTIONS_ORDER],
       default: "default",
     });
+    for (const cd of syntheticPartMaterialFillDefs(
+      `extra_zone_${zone}_material`,
+      `${zlabel} extra material`,
+    )) {
+      out.push(cd);
+    }
     out.push({
       key: `extra_zone_${zone}_hex`,
       label: `${zlabel} extra hex`,
       type: "str",
       default: "",
     });
+  }
+  return out;
+}
+
+/** Mirrors Python ``_material_fill_control_defs`` for offline / partial meta. */
+export function syntheticPartMaterialFillDefs(
+  materialPrefix: string,
+  label: string,
+): AnimatedBuildControlDef[] {
+  return [
+    { key: materialPrefix, label, type: "fill_picker" },
+    {
+      key: `${materialPrefix}_mode`,
+      label: `${label} — Fill type`,
+      type: "select_str",
+      options: ["single", "gradient", "image"],
+      default: "single",
+    },
+    { key: `${materialPrefix}_hex`, label: `${label} — Color (hex)`, type: "str", default: "" },
+    { key: `${materialPrefix}_grad_a`, label: `${label} — Gradient color A`, type: "str", default: "" },
+    { key: `${materialPrefix}_grad_b`, label: `${label} — Gradient color B`, type: "str", default: "" },
+    {
+      key: `${materialPrefix}_grad_direction`,
+      label: `${label} — Gradient direction`,
+      type: "select_str",
+      options: ["horizontal", "vertical", "radial"],
+      default: "horizontal",
+    },
+    { key: `${materialPrefix}_image_id`, label: `${label} — Image asset ID`, type: "str", default: "" },
+    { key: `${materialPrefix}_image_preview`, label: `${label} — Image preview`, type: "str", default: "" },
+    { key: `${materialPrefix}_image_uv_rect`, label: `${label} — Image UV rect`, type: "str", default: "" },
+  ];
+}
+
+const PART_MATERIAL_SUB_KEY_RE =
+  /^feat_(?:limb|joint)_[a-z0-9_]+_material_(?:mode|hex|grad_a|grad_b|grad_direction|image_id|image_preview|image_uv_rect)$/;
+
+const EXTRA_MATERIAL_SUB_KEY_RE =
+  /^extra_zone_(?:body|head|limbs|joints|extra)_material_(?:mode|hex|grad_a|grad_b|grad_direction|image_id|image_preview|image_uv_rect)$/;
+
+export function isPartMaterialSubKey(key: string): boolean {
+  return PART_MATERIAL_SUB_KEY_RE.test(key);
+}
+
+export function isExtraMaterialSubKey(key: string): boolean {
+  return EXTRA_MATERIAL_SUB_KEY_RE.test(key);
+}
+
+/** Ensures per-limb / per-joint rows include ``fill_picker`` material defs when only legacy hex exists. */
+export function mergePartMaterialFillControls(
+  defs: readonly AnimatedBuildControlDef[],
+): AnimatedBuildControlDef[] {
+  const seen = new Set(defs.map((d) => d.key));
+  const out: AnimatedBuildControlDef[] = [...defs];
+  for (const d of defs) {
+    const limbMatch = /^feat_limb_([a-z0-9_]+)_hex$/.exec(d.key);
+    const jointMatch = /^feat_joint_([a-z0-9_]+)_hex$/.exec(d.key);
+    const pid = limbMatch?.[1] ?? jointMatch?.[1];
+    if (!pid) continue;
+    const prefix = limbMatch ? `feat_limb_${pid}_material` : `feat_joint_${pid}_material`;
+    if (seen.has(prefix)) continue;
+    const label = d.label.replace(/\shex$/i, " material");
+    const block = syntheticPartMaterialFillDefs(prefix, label);
+    const hexIdx = out.findIndex((row) => row.key === d.key);
+    if (hexIdx >= 0) {
+      out.splice(hexIdx, 0, ...block);
+    } else {
+      out.push(...block);
+    }
+    for (const cd of block) seen.add(cd.key);
   }
   return out;
 }
@@ -391,7 +467,7 @@ export function mergeCanonicalZoneControls(
       seen.add(d.key);
     }
   }
-  return merged;
+  return mergePartMaterialFillControls(merged);
 }
 
 /**

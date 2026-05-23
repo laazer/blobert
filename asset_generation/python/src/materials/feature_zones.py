@@ -10,6 +10,7 @@ from src.materials.gradient_generator import (
     sanitize_image_label,
 )
 from src.materials.material_stripes_zone import material_for_stripes_zone
+from src.materials import material_system
 from src.materials.material_system import (
     material_for_color_image_zone,
     overlay_base_image_on_zone_material,
@@ -19,6 +20,7 @@ from src.materials.material_system import (
 from src.materials.material_types import (
     FeatureMap,
     ImageFill,
+    MaterialFillOptions,
     ZoneTextureOptions,
     feature_zone_map,
 )
@@ -29,11 +31,11 @@ from src.materials.presets import (
     rgba_from_hex_or_fallback,
     sanitize_hex_input,
 )
+from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
 from src.materials.spots_zone_pipeline import (
     apply_spots_zone_pattern,
     spot_density_payload_usable,
 )
-from src.materials.texture_handlers import create_material
 from src.utils.texture_asset_loader import (
     get_texture_asset_filepath,
     infer_texture_asset_id_from_preview,
@@ -79,7 +81,7 @@ def _material_for_finish_hex(
     alpha = material_color[3] if len(material_color) > 3 else 1.0
 
     new_name = f"{base_palette_name}__feat_{instance_suffix}"
-    return create_material(
+    return material_system.create_material(
         new_name,
         material_color,
         metallic,
@@ -222,7 +224,7 @@ def _material_for_gradient_zone(
     roughness = finish_roughness if finish_roughness is not None else 0.75
     transmission = finish_transmission if finish_transmission is not None else 0.0
     alpha = color_a[3] if len(color_a) > 3 else 1.0
-    mat = create_material(
+    mat = material_system.create_material(
         f"{base_palette_name}__feat_{instance_suffix}",
         color_a,
         0.0,
@@ -372,6 +374,55 @@ def apply_zone_texture_pattern_overrides(
     return out
 
 
+def _material_for_material_fill(
+    *,
+    base: bpy.types.Material,
+    finish: str,
+    zone_hex_fallback: str,
+    material_fill: MaterialFillOptions | None,
+    legacy_hex: str,
+    instance_suffix: str,
+) -> bpy.types.Material | None:
+    """Resolve finish/hex/gradient/image from ``material_fill`` with legacy hex fallback."""
+    mode = "single"
+    if material_fill is not None:
+        mode = str(material_fill.mode or "single").strip().lower()
+    if mode == "image" and material_fill is not None:
+        asset_id = material_fill.image_id
+        if not asset_id:
+            asset_id = infer_texture_asset_id_from_preview(material_fill.image_preview) or ""
+        if asset_id:
+            return material_for_color_image_zone(
+                base_material=base,
+                asset_id=asset_id,
+                instance_suffix=instance_suffix,
+                uv_rect=material_fill.uv_rect,
+            )
+    if mode == "gradient" and material_fill is not None:
+        return _material_for_gradient_zone(
+            base_palette_name=_palette_base_name_from_material(base),
+            finish=finish,
+            grad_a_hex=material_fill.grad_a_hex,
+            grad_b_hex=material_fill.grad_b_hex,
+            direction=material_fill.grad_direction,
+            zone_hex_fallback=zone_hex_fallback,
+            instance_suffix=instance_suffix,
+        )
+    eff_hex = sanitize_hex_input(legacy_hex)
+    if material_fill is not None:
+        mf_hex = sanitize_hex_input(material_fill.hex_value)
+        if mf_hex:
+            eff_hex = mf_hex
+    if finish == "default" and not eff_hex:
+        return None
+    return _material_for_finish_hex(
+        base_palette_name=_palette_base_name_from_material(base),
+        finish=finish,
+        hex_str=eff_hex or zone_hex_fallback,
+        instance_suffix=instance_suffix,
+    )
+
+
 def material_for_zone_part(
     zone: str,
     part_id: str | None,
@@ -392,19 +443,33 @@ def material_for_zone_part(
     p_fin = str(pf.finish)
     z_hex = sanitize_hex_input(zf.hex_value)
     z_fin = str(zf.finish)
-    if not (bool(p_hex) or p_fin != "default"):
+    wants_override = bool(p_hex) or p_fin != "default"
+    mf = pf.material_fill
+    if mf is not None:
+        mode = str(mf.mode or "single").strip().lower()
+        if mode == "gradient":
+            wants_override = wants_override or bool(
+                sanitize_hex_input(mf.grad_a_hex) or sanitize_hex_input(mf.grad_b_hex)
+            )
+        elif mode == "image":
+            wants_override = wants_override or bool(
+                mf.image_id or infer_texture_asset_id_from_preview(mf.image_preview)
+            )
+        elif sanitize_hex_input(mf.hex_value):
+            wants_override = True
+    if not wants_override:
         return base
     eff_fin = p_fin if p_fin != "default" else z_fin
-    eff_hex = p_hex or z_hex
-    if eff_fin == "default" and not eff_hex:
-        return base
     safe_part = str(part_id).replace(".", "_")
-    return _material_for_finish_hex(
-        base_palette_name=_palette_base_name_from_material(base),
+    filled = _material_for_material_fill(
+        base=base,
         finish=eff_fin,
-        hex_str=eff_hex,
+        zone_hex_fallback=z_hex,
+        material_fill=mf,
+        legacy_hex=p_hex,
         instance_suffix=f"{zone}_{safe_part}",
     )
+    return filled if filled is not None else base
 
 
 def material_for_zone_geometry_extra(
@@ -413,19 +478,35 @@ def material_for_zone_geometry_extra(
     features: FeatureMap | None,
     extra_finish: str,
     extra_hex: str,
+    material_fill: object | None = None,
 ) -> bpy.types.Material | None:
     base = slot_materials.get(zone)
     if base is None:
         return None
-    extra_hex_sanitized = sanitize_hex_input(extra_hex)
+    xz = sanitize_hex_input(extra_hex)
     finish = str(extra_finish or "default")
     zone_feature = feature_zone_map(features).get(zone)
     zone_hex = sanitize_hex_input(zone_feature.hex_value) if zone_feature is not None else ""
     zone_finish = str(zone_feature.finish) if zone_feature is not None else "default"
     eff_fin = finish if finish != "default" else zone_finish
-    eff_hex = extra_hex_sanitized or zone_hex
-    if eff_fin == "default" and not eff_hex:
+    mf_opts = (
+        material_fill
+        if isinstance(material_fill, MaterialFillOptions)
+        else MaterialFillOptions.from_mapping(material_fill)
+    )
+    filled = _material_for_material_fill(
+        base=base,
+        finish=eff_fin,
+        zone_hex_fallback=zone_hex,
+        material_fill=mf_opts,
+        legacy_hex=xz,
+        instance_suffix=f"{zone}_zgeom_extra",
+    )
+    if filled is not None:
+        return filled
+    if eff_fin == "default" and not xz and not zone_hex:
         return base
+    eff_hex = xz or zone_hex
     return _material_for_finish_hex(
         base_palette_name=_palette_base_name_from_material(base),
         finish=eff_fin,

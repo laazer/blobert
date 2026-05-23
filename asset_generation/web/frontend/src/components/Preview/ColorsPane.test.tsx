@@ -158,7 +158,8 @@ describe("ColorsPane", () => {
 
     expect(screen.getByTestId("studio-advanced-texture-body")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-advanced-texture-head")).not.toBeInTheDocument();
-    expect(screen.getByTestId("studio-color-picker-tabs")).toBeInTheDocument();
+    expect(screen.getAllByTestId("studio-color-picker-tabs").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("studio-extra-material-body")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-look-part-chip-head"));
     expect(screen.queryByTestId("studio-advanced-texture-body")).not.toBeInTheDocument();

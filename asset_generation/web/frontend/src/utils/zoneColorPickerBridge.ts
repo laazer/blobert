@@ -47,6 +47,65 @@ export function zonePatternColorKeys(zone: string, colorField = "pattern"): Colo
   };
 }
 
+/** Geometry extra material fill (``extra_zone_{zone}_material_*``). */
+export function extraZoneMaterialKeys(zone: string): ColorFieldKeys {
+  return partMaterialKeys(`extra_zone_${zone}_material`, `extra_zone_${zone}_hex`);
+}
+
+/** Per-limb / per-joint material fill (``feat_limb_*_material_*`` / ``feat_joint_*_material_*``). */
+export function partMaterialKeys(materialPrefix: string, legacyHexKey: string): ColorFieldKeys {
+  return {
+    hexKey: `${materialPrefix}_hex`,
+    colorAKey: `${materialPrefix}_grad_a`,
+    colorBKey: `${materialPrefix}_grad_b`,
+    colorDirKey: `${materialPrefix}_grad_direction`,
+    imageIdKey: `${materialPrefix}_image_id`,
+    imagePreviewKey: `${materialPrefix}_image_preview`,
+    imageUvRectKey: `${materialPrefix}_image_uv_rect`,
+    legacySingleKey: legacyHexKey,
+  };
+}
+
+export function normalizedFillMode(
+  materialPrefix: string,
+  values: Readonly<Record<string, unknown>>,
+): PickerMode {
+  const raw = values[`${materialPrefix}_mode`];
+  const s = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  if (s === "gradient" || s === "image" || s === "single") return s;
+  return "single";
+}
+
+export function carryFillPaletteOnModeChange(
+  materialPrefix: string,
+  from: "single" | "gradient",
+  to: "single" | "gradient",
+  values: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  const keys = partMaterialKeys(materialPrefix, `${materialPrefix}_hex`);
+  const out: Record<string, unknown> = {};
+  if (from === "single" && to === "gradient") {
+    const single =
+      typeof values[keys.hexKey] === "string"
+        ? (values[keys.hexKey] as string)
+        : keys.legacySingleKey && typeof values[keys.legacySingleKey] === "string"
+          ? (values[keys.legacySingleKey] as string)
+          : "";
+    if (single.trim()) {
+      out[keys.colorAKey] = single;
+      out[keys.colorBKey] = single;
+    }
+    return out;
+  }
+  if (from === "gradient" && to === "single") {
+    const a =
+      typeof values[keys.colorAKey] === "string" ? (values[keys.colorAKey] as string) : "";
+    if (a.trim()) out[keys.hexKey] = a;
+    return out;
+  }
+  return out;
+}
+
 export function buildColorPickerValue(
   mode: PickerMode,
   values: Readonly<Record<string, unknown>>,

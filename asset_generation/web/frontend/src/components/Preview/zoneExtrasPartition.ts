@@ -72,7 +72,10 @@ export function kindOptionsForZone(zone: string): readonly string[] {
   return EXTRA_KINDS_ALL.filter((k) => k !== "horns");
 }
 
-/** Finish / hex for geometry extras — edited on the Colors tab, not Extras. */
+/** Finish / material fill for geometry extras — edited on Colors tab, not Extras. */
 export function isExtraZoneAppearanceDefKey(key: string): boolean {
-  return /^extra_zone_(?:body|head|limbs|joints|extra)_(finish|hex)$/.test(key);
+  return (
+    /^extra_zone_(?:body|head|limbs|joints|extra)_(?:finish|hex)$/.test(key) ||
+    /^extra_zone_(?:body|head|limbs|joints|extra)_material$/.test(key)
+  );
 }

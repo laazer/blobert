@@ -26,9 +26,37 @@ class ColorImageOptions:
 
 
 @dataclass(frozen=True)
+class MaterialFillOptions:
+    mode: str
+    hex_value: str
+    grad_a_hex: str
+    grad_b_hex: str
+    grad_direction: str
+    image_id: str
+    image_preview: str
+    uv_rect: tuple[float, float, float, float] | None = None
+
+    @classmethod
+    def from_mapping(cls, raw: object) -> "MaterialFillOptions | None":
+        if not isinstance(raw, dict):
+            return None
+        return cls(
+            mode=str(raw.get("mode", "single") or "single").strip().lower(),
+            hex_value=str(raw.get("hex", "") or ""),
+            grad_a_hex=str(raw.get("grad_a", "") or ""),
+            grad_b_hex=str(raw.get("grad_b", "") or ""),
+            grad_direction=str(raw.get("grad_direction", "horizontal") or "horizontal"),
+            image_id=str(raw.get("image_id", "") or "").strip(),
+            image_preview=str(raw.get("image_preview", "") or ""),
+            uv_rect=parse_uv_rect(raw.get("image_uv_rect")),
+        )
+
+
+@dataclass(frozen=True)
 class PartOverrideOptions:
     finish: str
     hex_value: str
+    material_fill: MaterialFillOptions | None = None
 
 
 @dataclass(frozen=True)
@@ -61,6 +89,7 @@ class FeatureZoneOptions:
                 parts[part_id] = PartOverrideOptions(
                     finish=str(value.get("finish", "default") or "default"),
                     hex_value=str(value.get("hex", "") or ""),
+                    material_fill=MaterialFillOptions.from_mapping(value.get("material_fill")),
                 )
         return cls(
             finish=str(raw.get("finish", "default") or "default"),

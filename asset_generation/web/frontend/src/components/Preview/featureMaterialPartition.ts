@@ -3,6 +3,8 @@
  * Used by ``FeatureMaterialControls`` and covered by unit tests (no DOM).
  */
 
+import { isPartMaterialSubKey } from "../../utils/animatedZoneControlsMerge";
+
 const ZONE_ORDER = ["body", "head", "limbs", "joints", "extra"] as const;
 
 /** Matches coarse zone finish/hex rows (not ``feat_limb_*`` / ``feat_joint_*``). */
@@ -33,7 +35,11 @@ export function partitionAnimatedFeatureDefs<T extends { key: string }>(
 } {
   const featureDefs = allDefs.filter((d) => d.key.startsWith("feat_"));
   const zoneDefs = sortZoneFeatureDefs(featureDefs.filter((d) => ZONE_FINISH_HEX_RE.test(d.key)));
-  const limbPartDefs = featureDefs.filter((d) => d.key.startsWith("feat_limb_"));
-  const jointPartDefs = featureDefs.filter((d) => d.key.startsWith("feat_joint_"));
+  const limbPartDefs = featureDefs.filter(
+    (d) => d.key.startsWith("feat_limb_") && !isPartMaterialSubKey(d.key),
+  );
+  const jointPartDefs = featureDefs.filter(
+    (d) => d.key.startsWith("feat_joint_") && !isPartMaterialSubKey(d.key),
+  );
   return { featureDefs, zoneDefs, limbPartDefs, jointPartDefs };
 }

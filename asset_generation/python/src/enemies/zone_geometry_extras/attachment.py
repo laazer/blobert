@@ -137,7 +137,7 @@ def append_animated_enemy_zone_extras(model: Any) -> None:
             )
 
 
-def append_body_ellipsoid_extras(
+def append_body_ellipsoid_extras(  # pylint: disable=too-many-statements
     model: Any,
     spec: dict[str, Any],
     slot_mats: dict[str, bpy.types.Material | None],
@@ -156,6 +156,7 @@ def append_body_ellipsoid_extras(
         features,
         str(spec.get("finish", "default")),
         str(spec.get("hex", "")),
+        material_fill=spec.get("material_fill"),
     )
     ref = body_ref_size(a, b, h)
     cx += _legacy_zone_extra_offset(spec, "offset_x")
@@ -320,7 +321,7 @@ def append_body_ellipsoid_extras(
                 placed += 1
 
 
-def append_head_ellipsoid_extras(
+def append_head_ellipsoid_extras(  # pylint: disable=too-many-statements
     model: Any,
     spec: dict[str, Any],
     slot_mats: dict[str, bpy.types.Material | None],
@@ -339,6 +340,7 @@ def append_head_ellipsoid_extras(
         features,
         str(spec.get("finish", "default")),
         str(spec.get("hex", "")),
+        material_fill=spec.get("material_fill"),
     )
     ref = head_ref_size(ax, ay, az)
     hx += _legacy_zone_extra_offset(spec, "offset_x")
