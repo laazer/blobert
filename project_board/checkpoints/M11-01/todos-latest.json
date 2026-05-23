@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-01",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-23T16:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-23T18:00:00Z",
   "todos": [
     {
-      "id": "td-1",
-      "content": "Read ticket, spec, workflow enforcement, and enemy/scene FSM test patterns",
+      "id": "tb-1",
+      "content": "Read spec EC-1..EC-10 and primary test suite for overlap gaps",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "td-2",
-      "content": "Author test_player_state_machine.gd covering PSM-1..PSM-9 (runtime FSM API)",
+      "id": "tb-2",
+      "content": "Author test_player_state_machine_adversarial.gd (runtime FSM seams)",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "td-3",
+      "id": "tb-3",
       "content": "Run headless suite; capture verbatim RED failure output",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "td-4",
-      "content": "Write checkpoint, handoff/todos, update ticket to TEST_BREAK",
+      "id": "tb-4",
+      "content": "Checkpoint, handoff/todos, ticket → IMPLEMENTATION_GENERALIST",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     }
   ]
 }

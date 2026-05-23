@@ -20,9 +20,9 @@ Execution plan in ticket (10 tasks). Stage → SPECIFICATION; handoff to Spec Ag
 Player state machine spec frozen (10 states, guards, timer, derivation, controller wiring).
 Log: `project_board/checkpoints/M11-01/2026-05-23T-spec-run.md`
 
-### M11-01 — OUTCOME: TEST_DESIGN → TEST_BREAK
-Primary FSM unit tests RED (49 failures); handoff to Test Breaker for adversarial suite.
-Log: `project_board/checkpoints/M11-01/2026-05-23T-test-design-run.md`
+### M11-01 — OUTCOME: TEST_BREAK → IMPLEMENTATION_GENERALIST
+Adversarial FSM tests RED (45 failures); EC-1..EC-10 + naming/stress probes; handoff to Gameplay Systems.
+Log: `project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md`
 
 ---
 

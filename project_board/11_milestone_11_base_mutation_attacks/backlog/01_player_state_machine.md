@@ -105,16 +105,16 @@ Introduce `PlayerStateMachine` (`scripts/player/player_state_machine.gd`) as a R
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: RED (49 failures — `player_state_machine.gd` not implemented; primary suite runnable)
+- Tests: RED (primary 31 failures + adversarial 45 failures — `player_state_machine.gd` not implemented; both suites parse and run)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -129,16 +129,17 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Required Input Schema
 ```json
 {
-  "execution_plan_section": "string — ticket Execution Plan task 3 (adversarial tests)",
-  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-test-design-run.md",
+  "execution_plan_section": "string — ticket Execution Plan tasks 4-6 (FSM + controller wiring)",
+  "checkpoint_log": "project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md",
   "spec_path": "project_board/specs/player_state_machine_spec.md",
   "primary_test_path": "tests/scripts/player/test_player_state_machine.gd",
-  "adversarial_test_path": "tests/scripts/player/test_player_state_machine_adversarial.gd"
+  "adversarial_test_path": "tests/scripts/player/test_player_state_machine_adversarial.gd",
+  "implementation_target": "scripts/player/player_state_machine.gd"
 }
 ```
 
@@ -146,4 +147,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary unit tests authored (PSM-1..PSM-9). Headless runner reports 49 RED failures until `scripts/player/player_state_machine.gd` exists. Test Breaker should add adversarial suite per spec Edge Cases (EC-1..EC-10) and MovementState isolation.
+Adversarial suite complete (EC-1..EC-10 + stress/naming probes). Primary + adversarial tests RED until `PlayerStateMachine` is implemented. Gameplay Systems Agent should implement FSM and wire `PlayerController3D` per spec without behavior change.

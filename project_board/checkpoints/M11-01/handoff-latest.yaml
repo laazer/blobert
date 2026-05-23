@@ -1,26 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-01
-  from_agent: test_designer
-  to_agent: test_breaker
-  validated_at: "2026-05-23T16:00:00Z"
-  required_items_met: 3
-  total_required_items: 3
+  from_agent: test_breaker
+  to_agent: implementation
+  validated_at: "2026-05-23T18:00:00Z"
+  required_items_met: 2
+  total_required_items: 2
   checklist:
-    - item_key: test_suite_complete
-      item: Test suite complete per spec test plan
+    - item_key: breaker_gaps_documented
+      item: All discovered gaps documented
       required: true
       status: complete
-      evidence: tests/scripts/player/test_player_state_machine.gd
+      evidence: project_board/checkpoints/M11-01/2026-05-23T-test-break-run.md
       evidence_type: path
-    - item_key: test_coverage_threshold
-      item: Coverage threshold met (>80% proxy)
+    - item_key: breaker_impl_notes
+      item: Implementation notes created
       required: true
       status: complete
-      evidence: "coverage: 100 — 34 primary test functions cover PSM-1..PSM-9 ACs; adversarial file assigned to Test Breaker per spec"
-    - item_key: test_all_runnable
-      item: All tests runnable
-      required: true
-      status: complete
-      evidence: "godot --headless -s tests/run_tests.gd — test_player_state_machine.gd loads; 49 FAIL RED (missing player_state_machine.gd)"
+      evidence: "Implement scripts/player/player_state_machine.gd per spec; wire PlayerController3D; satisfy primary (31 fail) + adversarial (45 fail) RED suites"
       evidence_type: attestation
