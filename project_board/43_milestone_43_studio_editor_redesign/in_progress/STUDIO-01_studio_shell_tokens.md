@@ -105,16 +105,16 @@ Phase 1 Studio shell in `asset_generation/web/frontend`: feature-flagged `Studio
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_FRONTEND
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: RED (StudioLayout.test.tsx — import resolution; see checkpoint)
+- Tests: RED (StudioLayout.test.tsx — 35 cases; import resolution; see `2026-05-23T-test-break-run.md`)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -129,16 +129,18 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Implementation Frontend Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/43_milestone_43_studio_editor_redesign/in_progress/STUDIO-01_studio_shell_tokens.md",
   "spec_path": "project_board/specs/studio_editor_redesign_spec.md",
+  "agent_guide": "agent_context/agents/misc_agents/implementation_frontend_v1.md",
   "test_file": "asset_generation/web/frontend/src/components/layout/StudioLayout.test.tsx",
-  "checkpoint": "project_board/checkpoints/STUDIO-01/2026-05-23T-test-design-run.md",
-  "scope": "Adversarial §8 gaps: invalid flag values, hydration spy hardening, env/module reload edges"
+  "checkpoint": "project_board/checkpoints/STUDIO-01/2026-05-23T-test-break-run.md",
+  "handoff": "test_break_to_implementation",
+  "scope": "Implement elements.ts, studioTokens.ts, App flag, StudioLayout + studio/*; satisfy §8 T-1..T-6 and §11 adversarial cases"
 }
 ```
 
@@ -146,4 +148,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Red Vitest contracts authored for §8 T-1..T-6; legacy-layout testid added. Handoff to Test Breaker for adversarial cases before implementation.
+Adversarial Vitest extended (§11 invalid flags, hydration spy on tab interaction, element hex CHECKPOINT). Suite RED until StudioLayout/elements/App flag land. Handoff to Implementation Frontend Agent.

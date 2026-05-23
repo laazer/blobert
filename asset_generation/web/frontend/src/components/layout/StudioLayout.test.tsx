@@ -1,14 +1,24 @@
 // @vitest-environment jsdom
 /**
- * STUDIO-01 — studio_editor_redesign_spec.md §8 (T-1..T-6).
+ * STUDIO-01 — studio_editor_redesign_spec.md §8 (T-1..T-6), §11 invalid-flag taxonomy.
  * Red contracts until StudioLayout, elements.ts, and App flag wiring land.
+ * Adversarial cases extended by Test Breaker (invalid flags, hydration on interaction).
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
+import * as client from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { StudioLayout } from "./StudioLayout";
 import { StudioPreviewColumn } from "../studio/StudioPreviewColumn";
 import { ELEMENTS, type ElementId } from "../../constants/elements";
+
+vi.mock("../../api/client", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("../../api/client")>();
+  return {
+    ...mod,
+    fetchBuildOptionsSidecarForGlbPath: vi.fn(),
+  };
+});
 
 vi.mock("../Editor/EditorPane", () => ({ EditorPane: () => <div data-testid="editor" /> }));
 vi.mock("../FileTree/FileTree", () => ({ FileTree: () => <div /> }));
@@ -40,6 +50,23 @@ const NINE_ELEMENT_IDS: ElementId[] = [
 ];
 
 const INSPECTOR_TABS = ["look", "build", "animate", "code", "versions"] as const;
+
+/** §11: only exact `"1"` enables studio; all other values → legacy. */
+const INVALID_STUDIO_FLAGS = [
+  "",
+  " ",
+  " 1",
+  "1 ",
+  "01",
+  "10",
+  "0",
+  "false",
+  "TRUE",
+  "yes",
+  "\t",
+  "\n1",
+  "1\n",
+] as const;
 
 afterEach(() => {
   cleanup();
@@ -188,6 +215,121 @@ describe("STUDIO-01 StudioLayout (spec §8)", () => {
       const column = screen.getByTestId("studio-preview-column");
       expect(within(column).queryByTestId("command-panel")).toBeNull();
       expect(within(column).queryByTestId("preview-terminal")).toBeNull();
+    });
+  });
+
+  describe("§11 adversarial — invalid VITE_STUDIO_LAYOUT → legacy", () => {
+    it.each(INVALID_STUDIO_FLAGS)(
+      "renders legacy-layout and not studio-layout when flag is %j",
+      async (flag) => {
+        await renderAppWithStudioFlag(flag);
+        expect(screen.getByTestId("legacy-layout")).toBeInTheDocument();
+        expect(screen.queryByTestId("studio-layout")).toBeNull();
+      },
+    );
+
+    it("re-reads App flag after resetModules when toggling from on to invalid", async () => {
+      await renderAppWithStudioFlag("1");
+      expect(screen.getByTestId("studio-layout")).toBeInTheDocument();
+      cleanup();
+      vi.resetModules();
+      await renderAppWithStudioFlag("true");
+      expect(screen.getByTestId("legacy-layout")).toBeInTheDocument();
+      expect(screen.queryByTestId("studio-layout")).toBeNull();
+    });
+  });
+
+  describe("T-3 adversarial — inspector tab edge cases", () => {
+    it("uses lowercase slug test ids (not PascalCase)", () => {
+      render(<StudioLayout />);
+      expect(screen.queryByTestId("studio-inspector-tab-Look")).toBeNull();
+      expect(screen.getByTestId("studio-inspector-tab-look")).toBeInTheDocument();
+    });
+
+    it("shows exactly one inspector panel while cycling all tabs", () => {
+      render(<StudioLayout />);
+      for (const tab of INSPECTOR_TABS) {
+        fireEvent.click(screen.getByTestId(`studio-inspector-tab-${tab}`));
+        const visiblePanels = INSPECTOR_TABS.filter(
+          (t) => screen.queryByTestId(`studio-inspector-panel-${t}`) !== null,
+        );
+        expect(visiblePanels).toEqual([tab]);
+      }
+    });
+
+    it("rapid double-click on a tab leaves a single active panel without throw", () => {
+      render(<StudioLayout />);
+      const buildTab = screen.getByTestId("studio-inspector-tab-build");
+      fireEvent.click(buildTab);
+      fireEvent.click(buildTab);
+      expect(buildTab).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByTestId("studio-inspector-panel-build")).toBeVisible();
+      expect(screen.queryByTestId("studio-inspector-panel-look")).toBeNull();
+    });
+  });
+
+  describe("T-4 adversarial — element token shape", () => {
+    // CHECKPOINT: spec §14 requires hue/soft/ink strings only; hex shape is conservative for shared.jsx parity.
+    const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+    it("uses six-digit hex colors for hue, soft, and ink on every element", () => {
+      for (const id of NINE_ELEMENT_IDS) {
+        const entry = ELEMENTS[id];
+        expect(entry.hue).toMatch(HEX_COLOR);
+        expect(entry.soft).toMatch(HEX_COLOR);
+        expect(entry.ink).toMatch(HEX_COLOR);
+      }
+    });
+
+    it("does not export stray element keys beyond the nine spec ids", () => {
+      const keys = Object.keys(ELEMENTS).sort();
+      expect(keys).toEqual([...NINE_ELEMENT_IDS].sort());
+      expect(keys).toHaveLength(9);
+    });
+  });
+
+  describe("T-5 adversarial — hydration guard on interaction", () => {
+    beforeEach(() => {
+      vi.mocked(client.fetchBuildOptionsSidecarForGlbPath).mockReset();
+      vi.mocked(client.fetchBuildOptionsSidecarForGlbPath).mockResolvedValue({
+        eye_count: 99,
+      });
+    });
+
+    function assertNoImportBuildOptions(selectSpy: ReturnType<typeof vi.spyOn>) {
+      for (const [, options] of selectSpy.mock.calls) {
+        expect(options?.importBuildOptions).not.toBe(true);
+      }
+    }
+
+    it("does not call selectAssetByPath with importBuildOptions true after cycling inspector tabs", () => {
+      const selectSpy = vi.spyOn(useAppStore.getState(), "selectAssetByPath");
+      render(<StudioLayout />);
+      for (const tab of INSPECTOR_TABS) {
+        fireEvent.click(screen.getByTestId(`studio-inspector-tab-${tab}`));
+      }
+      fireEvent.click(screen.getByTestId("studio-inspector-tab-look"));
+      assertNoImportBuildOptions(selectSpy);
+    });
+
+    it("does not fetch build options sidecar on StudioLayout mount", () => {
+      render(<StudioLayout />);
+      expect(client.fetchBuildOptionsSidecarForGlbPath).not.toHaveBeenCalled();
+    });
+
+    it("does not fetch build options sidecar after inspector tab interaction", () => {
+      render(<StudioLayout />);
+      for (const tab of INSPECTOR_TABS) {
+        fireEvent.click(screen.getByTestId(`studio-inspector-tab-${tab}`));
+      }
+      expect(client.fetchBuildOptionsSidecarForGlbPath).not.toHaveBeenCalled();
+    });
+
+    it("does not pass importBuildOptions true when StudioPreviewColumn mounts under App flag on", async () => {
+      const selectSpy = vi.spyOn(useAppStore.getState(), "selectAssetByPath");
+      await renderAppWithStudioFlag("1");
+      assertNoImportBuildOptions(selectSpy);
+      expect(client.fetchBuildOptionsSidecarForGlbPath).not.toHaveBeenCalled();
     });
   });
 });

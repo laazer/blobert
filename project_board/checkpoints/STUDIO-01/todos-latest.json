@@ -1,32 +1,26 @@
 {
   "schema_version": "1.0",
   "ticket_id": "STUDIO-01",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-23T14:25:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-23T14:30:00Z",
   "todos": [
     {
-      "id": "td-1",
-      "content": "Author StudioLayout.test.tsx for spec §8 T-1..T-6 (jsdom, store mocks)",
+      "id": "tb-1",
+      "content": "Extend StudioLayout.test.tsx — §11 invalid flags, hydration on interaction",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "td-2",
-      "content": "Add legacy-layout data-testid on ThreePanelLayout root",
+      "id": "tb-2",
+      "content": "Checkpoint 2026-05-23T-test-break-run.md with verbatim RED npm output",
       "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     },
     {
-      "id": "td-3",
-      "content": "Capture RED npm test output in checkpoint; update ticket to TEST_BREAK rev 4",
+      "id": "tb-3",
+      "content": "Update ticket to IMPLEMENTATION_FRONTEND; handoff test_break_to_implementation",
       "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "td-4",
-      "content": "Write handoff-latest.yaml and todos-latest.json for test_design_to_test_break",
-      "status": "completed",
-      "agent": "Test Designer Agent"
+      "agent": "Test Breaker Agent"
     }
   ]
 }
