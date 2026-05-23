@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
 import { mergeBuildOptionValues } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
@@ -10,7 +10,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe("StudioLookPanel", () => {
+describe("StudioLookPanel (redesign_v2 IA)", () => {
   beforeEach(() => {
     const controls = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
     useAppStore.setState({
@@ -19,12 +19,18 @@ describe("StudioLookPanel", () => {
     });
   });
 
-  it("renders element grid and applies fire palette on click", () => {
+  it("renders v2 sections: element, part picker, background", () => {
     render(<StudioLookPanel slug="spider" />);
 
     expect(screen.getByTestId("studio-look-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-look-element-fire")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-element-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-part-picker")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-background")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-zone-fill-body-background")).toBeInTheDocument();
+  });
 
+  it("applies fire palette from element grid", () => {
+    render(<StudioLookPanel slug="spider" />);
     fireEvent.click(screen.getByTestId("studio-look-element-fire"));
 
     const values = useAppStore.getState().animatedBuildOptionValues.spider ?? {};
@@ -32,14 +38,40 @@ describe("StudioLookPanel", () => {
     expect(values.feat_body_finish).toBe("glossy");
   });
 
-  it("sets body finish and pattern mode from mockup controls", () => {
+  it("sets finish and pattern mode for active zone", () => {
     render(<StudioLookPanel slug="spider" />);
 
-    fireEvent.click(screen.getByTestId("studio-look-body-finish-metallic"));
-    fireEvent.click(screen.getByTestId("studio-look-pattern-stripes"));
+    fireEvent.click(screen.getByTestId("studio-look-finish-body-metallic"));
+    fireEvent.click(screen.getByTestId("studio-look-pattern-body-stripes"));
 
     const values = useAppStore.getState().animatedBuildOptionValues.spider ?? {};
     expect(values.feat_body_finish).toBe("metallic");
     expect(values.feat_body_texture_mode).toBe("stripes");
+  });
+
+  it("shows only pipeline texture modes as pattern tiles", () => {
+    render(<StudioLookPanel slug="spider" />);
+    expect(screen.getByTestId("studio-look-pattern-body-plain")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-pattern-body-dots")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-pattern-body-stripes")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-pattern-body-checkerboard")).toBeInTheDocument();
+    expect(screen.queryByTestId("studio-look-pattern-body-swirl")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("studio-look-pattern-body-cracks")).not.toBeInTheDocument();
+  });
+
+  it("exposes Color / Gradient / Image tabs on background fill", () => {
+    render(<StudioLookPanel slug="spider" />);
+    const fill = within(screen.getByTestId("studio-zone-fill-body-background"));
+    expect(fill.getByRole("tab", { name: "Color" })).toBeInTheDocument();
+    expect(fill.getByRole("tab", { name: "Gradient" })).toBeInTheDocument();
+    expect(fill.getByRole("tab", { name: "Image" })).toBeInTheDocument();
+  });
+
+  it("switches active part via part picker", () => {
+    render(<StudioLookPanel slug="spider" />);
+
+    fireEvent.click(screen.getByTestId("studio-look-part-chip-head"));
+    expect(screen.getByTestId("studio-zone-fill-head-background")).toBeInTheDocument();
+    expect(screen.getByText(/Background · Head/)).toBeInTheDocument();
   });
 });

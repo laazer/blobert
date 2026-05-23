@@ -46,6 +46,34 @@ export function syntheticZoneControl(zone: string, field: "finish" | "hex"): Ani
   };
 }
 
+/** Base zone color (``feat_{zone}_color_*``) — Color / Gradient / Image tabs in Studio Look. */
+export function syntheticZoneColorDefs(zone: string): AnimatedBuildControlDef[] {
+  const zlabel = titleZone(zone);
+  const p = `feat_${zone}_color_`;
+  return [
+    {
+      key: `${p}mode`,
+      label: `${zlabel} — Color mode`,
+      type: "select_str",
+      options: ["single", "gradient", "image"],
+      default: "single",
+    },
+    { key: `${p}hex`, label: `${zlabel} — Color (hex)`, type: "str", default: "" },
+    { key: `${p}a`, label: `${zlabel} — Gradient color A`, type: "str", default: "" },
+    { key: `${p}b`, label: `${zlabel} — Gradient color B`, type: "str", default: "" },
+    {
+      key: `${p}direction`,
+      label: `${zlabel} — Gradient direction`,
+      type: "select_str",
+      options: ["horizontal", "vertical", "radial"],
+      default: "horizontal",
+    },
+    { key: `${p}image_id`, label: `${zlabel} — Color image asset ID`, type: "str", default: "" },
+    { key: `${p}image_preview`, label: `${zlabel} — Color image preview`, type: "str", default: "" },
+    { key: `${p}image_uv_rect`, label: `${zlabel} — Color image UV rect`, type: "str", default: "" },
+  ];
+}
+
 /** Mirrors Python ``_zone_texture_control_defs`` for a single zone (offline / partial meta). */
 export function syntheticZoneTextureDefs(zone: string): AnimatedBuildControlDef[] {
   const zlabel = titleZone(zone);
@@ -338,6 +366,9 @@ export function mergeCanonicalZoneControls(
     for (const field of ["finish", "hex"] as const) {
       const key = `feat_${z}_${field}`;
       canonicalZoneDefs.push(byKey.get(key) ?? syntheticZoneControl(z, field));
+    }
+    for (const cd of syntheticZoneColorDefs(z)) {
+      canonicalZoneDefs.push(byKey.get(cd.key) ?? cd);
     }
     for (const td of syntheticZoneTextureDefs(z)) {
       canonicalZoneDefs.push(byKey.get(td.key) ?? td);

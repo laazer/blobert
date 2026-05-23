@@ -1,56 +1,79 @@
 import type { CSSProperties } from "react";
 
-export type PatternTileId = "stripes" | "dots" | "swirl" | "cracks" | "plain";
-
 export type PatternTileDef = {
-  id: PatternTileId;
+  id: string;
   label: string;
   /** Value written to ``feat_{zone}_texture_mode``. */
   textureMode: string;
 };
 
-export const STUDIO_PATTERN_TILES: readonly PatternTileDef[] = [
-  { id: "stripes", label: "stripes", textureMode: "stripes" },
-  { id: "dots", label: "dots", textureMode: "spots" },
-  { id: "swirl", label: "swirl", textureMode: "checkerboard" },
-  { id: "cracks", label: "cracks", textureMode: "assets" },
-  { id: "plain", label: "plain", textureMode: "none" },
-] as const;
+/** Display metadata for pipeline ``texture_mode`` values (functional parity only). */
+const TEXTURE_MODE_TILE_META: Record<string, { id: string; label: string }> = {
+  none: { id: "plain", label: "plain" },
+  spots: { id: "dots", label: "dots" },
+  stripes: { id: "stripes", label: "stripes" },
+  checkerboard: { id: "checkerboard", label: "checker" },
+  assets: { id: "assets", label: "assets" },
+};
 
-/** CSS background for pattern preview tiles (mockup Look tab). */
-export function patternTilePreviewStyle(
-  tileId: PatternTileId,
-  bodyHex: string,
-  patternHex: string,
-): CSSProperties {
-  const base: CSSProperties = {
-    flex: 1,
-    backgroundColor: bodyHex,
-    backgroundSize: tileId === "dots" ? "8px 8px" : undefined,
-  };
+/** Build pattern shape tiles from the active enemy's ``feat_{zone}_texture_mode`` options. */
+export function buildStudioPatternTiles(textureModeOptions: readonly string[]): PatternTileDef[] {
+  const out: PatternTileDef[] = [];
+  for (const mode of textureModeOptions) {
+    const meta = TEXTURE_MODE_TILE_META[mode];
+    if (meta) {
+      out.push({ id: meta.id, label: meta.label, textureMode: mode });
+    }
+  }
+  return out;
+}
 
-  switch (tileId) {
+export function textureModeFromTileId(
+  tileId: string,
+  tiles: readonly PatternTileDef[],
+): string {
+  return tiles.find((t) => t.id === tileId)?.textureMode ?? "none";
+}
+
+export function tileIdFromTextureMode(
+  textureMode: string,
+  tiles: readonly PatternTileDef[],
+): string {
+  return tiles.find((t) => t.textureMode === textureMode)?.id ?? "plain";
+}
+
+/** v2 Look tab: pattern shape tiles use element hue for preview. */
+export function patternTileHuePreviewStyle(textureMode: string, elementHue: string): CSSProperties {
+  const preview = "#0a0a10";
+  switch (textureMode) {
     case "stripes":
       return {
-        ...base,
-        backgroundImage: `repeating-linear-gradient(45deg, ${patternHex} 0 4px, transparent 4px 9px)`,
+        flex: 1,
+        backgroundColor: preview,
+        backgroundImage: `repeating-linear-gradient(45deg, ${elementHue} 0 3px, transparent 3px 7px)`,
       };
-    case "dots":
+    case "spots":
       return {
-        ...base,
-        backgroundImage: `radial-gradient(${patternHex} 1.4px, transparent 1.4px)`,
+        flex: 1,
+        backgroundColor: preview,
+        backgroundImage: `radial-gradient(${elementHue} 1.4px, transparent 1.4px)`,
+        backgroundSize: "8px 8px",
       };
-    case "swirl":
+    case "checkerboard":
       return {
-        ...base,
-        backgroundImage: `conic-gradient(from 45deg, ${patternHex}, transparent 25%, ${patternHex} 60%, transparent)`,
+        flex: 1,
+        backgroundColor: preview,
+        backgroundImage: `linear-gradient(45deg, ${elementHue} 25%, transparent 25%, transparent 75%, ${elementHue} 75%), linear-gradient(45deg, ${elementHue} 25%, transparent 25%, transparent 75%, ${elementHue} 75%)`,
+        backgroundSize: "8px 8px",
+        backgroundPosition: "0 0, 4px 4px",
       };
-    case "cracks":
+    case "assets":
       return {
-        ...base,
-        backgroundImage: `linear-gradient(45deg, transparent 46%, ${patternHex} 48%, transparent 50%), linear-gradient(135deg, transparent 46%, ${patternHex} 48%, transparent 50%)`,
+        flex: 1,
+        backgroundColor: preview,
+        backgroundImage: `repeating-linear-gradient(0deg, ${elementHue}55, ${elementHue}55 2px, transparent 2px, transparent 6px)`,
       };
     default:
-      return base;
+      return { flex: 1, backgroundColor: preview };
   }
 }

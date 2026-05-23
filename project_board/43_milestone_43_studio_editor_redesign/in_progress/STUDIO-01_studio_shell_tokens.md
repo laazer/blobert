@@ -12,7 +12,7 @@ Implement **Phase 1** of the Asset Editor Studio redesign in `asset_generation/w
 
 **Authoritative spec:** `project_board/specs/studio_editor_redesign_spec.md` (§6–§9, §12 deferred boundaries).
 
-**Reference (design-time only):** `bot_vault/asset_generation/redesign_v1/studio.jsx`, `shared.jsx`. Do **not** ship `design-canvas.jsx`.
+**Reference (design-time only):** Shell — `bot_vault/asset_generation/redesign_v1/studio.jsx`, `shared.jsx`. **Look tab** — `bot_vault/asset_generation/redesign_v2/studio.jsx` (`LookTab`, `PartPicker`, `FillSection`). Do **not** ship `design-canvas.jsx`.
 
 **Conversion contract:** Match existing frontend patterns (`RegistryTagChips.tsx`, `ThreePanelLayout.tsx`): module-level `CSSProperties`, Zustand, Vitest, reuse `GlbViewer` / `PreviewSourceBar` / `AnimationControls`. No `window` globals. No `importBuildOptions` from new layout code.
 

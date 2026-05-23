@@ -68,6 +68,41 @@ export function finishPillSelected(stored: string, pill: string): boolean {
   return false;
 }
 
+/** Display label → coarse zone key (redesign_v2 PartPicker). */
+export const STUDIO_PART_ZONE_BY_LABEL: Record<string, CoarseZoneKey> = {
+  Body: "body",
+  Head: "head",
+  Limbs: "limbs",
+  Joints: "joints",
+  Extra: "extra",
+};
+
+export function zoneToPartLabel(zone: CoarseZoneKey): string {
+  return partRowLabel(zone);
+}
+
+export function shadeHex(hex: string, amount: number): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  const n = hex.slice(1);
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = clamp(Number.parseInt(n.slice(0, 2), 16) * (1 - amount));
+  const g = clamp(Number.parseInt(n.slice(2, 4), 16) * (1 - amount));
+  const b = clamp(Number.parseInt(n.slice(4, 6), 16) * (1 - amount));
+  const h = (v: number) => v.toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+export function tintHex(hex: string, amount: number): string {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  const n = hex.slice(1);
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = clamp(Number.parseInt(n.slice(0, 2), 16) + 255 * amount);
+  const g = clamp(Number.parseInt(n.slice(2, 4), 16) + 255 * amount);
+  const b = clamp(Number.parseInt(n.slice(4, 6), 16) + 255 * amount);
+  const h = (v: number) => v.toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 export const STUDIO_PATTERN_COLOR_SWATCHES = [
   "#ffd23d",
   "#ededf0",

@@ -32,6 +32,10 @@ npx tsc --noEmit
 npm run sync-api-types
 ```
 
+## Studio redesign (feature flag)
+
+`VITE_STUDIO_LAYOUT=1` enables `StudioLayout`. Shell IA: `bot_vault/asset_generation/redesign_v1/`. **Look tab IA:** `bot_vault/asset_generation/redesign_v2/studio.jsx` — implement with `src/components/studio/*` (`StudioColorPickerTabs`, `StudioPartPicker`, `StudioZoneFill`), not `variant` flags on legacy `ColorPickerTabs`.
+
 ## Agent role
 
 Multi-agent workflow: **Implementation Frontend Agent** — `agent_context/agents/misc_agents/implementation_frontend_v1.md`.

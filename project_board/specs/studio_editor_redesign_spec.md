@@ -2,8 +2,14 @@
 
 **Status:** STUDIO-01 frozen (2026-05-23, spec revision 2); Phases 2–4 deferred per §12  
 **Freeze scope:** §6–§9, §10, §12, §14–§16 only  
-**Reference prototypes (design-time only):** `bot_vault/asset_generation/redesign_v1/studio.jsx`, `shared.jsx`  
-**Out of scope:** `design-canvas.jsx`, `Asset Editor Redesign.html` host, Figma HTML exports — presentation only, never shipped.
+**Reference prototypes (design-time only):**
+
+| Area | Path |
+|------|------|
+| Shell / library / inspector tabs (Phase 1) | `bot_vault/asset_generation/redesign_v1/studio.jsx`, `shared.jsx` |
+| **Look tab (authoritative)** | `bot_vault/asset_generation/redesign_v2/studio.jsx`, `shared.jsx` |
+
+**Out of scope:** `design-canvas.jsx` (v1 or v2), `Asset Editor Redesign.html` host, Figma HTML exports — presentation only, never shipped.
 
 **Runtime:** `asset_generation/web/frontend` (Vite + React + TypeScript + Zustand).  
 **Agent:** Implementation Frontend (`implementation_frontend_v1.md`, `frontend/AGENTS.md`).
@@ -26,6 +32,7 @@ The redesign must **not** rewrite business logic or break registry / `build_opti
 - Implement in **existing frontend style**: TypeScript, named exports, module-level `CSSProperties`, Zustand, Vitest — not a 1:1 port of prototype JS (`window` globals, monolithic file).
 - Reuse existing panes: `GlbViewer`, `ColorsPane`, `BuildControls`, `AnimationControls`, `EditorPane`, `Terminal`, registry panels.
 - Feature-flag rollout: legacy `ThreePanelLayout` remains default until cutover ticket.
+- **Look tab** follows **redesign_v2** IA (part picker → per-part background + pattern fills), not the v1 “Body card + Parts list” layout.
 
 ### Non-goals (this program)
 
@@ -203,7 +210,7 @@ All Studio work must preserve:
 **Deferred to STUDIO-02+:**
 
 - `CommandPanel` and `Terminal` in Studio layout (any column); legacy center column retains them until then.
-- Wiring `ColorsPane`, `BuildControls`, `ExtrasPane`, `ModelRegistryPane` into inspector tabs.
+- Wiring `ColorsPane` (v2 Look: `PartPicker`, `FillSection` for color/gradient/image), `BuildControls`, `ExtrasPane`, `ModelRegistryPane` into inspector tabs.
 - `EnemyLibrary` connected to registry families.
 - `compareVersionIds`, `GlbCompareGrid`, duplicate version API.
 - Top bar Regenerate/Save fully styled and wired.

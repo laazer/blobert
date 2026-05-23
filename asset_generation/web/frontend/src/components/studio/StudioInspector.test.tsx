@@ -32,8 +32,8 @@ describe("StudioInspector Look tab", () => {
       expect(screen.getByTestId("studio-look-panel")).toBeInTheDocument();
     });
     expect(screen.getByTestId("studio-look-element-grid")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-look-body")).toBeInTheDocument();
-    expect(screen.getByTestId("studio-look-parts")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-part-picker")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-look-background")).toBeInTheDocument();
     expect(screen.getByText("Element")).toBeInTheDocument();
   });
 });

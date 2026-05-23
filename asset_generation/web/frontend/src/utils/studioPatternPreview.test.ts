@@ -1,16 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { patternTilePreviewStyle } from "./studioPatternPreview";
+import {
+  buildStudioPatternTiles,
+  patternTileHuePreviewStyle,
+  tileIdFromTextureMode,
+  textureModeFromTileId,
+} from "./studioPatternPreview";
 
-describe("patternTilePreviewStyle", () => {
-  it("returns stripe gradient for stripes tile", () => {
-    const style = patternTilePreviewStyle("stripes", "#e6531f", "#ffd23d");
-    expect(String(style.backgroundImage)).toContain("repeating-linear-gradient");
-    expect(style.backgroundColor).toBe("#e6531f");
+describe("buildStudioPatternTiles", () => {
+  it("includes only modes present in def options (canonical synthetic)", () => {
+    const tiles = buildStudioPatternTiles(["none", "spots", "stripes", "checkerboard"]);
+    expect(tiles.map((t) => t.textureMode)).toEqual(["none", "spots", "stripes", "checkerboard"]);
+    expect(tiles.find((t) => t.id === "swirl")).toBeUndefined();
+    expect(tiles.find((t) => t.id === "cracks")).toBeUndefined();
   });
 
-  it("returns plain body color for plain tile", () => {
-    const style = patternTilePreviewStyle("plain", "#e6531f", "#ffd23d");
-    expect(style.backgroundColor).toBe("#e6531f");
-    expect(style.backgroundImage).toBeUndefined();
+  it("maps texture mode ↔ tile id", () => {
+    const tiles = buildStudioPatternTiles(["none", "stripes", "spots"]);
+    expect(tileIdFromTextureMode("stripes", tiles)).toBe("stripes");
+    expect(textureModeFromTileId("dots", tiles)).toBe("spots");
+  });
+});
+
+describe("patternTileHuePreviewStyle", () => {
+  it("uses element hue for stripe preview", () => {
+    const style = patternTileHuePreviewStyle("stripes", "#ff6b3d");
+    expect(String(style.backgroundImage)).toContain("#ff6b3d");
   });
 });
