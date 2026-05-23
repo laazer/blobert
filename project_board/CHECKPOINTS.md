@@ -25,6 +25,10 @@ Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-spec-run.md`
 Red Vitest contracts: `StudioLayout.test.tsx` (§8 T-1..T-6); `legacy-layout` testid on `ThreePanelLayout`.
 Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-test-design-run.md`
 
+### STUDIO-01 — OUTCOME: IMPLEMENTATION → INTEGRATION (AC gatekeeper)
+Studio shell implemented; `StudioLayout.test.tsx` 34/34; `tsc` pass. **Not COMPLETE:** full `npm test` 15 failures in unrelated files; STUDIO paths uncommitted.
+Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-ac-gatekeeper-run.md`
+
 ---
 
 ## Run: 2026-05-23T-m11-01-autopilot (M11 Player State Machine)
