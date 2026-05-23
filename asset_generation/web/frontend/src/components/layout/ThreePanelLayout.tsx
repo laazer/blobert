@@ -187,7 +187,7 @@ export function ThreePanelLayout() {
   const centerOpen = centerPanel !== "none";
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div data-testid="legacy-layout" style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       {fileTreeVisible ? (
         <div style={{ width: "18%", minWidth: 160, flexShrink: 0, display: "flex", flexDirection: "column" }}>
           <FileTree onRequestHide={() => setFileTreeVisible(false)} />

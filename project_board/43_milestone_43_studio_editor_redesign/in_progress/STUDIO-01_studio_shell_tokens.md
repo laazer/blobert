@@ -105,16 +105,16 @@ Phase 1 Studio shell in `asset_generation/web/frontend`: feature-flagged `Studio
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: RED (StudioLayout.test.tsx — import resolution; see checkpoint)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -129,15 +129,16 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/43_milestone_43_studio_editor_redesign/in_progress/STUDIO-01_studio_shell_tokens.md",
   "spec_path": "project_board/specs/studio_editor_redesign_spec.md",
-  "execution_plan_path": "project_board/execution_plans/STUDIO-01_studio_shell_tokens.md",
-  "scope": "STUDIO-01 Phase 1 only (spec §6–§9, §10, §12, §15–§16); tests §8 T-1..T-6"
+  "test_file": "asset_generation/web/frontend/src/components/layout/StudioLayout.test.tsx",
+  "checkpoint": "project_board/checkpoints/STUDIO-01/2026-05-23T-test-design-run.md",
+  "scope": "Adversarial §8 gaps: invalid flag values, hydration spy hardening, env/module reload edges"
 }
 ```
 
@@ -145,4 +146,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-Spec frozen for Phase 1: Studio center = preview + animation rail only (CommandPanel/Terminal deferred). Handoff to Test Designer for red Vitest suite per §8.
+Red Vitest contracts authored for §8 T-1..T-6; legacy-layout testid added. Handoff to Test Breaker for adversarial cases before implementation.

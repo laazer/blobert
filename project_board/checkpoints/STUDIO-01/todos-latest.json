@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
   "ticket_id": "STUDIO-01",
-  "agent": "Spec Agent",
-  "captured_at": "2026-05-23T14:00:00Z",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-23T14:25:00Z",
   "todos": [
     {
-      "id": "spec-1",
-      "content": "Validate pre-authored spec §6–§9 against ticket AC-1..AC-7 and frontend patterns",
+      "id": "td-1",
+      "content": "Author StudioLayout.test.tsx for spec §8 T-1..T-6 (jsdom, store mocks)",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-2",
-      "content": "Freeze Phase 1: center column preview+rail only; defer CommandPanel/Terminal to §12",
+      "id": "td-2",
+      "content": "Add legacy-layout data-testid on ThreePanelLayout root",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-3",
-      "content": "Add §15 traceability, §16 freeze record, T-6; update ticket to TEST_DESIGN rev 3",
+      "id": "td-3",
+      "content": "Capture RED npm test output in checkpoint; update ticket to TEST_BREAK rev 4",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     },
     {
-      "id": "spec-4",
-      "content": "Write checkpoint, handoff-latest.yaml, todos-latest.json for spec_to_test_design",
+      "id": "td-4",
+      "content": "Write handoff-latest.yaml and todos-latest.json for test_design_to_test_break",
       "status": "completed",
-      "agent": "Spec Agent"
+      "agent": "Test Designer Agent"
     }
   ]
 }

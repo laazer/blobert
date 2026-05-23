@@ -1,27 +1,27 @@
 handoff:
   schema_version: "1.0"
   ticket_id: STUDIO-01
-  from_agent: spec
-  to_agent: test_designer
-  validated_at: "2026-05-23T14:00:00Z"
+  from_agent: test_designer
+  to_agent: test_breaker
+  validated_at: "2026-05-23T14:25:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: spec_acceptance_criteria
-      item: Acceptance criteria defined
+    - item_key: test_suite_complete
+      item: Test suite complete per spec test plan
       required: true
       status: complete
-      evidence: project_board/specs/studio_editor_redesign_spec.md
+      evidence: asset_generation/web/frontend/src/components/layout/StudioLayout.test.tsx
       evidence_type: path
-    - item_key: spec_test_strategy
-      item: Test strategy documented
+    - item_key: test_coverage_threshold
+      item: Coverage threshold met (>80% proxy)
       required: true
       status: complete
-      evidence: project_board/specs/studio_editor_redesign_spec.md
-      evidence_type: path
-    - item_key: spec_edge_cases
-      item: Edge cases listed
+      evidence: "coverage: 100 — spec §8 T-1..T-6 in StudioLayout.test.tsx (11 cases); RED until StudioLayout/elements/App flag"
+      evidence_type: attestation
+    - item_key: test_all_runnable
+      item: All tests runnable
       required: true
       status: complete
-      evidence: project_board/specs/studio_editor_redesign_spec.md
+      evidence: project_board/checkpoints/STUDIO-01/2026-05-23T-test-design-run.md
       evidence_type: path

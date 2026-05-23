@@ -21,6 +21,10 @@ Ten-task execution plan in ticket + execution plan file. Stage → SPECIFICATION
 Phase 1 spec frozen: Studio center = preview + animation rail only (no CommandPanel/Terminal). T-1..T-6; FR↔AC traceability §15.
 Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-spec-run.md`
 
+### STUDIO-01 — OUTCOME: TEST_DESIGN → TEST_BREAK
+Red Vitest contracts: `StudioLayout.test.tsx` (§8 T-1..T-6); `legacy-layout` testid on `ThreePanelLayout`.
+Log: `project_board/checkpoints/STUDIO-01/2026-05-23T-test-design-run.md`
+
 ---
 
 ## Run: 2026-05-23T-m11-01-autopilot (M11 Player State Machine)
