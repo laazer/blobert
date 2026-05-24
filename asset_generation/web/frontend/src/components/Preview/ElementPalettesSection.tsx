@@ -2,13 +2,13 @@ import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import {
   COARSE_ZONE_KEYS,
-  DEFAULT_ELEMENT_PALETTES,
   ELEMENT_IDS,
   ELEMENT_LABELS,
   type ElementId,
-  buildFeatUpdatesFromPalette,
   defaultElementForSlug,
 } from "../../utils/elementColorPalettes";
+import { buildElementApplyUpdates } from "../../utils/elementPaletteOverrides";
+import { useElementPaletteCatalog } from "../../hooks/useElementPaletteCatalog";
 import { copyHexToClipboard } from "../../utils/clipboardHex";
 import { slugDisplayLabel } from "../../utils/enemyDisplay";
 import { ZONE_FINISH_HEX_RE } from "./featureMaterialPartition";
@@ -30,6 +30,7 @@ export function ElementPalettesSection({ slug, studioSurface = false }: Props) {
   const defs = useAppStore((s) => s.animatedBuildControls[slug] ?? []);
   const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
   const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
+  const { getPalette } = useElementPaletteCatalog();
 
   const knownDefKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -52,8 +53,7 @@ export function ElementPalettesSection({ slug, studioSurface = false }: Props) {
 
   const applyElement = useCallback(
     (id: ElementId) => {
-      const palette = DEFAULT_ELEMENT_PALETTES[id];
-      const updates = buildFeatUpdatesFromPalette(palette, knownDefKeys, values);
+      const updates = buildElementApplyUpdates(id, knownDefKeys, values);
       if (Object.keys(updates).length === 0) return;
       applyBulk(slug, updates);
     },
@@ -89,10 +89,9 @@ export function ElementPalettesSection({ slug, studioSurface = false }: Props) {
         </p>
       ) : (
         <p style={{ color: "#8f8f8f", fontSize: 11, margin: "0 0 8px", lineHeight: 1.45 }}>
-          Fixed presets (combat + earth, forest, water, lightning) — not editable here.{" "}
+          Built-in presets plus any overrides saved from Studio Look (gear on each element).{" "}
           <strong style={{ color: "#bbb" }}>Apply</strong> sets coarse zone finishes + hexes for this enemy.{" "}
-          <strong style={{ color: "#bbb" }}>Click a swatch</strong> to copy <code style={{ color: "#ccc" }}>#RRGGBB</code>. Limb /
-          joint overrides are unchanged.
+          <strong style={{ color: "#bbb" }}>Click a swatch</strong> to copy <code style={{ color: "#ccc" }}>#RRGGBB</code>.
         </p>
       )}
       {copiedLabel ? (
@@ -110,7 +109,7 @@ export function ElementPalettesSection({ slug, studioSurface = false }: Props) {
         <div style={{ color: "#d7ba7d", fontSize: 11 }}>No coarse zone controls loaded for this enemy yet.</div>
       ) : (
         ELEMENT_IDS.map((id) => {
-          const palette = DEFAULT_ELEMENT_PALETTES[id];
+          const palette = getPalette(id);
           return (
             <div
               key={id}

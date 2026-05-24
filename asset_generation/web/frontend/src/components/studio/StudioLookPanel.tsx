@@ -3,15 +3,15 @@ import { ELEMENTS, type ElementId } from "../../constants/elements";
 import { STUDIO_INK_MUTED, STUDIO_SURFACE_PANEL } from "../../styles/studioTokens";
 import { useAppStore } from "../../store/useAppStore";
 import {
-  DEFAULT_ELEMENT_PALETTES,
   ELEMENT_IDS,
-  buildFeatUpdatesFromPalette,
   defaultElementForSlug,
   sanitizeFinish,
   sanitizeHex,
   type CoarseZoneKey,
   type ElementId as PaletteElementId,
 } from "../../utils/elementColorPalettes";
+import { buildElementApplyUpdates } from "../../utils/elementPaletteOverrides";
+import { useElementPaletteCatalog } from "../../hooks/useElementPaletteCatalog";
 import { inferFamilyElementId } from "../../utils/inferFamilyElement";
 import {
   buildStudioPatternTiles,
@@ -29,6 +29,7 @@ import { ZONE_FINISH_HEX_RE } from "../Preview/featureMaterialPartition";
 import { StudioPanelHead } from "./StudioPanelHead";
 import { StudioPartContextBar } from "./StudioPartContextBar";
 import { StudioPartPicker } from "./StudioPartPicker";
+import { ElementPaletteDefaultsModal } from "./ElementPaletteDefaultsModal";
 import { StudioZoneFill } from "./StudioZoneFill";
 
 type Props = {
@@ -48,7 +49,9 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
   const commandEnemy = useAppStore((s) => s.commandContext.enemy);
 
   const [pickedElement, setPickedElement] = useState<ElementId | null>(null);
+  const [configElementId, setConfigElementId] = useState<ElementId | null>(null);
   const [internalActiveZone, setInternalActiveZone] = useState<CoarseZoneKey>("body");
+  const { getPalette, isOverridden, saveMaterialDefaults, resetPalette } = useElementPaletteCatalog();
   const activeZone = activeZoneProp ?? internalActiveZone;
   const setActiveZone = onActiveZoneChange ?? setInternalActiveZone;
 
@@ -66,7 +69,7 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
   }, [pickedElement, slug, commandEnemy]);
 
   const elToken = ELEMENTS[displayElementId];
-  const palette = DEFAULT_ELEMENT_PALETTES[displayElementId as PaletteElementId];
+  const palette = getPalette(displayElementId as PaletteElementId);
   const paletteColors = useMemo(() => paletteSwatchColors(palette), [palette]);
 
   const effectiveZone = partZones.includes(activeZone) ? activeZone : (partZones[0] ?? "body");
@@ -92,8 +95,8 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
   const applyElement = useCallback(
     (id: ElementId) => {
       setPickedElement(id);
-      const pal = DEFAULT_ELEMENT_PALETTES[id as PaletteElementId];
-      const updates = buildFeatUpdatesFromPalette(pal, knownDefKeys, values);
+      const pal = getPalette(id as PaletteElementId);
+      const updates = buildElementApplyUpdates(id as PaletteElementId, knownDefKeys, values);
       if (Object.keys(updates).length > 0) applyBulk(slug, updates);
       const body = pal.body;
       if (body) {
@@ -104,7 +107,7 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
         });
       }
     },
-    [slug, knownDefKeys, values, applyBulk, setCommandExport],
+    [slug, knownDefKeys, values, applyBulk, setCommandExport, getPalette],
   );
 
   const setZoneFinish = useCallback(
@@ -141,42 +144,111 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
           {ELEMENT_IDS.map((id) => {
             const e = ELEMENTS[id as ElementId];
             const active = displayElementId === id;
+            const customized = isOverridden(id as PaletteElementId);
             return (
-              <button
+              <div
                 key={id}
-                type="button"
-                data-testid={`studio-look-element-${id}`}
-                aria-pressed={active}
-                onClick={() => applyElement(id as ElementId)}
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "8px 8px",
+                  alignItems: "stretch",
+                  gap: 0,
                   borderRadius: 7,
-                  background: active ? e.soft : STUDIO_SURFACE_PANEL,
+                  overflow: "hidden",
                   border: active ? `1px solid ${e.hue}` : "1px solid rgba(255,255,255,0.06)",
-                  cursor: "pointer",
-                  textAlign: "left",
+                  background: active ? e.soft : STUDIO_SURFACE_PANEL,
                 }}
               >
-                <span
+                <button
+                  type="button"
+                  data-testid={`studio-look-element-${id}`}
+                  aria-pressed={active}
+                  onClick={() => applyElement(id as ElementId)}
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: e.hue,
-                    boxShadow: `0 0 6px ${e.hue}80`,
-                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 6px 8px 8px",
+                    border: 0,
+                    background: "transparent",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    flex: 1,
+                    minWidth: 0,
                   }}
-                />
-                <span style={{ fontSize: 11, fontWeight: 600, color: active ? e.ink : "#bababf" }}>
-                  {e.name}
-                </span>
-              </button>
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: e.hue,
+                      boxShadow: `0 0 6px ${e.hue}80`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: active ? e.ink : "#bababf",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {e.name}
+                    {customized ? (
+                      <span
+                        style={{
+                          marginLeft: 4,
+                          fontSize: 9,
+                          color: active ? e.ink : "#7a7a86",
+                          fontWeight: 700,
+                        }}
+                        aria-hidden
+                      >
+                        •
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  data-testid={`studio-look-element-config-${id}`}
+                  aria-label={`Configure ${e.name} element defaults`}
+                  title={`Configure ${e.name} defaults`}
+                  onClick={() => setConfigElementId(id as ElementId)}
+                  style={{
+                    width: 28,
+                    flexShrink: 0,
+                    border: 0,
+                    borderLeft: "1px solid rgba(255,255,255,0.06)",
+                    background: active ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.03)",
+                    color: active ? e.ink : "#8a8a96",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
+                >
+                  ⚙
+                </button>
+              </div>
             );
           })}
         </div>
+        {configElementId ? (
+          <ElementPaletteDefaultsModal
+            open
+            slug={slug}
+            elementId={configElementId}
+            defs={defs}
+            knownDefKeys={knownDefKeys}
+            onClose={() => setConfigElementId(null)}
+            onSave={(draft) => saveMaterialDefaults(configElementId, draft, knownDefKeys)}
+            onResetBuiltin={() => resetPalette(configElementId)}
+          />
+        ) : null}
       </section>
 
       <section data-testid="studio-look-parts">

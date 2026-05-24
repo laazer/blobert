@@ -23,6 +23,12 @@ export type StudioZoneFillRole = "background" | "pattern";
 
 export type ModernFillKind = "zone_color" | "texture_background" | "texture_pattern";
 
+export type StudioZoneFillBindings = {
+  values: Readonly<Record<string, unknown>>;
+  applyUpdates: (updates: Record<string, unknown>) => void;
+  setOption: (key: string, value: unknown) => void;
+};
+
 type Props = {
   slug: string;
   zone: string;
@@ -30,6 +36,9 @@ type Props = {
   accentHue: string;
   paletteColors?: readonly string[];
   embedded?: boolean;
+  /** When set, read/write draft values instead of the app store (element-defaults modal). */
+  bindings?: StudioZoneFillBindings;
+  knownDefKeys?: ReadonlySet<string>;
 };
 
 type LegacyBackground = { kind: "legacy"; hexKey: string };
@@ -41,7 +50,7 @@ type ModernFill = {
 };
 type FillConfig = LegacyBackground | ModernFill;
 
-function resolveFillConfig(
+export function resolveZoneFillConfig(
   zone: string,
   fillRole: StudioZoneFillRole,
   knownDefKeys: ReadonlySet<string>,
@@ -98,6 +107,29 @@ function patternColorField(fillKind: ModernFillKind): "pattern" | "background" {
   return fillKind === "texture_pattern" ? "pattern" : "background";
 }
 
+function useZoneFillState(
+  slug: string,
+  bindings: StudioZoneFillBindings | undefined,
+) {
+  const storeValues = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
+  const storeApplyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
+  const storeSetOption = useAppStore((s) => s.setAnimatedBuildOption);
+
+  if (bindings) {
+    return {
+      values: bindings.values,
+      applyBulk: (_s: string, updates: Record<string, unknown>) => bindings.applyUpdates(updates),
+      setOption: (_s: string, key: string, value: unknown) => bindings.setOption(key, value),
+    };
+  }
+
+  return {
+    values: storeValues,
+    applyBulk: storeApplyBulk,
+    setOption: storeSetOption,
+  };
+}
+
 function StudioLegacyHexFill({
   slug,
   zone,
@@ -105,6 +137,7 @@ function StudioLegacyHexFill({
   paletteColors,
   embedded,
   knownDefKeys,
+  bindings,
 }: {
   slug: string;
   zone: string;
@@ -112,9 +145,9 @@ function StudioLegacyHexFill({
   paletteColors?: readonly string[];
   embedded?: boolean;
   knownDefKeys: ReadonlySet<string>;
+  bindings?: StudioZoneFillBindings;
 }) {
-  const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
-  const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
+  const { values, applyBulk } = useZoneFillState(slug, bindings);
 
   const hex = readZoneHex(values, zone) || "#888888";
 
@@ -178,10 +211,9 @@ function StudioModernZoneFill({
   embedded,
   config,
   knownDefKeys,
+  bindings,
 }: Props & { config: ModernFill; knownDefKeys: ReadonlySet<string> }) {
-  const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
-  const setOption = useAppStore((s) => s.setAnimatedBuildOption);
-  const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
+  const { values, setOption, applyBulk } = useZoneFillState(slug, bindings);
 
   const { keys, modeKey, fillKind } = config;
 
@@ -265,8 +297,11 @@ function StudioModernZoneFill({
 
 export function StudioZoneFill(props: Props) {
   const defs = useAppStore((s) => s.animatedBuildControls[props.slug] ?? []);
-  const knownDefKeys = useMemo(() => new Set(defs.map((d) => d.key)), [defs]);
-  const config = resolveFillConfig(props.zone, props.fillRole, knownDefKeys);
+  const knownDefKeys = useMemo(
+    () => props.knownDefKeys ?? new Set(defs.map((d) => d.key)),
+    [props.knownDefKeys, defs],
+  );
+  const config = resolveZoneFillConfig(props.zone, props.fillRole, knownDefKeys);
 
   if (!config) return null;
 
@@ -279,9 +314,17 @@ export function StudioZoneFill(props: Props) {
         paletteColors={props.paletteColors}
         embedded={props.embedded}
         knownDefKeys={knownDefKeys}
+        bindings={props.bindings}
       />
     );
   }
 
-  return <StudioModernZoneFill {...props} config={config} knownDefKeys={knownDefKeys} />;
+  return (
+    <StudioModernZoneFill
+      {...props}
+      config={config}
+      knownDefKeys={knownDefKeys}
+      bindings={props.bindings}
+    />
+  );
 }

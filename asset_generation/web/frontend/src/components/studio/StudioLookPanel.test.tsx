@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { mergeBuildOptionValues } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
+import { ELEMENT_PALETTE_OVERRIDES_LS } from "../../utils/elementPaletteOverrides";
 import { StudioLookPanel } from "./StudioLookPanel";
 
 afterEach(() => {
   cleanup();
+  localStorage.removeItem(ELEMENT_PALETTE_OVERRIDES_LS);
 });
 
 describe("StudioLookPanel (redesign_v2 IA)", () => {
@@ -27,6 +29,20 @@ describe("StudioLookPanel (redesign_v2 IA)", () => {
     expect(screen.getByTestId("studio-look-part-picker")).toBeInTheDocument();
     expect(screen.getByTestId("studio-look-background")).toBeInTheDocument();
     expect(screen.getByTestId("studio-zone-fill-body-background")).toBeInTheDocument();
+  });
+
+  it("applies customized element defaults from gear modal", () => {
+    render(<StudioLookPanel slug="spider" />);
+    fireEvent.click(screen.getByTestId("studio-look-element-config-fire"));
+    expect(screen.getByTestId("element-palette-defaults-modal")).toBeInTheDocument();
+
+    const modal = screen.getByTestId("element-palette-defaults-modal");
+    fireEvent.click(within(modal).getByTestId("studio-look-finish-body-metallic"));
+    fireEvent.click(screen.getByTestId("element-palette-save"));
+
+    fireEvent.click(screen.getByTestId("studio-look-element-fire"));
+    const values = useAppStore.getState().animatedBuildOptionValues.spider ?? {};
+    expect(values.feat_body_finish).toBe("metallic");
   });
 
   it("applies fire palette from element grid", () => {
