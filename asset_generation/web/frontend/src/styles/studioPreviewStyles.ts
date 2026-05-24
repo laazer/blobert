@@ -163,8 +163,14 @@ export function studioPreviewViewportFrameStyle(accentHue: string): CSSPropertie
   };
 }
 
+/** Corner radius for the scaled GLB viewer card in studio. */
+export const STUDIO_PREVIEW_VIEWPORT_RADIUS_PX = 10;
+
 export function studioPreviewViewportShellStyle(accentHue: string): CSSProperties {
   return {
+    borderRadius: STUDIO_PREVIEW_VIEWPORT_RADIUS_PX,
+    overflow: "hidden",
+    border: "1px solid rgba(255,255,255,0.06)",
     boxShadow: [
       `0 0 40px color-mix(in srgb, ${accentHue} 11%, transparent)`,
       `0 0 88px color-mix(in srgb, ${accentHue} 4%, transparent)`,
