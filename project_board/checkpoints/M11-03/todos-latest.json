@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-03",
-  "agent": "Spec Agent",
-  "captured_at": "2026-05-24T12:00:00Z",
+  "agent": "Test Designer Agent",
+  "captured_at": "2026-05-24T14:00:00Z",
   "todos": [
     {
       "id": "plan-1",
@@ -31,14 +31,20 @@
     {
       "id": "test-design-1",
       "content": "Author test_player_input_action_policy.gd (RED)",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "test-design-2",
-      "content": "Register policy tests in tests/run_tests.gd",
-      "status": "pending",
+      "content": "Confirm run_tests.gd auto-discovery (no manual register)",
+      "status": "completed",
       "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test-break-1",
+      "content": "Author test_player_input_action_policy_adversarial.gd",
+      "status": "pending",
+      "agent": "Test Breaker Agent"
     }
   ]
 }

@@ -132,16 +132,16 @@ python ci/scripts/spec_completeness_check.py \
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_DESIGN
+TEST_BREAK
 
 ## Revision
-3
+4
 
 ## Last Updated By
-Spec Agent
+Test Designer Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: RED (28 failures — policy .gd absent; expected)
 - Static QA: N/A
 - Integration: Not Run
 
@@ -156,18 +156,18 @@ Spec Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Designer Agent
+Test Breaker Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/03_input_action_mapping.md",
   "spec_path": "project_board/specs/input_action_mapping_spec.md",
-  "spec_exit_type": "generic",
-  "policy_class": "PlayerInputActionPolicy",
-  "policy_script": "scripts/player/player_input_action_policy.gd",
-  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-spec-run.md",
-  "execution_plan_revision": 2
+  "primary_tests": "tests/scripts/player/test_player_input_action_policy.gd",
+  "adversarial_tests": "tests/scripts/player/test_player_input_action_policy_adversarial.gd",
+  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-test-design-run.md",
+  "expected_red_count": 28,
+  "policy_script": "scripts/player/player_input_action_policy.gd"
 }
 ```
 
@@ -175,4 +175,4 @@ Test Designer Agent
 Proceed
 
 ## Reason
-IAM spec complete at `project_board/specs/input_action_mapping_spec.md` (revision 1). `spec_completeness_check.py --type generic` PASS. Author runtime unit tests for `PlayerInputActionPolicy` per IAM test strategy (RED acceptable without policy `.gd`).
+Primary IAM policy unit tests authored (28 RED, policy module deferred). Adversarial suite not yet written — Test Breaker adds `test_player_input_action_policy_adversarial.gd` per IAM test strategy.
