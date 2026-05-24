@@ -132,3 +132,14 @@ export function assetByPath(assets: Asset[], path: string | null): Asset | null 
   if (!path) return null;
   return assets.find((a) => a.path === path) ?? null;
 }
+
+/** Registry version id for the player slime GLB in preview when it matches ``player_slime_{color}_NN``. */
+export function preferredPlayerVersionIdFromPreview(
+  normalizedPlayerColor: string,
+  activeGlbUrl: string | null,
+): string | null {
+  const color = normalizedPlayerColor.trim().toLowerCase();
+  if (!color) return null;
+  const idx = playerVariantIndexFromPreviewGlb(color, activeGlbUrl);
+  return playerSlimeVersionId(color, idx);
+}

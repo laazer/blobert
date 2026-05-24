@@ -85,6 +85,9 @@ export type AnimatedBuildControlDef =
       type: "fill_picker";
     };
 
+/** Studio/material editors — alias for {@link AnimatedBuildControlDef}. */
+export type BuildControlDef = AnimatedBuildControlDef;
+
 /** One row under ``enemies[slug].versions`` (MRVC-2). */
 export type RegistryEnemyVersion = {
   id: string;

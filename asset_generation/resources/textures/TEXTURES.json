@@ -43,5 +43,23 @@
     "width": 1536,
     "height": 1024,
     "tiling_supported": true
+  },
+  "tilesheet_3": {
+    "filename": "tilesheet3.jpg",
+    "display_name": "Tilesheet 3",
+    "description": "Tiled texture grid variation",
+    "layout": "single",
+    "width": 1535,
+    "height": 1024,
+    "tiling_supported": true
+  },
+  "motiontiles": {
+    "filename": "motiontiles.jpg",
+    "display_name": "Motion tiles",
+    "description": "Motion-themed tile grid",
+    "layout": "single",
+    "width": 1535,
+    "height": 1024,
+    "tiling_supported": true
   }
 }

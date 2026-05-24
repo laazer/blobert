@@ -11,7 +11,9 @@ type Props = {
   knownTags: readonly string[];
   hideDisplayTags: ReadonlySet<string>;
   disabled?: boolean;
-  tagIndentPx: number;
+  tagIndentPx?: number;
+  /** Inline row (preview meta bar); default stacked under version row. */
+  layout?: "stacked" | "inline";
   onCommit: (tags: string[]) => void | Promise<void>;
 };
 
@@ -25,7 +27,8 @@ export function StudioVersionTags({
   knownTags,
   hideDisplayTags,
   disabled,
-  tagIndentPx,
+  tagIndentPx = 0,
+  layout = "stacked",
   onCommit,
 }: Props) {
   const [adderOpen, setAdderOpen] = useState(false);
@@ -81,8 +84,7 @@ export function StudioVersionTags({
         flexWrap: "wrap",
         gap: 4,
         alignItems: "center",
-        marginTop: 6,
-        marginLeft: tagIndentPx,
+        ...(layout === "stacked" ? { marginTop: 6, marginLeft: tagIndentPx } : { flex: "1 1 auto", minWidth: 0 }),
       }}
       data-testid={`studio-version-tags-${version.id}`}
     >

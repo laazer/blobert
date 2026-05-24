@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { registryFamilyTabLabel } from "../../utils/registryFamilyNav";
+import { playerColorLabel } from "../../utils/studioPlayerLibrary";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { ModelRegistryPane } from "../Editor/ModelRegistryPane";
 import { STUDIO_INK_MUTED, STUDIO_INK_SECONDARY } from "../../styles/studioTokens";
@@ -37,7 +38,7 @@ export function StudioVersionsPanel() {
       return `${registryFamilyTabLabel(animatedSlug)} — spawn pool and version rows`;
     }
     if (isPlayerRegistry) {
-      return "Player slime variants — spawn pool and version rows";
+      return `${playerColorLabel(playerColor)} slime — spawn pool and version rows`;
     }
     return "Select an animated enemy or player color in the library";
   }, [isAnimatedEnemy, isPlayerRegistry, animatedSlug]);

@@ -13,6 +13,18 @@ def test_get_texture_asset_filepath_resolves_known_id() -> None:
     assert p.parent == tal.get_texture_assets_dir()
 
 
+def test_get_texture_asset_filepath_resolves_jpg_tilesheets() -> None:
+    p3 = tal.get_texture_asset_filepath("tilesheet_3")
+    assert p3.name == "tilesheet3.jpg"
+    motion = tal.get_texture_asset_filepath("motiontiles")
+    assert motion.name == "motiontiles.jpg"
+
+
+def test_get_available_assets_includes_registered_tilesheets() -> None:
+    ids = {a["id"] for a in tal.get_available_assets()}
+    assert {"tilesheet_1", "tilesheet_2", "tilesheet_3", "motiontiles"}.issubset(ids)
+
+
 def test_load_texture_image_returns_pillow_image() -> None:
     """Executes lazy PIL import in load_texture_image (see texture_asset_loader)."""
     im = tal.load_texture_image("demo_textures3")

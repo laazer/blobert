@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 from pathlib import Path
 
 from core.config import settings
@@ -157,9 +158,13 @@ async def serve_texture_file(file_path: str) -> FileResponse:
         if not full_path.exists() or not full_path.is_file():
             raise HTTPException(status_code=404, detail="Texture file not found")
 
+        media_type, _ = mimetypes.guess_type(full_path.name)
+        if not media_type or not media_type.startswith("image/"):
+            media_type = "application/octet-stream"
+
         return FileResponse(
             full_path,
-            media_type="image/png",
+            media_type=media_type,
             headers={"Cache-Control": "public, max-age=3600"},
         )
     except ValueError:

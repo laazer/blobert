@@ -19,7 +19,10 @@ import {
 } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import type { ModelRegistryPayload, RegistryEnemyVersion } from "../../types";
-import { preferredAnimatedVersionIdFromPreview } from "../../utils/glbVariants";
+import { preferredAnimatedVersionIdFromPreview, preferredPlayerVersionIdFromPreview } from "../../utils/glbVariants";
+import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
+import { filterVersionsByPlayerColor } from "../../utils/studioPlayerLibrary";
+import { StudioPlayerVersionsPanel } from "../studio/StudioPlayerVersionsPanel";
 import { canAddEnemySlot, nextEnemySlotsAfterAdd, nextEnemySlotsAfterRemove } from "../../utils/registrySlotOps";
 import {
   REGISTRY_ENEMY_FAMILY_LS,
@@ -222,6 +225,17 @@ export function ModelRegistryPane({ studioSurface = false }: ModelRegistryPanePr
 
   const commandEnemyForFamily =
     commandContext.cmd === "animated" ? commandContext.enemy : undefined;
+
+  const studioPlayerColor = useMemo(() => {
+    if (!studioSurface || commandContext.cmd !== "player") return null;
+    const c = commandContext.enemy.trim().toLowerCase();
+    return PLAYER_COLORS.includes(c) ? c : null;
+  }, [studioSurface, commandContext.cmd, commandContext.enemy]);
+
+  const studioPlayerVersions = useMemo(() => {
+    if (!studioPlayerColor || !data?.player?.versions) return [];
+    return filterVersionsByPlayerColor(data.player.versions, studioPlayerColor);
+  }, [data, studioPlayerColor]);
 
   useEffect(() => {
     if (!studioSurface) return;
@@ -830,18 +844,40 @@ export function ModelRegistryPane({ studioSurface = false }: ModelRegistryPanePr
       ) : null}
 
       {registrySubtab === "player" ? (
-        <RegistryPlayerPowerTypesSection
-          playerVersions={playerVersions}
-          scanBusy={playerScanBusy}
-          busyKey={busyKey}
-          onScanPlayerExports={scanPlayerExports}
-          onApplyFlags={applyPlayerVersionFlags}
-          onPreviewVersion={(v) => selectAssetByPath(v.path)}
-          onRenameVersion={(v, trimmed) => void renameRegistryVersion("player", v, trimmed)}
-          knownTags={tagCatalog}
-          hideDisplayTags={new Set(["player"])}
-          onPatchTags={(v, tags) => patchVersionTags("player", v, tags)}
-        />
+        studioSurface ? (
+          studioPlayerColor ? (
+            <StudioPlayerVersionsPanel
+              color={studioPlayerColor}
+              versions={studioPlayerVersions}
+              activeVersionId={preferredPlayerVersionIdFromPreview(studioPlayerColor, activeGlbUrl)}
+              pendingVersionId={busyKey}
+              knownTags={tagCatalog}
+              hideDisplayTags={new Set(["player", studioPlayerColor])}
+              scanBusy={playerScanBusy}
+              onSelectVersion={(v) => selectAssetByPath(v.path)}
+              onApplyFlags={applyPlayerVersionFlags}
+              onPatchTags={(v, tags) => patchVersionTags("player", v, tags)}
+              onScanExports={() => void scanPlayerExports()}
+            />
+          ) : (
+            <p style={{ color: STUDIO_INK_MUTED, fontSize: 11, margin: 0, lineHeight: 1.5 }}>
+              Select a slime color in the Player library to manage versions.
+            </p>
+          )
+        ) : (
+          <RegistryPlayerPowerTypesSection
+            playerVersions={playerVersions}
+            scanBusy={playerScanBusy}
+            busyKey={busyKey}
+            onScanPlayerExports={scanPlayerExports}
+            onApplyFlags={applyPlayerVersionFlags}
+            onPreviewVersion={(v) => selectAssetByPath(v.path)}
+            onRenameVersion={(v, trimmed) => void renameRegistryVersion("player", v, trimmed)}
+            knownTags={tagCatalog}
+            hideDisplayTags={new Set(["player"])}
+            onPatchTags={(v, tags) => patchVersionTags("player", v, tags)}
+          />
+        )
       ) : null}
 
       {registrySubtab === "level" ? (

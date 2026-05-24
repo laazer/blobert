@@ -14,7 +14,6 @@ import {
   STUDIO_SURFACE_PANEL,
   STUDIO_TOP_BAR_HEIGHT_PX,
 } from "../../styles/studioTokens";
-import { StudioTopBarBreadcrumbTags } from "./StudioTopBarBreadcrumbTags";
 
 const topBarRoot: CSSProperties = {
   gridColumn: "1 / 4",
@@ -69,7 +68,7 @@ export function StudioTopBar() {
   const commandExportFinish = useAppStore((s) => s.commandExportFinish);
   const commandExportHexColor = useAppStore((s) => s.commandExportHexColor);
 
-  const { versionLabel, breadcrumbTags } = useStudioPreviewVersion();
+  const { versionLabel } = useStudioPreviewVersion();
 
   const familyLabel =
     commandContext.cmd === "animated" && commandContext.enemy
@@ -115,7 +114,6 @@ export function StudioTopBar() {
         <span style={breadcrumbActive} data-testid="studio-top-bar-version-label">
           {activeCrumb}
         </span>
-        <StudioTopBarBreadcrumbTags tags={breadcrumbTags} />
       </div>
       <div style={{ flex: 1 }} />
       <button

@@ -27,6 +27,19 @@ vi.mock("../Preview/PreviewSourceBar", () => ({
   PreviewSourceBar: () => <div data-testid="preview-source-bar" />,
 }));
 vi.mock("../Preview/GlbViewer", () => ({ GlbViewer: () => <div data-testid="glb-viewer" /> }));
+vi.mock("../../hooks/useStudioPreviewVersion", () => ({
+  useStudioPreviewVersion: () => ({
+    previewContext: null,
+    versionLabel: null,
+    breadcrumbTags: [],
+    glbLabel: null,
+    tagCatalog: [],
+    hideDisplayTags: new Set<string>(),
+    patchName: vi.fn(),
+    patchTags: vi.fn(),
+    saving: false,
+  }),
+}));
 vi.mock("../Preview/AnimationControls", () => ({
   AnimationControls: () => <div data-testid="animation-controls" />,
 }));
@@ -127,6 +140,8 @@ describe("STUDIO-01 StudioLayout (spec §8)", () => {
       const previewColumn = screen.getByTestId("studio-preview-column");
       expect(previewColumn).toBeInTheDocument();
       expect(within(previewColumn).queryByTestId("preview-source-bar")).toBeNull();
+      expect(within(previewColumn).getByTestId("studio-preview-header")).toBeInTheDocument();
+      expect(within(previewColumn).getByTestId("studio-preview-size-chips")).toBeInTheDocument();
       expect(within(previewColumn).getByTestId("glb-viewer")).toBeInTheDocument();
       expect(within(previewColumn).getByTestId("animation-controls")).toBeInTheDocument();
       expect(screen.queryByTestId("legacy-layout")).toBeNull();

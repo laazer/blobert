@@ -73,7 +73,7 @@ export function textureModeOptionsForZone(
 ): string[] {
   const def = defs.find((d) => d.key === `feat_${zone}_texture_mode`);
   if (def?.type === "select_str" && def.options.length > 0) {
-    return def.options.map((o) => o.toLowerCase());
+    return def.options.map((o: string) => o.toLowerCase());
   }
   return ["none", "spots", "stripes", "checkerboard"];
 }

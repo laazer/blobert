@@ -64,7 +64,7 @@ function segmentButtonStyle(active: boolean): CSSProperties {
   };
 }
 
-function familyRowStyle(active: boolean, accentHue: string): CSSProperties {
+function libraryRowStyle(active: boolean, accentHue: string): CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
@@ -92,6 +92,10 @@ export function EnemyLibrary() {
     selectedFamily,
     selectFamily,
     totalVariants,
+    playerColorRows,
+    selectedPlayerColor,
+    selectPlayerColor,
+    totalPlayerVariants,
   } = useStudioEnemyLibrary();
 
   return (
@@ -197,7 +201,7 @@ export function EnemyLibrary() {
                     role="listitem"
                     data-testid={`studio-family-row-${row.id}`}
                     aria-current={active ? "true" : undefined}
-                    style={familyRowStyle(active, el.hue)}
+                    style={libraryRowStyle(active, el.hue)}
                     onClick={() => selectFamily(row.id)}
                   >
                     <StudioFamilyGlyph
@@ -248,11 +252,108 @@ export function EnemyLibrary() {
             </p>
           </div>
         </>
+      ) : segment === "player" ? (
+        <>
+          <div
+            style={{
+              padding: "4px 14px 0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexShrink: 0,
+            }}
+          >
+            <div style={familiesHeader}>Colors</div>
+          </div>
+
+          {!data && !error ? (
+            <p style={{ padding: "12px 14px", margin: 0, fontSize: 12, color: STUDIO_INK_MUTED }}>
+              Loading player variants…
+            </p>
+          ) : error ? (
+            <div style={{ padding: "8px 14px", flex: 1 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 11, color: "#f48771" }}>{error}</p>
+              <button type="button" onClick={reload} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "#23232e", color: STUDIO_INK_SECONDARY, cursor: "pointer" }}>
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: "8px 10px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                overflowY: "auto",
+                flex: 1,
+                minHeight: 0,
+              }}
+              role="list"
+              aria-label="Player slime colors"
+            >
+              {playerColorRows.map((row) => {
+                const el = ELEMENTS[row.elementId];
+                const active = selectedPlayerColor === row.id;
+                return (
+                  <button
+                    key={row.id}
+                    type="button"
+                    role="listitem"
+                    data-testid={`studio-player-color-row-${row.id}`}
+                    aria-current={active ? "true" : undefined}
+                    style={libraryRowStyle(active, el.hue)}
+                    onClick={() => selectPlayerColor(row.id)}
+                  >
+                    <StudioFamilyGlyph
+                      familyId="player_slime"
+                      elementGlyph={el.glyph}
+                      hue={el.hue}
+                      soft={el.soft}
+                      ink={el.ink}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: active ? STUDIO_INK_PRIMARY : STUDIO_INK_SECONDARY,
+                        }}
+                      >
+                        {row.label}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#6a6a76",
+                          marginTop: 1,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {row.versionCount} version{row.versionCount === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div
+            style={{
+              padding: "12px 14px",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              flexShrink: 0,
+            }}
+          >
+            <p style={{ ...footerNote, margin: 0 }}>
+              {playerColorRows.length} color{playerColorRows.length === 1 ? "" : "s"} · {totalPlayerVariants}{" "}
+              variant{totalPlayerVariants === 1 ? "" : "s"}
+            </p>
+          </div>
+        </>
       ) : (
         <div style={{ padding: "12px 14px", flex: 1, fontSize: 12, color: STUDIO_INK_MUTED, lineHeight: 1.5 }}>
-          {segment === "player"
-            ? "Player variants are managed in the Versions inspector tab."
-            : "Level assets use cmd: level in the command bar. Full level library navigation is Phase 2."}
+          Level assets use cmd: level in the command bar. Full level library navigation is Phase 2.
         </div>
       )}
     </aside>

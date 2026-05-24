@@ -24,7 +24,7 @@ const FILTER_LABELS: { id: StudioVersionFilter; label: string }[] = [
 
 export type StudioVersionListProps = {
   family: string;
-  versions: RegistryEnemyVersion[];
+  versions: readonly RegistryEnemyVersion[];
   activeVersionId: string | null;
   compareVersionIds: readonly string[];
   onCompareVersionIdsChange: (ids: string[]) => void;
@@ -39,6 +39,8 @@ export type StudioVersionListProps = {
   onNewVersion: () => void;
   newVersionDisabled?: boolean;
   newVersionBusy?: boolean;
+  newVersionButtonLabel?: string;
+  newVersionBusyLabel?: string;
 };
 
 export function StudioVersionList({
@@ -58,6 +60,8 @@ export function StudioVersionList({
   onNewVersion,
   newVersionDisabled,
   newVersionBusy,
+  newVersionButtonLabel = "+ New",
+  newVersionBusyLabel = "Scanning…",
 }: StudioVersionListProps) {
   const [filter, setFilter] = useState<StudioVersionFilter>("all");
   const [compareMode, setCompareMode] = useState(compareVersionIds.length > 0);
@@ -125,7 +129,7 @@ export function StudioVersionList({
           data-testid="studio-version-new"
           onClick={onNewVersion}
         >
-          {newVersionBusy ? "Scanning…" : "+ New"}
+          {newVersionBusy ? newVersionBusyLabel : newVersionButtonLabel}
         </button>
       </div>
 

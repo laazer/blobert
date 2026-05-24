@@ -72,4 +72,34 @@ describe("StudioVersionsPanel", () => {
     fireEvent.click(screen.getByTestId("studio-inspector-tab-versions"));
     expect(screen.getByTestId("studio-versions-empty")).toBeInTheDocument();
   });
+
+  it("shows player versions when cmd is player with color", async () => {
+    useAppStore.setState({
+      commandContext: { cmd: "player", enemy: "blue" },
+    });
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue({
+      ...registryFixture,
+      player: {
+        versions: [
+          {
+            id: "player_slime_blue_00",
+            path: "player_exports/player_slime_blue_00.glb",
+            draft: false,
+            in_use: true,
+            name: "blue blob",
+          },
+        ],
+        slots: [],
+      },
+    });
+
+    render(<StudioInspector />);
+    fireEvent.click(screen.getByTestId("studio-inspector-tab-versions"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-player-versions-blue")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("studio-version-row-player_slime_blue_00")).toBeInTheDocument();
+    expect(screen.getByText("blue blob")).toBeInTheDocument();
+  });
 });

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ModelRegistryPayload } from "../../types";
 import { REGISTRY_ENEMY_FAMILY_LS } from "../../utils/registryFamilyNav";
+import { REGISTRY_PLAYER_COLOR_LS } from "../../utils/studioPlayerLibrary";
 import { EnemyLibrary } from "./EnemyLibrary";
 import { useAppStore } from "../../store/useAppStore";
 
@@ -35,7 +36,23 @@ const registryFixture: ModelRegistryPayload = {
       ],
     },
   },
-  player: { versions: [], slots: [] },
+  player: {
+    versions: [
+      {
+        id: "player_slime_blue_00",
+        path: "player_exports/player_slime_blue_00.glb",
+        draft: false,
+        in_use: true,
+      },
+      {
+        id: "player_slime_green_01",
+        path: "player_exports/player_slime_green_01.glb",
+        draft: true,
+        in_use: false,
+      },
+    ],
+    slots: [],
+  },
   player_active_visual: { path: "player_exports/p.glb", draft: false },
 };
 
@@ -52,6 +69,7 @@ import { fetchModelRegistry } from "../../api/client";
 describe("EnemyLibrary", () => {
   afterEach(() => {
     localStorage.removeItem(REGISTRY_ENEMY_FAMILY_LS);
+    localStorage.removeItem(REGISTRY_PLAYER_COLOR_LS);
     cleanup();
     useAppStore.setState({
       commandContext: { cmd: "animated", enemy: "spider" },
@@ -94,7 +112,7 @@ describe("EnemyLibrary", () => {
     );
   });
 
-  it("Player segment shows placeholder instead of family list", async () => {
+  it("lists player colors and selects cmd player", async () => {
     render(<EnemyLibrary />);
 
     await waitFor(() => {
@@ -103,7 +121,20 @@ describe("EnemyLibrary", () => {
 
     fireEvent.click(screen.getByTestId("studio-library-segment-player"));
 
-    expect(screen.queryByTestId("studio-family-row-spider")).not.toBeInTheDocument();
-    expect(screen.getByText(/Player variants/)).toBeInTheDocument();
+    expect(screen.getByTestId("studio-player-color-row-blue")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-player-color-row-green")).toBeInTheDocument();
+    expect(screen.getByText(/8 colors · 2 variants/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("studio-player-color-row-green"));
+
+    expect(useAppStore.getState().commandContext).toEqual({
+      cmd: "player",
+      enemy: "green",
+    });
+    expect(localStorage.getItem(REGISTRY_PLAYER_COLOR_LS)).toBe("green");
+    expect(screen.getByTestId("studio-player-color-row-green")).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
   });
 });

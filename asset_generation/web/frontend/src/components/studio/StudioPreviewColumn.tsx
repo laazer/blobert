@@ -3,13 +3,19 @@ import { ELEMENTS } from "../../constants/elements";
 import { usePersistedBoolean } from "../../hooks/usePersistedBoolean";
 import { useAppStore } from "../../store/useAppStore";
 import { inferFamilyElementId } from "../../utils/inferFamilyElement";
+import { useStudioPreviewScale } from "../../hooks/useStudioPreviewScale";
 import {
   studioAnimationCollapsibleBar,
   studioAnimationCollapsibleTitle,
   studioAnimationCollapsibleToggle,
+  studioPreviewMetaBarRoot,
+  studioPreviewViewportFrameStyle,
+  studioPreviewViewportShellStyle,
 } from "../../styles/studioPreviewStyles";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
+import { StudioPreviewMetaBar } from "./StudioPreviewMetaBar";
+import { StudioPreviewSizeChips } from "./StudioPreviewSizeChips";
 
 const LS_PREVIEW_ANIMATION_EXPANDED = "blobert.editor.preview.animationExpanded";
 
@@ -69,6 +75,7 @@ function CollapsiblePreviewSection({
 
 export function StudioPreviewColumn() {
   const [animationExpanded, setAnimationExpanded] = usePersistedBoolean(LS_PREVIEW_ANIMATION_EXPANDED, true);
+  const { scale, canShrink, canEnlarge, shrink, enlarge } = useStudioPreviewScale();
   const commandContext = useAppStore((s) => s.commandContext);
 
   const elementId = useMemo(() => {
@@ -91,7 +98,39 @@ export function StudioPreviewColumn() {
           overflow: "hidden",
         }}
       >
-        <GlbViewer />
+        <div style={studioPreviewMetaBarRoot} data-testid="studio-preview-header">
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+            <StudioPreviewMetaBar embedded />
+          </div>
+          <StudioPreviewSizeChips
+            scale={scale}
+            canShrink={canShrink}
+            canEnlarge={canEnlarge}
+            onShrink={shrink}
+            onEnlarge={enlarge}
+          />
+        </div>
+        <div
+          style={studioPreviewViewportFrameStyle(accentHue)}
+          data-testid="studio-preview-viewport-frame"
+        >
+          <div
+            data-testid="studio-preview-viewport"
+            style={{
+              width: `${scale * 100}%`,
+              height: `${scale * 100}%`,
+              maxWidth: "100%",
+              maxHeight: "100%",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+              flexShrink: 0,
+              ...studioPreviewViewportShellStyle(accentHue),
+            }}
+          >
+            <GlbViewer />
+          </div>
+        </div>
       </div>
       <CollapsiblePreviewSection
         panelId="blobert-studio-preview-animation-panel"

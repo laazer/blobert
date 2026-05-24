@@ -80,11 +80,10 @@ describe("StudioTopBar Regenerate", () => {
     });
   });
 
-  it("shows version name and tags in breadcrumb when registry matches preview", async () => {
+  it("shows version name in breadcrumb when registry matches preview", async () => {
     render(<StudioTopBar />);
     expect(await screen.findByTestId("studio-top-bar-version-label")).toHaveTextContent("Ember Scout");
-    expect(screen.getByTestId("studio-top-bar-tag-fire")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-top-bar-tag-spider")).toBeNull();
+    expect(screen.queryByTestId("studio-top-bar-tags")).toBeNull();
     expect(screen.queryByRole("button", { name: /Search/i })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });

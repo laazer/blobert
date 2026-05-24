@@ -47,5 +47,6 @@ describe("useStudioPreviewVersion", () => {
       expect(result.current.versionLabel).toBe("Fire Queen");
     });
     expect(result.current.breadcrumbTags).toEqual(["fire", "combat"]);
+    expect(result.current.glbLabel).toBe("spider_animated_02.glb");
   });
 });
