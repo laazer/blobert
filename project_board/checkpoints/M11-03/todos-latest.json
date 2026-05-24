@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M11-03",
+  "agent": "Planner Agent",
+  "captured_at": "2026-05-24T00:00:00Z",
+  "todos": [
+    {
+      "id": "plan-1",
+      "content": "Decompose M11-03 execution plan in ticket",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "plan-2",
+      "content": "Write checkpoint log and handoff artifacts",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "spec-1",
+      "content": "Author input_action_mapping_spec.md (IAM requirements)",
+      "status": "pending",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec-2",
+      "content": "Run spec_completeness_check.py --type generic",
+      "status": "pending",
+      "agent": "Spec Agent"
+    }
+  ]
+}

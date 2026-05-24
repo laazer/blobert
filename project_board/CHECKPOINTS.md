@@ -5,6 +5,19 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-23T-m11-03-autopilot (M11 Input Action Mapping)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/03_input_action_mapping.md`
+- Lean: no
+- Log: `project_board/checkpoints/M11-03/2026-05-23T-plan-run.md`
+- Log root: `project_board/checkpoints/M11-03/`
+
+### M11-03 — OUTCOME: PLANNING COMPLETE
+Ten-task execution plan in ticket (revision 2). Stage → SPECIFICATION; handoff to Spec Agent. Spec-only: no PlayerController; policy runtime tests RED until downstream impl.
+
+---
+
 ## Run: 2026-05-23T-m11-02-autopilot (M11 Physics Frame Order)
 
 - Queue mode: single ticket
