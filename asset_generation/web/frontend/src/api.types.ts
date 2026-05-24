@@ -714,6 +714,10 @@ export interface components {
             options: number[];
             /** Default */
             default: number;
+            /** Segmented */
+            segmented?: boolean | null;
+            /** Hint */
+            hint?: string | null;
         };
         /** SelectStrControlResponse */
         SelectStrControlResponse: {
