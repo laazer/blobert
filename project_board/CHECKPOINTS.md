@@ -32,10 +32,10 @@ Log: `project_board/checkpoints/M11-02/2026-05-23T-test-break-run.md`
 PFO 43/43 green; GDScript review pass; `run_tests.sh` exit 1 (4 unrelated Godot failures).
 Log: `project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md`
 
-## Resume: 2026-05-23T-ap-continue
-Ticket: `project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md`
-Resuming at Stage: IMPLEMENTATION_GENERALIST → completed; gatekeeper → INTEGRATION
+### M11-02 — OUTCOME: COMPLETE
+Fixed cross-test AnimationLibrary pollution + detach signal test; `run_tests.sh` exit 0.
 Log: `project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md`
+Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/02_physics_frame_order.md`
 
 ---
 

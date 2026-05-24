@@ -13,6 +13,9 @@ const EPSILON: float = 1e-3
 
 var _pass_count: int = 0
 var _fail_count: int = 0
+var _detach_signal_count: int = 0
+var _detach_player_pos: Vector3 = Vector3.INF
+var _detach_chunk_pos: Vector3 = Vector3.INF
 
 
 func _load_3d_scene() -> Node:
@@ -162,6 +165,12 @@ func test_3d_respawn_zone_has_spawn_point_path() -> void:
 	root.free()
 
 
+func _on_test_detach_fired(player_pos: Vector3, chunk_pos: Vector3) -> void:
+	_detach_signal_count += 1
+	_detach_player_pos = player_pos
+	_detach_chunk_pos = chunk_pos
+
+
 func test_3d_detach_fired_emitted_with_vector3() -> void:
 	var root: Node = _load_3d_scene()
 	if root == null:
@@ -187,21 +196,17 @@ func test_3d_detach_fired_emitted_with_vector3() -> void:
 		tree.root.remove_child(root)
 		root.free()
 		return
-	var count: int = 0
-	var got_player_pos: Vector3 = Vector3.INF
-	var got_chunk_pos: Vector3 = Vector3.INF
-	player.detach_fired.connect(func(pp: Vector3, cp: Vector3) -> void:
-		count += 1
-		got_player_pos = pp
-		got_chunk_pos = cp
-	)
+	_detach_signal_count = 0
+	_detach_player_pos = Vector3.INF
+	_detach_chunk_pos = Vector3.INF
+	player.detach_fired.connect(_on_test_detach_fired)
 	Input.action_press("detach")
 	if player.has_method("_physics_process"):
 		player._physics_process(0.016)
 	Input.action_release("detach")
-	_assert_true(count == 1, "3d_detach_fired_emitted_once")
-	_assert_true(got_player_pos != Vector3.INF, "3d_detach_fired_player_pos_vector3")
-	_assert_true(got_chunk_pos != Vector3.INF, "3d_detach_fired_chunk_pos_vector3")
+	_assert_true(_detach_signal_count == 1, "3d_detach_fired_emitted_once")
+	_assert_true(_detach_player_pos != Vector3.INF, "3d_detach_fired_player_pos_vector3")
+	_assert_true(_detach_chunk_pos != Vector3.INF, "3d_detach_fired_chunk_pos_vector3")
 	tree.root.remove_child(root)
 	root.free()
 

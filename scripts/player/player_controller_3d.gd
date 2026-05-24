@@ -58,6 +58,8 @@ var _enemy_movement_root_remaining: float = 0.0
 var _jump_buffer_timer: float = 0.0
 var _jump_buffer_pending_at_frame_start: bool = false
 var _jump_pressed_last_frame: bool = false
+var _detach_pressed_last_frame: bool = false
+var _detach_2_pressed_last_frame: bool = false
 
 const _GROUND_COLLISION_MASK: int = 1
 const _ONE_WAY_COLLISION_MASK: int = 2
@@ -226,6 +228,16 @@ func _read_player_input() -> Dictionary:
 	if not jump_just_pressed and jump_pressed and not _jump_pressed_last_frame:
 		jump_just_pressed = true
 	_jump_pressed_last_frame = jump_pressed
+	var detach_pressed: bool = Input.is_action_pressed("detach")
+	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
+	if not detach_just_pressed and detach_pressed and not _detach_pressed_last_frame:
+		detach_just_pressed = true
+	_detach_pressed_last_frame = detach_pressed
+	var detach_2_pressed: bool = Input.is_action_pressed("detach_2")
+	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
+	if not detach_2_just_pressed and detach_2_pressed and not _detach_2_pressed_last_frame:
+		detach_2_just_pressed = true
+	_detach_2_pressed_last_frame = detach_2_pressed
 	if _enemy_movement_root_remaining > 0.0:
 		input_axis = 0.0
 		jump_pressed = false
@@ -236,8 +248,8 @@ func _read_player_input() -> Dictionary:
 		"input_axis": input_axis,
 		"jump_pressed": jump_pressed,
 		"jump_just_pressed": jump_just_pressed,
-		"detach_just_pressed": Input.is_action_just_pressed("detach"),
-		"detach_2_just_pressed": Input.is_action_just_pressed("detach_2"),
+		"detach_just_pressed": detach_just_pressed,
+		"detach_2_just_pressed": detach_2_just_pressed,
 	}
 
 
@@ -743,6 +755,8 @@ func reset_hp() -> void:
 	_enemy_movement_root_remaining = 0.0
 	_jump_buffer_timer = 0.0
 	_jump_pressed_last_frame = false
+	_detach_pressed_last_frame = false
+	_detach_2_pressed_last_frame = false
 	velocity = Vector3.ZERO
 	_current_state.velocity = Vector2.ZERO
 	_current_state.jump_consumed = false
@@ -775,6 +789,8 @@ func reset_position(target: Vector3) -> void:
 	velocity = Vector3.ZERO
 	_jump_buffer_timer = 0.0
 	_jump_pressed_last_frame = false
+	_detach_pressed_last_frame = false
+	_detach_2_pressed_last_frame = false
 
 
 func has_chunk() -> bool:

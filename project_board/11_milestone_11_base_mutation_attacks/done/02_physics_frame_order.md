@@ -35,7 +35,7 @@ Also implement and document:
 - [x] One-way platform collision mask updates correctly (up = exclude one-way, down = include)
 - [x] Renderer sync happens after ALL game state updates (not mid-frame)
 - [x] All M1 tests still pass (movement/jump sim suites green; no PFO regressions)
-- [ ] `run_tests.sh` exits 0 (blocked: 4 unrelated Godot failures on branch)
+- [x] `run_tests.sh` exits 0
 
 ## Dependencies
 
@@ -123,24 +123,25 @@ Make `_physics_process` in `PlayerController3D` follow a frozen, documented six-
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-INTEGRATION
+COMPLETE
 
 ## Revision
-7
+8
 
 ## Last Updated By
 Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: PFO 43/43 pass (15 primary + 28 adversarial); Godot full suite 4 unrelated failures
-- Static QA: GDScript review PASS (delta param fix applied)
-- Integration: `run_tests.sh` exit 1 (4 unrelated Godot failures — not M11-02)
+- Tests: PFO 43/43 pass; Godot full suite green; `run_tests.sh` exit 0
+- Static QA: GDScript review PASS
+- Integration: `timeout 300 ci/scripts/run_tests.sh` exit 0 (2026-05-24)
 
 ## Blocking Issues
-- Branch `run_tests.sh` not exit 0 (enemy animation clip + 3d detach signals)
+- None
 
 ## Escalation Notes
-- M11-02 implementation ACs evidenced; COMPLETE blocked on branch integration debt (same pattern as M11-01).
+- Fixed cross-test pollution: death_animation adversarial stripped shared AnimationLibrary Death clip.
+- Fixed detach signal test: GDScript lambda int capture + detach edge-trigger in _read_player_input.
 
 ---
 
@@ -149,18 +150,8 @@ Acceptance Criteria Gatekeeper Agent
 ## Next Responsible Agent
 Human
 
-## Required Input Schema
-```json
-{
-  "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md",
-  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md",
-  "pfo_evidence": "43/43 pass",
-  "integration_blocker": "run_tests.sh exit 1 — 4 unrelated Godot failures"
-}
-```
-
 ## Status
-Blocked (integration)
+Proceed
 
 ## Reason
-M11-02 scope complete and PFO-tested. Move to `done/` when branch `run_tests.sh` is green or failures are triaged out of scope.
+All ACs met including full suite green. Ticket ready for `done/`.

@@ -184,7 +184,10 @@ func test_adv_missing_death_clip_no_crash_under_spam() -> void:
 	for lib_key in ap.get_animation_library_list():
 		var lib: AnimationLibrary = ap.get_animation_library(lib_key)
 		if lib != null and lib.has_animation("Death"):
-			lib.remove_animation("Death")
+			var lib_copy: AnimationLibrary = lib.duplicate(true) as AnimationLibrary
+			lib_copy.remove_animation("Death")
+			ap.remove_animation_library(lib_key)
+			ap.add_animation_library(lib_key, lib_copy)
 	esm.apply_death_event()
 	# First tick: play("Death") errors once when clip missing; latch still engages (DAP-2 risk).
 	eac._physics_process(0.016)
