@@ -56,6 +56,7 @@ var _enemy_acid_dots: Array = []
 ## M8 adhesion lunge: horizontal move + jump input suppressed; velocity.x clamped after sim.
 var _enemy_movement_root_remaining: float = 0.0
 var _jump_buffer_timer: float = 0.0
+var _jump_buffer_pending_at_frame_start: bool = false
 var _jump_pressed_last_frame: bool = false
 
 const _GROUND_COLLISION_MASK: int = 1
@@ -197,6 +198,7 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# PFO-2 Step 0: read input before gameplay tick.
 	var input: Dictionary = _read_player_input()
+	_jump_buffer_pending_at_frame_start = _jump_buffer_timer > 0.0
 	# PFO-2 Step 1: advance gameplay FSM timers only.
 	_player_state_machine.update(delta)
 	# PFO-2 Step 2: controller timers (jump buffer; coyote stays in sim).
@@ -338,14 +340,14 @@ func _post_slide_housekeeping(
 ) -> void:
 	var landed_this_frame: bool = is_on_floor() and not _current_state.is_on_floor
 	# EC-1: buffer consumes on first grounded frame; floor contact is unknown until after Step 7.
-	if landed_this_frame and _jump_buffer_timer > 0.0 and not next_state.jump_consumed:
+	if landed_this_frame and _jump_buffer_pending_at_frame_start:
 		_jump_buffer_timer = 0.0
 		_current_state.velocity = Vector2(velocity.x * SCALE_2D_TO_3D, -velocity.y * SCALE_2D_TO_3D)
 		_current_state.coyote_timer = next_state.coyote_timer
-		_current_state.jump_consumed = next_state.jump_consumed
 		_current_state.is_wall_clinging = next_state.is_wall_clinging
 		_current_state.cling_timer = next_state.cling_timer
 		_current_state.is_on_floor = true
+		_current_state.jump_consumed = false
 		next_state = _simulation.simulate(
 			_current_state,
 			input["input_axis"],
@@ -386,6 +388,18 @@ func _post_slide_housekeeping(
 
 func get_one_way_collision_mask() -> int:
 	return collision_mask
+
+
+func sync_movement_simulation_exports() -> void:
+	if _simulation == null:
+		return
+	_simulation.jump_height = jump_height
+	_simulation.coyote_time = coyote_time
+	_simulation.jump_cut_velocity = jump_cut_velocity
+	_simulation.cling_gravity_scale = cling_gravity_scale
+	_simulation.max_cling_time = max_cling_time
+	_simulation.wall_jump_height = wall_jump_height
+	_simulation.wall_jump_horizontal_speed = wall_jump_horizontal_speed
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:

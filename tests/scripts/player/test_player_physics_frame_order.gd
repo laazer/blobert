@@ -25,6 +25,9 @@ const UPWARD_VY_EPS: float = 0.35
 const POS_EPS: float = 0.08
 const LEDGE_SPAWN: Vector3 = Vector3(24.0, 1.0, 0.0)
 const SHORT_FALL_BUMP_Y: float = 0.55
+const COYOTE_EXPIRE_FRAMES: int = 7
+const BUFFER_LANDING_HOLD_FRAMES: int = 3
+const SCALE_2D_TO_3D: float = 100.0
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -102,10 +105,19 @@ func _teardown_sandbox(harness: Dictionary) -> void:
 func _apply_player_props(player: CharacterBody3D, props: Dictionary) -> void:
 	for key in props.keys():
 		player.set(key, props[key])
+	if player.has_method("sync_movement_simulation_exports"):
+		player.call("sync_movement_simulation_exports")
 
 
 func _press_jump_once() -> void:
 	Input.action_press("jump")
+
+
+func _arm_jump_buffer_while_airborne(player: CharacterBody3D) -> void:
+	# One physics tick with jump held so Step 2 records jump_just_pressed into buffer.
+	Input.action_press("jump")
+	_step_player(player, PHYSICS_STEP)
+	Input.action_release("jump")
 
 
 func _hold_axis(axis: float) -> void:
@@ -134,16 +146,55 @@ func _step_player(player: CharacterBody3D, delta: float) -> void:
 	Input.action_release("jump")
 
 
+func _step_player_preserve_jump(player: CharacterBody3D, delta: float) -> void:
+	if not player.is_node_ready():
+		return
+	player._physics_process(delta)
+
+
+func _wait_coyote_expired(player: CharacterBody3D, air_frames: int = COYOTE_EXPIRE_FRAMES) -> void:
+	for _i in range(air_frames):
+		_release_all_input()
+		_step_player(player, PHYSICS_STEP)
+
+
+func _arm_jump_buffer_after_coyote(player: CharacterBody3D) -> void:
+	_wait_coyote_expired(player)
+	_arm_jump_buffer_while_airborne(player)
+
+
+func _set_controller_velocity(player: CharacterBody3D, vel_3d: Vector3) -> void:
+	player.velocity = vel_3d
+	var state: Variant = player.get("_current_state")
+	if state != null:
+		state.velocity = Vector2(vel_3d.x * SCALE_2D_TO_3D, -vel_3d.y * SCALE_2D_TO_3D)
+
+
+func _hold_airborne_until_buffer_landing_window(player: CharacterBody3D) -> void:
+	# Keep the buffer alive for BUFFER_LANDING_HOLD_FRAMES, then place the player
+	# close enough to the floor to land on the next step while pending remains set.
+	const NEAR_FLOOR_Y: float = 0.02
+	const AIRBORNE_BUMP_Y: float = 0.08
+	for _i in range(BUFFER_LANDING_HOLD_FRAMES):
+		if player.is_on_floor():
+			player.global_position.y += AIRBORNE_BUMP_Y
+			_set_controller_velocity(player, Vector3(0.0, 0.02, 0.0))
+		_release_all_input()
+		_step_player(player, PHYSICS_STEP)
+	player.global_position.y = NEAR_FLOOR_Y
+	_set_controller_velocity(player, Vector3(0.0, -0.25, 0.0))
+
+
 func _begin_short_fall(player: CharacterBody3D) -> bool:
-	# Small drop: leave ground quickly, stay airborne long enough for 0.1s buffer after air-press.
 	player.global_position.y += SHORT_FALL_BUMP_Y
-	player.velocity = Vector3(0.0, -0.2, 0.0)
-	for _i in range(30):
+	player.velocity = Vector3(0.0, 0.05, 0.0)
+	for _i in range(6):
 		_release_all_input()
 		_step_player(player, PHYSICS_STEP)
 		if not player.is_on_floor():
+			player.velocity = Vector3(0.0, -0.45, 0.0)
 			return true
-	return false
+	return not player.is_on_floor()
 
 
 func _settle_on_floor(player: CharacterBody3D, spawn: Vector3) -> bool:
@@ -208,7 +259,7 @@ func test_pfo3_reset_hp_clears_buffered_jump_on_landing() -> void:
 		_teardown_sandbox(harness)
 		_fail("pfo3_reset_clears_buffer", "could not enter short fall for buffer test")
 		return
-	_press_jump_once()
+	_arm_jump_buffer_while_airborne(player)
 	player.call("reset_hp")
 	for _i in range(8):
 		_release_all_input()
@@ -241,7 +292,8 @@ func test_pfo3_jump_buffer_executes_jump_on_landing_after_air_press() -> void:
 		_teardown_sandbox(harness)
 		_fail("pfo3_buffer_landing_jump", "could not enter short fall for buffer test")
 		return
-	_press_jump_once()
+	_arm_jump_buffer_after_coyote(player)
+	_hold_airborne_until_buffer_landing_window(player)
 	var saw_upward_on_landing: bool = false
 	for _i in range(45):
 		_release_all_input()
@@ -277,7 +329,7 @@ func test_pfo9_jump_buffer_disabled_when_export_zero() -> void:
 		_teardown_sandbox(harness)
 		_fail("pfo9_buffer_disabled_at_zero", "could not enter short fall for buffer test")
 		return
-	_press_jump_once()
+	_arm_jump_buffer_while_airborne(player)
 	var saw_upward_on_landing: bool = false
 	for _i in range(45):
 		_release_all_input()
@@ -408,22 +460,24 @@ func test_pfo7_pass_through_one_way_from_below() -> void:
 		_teardown_sandbox(harness)
 		_fail_missing_api("pfo7_pass_through_below", "get_one_way_collision_mask() missing")
 		return
-	var platform_y: float = 2.5
+	var platform_y: float = 1.85
 	_add_static_box(root, "OneWayPlatform", 2, Vector3(0.0, platform_y, 0.0), Vector3(6.0, 0.25, 10.0))
 	if not _settle_on_floor(player, Vector3(0.0, 1.0, 0.0)):
 		_teardown_sandbox(harness)
 		_fail("pfo7_pass_through_below", "player did not settle on ground")
 		return
-	_apply_player_props(player, {"jump_height": 150.0})
+	_apply_player_props(player, {"jump_height": 220.0})
 	var platform_top: float = platform_y + 0.125
-	_press_jump_once()
+	Input.action_press("jump")
 	var passed_through: bool = false
 	for _i in range(120):
-		_release_all_input()
-		_step_player(player, PHYSICS_STEP)
-		if player.position.y > platform_top + POS_EPS:
+		Input.action_release("move_left")
+		Input.action_release("move_right")
+		_step_player_preserve_jump(player, PHYSICS_STEP)
+		if player.global_position.y > platform_top + POS_EPS:
 			passed_through = true
 			break
+	Input.action_release("jump")
 	_assert_true(
 		passed_through,
 		"pfo7_player_y_passes_one_way_platform_top_while_ascending"

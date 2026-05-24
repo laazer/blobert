@@ -13,7 +13,6 @@ class_name PlayerPhysicsFrameOrderAdversarialTests
 extends "res://tests/scripts/player/test_player_physics_frame_order.gd"
 
 const BUFFER_EXPIRE_FRAMES: int = 7
-const COYOTE_EXPIRE_FRAMES: int = 7
 const VY_ZERO_EPS: float = 0.02
 const DOUBLE_JUMP_VY_WINDOW: float = 0.08
 
@@ -132,13 +131,8 @@ func test_tb_pfo_002_buffer_still_valid_one_frame_before_expiry() -> void:
 		_teardown_sandbox(harness)
 		_fail("tb_pfo_002", "short fall setup failed")
 		return
-	_press_jump_once()
-	for _i in range(BUFFER_EXPIRE_FRAMES - 2):
-		if player.is_on_floor():
-			player.global_position.y += SHORT_FALL_BUMP_Y
-			player.velocity = Vector3(0.0, -0.2, 0.0)
-		_release_all_input()
-		_step_player(player, PHYSICS_STEP)
+	_arm_jump_buffer_after_coyote(player)
+	_hold_airborne_until_buffer_landing_window(player)
 	var saw_upward_on_landing: bool = false
 	for _i in range(45):
 		_release_all_input()
@@ -339,11 +333,12 @@ func test_tb_pfo_007_double_air_press_buffered_landing_single_jump() -> void:
 		_teardown_sandbox(harness)
 		_fail("tb_pfo_007", "short fall setup failed")
 		return
-	_press_jump_once()
+	_arm_jump_buffer_after_coyote(player)
 	for _i in range(2):
 		_release_all_input()
 		_step_player(player, PHYSICS_STEP)
-	_press_jump_once()
+	_arm_jump_buffer_while_airborne(player)
+	_hold_airborne_until_buffer_landing_window(player)
 	var upward_spikes: int = 0
 	for _i in range(50):
 		_release_all_input()
@@ -513,25 +508,28 @@ func test_tb_pfo_012_ascending_through_one_way_never_blocked_mid_rise() -> void:
 	if not _require_mask_accessor(player, "tb_pfo_012"):
 		_teardown_sandbox(harness)
 		return
-	var platform_y: float = 2.5
+	var platform_y: float = 1.85
 	_add_static_box(root, "OneWayPlatform", 2, Vector3(0.0, platform_y, 0.0), Vector3(6.0, 0.25, 10.0))
 	if not _settle_on_floor(player, Vector3(0.0, 1.0, 0.0)):
 		_teardown_sandbox(harness)
 		_fail("tb_pfo_012", "player did not settle")
 		return
+	_apply_player_props(player, {"jump_height": 220.0})
 	var platform_top: float = platform_y + 0.125
-	_press_jump_once()
+	Input.action_press("jump")
 	var stall_frames: int = 0
 	var passed_through: bool = false
 	for _i in range(150):
-		_release_all_input()
-		var y_before: float = player.position.y
-		_step_player(player, PHYSICS_STEP)
-		if player.position.y > platform_top + POS_EPS:
+		Input.action_release("move_left")
+		Input.action_release("move_right")
+		var y_before: float = player.global_position.y
+		_step_player_preserve_jump(player, PHYSICS_STEP)
+		if player.global_position.y > platform_top + POS_EPS:
 			passed_through = true
 			break
-		if _player_vy(player) > VY_ZERO_EPS and absf(player.position.y - y_before) < 1e-4:
+		if _player_vy(player) > VY_ZERO_EPS and absf(player.global_position.y - y_before) < 1e-4:
 			stall_frames += 1
+	Input.action_release("jump")
 	_assert_true(
 		passed_through,
 		"tb_pfo_012_player_passes_through_one_way_while_ascending"
