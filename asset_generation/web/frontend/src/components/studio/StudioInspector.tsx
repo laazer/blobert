@@ -3,16 +3,21 @@ import { ELEMENTS } from "../../constants/elements";
 import { useAppStore } from "../../store/useAppStore";
 import { inferFamilyElementId } from "../../utils/inferFamilyElement";
 import { ColorsPane } from "../Preview/ColorsPane";
+import { BuildControls } from "../Preview/BuildControls";
+import { StudioCodePanel } from "./StudioCodePanel";
+import { StudioVersionsPanel } from "./StudioVersionsPanel";
 import {
   STUDIO_INSPECTOR_WIDTH_PX,
-  STUDIO_INK_MUTED,
   STUDIO_INK_SECONDARY,
   STUDIO_SURFACE_PANEL,
   studioInspectorTabStyle,
 } from "../../styles/studioTokens";
 
-export const STUDIO_INSPECTOR_TABS = ["look", "build", "animate", "code", "versions"] as const;
+export const STUDIO_INSPECTOR_TABS = ["look", "build", "code", "versions"] as const;
 export type StudioInspectorTab = (typeof STUDIO_INSPECTOR_TABS)[number];
+
+/** Animate tab hidden until center-rail animation UX is product-ready. */
+export const STUDIO_INSPECTOR_TAB_HIDDEN = ["animate"] as const;
 
 const inspectorRoot: CSSProperties = {
   gridColumn: 3,
@@ -38,13 +43,6 @@ const panelBody: CSSProperties = {
   padding: 16,
   fontSize: 12,
   color: STUDIO_INK_SECONDARY,
-};
-
-const PLACEHOLDER_COPY: Record<Exclude<StudioInspectorTab, "look">, string> = {
-  build: "Build controls — BuildControls (Phase 2)",
-  animate: "Animate controls — AnimationControls in center rail",
-  code: "Code editor — EditorPane (Phase 2)",
-  versions: "Version list — registry compare (Phase 3)",
 };
 
 function useInspectorElementHue(): string | undefined {
@@ -90,13 +88,21 @@ export function StudioInspector() {
         role="tabpanel"
         data-testid={`studio-inspector-panel-${activeTab}`}
         aria-labelledby={`studio-inspector-tab-${activeTab}`}
-        style={panelBody}
+        style={
+          activeTab === "code"
+            ? { ...panelBody, display: "flex", flexDirection: "column", padding: 14 }
+            : panelBody
+        }
       >
         {activeTab === "look" ? (
           <ColorsPane studioSurface />
-        ) : (
-          <p style={{ margin: 0, color: STUDIO_INK_MUTED }}>{PLACEHOLDER_COPY[activeTab]}</p>
-        )}
+        ) : activeTab === "build" ? (
+          <BuildControls studioSurface />
+        ) : activeTab === "code" ? (
+          <StudioCodePanel />
+        ) : activeTab === "versions" ? (
+          <StudioVersionsPanel />
+        ) : null}
       </div>
     </aside>
   );

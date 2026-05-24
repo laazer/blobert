@@ -261,7 +261,7 @@ export function EnemyLibrary() {
       ) : (
         <div style={{ padding: "12px 14px", flex: 1, fontSize: 12, color: STUDIO_INK_MUTED, lineHeight: 1.5 }}>
           {segment === "player"
-            ? "Player variants are managed in the registry. Use the Versions inspector tab (Phase 2) or switch to the legacy layout for the full player panel."
+            ? "Player variants are managed in the Versions inspector tab."
             : "Level assets use cmd: level in the command bar. Full level library navigation is Phase 2."}
         </div>
       )}

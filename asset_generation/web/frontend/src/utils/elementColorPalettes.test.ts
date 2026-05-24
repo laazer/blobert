@@ -99,6 +99,29 @@ describe("buildFeatUpdatesFromPalette", () => {
     expect(u.feat_head_texture_background_grad_b).toBe("");
   });
 
+  it("sets feat zone hex when texture mode is spots (regenerate must see palette)", () => {
+    const keys = new Set([
+      "feat_body_finish",
+      "feat_body_hex",
+      "feat_body_texture_mode",
+      "feat_body_texture_pattern_hex",
+      "feat_body_texture_background_hex",
+      "feat_body_color_mode",
+      "feat_body_color_image_id",
+    ]);
+    const lightning = DEFAULT_ELEMENT_PALETTES.lightning.body!;
+    const u = buildFeatUpdatesFromPalette(
+      { body: lightning },
+      keys,
+      { feat_body_texture_mode: "spots", feat_body_color_mode: "image", feat_body_color_image_id: "hash_texture" },
+    );
+    expect(u.feat_body_hex).toBe(lightning.hex);
+    expect(u.feat_body_finish).toBe(lightning.finish);
+    expect(u.feat_body_color_mode).toBe("single");
+    expect(u.feat_body_color_image_id).toBe("");
+    expect(u.feat_body_texture_pattern_hex).toBe(lightning.hex);
+  });
+
   it("keeps spots background image mode when already configured", () => {
     const keys = new Set([
       "feat_head_texture_mode",

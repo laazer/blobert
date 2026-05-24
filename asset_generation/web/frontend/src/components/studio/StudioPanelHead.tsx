@@ -11,13 +11,15 @@ const titleStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 700,
   color: STUDIO_INK_PRIMARY,
+  letterSpacing: 0.2,
 };
 
 const subtitleStyle: CSSProperties = {
   fontSize: 11,
-  color: STUDIO_INK_MUTED,
+  color: "#8a8a96",
   marginTop: 2,
   lineHeight: 1.4,
+  fontWeight: 500,
 };
 
 export function StudioPanelHead({ title, subtitle, right }: Props) {
@@ -27,8 +29,8 @@ export function StudioPanelHead({ title, subtitle, right }: Props) {
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "space-between",
-        gap: 8,
-        marginBottom: 10,
+        gap: 12,
+        marginBottom: subtitle ? 12 : 10,
       }}
     >
       <div>

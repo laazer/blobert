@@ -198,6 +198,38 @@ function applyZoneFinishAndHex(
   }
 }
 
+/** Drop uploaded zone color images so element hex/finish apply on regenerate. */
+function clearZoneColorImageAssets(
+  zone: CoarseZoneKey,
+  existingDefKeys: ReadonlySet<string>,
+  updates: Record<string, unknown>,
+): void {
+  const idKey = `feat_${zone}_color_image_id`;
+  const previewKey = `feat_${zone}_color_image_preview`;
+  const uvKey = `feat_${zone}_color_image_uv_rect`;
+  if (existingDefKeys.has(idKey)) updates[idKey] = "";
+  if (existingDefKeys.has(previewKey)) updates[previewKey] = "";
+  if (existingDefKeys.has(uvKey)) updates[uvKey] = "";
+}
+
+function ensureZoneSolidColorModeWhenImage(
+  zone: CoarseZoneKey,
+  existingDefKeys: ReadonlySet<string>,
+  currentValues: Readonly<Record<string, unknown>>,
+  updates: Record<string, unknown>,
+): void {
+  const modeKey = `feat_${zone}_color_mode`;
+  const rawMode = currentValues[modeKey];
+  const colorMode = typeof rawMode === "string" ? rawMode.trim().toLowerCase() : "single";
+  const hasImageAsset =
+    typeof currentValues[`feat_${zone}_color_image_id`] === "string" &&
+    String(currentValues[`feat_${zone}_color_image_id`]).trim() !== "";
+  if (colorMode === "image" || hasImageAsset) {
+    if (existingDefKeys.has(modeKey)) updates[modeKey] = "single";
+    clearZoneColorImageAssets(zone, existingDefKeys, updates);
+  }
+}
+
 /** Build store updates for coarse zone keys that exist on this enemy. */
 export function buildFeatUpdatesFromPalette(
   palette: ElementPalette,
@@ -216,8 +248,11 @@ export function buildFeatUpdatesFromPalette(
     const primary = sanitizeHex(mat.hex);
     const secondary = companionPatternColor(primary);
 
+    // Always push finish/hex into the store (and export JSON) even when textures are active.
+    applyZoneFinishAndHex(zone, mat, existingDefKeys, updates);
+    ensureZoneSolidColorModeWhenImage(zone, existingDefKeys, currentValues, updates);
+
     if (mode === "none") {
-      applyZoneFinishAndHex(zone, mat, existingDefKeys, updates);
       continue;
     }
 

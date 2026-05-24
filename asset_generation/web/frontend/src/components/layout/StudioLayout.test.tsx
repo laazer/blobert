@@ -49,7 +49,7 @@ const NINE_ELEMENT_IDS: ElementId[] = [
   "physical",
 ];
 
-const INSPECTOR_TABS = ["look", "build", "animate", "code", "versions"] as const;
+const INSPECTOR_TABS = ["look", "build", "code", "versions"] as const;
 
 /** §11: only exact `"1"` enables studio; all other values → legacy. */
 const INVALID_STUDIO_FLAGS = [
@@ -153,13 +153,15 @@ describe("STUDIO-01 StudioLayout (spec §8)", () => {
       expect(lookTab).toHaveAttribute("aria-selected", "false");
       expect(screen.getByTestId("studio-inspector-panel-build")).toBeVisible();
       expect(screen.queryByTestId("studio-inspector-panel-look")).toBeNull();
+      expect(screen.queryByText(/BuildControls \(Phase 2\)/)).toBeNull();
     });
 
-    it("exposes all five inspector tab triggers", () => {
+    it("exposes all four visible inspector tab triggers", () => {
       render(<StudioLayout />);
       for (const tab of INSPECTOR_TABS) {
         expect(screen.getByTestId(`studio-inspector-tab-${tab}`)).toBeInTheDocument();
       }
+      expect(screen.queryByTestId("studio-inspector-tab-animate")).toBeNull();
     });
   });
 

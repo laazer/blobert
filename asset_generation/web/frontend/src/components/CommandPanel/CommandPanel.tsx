@@ -3,10 +3,14 @@ import { killProcess } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { useStreamingOutput } from "../Terminal/useStreamingOutput";
 import { RunCmd } from "../../types";
-import { enemySelectOptionLabel, normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { enemySelectOptionLabel, normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import { animatedVariantIndexFromPreviewGlb, playerVariantIndexFromPreviewGlb } from "../../utils/glbVariants";
-import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
-import { regeneratePreviewParams } from "../../utils/regeneratePreviewParams";
+import {
+  buildAssetRunOptions,
+  canRegenerateAsset,
+  validateAssetRun,
+  type AssetRunFieldState,
+} from "../../utils/assetRunOptions";
 import {
   ALL_CMDS,
   CMD_CONFIG,
@@ -15,8 +19,6 @@ import {
   getEnemyOptions,
   normalizeEnemyForCmd,
   parseCommandPreview,
-  partitionAnimatedBuildOptionsForJson,
-  prunePartitionedBuildOptionsForRun,
   PLAYER_COLORS,
   PLAYER_FINISHES,
 } from "./commandLogic";
@@ -185,74 +187,28 @@ export function CommandPanel() {
     setCmdTransitionHint(null);
   }
 
-  const runValidationError = (() => {
-    if (commandPreviewDirty) return "Apply command preview changes before running.";
-    if (showEnemy && cfg.requiresEnemy && !enemy.trim()) return "Enemy is required for this cmd.";
-    if (cmd === "player" && !PLAYER_COLORS.includes(enemy)) {
-      return `Player cmd requires a slime color (${PLAYER_COLORS.join(", ")}).`;
-    }
-    if (cmd === "player" && !PLAYER_FINISHES.includes(finish)) {
-      return `Player finish must be one of: ${PLAYER_FINISHES.join(", ")}.`;
-    }
-    if (cmd === "animated" && !ENEMY_FINISHES.includes(finish)) {
-      return `Enemy finish must be one of: ${ENEMY_FINISHES.join(", ")}.`;
-    }
-    if (cmd === "player" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
-      return "Custom color must be in #RRGGBB format.";
-    }
-    if (cmd === "animated" && hexColor && !/^#[0-9a-fA-F]{6}$/.test(hexColor)) {
-      return "Custom color must be in #RRGGBB format.";
-    }
-    return null;
-  })();
+  const runFields: AssetRunFieldState = {
+    cmd,
+    enemy,
+    description,
+    difficulty,
+    finish,
+    hexColor,
+    commandPreviewDirty,
+  };
+
+  const runValidationError = validateAssetRun(runFields, activeGlbUrl);
+
+  const canRegenerate = canRegenerateAsset(runFields, activeGlbUrl, runValidationError);
 
   function buildRunOptions(regenerate: boolean) {
-    const singleOutputCmd = cmd === "animated" || cmd === "player" || cmd === "level";
-    let buildOptionsJson: string | undefined;
-    if (cmd === "animated" && enemy && enemy !== "all") {
-      const slug = normalizeAnimatedSlug(enemy);
-      const opts = animatedBuildOptionValues[slug];
-      if (opts && Object.keys(opts).length > 0) {
-        const defs = animatedBuildControls[slug] ?? [];
-        const top = partitionAnimatedBuildOptionsForJson(opts, defs);
-        const pruned = prunePartitionedBuildOptionsForRun(top, defs);
-        buildOptionsJson =
-          Object.keys(pruned).length > 0 ? JSON.stringify({ [slug]: pruned }) : undefined;
-      }
-    }
-    if (cmd === "player" && enemy && PLAYER_COLORS.includes(enemy.trim().toLowerCase())) {
-      const opts = animatedBuildOptionValues[PLAYER_PROCEDURAL_BUILD_SLUG];
-      if (opts && Object.keys(opts).length > 0) {
-        const defs = animatedBuildControls[PLAYER_PROCEDURAL_BUILD_SLUG] ?? [];
-        const top = partitionAnimatedBuildOptionsForJson(opts, defs);
-        const pruned = prunePartitionedBuildOptionsForRun(top, defs);
-        buildOptionsJson =
-          Object.keys(pruned).length > 0
-            ? JSON.stringify({ [PLAYER_PROCEDURAL_BUILD_SLUG]: pruned })
-            : undefined;
-      }
-    }
-    const regen = regenerate ? regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) : null;
-    const previewRel = previewPathFromAssetsUrl(activeGlbUrl);
-    const outputDraft =
-      regen != null
-        ? regen.outputDraft
-        : (cmd === "animated" || cmd === "player" || cmd === "level") &&
-          previewRel != null &&
-          previewRel.includes("/draft/");
-
-    return {
-      cmd,
-      enemy: showEnemy ? enemy : undefined,
-      count: singleOutputCmd ? 1 : undefined,
-      description: showDescription ? description : undefined,
-      difficulty: showDifficulty ? difficulty : undefined,
-      finish: (cmd === "player" || cmd === "animated") ? finish : undefined,
-      hexColor: (cmd === "player" || cmd === "animated") && hexColor ? hexColor : undefined,
-      buildOptionsJson,
-      outputDraft,
-      replaceVariantIndex: regen?.replaceVariantIndex,
-    };
+    return buildAssetRunOptions(
+      runFields,
+      activeGlbUrl,
+      animatedBuildControls,
+      animatedBuildOptionValues,
+      regenerate,
+    );
   }
 
   async function handleRun() {
@@ -264,7 +220,7 @@ export function CommandPanel() {
   async function handleRegenerate() {
     if (isDirty) await saveFile();
     if (runValidationError) return;
-    if (!regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl)) return;
+    if (!canRegenerate) return;
     start(buildRunOptions(true));
   }
 
@@ -286,11 +242,6 @@ export function CommandPanel() {
     saveModelFamily === "player"
       ? playerVariantIndexFromPreviewGlb(saveModelPlayerColor ?? "", activeGlbUrl)
       : animatedVariantIndexFromPreviewGlb(saveModelFamily, activeGlbUrl);
-
-  const canRegenerate =
-    (cmd === "animated" || cmd === "player" || cmd === "level") &&
-    !runValidationError &&
-    regeneratePreviewParams(cmd, showEnemy ? enemy : "", activeGlbUrl) != null;
 
   return (
     <div style={s.panel}>

@@ -1415,8 +1415,3 @@ def apply_material_to_object(obj: Any, material: bpy.types.Material | None) -> N
         else:
             obj.data.materials[0] = material
 
-
-from src.materials.feature_zones import (  # noqa: E402
-    material_for_zone_geometry_extra,
-    material_for_zone_part,
-)

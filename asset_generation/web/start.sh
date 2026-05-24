@@ -41,7 +41,7 @@ if [ ! -d "node_modules" ]; then
   echo "Installing frontend dependencies (this may take a minute)..."
   npm install --silent
 fi
-npm run dev &
+VITE_STUDIO_LAYOUT="${VITE_STUDIO_LAYOUT:-1}" npm run dev &
 FRONT=$!
 echo "Frontend started (pid $FRONT)"
 

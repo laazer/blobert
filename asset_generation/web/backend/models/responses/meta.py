@@ -35,6 +35,8 @@ class SelectControlResponse(BaseModel):
     label: str = Field(..., min_length=1)
     options: list[int]
     default: int
+    segmented: bool | None = None
+    hint: str | None = None
 
 
 class FloatControlResponse(BaseModel):

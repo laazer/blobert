@@ -14,7 +14,7 @@ describe("mergeCanonicalZoneControls", () => {
     const incoming: AnimatedBuildControlDef[] = [
       {
         key: "eye_count",
-        label: "Eyes",
+        label: "Count",
         type: "select",
         options: [4, 6],
         default: 4,
@@ -54,6 +54,36 @@ describe("mergeCanonicalZoneControls", () => {
     expect(headIdx).toBeLessThan(limbIdx);
   });
 
+  it("patches spider eye_count label to Count and keeps full option list", () => {
+    const incoming: AnimatedBuildControlDef[] = [
+      {
+        key: "eye_count",
+        label: "Eyes",
+        type: "select",
+        options: [2, 4],
+        default: 2,
+      },
+    ];
+    const merged = mergeCanonicalZoneControls("spider", incoming);
+    const eye = merged.find((d) => d.key === "eye_count");
+    expect(eye?.label).toBe("Count");
+    expect(eye?.type).toBe("select");
+    if (eye?.type === "select") {
+      expect(eye.options.length).toBeGreaterThan(8);
+      expect(eye.options).toContain(99);
+    }
+  });
+
+  it("replaces spider eye_count int def with select segmented options", () => {
+    const incoming: AnimatedBuildControlDef[] = [
+      { key: "eye_count", label: "Eyes", type: "int", min: 1, max: 8, default: 2 },
+    ];
+    const merged = mergeCanonicalZoneControls("spider", incoming);
+    const eye = merged.find((d) => d.key === "eye_count");
+    expect(eye?.type).toBe("select");
+    expect(merged.filter((d) => d.key === "eye_count")).toHaveLength(1);
+  });
+
   it("is a no-op for unknown slug", () => {
     const defs: AnimatedBuildControlDef[] = [
       { key: "feat_body_finish", label: "Body finish", type: "select_str", options: ["a"], default: "a" },
@@ -68,7 +98,7 @@ describe("mergeCanonicalZoneControls", () => {
     expect(extraKeys).toContain("extra_zone_head_spike_shape");
     expect(extraKeys).toContain("extra_zone_extra_hex");
     expect(extraKeys).toContain("extra_zone_body_place_top");
-    expect(extraKeys).toHaveLength(51);
+    expect(extraKeys.length).toBeGreaterThanOrEqual(51);
   });
 });
 

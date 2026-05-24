@@ -1973,10 +1973,11 @@ def spider_eye_control_defs(
     return [
         {
             "key": "eye_count",
-            "label": "Eyes",
+            "label": "Count",
             "type": "select",
             "options": list(AnimatedSpider.ALLOWED_EYE_COUNTS),
             "default": AnimatedSpider.DEFAULT_EYE_COUNT,
+            "segmented": True,
         },
         {
             "key": "eye_distribution",

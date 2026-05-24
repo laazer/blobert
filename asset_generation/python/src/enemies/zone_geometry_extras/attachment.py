@@ -9,12 +9,12 @@ import bpy
 from mathutils import Vector
 
 from ...core.blender_utils import create_cone, create_sphere
+from ...materials.feature_zones import material_for_zone_geometry_extra
 from ...materials.material_system import (
     apply_feature_slot_overrides,
     apply_material_to_object,
     apply_zone_texture_pattern_overrides,
     get_enemy_materials,
-    material_for_zone_geometry_extra,
 )
 from ...utils.build_options import OFFSET_XYZ_MAX, OFFSET_XYZ_MIN
 from ...utils.placement_clustering import (

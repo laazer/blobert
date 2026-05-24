@@ -1,0 +1,10 @@
+/* Hide horizontal scrollbar on studio build segmented tracks (macOS shows a thick light bar). */
+.studio-build-segment-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.studio-build-segment-scroll::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}

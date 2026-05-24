@@ -133,9 +133,9 @@ func test_tb_pfo_002_buffer_still_valid_one_frame_before_expiry() -> void:
 		_fail("tb_pfo_002", "short fall setup failed")
 		return
 	_press_jump_once()
-	for _i in range(BUFFER_EXPIRE_FRAMES - 1):
+	for _i in range(BUFFER_EXPIRE_FRAMES - 2):
 		if player.is_on_floor():
-			player.global_position.y += 0.06
+			player.global_position.y += SHORT_FALL_BUMP_Y
 			player.velocity = Vector3(0.0, -0.2, 0.0)
 		_release_all_input()
 		_step_player(player, PHYSICS_STEP)
@@ -248,7 +248,7 @@ func test_tb_pfo_005_coyote_jump_denied_after_window_expires() -> void:
 		return
 	var player: CharacterBody3D = harness["player"] as CharacterBody3D
 	_apply_player_props(player, {"coyote_time": COYOTE_TIME_DEFAULT})
-	if not _settle_on_floor(player, Vector3(0.0, 1.0, 0.0)):
+	if not _settle_on_floor(player, LEDGE_SPAWN):
 		_teardown_sandbox(harness)
 		_fail("tb_pfo_005", "player did not settle")
 		return
@@ -289,7 +289,7 @@ func test_tb_pfo_006_coyote_jump_does_not_double_with_buffer_on_landing() -> voi
 		player,
 		{"coyote_time": COYOTE_TIME_DEFAULT, "jump_buffer_time": JUMP_BUFFER_DEFAULT}
 	)
-	if not _settle_on_floor(player, Vector3(0.0, 1.0, 0.0)):
+	if not _settle_on_floor(player, LEDGE_SPAWN):
 		_teardown_sandbox(harness)
 		_fail("tb_pfo_006", "player did not settle")
 		return

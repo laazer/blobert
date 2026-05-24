@@ -21,7 +21,8 @@ from ..core.rig_models.quadruped_simple import (
     QUADRUPED_LEG_THICKNESS,
     QuadrupedSimpleRig,
 )
-from ..materials.material_system import apply_material_to_object, material_for_zone_part
+from ..materials.feature_zones import material_for_zone_part
+from ..materials.material_system import apply_material_to_object
 from ..utils.body_type_presets import spider_body_type_scales
 from ..utils.config import EnemyBodyTypes
 from .animated_enemy import UsesSimpleRigMixin

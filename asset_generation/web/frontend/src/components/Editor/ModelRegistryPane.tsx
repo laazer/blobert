@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "r
 import type { RunCmd } from "../../types";
 import { ALL_CMDS } from "../CommandPanel/commandLogic";
 import { centerPanelTabBtnStyle } from "../layout/centerPanelTabStyles";
+import { STUDIO_INK_MUTED, STUDIO_INK_SECONDARY } from "../../styles/studioTokens";
+import { normalizeAnimatedSlug } from "../../utils/enemyDisplay";
 import {
   deleteRegistryEnemyVersion,
   fetchLoadExistingCandidates,
@@ -40,6 +42,7 @@ import {
 } from "../../utils/registryTags";
 import { AddEnemySlotModal } from "./AddEnemySlotModal";
 import { RegistryEnemyFamilyPanel } from "./RegistryEnemyFamilyPanel";
+import { StudioEnemyVersionsPanel } from "../studio/StudioEnemyVersionsPanel";
 import { RegistryEnemyLoadExistingSection } from "./RegistryEnemyLoadExistingSection";
 import { RegistryPlayerPowerTypesSection } from "./RegistryPlayerPowerTypesSection";
 import { RegistryTagOrganizerBar } from "./RegistryTagOrganizerBar";
@@ -87,6 +90,11 @@ function registrySubtabLabel(cmd: RunCmd): string {
 
 const noteStyle = { fontSize: 11, color: "#9d9d9d", marginBottom: 12, lineHeight: 1.45 };
 
+export type ModelRegistryPaneProps = {
+  /** Studio Versions inspector: scoped to command bar context, no legacy subtab chrome. */
+  studioSurface?: boolean;
+};
+
 export function buildEnemyDeletePlan(family: string, version: Pick<RegistryEnemyVersion, "id" | "draft" | "in_use">): EnemyDeletePlan | null {
   const isDraft = version.draft;
   const isInUse = version.in_use && !version.draft;
@@ -125,7 +133,7 @@ export async function executeEnemyDeleteFlow(args: {
   }
 }
 
-export function ModelRegistryPane() {
+export function ModelRegistryPane({ studioSurface = false }: ModelRegistryPaneProps) {
   const [data, setData] = useState<ModelRegistryPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -214,6 +222,23 @@ export function ModelRegistryPane() {
 
   const commandEnemyForFamily =
     commandContext.cmd === "animated" ? commandContext.enemy : undefined;
+
+  useEffect(() => {
+    if (!studioSurface) return;
+    const { cmd, enemy } = commandContext;
+    if (cmd === "animated") {
+      setRegistrySubtab("animated");
+      const slug = normalizeAnimatedSlug(enemy);
+      if (slug && slug !== "all") {
+        setSelectedEnemyFamily(slug);
+      }
+      return;
+    }
+    if (cmd === "player") {
+      setRegistrySubtab("player");
+      setSelectedEnemyFamily(null);
+    }
+  }, [studioSurface, commandContext.cmd, commandContext.enemy]);
 
   const tagCatalog = useMemo(
     () => (data ? collectRegistryTagCatalog(data) : []),
@@ -583,7 +608,14 @@ export function ModelRegistryPane() {
 
   if (!data && !error) {
     return (
-      <div style={{ padding: 16, color: "#9d9d9d", fontSize: 12 }}>
+      <div
+        style={{
+          padding: studioSurface ? 0 : 16,
+          color: studioSurface ? STUDIO_INK_MUTED : "#9d9d9d",
+          fontSize: 12,
+        }}
+        data-testid={studioSurface ? "studio-versions-loading" : undefined}
+      >
         Loading model registry…
       </div>
     );
@@ -591,7 +623,7 @@ export function ModelRegistryPane() {
 
   if (error && !data) {
     return (
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: studioSurface ? 0 : 16 }} data-testid={studioSurface ? "studio-versions-error" : undefined}>
         <div style={{ color: "#f14c4c", fontSize: 12, marginBottom: 8 }}>{error}</div>
         <button type="button" onClick={reload} style={btnSecondary}>
           Retry
@@ -632,7 +664,17 @@ export function ModelRegistryPane() {
   );
 
   return (
-    <div style={{ padding: 12, color: "#d4d4d4", fontSize: 12, overflow: "auto", flex: 1 }}>
+    <div
+      style={{
+        padding: studioSurface ? 0 : 12,
+        color: studioSurface ? STUDIO_INK_SECONDARY : "#d4d4d4",
+        fontSize: 12,
+        overflow: studioSurface ? "visible" : "auto",
+        flex: studioSurface ? undefined : 1,
+      }}
+      data-testid={studioSurface ? "studio-versions-controls" : undefined}
+    >
+      {!studioSurface ? (
       <div
         style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}
         role="tablist"
@@ -652,10 +694,11 @@ export function ModelRegistryPane() {
           </button>
         ))}
       </div>
+      ) : null}
 
       {registrySubtab === "animated" ? (
         <>
-          {families.length > 0 ? (
+          {!studioSurface && families.length > 0 ? (
             <RegistryTagOrganizerBar
               catalog={tagCatalog}
               filterTags={tagFilter}
@@ -672,7 +715,7 @@ export function ModelRegistryPane() {
               onGroupByChange={setGroupByTag}
             />
           ) : null}
-          {visibleFamilies.length > 0 ? (
+          {!studioSurface && visibleFamilies.length > 0 ? (
             familyGroups ? (
               familyGroups.map((group) => (
                 <div key={group.tag} style={{ marginBottom: 8 }}>
@@ -696,13 +739,49 @@ export function ModelRegistryPane() {
                 {visibleFamilies.map((family) => renderFamilyTab(family))}
               </div>
             )
-          ) : families.length > 0 ? (
+          ) : !studioSurface && families.length > 0 ? (
             <div style={{ color: "#d7ba7d", fontSize: 11, marginBottom: 10 }}>
               No enemy families match the current tag filters.
             </div>
           ) : null}
+          {studioSurface && registrySubtab === "animated" && selectedEnemyFamily && !data.enemies[selectedEnemyFamily] ? (
+            <div style={{ color: STUDIO_INK_MUTED, fontSize: 11, marginBottom: 12 }}>
+              No registry entry for <strong style={{ color: STUDIO_INK_SECONDARY }}>{selectedEnemyFamily}</strong>.
+            </div>
+          ) : null}
           {selectedEnemyFamily && data.enemies[selectedEnemyFamily] ? (
             <>
+              {studioSurface ? (
+                <StudioEnemyVersionsPanel
+                  family={selectedEnemyFamily}
+                  versions={data.enemies[selectedEnemyFamily].versions}
+                  slotVersionIds={slotVersionIdsByFamily[selectedEnemyFamily] ?? []}
+                  activeVersionId={preferredAnimatedVersionIdFromPreview(selectedEnemyFamily, activeGlbUrl)}
+                  addSlotDisabled={familyAddSlotDisabled[selectedEnemyFamily] ?? true}
+                  addSlotPreparing={addSlotPreparingFamily === selectedEnemyFamily}
+                  slotSaveBusy={slotSaveBusyFamily === selectedEnemyFamily}
+                  busyKey={busyKey}
+                  deleteBusyKey={deleteBusyKey}
+                  loadExistingCandidates={loadExistingCandidates}
+                  loadExistingSelection={loadExistingSelection}
+                  loadExistingBusy={loadExistingBusy}
+                  knownTags={tagCatalog}
+                  hideDisplayTags={hideDisplayTags}
+                  onAddSlot={requestAddSlotModal}
+                  onAddEmptySlot={addEmptyEnemySlot}
+                  onRemoveSlot={removeEnemySlot}
+                  onUpdateSlotVersion={updateEnemySlotVersion}
+                  onSaveSlots={saveEnemySlots}
+                  onApplyFlags={applyFlags}
+                  onPreviewVersion={previewVersion}
+                  onDeleteVersion={deleteEnemyVersion}
+                  getEnemyDeletePlan={buildEnemyDeletePlan}
+                  onPatchTags={patchVersionTags}
+                  onLoadExistingSelectionChange={setLoadExistingSelection}
+                  onLoadExistingInPreview={openExistingSelection}
+                />
+              ) : (
+                <>
               <RegistryEnemyFamilyPanel
                 family={selectedEnemyFamily}
                 versions={data.enemies[selectedEnemyFamily].versions}
@@ -741,10 +820,12 @@ export function ModelRegistryPane() {
                 onLoadExistingInPreview={openExistingSelection}
                 activeFamily={selectedEnemyFamily}
               />
+                </>
+              )}
             </>
-          ) : (
+          ) : !studioSurface ? (
             <div style={{ color: "#9d9d9d", fontSize: 11, marginBottom: 12 }}>No enemy families in the registry.</div>
-          )}
+          ) : null}
         </>
       ) : null}
 
@@ -788,10 +869,12 @@ export function ModelRegistryPane() {
       {error && (
         <div style={{ color: "#f14c4c", marginBottom: 8, fontSize: 11 }}>{error}</div>
       )}
+      {!studioSurface ? (
       <div style={{ marginTop: 16, ...noteStyle }}>
         Persisted to <code style={{ color: "#ce9178" }}>asset_generation/python/model_registry.json</code> via API
         (atomic write; only this manifest path is modified).
       </div>
+      ) : null}
     </div>
   );
 }

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import bpy
 
+from src.materials import material_system
 from src.materials.gradient_generator import (
     create_gradient_png_and_load,
     gradient_image_pixel_buffer,
     sanitize_image_label,
 )
 from src.materials.material_stripes_zone import material_for_stripes_zone
-from src.materials import material_system
 from src.materials.material_system import (
     material_for_color_image_zone,
     overlay_base_image_on_zone_material,
@@ -31,7 +31,6 @@ from src.materials.presets import (
     rgba_from_hex_or_fallback,
     sanitize_hex_input,
 )
-from src.utils.texture_asset_loader import infer_texture_asset_id_from_preview
 from src.materials.spots_zone_pipeline import (
     apply_spots_zone_pattern,
     spot_density_payload_usable,

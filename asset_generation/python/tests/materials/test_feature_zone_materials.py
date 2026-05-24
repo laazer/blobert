@@ -753,7 +753,7 @@ def test_material_for_zone_part_creates_variant_when_part_hex_set() -> None:
     }
     new_mat = MagicMock()
     with patch.object(ms, "create_material", return_value=new_mat) as cm:
-        got = ms.material_for_zone_part("limbs", "arm_0", slots, features)
+        got = fz.material_for_zone_part("limbs", "arm_0", slots, features)
     assert got is new_mat
     assert cm.called
 
@@ -762,18 +762,18 @@ def test_material_for_zone_part_returns_base_when_no_override() -> None:
     limb = MagicMock()
     limb.name = "Bone_White"
     slots = {"limbs": limb}
-    assert ms.material_for_zone_part("limbs", "arm_0", slots, {"limbs": {}}) is limb
+    assert fz.material_for_zone_part("limbs", "arm_0", slots, {"limbs": {}}) is limb
 
 
 def test_material_for_zone_part_returns_none_when_zone_slot_missing() -> None:
-    assert ms.material_for_zone_part("limbs", "arm_0", {}, {"limbs": {}}) is None
+    assert fz.material_for_zone_part("limbs", "arm_0", {}, {"limbs": {}}) is None
 
 
 def test_material_for_zone_part_returns_base_when_zone_feature_not_dict() -> None:
     limb = MagicMock()
     limb.name = "Bone_White"
     slots = {"limbs": limb}
-    assert ms.material_for_zone_part("limbs", "arm_0", slots, {"limbs": "nope"}) is limb
+    assert fz.material_for_zone_part("limbs", "arm_0", slots, {"limbs": "nope"}) is limb
 
 
 def test_material_for_zone_part_inherits_zone_hex_when_part_sets_finish_only() -> None:
@@ -789,7 +789,7 @@ def test_material_for_zone_part_inherits_zone_hex_when_part_sets_finish_only() -
     }
     new_mat = MagicMock()
     with patch.object(ms, "create_material", return_value=new_mat):
-        got = ms.material_for_zone_part("limbs", "arm_0", slots, features)
+        got = fz.material_for_zone_part("limbs", "arm_0", slots, features)
     assert got is new_mat
 
 
@@ -798,7 +798,7 @@ def test_material_for_zone_part_ignores_non_dict_parts_map() -> None:
     limb.name = "Bone_White"
     slots = {"limbs": limb}
     assert (
-        ms.material_for_zone_part(
+        fz.material_for_zone_part(
             "limbs",
             "arm_0",
             slots,
@@ -813,7 +813,7 @@ def test_material_for_zone_part_ignores_non_dict_part_payload() -> None:
     limb.name = "Bone_White"
     slots = {"limbs": limb}
     assert (
-        ms.material_for_zone_part(
+        fz.material_for_zone_part(
             "limbs",
             "arm_0",
             slots,
@@ -828,7 +828,7 @@ def test_material_for_zone_geometry_extra_returns_base_when_no_override() -> Non
     limb.name = "Bone_White"
     slots = {"body": limb}
     assert (
-        ms.material_for_zone_geometry_extra("body", slots, {"body": {}}, "default", "")
+        fz.material_for_zone_geometry_extra("body", slots, {"body": {}}, "default", "")
         is limb
     )
 
@@ -839,7 +839,7 @@ def test_material_for_zone_geometry_extra_creates_when_extra_hex() -> None:
     slots = {"body": b}
     new_m = MagicMock()
     with patch.object(ms, "create_material", return_value=new_m) as cm:
-        got = ms.material_for_zone_geometry_extra(
+        got = fz.material_for_zone_geometry_extra(
             "body", slots, None, "default", "ff00aa"
         )
     assert got is new_m
@@ -854,14 +854,14 @@ def test_material_for_zone_geometry_extra_uses_zone_hex_when_extra_empty() -> No
     new_m = MagicMock()
     features = {"body": {"finish": "default", "hex": "00aa11"}}
     with patch.object(ms, "create_material", return_value=new_m) as cm:
-        got = ms.material_for_zone_geometry_extra("body", slots, features, "default", "")
+        got = fz.material_for_zone_geometry_extra("body", slots, features, "default", "")
     assert got is new_m
     assert cm.called
 
 
 def test_material_for_zone_geometry_extra_returns_none_when_slot_missing() -> None:
     assert (
-        ms.material_for_zone_geometry_extra("body", {}, {}, "matte", "aabbcc") is None
+        fz.material_for_zone_geometry_extra("body", {}, {}, "matte", "aabbcc") is None
     )
 
 

@@ -23,6 +23,8 @@ const COYOTE_TIME_DEFAULT: float = 0.1
 const JUMP_BUFFER_DEFAULT: float = 0.1
 const UPWARD_VY_EPS: float = 0.35
 const POS_EPS: float = 0.08
+const LEDGE_SPAWN: Vector3 = Vector3(24.0, 1.0, 0.0)
+const SHORT_FALL_BUMP_Y: float = 0.55
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -104,7 +106,6 @@ func _apply_player_props(player: CharacterBody3D, props: Dictionary) -> void:
 
 func _press_jump_once() -> void:
 	Input.action_press("jump")
-	Input.action_release("jump")
 
 
 func _hold_axis(axis: float) -> void:
@@ -122,25 +123,27 @@ func _hold_axis(axis: float) -> void:
 func _release_all_input() -> void:
 	Input.action_release("move_left")
 	Input.action_release("move_right")
-	Input.action_release("jump")
+	# Do not release jump here — _step_player releases jump after _physics_process so buffer tests
+	# can arm jump_just_pressed on the airborne press frame.
 
 
 func _step_player(player: CharacterBody3D, delta: float) -> void:
 	if not player.is_node_ready():
 		return
 	player._physics_process(delta)
+	Input.action_release("jump")
 
 
 func _begin_short_fall(player: CharacterBody3D) -> bool:
-	# ~0.05 m drop so landing occurs within jump_buffer_time (0.1s) after air press.
-	player.global_position.y += 0.06
-	player.velocity = Vector3(0.0, -0.15, 0.0)
-	for _i in range(6):
+	# Small drop: leave ground quickly, stay airborne long enough for 0.1s buffer after air-press.
+	player.global_position.y += SHORT_FALL_BUMP_Y
+	player.velocity = Vector3(0.0, -0.2, 0.0)
+	for _i in range(30):
 		_release_all_input()
 		_step_player(player, PHYSICS_STEP)
 		if not player.is_on_floor():
 			return true
-	return not player.is_on_floor()
+	return false
 
 
 func _settle_on_floor(player: CharacterBody3D, spawn: Vector3) -> bool:
@@ -302,7 +305,7 @@ func test_pfo4_coyote_jump_within_window_after_walking_off_ledge() -> void:
 		return
 	var player: CharacterBody3D = harness["player"] as CharacterBody3D
 	_apply_player_props(player, {"coyote_time": COYOTE_TIME_DEFAULT})
-	if not _settle_on_floor(player, Vector3(0.0, 1.0, 0.0)):
+	if not _settle_on_floor(player, LEDGE_SPAWN):
 		_teardown_sandbox(harness)
 		_fail("pfo4_coyote_off_ledge", "player did not settle on sandbox floor")
 		return
@@ -411,6 +414,7 @@ func test_pfo7_pass_through_one_way_from_below() -> void:
 		_teardown_sandbox(harness)
 		_fail("pfo7_pass_through_below", "player did not settle on ground")
 		return
+	_apply_player_props(player, {"jump_height": 150.0})
 	var platform_top: float = platform_y + 0.125
 	_press_jump_once()
 	var passed_through: bool = false

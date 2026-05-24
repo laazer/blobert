@@ -36,6 +36,31 @@ describe("StudioLookPanel (redesign_v2 IA)", () => {
     const values = useAppStore.getState().animatedBuildOptionValues.spider ?? {};
     expect(values.feat_body_hex).toBe("#b83228");
     expect(values.feat_body_finish).toBe("glossy");
+    expect(useAppStore.getState().commandExportFinish).toBe("glossy");
+    expect(useAppStore.getState().commandExportHexColor).toBe("#b83228");
+  });
+
+  it("applies lightning palette when body already uses spots texture", () => {
+    useAppStore.setState({
+      animatedBuildOptionValues: mergeBuildOptionValues(useAppStore.getState().animatedBuildControls, {
+        spider: {
+          feat_body_texture_mode: "spots",
+          feat_body_hex: "#6b3d8f",
+          feat_body_finish: "matte",
+          feat_body_color_mode: "image",
+          feat_body_color_image_id: "hash_texture",
+        },
+      }),
+    });
+    render(<StudioLookPanel slug="spider" />);
+    fireEvent.click(screen.getByTestId("studio-look-element-lightning"));
+
+    const values = useAppStore.getState().animatedBuildOptionValues.spider ?? {};
+    expect(values.feat_body_hex).toBe("#e8e0a0");
+    expect(values.feat_body_finish).toBe("metallic");
+    expect(values.feat_body_color_mode).toBe("single");
+    expect(values.feat_body_color_image_id).toBe("");
+    expect(useAppStore.getState().commandExportHexColor).toBe("#e8e0a0");
   });
 
   it("sets finish and pattern mode for active zone", () => {

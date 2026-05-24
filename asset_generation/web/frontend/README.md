@@ -49,7 +49,7 @@ const body = await fetchHealth();
 |----------|---------|---------|
 | `BLOBERT_OPENAPI_URL` | `http://127.0.0.1:8000/openapi.json` | Live spec URL |
 | `BLOBERT_SYNC_SKIP_FETCH` | unset | Set to `1` to use cache only (tests) |
-| `VITE_STUDIO_LAYOUT` | unset | Set to `1` to enable the Studio shell (`StudioLayout`) instead of `ThreePanelLayout` |
+| `VITE_STUDIO_LAYOUT` | `1` in `.env.development` / `task editor` | Set to `1` to enable the Studio shell (`StudioLayout`) instead of `ThreePanelLayout`. Restart Vite after changing. |
 
 ## Dual validation (M902-25)
 

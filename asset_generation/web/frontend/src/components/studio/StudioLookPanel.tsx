@@ -7,6 +7,8 @@ import {
   ELEMENT_IDS,
   buildFeatUpdatesFromPalette,
   defaultElementForSlug,
+  sanitizeFinish,
+  sanitizeHex,
   type CoarseZoneKey,
   type ElementId as PaletteElementId,
 } from "../../utils/elementColorPalettes";
@@ -42,6 +44,7 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
   const values = useAppStore((s) => s.animatedBuildOptionValues[slug] ?? {});
   const applyBulk = useAppStore((s) => s.applyAnimatedBuildOptionsForSlug);
   const setOption = useAppStore((s) => s.setAnimatedBuildOption);
+  const setCommandExport = useAppStore((s) => s.setCommandExport);
   const commandEnemy = useAppStore((s) => s.commandContext.enemy);
 
   const [pickedElement, setPickedElement] = useState<ElementId | null>(null);
@@ -92,8 +95,16 @@ export function StudioLookPanel({ slug, activeZone: activeZoneProp, onActiveZone
       const pal = DEFAULT_ELEMENT_PALETTES[id as PaletteElementId];
       const updates = buildFeatUpdatesFromPalette(pal, knownDefKeys, values);
       if (Object.keys(updates).length > 0) applyBulk(slug, updates);
+      const body = pal.body;
+      if (body) {
+        const hex = sanitizeHex(body.hex);
+        setCommandExport({
+          finish: sanitizeFinish(body.finish),
+          hexColor: hex,
+        });
+      }
     },
-    [slug, knownDefKeys, values, applyBulk],
+    [slug, knownDefKeys, values, applyBulk, setCommandExport],
   );
 
   const setZoneFinish = useCallback(

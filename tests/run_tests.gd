@@ -48,7 +48,10 @@ func _initialize() -> void:
 	var suites: Array[String] = []
 	_collect_test_files("res://tests", suites)
 	suites.sort()
+	call_deferred("_run_suites", suites)
 
+
+func _run_suites(suites: Array[String]) -> void:
 	var total_failures: int = 0
 
 	for path in suites:

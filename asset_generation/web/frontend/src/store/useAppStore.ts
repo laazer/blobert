@@ -30,6 +30,7 @@ import {
   PLAYER_PROCEDURAL_BUILD_SLUG,
 } from "../utils/enemyDisplay";
 import { PLAYER_COLORS } from "../components/CommandPanel/commandLogic";
+import { previewPathFromAssetsUrl } from "../utils/previewPathFromAssetsUrl";
 
 /** Zone + defaults before / after /api/meta — keeps Colors usable if the API is down or still loading. */
 const OFFLINE_SEEDED_BUILD_CONTROLS = mergeCanonicalZoneControlsForAllSlugs(
@@ -396,7 +397,10 @@ export const useAppStore = create<AppState>()(
       set((s) => { s.assets = assets; });
       if (!outputFile) return;
       const normalized = outputFile.includes("/") ? outputFile : `animated_exports/${outputFile}`;
-      get().selectAssetByPath(normalized, { importBuildOptions: true });
+      const currentRel = previewPathFromAssetsUrl(get().activeGlbUrl);
+      // Regenerate overwrites the same GLB: keep in-session build/export settings that drove the run.
+      const importBuildOptions = currentRel == null || currentRel !== normalized;
+      get().selectAssetByPath(normalized, { importBuildOptions });
     },
   };
   })

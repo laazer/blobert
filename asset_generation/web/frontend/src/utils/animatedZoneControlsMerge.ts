@@ -1,4 +1,5 @@
 import type { AnimatedBuildControlDef } from "../types";
+import { syntheticSpiderEyeBuildDefs } from "../constants/spiderBuildControls";
 import { ZONE_FINISH_HEX_RE, ZONE_TEXTURE_CONTROL_RE } from "../components/Preview/featureMaterialPartition";
 import { normalizeAnimatedSlug } from "./enemyDisplay";
 
@@ -467,7 +468,47 @@ export function mergeCanonicalZoneControls(
       seen.add(d.key);
     }
   }
-  return mergePartMaterialFillControls(merged);
+  const withSpiderEyes = slugKey === "spider" ? mergeSpiderEyeBuildControls(merged) : merged;
+  return mergePartMaterialFillControls(withSpiderEyes);
+}
+
+/** Studio Build: canonical spider eye_count (select pills), replacing stale int/dropdown defs. */
+export function mergeSpiderEyeBuildControls(
+  defs: readonly AnimatedBuildControlDef[],
+): AnimatedBuildControlDef[] {
+  const synthetic = syntheticSpiderEyeBuildDefs();
+  const eyeCanonical = synthetic.find(
+    (d): d is Extract<AnimatedBuildControlDef, { type: "select" }> =>
+      d.key === "eye_count" && d.type === "select",
+  );
+  if (!eyeCanonical) return [...defs];
+
+  const withoutEye = defs.filter((d) => d.key !== "eye_count");
+  const prior = defs.find((d) => d.key === "eye_count");
+  let defaultVal = eyeCanonical.default;
+  if (prior?.type === "select") defaultVal = prior.default;
+  else if (prior?.type === "int") defaultVal = prior.default;
+
+  const eyeDef: Extract<AnimatedBuildControlDef, { type: "select" }> = {
+    ...eyeCanonical,
+    label: "Count",
+    options: [...eyeCanonical.options].sort((a, b) => a - b),
+    default: defaultVal,
+  };
+
+  const insertAt = withoutEye.findIndex(
+    (d) => d.key.startsWith("feat_") || d.key === "body_type" || d.key.startsWith("RIG_"),
+  );
+  const at = insertAt >= 0 ? insertAt : withoutEye.length;
+  const out = [...withoutEye];
+  out.splice(at, 0, eyeDef);
+
+  for (const sd of synthetic) {
+    if (sd.key === "eye_count") continue;
+    if (out.some((d) => d.key === sd.key)) continue;
+    out.splice(at, 0, sd);
+  }
+  return out;
 }
 
 /**

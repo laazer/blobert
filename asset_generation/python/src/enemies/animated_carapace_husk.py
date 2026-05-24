@@ -20,7 +20,8 @@ from ..core.rig_models.humanoid_simple import (
     HumanoidSimpleRig,
 )
 from ..core.rig_models.limb_mesh import append_segmented_limb_mesh
-from ..materials.material_system import apply_material_to_object, material_for_zone_part
+from ..materials.feature_zones import material_for_zone_part
+from ..materials.material_system import apply_material_to_object
 from ..utils.body_type_presets import humanoid_torso_leg_multipliers
 from ..utils.config import EnemyBodyTypes
 from .animated_enemy import UsesSimpleRigMixin

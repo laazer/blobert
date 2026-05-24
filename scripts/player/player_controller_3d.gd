@@ -1,6 +1,7 @@
 # player_controller_3d.gd
 #
 # 3D engine-integration layer for blobert (2.5D).
+# Normative physics frame pipeline: project_board/specs/player_physics_frame_order_spec.md
 # Uses the same MovementSimulation; maps Vector2 velocity to Vector3
 # (X = horizontal, Y = vertical; 2D y+ down -> 3D y- so velocity.y = -sim.velocity.y).
 # Movement constrained to plane Z=0; camera fixed for side view.
@@ -54,6 +55,12 @@ var _enemy_acid_dots: Array = []
 
 ## M8 adhesion lunge: horizontal move + jump input suppressed; velocity.x clamped after sim.
 var _enemy_movement_root_remaining: float = 0.0
+var _jump_buffer_timer: float = 0.0
+var _jump_pressed_last_frame: bool = false
+
+const _GROUND_COLLISION_MASK: int = 1
+const _ONE_WAY_COLLISION_MASK: int = 2
+const _FULL_GROUND_MASK: int = 3
 
 signal detach_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_started(player_position: Vector3, chunk_position: Vector3)
@@ -67,6 +74,7 @@ const _DEFAULT_MOVEMENT_MAX_SPEED_2D: float = 300.0
 @export var movement_max_speed_2d: float = _DEFAULT_MOVEMENT_MAX_SPEED_2D
 @export var jump_height: float = 120.0
 @export var coyote_time: float = 0.1
+@export var jump_buffer_time: float = 0.1
 @export var jump_cut_velocity: float = -200.0
 @export var cling_gravity_scale: float = 0.1
 @export var max_cling_time: float = 1.5
@@ -135,6 +143,7 @@ func _ready() -> void:
 	_player_state_machine = PlayerStateMachine.new()
 	_player_state_ctx = PlayerStateDerivationContext.new()
 	_base_max_speed = _simulation.max_speed
+	collision_mask = _FULL_GROUND_MASK
 
 	var root: Node = get_parent()
 	if root != null:
@@ -186,33 +195,68 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# PFO-2 Step 0: read input before gameplay tick.
+	var input: Dictionary = _read_player_input()
+	# PFO-2 Step 1: advance gameplay FSM timers only.
+	_player_state_machine.update(delta)
+	# PFO-2 Step 2: controller timers (jump buffer; coyote stays in sim).
+	_tick_controller_timers(delta, input["jump_just_pressed"])
+	# PFO-2 Step 3: collision read + movement speed modifiers.
+	var frame: Dictionary = _prepare_frame_collision_state(delta)
+	# PFO-2 Step 4: kinematic dispatch (simulate; no move_and_slide).
+	var next_state: MovementSimulation.MovementState = _dispatch_movement(input, frame, delta)
+	# PFO-2 Step 5: one-way collision mask from post-dispatch velocity.
+	_update_one_way_collision_mask()
+	# PFO-2 Step 6: presentation sync (read-only from controller).
+	_sync_renderer_from_state(next_state)
+	# PFO-2 Step 7: collision resolution (last engine move).
+	_apply_collision_slide()
+	# PFO-2 Step 8: post-slide housekeeping (land juice, state copy, chunks).
+	_post_slide_housekeeping(next_state, input, frame, delta)
+	# PFO-2 Step 9: gameplay FSM derivation from post-slide engine state.
+	_sync_player_state_machine()
+
+
+func _read_player_input() -> Dictionary:
 	var input_axis: float = Input.get_axis("move_left", "move_right")
 	var jump_pressed: bool = Input.is_action_pressed("jump")
 	var jump_just_pressed: bool = Input.is_action_just_pressed("jump")
+	if not jump_just_pressed and jump_pressed and not _jump_pressed_last_frame:
+		jump_just_pressed = true
+	_jump_pressed_last_frame = jump_pressed
 	if _enemy_movement_root_remaining > 0.0:
 		input_axis = 0.0
 		jump_pressed = false
 		jump_just_pressed = false
-	var detach_just_pressed: bool = Input.is_action_just_pressed("detach")
-	var detach_2_just_pressed: bool = Input.is_action_just_pressed("detach_2")
-
 	if OS.is_debug_build() and Input.is_action_just_pressed("debug_kill"):
 		_current_state.current_hp = _simulation.min_hp
+	return {
+		"input_axis": input_axis,
+		"jump_pressed": jump_pressed,
+		"jump_just_pressed": jump_just_pressed,
+		"detach_just_pressed": Input.is_action_just_pressed("detach"),
+		"detach_2_just_pressed": Input.is_action_just_pressed("detach_2"),
+	}
 
-	_player_state_machine.update(delta)
 
+func _tick_controller_timers(delta: float, jump_just_pressed: bool) -> void:
+	var buffer_duration: float = maxf(0.0, jump_buffer_time)
+	if jump_just_pressed and buffer_duration > 0.0:
+		_jump_buffer_timer = buffer_duration
+	_jump_buffer_timer = maxf(0.0, _jump_buffer_timer - delta)
+	# PFO-2 Step 2c: reserved for future invulnerability / iframes timers (out of scope M11-02).
+
+
+func _prepare_frame_collision_state(_delta: float) -> Dictionary:
 	_current_state.is_on_floor = is_on_floor()
-
 	var is_on_wall_now: bool = is_on_wall()
 	var wall_normal_x: float = 0.0
 	if is_on_wall_now:
 		wall_normal_x = get_wall_normal().x
-
 	if _base_max_speed <= 0.0:
 		_base_max_speed = _simulation.max_speed
-
 	if _fusion_active:
-		_fusion_timer -= delta
+		_fusion_timer -= _delta
 		if _fusion_timer > 0.0:
 			_simulation.max_speed = _base_max_speed * _fusion_multiplier
 		else:
@@ -230,19 +274,28 @@ func _physics_process(delta: float) -> void:
 			if mutation_active:
 				speed_multiplier = _MUTATION_SPEED_MULTIPLIER
 		_simulation.max_speed = _base_max_speed * speed_multiplier
+	return {"is_on_wall_now": is_on_wall_now, "wall_normal_x": wall_normal_x}
 
+
+func _dispatch_movement(
+	input: Dictionary,
+	frame: Dictionary,
+	delta: float
+) -> MovementSimulation.MovementState:
+	var effective_jump_just_pressed: bool = input["jump_just_pressed"]
+	if _jump_buffer_timer > 0.0 and is_on_floor():
+		effective_jump_just_pressed = true
+		_jump_buffer_timer = 0.0
 	var next_state: MovementSimulation.MovementState = _simulation.simulate(
-		_current_state, input_axis, jump_pressed, jump_just_pressed,
-		is_on_wall_now, wall_normal_x, [detach_just_pressed, detach_2_just_pressed], delta
+		_current_state,
+		input["input_axis"],
+		input["jump_pressed"],
+		effective_jump_just_pressed,
+		frame["is_on_wall_now"],
+		frame["wall_normal_x"],
+		[input["detach_just_pressed"], input["detach_2_just_pressed"]],
+		delta
 	)
-
-	if next_state.jump_consumed and not _current_state.jump_consumed:
-		var am := _get_audio_manager()
-		if am != null and am.jump_sfx != null:
-			am.jump_sfx.pitch_scale = randf_range(_JUMP_SFX_PITCH_MIN, _JUMP_SFX_PITCH_MAX)
-			am.jump_sfx.play()
-		_juice_jump_stretch()
-
 	velocity = Vector3(
 		next_state.velocity.x / SCALE_2D_TO_3D,
 		-next_state.velocity.y / SCALE_2D_TO_3D,
@@ -250,40 +303,89 @@ func _physics_process(delta: float) -> void:
 	)
 	if _enemy_movement_root_remaining > 0.0:
 		velocity.x = 0.0
-
 	var pos: Vector3 = global_position
 	pos.z = _PLAY_PLANE_Z
 	global_position = pos
+	return next_state
 
+
+func _update_one_way_collision_mask() -> void:
+	# PFO-7: ascending (vy>0) or airborne apex (vy==0) excludes one-way; grounded vy<=0 includes one-way.
+	var exclude_one_way: bool = velocity.y > 0.0 or (not is_on_floor() and velocity.y == 0.0)
+	collision_mask = _GROUND_COLLISION_MASK if exclude_one_way else _FULL_GROUND_MASK
+
+
+func _sync_renderer_from_state(next_state: MovementSimulation.MovementState) -> void:
+	if next_state.jump_consumed and not _current_state.jump_consumed:
+		var am := _get_audio_manager()
+		if am != null and am.jump_sfx != null:
+			am.jump_sfx.pitch_scale = randf_range(_JUMP_SFX_PITCH_MIN, _JUMP_SFX_PITCH_MAX)
+			am.jump_sfx.play()
+		_juice_jump_stretch()
+
+
+func _apply_collision_slide() -> void:
 	move_and_slide()
-
 	if _enemy_movement_root_remaining > 0.0:
 		velocity.x = 0.0
 
-	if is_on_floor() and not _current_state.is_on_floor:
-		_juice_land_squash()
 
+func _post_slide_housekeeping(
+	next_state: MovementSimulation.MovementState,
+	input: Dictionary,
+	frame: Dictionary,
+	delta: float
+) -> void:
+	var landed_this_frame: bool = is_on_floor() and not _current_state.is_on_floor
+	# EC-1: buffer consumes on first grounded frame; floor contact is unknown until after Step 7.
+	if landed_this_frame and _jump_buffer_timer > 0.0 and not next_state.jump_consumed:
+		_jump_buffer_timer = 0.0
+		_current_state.velocity = Vector2(velocity.x * SCALE_2D_TO_3D, -velocity.y * SCALE_2D_TO_3D)
+		_current_state.coyote_timer = next_state.coyote_timer
+		_current_state.jump_consumed = next_state.jump_consumed
+		_current_state.is_wall_clinging = next_state.is_wall_clinging
+		_current_state.cling_timer = next_state.cling_timer
+		_current_state.is_on_floor = true
+		next_state = _simulation.simulate(
+			_current_state,
+			input["input_axis"],
+			false,
+			true,
+			frame["is_on_wall_now"],
+			frame["wall_normal_x"],
+			[false, false],
+			delta
+		)
+		velocity = Vector3(
+			next_state.velocity.x / SCALE_2D_TO_3D,
+			-next_state.velocity.y / SCALE_2D_TO_3D,
+			_PLAY_PLANE_Z
+		)
+		if _enemy_movement_root_remaining > 0.0:
+			velocity.x = 0.0
+		_sync_renderer_from_state(next_state)
+	if landed_this_frame:
+		_juice_land_squash()
 	_current_state.velocity = Vector2(velocity.x * SCALE_2D_TO_3D, -velocity.y * SCALE_2D_TO_3D)
 	_current_state.coyote_timer = next_state.coyote_timer
 	_current_state.jump_consumed = next_state.jump_consumed
 	_current_state.is_wall_clinging = next_state.is_wall_clinging
 	_current_state.cling_timer = next_state.cling_timer
 	_current_state.current_hp = next_state.current_hp
-
 	var can_afford_throw: bool = _current_state.current_hp >= _simulation.hp_cost_per_detach
 	var detach_inputs: Array = [
-		detach_just_pressed and can_afford_throw,
-		detach_2_just_pressed and can_afford_throw,
+		input["detach_just_pressed"] and can_afford_throw,
+		input["detach_2_just_pressed"] and can_afford_throw,
 	]
 	for i in _CHUNK_SLOT_COUNT:
 		_process_chunk_slot(i, detach_inputs[i], next_state, delta)
-
 	_tick_enemy_acid_dots(delta)
-
 	if _enemy_movement_root_remaining > 0.0:
 		_enemy_movement_root_remaining = maxf(0.0, _enemy_movement_root_remaining - delta)
 
-	_sync_player_state_machine()
+
+func get_one_way_collision_mask() -> int:
+	return collision_mask
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
@@ -625,6 +727,13 @@ func reset_hp() -> void:
 	_player_state_machine.reset()
 	_enemy_acid_dots.clear()
 	_enemy_movement_root_remaining = 0.0
+	_jump_buffer_timer = 0.0
+	_jump_pressed_last_frame = false
+	velocity = Vector3.ZERO
+	_current_state.velocity = Vector2.ZERO
+	_current_state.jump_consumed = false
+	if InputMap.has_action("jump"):
+		Input.action_release("jump")
 
 
 func reset_chunks() -> void:
@@ -650,6 +759,8 @@ func reset_position(target: Vector3) -> void:
 	global_position = target
 	position = target
 	velocity = Vector3.ZERO
+	_jump_buffer_timer = 0.0
+	_jump_pressed_last_frame = false
 
 
 func has_chunk() -> bool:

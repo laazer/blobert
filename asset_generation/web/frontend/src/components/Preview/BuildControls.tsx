@@ -1,7 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ELEMENTS } from "../../constants/elements";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
 import { normalizeAnimatedSlug, PLAYER_PROCEDURAL_BUILD_SLUG } from "../../utils/enemyDisplay";
+import { inferFamilyElementId } from "../../utils/inferFamilyElement";
 import { animatedExportRelativePath, parseAnimatedEnemyExportFilename, parseVariantFilename, playerExportRelativePath } from "../../utils/glbVariants";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
@@ -11,6 +13,19 @@ import {
   type PartTreeNode,
 } from "./quickSourceNav";
 import { ControlRow, FloatControlsTable } from "./BuildControlRow";
+import { StudioPanelHead } from "../studio/StudioPanelHead";
+import { StudioBuildPanel } from "../studio/StudioBuildPanel";
+import {
+  STUDIO_INK_MUTED,
+  STUDIO_INK_SECONDARY,
+  STUDIO_NEUTRAL_ACCENT,
+  STUDIO_SURFACE_PANEL,
+} from "../../styles/studioTokens";
+
+export type BuildControlsProps = {
+  /** Studio Build inspector: transparent shell, panel heads, no legacy IDE chrome. */
+  studioSurface?: boolean;
+};
 
 const s = {
   bar: {
@@ -157,7 +172,7 @@ function PartTreeRows({ nodes, depth }: { nodes: PartTreeNode[]; depth: number }
  * Procedural build options for the selected animated enemy (preview always uses variant index 00).
  * Finish, base color, and pattern build options live on the Colors tab (`TextureControlsSection`).
  */
-export function BuildControls() {
+export function BuildControls({ studioSurface = false }: BuildControlsProps) {
   const commandContext = useAppStore((st) => st.commandContext);
   const animatedEnemyMeta = useAppStore((st) => st.animatedEnemyMeta);
   const animatedBuildControls = useAppStore((st) => st.animatedBuildControls);
@@ -169,9 +184,12 @@ export function BuildControls() {
   const metaBackend = useAppStore((st) => st.metaBackend);
   const metaBackendDetail = useAppStore((st) => st.metaBackendDetail);
   const loadAnimatedEnemyMeta = useAppStore((st) => st.loadAnimatedEnemyMeta);
+  const centerPanel = useAppStore((st) => st.centerPanel);
   const [meshFilter, setMeshFilter] = useState("");
   const [rigFilter, setRigFilter] = useState("");
   const [partsOpen, setPartsOpen] = useState(false);
+
+  const surfaceActive = studioSurface || centerPanel === "build";
 
   const { cmd, enemy } = commandContext;
   const playerColor = (enemy || "").trim().toLowerCase();
@@ -214,10 +232,12 @@ export function BuildControls() {
   const controlSlugs = Object.keys(animatedBuildControls);
 
   useEffect(() => {
+    if (!surfaceActive) return;
     if (enemyMetaStatus !== "idle") return;
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
     void loadAnimatedEnemyMeta();
   }, [
+    surfaceActive,
     enemyMetaStatus,
     loadAnimatedEnemyMeta,
     isAnimatedEnemy,
@@ -225,6 +245,7 @@ export function BuildControls() {
   ]);
 
   useEffect(() => {
+    if (!surfaceActive) return;
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
     const current = previewPathFromAssetsUrl(useAppStore.getState().activeGlbUrl);
     if (isPlayerSlimeBuild) {
@@ -254,7 +275,55 @@ export function BuildControls() {
     const desired = animatedExportRelativePath(slug, 0);
     if (current === desired) return;
     selectAssetByPath(desired);
-  }, [isAnimatedEnemy, isPlayerSlimeBuild, playerColor, slug, selectAssetByPath]);
+  }, [surfaceActive, isAnimatedEnemy, isPlayerSlimeBuild, playerColor, slug, selectAssetByPath]);
+
+  const studioAccentHue = useMemo(() => {
+    if (!studioSurface) return STUDIO_NEUTRAL_ACCENT;
+    if (cmd === "animated" && enemy.trim()) {
+      return ELEMENTS[inferFamilyElementId(enemy.trim(), [])].hue;
+    }
+    return STUDIO_NEUTRAL_ACCENT;
+  }, [studioSurface, cmd, enemy]);
+
+  const shellStyle = studioSurface
+    ? {
+        display: "flex" as const,
+        flexDirection: "column" as const,
+        gap: 16,
+        flex: 1,
+        minHeight: 0,
+        background: "transparent",
+        color: STUDIO_INK_SECONDARY,
+      }
+    : {
+        display: "flex" as const,
+        flexDirection: "column" as const,
+        alignItems: "stretch" as const,
+        gap: 8,
+        padding: "8px 8px 12px",
+        background: "#1e1e1e",
+        color: "#9d9d9d",
+        fontSize: 12,
+        flex: 1,
+        minHeight: 0,
+      };
+
+  const sectionTitleStyle = studioSurface
+    ? { color: STUDIO_INK_MUTED, fontSize: 11, fontWeight: 600 as const }
+    : s.sectionTitle;
+
+  const filterStyle = studioSurface
+    ? {
+        background: "#16161d",
+        color: STUDIO_INK_SECONDARY,
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 6,
+        padding: "4px 8px",
+        fontSize: 11,
+        width: 128,
+        flex: "0 0 auto" as const,
+      }
+    : s.filterInput;
 
   const meshPartTreeBlock = (
     <>
@@ -271,26 +340,49 @@ export function BuildControls() {
     </>
   );
 
-  if (!isAnimatedEnemy && !isPlayerSlimeBuild) {
-    return (
-      <div
+  const meshPartTreeStudio = (
+    <details data-testid="studio-build-mesh-parts" style={{ marginTop: 4 }}>
+      <summary
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          gap: 8,
-          padding: "8px 8px 12px",
-          background: "#1e1e1e",
-          color: "#9d9d9d",
-          fontSize: 12,
-          flex: 1,
-          minHeight: 0,
+          cursor: "pointer",
+          fontSize: 11,
+          fontWeight: 600,
+          color: STUDIO_INK_MUTED,
+          userSelect: "none",
         }}
       >
-        {meshPartTreeBlock}
-        <div style={{ padding: "4px 4px 0" }}>
-          Set <strong style={{ color: "#bbb" }}>cmd</strong> to <code style={{ color: "#bbb" }}>animated</code> (enemy, not
-          &quot;all&quot;) or <code style={{ color: "#bbb" }}>player</code> (color) to use build controls.
+        Mesh parts (source)
+      </summary>
+      <div
+        style={{
+          marginTop: 8,
+          maxHeight: 200,
+          overflowY: "auto",
+          background: STUDIO_SURFACE_PANEL,
+          border: "1px solid rgba(255,255,255,0.04)",
+          borderRadius: 8,
+          padding: "6px 8px",
+          fontSize: 11,
+          color: STUDIO_INK_MUTED,
+        }}
+      >
+        <PartTreeRows nodes={partTree} depth={0} />
+      </div>
+    </details>
+  );
+
+  if (!isAnimatedEnemy && !isPlayerSlimeBuild) {
+    return (
+      <div style={shellStyle} data-testid={studioSurface ? "studio-build-empty" : undefined}>
+      {studioSurface ? (
+        <StudioPanelHead title="Build options" subtitle="Procedural mesh & rig parameters" />
+      ) : null}
+      {studioSurface ? null : meshPartTreeBlock}
+        <div style={{ padding: studioSurface ? 0 : "4px 4px 0", color: STUDIO_INK_MUTED, fontSize: 12 }}>
+          Set <strong style={{ color: studioSurface ? STUDIO_INK_SECONDARY : "#bbb" }}>cmd</strong> to{" "}
+          <code style={{ color: studioSurface ? STUDIO_INK_SECONDARY : "#bbb" }}>animated</code> (enemy, not
+          &quot;all&quot;) or <code style={{ color: studioSurface ? STUDIO_INK_SECONDARY : "#bbb" }}>player</code> (color) to
+          use build controls.
         </div>
       </div>
     );
@@ -336,18 +428,26 @@ export function BuildControls() {
 
     return (
       <div
-        style={{
-          ...s.bar,
-          flexDirection: "column",
-          alignItems: "stretch",
-          flex: 1,
-          minHeight: 0,
-          flexShrink: 1,
-        }}
+        style={
+          studioSurface
+            ? shellStyle
+            : {
+                ...s.bar,
+                flexDirection: "column",
+                alignItems: "stretch",
+                flex: 1,
+                minHeight: 0,
+                flexShrink: 1,
+              }
+        }
+        data-testid={studioSurface ? "studio-build-controls" : undefined}
       >
-        {meshPartTreeBlock}
+        {studioSurface ? (
+          <StudioPanelHead title="Build options" subtitle="Procedural mesh & rig parameters" />
+        ) : null}
+        {!studioSurface ? meshPartTreeBlock : null}
         {busy ? (
-          <span style={{ color: "#9d9d9d", fontSize: 11 }}>Loading build controls…</span>
+          <span style={{ color: STUDIO_INK_MUTED, fontSize: 11 }}>Loading build controls…</span>
         ) : enemyMetaStatus === "error" ? (
           <span style={{ color: "#f48771", fontSize: 11 }} title={enemyMetaError ?? ""}>
             {enemyMetaError ?? "Could not load build controls."} Start the asset editor API (port 8000) or check the Vite proxy.
@@ -357,15 +457,28 @@ export function BuildControls() {
         )}
         <button
           type="button"
-          style={{
-            background: "#3c3c3c",
-            color: "#d4d4d4",
-            border: "1px solid #555",
-            borderRadius: 3,
-            padding: "2px 8px",
-            fontSize: 11,
-            cursor: busy ? "wait" : "pointer",
-          }}
+          style={
+            studioSurface
+              ? {
+                  background: "#16161d",
+                  color: STUDIO_INK_SECONDARY,
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 6,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  cursor: busy ? "wait" : "pointer",
+                  alignSelf: "flex-start",
+                }
+              : {
+                  background: "#3c3c3c",
+                  color: "#d4d4d4",
+                  border: "1px solid #555",
+                  borderRadius: 3,
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  cursor: busy ? "wait" : "pointer",
+                }
+          }
           disabled={busy}
           onClick={() => loadAnimatedEnemyMeta()}
         >
@@ -410,14 +523,14 @@ export function BuildControls() {
     const body = (
       <>
         <div style={s.sectionHeaderRow}>
-          <span style={s.sectionTitle}>{label}</span>
+          <span style={sectionTitleStyle}>{label}</span>
           <input
             type="search"
             placeholder={filterPlaceholder}
             aria-label={filterAria}
             value={filterValue}
             onChange={(e) => setFilter(e.target.value)}
-            style={s.filterInput}
+            style={filterStyle}
           />
         </div>
         <FloatControlsTable
@@ -455,59 +568,82 @@ export function BuildControls() {
 
   return (
     <div
-      style={{
-        ...s.bar,
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: 10,
-        flex: 1,
-        minHeight: 0,
-        flexShrink: 1,
-      }}
+      style={
+        studioSurface
+          ? shellStyle
+          : {
+              ...s.bar,
+              flexDirection: "column",
+              alignItems: "stretch",
+              gap: 10,
+              flex: 1,
+              minHeight: 0,
+              flexShrink: 1,
+            }
+      }
+      data-testid={studioSurface ? "studio-build-controls" : undefined}
     >
-      {meshPartTreeBlock}
+      {!studioSurface ? meshPartTreeBlock : null}
       {buildDefs.length === 0 && defs.length > 0 ? (
-        <span style={{ color: "#9d9d9d", fontSize: 11 }}>
+        <span style={{ color: STUDIO_INK_MUTED, fontSize: 11 }}>
           No mesh or rig numeric fields here for this enemy — per-part finishes and hex colors are on the{" "}
-          <strong style={{ color: "#bbb" }}>Colors</strong> tab.
+          <strong style={{ color: studioSurface ? STUDIO_INK_SECONDARY : "#bbb" }}>Look</strong> tab.
         </span>
       ) : null}
-      {nonFloat.map((def) => {
-        const dis = buildControlDisabled(slug, def.key, values);
-        return (
-          <div key={def.key}>
-            <div style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}>
-              <ControlRow
-                def={def}
-                value={values[def.key]}
-                onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
-              />
-            </div>
-          </div>
-        );
-      })}
-      {floatSection(
-        "Rig",
-        rigFloats,
-        rigFiltered,
-        rigFilter,
-        setRigFilter,
-        "Filter rig…",
-        "Filter rig (bone layout) parameters",
-        s.rigFloatScrollWrap,
-        false,
+      {studioSurface ? (
+        <StudioBuildPanel
+          slug={slug}
+          defs={buildDefs}
+          values={values}
+          accentHue={studioAccentHue}
+          isRowDisabled={(key) => buildControlDisabled(slug, key, values)}
+          onChange={(key, v) => setAnimatedBuildOption(slug, key, v)}
+          meshPartTree={meshPartTreeStudio}
+        />
+      ) : (
+        <>
+          {nonFloat.map((def) => {
+            const dis = buildControlDisabled(slug, def.key, values);
+            return (
+              <div key={def.key}>
+                <div style={{ opacity: dis ? 0.42 : 1, pointerEvents: dis ? "none" : undefined }}>
+                  <ControlRow
+                    def={def}
+                    value={values[def.key]}
+                    onChange={(v: number | string | boolean) => setAnimatedBuildOption(slug, def.key, v)}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </>
       )}
-      {floatSection(
-        "Mesh",
-        meshFloats,
-        meshFiltered,
-        meshFilter,
-        setMeshFilter,
-        "Filter mesh…",
-        "Filter mesh parameters",
-        s.meshFloatScrollWrap,
-        true,
-      )}
+      {!studioSurface ? (
+        <>
+          {floatSection(
+            "Rig",
+            rigFloats,
+            rigFiltered,
+            rigFilter,
+            setRigFilter,
+            "Filter rig…",
+            "Filter rig (bone layout) parameters",
+            s.rigFloatScrollWrap,
+            false,
+          )}
+          {floatSection(
+            "Mesh",
+            meshFloats,
+            meshFiltered,
+            meshFilter,
+            setMeshFilter,
+            "Filter mesh…",
+            "Filter mesh parameters",
+            s.meshFloatScrollWrap,
+            true,
+          )}
+        </>
+      ) : null}
     </div>
   );
 }
