@@ -4,10 +4,14 @@ import {
   STUDIO_INK_PRIMARY,
   STUDIO_INK_SECONDARY,
   STUDIO_SURFACE_PANEL,
+  STUDIO_SURFACE_ROOT,
 } from "./studioTokens";
 
+/** Meta bar, animation strip, and preview letterbox — matches studio column chrome. */
+export const STUDIO_PREVIEW_CHROME_BG = "#0d0d13";
+
 export const studioAnimationPanelRoot: CSSProperties = {
-  background: "#0d0d13",
+  background: STUDIO_PREVIEW_CHROME_BG,
   borderTop: "1px solid rgba(255,255,255,0.06)",
   padding: "10px 16px",
   display: "flex",
@@ -21,7 +25,7 @@ export const studioAnimationCollapsibleBar: CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "8px 16px",
-  background: "#0d0d13",
+  background: STUDIO_PREVIEW_CHROME_BG,
   borderTop: "1px solid rgba(255,255,255,0.06)",
   flexShrink: 0,
 };
@@ -81,7 +85,7 @@ export const studioPreviewMetaBarRoot: CSSProperties = {
   alignItems: "center",
   gap: 6,
   padding: "8px 12px",
-  background: "#0d0d13",
+  background: STUDIO_PREVIEW_CHROME_BG,
   borderBottom: "1px solid rgba(255,255,255,0.06)",
   minHeight: 0,
 };
@@ -132,13 +136,14 @@ export function studioPreviewSizeChipStyle(inert: boolean): CSSProperties {
   };
 }
 
-const STUDIO_PREVIEW_VIEWPORT_BASE = "#08080c";
-const STUDIO_PREVIEW_VIEWPORT_EDGE = "#040406";
+/** Center wash — nudged toward library/inspector panel tone. */
+const STUDIO_PREVIEW_VIEWPORT_BASE = `color-mix(in srgb, ${STUDIO_SURFACE_PANEL} 18%, ${STUDIO_PREVIEW_CHROME_BG})`;
+const STUDIO_PREVIEW_VIEWPORT_EDGE = STUDIO_SURFACE_ROOT;
 
-/** Radial wash behind the GLB viewer — muted glow at center, very dark at edges. */
+/** Radial wash behind the GLB viewer — muted glow at center, studio root at edges. */
 export function studioPreviewViewportGlowBackground(accentHue: string): string {
   const glowCore = `color-mix(in srgb, ${accentHue} 8%, ${STUDIO_PREVIEW_VIEWPORT_BASE})`;
-  const glowMid = `color-mix(in srgb, ${accentHue} 3%, ${STUDIO_PREVIEW_VIEWPORT_BASE})`;
+  const glowMid = `color-mix(in srgb, ${accentHue} 3%, ${STUDIO_PREVIEW_CHROME_BG})`;
   return [
     `radial-gradient(ellipse 58% 52% at 50% 46%, ${glowCore} 0%, transparent 52%)`,
     `radial-gradient(ellipse 92% 84% at 50% 50%, ${glowMid} 0%, ${STUDIO_PREVIEW_VIEWPORT_EDGE} 100%)`,
@@ -163,7 +168,7 @@ export function studioPreviewViewportShellStyle(accentHue: string): CSSPropertie
     boxShadow: [
       `0 0 40px color-mix(in srgb, ${accentHue} 11%, transparent)`,
       `0 0 88px color-mix(in srgb, ${accentHue} 4%, transparent)`,
-      "inset 0 0 64px rgba(0, 0, 0, 0.55)",
+      "inset 0 0 48px rgba(0, 0, 0, 0.38)",
     ].join(", "),
   };
 }
