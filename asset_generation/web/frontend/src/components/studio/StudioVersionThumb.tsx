@@ -1,28 +1,28 @@
-import type { CSSProperties } from "react";
-import { versionThumbGradient } from "../../utils/studioVersionUi";
+import type { ElementId } from "../../constants/elements";
+import { ELEMENTS } from "../../constants/elements";
+import { StudioFamilyGlyph } from "./StudioFamilyGlyph";
 
 type Props = {
-  hue: string;
+  familyId: string;
+  versionId: string;
+  elementId: ElementId;
   title?: string;
 };
 
-const box: CSSProperties = {
-  width: 32,
-  height: 32,
-  borderRadius: 7,
-  flexShrink: 0,
-  boxShadow: "inset -3px -3px 6px rgba(0,0,0,0.35)",
-};
+/** Version list icon: family glyph from redesign, tinted by the version's element tag. */
+export function StudioVersionThumb({ familyId, versionId, elementId, title }: Props) {
+  const el = ELEMENTS[elementId];
 
-export function StudioVersionThumb({ hue, title }: Props) {
   return (
-    <div
-      title={title}
-      aria-hidden
-      style={{
-        ...box,
-        background: versionThumbGradient(hue),
-      }}
-    />
+    <div title={title} data-testid={`studio-version-thumb-${versionId}`}>
+      <StudioFamilyGlyph
+        familyId={familyId}
+        elementGlyph={el.glyph}
+        hue={el.hue}
+        soft={el.soft}
+        ink={el.ink}
+        size={32}
+      />
+    </div>
   );
 }

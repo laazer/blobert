@@ -1,6 +1,13 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { ELEMENTS } from "../../constants/elements";
 import { usePersistedBoolean } from "../../hooks/usePersistedBoolean";
-import { PreviewSourceBar } from "../Preview/PreviewSourceBar";
+import { useAppStore } from "../../store/useAppStore";
+import { inferFamilyElementId } from "../../utils/inferFamilyElement";
+import {
+  studioAnimationCollapsibleBar,
+  studioAnimationCollapsibleTitle,
+  studioAnimationCollapsibleToggle,
+} from "../../styles/studioPreviewStyles";
 import { GlbViewer } from "../Preview/GlbViewer";
 import { AnimationControls } from "../Preview/AnimationControls";
 
@@ -14,32 +21,6 @@ const previewColumnRoot: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
-};
-
-const collapsibleBar: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  padding: "4px 8px",
-  background: "#252526",
-  borderTop: "1px solid #3c3c3c",
-  flexShrink: 0,
-};
-
-const collapsibleTitle: CSSProperties = {
-  fontSize: 11,
-  color: "#9d9d9d",
-  flex: 1,
-};
-
-const collapsibleToggle: CSSProperties = {
-  background: "#3c3c3c",
-  color: "#d4d4d4",
-  border: "1px solid #555",
-  borderRadius: 3,
-  padding: "2px 8px",
-  cursor: "pointer",
-  fontSize: 11,
 };
 
 type CollapsiblePreviewSectionProps = {
@@ -65,11 +46,11 @@ function CollapsiblePreviewSection({
 }: CollapsiblePreviewSectionProps) {
   return (
     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" }}>
-      <div style={collapsibleBar}>
-        <span style={collapsibleTitle}>{title}</span>
+      <div style={studioAnimationCollapsibleBar}>
+        <span style={studioAnimationCollapsibleTitle}>{title}</span>
         <button
           type="button"
-          style={collapsibleToggle}
+          style={studioAnimationCollapsibleToggle}
           aria-expanded={expanded}
           aria-controls={expanded ? panelId : undefined}
           onClick={() => onExpandedChange(!expanded)}
@@ -88,6 +69,16 @@ function CollapsiblePreviewSection({
 
 export function StudioPreviewColumn() {
   const [animationExpanded, setAnimationExpanded] = usePersistedBoolean(LS_PREVIEW_ANIMATION_EXPANDED, true);
+  const commandContext = useAppStore((s) => s.commandContext);
+
+  const elementId = useMemo(() => {
+    if (commandContext.cmd === "animated" && commandContext.enemy.trim()) {
+      return inferFamilyElementId(commandContext.enemy.trim(), []);
+    }
+    return "physical" as const;
+  }, [commandContext.cmd, commandContext.enemy]);
+
+  const accentHue = ELEMENTS[elementId].hue;
 
   return (
     <main style={previewColumnRoot} data-testid="studio-preview-column">
@@ -100,7 +91,6 @@ export function StudioPreviewColumn() {
           overflow: "hidden",
         }}
       >
-        <PreviewSourceBar />
         <GlbViewer />
       </div>
       <CollapsiblePreviewSection
@@ -112,7 +102,7 @@ export function StudioPreviewColumn() {
         expanded={animationExpanded}
         onExpandedChange={setAnimationExpanded}
       >
-        <AnimationControls />
+        <AnimationControls appearance="studio" accentHue={accentHue} />
       </CollapsiblePreviewSection>
     </main>
   );

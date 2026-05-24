@@ -4,7 +4,13 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import * as client from "../../api/client";
 import { mergeBuildOptionValues } from "../../api/client";
+
+vi.mock("../../api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../api/client")>();
+  return { ...actual, fetchModelRegistry: vi.fn() };
+});
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
 import type { AnimatedBuildControlDef } from "../../types";
@@ -73,8 +79,18 @@ afterEach(() => {
   startSpy.mockClear();
 });
 
+const emptyRegistry = {
+  schema_version: 1,
+  enemies: {},
+  player: null,
+  player_active_visual: null,
+} as const;
+
 describe("Studio vs CommandPanel run parity", () => {
-  beforeEach(seedStore);
+  beforeEach(() => {
+    vi.mocked(client.fetchModelRegistry).mockResolvedValue(emptyRegistry);
+    seedStore();
+  });
 
   it("CommandPanel Regenerate baseline", () => {
     render(<CommandPanel />);
@@ -89,6 +105,21 @@ describe("Studio vs CommandPanel run parity", () => {
       hexColor: "#ff5500",
     });
     expect(lastStartPayload().buildOptionsJson).toBeDefined();
+  });
+
+  it("StudioTopBar Generate new matches CommandPanel Run payload", () => {
+    render(<CommandPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Run" }));
+    const commandPayload = { ...lastStartPayload() };
+
+    startSpy.mockClear();
+    cleanup();
+
+    render(<StudioTopBar />);
+    fireEvent.click(screen.getByTestId("studio-top-generate-new"));
+    expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(lastStartPayload()).toEqual(commandPayload);
+    expect(lastStartPayload().replaceVariantIndex).toBeUndefined();
   });
 
   it("StudioTopBar Regenerate matches CommandPanel payload", () => {

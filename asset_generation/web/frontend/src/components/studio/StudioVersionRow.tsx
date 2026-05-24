@@ -3,9 +3,9 @@ import { ELEMENTS } from "../../constants/elements";
 import type { RegistryEnemyVersion } from "../../types";
 import type { EnemyDeletePlan } from "../Editor/registryEnemyTypes";
 import {
-  versionElementId,
   versionGlbLabel,
   versionPoolKind,
+  versionRowElementId,
   type VersionPoolKind,
 } from "../../utils/studioVersionUi";
 import { STUDIO_INK_MUTED, STUDIO_INK_PRIMARY, STUDIO_NEUTRAL_ACCENT } from "../../styles/studioTokens";
@@ -17,7 +17,6 @@ import { StudioVersionThumb } from "./StudioVersionThumb";
 type Props = {
   family: string;
   row: RegistryEnemyVersion;
-  familyVersions: readonly RegistryEnemyVersion[];
   active: boolean;
   inCompare: boolean;
   compareMode: boolean;
@@ -42,7 +41,6 @@ const poolDotColor: Record<VersionPoolKind, string> = {
 export function StudioVersionRow({
   family,
   row,
-  familyVersions,
   active,
   inCompare,
   compareMode,
@@ -58,7 +56,7 @@ export function StudioVersionRow({
   onPatchTags,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const elementId = versionElementId(family, row, familyVersions);
+  const elementId = versionRowElementId(family, row);
   const hue = ELEMENTS[elementId].hue;
   const poolKind = versionPoolKind(row);
   const displayName = row.name?.trim();
@@ -117,7 +115,12 @@ export function StudioVersionRow({
             textAlign: "left",
           }}
         >
-          <StudioVersionThumb hue={hue} title={row.id} />
+          <StudioVersionThumb
+            familyId={family}
+            versionId={row.id}
+            elementId={elementId}
+            title={row.id}
+          />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span
               style={{

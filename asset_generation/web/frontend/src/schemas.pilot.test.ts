@@ -49,6 +49,29 @@ const INVALID_CASES: Array<{ file: string; schema: z.ZodTypeAny }> = [
 ];
 
 describe("pilot Zod schemas (M902-25 drift fixtures)", () => {
+  it("accepts segmented on numeric select controls (eye_count)", () => {
+    const parsed = MetaEnemiesResponseSchema.parse({
+      enemies: [{ slug: "spider", label: "Spider" }],
+      animated_build_controls: {
+        spider: [
+          {
+            type: "select",
+            key: "eye_count",
+            label: "Count",
+            options: [1, 2, 4],
+            default: 2,
+            segmented: true,
+          },
+        ],
+      },
+      meta_backend: "ok",
+    });
+    expect(parsed.animated_build_controls.spider[0]).toMatchObject({
+      type: "select",
+      segmented: true,
+    });
+  });
+
   it("coerces null build_options to undefined on version rows", () => {
     const parsed = ModelRegistryResponseSchema.parse({
       schema_version: 1,

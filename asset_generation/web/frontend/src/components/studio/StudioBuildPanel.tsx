@@ -7,6 +7,7 @@ import {
   BUILD_SECTION_LABEL,
   BUILD_SECTION_ORDER,
   eyesDefsWithoutPupil,
+  orderSectionDefs,
   partitionBuildControls,
   pupilControlDefs,
   summarizeBuildSection,
@@ -16,7 +17,6 @@ import { STUDIO_INK_MUTED, STUDIO_INK_SECONDARY } from "../../styles/studioToken
 import { StudioPanelHead } from "./StudioPanelHead";
 import { StudioBuildControlRow } from "./StudioBuildControlRow";
 import { StudioBuildSection } from "./StudioBuildSection";
-import { StudioBuildSlider } from "./StudioBuildSlider";
 import { studioBuildFilterInput } from "./studioBuildStyles";
 
 type Props = {
@@ -27,6 +27,22 @@ type Props = {
   isRowDisabled: (key: string) => boolean;
   onChange: (key: string, value: number | string | boolean) => void;
   meshPartTree: ReactNode;
+  catalogIncomplete?: boolean;
+  catalogDetail?: string | null;
+  onRetryCatalog?: () => void;
+  catalogLoading?: boolean;
+};
+
+const FLOAT_SCROLL_MIN = 5;
+
+const sectionFloatScroll: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
+  maxHeight: 280,
+  overflowY: "auto",
+  paddingRight: 2,
+  marginTop: 4,
 };
 
 function boolControlValue(
@@ -37,6 +53,29 @@ function boolControlValue(
   return typeof v === "boolean" ? v : def.default;
 }
 
+function renderOrderedControls(
+  defs: readonly AnimatedBuildControlDef[],
+  renderDef: (def: AnimatedBuildControlDef) => ReactNode,
+): ReactNode {
+  const ordered = orderSectionDefs(defs);
+  const nonFloat = ordered.filter((d) => d.type !== "float");
+  const floats = ordered.filter((d) => d.type === "float");
+
+  return (
+    <>
+      {nonFloat.map(renderDef)}
+      {floats.length > 0 ? (
+        <div
+          style={floats.length >= FLOAT_SCROLL_MIN ? sectionFloatScroll : { display: "flex", flexDirection: "column", gap: 12 }}
+          data-testid={floats.length >= FLOAT_SCROLL_MIN ? "studio-build-section-float-scroll" : undefined}
+        >
+          {floats.map(renderDef)}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function StudioBuildPanel({
   slug,
   defs,
@@ -45,6 +84,10 @@ export function StudioBuildPanel({
   isRowDisabled,
   onChange,
   meshPartTree,
+  catalogIncomplete = false,
+  catalogDetail = null,
+  onRetryCatalog,
+  catalogLoading = false,
 }: Props) {
   const [filter, setFilter] = useState("");
   const animatedBuildControls = useAppStore((s) => s.animatedBuildControls);
@@ -70,19 +113,6 @@ export function StudioBuildPanel({
   }
 
   function renderDef(def: AnimatedBuildControlDef) {
-    if (def.type === "float") {
-      return (
-        <StudioBuildSlider
-          key={def.key}
-          def={def}
-          value={values[def.key]}
-          accentHue={accentHue}
-          disabled={isRowDisabled(def.key)}
-          showHint={false}
-          onChange={(v) => onChange(def.key, v)}
-        />
-      );
-    }
     return (
       <StudioBuildControlRow
         key={def.key}
@@ -108,7 +138,7 @@ export function StudioBuildPanel({
       const pupilEnabled = pupilToggleDef ? boolControlValue(values, pupilToggleDef) : false;
       return (
         <>
-          {main.map(renderDef)}
+          {renderOrderedControls(main, renderDef)}
           {pupil.length > 0 ? (
             <div
               data-testid="studio-build-pupil-nest"
@@ -145,15 +175,14 @@ export function StudioBuildPanel({
       );
     }
 
-    if (sectionId === "mouth" || sectionId === "tail") {
-      const enabledKey = sectionId === "mouth" ? "mouth_enabled" : "tail_enabled";
+    if (sectionId === "mouth") {
       const toggleDef = sectionDefs.find(
         (d): d is Extract<AnimatedBuildControlDef, { type: "bool" }> =>
-          d.key === enabledKey && d.type === "bool",
+          d.key === "mouth_enabled" && d.type === "bool",
       );
       const enabled = toggleDef ? boolControlValue(values, toggleDef) : false;
-      return sectionDefs.map((def) => {
-        if (def.key === `${sectionId}_shape` || def.key === "tail_length") {
+      return renderOrderedControls(sectionDefs, (def) => {
+        if (def.key === "mouth_shape") {
           return (
             <div
               key={def.key}
@@ -170,7 +199,31 @@ export function StudioBuildPanel({
       });
     }
 
-    return sectionDefs.map(renderDef);
+    if (sectionId === "tail") {
+      const toggleDef = sectionDefs.find(
+        (d): d is Extract<AnimatedBuildControlDef, { type: "bool" }> =>
+          d.key === "tail_enabled" && d.type === "bool",
+      );
+      const enabled = toggleDef ? boolControlValue(values, toggleDef) : false;
+      return renderOrderedControls(sectionDefs, (def) => {
+        if (def.key === "tail_shape" || def.key === "tail_length") {
+          return (
+            <div
+              key={def.key}
+              style={{
+                opacity: enabled ? 1 : 0.45,
+                pointerEvents: enabled ? undefined : "none",
+              }}
+            >
+              {renderDef(def)}
+            </div>
+          );
+        }
+        return renderDef(def);
+      });
+    }
+
+    return renderOrderedControls(sectionDefs, renderDef);
   }
 
   const visibleSections = BUILD_SECTION_ORDER.filter((id) => sections[id].length > 0);
@@ -216,6 +269,39 @@ export function StudioBuildPanel({
         style={{ ...studioBuildFilterInput, marginBottom: 0, maxWidth: "100%" }}
         onChange={(e) => setFilter(e.target.value)}
       />
+
+      {catalogIncomplete ? (
+        <div
+          data-testid="studio-build-catalog-incomplete"
+          style={{
+            padding: "10px 12px",
+            borderRadius: 8,
+            background: "rgba(255, 107, 61, 0.08)",
+            border: "1px solid rgba(255, 107, 61, 0.25)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <span style={{ fontSize: 11, color: "#ffb4a0", lineHeight: 1.45 }}>
+            Mesh and rig controls did not load from the Python pipeline
+            {catalogDetail ? ` — ${catalogDetail}` : ""}. Only eye placement may appear until the asset
+            editor API returns full build metadata. Run{" "}
+            <code style={{ color: STUDIO_INK_SECONDARY }}>task editor</code> from the repo root (port 8000).
+          </span>
+          {onRetryCatalog ? (
+            <button
+              type="button"
+              data-testid="studio-build-catalog-retry"
+              style={{ ...headerBtnStyle, alignSelf: "flex-start", opacity: catalogLoading ? 0.6 : 1 }}
+              disabled={catalogLoading}
+              onClick={onRetryCatalog}
+            >
+              {catalogLoading ? "Loading…" : "Reload build controls"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {visibleSections.length === 0 ? (
         <span style={{ color: STUDIO_INK_MUTED, fontSize: 11 }}>No controls match filter.</span>

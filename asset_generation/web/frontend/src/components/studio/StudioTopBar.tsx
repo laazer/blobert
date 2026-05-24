@@ -1,10 +1,11 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
+import projectIconUrl from "@blobert/project-icon";
 import { ELEMENTS } from "../../constants/elements";
+import { useStudioPreviewVersion } from "../../hooks/useStudioPreviewVersion";
 import { useStudioRunActions } from "../../hooks/useStudioRunActions";
 import { useAppStore } from "../../store/useAppStore";
 import { inferFamilyElementId } from "../../utils/inferFamilyElement";
 import { registryFamilyTabLabel } from "../../utils/registryFamilyNav";
-import { SaveScriptModal } from "../CommandPanel/SaveScriptModal";
 import {
   STUDIO_INK_MUTED,
   STUDIO_INK_PRIMARY,
@@ -13,6 +14,7 @@ import {
   STUDIO_SURFACE_PANEL,
   STUDIO_TOP_BAR_HEIGHT_PX,
 } from "../../styles/studioTokens";
+import { StudioTopBarBreadcrumbTags } from "./StudioTopBarBreadcrumbTags";
 
 const topBarRoot: CSSProperties = {
   gridColumn: "1 / 4",
@@ -27,17 +29,12 @@ const topBarRoot: CSSProperties = {
   flexShrink: 0,
 };
 
-const logoMark: CSSProperties = {
+const logoImg: CSSProperties = {
   width: 26,
   height: 26,
   borderRadius: 7,
-  background: "conic-gradient(from 180deg, #ff6b3d, #b87dff, #5dc1ff, #9fe830, #ff6b3d)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 800,
-  color: "#0c0c10",
-  fontSize: 13,
+  objectFit: "cover",
+  flexShrink: 0,
 };
 
 const breadcrumbMuted: CSSProperties = {
@@ -52,20 +49,6 @@ const breadcrumbActive: CSSProperties = {
   fontWeight: 600,
 };
 
-const searchBtn: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  background: STUDIO_SURFACE_PANEL,
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "#9a9aa6",
-  padding: "6px 12px",
-  borderRadius: 8,
-  fontSize: 12,
-  cursor: "default",
-  fontFamily: "inherit",
-};
-
 const solidBtn: CSSProperties = {
   padding: "6px 14px",
   borderRadius: 8,
@@ -78,22 +61,22 @@ const solidBtn: CSSProperties = {
   color: STUDIO_INK_SECONDARY,
 };
 
+const generateNewTitle =
+  "Export a new GLB variant (next index). Does not overwrite the model currently in preview.";
+
 export function StudioTopBar() {
   const commandContext = useAppStore((s) => s.commandContext);
   const commandExportFinish = useAppStore((s) => s.commandExportFinish);
   const commandExportHexColor = useAppStore((s) => s.commandExportHexColor);
-  const selectedFile = useAppStore((s) => s.selectedFile);
-  const fileTree = useAppStore((s) => s.fileTree);
-  const isSaving = useAppStore((s) => s.isSaving);
-  const saveEditorToPath = useAppStore((s) => s.saveEditorToPath);
-  const loadFileTree = useAppStore((s) => s.loadFileTree);
 
-  const [saveScriptModalOpen, setSaveScriptModalOpen] = useState(false);
+  const { versionLabel, breadcrumbTags } = useStudioPreviewVersion();
 
   const familyLabel =
     commandContext.cmd === "animated" && commandContext.enemy
       ? registryFamilyTabLabel(commandContext.enemy)
-      : commandContext.cmd;
+      : commandContext.cmd === "player" && commandContext.enemy
+        ? `Player · ${commandContext.enemy}`
+        : commandContext.cmd;
 
   const elementId = useMemo(() => {
     if (commandContext.cmd === "animated" && commandContext.enemy.trim()) {
@@ -117,46 +100,36 @@ export function StudioTopBar() {
     [commandContext.cmd, commandContext.enemy, commandExportFinish, commandExportHexColor],
   );
 
-  const { isRunning, canRegenerate, regenerateTitle, handleRun } = useStudioRunActions(runFields);
+  const { isRunning, canRegenerate, canRun, regenerateTitle, handleRun } = useStudioRunActions(runFields);
+
+  const activeCrumb = versionLabel ?? (commandContext.cmd === "animated" && commandContext.enemy ? "Look" : "Studio");
 
   return (
     <header style={topBarRoot} data-testid="studio-top-bar">
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={logoMark} aria-hidden>
-          B
-        </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+        <img src={projectIconUrl} alt="" style={logoImg} width={26} height={26} aria-hidden />
         <span style={{ fontWeight: 700, fontSize: 13 }}>Blobert</span>
         <span style={{ opacity: 0.4, fontSize: 13 }}>/</span>
         <span style={breadcrumbMuted}>{familyLabel}</span>
         <span style={{ opacity: 0.4, fontSize: 13 }}>/</span>
-        <span style={breadcrumbActive}>
-          {commandContext.cmd === "animated" && commandContext.enemy ? "Look" : "Studio"}
+        <span style={breadcrumbActive} data-testid="studio-top-bar-version-label">
+          {activeCrumb}
         </span>
+        <StudioTopBarBreadcrumbTags tags={breadcrumbTags} />
       </div>
       <div style={{ flex: 1 }} />
-      <button type="button" style={searchBtn} disabled title="Search (Phase 2)">
-        Search…
-        <span
-          style={{
-            background: "#23232e",
-            padding: "2px 6px",
-            borderRadius: 4,
-            fontSize: 10,
-            color: STUDIO_INK_MUTED,
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-          }}
-        >
-          ⌘K
-        </span>
-      </button>
       <button
         type="button"
-        style={solidBtn}
-        disabled={isSaving}
-        onClick={() => setSaveScriptModalOpen(true)}
-        title="Save the current editor buffer to a project path"
+        data-testid="studio-top-generate-new"
+        style={{
+          ...solidBtn,
+          opacity: isRunning || !canRun ? 0.5 : 1,
+        }}
+        disabled={isRunning || !canRun}
+        title={generateNewTitle}
+        onClick={() => void handleRun(false)}
       >
-        Save
+        Generate new
       </button>
       <button
         type="button"
@@ -174,15 +147,6 @@ export function StudioTopBar() {
       >
         Regenerate
       </button>
-      <SaveScriptModal
-        open={saveScriptModalOpen}
-        onClose={() => setSaveScriptModalOpen(false)}
-        initialPath={selectedFile}
-        fileTree={fileTree}
-        onLoadFileTree={loadFileTree}
-        isSaving={isSaving}
-        onSave={saveEditorToPath}
-      />
     </header>
   );
 }

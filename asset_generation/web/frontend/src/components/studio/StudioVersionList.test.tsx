@@ -35,6 +35,7 @@ describe("StudioVersionList", () => {
     expect(screen.getByTestId("studio-version-list")).toBeInTheDocument();
     expect(screen.getByTestId("studio-version-filter-pool")).toBeInTheDocument();
     expect(screen.getByTestId("studio-version-row-spider_animated_00")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-version-thumb-spider_animated_00")).toHaveTextContent("🕷");
     expect(screen.getByText("alpha")).toBeInTheDocument();
   });
 

@@ -12,7 +12,12 @@ describe("buildControlSections", () => {
     expect(classifyBuildControlSection("body_type", "select_str")).toBe("body");
     expect(classifyBuildControlSection("RIG_HEAD_ROT_X", "float")).toBe("rig");
     expect(classifyBuildControlSection("BODY_SCALE_Y_BASE", "float")).toBe("body");
+    expect(classifyBuildControlSection("HEAD_SCALE_REL", "float")).toBe("body");
+    expect(classifyBuildControlSection("LEG_COUNT", "float")).toBe("limbs");
+    expect(classifyBuildControlSection("SPIDER_LEG_SEGMENTS", "float")).toBe("limbs");
     expect(classifyBuildControlSection("STRIPE_WIDTH", "float")).toBe("pattern");
+    expect(classifyBuildControlSection("tail_length", "float")).toBe("tail");
+    expect(classifyBuildControlSection("eye_clustering", "float")).toBe("eyes");
   });
 
   it("partitions defs by section", () => {

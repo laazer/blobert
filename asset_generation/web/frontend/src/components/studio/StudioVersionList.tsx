@@ -164,7 +164,6 @@ export function StudioVersionList({
                 key={row.id}
                 family={family}
                 row={row}
-                familyVersions={versions}
                 active={activeVersionId === row.id}
                 inCompare={compareSet.has(row.id)}
                 compareMode={compareMode}

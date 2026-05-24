@@ -101,6 +101,8 @@ export const AnimatedBuildControlDefSchema = z.discriminatedUnion("type", [
       label: z.string().min(1),
       options: z.array(z.number()),
       default: z.number(),
+      segmented: z.boolean().optional(),
+      hint: z.string().optional(),
     })
     .strict(),
   z

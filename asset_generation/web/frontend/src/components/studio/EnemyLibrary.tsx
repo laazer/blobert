@@ -8,6 +8,7 @@ import {
   STUDIO_LIBRARY_WIDTH_PX,
   STUDIO_SURFACE_PANEL,
 } from "../../styles/studioTokens";
+import { StudioFamilyGlyph } from "./StudioFamilyGlyph";
 
 const railRoot: CSSProperties = {
   gridColumn: 1,
@@ -199,24 +200,13 @@ export function EnemyLibrary() {
                     style={familyRowStyle(active, el.hue)}
                     onClick={() => selectFamily(row.id)}
                   >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        background: el.soft,
-                        border: `1px solid ${el.hue}40`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: el.ink,
-                        fontSize: 14,
-                        flexShrink: 0,
-                      }}
-                      aria-hidden
-                    >
-                      {el.glyph ?? "◆"}
-                    </div>
+                    <StudioFamilyGlyph
+                      familyId={row.id}
+                      elementGlyph={el.glyph}
+                      hue={el.hue}
+                      soft={el.soft}
+                      ink={el.ink}
+                    />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{

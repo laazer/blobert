@@ -51,7 +51,7 @@ export function StudioBuildSection({
     <details
       data-testid={`studio-build-section-${sectionId}`}
       style={sectionShell}
-      open={open}
+      defaultOpen={defaultOpen}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary style={headerRow}>

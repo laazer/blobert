@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ELEMENTS } from "../../constants/elements";
 import { useAppStore } from "../../store/useAppStore";
 import type { AnimatedBuildControlDef } from "../../types";
@@ -7,6 +7,10 @@ import { inferFamilyElementId } from "../../utils/inferFamilyElement";
 import { animatedExportRelativePath, parseAnimatedEnemyExportFilename, parseVariantFilename, playerExportRelativePath } from "../../utils/glbVariants";
 import { PLAYER_COLORS } from "../CommandPanel/commandLogic";
 import { previewPathFromAssetsUrl } from "../../utils/previewPathFromAssetsUrl";
+import {
+  isProceduralBuildCatalogIncomplete,
+  proceduralBuildControlDefs,
+} from "../../utils/proceduralBuildCatalog";
 import {
   getMeshPartTree,
   type MeshPartTreeControlHints,
@@ -223,22 +227,32 @@ export function BuildControls({ studioSurface = false }: BuildControlsProps) {
 
   const defs = animatedBuildControls[slug] ?? [];
   /** Per-part materials (`feat_*`) on Colors; geometry extras (`extra_zone_*`) on Extras; surface texture on Colors. */
-  const buildDefs = defs.filter(
-    (d) =>
-      !d.key.startsWith("feat_") &&
-      !d.key.startsWith("extra_zone_") &&
-      !d.key.startsWith("texture_"),
-  );
+  const buildDefs = useMemo(() => proceduralBuildControlDefs(defs), [defs]);
   const controlSlugs = Object.keys(animatedBuildControls);
+  const catalogIncomplete = isProceduralBuildCatalogIncomplete(slug, buildDefs, metaBackend);
+  const catalogRetryRef = useRef(false);
+
+  useEffect(() => {
+    catalogRetryRef.current = false;
+  }, [slug]);
 
   useEffect(() => {
     if (!surfaceActive) return;
-    if (enemyMetaStatus !== "idle") return;
     if (!isAnimatedEnemy && !isPlayerSlimeBuild) return;
+    if (enemyMetaStatus === "loading") return;
+
+    const shouldLoad =
+      enemyMetaStatus === "idle" ||
+      enemyMetaStatus === "error" ||
+      (enemyMetaStatus === "ok" && catalogIncomplete && !catalogRetryRef.current);
+
+    if (!shouldLoad) return;
+    if (enemyMetaStatus === "ok") catalogRetryRef.current = true;
     void loadAnimatedEnemyMeta();
   }, [
     surfaceActive,
     enemyMetaStatus,
+    catalogIncomplete,
     loadAnimatedEnemyMeta,
     isAnimatedEnemy,
     isPlayerSlimeBuild,
@@ -599,6 +613,19 @@ export function BuildControls({ studioSurface = false }: BuildControlsProps) {
           isRowDisabled={(key) => buildControlDisabled(slug, key, values)}
           onChange={(key, v) => setAnimatedBuildOption(slug, key, v)}
           meshPartTree={meshPartTreeStudio}
+          catalogIncomplete={catalogIncomplete}
+          catalogDetail={
+            metaBackend === "fallback"
+              ? metaBackendDetail
+              : catalogIncomplete
+                ? `${buildDefs.length} procedural control(s) loaded`
+                : null
+          }
+          catalogLoading={enemyMetaStatus === "loading"}
+          onRetryCatalog={() => {
+            catalogRetryRef.current = false;
+            void loadAnimatedEnemyMeta();
+          }}
         />
       ) : (
         <>

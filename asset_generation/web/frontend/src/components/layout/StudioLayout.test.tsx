@@ -126,7 +126,7 @@ describe("STUDIO-01 StudioLayout (spec §8)", () => {
       expect(screen.getByTestId("studio-layout")).toBeInTheDocument();
       const previewColumn = screen.getByTestId("studio-preview-column");
       expect(previewColumn).toBeInTheDocument();
-      expect(within(previewColumn).getByTestId("preview-source-bar")).toBeInTheDocument();
+      expect(within(previewColumn).queryByTestId("preview-source-bar")).toBeNull();
       expect(within(previewColumn).getByTestId("glb-viewer")).toBeInTheDocument();
       expect(within(previewColumn).getByTestId("animation-controls")).toBeInTheDocument();
       expect(screen.queryByTestId("legacy-layout")).toBeNull();

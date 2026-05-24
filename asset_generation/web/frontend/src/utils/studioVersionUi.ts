@@ -1,6 +1,9 @@
 import { ELEMENTS, type ElementId } from "../constants/elements";
 import type { RegistryEnemyVersion } from "../types";
 import { inferFamilyElementId } from "./inferFamilyElement";
+import { versionTags } from "./registryTags";
+
+const ELEMENT_IDS = Object.keys(ELEMENTS) as ElementId[];
 
 export type StudioVersionFilter = "all" | "pool" | "draft";
 
@@ -22,17 +25,23 @@ export function matchesStudioVersionFilter(
   return kind === "draft";
 }
 
+/** Element accent for one version row (tags on that row, then family heuristics). */
+export function versionRowElementId(family: string, row: RegistryEnemyVersion): ElementId {
+  for (const tag of versionTags(row, family)) {
+    if (ELEMENT_IDS.includes(tag as ElementId)) {
+      return tag as ElementId;
+    }
+  }
+  return inferFamilyElementId(family, []);
+}
+
+/** @deprecated Prefer {@link versionRowElementId} for per-version UI. */
 export function versionElementId(
   family: string,
   row: RegistryEnemyVersion,
   familyVersions: readonly RegistryEnemyVersion[],
 ): ElementId {
   return inferFamilyElementId(family, familyVersions.length > 0 ? familyVersions : [row]);
-}
-
-/** Radial thumb fill aligned with redesign_v2 version rows. */
-export function versionThumbGradient(hue: string): string {
-  return `radial-gradient(circle at 30% 25%, color-mix(in srgb, ${hue} 55%, white), ${hue} 60%, color-mix(in srgb, ${hue} 65%, black))`;
 }
 
 export function elementTagChipStyle(elementId: ElementId): {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
-import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { mergeBuildOptionValues } from "../../api/client";
 import { useAppStore } from "../../store/useAppStore";
 import { mergeCanonicalZoneControlsForAllSlugs } from "../../utils/animatedZoneControlsMerge";
@@ -49,8 +49,31 @@ describe("StudioInspector Build tab", () => {
     default: 2,
   };
 
+  const RIG_FLOAT: AnimatedBuildControlDef = {
+    key: "RIG_SPINE",
+    label: "Spine",
+    type: "float",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    default: 0.5,
+  };
+
+  const MESH_FLOAT: AnimatedBuildControlDef = {
+    key: "BODY_SCALE_Y",
+    label: "Body scale Y",
+    type: "float",
+    min: 0,
+    max: 2,
+    step: 0.01,
+    default: 1,
+  };
+
   beforeEach(() => {
-    const controls = mergeCanonicalZoneControlsForAllSlugs({ spider: [EYE_COUNT_DEF] }, ["spider"]);
+    const controls = mergeCanonicalZoneControlsForAllSlugs(
+      { spider: [EYE_COUNT_DEF, RIG_FLOAT, MESH_FLOAT] },
+      ["spider"],
+    );
     useAppStore.setState({
       commandContext: { cmd: "animated", enemy: "spider" },
       animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
@@ -73,6 +96,10 @@ describe("StudioInspector Build tab", () => {
     expect(screen.getByTestId("studio-build-controls")).toBeInTheDocument();
     expect(screen.getByTestId("studio-build-panel")).toBeInTheDocument();
     expect(screen.getByTestId("studio-build-segmented-eye_count")).toBeInTheDocument();
+    const rigSection = screen.getByTestId("studio-build-section-rig");
+    expect(within(rigSection).getByTestId("studio-build-slider-RIG_SPINE")).toBeInTheDocument();
+    const bodySection = screen.getByTestId("studio-build-section-body");
+    expect(within(bodySection).getByTestId("studio-build-slider-BODY_SCALE_Y")).toBeInTheDocument();
     expect(screen.queryByText(/BuildControls \(Phase 2\)/)).toBeNull();
   });
 });

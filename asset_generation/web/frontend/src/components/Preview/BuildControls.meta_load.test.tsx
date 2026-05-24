@@ -47,6 +47,7 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
     const loadSpy = vi.fn(() => Promise.resolve());
     useAppStore.setState({
       ...emptyMetaContext("unknown_new_enemy"),
+      centerPanel: "build",
       enemyMetaStatus: "idle",
       loadAnimatedEnemyMeta: stubLoad(loadSpy),
     });
@@ -91,6 +92,22 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
     expect(screen.getByRole("button", { name: "Retry" })).not.toBeDisabled();
   });
 
+  it("requests meta again when catalog is incomplete (eyes-only synthetics)", async () => {
+    const loadSpy = vi.fn(() => Promise.resolve());
+    const controls = mergeCanonicalZoneControlsForAllSlugs({}, ["spider"]);
+    useAppStore.setState({
+      commandContext: { cmd: "animated", enemy: "spider" },
+      animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
+      animatedBuildControls: controls,
+      animatedBuildOptionValues: { spider: {} },
+      enemyMetaStatus: "ok",
+      metaBackend: "ok",
+      loadAnimatedEnemyMeta: stubLoad(loadSpy),
+    });
+    render(<BuildControls studioSurface />);
+    await waitFor(() => expect(loadSpy).toHaveBeenCalledTimes(1));
+  });
+
   it("still requests meta when offline defs exist for the slug but status is idle (regression: offline defs should not suppress real fetch)", async () => {
     // REGRESSION: offline seeded controls have non-empty defs per slug (zone finish/hex),
     // but they lack controls that only come from the backend (e.g. eye_shape, pupil_enabled).
@@ -102,6 +119,7 @@ describe("BuildControls enemy meta / empty-defs state (regression: idle is not l
       animatedEnemyMeta: [{ slug: "spider", label: "Spider" }],
       animatedBuildControls: controls,
       animatedBuildOptionValues: { spider: {} },
+      centerPanel: "build",
       enemyMetaStatus: "idle",
       loadAnimatedEnemyMeta: stubLoad(loadSpy),
     });

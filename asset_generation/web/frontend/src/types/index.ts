@@ -41,6 +41,9 @@ export type AnimatedBuildControlDef =
       type: "select";
       options: number[];
       default: number;
+      /** When true, render segmented pills instead of a dropdown (e.g. eye_count). */
+      segmented?: boolean;
+      hint?: string;
     }
   | {
       key: string;

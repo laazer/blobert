@@ -5,6 +5,7 @@ export type BuildSectionId =
   | "eyes"
   | "mouth"
   | "tail"
+  | "limbs"
   | "pattern"
   | "rig"
   | "advanced";
@@ -14,6 +15,7 @@ export const BUILD_SECTION_ORDER: readonly BuildSectionId[] = [
   "eyes",
   "mouth",
   "tail",
+  "limbs",
   "pattern",
   "rig",
   "advanced",
@@ -24,6 +26,7 @@ export const BUILD_SECTION_LABEL: Record<BuildSectionId, string> = {
   eyes: "Eyes",
   mouth: "Mouth",
   tail: "Tail",
+  limbs: "Legs & limbs",
   pattern: "Pattern parameters",
   rig: "Rig",
   advanced: "Advanced",
@@ -33,10 +36,11 @@ export const BUILD_SECTION_LABEL: Record<BuildSectionId, string> = {
 export const BUILD_SECTION_DEFAULT_OPEN: Record<BuildSectionId, boolean> = {
   body: true,
   eyes: true,
-  mouth: false,
-  tail: false,
+  mouth: true,
+  tail: true,
+  limbs: true,
   pattern: true,
-  rig: false,
+  rig: true,
   advanced: false,
 };
 
@@ -54,7 +58,16 @@ export function classifyBuildControlSection(
   if (kl.startsWith("tail_")) return "tail";
   if (kl === "body_type") return "body";
 
+  if (
+    ku.includes("LEG") ||
+    ku.includes("LIMB") ||
+    ku.includes("SPIDER_LEG")
+  ) {
+    return "limbs";
+  }
+
   if (type === "float") {
+    if (ku.includes("HEAD") && !ku.includes("EYE")) return "body";
     if (
       ku.includes("BODY") ||
       ku.includes("TORSO") ||
@@ -72,6 +85,19 @@ export function classifyBuildControlSection(
   return "advanced";
 }
 
+/** Toggles/selects first, then sliders — stable within each Build inspector section. */
+export function orderSectionDefs(
+  defs: readonly AnimatedBuildControlDef[],
+): AnimatedBuildControlDef[] {
+  const nonFloat: AnimatedBuildControlDef[] = [];
+  const floats: AnimatedBuildControlDef[] = [];
+  for (const def of defs) {
+    if (def.type === "float") floats.push(def);
+    else nonFloat.push(def);
+  }
+  return [...nonFloat, ...floats];
+}
+
 export function partitionBuildControls(
   defs: readonly AnimatedBuildControlDef[],
 ): Record<BuildSectionId, AnimatedBuildControlDef[]> {
@@ -80,6 +106,7 @@ export function partitionBuildControls(
     eyes: [],
     mouth: [],
     tail: [],
+    limbs: [],
     pattern: [],
     rig: [],
     advanced: [],
@@ -159,7 +186,18 @@ export function summarizeBuildSection(
       const on = readBool(values, "tail_enabled", false);
       if (!on) return "off";
       const shape = readStr(values, "tail_shape", "");
+      const len = defs.find((d) => d.key === "tail_length" && d.type === "float");
+      if (len?.type === "float") {
+        return `${shape || "on"} · len ${fmt(readNum(values, "tail_length", len.default))}`;
+      }
       return shape || "on";
+    }
+    case "limbs": {
+      const count = defs.find((d) => d.key.includes("LEG_COUNT") && d.type === "float");
+      if (count?.type === "float") {
+        return `${fmt(readNum(values, count.key, count.default))} legs`;
+      }
+      return `${defs.length} controls`;
     }
     case "rig": {
       const headX = defs.find((d) => d.key === "RIG_HEAD_ROT_X");

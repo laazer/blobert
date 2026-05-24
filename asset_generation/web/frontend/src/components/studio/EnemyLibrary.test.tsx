@@ -69,6 +69,8 @@ describe("EnemyLibrary", () => {
       expect(screen.getByTestId("studio-family-row-spider")).toBeInTheDocument();
     });
     expect(screen.getByTestId("studio-family-row-acid_spitter")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-family-glyph-spider")).toHaveTextContent("🕷");
+    expect(screen.getByTestId("studio-family-glyph-acid_spitter")).toHaveTextContent("◉");
     expect(screen.getByText(/2 families · 2 variants/)).toBeInTheDocument();
   });
 
