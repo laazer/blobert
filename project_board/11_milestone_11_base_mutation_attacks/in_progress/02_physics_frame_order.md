@@ -29,13 +29,13 @@ Also implement and document:
 
 ## Acceptance Criteria
 
-- [ ] Frame-order execution documented (in-code comments + explicit sequence)
-- [ ] Jump buffer timer implemented and tested: jump queued before landing is executable
-- [ ] Coyote time timer implemented and tested: jump executable 0.1s after leaving ground
-- [ ] One-way platform collision mask updates correctly (up = exclude one-way, down = include)
-- [ ] Renderer sync happens after ALL game state updates (not mid-frame)
-- [ ] All M1 tests still pass
-- [ ] `run_tests.sh` exits 0
+- [x] Frame-order execution documented (in-code comments + explicit sequence)
+- [x] Jump buffer timer implemented and tested: jump queued before landing is executable
+- [x] Coyote time timer implemented and tested: jump executable 0.1s after leaving ground
+- [x] One-way platform collision mask updates correctly (up = exclude one-way, down = include)
+- [x] Renderer sync happens after ALL game state updates (not mid-frame)
+- [x] All M1 tests still pass (movement/jump sim suites green; no PFO regressions)
+- [ ] `run_tests.sh` exits 0 (blocked: 4 unrelated Godot failures on branch)
 
 ## Dependencies
 
@@ -123,48 +123,44 @@ Make `_physics_process` in `PlayerController3D` follow a frozen, documented six-
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GENERALIST
+INTEGRATION
 
 ## Revision
-5
+7
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: RED (25 PFO failures — 13 primary + 12 adversarial)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: PFO 43/43 pass (15 primary + 28 adversarial); Godot full suite 4 unrelated failures
+- Static QA: GDScript review PASS (delta param fix applied)
+- Integration: `run_tests.sh` exit 1 (4 unrelated Godot failures — not M11-02)
 
 ## Blocking Issues
-- None
+- Branch `run_tests.sh` not exit 0 (enemy animation clip + 3d detach signals)
 
 ## Escalation Notes
-- M11-01 dependency satisfied (`done/01_player_state_machine.md`).
-- Adversarial suite authored: buffer/coyote boundaries, mask at vy=0, reorder regressions (TB-PFO-001..012).
-- **WARN:** Branch `run_tests.sh` may still exit 1 from unrelated failures; blocks COMPLETE until green.
+- M11-02 implementation ACs evidenced; COMPLETE blocked on branch integration debt (same pattern as M11-01).
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Gameplay Systems Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "spec_path": "project_board/specs/player_physics_frame_order_spec.md",
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md",
-  "primary_test_file": "tests/scripts/player/test_player_physics_frame_order.gd",
-  "adversarial_test_file": "tests/scripts/player/test_player_physics_frame_order_adversarial.gd",
-  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-test-break-run.md",
-  "red_evidence": "25/25 failures (13 primary + 12 adversarial PFO tests)"
+  "checkpoint_log": "project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md",
+  "pfo_evidence": "43/43 pass",
+  "integration_blocker": "run_tests.sh exit 1 — 4 unrelated Godot failures"
 }
 ```
 
 ## Status
-Proceed
+Blocked (integration)
 
 ## Reason
-Adversarial PFO tests authored and RED. Implement PFO-2 pipeline, jump buffer, one-way mask, fixture scene; green all 25 tests.
+M11-02 scope complete and PFO-tested. Move to `done/` when branch `run_tests.sh` is green or failures are triaged out of scope.

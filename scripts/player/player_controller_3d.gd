@@ -249,7 +249,7 @@ func _tick_controller_timers(delta: float, jump_just_pressed: bool) -> void:
 	# PFO-2 Step 2c: reserved for future invulnerability / iframes timers (out of scope M11-02).
 
 
-func _prepare_frame_collision_state(_delta: float) -> Dictionary:
+func _prepare_frame_collision_state(delta: float) -> Dictionary:
 	_current_state.is_on_floor = is_on_floor()
 	var is_on_wall_now: bool = is_on_wall()
 	var wall_normal_x: float = 0.0
@@ -258,7 +258,7 @@ func _prepare_frame_collision_state(_delta: float) -> Dictionary:
 	if _base_max_speed <= 0.0:
 		_base_max_speed = _simulation.max_speed
 	if _fusion_active:
-		_fusion_timer -= _delta
+		_fusion_timer -= delta
 		if _fusion_timer > 0.0:
 			_simulation.max_speed = _base_max_speed * _fusion_multiplier
 		else:

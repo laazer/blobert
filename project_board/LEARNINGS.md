@@ -7429,3 +7429,104 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M11-02] — Physics frame order: buffer landing, coyote ownership, one-way mask pipeline
+*Completed: 2026-05-23*
+
+### Learnings
+
+- **category: architecture**
+  **insight:** Jump buffer and coyote time are orthogonal timers with different consume sites: buffer arms in controller Step 2 and consumes on first grounded frame; coyote decrements inside `MovementSimulation.simulate()`. `jump_pressed` (hold) stays raw for jump-cut; only `jump_just_pressed` is augmented by buffer (PFO-5).
+  **impact:** Conflating both timers in controller Step 2 would duplicate M1 coyote math and break sim test authority; mixing hold into buffer would break jump-cut (SPEC-20).
+  **prevention:** Spec must freeze timer ownership table (controller vs sim) before implementation; buffer tests that need pure buffer behavior must expire coyote first (`_arm_jump_buffer_after_coyote`).
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Landing buffer consume cannot run entirely in pre-slide dispatch: `is_on_floor()` for a mid-air→ground transition is unknowable until after `move_and_slide()`. Post-slide Step 8 must re-dispatch with `effective_jump_just_pressed` when `landed_this_frame && _jump_buffer_pending_at_frame_start`.
+  **impact:** Step-4-only buffer consume misses EC-1 (press in air, land within 0.1s → jump on landing); TB-PFO-002 fails if Step 2 decrement clears timer before post-slide can read pending state.
+  **prevention:** Snapshot `_jump_buffer_pending_at_frame_start` at Step 0 (before Step 2 decrement); document dual consume paths (pre-slide grounded vs post-slide landing) in spec PFO-5/EC-1.
+  **severity:** high
+
+- **category: testing**
+  **insight:** CharacterBody3D integration tests stay deterministic by calling `player._physics_process(PHYSICS_STEP)` directly, syncing both `player.velocity` and `_current_state.velocity` (2D sim mirror), and splitting input helpers: `_step_player` releases jump after tick; `_step_player_preserve_jump` keeps jump held for ascent/jump-cut/one-way pass-through tests.
+  **impact:** Without dual velocity sync, landing/buffer setup drifts; releasing jump in `_release_all_input()` breaks buffer arm tests; auto jump-cut during ascent causes false one-way stall failures.
+  **prevention:** PFO harness checklist: settle 90 frames → `_set_controller_velocity` for both layers → coyote-expire N frames before buffer arm → preserve-jump variant for ascending scenarios.
+  **severity:** medium
+
+- **category: architecture**
+  **insight:** One-way collision mask must use post-dispatch `velocity.y` and apply every frame after simulate, strictly before `move_and_slide()`. Ascending (`vy > 0`) or airborne apex (`vy == 0` and not on floor) excludes one-way bit; grounded or falling includes it.
+  **impact:** Mask-after-slide causes upward stall at platform lip (TB-PFO-012); mask-only-on-jump-frame leaves one-way enabled mid-ascent (TB-PFO-009); strict `vy > 0` alone fails apex pass-through.
+  **prevention:** Freeze Step 5→7 ordering in spec; adversarial tests assert mask every ascending frame and stall detection below one-way lip; expose `get_one_way_collision_mask()` for behavioral asserts only.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Coyote + buffer combinatorial cases (EC-11) require sim `jump_consumed` as the single-jump gate: coyote jump in air must not re-fire via buffer on landing (TB-PFO-006); double air-press must not reset buffer into multiple landing jumps (TB-PFO-007).
+  **impact:** Without explicit EC-11 adversarial tests, buffer landing polish reintroduces double-jump on walk-off + late press sequences.
+  **prevention:** Test Breaker must add coyote+buffer and double-press landing cases whenever buffer is added to a sim that already owns coyote.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Buffer consume only in pre-slide `_dispatch_movement` using `is_on_floor()` from prior frame — misses first landing frame where floor contact resolves in Step 7.
+  **detection_signal:** EC-1/TB-PFO-002 fail; player lands without upward impulse despite pending buffer; timer hits zero on landing frame before consume.
+  **prevention:** Dual-path consume: pre-slide for already-grounded; post-slide re-simulate on `landed_this_frame` with Step-0 pending snapshot.
+
+- **description:** Coyote and jump buffer both decremented or armed in controller Step 2.
+  **detection_signal:** M1 sim coyote tests diverge; controller tests pass but `test_jump_simulation*.gd` regress; duplicate timer logic in two modules.
+  **prevention:** Spec ownership table: coyote in sim only; controller mirrors export and passes `prior_state.is_on_floor` at frame start.
+
+- **description:** One-way mask updated after `move_and_slide()` or only on the jump initiation frame.
+  **detection_signal:** TB-PFO-009/TB-PFO-012 stall or fail pass-through; player hangs below one-way lip with positive vy.
+  **prevention:** Step 5 mask from post-dispatch velocity; assert mask each ascending tick in adversarial suite.
+
+- **description:** Test harness releases jump in generic input cleanup, breaking buffer arm and jump-cut scenarios.
+  **detection_signal:** Buffer tests flaky or never arm; ascending one-way tests show premature velocity clamp.
+  **prevention:** Separate `_step_player` (release jump) vs `_step_player_preserve_jump` (hold through tick); `_release_all_input` omits jump release.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "For controller physics-frame tickets: freeze (1) numbered step pipeline with pre/post-slide boundaries, (2) timer ownership table (controller vs sim), (3) effective-input contract (`jump_just_pressed` buffered, `jump_pressed` raw for jump-cut), (4) post-slide unknowable state list (landing, `is_on_floor`), (5) collision-mask step relative to dispatch and `move_and_slide`. Include EC table for buffer+coyote interaction (EC-11)."
+  **reason:** M11-02 rework risk was frame-boundary ambiguity, not missing features.
+
+- **agent: Test Designer Agent**
+  **change:** "CharacterBody3D harness: load `test_movement_3d.tscn` sandbox; call `_physics_process` directly; sync `velocity` AND `_current_state.velocity`; `_settle_on_floor` before behavioral asserts; `_arm_jump_buffer_after_coyote` before buffer-landing tests; `_step_player_preserve_jump` for ascent/jump-cut. Assert runtime behavior only (position, vy, mask, `is_on_floor`) — no call-order logging."
+  **reason:** Primary PFO suite patterns were the implementation contract; settle failures in RED phase resolved post-refactor.
+
+- **agent: Test Breaker Agent**
+  **change:** "Physics-frame tickets: add boundary tests for timer expiry one frame before/after 0.1s (frame-count at 60 Hz); mask flip at vy==0 apex; reorder regression (mask before slide); coyote+buffer single-jump (EC-11); double air-press buffer reset. Mark frame-count vs wall-clock assumptions with `# CHECKPOINT`."
+  **reason:** 28 adversarial tests caught landing-frame boundary and mask-order bugs pre-merge.
+
+- **agent: Gameplay Systems Agent**
+  **change:** "When buffer must fire on landing: snapshot pending at frame start; post-slide consume via re-dispatch if `landed_this_frame`. Do not move coyote decrement to controller. One-way mask: post-dispatch velocity, before slide; treat airborne vy==0 as ascending. Do not claim COMPLETE without scoped PFO suite log; route INTEGRATION if branch `run_tests.sh` has unrelated failures."
+  **reason:** Implementation checkpoint documented Step-0 snapshot decision that fixed TB-PFO-002.
+
+### Workflow Improvements
+
+- **issue:** Spec PFO-5 initially described buffer consume only in Step 4; landing frame requires post-slide path discovered during implementation.
+  **improvement:** Spec exit gate for physics-frame specs: require explicit 'unknowable until post-slide' state list and dual consume paths for any input buffer tied to collision resolution.
+  **expected_benefit:** Test Designer writes EC-1 landing tests against frozen contract; fewer implementation checkpoints on frame boundaries.
+
+- **issue:** One-way layer bits were greenfield (`project.godot` had no layer names); tests needed fixture scene + runtime box spawn.
+  **improvement:** Planner/spec checklist for collision features: declare bit map, baseline player mask, headless fixture path, and test accessor policy in same spec section (PFO-6 + PFO-7 + PFO-11).
+  **expected_benefit:** Avoids split deliverables across implementation Tasks 4–5.
+
+- **issue:** Learning ran at INTEGRATION (scoped 43/43 green, branch 4 unrelated failures) — same pattern as M11-01.
+  **improvement:** Reinforce INTEGRATION-stage Learning when scoped spec paths pass; gatekeeper re-run for COMPLETE after branch hygiene.
+  **expected_benefit:** Frame-order lessons captured while buffer/mask decisions are fresh.
+
+### Keep / Reinforce
+
+- **practice:** 10-step PFO-2 pipeline with in-code step comments matching spec numbers; private methods `_tick_controller_timers`, `_dispatch_movement`, `_update_one_way_collision_mask`, `_sync_renderer_from_state`.
+  **reason:** Behavioral tests (PFO-10) enforce structure without fragile call-order mocks.
+
+- **practice:** Coyote remains sim-authoritative; controller adds net-new buffer only — M1 `test_jump_simulation*.gd` unchanged.
+  **reason:** Preserves movement feel while adding controller-boundary polish.
+
+- **practice:** Adversarial matrix TB-PFO-001..012 covering expiry boundaries, EC-10 suppression, mask sustained ascending, reorder stall detection.
+  **reason:** 43/43 scoped pass was regression contract while branch suite had unrelated debt.
+
+- **practice:** `get_one_way_collision_mask()` test-only accessor for deterministic mask asserts separate from gameplay API surface.
+  **reason:** Enables PFO-7 tests without exposing mask internals to production callers.
+
+---
+

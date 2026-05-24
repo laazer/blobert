@@ -28,6 +28,15 @@ Log: `project_board/checkpoints/M11-02/2026-05-23T-test-design-run.md`
 Adversarial suite `test_player_physics_frame_order_adversarial.gd` — 12 RED failures (buffer/coyote boundaries, mask vy=0, reorder regressions). Combined 25 RED.
 Log: `project_board/checkpoints/M11-02/2026-05-23T-test-break-run.md`
 
+### M11-02 — OUTCOME: IMPLEMENTATION → INTEGRATION (not COMPLETE)
+PFO 43/43 green; GDScript review pass; `run_tests.sh` exit 1 (4 unrelated Godot failures).
+Log: `project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md`
+
+## Resume: 2026-05-23T-ap-continue
+Ticket: `project_board/11_milestone_11_base_mutation_attacks/in_progress/02_physics_frame_order.md`
+Resuming at Stage: IMPLEMENTATION_GENERALIST → completed; gatekeeper → INTEGRATION
+Log: `project_board/checkpoints/M11-02/2026-05-23T-implementation-run.md`
+
 ---
 
 ## Run: 2026-05-23T-studio-01-autopilot
