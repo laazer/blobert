@@ -9,22 +9,10 @@
 
 extends "res://tests/utils/test_utils.gd"
 
+const Harness = preload("res://tests/utils/death_animation_playthrough_harness.gd")
 
 var _pass_count: int = 0
 var _fail_count: int = 0
-
-
-# Same pattern as test_soft_death_and_restart.gd _make_iih_ready() — no SceneTree parent
-# so _inventory exists before _process (avoids deferred _ready before first frame).
-func _new_handler_ready() -> Node:
-	var handler_script: GDScript = load("res://scripts/infection/infection_interaction_handler.gd") as GDScript
-	if handler_script == null:
-		return null
-	var handler: Node = handler_script.new() as Node
-	if handler == null:
-		return null
-	handler._ready()
-	return handler
 
 
 # DAP-1.3 — no chunk_attached while enemy ESM is dead (full window until free).
@@ -70,7 +58,7 @@ func test_dap_13_no_chunk_attached_when_dead() -> void:
 # DAP-1.4 — absorb input does not mutate inventory when target ESM is dead (handler path).
 func test_dap_14_absorb_dead_target_no_inventory_mutation() -> void:
 	const NAME := "DAP-1.4 — absorb input does not mutate inventory when target is dead"
-	var handler: Node = _new_handler_ready()
+	var handler: Node = Harness.new_handler_ready()
 	if handler == null:
 		_fail(NAME, "handler init failed")
 		return
@@ -94,7 +82,7 @@ func test_dap_14_absorb_dead_target_no_inventory_mutation() -> void:
 # DAP-1.5 — infect input does not call apply_infection_event when target is dead (state stays dead).
 func test_dap_15_infect_dead_target_state_unchanged() -> void:
 	const NAME := "DAP-1.5 — infect input leaves dead ESM in dead"
-	var handler: Node = _new_handler_ready()
+	var handler: Node = Harness.new_handler_ready()
 	if handler == null:
 		_fail(NAME, "handler init failed")
 		return
