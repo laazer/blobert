@@ -16,6 +16,9 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ### M11-03 — OUTCOME: PLANNING COMPLETE
 Ten-task execution plan in ticket (revision 2). Stage → SPECIFICATION; handoff to Spec Agent. Spec-only: no PlayerController; policy runtime tests RED until downstream impl.
 
+### M11-03 — OUTCOME: SPECIFICATION COMPLETE
+IAM spec at `project_board/specs/input_action_mapping_spec.md` (rev 1). Stage → TEST_DESIGN; handoff to Test Designer. Log: `project_board/checkpoints/M11-03/2026-05-23T-spec-run.md`
+
 ---
 
 ## Run: 2026-05-23T-m11-02-autopilot (M11 Physics Frame Order)

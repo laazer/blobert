@@ -132,13 +132,13 @@ python ci/scripts/spec_completeness_check.py \
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-SPECIFICATION
+TEST_DESIGN
 
 ## Revision
-2
+3
 
 ## Last Updated By
-Planner Agent
+Spec Agent
 
 ## Validation Status
 - Tests: Not Run
@@ -156,16 +156,17 @@ Planner Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Spec Agent
+Test Designer Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/11_milestone_11_base_mutation_attacks/in_progress/03_input_action_mapping.md",
-  "prerequisite_spec": "project_board/specs/player_state_machine_spec.md",
-  "output_spec_path": "project_board/specs/input_action_mapping_spec.md",
+  "spec_path": "project_board/specs/input_action_mapping_spec.md",
   "spec_exit_type": "generic",
-  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-plan-run.md",
+  "policy_class": "PlayerInputActionPolicy",
+  "policy_script": "scripts/player/player_input_action_policy.gd",
+  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-spec-run.md",
   "execution_plan_revision": 2
 }
 ```
@@ -174,4 +175,4 @@ Spec Agent
 Proceed
 
 ## Reason
-Planning complete. M11-01 satisfied. Author IAM spec with current InputMap inventory, planned M11 actions, full state-action matrix, and consumption rules; then run generic spec exit gate.
+IAM spec complete at `project_board/specs/input_action_mapping_spec.md` (revision 1). `spec_completeness_check.py --type generic` PASS. Author runtime unit tests for `PlayerInputActionPolicy` per IAM test strategy (RED acceptable without policy `.gd`).
