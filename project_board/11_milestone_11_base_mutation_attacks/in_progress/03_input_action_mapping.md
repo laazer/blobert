@@ -132,16 +132,16 @@ python ci/scripts/spec_completeness_check.py \
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GAMEPLAY
 
 ## Revision
-4
+5
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: RED (28 failures — policy .gd absent; expected)
+- Tests: adversarial 21 methods (37/38 PASS); primary 28/29 PASS; RED `debug_kill` permit (IAM-9.2, EC-IAM-12)
 - Static QA: N/A
 - Integration: Not Run
 
@@ -156,7 +156,7 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Required Input Schema
 ```json
@@ -165,9 +165,9 @@ Test Breaker Agent
   "spec_path": "project_board/specs/input_action_mapping_spec.md",
   "primary_tests": "tests/scripts/player/test_player_input_action_policy.gd",
   "adversarial_tests": "tests/scripts/player/test_player_input_action_policy_adversarial.gd",
-  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-test-design-run.md",
-  "expected_red_count": 28,
-  "policy_script": "scripts/player/player_input_action_policy.gd"
+  "checkpoint_log": "project_board/checkpoints/M11-03/2026-05-23T-test-break-run.md",
+  "policy_script": "scripts/player/player_input_action_policy.gd",
+  "red_tests": ["iam9_debug_kill_permitted_idle_when_enabled", "ec_iam12_debug_after_combat_winner"]
 }
 ```
 
@@ -175,4 +175,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Primary IAM policy unit tests authored (28 RED, policy module deferred). Adversarial suite not yet written — Test Breaker adds `test_player_input_action_policy_adversarial.gd` per IAM test strategy.
+Adversarial IAM suite authored (21 methods, EC-IAM-1..16 coverage). Policy module exists; fix `debug_kill` matrix/permit so IAM-9.2 and EC-IAM-12 pass, then AC gatekeeper.

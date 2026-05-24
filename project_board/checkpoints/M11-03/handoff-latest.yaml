@@ -1,31 +1,31 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-03
-  from_agent: test_designer
-  to_agent: test_breaker
-  validated_at: "2026-05-24T14:00:00Z"
+  from_agent: test_breaker
+  to_agent: implementation
+  validated_at: "2026-05-24T16:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: primary_policy_tests
-      item: test_player_input_action_policy.gd authored with IAM behavioral coverage
+    - item_key: adversarial_suite
+      item: test_player_input_action_policy_adversarial.gd authored (EC-IAM coverage)
+      required: true
+      status: complete
+      evidence: tests/scripts/player/test_player_input_action_policy_adversarial.gd
+      evidence_type: path
+    - item_key: adversarial_run_evidence
+      item: Headless run 21 methods / 38 assertions (1 RED debug_kill)
+      required: true
+      status: complete
+      evidence: project_board/checkpoints/M11-03/2026-05-23T-test-break-run.md
+      evidence_type: path
+    - item_key: primary_suite_present
+      item: Primary policy tests present and mostly green
       required: true
       status: complete
       evidence: tests/scripts/player/test_player_input_action_policy.gd
       evidence_type: path
-    - item_key: red_without_policy
-      item: 28 RED failures with policy .gd absent (expected)
-      required: true
-      status: complete
-      evidence: project_board/checkpoints/M11-03/2026-05-23T-test-design-run.md
-      evidence_type: path
-    - item_key: run_tests_discovery
-      item: Suite auto-discovered by tests/run_tests.gd (no manual register)
-      required: true
-      status: complete
-      evidence: tests/run_tests.gd _collect_test_files
-      evidence_type: attestation
   next_work:
-    - Author tests/scripts/player/test_player_input_action_policy_adversarial.gd
-    - Cover EC-IAM simultaneous edges, detach+detach_2, FLOAT/WALL_CLING rows per IAM spec
-    - Register adversarial file via same auto-discovery (no run_tests edit)
+    - Fix PlayerInputActionPolicy debug_kill IDLE permit (iam9 + ec_iam12 RED)
+    - Re-run timeout 300 godot --headless -s tests/run_tests.gd policy suites
+    - AC gatekeeper after policy green (M11-03 scope = spec + tests; controller wiring deferred)

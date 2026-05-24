@@ -1,18 +1,12 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-03",
-  "agent": "Test Designer Agent",
-  "captured_at": "2026-05-24T14:00:00Z",
+  "agent": "Test Breaker Agent",
+  "captured_at": "2026-05-24T16:00:00Z",
   "todos": [
     {
       "id": "plan-1",
       "content": "Decompose M11-03 execution plan in ticket",
-      "status": "completed",
-      "agent": "Planner Agent"
-    },
-    {
-      "id": "plan-2",
-      "content": "Write checkpoint log and handoff artifacts",
       "status": "completed",
       "agent": "Planner Agent"
     },
@@ -30,21 +24,27 @@
     },
     {
       "id": "test-design-1",
-      "content": "Author test_player_input_action_policy.gd (RED)",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "test-design-2",
-      "content": "Confirm run_tests.gd auto-discovery (no manual register)",
+      "content": "Author test_player_input_action_policy.gd",
       "status": "completed",
       "agent": "Test Designer Agent"
     },
     {
       "id": "test-break-1",
       "content": "Author test_player_input_action_policy_adversarial.gd",
-      "status": "pending",
+      "status": "completed",
       "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "impl-1",
+      "content": "Fix debug_kill permit matrix (IAM-9.2, EC-IAM-12 RED)",
+      "status": "pending",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "ac-1",
+      "content": "AC gatekeeper: spec AC + test artifacts; ticket to done/",
+      "status": "pending",
+      "agent": "AC Gatekeeper"
     }
   ]
 }
