@@ -12,6 +12,20 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: `project_board/checkpoints/M11-06/`
 
+---
+
+## Run: 2026-05-25T-m11-12-autopilot (M11 Verify Cooldown Behavior)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/12_verify_cooldown_behavior.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-12/`
+
+### M11-12 — OUTCOME: SPECIFICATION COMPLETE
+Cooldown cross-state behavior spec (CDB-1 through CDB-5): 24 acceptance criteria, 5 requirements. One implementation gap: `reset_hp()` missing `_mutation_cooldowns.clear()`. All other behaviors already correctly implemented. Stage → TEST_DESIGN.
+Log: `project_board/checkpoints/M11-12/2026-05-25T-spec-run.md`
+Spec: `project_board/specs/cooldown_cross_state_behavior_spec.md`
+
 ### M11-06 — OUTCOME: COMPLETE
 AttackDatabase autoload + PlayerController3D integration implemented. 98 tests (48 primary + 50 adversarial) all GREEN. EC-20 test setup bug fixed (slot fill order). All hooks pass.
 Log: project_board/checkpoints/M11-06/
@@ -670,6 +684,33 @@ Log: project_board/checkpoints/M902-20/
 - **Agent:** Gameplay Systems Agent
 - **Outcome:** 156/157 tests pass; 1 test (EC-20) has setup bug (fills slot A then clears, leaving both empty). Linter clean.
 - Log: `project_board/checkpoints/M11-06/2026-05-25T-implementation-run.md`
+
+---
+
+### M11-12 — Cooldown Cross-State Behavior (Test Design)
+
+- **Run:** 2026-05-25T-test-design-run
+- **Agent:** Test Designer Agent
+- **Outcome:** 23 behavioral tests created covering CDB-1..CDB-5. CDB-3 tests are regression (fail until `_mutation_cooldowns.clear()` added to `reset_hp()`).
+- Log: `project_board/checkpoints/M11-12/2026-05-25T-test-design-run.md`
+
+---
+
+### M11-12 — Cooldown Cross-State Behavior (Test Break)
+
+- **Run:** 2026-05-25T-test-break-run
+- **Agent:** Test Breaker Agent
+- **Outcome:** 26 adversarial test functions (30+ assertions). Gaps found: negative delta guard, zero-cooldown spam, CDB-3 regression confirmed.
+- Log: `project_board/checkpoints/M11-12/2026-05-25T-test-break-run.md`
+
+---
+
+### M11-12 — Cooldown Cross-State Behavior (Implementation)
+
+- **Run:** 2026-05-25T-implementation-run
+- **Agent:** Gameplay Systems Agent
+- **Outcome:** CDB-3 fixed (`_mutation_cooldowns.clear()` in `reset_hp()`), GAP-1 fixed (negative delta guard). All 83 cooldown tests + existing attack suites pass. Stage → INTEGRATION.
+- Log: `project_board/checkpoints/M11-12/2026-05-25T-implementation-run.md`
 
 ---
 
