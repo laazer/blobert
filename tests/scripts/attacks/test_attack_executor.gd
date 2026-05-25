@@ -12,9 +12,6 @@ extends "res://tests/utils/test_utils.gd"
 var _pass_count: int = 0
 var _fail_count: int = 0
 
-const _EXECUTOR_PATH := "res://scripts/attacks/attack_executor.gd"
-
-
 # ---------------------------------------------------------------------------
 # Mock inner classes
 # ---------------------------------------------------------------------------
@@ -53,19 +50,10 @@ class MockParent extends Node3D:
 # Helpers
 # ---------------------------------------------------------------------------
 
-func _load_executor_script() -> GDScript:
-	return load(_EXECUTOR_PATH) as GDScript
-
-
 func _make_executor(test_label: String) -> Node:
-	var script := _load_executor_script()
-	if script == null:
-		_fail_test(test_label, _EXECUTOR_PATH + " not loadable")
-		return null
-	var inst = script.new()
+	var inst = AttackExecutorHarness.make_executor()
 	if inst == null:
-		_fail_test(test_label, "instantiation returned null")
-		return null
+		_fail_test(test_label, AttackExecutorHarness.EXECUTOR_PATH + " not loadable")
 	return inst
 
 
@@ -140,7 +128,7 @@ func _count_signal(signal_name: String) -> int:
 # ---------------------------------------------------------------------------
 
 func test_aex01_script_loads() -> void:
-	var script := _load_executor_script()
+	var script := AttackExecutorHarness.load_executor_script()
 	_assert_true(script != null, "AEX-01_script_loads")
 
 
