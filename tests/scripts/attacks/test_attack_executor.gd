@@ -149,7 +149,7 @@ func test_aex01_class_identity() -> void:
 	if inst == null:
 		return
 	_assert_true(inst is Node, "AEX-01_is_node")
-	_assert_false(inst is Resource, "AEX-01_not_resource")
+	_assert_false(is_instance_of(inst, Resource), "AEX-01_not_resource")
 	_assert_false(inst is CharacterBody3D, "AEX-01_not_character_body")
 	inst.free()
 
@@ -178,7 +178,7 @@ func test_aex02_projectile_dispatch() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var res := _make_resource({"effect_type": "PROJECTILE_SPIT", "damage": 3.0, "projectile_speed": 100.0})
 	executor.execute_attack(res)
 	_assert_true(scene_root.get_child_count() > children_before, "AEX-02_projectile_routed")
@@ -311,7 +311,7 @@ func test_aex04_projectile_created() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var res := _make_resource({
 		"effect_type": "PROJECTILE_SPIT",
 		"damage": 5.0,
@@ -329,7 +329,7 @@ func test_aex04_projectile_properties() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var mods := {"poison": true, "poison_duration": 3.0, "poison_dps": 0.5}
 	var res := _make_resource({
 		"effect_type": "PROJECTILE_SPIT",
@@ -361,7 +361,7 @@ func test_aex04_projectile_direction() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var res := _make_resource({"effect_type": "PROJECTILE_SPIT", "damage": 1.0, "projectile_speed": 100.0})
 	executor.execute_attack(res)
 	if scene_root.get_child_count() <= children_before:
@@ -379,7 +379,7 @@ func test_aex04_zero_speed() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var res := _make_resource({"effect_type": "PROJECTILE_SPIT", "damage": 1.0, "projectile_speed": 0.0})
 	executor.execute_attack(res)
 	_assert_true(scene_root.get_child_count() > children_before, "AEX-04_zero_speed_still_created")
@@ -688,7 +688,7 @@ func test_aex08_no_damage_no_projectile() -> void:
 		return
 	var executor = scene["executor"]
 	var scene_root = scene["root"]
-	var children_before := scene_root.get_child_count()
+	var children_before: int = scene_root.get_child_count()
 	var res := _make_resource({"effect_type": "FUTURE_UNKNOWN", "damage": 99.0, "attack_range": 100.0})
 	executor.execute_attack(res)
 	_assert_eq_int(0, enemy.damage_taken.size(), "AEX-08_no_damage")
