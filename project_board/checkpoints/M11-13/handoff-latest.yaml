@@ -1,0 +1,22 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M11-13
+  from_agent: Static QA
+  to_agent: Learning Agent
+  validated_at: "2026-05-25T16:15:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: review_feedback_incorporated
+      item: "Feedback incorporated"
+      status: complete
+      evidence: "No review findings; gd-review and gd-organization both exit 0"
+    - item_key: review_code_reviewed
+      item: "Code reviewed"
+      status: complete
+      evidence: "tests/scripts/attacks/test_verify_damage_knockback.gd"
+    - item_key: review_merge_ready
+      item: "Merge-ready"
+      status: complete
+      evidence: "Full Godot test suite exit 0; all lint checks pass"
+  blocking_issues: []

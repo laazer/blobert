@@ -14,6 +14,19 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-25T-m11-13-autopilot (M11 Verify Damage Knockback)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/13_verify_damage_knockback.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-13/`
+
+### M11-13 — OUTCOME: PLANNING COMPLETE
+Verification ticket decomposed into 4 tasks (Spec → Test Design → Test Break → Implementation). Existing implementation fully covers AttackResource, AttackExecutor, PlayerProjectile3D, AttackDatabase, and _try_attack(). Five test coverage gaps identified: (1) cross-mutation integration tests, (2) VFX position correctness, (3) projectile on-hit behavior, (4) knockback direction in end-to-end melee, (5) projectile velocity in _physics_process. No implementation changes expected unless tests reveal bugs. Stage → SPECIFICATION; handoff to Spec Agent.
+Log: `project_board/checkpoints/M11-13/2026-05-25T-plan-run.md`
+
+---
+
 ## Run: 2026-05-25T-m11-12-autopilot (M11 Verify Cooldown Behavior)
 
 - Queue mode: single ticket
@@ -710,6 +723,24 @@ Log: project_board/checkpoints/M902-20/
 - **Agent:** Gameplay Systems Agent
 - **Outcome:** CDB-3 fixed (`_mutation_cooldowns.clear()` in `reset_hp()`), GAP-1 fixed (negative delta guard). All 83 cooldown tests + existing attack suites pass. Stage → INTEGRATION.
 - Log: `project_board/checkpoints/M11-12/2026-05-25T-implementation-run.md`
+
+---
+
+### M11-13 — Verify Damage and Knockback (Specification)
+
+- **Run:** 2026-05-25T-spec-run
+- **Agent:** Spec Agent
+- **Outcome:** Verification spec produced (VDK-1 through VDK-5, 31 AC) covering 5 coverage gaps: cross-mutation integration, VFX position, projectile on-hit, E2E knockback direction, projectile velocity. Stage → TEST_DESIGN.
+- Log: `project_board/specs/verify_damage_knockback_spec.md`
+
+---
+
+### M11-13 — Verify Damage and Knockback (Test Break)
+
+- **Run:** 2026-05-25T-test-break-run
+- **Agent:** Test Breaker Agent
+- **Outcome:** 38 adversarial tests (102 assertions) in `tests/scripts/attacks/test_verify_damage_knockback_adversarial.gd`. 8 categories: null/empty boundary, DB boundary, degenerate knockback geometry, projectile boundary, modifier defaults, executor edge cases, mutation testing, combinatorial/stress + determinism. All 102 pass. Full suite exit 0. Stage → IMPLEMENTATION_GAMEPLAY.
+- Log: `project_board/checkpoints/M11-13/`
 
 ---
 
