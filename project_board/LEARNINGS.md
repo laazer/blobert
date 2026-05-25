@@ -7694,3 +7694,69 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M11-13] — Test Breaker output must respect file limits; verification pipelines can skip implementation stage
+*Completed: 2026-05-25*
+
+### Learnings
+
+- **category:** process
+  **insight:** Test Breaker Agent generates adversarial test files without checking output size against the project's 900-line organization limit, causing a post-generation split that wastes a review cycle.
+  **impact:** The adversarial test file for M11-13 reached 971 lines, requiring a split into two files (`_adversarial.gd` at 578 lines and `_adversarial_b.gd` at 487 lines). The split itself was clean, but it was an avoidable rework step.
+  **prevention:** Test Breaker Agent must track cumulative line count while generating adversarial tests. When the running total approaches 800 lines, start a new file with a `_b` / `_c` suffix proactively instead of requiring a reactive split.
+  **severity:** medium
+
+- **category:** process
+  **insight:** Verification-only tickets require zero implementation changes by definition, yet the pipeline still schedules an implementation stage. When all tests pass on first run, the implementation stage is a no-op that adds orchestration overhead and checkpoint noise.
+  **impact:** M11-13 (and M11-12 before it) ran through a full 7-stage pipeline when the implementation stage contributed nothing. The planner correctly predicted "no implementation expected" but the pipeline did not act on that signal.
+  **prevention:** When the Planner classifies a ticket as "verification-only" and the Test Designer's tests all pass on first run, the pipeline should skip the implementation stage and proceed directly to static QA / AC gatekeeper.
+  **severity:** low
+
+- **category:** process
+  **insight:** Handoff schema non-compliance has now recurred across M902-23, M11-04, M11-05, M11-06, M11-12, and M11-13 (6+ occurrences). **`TOOLING_TICKET_REQUIRED`**: build `ci/scripts/write_handoff.sh` — a deterministic artifact writer that takes structured arguments and emits valid YAML/JSON. Documenting this as a learning no longer has preventive value.
+  **impact:** Every ticket run requires manual correction of handoff artifacts by the orchestrator. Cumulative cost is now significant across 6+ tickets.
+  **prevention:** Stop documenting. Build the script. Block next milestone on its completion.
+  **severity:** high
+
+### Anti-Patterns
+
+- **description:** Test-generation agents produce output that exceeds file organization limits, then a separate agent must retroactively split and re-validate the output.
+  **detection_signal:** Adversarial test file exceeds 800 lines during generation, or the Static QA pass fails on a freshly generated test file.
+  **prevention:** All code-writing agents (Implementation, Test Designer, Test Breaker) must track output line count. When approaching the limit, proactively split into multiple files within the same generation pass.
+
+- **description:** Pipeline stages run unconditionally even when upstream signals indicate they will be no-ops (e.g., "verification-only" classification + all tests passing).
+  **detection_signal:** Implementation checkpoint shows "no changes made" or "all tests already pass."
+  **prevention:** Add a conditional gate after test execution: if all tests pass and the planner flagged "no implementation expected," skip the implementation stage and emit a checkpoint noting the skip reason.
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "Track cumulative line count while generating adversarial tests. When the output file approaches 800 lines, close the current file and start a new one with a `_b` (then `_c`, etc.) suffix. Each split file must have its own class_name, docstring with spec traceability, and independent pass/fail counters. Never generate a single test file exceeding 850 lines."
+  **reason:** M11-13's adversarial file hit 971 lines, requiring a reactive split. Pre-emptive splitting during generation eliminates this rework.
+
+- **agent: Orchestrator / Autopilot**
+  **change:** "After running tests for a verification-only ticket: if all tests pass with 0 failures and the Planner flagged 'no implementation expected,' skip the Implementation stage. Record a checkpoint entry: 'Implementation stage skipped — verification-only ticket, all N tests pass.' Proceed directly to Static QA."
+  **reason:** Two consecutive verification tickets (M11-12, M11-13) ran a no-op implementation stage. Skipping it saves one agent invocation and reduces checkpoint noise.
+
+### Workflow Improvements
+
+- **issue:** `TOOLING_TICKET_REQUIRED` — Handoff schema non-compliance (6th recurrence). Learning-based prevention has failed to resolve this issue.
+  **improvement:** Create backlog ticket: "Build `ci/scripts/write_handoff.sh` — deterministic handoff artifact writer." Block M12 milestone start on its completion. The script accepts `ticket_id`, `from_agent`, `to_agent`, and a checklist array as arguments and emits a valid `handoff-latest.yaml`.
+  **expected_benefit:** Eliminates handoff schema errors permanently. Removes the need for manual artifact correction on every ticket.
+
+- **issue:** Test Breaker has no line-budget awareness, creating a mismatch between its output and the project's GDScript organization rules.
+  **improvement:** Add a `MAX_TEST_FILE_LINES = 850` constant to the Test Breaker's generation loop. When the threshold is reached mid-generation, the agent splits output into a new file and continues. The split is transparent to downstream agents because each file is independently runnable.
+  **expected_benefit:** Prevents reactive file splits and the associated re-validation overhead. Aligns test generation with the same limits that apply to implementation code.
+
+### Keep / Reinforce
+
+- **practice:** Planner Agent's pre-flight code analysis identified all 5 coverage gaps (cross-mutation integration, VFX position, projectile on-hit, e2e knockback direction, projectile velocity) with high confidence, and all 5 mapped 1:1 to spec requirements VDK-1 through VDK-5.
+  **reason:** Accurate gap analysis at planning time eliminates rework in the spec and test-design stages. The planner's pattern of reading existing test files and comparing against ticket AC is highly effective.
+
+- **practice:** Spec Agent's discrepancy resolutions (VDK-DR-1 for unhandled effect_types, VDK-DR-2 for missing EnemyBase methods) preemptively clarified scope boundaries, preventing test designers from attempting to test unimplemented handlers.
+  **reason:** Explicit discrepancy resolution in the spec prevents downstream agents from making incorrect assumptions about what is testable. This pattern should be standard for any ticket where the implementation boundary is partial.
+
+- **practice:** 69 tests (31 primary + 38 adversarial) with 206 assertions, all passing on existing code with zero implementation changes, permanently guard the attack system's damage/knockback contracts.
+  **reason:** This is the second consecutive ticket (after M11-12's 83 tests) demonstrating that verification tickets are high-ROI — they convert undocumented behavioral assumptions into durable regression coverage.
+
+---
+

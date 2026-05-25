@@ -1,37 +1,15 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-25T16:15:00Z",
+  "captured_at": "2026-05-25T16:20:00Z",
   "ticket_id": "M11-13",
   "todos": [
     {
-      "id": "impl-split-adversarial",
-      "content": "Split oversized adversarial test file under 900 lines",
+      "id": "learn-extract",
+      "content": "Extract reusable engineering insights from M11-13",
       "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-25T16:03:00Z",
-      "completed_at": "2026-05-25T16:07:00Z"
-    },
-    {
-      "id": "impl-run-tests",
-      "content": "Run full Godot test suite and verify all pass",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-25T16:07:00Z",
-      "completed_at": "2026-05-25T16:08:00Z"
-    },
-    {
-      "id": "review-gd",
-      "content": "GDScript review and organization check on changed files",
-      "status": "completed",
-      "agent": "Static QA",
-      "started_at": "2026-05-25T16:12:00Z",
-      "completed_at": "2026-05-25T16:15:00Z"
-    },
-    {
-      "id": "ac-gatekeeper",
-      "content": "AC Gatekeeper validates acceptance criteria",
-      "status": "pending",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent",
+      "started_at": "2026-05-25T16:18:00Z",
+      "completed_at": "2026-05-25T16:20:00Z"
     }
   ]
 }
