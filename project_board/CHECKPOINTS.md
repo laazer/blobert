@@ -5,6 +5,31 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-25T-m11-04-autopilot (M11 AttackResource)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/04_attack_resource.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-04/`
+
+### M11-04 — OUTCOME: PLANNING COMPLETE
+Six-task execution plan (Spec → Test Design → Test Break → Implementation → Static QA → AC Gatekeeper). Three property discrepancies flagged for Spec Agent (knockback_direction placement, range shadowing, description/projectile_lifetime inclusion). Stage → SPECIFICATION; handoff to Spec Agent. Log: `project_board/checkpoints/M11-04/2026-05-25T-plan-run.md`
+
+### M11-04 — OUTCOME: SPECIFICATION → TEST_DESIGN
+AttackResource spec frozen: 15 properties (attack_range not range, knockback_direction top-level, description + projectile_lifetime added); 4 effect_types (MELEE_SWIPE, PROJECTILE_SPIT, SLAM_AOE, LUNGE); 13 modifier keys documented; 14 edge cases; serialization contract. Spec exit type: generic.
+Log: `project_board/checkpoints/M11-04/2026-05-25T-spec-run.md`
+Spec: `project_board/specs/attack_resource_spec.md`
+
+### M11-04 — OUTCOME: TEST_BREAK → IMPLEMENTATION_GAMEPLAY
+Adversarial suite `tests/scripts/attacks/test_attack_resource_adversarial.gd` — 52 test functions, 100 assertions. Covers EC-1 through EC-14 (negative damage, zero cooldown, empty strings, unknown enums, large/nested modifiers, color HDR, duplicate IDs, negative startup_frames, duplicate() independence) plus 15 adversarial dimensions (extreme values, null-safety, int/float coercion, modifier lifecycle, instance isolation, combinatorial zero/negative, determinism, long strings). Combined with primary suite: 75 tests, 231 assertions. All RED until implementation.
+Log: `project_board/checkpoints/M11-04/2026-05-25T-test-break-run.md`
+
+### M11-04 — OUTCOME: IMPLEMENTATION → INTEGRATION
+`scripts/attacks/attack_resource.gd` created (AttackResource extends Resource, 15 exports). Deep-copy setter on modifiers for duplicate() independence (ATK-08). All 255 assertions GREEN (133 primary + 122 adversarial). Full suite exit 0.
+Log: `project_board/checkpoints/M11-04/2026-05-25T-implementation-run.md`
+
+---
+
 ## Run: 2026-05-23T-m11-03-autopilot (M11 Input Action Mapping)
 
 - Queue mode: single ticket

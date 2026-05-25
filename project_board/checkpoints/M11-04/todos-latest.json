@@ -1,0 +1,45 @@
+{
+  "ticket_id": "M11-04",
+  "stage": "INTEGRATION",
+  "updated_by": "Gameplay Systems Agent",
+  "updated_at": "2026-05-25",
+  "todos": [
+    {
+      "id": "T1",
+      "task": "Freeze AttackResource property list, defaults, and modifiers contract",
+      "agent": "Spec Agent",
+      "status": "COMPLETE"
+    },
+    {
+      "id": "T2",
+      "task": "Write behavioral test suite for AttackResource",
+      "agent": "Test Designer Agent",
+      "status": "COMPLETE"
+    },
+    {
+      "id": "T3",
+      "task": "Adversarial test deepening",
+      "agent": "Test Breaker Agent",
+      "status": "COMPLETE"
+    },
+    {
+      "id": "T4",
+      "task": "Implement AttackResource class",
+      "agent": "Gameplay Systems Agent",
+      "status": "COMPLETE",
+      "notes": "scripts/attacks/attack_resource.gd created. 15 exports, deep-copy modifier setter. All 255 assertions pass."
+    },
+    {
+      "id": "T5",
+      "task": "Static QA review",
+      "agent": "Static QA Agent",
+      "status": "PENDING"
+    },
+    {
+      "id": "T6",
+      "task": "AC Gatekeeper validation",
+      "agent": "AC Gatekeeper Agent",
+      "status": "PENDING"
+    }
+  ]
+}

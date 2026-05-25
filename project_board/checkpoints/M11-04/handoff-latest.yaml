@@ -1,0 +1,32 @@
+ticket_id: M11-04
+stage: INTEGRATION
+revision: 6
+from_agent: Gameplay Systems Agent
+to_agent: Acceptance Criteria Gatekeeper Agent
+timestamp: "2026-05-25"
+status: Proceed
+
+implementation:
+  file: scripts/attacks/attack_resource.gd
+  class_name: AttackResource
+  extends: Resource
+  properties: 15
+  all_exports: true
+
+test_results:
+  primary_suite: tests/scripts/attacks/test_attack_resource.gd
+  primary_tests: 23
+  primary_assertions: 133
+  primary_failures: 0
+  adversarial_suite: tests/scripts/attacks/test_attack_resource_adversarial.gd
+  adversarial_tests: 52
+  adversarial_assertions: 122
+  adversarial_failures: 0
+  full_suite_exit_code: 0
+
+checkpoint_decisions:
+  - label: modifiers deep-copy setter
+    confidence: High
+    summary: Added set:/get: accessor on modifiers to deep-copy Dictionary on assignment, ensuring Resource.duplicate() independence per ATK-08.
+
+blocking_issues: []
