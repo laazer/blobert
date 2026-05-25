@@ -232,7 +232,7 @@ func _tick_controller_timers(delta: float, jump_just_pressed: bool) -> void:
 		_jump_buffer_timer = buffer_duration
 	_jump_buffer_timer = maxf(0.0, _jump_buffer_timer - delta)
 	for cd_key in _mutation_cooldowns:
-		_mutation_cooldowns[cd_key] = maxf(0.0, _mutation_cooldowns[cd_key] - delta)
+		_mutation_cooldowns[cd_key] = maxf(0.0, _mutation_cooldowns[cd_key] - maxf(0.0, delta))
 
 
 func _prepare_frame_collision_state(delta: float) -> Dictionary:
@@ -765,6 +765,7 @@ func take_damage(amount: float, knockback: Vector3) -> void:
 func reset_hp() -> void:
 	_current_state.current_hp = _simulation.max_hp
 	_player_state_machine.reset()
+	_mutation_cooldowns.clear()
 	_enemy_acid_dots.clear()
 	_enemy_movement_root_remaining = 0.0
 	_jump_buffer_timer = 0.0
@@ -896,5 +897,3 @@ func _tick_enemy_acid_dots(delta: float) -> void:
 		if int(d["ticks_remaining"]) <= 0:
 			_enemy_acid_dots.remove_at(idx)
 		idx -= 1
-
-
