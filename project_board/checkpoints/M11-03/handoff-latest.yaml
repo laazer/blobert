@@ -1,36 +1,37 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-03
-  from_agent: test_breaker
-  to_agent: implementation
-  validated_at: "2026-05-24T16:00:00Z"
-  required_items_met: 2
-  total_required_items: 2
+  from_agent: acceptance_criteria_gatekeeper
+  to_agent: human
+  validated_at: "2026-05-24T12:30:00Z"
+  required_items_met: 4
+  total_required_items: 4
   checklist:
-    - item_key: breaker_gaps_documented
-      item: All discovered gaps documented
+    - item_key: ac_spec_written
+      item: IAM spec satisfies all ticket AC
       required: true
       status: complete
-      evidence: tests/scripts/player/test_player_input_action_policy_adversarial.gd
+      evidence: project_board/specs/input_action_mapping_spec.md
       evidence_type: path
-    - item_key: breaker_impl_notes
-      item: Implementation notes created
+    - item_key: ac_policy_tests
+      item: IAM policy tests green
       required: true
       status: complete
-      evidence: project_board/checkpoints/M11-03/2026-05-23T-test-break-run.md
+      evidence: 29/29 primary + 38/38 adversarial PASS (godot re-run 2026-05-24)
+      evidence_type: command_output
+    - item_key: ac_scope_boundary
+      item: No controller/InputMap edits in M11-03
+      required: true
+      status: complete
+      evidence: 051f87b..938e381 commit range; no PlayerInputActionPolicy in player_controller_3d.gd
+      evidence_type: attestation
+    - item_key: ac_ticket_complete
+      item: Ticket in done/ with Stage COMPLETE
+      required: true
+      status: complete
+      evidence: project_board/11_milestone_11_base_mutation_attacks/done/03_input_action_mapping.md
       evidence_type: path
-  test_evidence:
-    command: "timeout 300 godot --headless -s tests/run_tests.gd"
-    primary_suite: test_player_input_action_policy.gd
-    adversarial_suite: test_player_input_action_policy_adversarial.gd
-    adversarial_methods: 21
-    adversarial_assertions: 38
-    primary_failed: 1
-    adversarial_failed: 1
-    red_tests:
-      - iam9_debug_kill_permitted_idle_when_enabled
-      - ec_iam12_debug_after_combat_winner
   next_work:
-    - Fix PlayerInputActionPolicy debug_kill IDLE/WALK matrix (IAM-9.2, EC-IAM-12)
-    - Green policy primary + adversarial suites
-    - AC gatekeeper (spec + tests; controller wiring still deferred)
+    - git push origin main (6 commits ahead)
+    - Commit done/ ticket + checkpoint if desired
+    - Fix EMU-ADV-COUNT_size separately for full suite green

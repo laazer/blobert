@@ -1,50 +1,15 @@
 {
   "schema_version": "1.0",
   "ticket_id": "M11-03",
-  "agent": "Test Breaker Agent",
-  "captured_at": "2026-05-24T16:00:00Z",
+  "agent": "Acceptance Criteria Gatekeeper Agent",
+  "captured_at": "2026-05-24T12:30:00Z",
   "todos": [
-    {
-      "id": "plan-1",
-      "content": "Decompose M11-03 execution plan in ticket",
-      "status": "completed",
-      "agent": "Planner Agent"
-    },
-    {
-      "id": "spec-1",
-      "content": "Author input_action_mapping_spec.md (IAM requirements)",
-      "status": "completed",
-      "agent": "Spec Agent"
-    },
-    {
-      "id": "spec-2",
-      "content": "Run spec_completeness_check.py --type generic",
-      "status": "completed",
-      "agent": "Spec Agent"
-    },
-    {
-      "id": "test-design-1",
-      "content": "Author test_player_input_action_policy.gd",
-      "status": "completed",
-      "agent": "Test Designer Agent"
-    },
-    {
-      "id": "test-break-1",
-      "content": "Author test_player_input_action_policy_adversarial.gd",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "impl-1",
-      "content": "Fix debug_kill permit matrix (IAM-9.2, EC-IAM-12 RED)",
-      "status": "pending",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "ac-1",
-      "content": "AC gatekeeper: spec AC + test artifacts; ticket to done/",
-      "status": "pending",
-      "agent": "AC Gatekeeper"
-    }
+    {"id": "plan-1", "content": "Decompose M11-03 execution plan in ticket", "status": "completed", "agent": "Planner Agent"},
+    {"id": "spec-1", "content": "Author input_action_mapping_spec.md", "status": "completed", "agent": "Spec Agent"},
+    {"id": "spec-2", "content": "Run spec_completeness_check.py --type generic", "status": "completed", "agent": "Spec Agent"},
+    {"id": "test-design-1", "content": "Author test_player_input_action_policy.gd", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "test-break-1", "content": "Author test_player_input_action_policy_adversarial.gd", "status": "completed", "agent": "Test Breaker Agent"},
+    {"id": "impl-1", "content": "Implement PlayerInputActionPolicy.gd (IAM-7)", "status": "completed", "agent": "Gameplay Systems Agent"},
+    {"id": "ac-1", "content": "AC gatekeeper: spec AC + test artifacts", "status": "completed", "agent": "Acceptance Criteria Gatekeeper Agent"}
   ]
 }
