@@ -7530,3 +7530,167 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M11-06] — Fill-order semantics, handoff schema drift, and controller line-budget exhaustion
+*Completed: 2026-05-25*
+
+### Learnings
+
+- **category: testing**
+  **insight:** Tests that manipulate ordered-slot systems (like `MutationSlotManager.fill_next_available`) must account for deterministic fill order. Clearing "slot 0" after a single fill empties the only occupied slot, not "the other slot." Test authors who intend to test slot-B-only states must fill both slots first, then clear the one they want empty.
+  **impact:** EC-20 adversarial test (`slot_b_fires_base_attack`) filled one slot and cleared index 0 — both slots ended up empty. The implementation agent correctly diagnosed this as a test setup bug (not an implementation bug), but didn't fix it, causing a 156/157 pass rate that required orchestrator intervention.
+  **prevention:** Test Breaker Agent should include a "slot state assertion" immediately after setup for any test that targets a specific slot configuration. For multi-slot systems, always assert the intended pre-condition (e.g., `assert_true(msm.is_slot_filled(1))`) before exercising the behavior under test.
+  **severity:** medium
+
+- **category: process**
+  **insight:** Handoff gate artifacts (`handoff-latest.yaml`, `todos-latest.json`) are consistently produced with incorrect schemas by subagents. Across M11-04, M11-05, and M11-06, every subagent wrote artifacts with missing `schema_version`, wrong field names (`description` instead of `content`, `complete` instead of `completed`), missing `captured_at`, missing root `handoff:` key, or wrong checklist item keys. The orchestrator manually fixed every one.
+  **impact:** Cumulative orchestrator tax: 3+ tickets × 5+ agents per ticket = 15+ manual artifact fixes. This is a recurring time sink that compounds as tickets increase.
+  **prevention:** Provide a validated YAML/JSON template in the agent prompt (not just a schema reference). Alternatively, implement a deterministic script that generates these artifacts from structured input (ticket_id, stage, checklist items) so agents never handwrite them.
+  **severity:** high
+
+- **category: architecture**
+  **insight:** Godot 4.6 prevents `class_name X` on scripts registered as autoload `X` — the parser raises `Class "X" hides an autoload singleton`. When the gd-organization hook requires `class_name`, the only workaround is a suffix pattern like `class_name XNode`.
+  **impact:** Implementation agent had to discover and resolve this at implementation time. The spec and planner did not anticipate the `class_name` vs autoload naming conflict.
+  **prevention:** Planner Agent should flag any new autoload deliverable and include a note: "Godot 4.6 autoload naming: use `class_name <Name>Node` to avoid parser collision with autoload singleton `<Name>`."
+  **severity:** low
+
+- **category: architecture**
+  **insight:** `PlayerController3D` reached exactly 900 lines (the `gd-organization` limit) after M11-06 wiring. Any future additions will trigger the lint gate and require an extraction refactor.
+  **impact:** No immediate failure, but the next ticket touching `PlayerController3D` (M11 attack states, charge-up, etc.) will be blocked by line-count enforcement unless the file is refactored first.
+  **prevention:** When a core file is within 10% of the organization line limit after implementation, create a follow-up refactor ticket immediately. For `PlayerController3D`, extract attack pipeline methods (`_try_attack`, cooldown management, attack input handling) into a dedicated helper class or child node before the next M11 ticket begins.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Test Breaker writes a slot-manipulation test without asserting the slot state after setup, relying on implicit understanding of fill order.
+  **detection_signal:** Any adversarial test that calls `fill_next_available` followed by `clear_slot(index)` without an assertion between them confirming the intended slot configuration.
+  **prevention:** Require a "state assertion barrier" pattern in slot tests: `fill → assert intended state → act → assert behavior`. Add this as a Test Breaker prompt instruction for ordered-collection test setup.
+
+- **description:** Subagents hand-write structured handoff artifacts (YAML/JSON) with field names from memory, producing schema-invalid files every time.
+  **detection_signal:** Orchestrator finds `handoff-latest.yaml` or `todos-latest.json` needs manual correction after any subagent handoff.
+  **prevention:** Replace hand-written artifacts with a deterministic generation script, or embed exact copy-paste templates with populated examples in each agent prompt.
+
+- **description:** Implementation agent correctly identifies a test setup bug but routes it to "next agent" instead of fixing it, leaving a known-failing test in the suite.
+  **detection_signal:** Agent reports N-1 of N tests passing with an explanation of why the failure is not an implementation bug but does not apply the fix.
+  **prevention:** Implementation agent prompt patch: "If a test failure is diagnosed as a test setup bug (not an implementation bug), fix the test setup in the same run. Do not defer test fixes to downstream agents."
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "For any test that manipulates ordered-collection state (slot managers, queues, stacks): after setup calls, add an explicit assertion confirming the pre-condition matches intent (e.g., `assert_true(msm.is_slot_filled(1), 'Slot B should be filled before testing slot-B-only behavior')`). This prevents fill-order assumptions from producing vacuous tests."
+  **reason:** EC-20 test setup bug went undetected through the entire Test Breaker run because there was no assertion verifying the intended slot-B-only state was achieved.
+
+- **agent: Gameplay Systems Agent (Implementation)**
+  **change:** "If a test failure is diagnosed as a test setup bug (not an implementation defect), fix the test in the same implementation run. Do not route test-setup fixes to downstream agents. A known-failing test must never be left in the suite when the fix is understood."
+  **reason:** Implementation agent identified the EC-20 root cause with high confidence but deferred the fix, requiring orchestrator intervention and an extra round-trip.
+
+- **agent: Planner Agent**
+  **change:** "When a deliverable includes a new Godot autoload: note in the plan that Godot 4.6 prevents `class_name X` on an autoload registered as `X`. Recommend `class_name XNode` suffix in the implementation task notes. Also: if the target controller file is within 10% of the gd-organization line limit, add a follow-up refactor task to the plan."
+  **reason:** Both the autoload naming conflict and the 900-line ceiling were discovered at implementation time rather than planning time, causing avoidable checkpoint entries.
+
+- **agent: All subagents (handoff writers)**
+  **change:** "When writing `handoff-latest.yaml`: root key must be `handoff:`, required fields are `schema_version: '1.0'`, `ticket_id`, `ticket_path`, `from_agent`, `to_agent`, `stage`, `revision`, `validated_at`, `required_items_met`, `total_required_items`, `checklist` (array of objects with keys: `item_key`, `item`, `status`, `evidence`), `blocking_issues`. When writing `todos-latest.json`: required fields are `schema_version: '1.0'`, `ticket_id`, `captured_at`, `stage`, `todos` (array with `id`, `content`, `status`, `agent`)."
+  **reason:** Every subagent across M11-04, M11-05, M11-06 produced schema-invalid handoff artifacts, creating cumulative orchestrator overhead.
+
+### Workflow Improvements
+
+- **issue:** Implementation agent deferred a known test-setup fix to the next agent, creating an unnecessary round-trip and orchestrator intervention.
+  **improvement:** Add a "test-setup fix" step to the implementation agent workflow: after all tests run, if any failure is attributed to test setup (not implementation), fix the test and re-run before handoff.
+  **expected_benefit:** Eliminates round-trips for test-setup bugs; implementation agent delivers a clean 100% pass rate.
+
+- **issue:** `PlayerController3D` hit the 900-line organization limit with no follow-up refactor planned, creating a latent blocker for downstream tickets.
+  **improvement:** Planner Agent should run a pre-flight line-count check on files that will be modified. If a file is within 50 lines of the limit, add a refactor extraction task (or a prerequisite refactor ticket) to the plan.
+  **expected_benefit:** Prevents surprise lint gate failures on the next ticket that touches a near-limit file.
+
+- **issue:** Handoff artifact schema drift has been documented as a learning in M902-23 and recurs in M11-04/05/06 — the learning alone did not prevent recurrence.
+  **improvement:** Escalate from "learning" to "tooling": create a deterministic `ci/scripts/write_handoff.sh` script that takes structured arguments and emits valid YAML/JSON. Agents call the script instead of hand-writing artifacts. Until the script exists, embed the full validated template (not a schema reference) directly in each agent's prompt.
+  **expected_benefit:** Eliminates handoff schema errors entirely by removing hand-authoring from the critical path.
+
+### Keep / Reinforce
+
+- **practice:** Spec Agent resolved mutation_id type (int → String) by tracing the existing codebase (`MutationSlot._active_mutation_id: String`, `EnemyInfection3D.mutation_drop: String`) rather than following the ticket's illustrative pseudocode.
+  **reason:** Prevented a type mismatch bug at the system boundary that would have required a late refactor across slot manager, controller, and database.
+
+- **practice:** Order-independent fused attack lookup with alphabetically sorted canonical key (`"acid_claw"` regardless of input order).
+  **reason:** Eliminates a class of caller-order bugs and simplifies downstream fused attack registration.
+
+- **practice:** 98 total tests (48 primary + 50 adversarial) with dedicated controller integration tests separate from unit-level database tests.
+  **reason:** Clean separation caught the EC-20 slot setup bug at the integration boundary, not buried in unit tests.
+
+---
+
+## [M11-12] — Verification tickets benefit from automated test conversion; line-limit pressure needs upstream mitigation
+*Completed: 2026-05-25*
+
+### Learnings
+
+- **category:** testing
+  **insight:** "Manual verification" tickets can and should be converted to automated behavioral tests by the pipeline. When all AC items describe observable state transitions, they map directly to assertions.
+  **impact:** 83 automated tests (46 primary + 37 adversarial) now permanently guard cooldown cross-state behavior, replacing ephemeral manual checks that would need repeating on every future change.
+  **prevention:** Planner Agent should flag "manual test" AC items as candidates for automated conversion during planning. Default to automated unless the AC truly requires human perception (visual, audio, feel).
+  **severity:** medium
+
+- **category:** testing
+  **insight:** Adversarial testing against engine-contract boundaries (negative delta, zero delta, massive delta) catches defensive-programming gaps that spec-driven tests miss by design.
+  **impact:** GAP-1 (negative delta increasing cooldown) would have been undetectable by spec tests since the spec assumes non-negative engine delta. The `maxf(0.0, delta)` guard was added only because of adversarial probing.
+  **prevention:** Test Breaker Agent should always include "engine boundary" adversarial cases for any code that consumes `delta`, `time`, or other engine-provided values.
+  **severity:** medium
+
+- **category:** architecture
+  **insight:** When a file is within 10 lines of the organization line limit, even a 2-line fix creates a blocking side-quest (inlining variables, removing blank lines) that consumes review cycles.
+  **impact:** Adding 2 lines to `player_controller_3d.gd` pushed it to 902 lines (over the 900 limit), requiring a separate Static QA task to inline a variable and remove a trailing blank line to get to 899.
+  **prevention:** Already captured as a workflow improvement in M11-04/05/06. Reinforced here: the planner's pre-flight line-count check MUST be implemented, not just documented.
+  **severity:** medium
+
+- **category:** process
+  **insight:** Handoff schema non-compliance has now recurred across M902-23, M11-04, M11-05, M11-06, and M11-12 despite being documented as a learning each time. Learnings alone do not fix structural deficiencies — tooling does.
+  **impact:** Orchestrator manually repaired subagent handoff artifacts every run. Cumulative overhead is now measurable across 5+ tickets.
+  **prevention:** Escalate from repeated learning to mandatory action: build `ci/scripts/write_handoff.sh` (deterministic artifact writer) or embed the complete validated template in each agent prompt. Stop re-documenting; start enforcing.
+  **severity:** high
+
+### Anti-Patterns
+
+- **description:** Re-documenting a known recurring problem as a "learning" without implementing the fix, creating a false sense of resolution.
+  **detection_signal:** The same learning appears in 3+ consecutive ticket entries with identical or near-identical prevention text.
+  **prevention:** After the second recurrence, escalate from "learning" to "tooling ticket" — create a backlog item to build the automation that eliminates the problem. Tag it as a blocker for the next milestone.
+
+- **description:** Implementation agent adds minimal lines to a near-limit file without checking the line count, causing a lint gate failure that requires a separate review pass to fix.
+  **detection_signal:** Implementation checkpoint shows file grew past a known organization limit (e.g., 900 lines for GDScript).
+  **prevention:** Implementation agent should run `wc -l` on the target file before and after changes. If the file will exceed the limit, apply an inline refactor in the same commit (don't defer to Static QA).
+
+### Prompt Patches
+
+- **agent: Planner Agent**
+  **change:** "When a ticket has 'manual test' or 'manual verification' in its AC items, evaluate whether each AC can be expressed as an automated assertion (state transition, value check, timing constraint). If yes, rewrite the AC as automated test requirements and note that the original manual scope has been superseded. Only keep AC items as manual if they require human sensory judgment (visual appearance, audio quality, game feel)."
+  **reason:** M11-12's five "manual test" AC items were all state-transition checks that mapped directly to automated tests. The pipeline discovered this at spec time rather than planning time, which is less efficient.
+
+- **agent: Test Breaker Agent**
+  **change:** "For any function that consumes `delta` (physics frame time), `Time.get_ticks_*`, or other engine-provided temporal values: always include adversarial tests for negative values, zero, epsilon (1e-10), and very large values (1e6). These engine-boundary cases are outside the spec's domain but are reachable in edge scenarios (paused physics, frame spikes, mocked tests)."
+  **reason:** GAP-1 (negative delta) was only caught because the Test Breaker happened to include it. Making this a standing instruction ensures consistent coverage of engine-contract boundaries.
+
+- **agent: All subagents (handoff writers)**
+  **change:** "ESCALATION: Handoff schema compliance has been a recurring learning for 5+ tickets. Until `ci/scripts/write_handoff.sh` exists, copy-paste the EXACT template below when writing `handoff-latest.yaml` — do not reconstruct from memory. [Template already provided in M11-04/05/06 prompt patch — reuse verbatim.]"
+  **reason:** Repeating the prompt patch with an escalation marker increases salience. The real fix is the script, but until it ships, maximum-salience prompting is the stopgap.
+
+### Workflow Improvements
+
+- **issue:** "Learnings" about recurring problems are documented but never converted to actionable work items, creating a documentation graveyard.
+  **improvement:** Add a "Recurrence Check" step to the Learning Agent: before appending a new learning, search LEARNINGS.md for the same root cause. If found 2+ times, emit a `TOOLING_TICKET_REQUIRED` flag with a one-line description. The orchestrator must create the ticket before proceeding to the next milestone.
+  **expected_benefit:** Breaks the cycle of re-documenting known problems. Converts chronic learnings into one-time fixes.
+
+- **issue:** Verification tickets that specify "manual tests" still go through the full 7-stage pipeline (plan → spec → test-design → test-break → implement → review → gate), which is correct for automated conversion but the planner should recognize the conversion opportunity upfront.
+  **improvement:** Planner Agent should classify verification tickets into "automatable" vs "requires-human-judgment" at planning time. Automatable tickets proceed through the standard pipeline with a note that the original manual scope is superseded. Human-judgment tickets should be routed to a simplified gate-only workflow.
+  **expected_benefit:** Eliminates spec-time discovery of the automation opportunity; the planner makes the call, and downstream agents execute with clarity.
+
+### Keep / Reinforce
+
+- **practice:** Pipeline correctly elevated a "manual verification" ticket into 83 automated tests, permanently encoding the verification as regression coverage rather than a one-time check.
+  **reason:** This is the ideal outcome for any verification ticket — convert ephemeral checks into durable automated guards. The pipeline's TDD structure naturally drives this conversion.
+
+- **practice:** Planner Agent identified the single implementation gap (`_mutation_cooldowns.clear()` missing from `reset_hp()`) during code analysis at planning time, allowing the entire downstream pipeline to focus narrowly.
+  **reason:** Early gap identification prevented spec/test agents from discovering the issue independently, saving at least one round-trip.
+
+- **practice:** Test Breaker's adversarial testing found a real defensive-programming gap (GAP-1: negative delta) that no other stage would have caught.
+  **reason:** Validates the Test Breaker stage as high-value even when the implementation is "almost complete." Engine-boundary adversarial testing should be a standing practice.
+
+---
+

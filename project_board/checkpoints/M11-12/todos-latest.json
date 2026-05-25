@@ -1,39 +1,15 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-25T15:10:00Z",
+  "captured_at": "2026-05-25T15:25:00Z",
   "ticket_id": "M11-12",
   "todos": [
     {
-      "id": "cdb-impl-reset",
-      "content": "Add _mutation_cooldowns.clear() to reset_hp()",
+      "id": "learning-extract",
+      "content": "Extract reusable insights from M11-12 run",
       "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-25T14:50:00Z",
-      "completed_at": "2026-05-25T14:54:00Z"
-    },
-    {
-      "id": "cdb-impl-delta-guard",
-      "content": "Guard against negative delta in cooldown tick",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-25T14:50:00Z",
-      "completed_at": "2026-05-25T14:54:00Z"
-    },
-    {
-      "id": "cdb-review",
-      "content": "GDScript review on changed files",
-      "status": "completed",
-      "agent": "Static QA",
-      "started_at": "2026-05-25T15:00:00Z",
-      "completed_at": "2026-05-25T15:10:00Z"
-    },
-    {
-      "id": "cdb-line-fix",
-      "content": "Fix player_controller_3d.gd 902 line count to under 900",
-      "status": "completed",
-      "agent": "Static QA",
-      "started_at": "2026-05-25T15:05:00Z",
-      "completed_at": "2026-05-25T15:10:00Z"
+      "agent": "Learning Agent",
+      "started_at": "2026-05-25T15:15:00Z",
+      "completed_at": "2026-05-25T15:25:00Z"
     }
   ]
 }

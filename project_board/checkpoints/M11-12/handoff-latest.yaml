@@ -1,22 +1,22 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-12
-  from_agent: Static QA
-  to_agent: Learning Agent
-  validated_at: "2026-05-25T15:15:00Z"
+  from_agent: Learning Agent
+  to_agent: AC Gatekeeper
+  validated_at: "2026-05-25T15:25:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: review_feedback_incorporated
-      item: "Feedback incorporated"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "player_controller_3d.gd trimmed to 899 lines (from 902); inlined cd_delta; removed trailing blank line"
-    - item_key: review_code_reviewed
-      item: "Code reviewed"
+      evidence: "project_board/LEARNINGS.md"
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "GDScript review on player_controller_3d.gd, test_cooldown_cross_state_behavior.gd, test_cooldown_cross_state_adversarial.gd — all clean"
-    - item_key: review_merge_ready
-      item: "Merge-ready"
+      evidence: "Verification ticket converted to 83 automated tests; single code change (reset_hp cooldown clear); negative delta guard added defensively"
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: "All tests green (exit 0), 899 lines under 900 limit, committed as a112309"
+      evidence: "All learning outputs appended to LEARNINGS.md under M11-12 section"
   blocking_issues: []
