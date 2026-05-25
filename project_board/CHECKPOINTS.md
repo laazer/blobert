@@ -21,10 +21,9 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: `project_board/checkpoints/M11-12/`
 
-### M11-12 — OUTCOME: SPECIFICATION COMPLETE
-Cooldown cross-state behavior spec (CDB-1 through CDB-5): 24 acceptance criteria, 5 requirements. One implementation gap: `reset_hp()` missing `_mutation_cooldowns.clear()`. All other behaviors already correctly implemented. Stage → TEST_DESIGN.
-Log: `project_board/checkpoints/M11-12/2026-05-25T-spec-run.md`
-Spec: `project_board/specs/cooldown_cross_state_behavior_spec.md`
+### M11-12 — OUTCOME: COMPLETE
+Verified cooldown behavior across all player state transitions. Added `_mutation_cooldowns.clear()` to `reset_hp()` and `maxf(0.0, delta)` negative delta guard. 83 automated tests (46 primary + 37 adversarial), all green. Commits: a112309, 920ddec, 00316d5, 73ea9b8.
+Log: project_board/checkpoints/M11-12/
 
 ### M11-06 — OUTCOME: COMPLETE
 AttackDatabase autoload + PlayerController3D integration implemented. 98 tests (48 primary + 50 adversarial) all GREEN. EC-20 test setup bug fixed (slot fill order). All hooks pass.
