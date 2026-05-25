@@ -40,3 +40,44 @@ Test with multiple mutations to ensure per-mutation cooldown tracking is indepen
 - Run after M11 core tickets are in_progress or completed
 - Results document expected cooldown behavior for future attack additions
 
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+COMPLETE
+
+## Revision
+7
+
+## Last Updated By
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+- Tests: PASS — CooldownCrossStateBehaviorTests (46 passed, 0 failed) covering CDB-1 through CDB-5; CooldownCrossStateAdversarialTests (37 passed, 0 failed) covering negative delta, zero delta, large delta, empty dict, float precision, rapid input, and state oscillation edge cases; all existing attack suites green; full suite exit code 0.
+- Static QA: PASS — gd-review clean on player_controller_3d.gd; gd-organization clean after extracting AttackControllerHarness for DRY compliance; file at 899 lines (under 900).
+- Integration: PASS — Automated behavioral tests exercise PlayerController3D scene setup, state machine transitions, cooldown dictionary manipulation, and attack pipeline end-to-end. All five AC items are covered by spec-mapped automated tests (CDB-1..CDB-5), superseding the original manual verification scope.
+- Git: Implementation committed (a112309); all hooks passed.
+
+## Blocking Issues
+None
+
+## Escalation Notes
+None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Human
+
+## Required Input Schema
+None
+
+## Status
+Proceed
+
+## Reason
+All 5 acceptance criteria have explicit automated test coverage mapped to spec requirements CDB-1..CDB-5 (83 tests total: 46 primary + 37 adversarial, 0 failures). Implementation committed (a112309) with all pre-commit hooks passing. Original "manual test" scope was superseded by comprehensive behavioral and adversarial test suites. Ticket is complete.
+
