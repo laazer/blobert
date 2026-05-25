@@ -21,9 +21,9 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: `project_board/checkpoints/M11-13/`
 
-### M11-13 — OUTCOME: PLANNING COMPLETE
-Verification ticket decomposed into 4 tasks (Spec → Test Design → Test Break → Implementation). Existing implementation fully covers AttackResource, AttackExecutor, PlayerProjectile3D, AttackDatabase, and _try_attack(). Five test coverage gaps identified: (1) cross-mutation integration tests, (2) VFX position correctness, (3) projectile on-hit behavior, (4) knockback direction in end-to-end melee, (5) projectile velocity in _physics_process. No implementation changes expected unless tests reveal bugs. Stage → SPECIFICATION; handoff to Spec Agent.
-Log: `project_board/checkpoints/M11-13/2026-05-25T-plan-run.md`
+### M11-13 — OUTCOME: COMPLETE
+Verification ticket for damage and knockback delivery (MELEE_SWIPE + PROJECTILE_SPIT). No implementation changes needed — 31 primary + 38 adversarial tests written, all passing on existing code. Adversarial file split from 971→899+487 lines. Commits: f61a3c3, 8dd653f, fad8dcc.
+Log: `project_board/checkpoints/M11-13/`
 
 ---
 
