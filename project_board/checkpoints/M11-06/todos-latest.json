@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M11-06",
+  "captured_at": "2026-05-25T13:38:00Z",
+  "stage": "INTEGRATION",
+  "todos": [
+    {
+      "id": "IMPL-1",
+      "content": "Implement AttackDatabase + wire PlayerController3D",
+      "status": "completed",
+      "agent": "Implementation Agent",
+      "started_at": "2026-05-25T13:30:00Z",
+      "completed_at": "2026-05-25T13:38:00Z"
+    },
+    {
+      "id": "IMPL-2",
+      "content": "All 98 tests GREEN and run_tests.sh exit 0",
+      "status": "completed",
+      "agent": "Implementation Agent",
+      "started_at": "2026-05-25T13:30:00Z",
+      "completed_at": "2026-05-25T13:38:00Z"
+    },
+    {
+      "id": "IMPL-3",
+      "content": "Fix EC-20 test setup bug",
+      "status": "completed",
+      "agent": "Implementation Agent",
+      "started_at": "2026-05-25T13:36:00Z",
+      "completed_at": "2026-05-25T13:38:00Z"
+    },
+    {
+      "id": "SQA-1",
+      "content": "GDScript review on new/changed files",
+      "status": "pending",
+      "agent": "Static QA"
+    },
+    {
+      "id": "AC-1",
+      "content": "AC Gatekeeper validation",
+      "status": "pending",
+      "agent": "AC Gatekeeper"
+    }
+  ]
+}

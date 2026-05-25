@@ -1,10 +1,5 @@
-# player_controller_3d.gd
-#
-# 3D engine-integration layer for blobert (2.5D).
 # Normative physics frame pipeline: project_board/specs/player_physics_frame_order_spec.md
-# Uses the same MovementSimulation; maps Vector2 velocity to Vector3
-# (X = horizontal, Y = vertical; 2D y+ down -> 3D y- so velocity.y = -sim.velocity.y).
-# Movement constrained to plane Z=0; camera fixed for side view.
+# Maps MovementSimulation Vector2 → Vector3 (X=horiz, Y=vert, Z=0 plane lock).
 
 class_name PlayerController3D
 extends BasePhysicsEntity3D
@@ -13,7 +8,6 @@ const MovementSimulation = preload("res://scripts/movement/movement_simulation.g
 const PlayerStateMachine = preload("res://scripts/player/player_state_machine.gd")
 const PlayerStateDerivationContext = preload("res://scripts/player/player_state_derivation_context.gd")
 const _MOVE_SPEED_THRESHOLD: float = 0.12
-## 2D sim uses pixel-like units; 3D uses meters. 1 m = SCALE_2D_TO_3D "pixels".
 const SCALE_2D_TO_3D: float = 100.0
 
 var _simulation: MovementSimulation
@@ -21,22 +15,16 @@ var _current_state: MovementSimulation.MovementState
 var _player_state_machine: PlayerStateMachine
 var _player_state_ctx: PlayerStateDerivationContext
 
-# Per-slot chunk state — index 0 = slot 1 (detach), index 1 = slot 2 (detach_2).
-var _chunks: Array = [null, null]             # RigidBody3D per slot
+var _chunks: Array = [null, null]
 var _recall_in_progress: Array = [false, false]
 var _recall_timer: Array = [0.0, 0.0]
-var _chunk_stuck: Array = [false, false]      # true while frozen on an enemy
-var _chunk_stuck_enemy: Array = [null, null]  # EnemyInfection3D per slot
-## Chunk DoT: 3 steps (weaken → infect → release or mini-boss absorb), spaced by interval.
+var _chunk_stuck: Array = [false, false]
+var _chunk_stuck_enemy: Array = [null, null]
 var _chunk_dot_ticks_remaining: Array[int] = [0, 0]
 var _chunk_dot_time_accum: Array[float] = [0.0, 0.0]
 var _infection_handler: Node = null
 
-## Seconds between chunk damage steps while stuck on an enemy.
 @export var chunk_dot_step_interval: float = 0.45
-# True after a spawn until detach_just goes false — prevents the same
-# just_pressed event from immediately triggering a recall on the next
-# physics tick within the same display frame.
 var _detach_spawned: Array = [false, false]
 
 const _RECALL_TRAVEL_TIME: float = 0.25
@@ -46,14 +34,15 @@ var _mutation_slot: Object = null
 var _base_max_speed: float = 5.0
 const _MUTATION_SPEED_MULTIPLIER: float = 1.25
 
+var _attack_executor: AttackExecutor
+var _mutation_cooldowns: Dictionary = {}
+var _input_policy: PlayerInputActionPolicy
+
 var _fusion_timer: float = 0.0
 var _fusion_active: bool = false
 var _fusion_multiplier: float = 1.0
 
-## Stacking enemy acid DoT instances (M8 acid projectile); each hit adds one entry.
 var _enemy_acid_dots: Array = []
-
-## M8 adhesion lunge: horizontal move + jump input suppressed; velocity.x clamped after sim.
 var _enemy_movement_root_remaining: float = 0.0
 var _jump_buffer_timer: float = 0.0
 var _jump_buffer_pending_at_frame_start: bool = false
@@ -72,7 +61,6 @@ signal detach_2_fired(player_position: Vector3, chunk_position: Vector3)
 signal recall_2_started(player_position: Vector3, chunk_position: Vector3)
 signal chunk_2_reabsorbed(player_position: Vector3, chunk_position: Vector3)
 
-## Horizontal cap in 2D sim units (see SCALE_2D_TO_3D). Applied to `MovementSimulation.max_speed` in `_ready`.
 const _DEFAULT_MOVEMENT_MAX_SPEED_2D: float = 300.0
 @export var movement_max_speed_2d: float = _DEFAULT_MOVEMENT_MAX_SPEED_2D
 @export var jump_height: float = 120.0
@@ -84,31 +72,22 @@ const _DEFAULT_MOVEMENT_MAX_SPEED_2D: float = 300.0
 @export var wall_jump_height: float = 100.0
 @export var wall_jump_horizontal_speed: float = 180.0
 
-## Detach lob: initial velocity (m/s) for the chunk when thrown. X = horizontal, Y = upward.
 @export var detach_lob_horizontal: float = 5.0
 @export var detach_lob_upward: float = 8.0
-## Spawn offset (m) in lob direction so chunk clears the player.
 const _DETACH_SPAWN_OFFSET: float = 0.4
-## Spawn height (m) above player origin so chunk clears the floor.
-## Player origin Y≈0 on floor; chunk radius=0.5 → 0.75 gives 0.25m clearance.
 const _DETACH_SPAWN_HEIGHT: float = 0.75
 
 const _CHUNK_SLOT_COUNT: int = 2
-## Kill-plane Y (m): recover detached chunk if it falls below; margin above respawn zone bottom (~-9 m).
 const _CHUNK_KILL_PLANE_Y: float = -4.0
-## Chunk DoT: three phases (weaken → infect → release), counted down in `_chunk_dot_ticks_remaining`.
 const _CHUNK_DOT_PHASE_WEAKEN: int = 3
 const _CHUNK_DOT_PHASE_INFECT: int = 2
 const _CHUNK_DOT_PHASE_RELEASE: int = 1
 
 const _DEFAULT_PROJECT_GRAVITY: float = 9.8
-## Particle trail: treat as moving if |velocity| exceeds this (m/s).
 const _TRAIL_VELOCITY_THRESHOLD: float = 0.5
 const _JUMP_SFX_PITCH_MIN: float = 1.0
 const _JUMP_SFX_PITCH_MAX: float = 1.15
-## 2.5D plane lock.
 const _PLAY_PLANE_Z: float = 0.0
-## Use horizontal velocity sign for lob only when moving faster than this (m/s).
 const _DETACH_LOB_DIRECTION_VELOCITY_EPSILON: float = 0.1
 
 const _LAND_SQUASH_SCALE: Vector3 = Vector3(1.15, 0.85, 1.15)
@@ -121,7 +100,6 @@ const _ENEMY_ACID_DEFAULT_DOT_DURATION: float = 3.0
 const _ENEMY_ACID_DEFAULT_TICK_INTERVAL: float = 0.5
 const _ENEMY_ACID_MIN_TICK_INTERVAL: float = 0.01
 
-## Game juice: jump stretch (kit jumpStretchSize). Scale applied to SlimeVisual.
 @export var jump_stretch_scale: Vector3 = Vector3(0.85, 1.15, 0.85)
 @export var juice_tween_duration: float = 0.1
 
@@ -147,6 +125,9 @@ func _ready() -> void:
 	_player_state_ctx = PlayerStateDerivationContext.new()
 	_base_max_speed = _simulation.max_speed
 	collision_mask = _FULL_GROUND_MASK
+	_attack_executor = AttackExecutor.new()
+	add_child(_attack_executor)
+	_input_policy = PlayerInputActionPolicy.new()
 
 	var root: Node = get_parent()
 	if root != null:
@@ -198,27 +179,17 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# PFO-2 Step 0: read input before gameplay tick.
-	var input: Dictionary = _read_player_input()
+	var input: Dictionary = _read_player_input()                            # Step 0
 	_jump_buffer_pending_at_frame_start = _jump_buffer_timer > 0.0
-	# PFO-2 Step 1: advance gameplay FSM timers only.
-	_player_state_machine.update(delta)
-	# PFO-2 Step 2: controller timers (jump buffer; coyote stays in sim).
-	_tick_controller_timers(delta, input["jump_just_pressed"])
-	# PFO-2 Step 3: collision read + movement speed modifiers.
-	var frame: Dictionary = _prepare_frame_collision_state(delta)
-	# PFO-2 Step 4: kinematic dispatch (simulate; no move_and_slide).
-	var next_state: MovementSimulation.MovementState = _dispatch_movement(input, frame, delta)
-	# PFO-2 Step 5: one-way collision mask from post-dispatch velocity.
-	_update_one_way_collision_mask()
-	# PFO-2 Step 6: presentation sync (read-only from controller).
-	_sync_renderer_from_state(next_state)
-	# PFO-2 Step 7: collision resolution (last engine move).
-	_apply_collision_slide()
-	# PFO-2 Step 8: post-slide housekeeping (land juice, state copy, chunks).
-	_post_slide_housekeeping(next_state, input, frame, delta)
-	# PFO-2 Step 9: gameplay FSM derivation from post-slide engine state.
-	_sync_player_state_machine()
+	_player_state_machine.update(delta)                                     # Step 1
+	_tick_controller_timers(delta, input["jump_just_pressed"])              # Step 2
+	var frame: Dictionary = _prepare_frame_collision_state(delta)           # Step 3
+	var next_state: MovementSimulation.MovementState = _dispatch_movement(input, frame, delta) # Step 4
+	_update_one_way_collision_mask()                                        # Step 5
+	_sync_renderer_from_state(next_state)                                   # Step 6
+	_apply_collision_slide()                                                # Step 7
+	_post_slide_housekeeping(next_state, input, frame, delta)               # Step 8
+	_sync_player_state_machine()                                            # Step 9
 
 
 func _read_player_input() -> Dictionary:
@@ -242,6 +213,7 @@ func _read_player_input() -> Dictionary:
 		input_axis = 0.0
 		jump_pressed = false
 		jump_just_pressed = false
+	var attack_just_pressed: bool = Input.is_action_just_pressed("attack")
 	if OS.is_debug_build() and Input.is_action_just_pressed("debug_kill"):
 		_current_state.current_hp = _simulation.min_hp
 	return {
@@ -250,6 +222,7 @@ func _read_player_input() -> Dictionary:
 		"jump_just_pressed": jump_just_pressed,
 		"detach_just_pressed": detach_just_pressed,
 		"detach_2_just_pressed": detach_2_just_pressed,
+		"attack_just_pressed": attack_just_pressed,
 	}
 
 
@@ -258,7 +231,8 @@ func _tick_controller_timers(delta: float, jump_just_pressed: bool) -> void:
 	if jump_just_pressed and buffer_duration > 0.0:
 		_jump_buffer_timer = buffer_duration
 	_jump_buffer_timer = maxf(0.0, _jump_buffer_timer - delta)
-	# PFO-2 Step 2c: reserved for future invulnerability / iframes timers (out of scope M11-02).
+	for cd_key in _mutation_cooldowns:
+		_mutation_cooldowns[cd_key] = maxf(0.0, _mutation_cooldowns[cd_key] - delta)
 
 
 func _prepare_frame_collision_state(delta: float) -> Dictionary:
@@ -396,6 +370,8 @@ func _post_slide_housekeeping(
 	_tick_enemy_acid_dots(delta)
 	if _enemy_movement_root_remaining > 0.0:
 		_enemy_movement_root_remaining = maxf(0.0, _enemy_movement_root_remaining - delta)
+	if input["attack_just_pressed"]:
+		_try_attack()
 
 
 func get_one_way_collision_mask() -> int:
@@ -653,53 +629,91 @@ func _get_visual_node() -> Node3D:
 	return get_node_or_null("SlimeVisual") as Node3D
 
 
-func _juice_jump_stretch() -> void:
+func _juice_pop(target_scale: Vector3, in_dur: float, out_dur: float) -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
 		return
 	var tween := create_tween()
-	tween.tween_property(vis, "scale", jump_stretch_scale, juice_tween_duration)
-	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
+	tween.tween_property(vis, "scale", target_scale, in_dur)
+	tween.tween_property(vis, "scale", Vector3.ONE, out_dur)
+
+
+func _juice_jump_stretch() -> void:
+	_juice_pop(jump_stretch_scale, juice_tween_duration, juice_tween_duration)
 
 
 func _juice_land_squash() -> void:
-	var vis: Node3D = _get_visual_node()
-	if vis == null:
-		return
-	var tween := create_tween()
-	tween.tween_property(vis, "scale", _LAND_SQUASH_SCALE, juice_tween_duration)
-	tween.tween_property(
-		vis, "scale", Vector3.ONE, juice_tween_duration * _LAND_SQUASH_OUT_DURATION_FACTOR
-	)
+	_juice_pop(_LAND_SQUASH_SCALE, juice_tween_duration,
+		juice_tween_duration * _LAND_SQUASH_OUT_DURATION_FACTOR)
 
 
 func _juice_detach_pop() -> void:
-	var vis: Node3D = _get_visual_node()
-	if vis == null:
-		return
-	var tween := create_tween()
-	tween.tween_property(
-		vis, "scale", _DETACH_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR
-	)
-	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
+	_juice_pop(_DETACH_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR,
+		juice_tween_duration)
 
 
 func _juice_recall_pop() -> void:
-	var vis: Node3D = _get_visual_node()
-	if vis == null:
-		return
-	var tween := create_tween()
-	tween.tween_property(
-		vis, "scale", _RECALL_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR
-	)
-	tween.tween_property(vis, "scale", Vector3.ONE, juice_tween_duration)
+	_juice_pop(_RECALL_POP_SCALE, juice_tween_duration * _JUICE_POP_IN_DURATION_FACTOR,
+		juice_tween_duration)
 
 
 func _get_audio_manager() -> Node:
-	if not is_inside_tree():
-		return null
-	var root: Node = get_tree().root
-	return root.get_node_or_null("AudioManager")
+	var tree: SceneTree = get_tree() if is_inside_tree() else null
+	return tree.root.get_node_or_null("AudioManager") if tree else null
+
+
+func get_facing_sign() -> float:
+	if velocity.x < 0.0:
+		return -1.0
+	return 1.0
+
+
+func get_attack_executor() -> AttackExecutor:
+	return _attack_executor
+
+
+func _try_attack() -> void:
+	if _input_policy == null or _mutation_slot == null:
+		return
+	if not _input_policy.is_action_permitted(
+		_player_state_machine.get_state(), PlayerInputActionPolicy.ACTION_ATTACK
+	):
+		return
+	var slot_a = _mutation_slot.get_slot(0) if _mutation_slot.has_method("get_slot") else null
+	var slot_b = _mutation_slot.get_slot(1) if _mutation_slot.has_method("get_slot") else null
+	var a_filled: bool = slot_a != null and slot_a.is_filled()
+	var b_filled: bool = slot_b != null and slot_b.is_filled()
+	if not a_filled and not b_filled:
+		return
+	var db: Node = _get_attack_database()
+	if db == null:
+		return
+	var attack_resource: AttackResource = null
+	var cooldown_key: String = ""
+	if a_filled and b_filled:
+		var a_id: String = slot_a.get_active_mutation_id()
+		var b_id: String = slot_b.get_active_mutation_id()
+		attack_resource = db.get_fused_attack(a_id, b_id)
+		if attack_resource != null:
+			var pair: Array = [a_id, b_id]
+			pair.sort()
+			cooldown_key = "%s_%s" % [pair[0], pair[1]]
+		else:
+			attack_resource = db.get_base_attack(a_id)
+			cooldown_key = a_id
+	else:
+		var mid: String = slot_a.get_active_mutation_id() if a_filled else slot_b.get_active_mutation_id()
+		attack_resource = db.get_base_attack(mid)
+		cooldown_key = mid
+	if attack_resource == null or _mutation_cooldowns.get(cooldown_key, 0.0) > 0.0:
+		return
+	_attack_executor.execute_attack(attack_resource)
+	_mutation_cooldowns[cooldown_key] = attack_resource.cooldown
+
+
+func _get_attack_database() -> Node:
+	var tree: SceneTree = get_tree() if is_inside_tree() else null
+	return tree.root.get_node_or_null("AttackDatabase") if tree else null
 
 
 func _is_mutation_active() -> bool:

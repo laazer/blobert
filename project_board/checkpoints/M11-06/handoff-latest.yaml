@@ -1,0 +1,31 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M11-06
+  ticket_path: project_board/11_milestone_11_base_mutation_attacks/in_progress/06_attack_database_integration.md
+  from_agent: Implementation Agent
+  to_agent: Static QA
+  stage: INTEGRATION
+  revision: 6
+  validated_at: "2026-05-25T13:38:00Z"
+  required_items_met: 4
+  total_required_items: 4
+
+  checklist:
+    - item_key: impl_ac_complete
+      item: "All acceptance criteria implemented"
+      status: complete
+      evidence: "AttackDatabase created (scripts/attacks/attack_database.gd). PlayerController3D wired with _try_attack, cooldowns, facing_sign, attack input, executor child. Autoload + InputMap registered in project.godot."
+    - item_key: impl_tests_passing
+      item: "All tests passing"
+      status: complete
+      evidence: "ALL TESTS PASSED — exit code 0 from godot --headless -s tests/run_tests.gd (98 attack-related tests + full suite)"
+    - item_key: impl_linter_clean
+      item: "No linter violations"
+      status: complete
+      evidence: "project_board/checkpoints/M11-06/2026-05-25T-implementation-run.md"
+    - item_key: impl_checkpoint_logged
+      item: "Checkpoint logged"
+      status: complete
+      evidence: "project_board/checkpoints/M11-06/2026-05-25T-implementation-run.md"
+
+  blocking_issues: []

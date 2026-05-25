@@ -5,6 +5,31 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-25T-m11-06-autopilot (M11 AttackDatabase Integration)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/06_attack_database_integration.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-06/`
+
+### M11-06 — OUTCOME: COMPLETE
+AttackDatabase autoload + PlayerController3D integration implemented. 98 tests (48 primary + 50 adversarial) all GREEN. EC-20 test setup bug fixed (slot fill order). All hooks pass.
+Log: project_board/checkpoints/M11-06/
+
+### M11-06 — OUTCOME: PLANNING COMPLETE
+Six-task execution plan (Spec → Test Design → Test Break → Implementation → Static QA → AC Gatekeeper). Five planning assumptions logged: `attack` InputMap registration (M11-06 owns it), AttackDatabase as true autoload, hybrid .tres/code loading, mutation_id derivation from `_mutation_slot`, AttackExecutor as PlayerController3D child. All four deps satisfied (M11-01, M11-03, M11-04, M11-05). Stage → SPECIFICATION; handoff to Spec Agent. Log: `project_board/checkpoints/M11-06/2026-05-25T-plan-run.md`
+
+### M11-06 — OUTCOME: SPECIFICATION COMPLETE
+Spec frozen: 15 requirements (ADB-1 through ADB-15), 50+ acceptance criteria, 7 discrepancy resolutions, 24 edge cases. Key decisions: mutation_id=String (matches MutationSlot), fused keys order-independent (alphabetically sorted), attack binding=J key (IAM-3.1), cooldown in PFO Step 2, attack attempt in PFO Step 8, AttackExecutor as child of PlayerController3D, get_facing_sign() added. Six checkpoint assumptions logged (mutation_id type, fused key format, J vs F binding, movement root non-suppression, fused fallback, policy instantiation). Stage → TEST_DESIGN; handoff to Test Designer Agent. Log: `project_board/checkpoints/M11-06/2026-05-25T-spec-run.md`
+
+### M11-06 — OUTCOME: TEST_DESIGN COMPLETE
+48 behavioral tests across 2 files: `test_attack_database.gd` (26 tests, ADB-1..ADB-6) and `test_attack_database_controller_integration.gd` (22 tests, ADB-7..ADB-14 + edge cases). 2 GREEN (policy matrix), 46 RED (AttackDatabase not implemented, controller lacks attack methods). Four checkpoint assumptions: controller instantiation strategy, autoload access, mutation slot override, cooldown decrement via _tick_controller_timers. Stage → TEST_BREAK; handoff to Test Breaker Agent. Log: `project_board/checkpoints/M11-06/2026-05-25T-test-design-run.md`
+
+### M11-06 — OUTCOME: TEST_BREAK COMPLETE
+50 adversarial tests across 2 files: `test_attack_database_adversarial.gd` (30 tests — boundary, stress, key collision, isolation, mutation) and `test_attack_database_controller_adversarial.gd` (20 tests — cooldown precision, facing edge cases, slot permutations, rapid attacks, lifecycle). 12-dimension coverage matrix. 3 spec gaps documented (whitespace mutation_id, negative cooldown, fused cooldown key). Combined 98 total tests (48 primary + 50 adversarial). All RED except 2 policy matrix tests. Stage → IMPLEMENTATION_GAMEPLAY; handoff to Gameplay Systems Agent. Log: `project_board/checkpoints/M11-06/2026-05-25T-test-break-run.md`
+
+---
+
 ## Run: 2026-05-25T-m11-05-autopilot (M11 AttackExecutor)
 
 - Queue mode: single ticket
@@ -14,6 +39,14 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ### M11-05 — OUTCOME: PLANNING COMPLETE
 Six-task execution plan (Spec → Test Design → Test Break → Implementation → Static QA → AC Gatekeeper). Key decisions deferred to Spec: AttackExecutor node type, enemy damage interface (mock for tests), PlayerProjectile3D class, timer-based startup frames, signal-based VFX/SFX stubs. Stage → SPECIFICATION; handoff to Spec Agent. Log: `project_board/checkpoints/M11-05/2026-05-25T-plan-run.md`
+
+### M11-05 — OUTCOME: IMPLEMENTATION → INTEGRATION
+AttackExecutor + PlayerProjectile3D implemented (`scripts/attacks/attack_executor.gd`, `scripts/attacks/player_projectile_3d.gd`). All 87 tests GREEN (38 primary + 49 adversarial, 152 assertions). Test file fixes for GDScript 4.6 parse errors. Commit `9fa63ec`.
+Log: `project_board/checkpoints/M11-05/2026-05-25T-implementation-run.md`
+
+### M11-05 — OUTCOME: TEST_BREAK → IMPLEMENTATION_GAMEPLAY
+49 adversarial tests added covering EC-1..EC-20 (null resource, re-entrancy, zero damage, negative knockback, bare enemy guards, modifier edge cases, degenerate positions, deep copy, signal verification). All RED until implementation.
+Log: `project_board/checkpoints/M11-05/2026-05-25T-test-break-run.md`
 
 ### M11-05 — OUTCOME: TEST_DESIGN → TEST_BREAK
 Primary behavioral tests `tests/scripts/attacks/test_attack_executor.gd` — 38 test functions covering AEX-1 through AEX-8. Mock inner classes (MockEnemy, BareEnemy, MockParent). Scene tree setup for melee/projectile dispatch tests; direct method calls for knockback calc and modifier application. All 38 RED (implementation does not exist). Startup_frames=0 throughout (async timer tests deferred to adversarial).
@@ -628,6 +661,15 @@ Log: project_board/checkpoints/M902-20/
 - Evidence: `project_board/checkpoints/M902-17/evidence/` (8 artifact files)
 - Learning: M902-17 entry appended to LEARNINGS.md
 - Blog: `blog/2026-05-19-078aed2-m902-17-final-validation.md`
+
+---
+
+### M11-06 — AttackDatabase & PlayerController3D Integration (Implementation)
+
+- **Run:** 2026-05-25T-implementation-run
+- **Agent:** Gameplay Systems Agent
+- **Outcome:** 156/157 tests pass; 1 test (EC-20) has setup bug (fills slot A then clears, leaving both empty). Linter clean.
+- Log: `project_board/checkpoints/M11-06/2026-05-25T-implementation-run.md`
 
 ---
 
