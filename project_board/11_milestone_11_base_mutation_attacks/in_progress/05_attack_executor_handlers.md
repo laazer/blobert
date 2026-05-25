@@ -78,3 +78,48 @@ play_sfx("projectile_fire")
 - Assume enemy API: `take_damage(damage, knockback_vector)`, `apply_poison(duration, dps)`, `apply_acid(duration, dps)`, `apply_slowness(multiplier, duration)`, etc.
 - Projectile script already exists (from M8); reuse it
 - Dynamic knockback calculation: `(enemy.position - player.position).normalized() * magnitude` for "away", reverse for "toward"
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+TEST_BREAK
+
+## Revision
+4
+
+## Last Updated By
+Test Designer Agent
+
+## Validation Status
+- Tests: RED (38 expected failures — implementation does not exist yet)
+- Static QA: Not Run
+- Integration: Not Run
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Test Breaker Agent
+
+## Required Input Schema
+- Ticket path: `project_board/11_milestone_11_base_mutation_attacks/in_progress/05_attack_executor_handlers.md`
+- Spec: `project_board/specs/attack_executor_spec.md`
+- Primary tests: `tests/scripts/attacks/test_attack_executor.gd`
+- Plan log: `project_board/checkpoints/M11-05/2026-05-25T-plan-run.md`
+- Spec log: `project_board/checkpoints/M11-05/2026-05-25T-spec-run.md`
+- Test design log: `project_board/checkpoints/M11-05/2026-05-25T-test-design-run.md`
+- Handoff: `project_board/checkpoints/M11-05/handoff-latest.yaml`
+- Dependency spec: `project_board/specs/attack_resource_spec.md`
+- Spec exit type: generic
+
+## Status
+Proceed

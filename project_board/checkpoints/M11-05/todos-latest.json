@@ -1,0 +1,51 @@
+{
+  "ticket_id": "M11-05",
+  "title": "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers",
+  "last_updated": "2026-05-25",
+  "last_updated_by": "Test Designer Agent",
+  "stage": "TEST_BREAK",
+  "todos": [
+    {
+      "id": "T1",
+      "task": "Freeze AttackExecutor specification: dispatch contract, handler signatures, enemy interface, projectile design, signal contract, knockback, modifiers",
+      "agent": "Spec Agent",
+      "status": "complete",
+      "output": "project_board/specs/attack_executor_spec.md (AEX-1..AEX-8, 6 DRs, 20 edge cases)"
+    },
+    {
+      "id": "T2",
+      "task": "Write behavioral test suite for AttackExecutor",
+      "agent": "Test Designer Agent",
+      "status": "complete",
+      "output": "tests/scripts/attacks/test_attack_executor.gd (38 tests covering AEX-1..AEX-8, all RED)"
+    },
+    {
+      "id": "T3",
+      "task": "Adversarial test deepening",
+      "agent": "Test Breaker Agent",
+      "status": "pending",
+      "output": null
+    },
+    {
+      "id": "T4",
+      "task": "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers",
+      "agent": "Gameplay Systems Agent",
+      "status": "pending",
+      "output": null
+    },
+    {
+      "id": "T5",
+      "task": "Static QA review (gd-review + gd-organization)",
+      "agent": "Static QA",
+      "status": "pending",
+      "output": null
+    },
+    {
+      "id": "T6",
+      "task": "AC Gatekeeper validation",
+      "agent": "Acceptance Criteria Gatekeeper Agent",
+      "status": "pending",
+      "output": null
+    }
+  ]
+}

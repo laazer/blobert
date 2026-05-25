@@ -5,6 +5,27 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-25T-m11-05-autopilot (M11 AttackExecutor)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/05_attack_executor_handlers.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-05/`
+
+### M11-05 — OUTCOME: PLANNING COMPLETE
+Six-task execution plan (Spec → Test Design → Test Break → Implementation → Static QA → AC Gatekeeper). Key decisions deferred to Spec: AttackExecutor node type, enemy damage interface (mock for tests), PlayerProjectile3D class, timer-based startup frames, signal-based VFX/SFX stubs. Stage → SPECIFICATION; handoff to Spec Agent. Log: `project_board/checkpoints/M11-05/2026-05-25T-plan-run.md`
+
+### M11-05 — OUTCOME: TEST_DESIGN → TEST_BREAK
+Primary behavioral tests `tests/scripts/attacks/test_attack_executor.gd` — 38 test functions covering AEX-1 through AEX-8. Mock inner classes (MockEnemy, BareEnemy, MockParent). Scene tree setup for melee/projectile dispatch tests; direct method calls for knockback calc and modifier application. All 38 RED (implementation does not exist). Startup_frames=0 throughout (async timer tests deferred to adversarial).
+Log: `project_board/checkpoints/M11-05/2026-05-25T-test-design-run.md`
+
+### M11-05 — OUTCOME: SPECIFICATION → TEST_DESIGN
+AttackExecutor spec frozen (AEX-1..AEX-8): Node subclass, `execute_attack()` dispatch via match on effect_type, MELEE_SWIPE handler (startup delay, area query, damage+knockback, modifiers, VFX signal), PROJECTILE_SPIT handler (PlayerProjectile3D creation, scene addition), knockback calculation (away/toward/none with Z-zeroed 2.5D constraint), modifier application (has_method guard for poison/acid/slow), 4 signals (attack_started, attack_hit, projectile_fired, melee_vfx_requested), unknown effect_type fail-closed (push_warning, no crash). 6 discrepancy resolutions, 20 edge cases. Enemy API mocked for tests (deferred boundary).
+Log: `project_board/checkpoints/M11-05/2026-05-25T-spec-run.md`
+Spec: `project_board/specs/attack_executor_spec.md`
+
+---
+
 ## Run: 2026-05-25T-m11-04-autopilot (M11 AttackResource)
 
 - Queue mode: single ticket
@@ -27,6 +48,11 @@ Log: `project_board/checkpoints/M11-04/2026-05-25T-test-break-run.md`
 ### M11-04 — OUTCOME: IMPLEMENTATION → INTEGRATION
 `scripts/attacks/attack_resource.gd` created (AttackResource extends Resource, 15 exports). Deep-copy setter on modifiers for duplicate() independence (ATK-08). All 255 assertions GREEN (133 primary + 122 adversarial). Full suite exit 0.
 Log: `project_board/checkpoints/M11-04/2026-05-25T-implementation-run.md`
+
+### M11-04 — OUTCOME: COMPLETE
+All 6 AC verified: class exists, 15 exports typed, examples documented (spec ATK-09), modifiers documented (spec ATK-07), 255 assertions GREEN, full suite exit 0. Commit `be206a7` pushed to `origin/main`. Pre-push hook ran full Godot suite (all PASS).
+Log: `project_board/checkpoints/M11-04/2026-05-25T-ac-gatekeeper-run.md`
+Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/04_attack_resource.md`
 
 ---
 

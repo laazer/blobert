@@ -1,0 +1,38 @@
+schema_version: "1.0"
+ticket_id: M11-05
+title: "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers"
+stage: TEST_BREAK
+revision: 4
+last_updated_by: "Test Designer Agent"
+date: "2026-05-25"
+
+artifacts:
+  spec: "project_board/specs/attack_executor_spec.md"
+  implementation: null
+  primary_tests: "tests/scripts/attacks/test_attack_executor.gd"
+  adversarial_tests: null
+  ticket: "project_board/11_milestone_11_base_mutation_attacks/in_progress/05_attack_executor_handlers.md"
+
+test_results:
+  primary: "38 RED (expected — no implementation)"
+  adversarial: null
+  total: null
+  full_suite: null
+
+git:
+  commit: null
+  message: null
+  pushed: false
+  remote: null
+
+ac_verdict: null
+
+next_action:
+  agent: "Test Breaker Agent"
+  status: Proceed
+  reason: "Primary behavioral tests written (38 tests, AEX-1..AEX-8). Ready for adversarial deepening."
+
+downstream:
+  - "T2: Test Designer wrote tests/scripts/attacks/test_attack_executor.gd (DONE)"
+  - "T3: Test Breaker writes tests/scripts/attacks/test_attack_executor_adversarial.gd"
+  - "T4: Gameplay Systems Agent implements scripts/attacks/attack_executor.gd + scripts/attacks/player_projectile_3d.gd"
