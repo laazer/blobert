@@ -7,6 +7,12 @@ const CLAW_RANGE := 1.5
 const CLAW_KNOCKBACK := 2.0
 const CLAW_VFX_SCALE := 1.2
 
+const ACID_DAMAGE := 1.0
+const ACID_COOLDOWN := 2.0
+const ACID_PROJECTILE_SPEED := 8.0
+const ACID_DPS := 1.0
+const ACID_DURATION := 3.0
+
 var _base_attacks: Dictionary = {}
 var _fused_attacks: Dictionary = {}
 
@@ -31,6 +37,24 @@ func _register_defaults() -> void:
 	claw.vfx_scale = CLAW_VFX_SCALE
 	claw.modifiers = {"infect_weakened": true}
 	register_base_attack("claw", claw)
+
+	var acid := AttackResource.new()
+	acid.attack_id = 2
+	acid.attack_name = "Acid Spit"
+	acid.description = "Ranged acid projectile. Applies damage over time. WEAKENED enemies suffer double duration."
+	acid.effect_type = "PROJECTILE_SPIT"
+	acid.damage = ACID_DAMAGE
+	acid.cooldown = ACID_COOLDOWN
+	acid.attack_range = 0.0
+	acid.startup_frames = 0
+	acid.knockback_magnitude = 0.0
+	acid.knockback_direction = "none"
+	acid.projectile_speed = ACID_PROJECTILE_SPEED
+	acid.projectile_lifetime = 2.0
+	acid.color = Color.CHARTREUSE
+	acid.vfx_scale = 1.0
+	acid.modifiers = {"acid_on_hit": true, "acid_duration": ACID_DURATION, "acid_dps": ACID_DPS}
+	register_base_attack("acid", acid)
 
 
 func register_base_attack(mutation_id: String, resource: AttackResource) -> void:

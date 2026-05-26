@@ -78,6 +78,7 @@ func _handle_projectile_spit(resource: AttackResource) -> void:
 	projectile.knockback_direction = resource.knockback_direction
 	projectile.modifiers = resource.modifiers.duplicate(true)
 	projectile.direction_x = _get_facing_sign()
+	projectile.color = resource.color
 
 	var grandparent: Node = null
 	if get_parent():
@@ -108,10 +109,11 @@ func _apply_modifiers(target: Node3D, modifiers: Dictionary, pre_damage_state: i
 
 	if modifiers.get("acid_on_hit", false):
 		if target.has_method("apply_acid"):
-			target.apply_acid(
-				modifiers.get("acid_duration", 2.0),
-				modifiers.get("acid_dps", DEFAULT_ACID_DPS)
-			)
+			var acid_dur: float = modifiers.get("acid_duration", 2.0)
+			var acid_dps_val: float = modifiers.get("acid_dps", DEFAULT_ACID_DPS)
+			if target.has_method("get_base_state") and target.get_base_state() == 1:
+				acid_dur *= 2.0
+			target.apply_acid(acid_dur, acid_dps_val)
 
 	var slow_val = modifiers.get("slow", 0.0)
 	if slow_val and slow_val > 0.0:

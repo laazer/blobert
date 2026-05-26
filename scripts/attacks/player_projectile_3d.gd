@@ -13,6 +13,7 @@ var knockback_magnitude: float = 0.0
 var knockback_direction: String = "away"
 var modifiers: Dictionary = {}
 var direction_x: float = 1.0
+var color: Color = Color.WHITE
 
 var _age: float = 0.0
 var _consumed: bool = false
@@ -67,10 +68,11 @@ func _apply_modifiers(target: Node3D) -> void:
 			)
 	if modifiers.get("acid_on_hit", false):
 		if target.has_method("apply_acid"):
-			target.apply_acid(
-				modifiers.get("acid_duration", 2.0),
-				modifiers.get("acid_dps", DEFAULT_ACID_DPS)
-			)
+			var acid_dur: float = modifiers.get("acid_duration", 2.0)
+			var acid_dps_val: float = modifiers.get("acid_dps", DEFAULT_ACID_DPS)
+			if target.has_method("get_base_state") and target.get_base_state() == 1:
+				acid_dur *= 2.0
+			target.apply_acid(acid_dur, acid_dps_val)
 	var slow_val = modifiers.get("slow", 0.0)
 	if slow_val and slow_val > 0.0:
 		if target.has_method("apply_slowness"):
