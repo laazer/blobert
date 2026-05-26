@@ -1,21 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-09
-  from_agent: Static QA
-  to_agent: Learning Agent
-  validated_at: "2026-05-26T21:10:00Z"
+  from_agent: Learning Agent
+  to_agent: Acceptance Criteria Gatekeeper
+  validated_at: "2026-05-26T21:24:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: review_feedback_incorporated
-      item: "Feedback incorporated"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "No critical findings — all files under 900 lines, conventions followed"
-    - item_key: review_code_reviewed
-      item: "Code reviewed"
+      evidence: project_board/LEARNINGS.md
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "GDScript review completed on 5 files"
-    - item_key: review_merge_ready
-      item: "Merge-ready"
+      evidence: "3 learnings, 2 anti-patterns, 2 prompt patches documented in LEARNINGS.md"
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: "All tests passing, no linter violations, review clean"
+      evidence: project_board/checkpoints/M11-09/handoff-latest.yaml

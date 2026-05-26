@@ -17,9 +17,13 @@ Keep this file small. Do not paste full checkpoint bodies here.
 ## Run: 2026-05-26T-m11-09-autopilot (M11 Acid Player Attack)
 
 - Queue mode: single ticket
-- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/09_acid_player_attack.md`
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/done/09_acid_player_attack.md`
 - Lean: no
 - Log root: `project_board/checkpoints/M11-09/`
+
+### [M11-09] — OUTCOME: COMPLETE
+Acid mutation attack implemented: PROJECTILE_SPIT registration, WEAKENED DoT doubling (3s→6s), 187 tests (83 behavioral + 104 adversarial), DRY fix for test harness. Zero implementation rework cycles.
+Log: project_board/checkpoints/M11-09/2026-05-26T-implementation-run.md
 - Log: `project_board/checkpoints/M11-09/2026-05-26T-plan-run.md` — PLANNING complete, 4-task plan, routed to Spec Agent
 
 ---

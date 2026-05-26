@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-26T21:10:00Z",
+  "captured_at": "2026-05-26T21:24:00Z",
   "ticket_id": "M11-09",
   "todos": [
     {
@@ -31,13 +31,25 @@
       "id": "implementation",
       "content": "Implement acid registration, WEAKENED doubling, and color property",
       "status": "completed",
-      "agent": "Implementation Agent"
+      "agent": "Gameplay Systems Agent"
     },
     {
       "id": "static_qa",
-      "content": "GDScript review of implementation and test files",
+      "content": "GDScript review and gd-organization DRY fix (AttackExecutorHarness extraction)",
       "status": "completed",
       "agent": "Static QA"
+    },
+    {
+      "id": "ac_gatekeeper",
+      "content": "Acceptance criteria validation — held at INTEGRATION for git commit, then COMPLETE",
+      "status": "completed",
+      "agent": "Acceptance Criteria Gatekeeper"
+    },
+    {
+      "id": "learning",
+      "content": "Extract reusable insights from M11-09 pipeline execution",
+      "status": "completed",
+      "agent": "Learning Agent"
     }
   ]
 }

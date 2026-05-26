@@ -7760,3 +7760,213 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M11-14] — AC Gatekeeper rework caused by unit-only test suite; handoff schema 7th recurrence; helper extraction kept EnemyBase lean
+*Completed: 2026-05-26*
+
+### Learnings
+
+- **category:** testing
+  **insight:** When an acceptance criterion explicitly names two interacting systems ("EnemyBase receives damage from AttackExecutor and PlayerProjectile3D"), unit tests that verify each system in isolation do not satisfy that criterion — integration tests bridging the two systems are required, even if the unit count is high (190 tests).
+  **impact:** AC Gatekeeper correctly routed back from INTEGRATION stage because AC-11 had zero integration test coverage despite 190 passing unit/behavioral tests. A second implementation pass was required to produce `test_enemy_attack_integration.gd` (31 tests). This added a full rework cycle.
+  **prevention:** Test Designer Agent must parse each AC for cross-system interaction keywords ("receives from", "delivers to", "triggers on", "bridges"). When detected, at least one integration test file must be planned in the test design pass, not deferred to a later stage.
+  **severity:** high
+
+- **category:** process
+  **insight:** Handoff schema non-compliance is now on its 7th consecutive occurrence (M902-23, M11-04, M11-05, M11-06, M11-12, M11-13, M11-14). All 5 subagents in M11-14 produced incorrect YAML schema (wrong keys, missing required fields). The orchestrator corrected all 5 manually. This is no longer a learning — it is a tooling gap that documentation cannot fix.
+  **impact:** Cumulative orchestrator time spent on handoff corrections across 7 tickets is now a significant drag on pipeline throughput. The per-ticket cost is small but the pattern is permanent without tooling intervention.
+  **prevention:** `TOOLING_TICKET_REQUIRED` (escalated from M11-13). Build `ci/scripts/write_handoff.sh`. Do not log this learning again — build the script.
+  **severity:** critical
+
+- **category:** architecture
+  **insight:** Extracting DoT/slowness tracking into a dedicated helper Node (`EnemyEffectTracker`, 85 lines) kept EnemyBase at 138 lines (under 200 limit) while implementing 6 new methods, 3 signals, death state, knockback physics, and WEAKENED threshold. The helper owns its own `_process()` for tick timing, decoupling effect lifecycle from the host entity.
+  **impact:** Clean implementation with no line-budget violations. The helper pattern is composable — future effect types (burn, freeze, etc.) can be added to EnemyEffectTracker without touching EnemyBase.
+  **prevention:** For any Node class approaching a line budget, identify "lifecycle-owning" concerns (timers, ticking effects, state machines) and extract them into child Node helpers early — during spec, not during implementation rework.
+  **severity:** low
+
+- **category:** testing
+  **insight:** Test Breaker produced 838 lines (42 test functions) for M11-14, staying under the 850-line threshold. This is a measurable improvement from M11-13's 971-line overshoot, indicating that the line-budget prompt patch from M11-13's learnings may have taken effect, or the agent self-corrected.
+  **impact:** No reactive file split was needed, saving one rework cycle compared to M11-13.
+  **prevention:** Continue reinforcing the 850-line budget in the Test Breaker prompt. Monitor for regression.
+  **severity:** low
+
+### Anti-Patterns
+
+- **description:** Implementation agent produces a complete unit test suite (190 tests) and declares coverage sufficient, without checking whether any AC explicitly requires cross-system integration tests. The AC Gatekeeper catches the gap, triggering a full rework cycle.
+  **detection_signal:** AC text contains cross-system verbs ("receives from", "delivers to", "verifies X from Y") but the test inventory has zero files importing both system names.
+  **prevention:** Before declaring test coverage complete, the Implementation Agent must grep the AC list for cross-system interaction language and verify at least one test file references both named systems. If none exists, write integration tests before advancing.
+
+- **description:** Every subagent in a pipeline run produces handoff artifacts with incorrect schema, and the orchestrator silently fixes them rather than failing the stage. This normalizes non-compliance and ensures the pattern recurs.
+  **detection_signal:** Orchestrator checkpoint notes mention "fixed handoff schema" or "corrected YAML."
+  **prevention:** Make handoff validation a hard gate: if the artifact does not validate against the schema, reject the handoff and return to the subagent with a specific error message. (Interim: build `ci/scripts/write_handoff.sh` to eliminate the error source.)
+
+### Prompt Patches
+
+- **agent: Test Designer Agent**
+  **change:** "Before finalizing the test plan, scan each acceptance criterion for cross-system interaction language: phrases like 'receives from', 'delivers to', 'verifies X from Y', 'triggers on'. For each such AC, plan at least one integration test file that instantiates both named systems and verifies the interaction end-to-end. Do not defer integration tests to a later pipeline stage."
+  **reason:** M11-14's AC-11 explicitly required integration tests ("EnemyBase receives damage from AttackExecutor and PlayerProjectile3D"), but the Test Designer produced only unit tests. The AC Gatekeeper caught this, adding a full rework cycle.
+
+- **agent: Orchestrator / Autopilot**
+  **change:** "After each subagent writes handoff-latest.yaml, validate the artifact against the schema before proceeding. Required root key: `handoff`. Required fields: `schema_version`, `ticket_id`, `from_agent`, `to_agent`, `validated_at`, `required_items_met`, `total_required_items`, `checklist` (array of objects with `item_key`, `item`, `status`, `evidence`). If validation fails, return the artifact to the subagent with the specific schema violations listed. Do not silently correct handoff artifacts."
+  **reason:** 7 consecutive tickets with handoff schema errors, all silently corrected by the orchestrator, have normalized non-compliance. Hard validation forces the subagent to learn the schema or fail fast.
+
+### Workflow Improvements
+
+- **issue:** `TOOLING_TICKET_CRITICAL` — Handoff schema non-compliance (7th recurrence). Previous M11-13 learning escalated to `TOOLING_TICKET_REQUIRED`. This ticket confirms the pattern is permanent. The `ci/scripts/write_handoff.sh` script has not been built.
+  **improvement:** Create and prioritize a blocking ticket at the top of the next milestone backlog: "Build `ci/scripts/write_handoff.sh` — deterministic handoff artifact writer." The script accepts `ticket_id`, `from_agent`, `to_agent`, `validated_at`, and a checklist array as CLI arguments, emits a schema-valid `handoff-latest.yaml`, and exits non-zero on invalid input. Block M12 milestone kickoff on completion.
+  **expected_benefit:** Eliminates the error class permanently. Removes manual orchestrator correction overhead. Makes handoff validation automatable as a pre-stage gate.
+
+- **issue:** AC Gatekeeper catches missing integration tests late in the pipeline (after 190 unit tests pass), causing a full rework cycle back to the Implementation Agent.
+  **improvement:** Add an integration-test checkpoint between Test Design and Implementation: after Test Designer outputs the test plan, the AC Gatekeeper (or a lightweight validator) checks whether ACs with cross-system language have corresponding integration test files planned. If not, route back to Test Designer before implementation begins — catching the gap at plan time instead of post-implementation.
+  **expected_benefit:** Eliminates the most expensive rework pattern (post-implementation AC failure). The M11-14 rework cycle required writing 31 new integration tests after 190 unit tests already passed.
+
+### Keep / Reinforce
+
+- **practice:** Planner Agent's helper extraction recommendation (EnemyEffectTracker as child Node) was adopted by the Spec Agent, implemented exactly as planned, and kept EnemyBase at 138 lines (under 200 limit). The pattern of identifying lifecycle-owning concerns during planning prevents line-budget violations during implementation.
+  **reason:** Early architectural decisions at planning time avoid reactive refactoring during implementation. This is the first M11 ticket where the planner's architectural recommendation was adopted unchanged through all stages.
+
+- **practice:** AC Gatekeeper's evidence matrix format (AC-by-AC mapping to test references and code locations) correctly identified the one AC without coverage (AC-11) despite 190 passing tests. The systematic AC-to-evidence mapping is the most reliable quality gate in the pipeline.
+  **reason:** The AC Gatekeeper's thoroughness prevented a false COMPLETE. Without this gate, the ticket would have shipped with a documented acceptance criterion (integration tests) unsatisfied. This reinforces that high unit test counts do not substitute for AC-level coverage verification.
+
+- **practice:** Implementation Agent committed its own code (commits d279a6c, ec9eb70), reducing orchestrator overhead. This is the first M11 ticket where the implementation agent managed its own git workflow.
+  **reason:** Self-committing implementation agents reduce handoff friction and make the commit history more traceable (commit author matches the agent that wrote the code).
+
+---
+
+## [M11-08] — Modifier-based extension pattern enables zero-new-file mutation implementation
+*Completed: 2026-05-26*
+
+### Learnings
+
+- **category:** architecture
+  **insight:** Mutation-specific attack behavior (WEAKENED→INFECTED transition) was implemented entirely through a modifier key (`infect_weakened`) in the existing `AttackResource.modifiers` dict and a new branch in `_apply_modifiers()`. Zero new script files were created. This validates the M11-04/05 attack pipeline architecture as properly extensible via data-driven modifiers.
+  **impact:** Claw was the first concrete mutation to exercise the full attack pipeline end-to-end. The modifier pattern held without architectural changes, confirming that acid, adhesion, and carapace can follow the same pattern.
+  **prevention:** Future mutation attacks should default to adding a modifier key + handler branch before considering new script files. If a modifier cannot express the behavior, that signals an architecture gap worth escalating.
+  **severity:** medium
+
+- **category:** architecture
+  **insight:** The Spec Agent's decision to add a `pre_damage_state` parameter to `_apply_modifiers()` resolved the same-hit weaken+infect ambiguity at design time, preventing what would have been a subtle runtime bug. The two-hit invariant (first hit weakens, second infects) was enforced structurally rather than relying on execution order.
+  **impact:** Without pre-damage state capture, a single claw hit could both weaken and infect an enemy in the same frame, violating the "aggressive two-hit play" design intent. 10+ tests validated this invariant.
+  **prevention:** When a modifier interacts with state transitions caused by the same hit's damage, always capture the relevant state before damage application and pass it explicitly. Do not rely on post-damage state checks.
+  **severity:** high
+
+- **category:** process
+  **insight:** Test Designer self-corrected from 1114 lines to 763 lines within the same agent turn. The initial generation still overshoots the 850-line budget, but the review step catches and corrects it before handoff. This indicates the line-budget prompt patch from M11-13 operates as a review-time constraint rather than a generation-time constraint.
+  **impact:** No reactive file-split rework cycle was needed (saved one full rework cycle compared to M11-13). However, the initial overshoot wastes tokens regenerating the file.
+  **prevention:** The self-correction mechanism is working — reinforce the 850-line budget. To reduce wasted tokens, add front-loading guidance: "Before writing tests, estimate the line count from your test plan. If the estimate exceeds 700 lines, split into primary and edge-case files proactively."
+  **severity:** low
+
+- **category:** process
+  **insight:** Pipeline efficiency improved measurably: planner gate passed first try (vs. M11-14's 5 consecutive fixes), AC Gatekeeper approved on first pass (vs. M11-14's integration test rework), and both Test Breaker and Implementation gates required only one handoff fix each (label/evidence format). Total pipeline throughput: 7 revisions to COMPLETE, with no rework cycles returning to earlier stages.
+  **impact:** The accumulated prompt patches from M11-13 and M11-14 learnings are producing measurable pipeline throughput gains. First-pass AC approval eliminates the most expensive rework pattern in the pipeline.
+  **prevention:** Continue applying learnings from each ticket to refine agent prompts. The diminishing-returns signal will be consecutive tickets with zero handoff fixes and zero rework cycles.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Handoff YAML schema non-compliance persists (8th ticket in a row). Both Test Breaker and Implementation gates needed one fix each for label/evidence formatting. The `ci/scripts/write_handoff.sh` script recommended in M11-13 and escalated to `TOOLING_TICKET_CRITICAL` in M11-14 has still not been built.
+  **detection_signal:** Orchestrator checkpoint notes mention handoff fix, corrected YAML, or label format adjustment for any subagent.
+  **prevention:** This is the 8th consecutive recurrence. The only permanent fix is the deterministic `write_handoff.sh` script. Escalation status: `TOOLING_TICKET_OVERDUE`.
+
+- **description:** Test Designer's initial generation ignores the 850-line budget and relies on the review step to catch the overshoot. This wastes tokens regenerating the file and indicates the budget constraint is not internalized during planning.
+  **detection_signal:** Test Designer produces an initial file exceeding 850 lines and then immediately rewrites it in the same turn.
+  **prevention:** Front-load the budget check: require the Test Designer to produce a line-count estimate from the test plan before writing code. If the estimate exceeds 700 lines, mandate a two-file split at plan time.
+
+### Prompt Patches
+
+- **agent: Test Designer Agent**
+  **change:** "Before writing test code, estimate the total line count from your test plan (count planned test functions × ~20 lines each + setup/teardown overhead). If the estimate exceeds 700 lines, split into two files at the plan stage: `test_<feature>.gd` for primary behavioral tests and `test_<feature>_edge.gd` for edge cases. Do not generate a single file and then split reactively."
+  **reason:** M11-08's Test Designer generated 1114 lines and self-corrected to 763 in the same turn. The budget is enforced at review time but ignored during generation, wasting tokens on a full regeneration cycle.
+
+- **agent: Spec Agent**
+  **change:** "When specifying a modifier that interacts with state transitions caused by the same hit's damage (e.g. infect-on-weakened), always require a pre-damage state capture parameter. Specify the parameter name, default value, and which call sites must pass it. Do not leave execution-order-dependent behavior implicit."
+  **reason:** M11-08's `pre_damage_state` parameter prevented the same-hit weaken+infect bug. This pattern will recur for acid (corrode-on-weakened) and adhesion (slow-on-weakened). Making it a spec-level requirement prevents the bug class from reaching implementation.
+
+### Workflow Improvements
+
+- **issue:** `TOOLING_TICKET_OVERDUE` — Handoff schema non-compliance (8th recurrence). The `ci/scripts/write_handoff.sh` script has been recommended since M11-13 and escalated to `TOOLING_TICKET_CRITICAL` in M11-14. Still unbuilt.
+  **improvement:** No new recommendation — the existing `write_handoff.sh` ticket is the correct fix. Escalation status upgraded to `OVERDUE`. If not built before M11-09, the Learning Agent will recommend hard-blocking the next milestone.
+  **expected_benefit:** Eliminates the single most persistent error class in the pipeline (8 consecutive tickets).
+
+- **issue:** First-pass AC approval on M11-08 suggests the M11-14 integration-test prompt patch to the Test Designer is working, but sample size is 1. Need confirmation on M11-09 (acid) to validate.
+  **improvement:** Track first-pass AC approval rate across M11-09 through M11-11. If 3/3 pass first try, mark the M11-14 Test Designer prompt patch as validated and reinforce. If any fail, analyze whether the integration-test scanning heuristic missed a case.
+  **expected_benefit:** Evidence-based prompt patch validation prevents cargo-culting prompt changes that may not actually improve outcomes.
+
+### Keep / Reinforce
+
+- **practice:** Planner Agent's risk register identified the "same-hit weaken+infect ambiguity" and the "first concrete mutation registration pattern" risks. Both were resolved cleanly by the Spec Agent. The risk-to-spec pipeline is working as designed.
+  **reason:** Planner risk identification at plan time prevents spec ambiguities from becoming implementation bugs. M11-08 is the second consecutive ticket (after M11-14) where planner risks were fully resolved before implementation.
+
+- **practice:** Modifier-based extension via `AttackResource.modifiers` dict + `_apply_modifiers()` branch pattern. Zero new files for mutation-specific behavior. Pattern is clean and reusable for remaining 3 mutations (acid, adhesion, carapace).
+  **reason:** Data-driven extension through modifiers keeps the codebase compact and avoids the script-proliferation anti-pattern. Each new mutation is one dict entry + one handler branch, not a new script file.
+
+- **practice:** AC Gatekeeper's linter-fix-in-place for mechanical changes (extracting numeric literals to named constants) during autonomous mode. The AC agent correctly classified this as a non-behavioral change that did not require routing back to the implementation agent.
+  **reason:** Autonomous-mode efficiency: mechanical linter fixes that don't change behavior should be handled in-place by the current agent, not routed back through the pipeline. This saved one full agent round-trip.
+
+---
+
+## [M11-09] — AC Gatekeeper git-state gate validates; gd-organization DRY enforcement catches test duplication
+*Completed: 2026-05-26*
+
+### Learnings
+
+- **category:** process
+  **insight:** AC Gatekeeper correctly blocked COMPLETE transition when implementation files were uncommitted/unpushed. All 7 ACs were evidenced but git state was dirty (3 modified + 2 untracked files). The INTEGRATION hold forced the implementation agent to commit before closure, proving the "Commit and Push BEFORE COMPLETE Closure" gate is effective at preventing drift between validated state and repository state.
+  **impact:** Without this gate, the ticket would have been marked COMPLETE with code only in the working tree — invisible to other agents, CI, or deployment. The hold added one routing cycle but guaranteed reproducibility.
+  **prevention:** Implementation agents should self-commit before requesting AC Gatekeeper review. Add a pre-AC self-check: "Is `git status` clean for all files I touched?"
+  **severity:** medium
+
+- **category:** testing
+  **insight:** The `gd-organization` hook detected `_build_scene()` duplication across `test_acid_attack.gd` and `test_acid_attack_adversarial.gd`. Both test files independently defined nearly identical scene-building helpers. The fix was extracting a shared `AttackExecutorHarness` utility, which DRYs the pattern for all future attack test files.
+  **impact:** Without the hook catch, each new mutation test file would copy-paste the scene builder, accumulating divergent variants. The harness extraction prevents N-way drift as adhesion and carapace tests are added.
+  **prevention:** When test files share scene-building or mock-setup logic, extract to a shared harness/fixture immediately during Test Design — do not defer to the organization hook. Test Designer should check for existing harness patterns before writing new setup code.
+  **severity:** medium
+
+- **category:** process
+  **insight:** Zero implementation rework cycles — all 187 tests (83 behavioral + 104 adversarial) passed on the first implementation run. This is the second consecutive ticket (after M11-08) where implementation required no rework. The combination of precise specs, pre-implementation Test Breaker adversarial hardening, and the modifier-based extension pattern produces implementation that works correctly on first attempt.
+  **impact:** Zero rework eliminates the most expensive pipeline operation (implementation → test failure → re-route → re-implementation). Pipeline completed in 8 revisions with no stage regression.
+  **prevention:** Reinforce the current pipeline sequencing. The "spec precision + adversarial pre-hardening + data-driven architecture" combination is the proven recipe for first-pass implementation success.
+  **severity:** low
+
+### Anti-Patterns
+
+- **description:** Handoff YAML schema non-compliance continues (9th consecutive ticket). The `agent_alias_map` in handoff validation does not include "Gameplay Systems Agent" as a recognized alias, despite being the agent that performs implementation for attack tickets. This causes routing confusion when the AC Gatekeeper routes back to "Gameplay Systems Agent" for commit — the alias must be manually resolved.
+  **detection_signal:** Handoff `to_agent` or `from_agent` field contains an agent name not present in the canonical agent alias registry, requiring orchestrator interpretation.
+  **prevention:** `TOOLING_TICKET_BLOCKED` — The `write_handoff.sh` script (recommended since M11-13, critical since M11-14, overdue since M11-08) must include a validated agent alias enum. Until built, add "Gameplay Systems Agent" to the alias map in `workflow_enforcement_v1.md`. Escalation: hard-block M11-12 if `write_handoff.sh` is not merged.
+
+- **description:** Implementation agent did not self-commit before requesting AC review. The code was fully working (187/187 tests pass) but existed only in the working tree, triggering a preventable routing cycle back to the implementation agent.
+  **detection_signal:** AC Gatekeeper checkpoint mentions "git state dirty" or "uncommitted files" as the sole blocker with all ACs evidenced.
+  **prevention:** Add to Implementation Agent prompt: "After all tests pass, run `git add` and `git commit` for all files you created or modified before updating the ticket to request AC review."
+
+### Prompt Patches
+
+- **agent: Gameplay Systems Agent (Implementation)**
+  **change:** "After confirming all tests pass (`run_tests.sh` exits 0), immediately commit your changes with `git add <files> && git commit -m 'feat(attacks): <description>'` BEFORE updating the ticket stage or requesting AC Gatekeeper review. A dirty git state will always block COMPLETE transition."
+  **reason:** M11-09's AC Gatekeeper correctly held the ticket at INTEGRATION because implementation files were uncommitted. This added one unnecessary routing cycle. Self-committing eliminates the round-trip.
+
+- **agent: Test Designer Agent**
+  **change:** "Before writing scene-building helper functions (`_build_scene`, `_build_*`), check if a shared test harness exists under `tests/scripts/attacks/` (e.g. `AttackExecutorHarness`). If one exists, import and use it. If one doesn't exist but your test plan requires scene setup that future test files will also need, create the harness as a separate file and import it from the start."
+  **reason:** M11-09's `gd-organization` hook caught duplicate `_build_scene()` across two test files. Extracting `AttackExecutorHarness` post-hoc is less efficient than designing for reuse upfront. Adhesion and carapace tests will need the same harness.
+
+### Workflow Improvements
+
+- **issue:** `TOOLING_TICKET_BLOCKED` — Handoff schema non-compliance (9th recurrence). `write_handoff.sh` still unbuilt. Per M11-08 learning: "If not built before M11-09, recommend hard-blocking the next milestone." Condition met.
+  **improvement:** Hard-block recommendation: do not begin M11-12 until `ci/scripts/write_handoff.sh` is merged. The script must validate agent names against a canonical enum, enforce YAML schema, and be called by all subagents at handoff time. This is the only permanent fix for the single most persistent pipeline error.
+  **expected_benefit:** Eliminates 9-ticket-recurring handoff format errors. Saves 1-2 routing cycles per ticket (estimated 18+ wasted cycles across M11).
+
+- **issue:** M11-08 learning requested tracking first-pass AC approval rate across M11-09 through M11-11. M11-09 result: AC Gatekeeper **did not** approve on first pass (blocked on git state), but all behavioral ACs were evidenced on first pass. The block was procedural (git state), not substantive (missing evidence).
+  **improvement:** Refine the tracking metric: separate "AC evidence completeness on first pass" (M11-09: YES) from "AC COMPLETE on first pass" (M11-09: NO, procedural block). The M11-14 Test Designer integration-test prompt patch appears validated for evidence completeness (2/2 tickets pass). The git-state block is a separate issue addressed by the implementation self-commit patch above.
+  **expected_benefit:** Prevents conflating procedural blocks with substantive AC failures when evaluating prompt patch effectiveness.
+
+### Keep / Reinforce
+
+- **practice:** Modifier-based extension pattern (`acid_on_hit` modifier key + `_apply_modifiers()` branch) produced a second successful zero-new-file mutation implementation. Acid follows the identical structural pattern as claw (`infect_weakened`). The pattern is now validated across 2 mutations with 2 remaining (adhesion, carapace).
+  **reason:** Consistent architectural pattern reduces implementation cognitive load and enables first-pass success. Each mutation is predictable: one modifier key, one handler branch, one `AttackResource` registration.
+
+- **practice:** Test Breaker Agent's "gaps discovered" section provided precise, actionable implementation notes (exact line numbers, exact code patterns, exact test names that will fail). The Implementation Agent cited these notes as sufficient to complete the work with zero ambiguity.
+  **reason:** When Test Breaker provides implementation-ready gap analysis, the Implementation Agent can work without consulting the spec directly. This eliminates one source of misinterpretation and explains the zero-rework outcome.
+
+- **practice:** Planner's estimated effort (~1 hour) closely matched actual throughput. All pipeline stages completed within expected bounds with no unexpected scope expansion.
+  **reason:** Accurate effort estimation enables better resource allocation and sets correct expectations for pipeline monitoring. When estimates match reality, it signals the task decomposition was correct.
+
+---
+
