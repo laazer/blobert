@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-26T21:10:00Z",
+  "ticket_id": "M11-09",
+  "todos": [
+    {
+      "id": "plan",
+      "content": "Decompose acid attack ticket into execution plan",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "spec",
+      "content": "Write acid attack specification",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "test_design",
+      "content": "Design behavioral tests for acid attack",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_break",
+      "content": "Adversarial test hardening for acid attack",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "implementation",
+      "content": "Implement acid registration, WEAKENED doubling, and color property",
+      "status": "completed",
+      "agent": "Implementation Agent"
+    },
+    {
+      "id": "static_qa",
+      "content": "GDScript review of implementation and test files",
+      "status": "completed",
+      "agent": "Static QA"
+    }
+  ]
+}

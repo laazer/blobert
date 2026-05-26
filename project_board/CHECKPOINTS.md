@@ -14,12 +14,26 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-26T-m11-09-autopilot (M11 Acid Player Attack)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/09_acid_player_attack.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-09/`
+- Log: `project_board/checkpoints/M11-09/2026-05-26T-plan-run.md` — PLANNING complete, 4-task plan, routed to Spec Agent
+
+---
+
 ## Run: 2026-05-26T-m11-08-autopilot (M11 Claw Player Attack)
 
 - Queue mode: single ticket
 - Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/08_claw_player_attack.md`
 - Lean: no
 - Log root: `project_board/checkpoints/M11-08/`
+
+### [M11-08] — OUTCOME: COMPLETE
+Claw mutation attack implemented using modifier-based extension pattern. 133 tests (0 failures). AC Gatekeeper approved on first pass. Zero new script files.
+Log: project_board/checkpoints/M11-08/
 
 ---
 
@@ -820,6 +834,27 @@ Log: project_board/checkpoints/M902-20/
 - Log: `project_board/checkpoints/M11-08/2026-05-26T-spec-run.md`
 - Spec: `project_board/specs/claw_player_attack_spec.md`
 
+### M11-09 — Acid Player Attack (Specification)
+
+- **Run:** 2026-05-26T-spec-run
+- **Agent:** Spec Agent
+- **Outcome:** Full spec produced with 7 requirements (APA-1..APA-7), 18 edge cases, 38 acceptance criteria. Key decisions: WEAKENED doubling uses post-damage state, DPS=1.0, direct damage=1.0, Color.CHARTREUSE. Stage → TEST_DESIGN.
+- Log: `project_board/checkpoints/M11-09/2026-05-26T-spec-run.md`
+
+### M11-09 — Acid Player Attack (Test Design)
+
+- **Run:** 2026-05-26T-test-design-run
+- **Agent:** Test Designer Agent
+- **Outcome:** 33 behavioral tests in `tests/scripts/attacks/test_acid_attack.gd` (683 lines). Covers APA-1..APA-7 plus 5 edge cases (EC-6/9/12/14/15). Tests for WEAKENED doubling, acid registration, and color property expected to FAIL until implementation. Stage → TEST_BREAK.
+- Log: `project_board/checkpoints/M11-09/2026-05-26T-test-design-run.md`
+
+### M11-09 — Acid Player Attack (Test Break)
+
+- **Run:** 2026-05-26T-test-break-run
+- **Agent:** Test Breaker Agent
+- **Outcome:** 40 adversarial tests in `tests/scripts/attacks/test_acid_attack_adversarial.gd` (833 lines). 73 total tests for M11-09. Covers 12 dimensions: null/empty, boundary, state machine, projectile consumed, non-stacking, registration, concurrency, mutation testing, visual distinction, determinism, stress, assumption checks. 4 gaps documented. Stage → IMPLEMENTATION_GAMEPLAY.
+- Log: `project_board/checkpoints/M11-09/2026-05-26T-test-break-run.md`
+
 ### M11-08 — Claw Player Attack (Test Design)
 
 - **Run:** 2026-05-26T-test-design-run
@@ -839,6 +874,13 @@ Claw mutation attack fully implemented and verified. 133 tests (79 primary + 54 
 Log: `project_board/checkpoints/M11-08/2026-05-26T-ac-gatekeeper-run.md`
 Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/08_claw_player_attack.md`
 Commits: `b05731b` (impl+tests), `b543fb3` (spec+checkpoints), `04f57ba` (ticket COMPLETE)
+
+### M11-09 — Acid Player Attack (AC Gate)
+
+- **Run:** 2026-05-26T-ac-gatekeeper-run
+- **Agent:** Acceptance Criteria Gatekeeper Agent
+- **Outcome:** FAIL — all 7 ACs behaviorally evidenced (187/187 tests), but implementation files uncommitted/unpushed. Held at INTEGRATION, routed to Gameplay Systems Agent to commit+push.
+- Log: `project_board/checkpoints/M11-09/2026-05-26T-ac-gatekeeper-run.md`
 
 ---
 
