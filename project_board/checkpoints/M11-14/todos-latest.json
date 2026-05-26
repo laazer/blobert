@@ -1,0 +1,42 @@
+{
+  "ticket_id": "M11-14",
+  "stage": "INTEGRATION",
+  "revision": 6,
+  "updated_by": "Gameplay Systems Agent",
+  "todos": [
+    {
+      "id": "impl-1",
+      "task": "Create EnemyEffectTracker helper node (DoT + slowness)",
+      "status": "complete",
+      "file": "scripts/enemies/enemy_effect_tracker.gd"
+    },
+    {
+      "id": "impl-2",
+      "task": "Add HP system, take_damage(), knockback, signals, death to EnemyBase",
+      "status": "complete",
+      "file": "scripts/enemies/enemy_base.gd"
+    },
+    {
+      "id": "impl-3",
+      "task": "Update EnemyAIController (remove move_and_slide, add speed_multiplier)",
+      "status": "complete",
+      "file": "scripts/enemies/enemy_ai_controller.gd"
+    },
+    {
+      "id": "impl-4",
+      "task": "Update backward compat test for _physics_process (EHD-9e)",
+      "status": "complete",
+      "file": "tests/scripts/enemy/test_enemy_base.gd"
+    },
+    {
+      "id": "impl-5",
+      "task": "All 190 tests pass (58 primary + 50 tracker + 82 adversarial)",
+      "status": "complete"
+    },
+    {
+      "id": "impl-6",
+      "task": "Lint checks clean (gd-review, gd-organization)",
+      "status": "complete"
+    }
+  ]
+}

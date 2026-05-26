@@ -291,19 +291,18 @@ func test_eb_integrate_1_set_via_object_set() -> void:
 # EB-COMPAT: No _physics_process override on the base script
 # ---------------------------------------------------------------------------
 
-func test_eb_compat_1_no_physics_process_override() -> void:
-	# EB-COMPAT-1: enemy_base.gd does NOT define _physics_process.
-	# Spec: EB-NFR-NOPHYSICS AC-NFR-PHYSICS-1
-	# Verified by source inspection: script source must not contain the string
-	# "_physics_process" as a function definition.
+func test_eb_compat_1_physics_process_exists() -> void:
+	# EB-COMPAT-1: enemy_base.gd NOW defines _physics_process for knockback.
+	# Updated per EHD-9e: EnemyBase owns _physics_process for knockback
+	# decay and move_and_slide().
 	var script_res: GDScript = load("res://scripts/enemies/enemy_base.gd")
 	if script_res == null:
 		_fail("EB-COMPAT-1", "script_res is null")
 		return
 	var source: String = script_res.source_code
 	_assert_true(
-		not source.contains("_physics_process"),
-		"EB-COMPAT-1 — enemy_base.gd source does not define _physics_process"
+		source.contains("_physics_process"),
+		"EB-COMPAT-1 — enemy_base.gd now defines _physics_process (knockback system)"
 	)
 
 
@@ -344,8 +343,8 @@ func run_all() -> int:
 	# Integration contract
 	test_eb_integrate_1_set_via_object_set()
 
-	# Compatibility (no physics process override)
-	test_eb_compat_1_no_physics_process_override()
+	# Compatibility (physics process now exists for knockback)
+	test_eb_compat_1_physics_process_exists()
 
 	print("")
 	print("  Results: " + str(_pass_count) + " passed, " + str(_fail_count) + " failed")

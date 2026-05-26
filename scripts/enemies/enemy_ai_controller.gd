@@ -102,7 +102,8 @@ func _patrol(delta: float) -> void:
 				_current_patrol_state = PatrolState.IDLE
 
 func _move_in_direction(direction: Vector2, delta: float) -> void:
-	var speed := enemy_base.velocity.length() * patrol_speed_multiplier if enemy_base.velocity.length() > VELOCITY_THRESHOLD else DEFAULT_MOVE_SPEED
+	var base_speed := enemy_base.velocity.length() * patrol_speed_multiplier if enemy_base.velocity.length() > VELOCITY_THRESHOLD else DEFAULT_MOVE_SPEED
+	var speed := base_speed * enemy_base.get_speed_multiplier()
 	var move_vec := Vector3(direction.x, 0.0, direction.y) * speed * delta
 	enemy_base.global_position += move_vec
 
@@ -122,10 +123,9 @@ func _chase_player(delta: float) -> void:
 	var direction := (player - enemy_base.global_position).normalized()
 
 	# Move toward player
-	var speed := BASE_CHASE_SPEED * chase_speed_multiplier
+	var speed := BASE_CHASE_SPEED * chase_speed_multiplier * enemy_base.get_speed_multiplier()
 	enemy_base.velocity.x = direction.x * speed
 	enemy_base.velocity.z = direction.z * speed
-	enemy_base.move_and_slide()
 
 	# Face player
 	if abs(direction.x) > DIRECTION_THRESHOLD:
@@ -187,10 +187,9 @@ func _handle_weakened_state(_delta: float) -> void:
 		var player := _get_player_position()
 		var direction := (player - enemy_base.global_position).normalized()
 
-		var speed := WEAKENED_CHASE_SPEED * chase_speed_multiplier
+		var speed := WEAKENED_CHASE_SPEED * chase_speed_multiplier * enemy_base.get_speed_multiplier()
 		enemy_base.velocity.x = direction.x * speed
 		enemy_base.velocity.z = direction.z * speed
-		enemy_base.move_and_slide()
 
 func _handle_infected_state(_delta: float) -> void:
 	# Infected enemies are immobilized and prepare mutation drop
