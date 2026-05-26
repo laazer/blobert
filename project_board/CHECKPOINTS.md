@@ -14,12 +14,25 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-26T-m11-08-autopilot (M11 Claw Player Attack)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/08_claw_player_attack.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-08/`
+
+---
+
 ## Run: 2026-05-26T-m11-14-autopilot (M11 Enemy Health & Damage Reception)
 
 - Queue mode: single ticket
 - Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/14_enemy_health_and_damage_reception.md`
 - Lean: no
 - Log root: `project_board/checkpoints/M11-14/`
+
+### [M11-14] — OUTCOME: COMPLETE
+Enemy health system implemented: EnemyBase (138 lines) + EnemyEffectTracker (85 lines). 221 tests (0 failures). AC Gatekeeper required one rework cycle for integration tests.
+Log: project_board/checkpoints/M11-14/
 - Log: `project_board/checkpoints/M11-14/2026-05-26T-plan-run.md` — PLANNING → SPECIFICATION, 8-task plan, all deps confirmed done
 
 ---
@@ -796,6 +809,36 @@ Log: project_board/checkpoints/M902-20/
 - **Agent:** Acceptance Criteria Gatekeeper Agent
 - **Outcome:** 11 of 12 ACs evidenced. AC-11 (integration tests with AttackExecutor/PlayerProjectile3D) NOT COVERED — no test bridges attack pipeline to real EnemyBase. Stage held at INTEGRATION; routed to Gameplay Systems Agent.
 - Log: `project_board/checkpoints/M11-14/2026-05-26T-ac-gatekeeper-run.md`
+
+---
+
+### M11-08 — Claw Player Attack (Specification)
+
+- **Run:** 2026-05-26T-spec-run
+- **Agent:** Spec Agent
+- **Outcome:** Frozen spec (CPA-1..CPA-7, 34 AC, 18 edge cases, 4 DRs). Key: infect_weakened modifier in _apply_modifiers(), pre_damage_state param for two-hit invariant, _register_defaults() registration site, melee_vfx_requested VFX placeholder. Stage → TEST_DESIGN.
+- Log: `project_board/checkpoints/M11-08/2026-05-26T-spec-run.md`
+- Spec: `project_board/specs/claw_player_attack_spec.md`
+
+### M11-08 — Claw Player Attack (Test Design)
+
+- **Run:** 2026-05-26T-test-design-run
+- **Agent:** Test Designer Agent
+- **Outcome:** 37 behavioral tests in `tests/scripts/attacks/test_claw_attack.gd` (763 lines). Covers CPA-1..CPA-7, edge cases EC-8/10/16/17. Tests for new behavior (infect_weakened, _register_defaults, pre_damage_state) expected to FAIL until implementation. Stage → TEST_BREAK.
+- Log: `project_board/checkpoints/M11-08/2026-05-26T-test-design-run.md`
+
+### M11-08 — Claw Player Attack (Planning)
+
+- **Run:** 2026-05-26T-plan-run
+- **Agent:** Planner Agent
+- **Outcome:** 5-task execution plan (Spec → Test Design → Test Break → Implementation → AC Gate). All dependencies satisfied. Two assumptions logged: same-hit weaken+infect disallowed, registration in AttackDatabaseNode._register_defaults(). Stage → SPECIFICATION.
+- Log: `project_board/checkpoints/M11-08/2026-05-26T-plan-run.md`
+
+### M11-08 — OUTCOME: COMPLETE
+Claw mutation attack fully implemented and verified. 133 tests (79 primary + 54 adversarial), 0 failures. All 7 ACs evidenced: hitbox range 1.5, VFX placeholder signal, damage 3.0, WEAKENED→INFECTED modifier, cooldown 0.8s, single-frame hitbox, full suite exit 0. Numeric literals extracted to named constants for gd-review compliance.
+Log: `project_board/checkpoints/M11-08/2026-05-26T-ac-gatekeeper-run.md`
+Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/08_claw_player_attack.md`
+Commits: `b05731b` (impl+tests), `b543fb3` (spec+checkpoints), `04f57ba` (ticket COMPLETE)
 
 ---
 
