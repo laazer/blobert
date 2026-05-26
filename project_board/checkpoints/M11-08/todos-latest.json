@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-26T20:05:00Z",
+  "ticket_id": "M11-08",
+  "todos": [
+    {
+      "id": "impl-done",
+      "content": "Claw AttackResource registered + WEAKENED→INFECTED logic implemented",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "review-done",
+      "content": "GDScript review and organization check passed",
+      "status": "completed",
+      "agent": "Static QA"
+    }
+  ]
+}
