@@ -50,12 +50,15 @@ func _handle_melee_swipe(resource: AttackResource) -> void:
 	var enemies := _query_enemies_in_range(center, radius)
 
 	for enemy in enemies:
+		var pre_state: int = -1
+		if enemy.has_method("get_base_state"):
+			pre_state = enemy.get_base_state()
 		var kb := _calculate_knockback(
 			enemy.global_position, owner_pos,
 			resource.knockback_magnitude, resource.knockback_direction
 		)
 		_apply_damage(enemy, resource.damage, kb)
-		_apply_modifiers(enemy, resource.modifiers)
+		_apply_modifiers(enemy, resource.modifiers, pre_state)
 		attack_hit.emit(enemy, resource)
 
 	melee_vfx_requested.emit(center, resource.color, resource.vfx_scale)
@@ -95,7 +98,7 @@ func _apply_damage(target: Node3D, damage: float, knockback: Vector3) -> void:
 		target.take_damage(damage, knockback)
 
 
-func _apply_modifiers(target: Node3D, modifiers: Dictionary) -> void:
+func _apply_modifiers(target: Node3D, modifiers: Dictionary, pre_damage_state: int = -1) -> void:
 	if modifiers.get("poison", false):
 		if target.has_method("apply_poison"):
 			target.apply_poison(
@@ -114,6 +117,16 @@ func _apply_modifiers(target: Node3D, modifiers: Dictionary) -> void:
 	if slow_val and slow_val > 0.0:
 		if target.has_method("apply_slowness"):
 			target.apply_slowness(slow_val, modifiers.get("slow_duration", DEFAULT_SLOW_DURATION))
+
+	if modifiers.get("infect_weakened", false):
+		if target.has_method("get_base_state") and target.has_method("set_base_state"):
+			if target.has_method("is_dead") and target.is_dead():
+				return
+			var check_state: int = pre_damage_state if pre_damage_state >= 0 else -1
+			if check_state < 0 and target.has_method("get_base_state"):
+				check_state = target.get_base_state()
+			if check_state == 1:
+				target.set_base_state(2)
 
 
 func _calculate_knockback(

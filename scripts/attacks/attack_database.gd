@@ -1,8 +1,36 @@
 class_name AttackDatabaseNode
 extends Node
 
+const CLAW_DAMAGE := 3.0
+const CLAW_COOLDOWN := 0.8
+const CLAW_RANGE := 1.5
+const CLAW_KNOCKBACK := 2.0
+const CLAW_VFX_SCALE := 1.2
+
 var _base_attacks: Dictionary = {}
 var _fused_attacks: Dictionary = {}
+
+
+func _ready() -> void:
+	_register_defaults()
+
+
+func _register_defaults() -> void:
+	var claw := AttackResource.new()
+	claw.attack_id = 1
+	claw.attack_name = "Claw Swipe"
+	claw.description = "Fast melee swipe with short cooldown. Infects weakened enemies."
+	claw.effect_type = "MELEE_SWIPE"
+	claw.damage = CLAW_DAMAGE
+	claw.cooldown = CLAW_COOLDOWN
+	claw.attack_range = CLAW_RANGE
+	claw.startup_frames = 0
+	claw.knockback_magnitude = CLAW_KNOCKBACK
+	claw.knockback_direction = "away"
+	claw.color = Color.ORANGE_RED
+	claw.vfx_scale = CLAW_VFX_SCALE
+	claw.modifiers = {"infect_weakened": true}
+	register_base_attack("claw", claw)
 
 
 func register_base_attack(mutation_id: String, resource: AttackResource) -> void:
