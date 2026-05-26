@@ -14,6 +14,16 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-26T-m11-14-autopilot (M11 Enemy Health & Damage Reception)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/14_enemy_health_and_damage_reception.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-14/`
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-plan-run.md` — PLANNING → SPECIFICATION, 8-task plan, all deps confirmed done
+
+---
+
 ## Run: 2026-05-25T-m11-13-autopilot (M11 Verify Damage Knockback)
 
 - Queue mode: single ticket
@@ -741,6 +751,51 @@ Log: project_board/checkpoints/M902-20/
 - **Agent:** Test Breaker Agent
 - **Outcome:** 38 adversarial tests (102 assertions) in `tests/scripts/attacks/test_verify_damage_knockback_adversarial.gd`. 8 categories: null/empty boundary, DB boundary, degenerate knockback geometry, projectile boundary, modifier defaults, executor edge cases, mutation testing, combinatorial/stress + determinism. All 102 pass. Full suite exit 0. Stage → IMPLEMENTATION_GAMEPLAY.
 - Log: `project_board/checkpoints/M11-13/`
+
+---
+
+### M11-14 — Enemy Health and Damage Reception (Planning)
+
+- **Run:** 2026-05-26T-plan-run
+- **Agent:** Planner Agent
+- **Outcome:** 8-task execution plan. All dependencies (M11-04, M11-05, M11-13) confirmed in done/. Stage → SPECIFICATION.
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-plan-run.md`
+
+---
+
+### M11-14 — Enemy Health and Damage Reception (Specification)
+
+- **Run:** 2026-05-26T-spec-run
+- **Agent:** Spec Agent
+- **Outcome:** Frozen spec (EHD-1 through EHD-9, 67 AC, 20 edge cases, 4 discrepancy resolutions) covering HP core, take_damage, knockback impulse, DoT, slowness, WEAKENED threshold, death state, EnemyEffectTracker helper, backward compat. Stage → TEST_DESIGN.
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-spec-run.md`
+
+---
+
+### M11-14 — Enemy Health and Damage Reception (Test Design)
+
+- **Run:** 2026-05-26T-test-design-run
+- **Agent:** Test Designer Agent
+- **Outcome:** 79 behavioral tests across 2 files (EHD-1–EHD-9 + edge cases). Red-phase contracts; implementation pending. Stage → TEST_BREAK.
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-test-design-run.md`
+
+---
+
+### M11-14 — Enemy Health and Damage Reception (Test Break)
+
+- **Run:** 2026-05-26T-test-break-run
+- **Agent:** Test Breaker Agent
+- **Outcome:** 43 adversarial tests in `tests/scripts/enemies/test_enemy_health_adversarial.gd`. 12 gap categories: killing-blow knockback gating, signal ordering, double-lethal, rapid burst, concurrent DoT+direct, dual-DoT race, floating-point accumulation, knockback convergence/NaN, DoT lag-spike multi-tick, negative params, slowness precision, tracker isolation. Total 122 tests across 3 files. All RED until implementation. Stage → IMPLEMENTATION_GAMEPLAY.
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-test-break-run.md`
+
+---
+
+### M11-14 — Enemy Health and Damage Reception (AC Gatekeeper)
+
+- **Run:** 2026-05-26T-ac-gatekeeper-run
+- **Agent:** Acceptance Criteria Gatekeeper Agent
+- **Outcome:** 11 of 12 ACs evidenced. AC-11 (integration tests with AttackExecutor/PlayerProjectile3D) NOT COVERED — no test bridges attack pipeline to real EnemyBase. Stage held at INTEGRATION; routed to Gameplay Systems Agent.
+- Log: `project_board/checkpoints/M11-14/2026-05-26T-ac-gatekeeper-run.md`
 
 ---
 

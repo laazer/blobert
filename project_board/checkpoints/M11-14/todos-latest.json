@@ -1,42 +1,37 @@
 {
+  "schema_version": "1.0",
+  "captured_at": "2026-05-26T17:30:00Z",
   "ticket_id": "M11-14",
-  "stage": "INTEGRATION",
-  "revision": 6,
-  "updated_by": "Gameplay Systems Agent",
   "todos": [
     {
-      "id": "impl-1",
-      "task": "Create EnemyEffectTracker helper node (DoT + slowness)",
-      "status": "complete",
-      "file": "scripts/enemies/enemy_effect_tracker.gd"
+      "id": "impl-done",
+      "content": "Implementation complete — EnemyBase HP + EnemyEffectTracker",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent",
+      "started_at": "2026-05-26T16:55:00Z",
+      "completed_at": "2026-05-26T17:05:00Z"
     },
     {
-      "id": "impl-2",
-      "task": "Add HP system, take_damage(), knockback, signals, death to EnemyBase",
-      "status": "complete",
-      "file": "scripts/enemies/enemy_base.gd"
+      "id": "review-done",
+      "content": "GDScript review and organization check passed",
+      "status": "completed",
+      "agent": "Static QA",
+      "started_at": "2026-05-26T17:15:00Z",
+      "completed_at": "2026-05-26T17:20:00Z"
     },
     {
-      "id": "impl-3",
-      "task": "Update EnemyAIController (remove move_and_slide, add speed_multiplier)",
-      "status": "complete",
-      "file": "scripts/enemies/enemy_ai_controller.gd"
+      "id": "integration-tests",
+      "content": "Integration tests written — AttackExecutor + PlayerProjectile3D → real EnemyBase (31 tests, 0 failures)",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent",
+      "started_at": "2026-05-26T17:25:00Z",
+      "completed_at": "2026-05-26T17:30:00Z"
     },
     {
-      "id": "impl-4",
-      "task": "Update backward compat test for _physics_process (EHD-9e)",
-      "status": "complete",
-      "file": "tests/scripts/enemy/test_enemy_base.gd"
-    },
-    {
-      "id": "impl-5",
-      "task": "All 190 tests pass (58 primary + 50 tracker + 82 adversarial)",
-      "status": "complete"
-    },
-    {
-      "id": "impl-6",
-      "task": "Lint checks clean (gd-review, gd-organization)",
-      "status": "complete"
+      "id": "ac-gate",
+      "content": "AC Gatekeeper validates acceptance criteria (all 12 ACs covered)",
+      "status": "pending",
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     }
   ]
 }
