@@ -20,3 +20,12 @@ Create the input and cooldown infrastructure that all 4 base mutation attacks sh
 
 - M2 (Infection Loop) — mutation slot system must be in place
 - M3 (Dual Mutation + Fusion) — active mutation identity per slot must be readable
+
+## Resolution
+
+**Closed as superseded.** All acceptance criteria are covered by the following completed tickets:
+- M11-03 (`input_action_mapping`) — `attack` action registered in Input Map
+- M11-04 (`attack_resource`) — configurable attack data including cooldown
+- M11-05 (`attack_executor_handlers`) — MELEE_SWIPE + PROJECTILE_SPIT execution
+- M11-06 (`attack_database_integration`) — mutation → attack lookup pipeline
+- M11-12 (`verify_cooldown_behavior`) — per-mutation cooldown independence, death reset, cross-state verification

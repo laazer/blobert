@@ -1,32 +1,41 @@
 ticket_id: M11-04
-stage: INTEGRATION
-revision: 6
-from_agent: Gameplay Systems Agent
-to_agent: Acceptance Criteria Gatekeeper Agent
-timestamp: "2026-05-25"
-status: Proceed
+title: "Implement AttackResource Godot resource class"
+stage: COMPLETE
+revision: 7
+last_updated_by: "Acceptance Criteria Gatekeeper Agent"
+date: "2026-05-25"
 
-implementation:
-  file: scripts/attacks/attack_resource.gd
-  class_name: AttackResource
-  extends: Resource
-  properties: 15
-  all_exports: true
+artifacts:
+  spec: "project_board/specs/attack_resource_spec.md"
+  implementation: "scripts/attacks/attack_resource.gd"
+  primary_tests: "tests/scripts/attacks/test_attack_resource.gd"
+  adversarial_tests: "tests/scripts/attacks/test_attack_resource_adversarial.gd"
+  ticket: "project_board/11_milestone_11_base_mutation_attacks/done/04_attack_resource.md"
 
 test_results:
-  primary_suite: tests/scripts/attacks/test_attack_resource.gd
-  primary_tests: 23
-  primary_assertions: 133
-  primary_failures: 0
-  adversarial_suite: tests/scripts/attacks/test_attack_resource_adversarial.gd
-  adversarial_tests: 52
-  adversarial_assertions: 122
-  adversarial_failures: 0
-  full_suite_exit_code: 0
+  primary: "23 tests, 133 assertions — GREEN"
+  adversarial: "52 tests, 122 assertions — GREEN"
+  total: "75 tests, 255 assertions — 0 failures"
+  full_suite: "run_tests.gd exit 0 (confirmed via pre-push hook)"
 
-checkpoint_decisions:
-  - label: modifiers deep-copy setter
-    confidence: High
-    summary: Added set:/get: accessor on modifiers to deep-copy Dictionary on assignment, ensuring Resource.duplicate() independence per ATK-08.
+git:
+  commit: "be206a7"
+  message: "feat(godot): implement AttackResource data model (M11-04)"
+  pushed: true
+  remote: "origin/main"
 
-blocking_issues: []
+ac_verdict:
+  ac1_class_created: PASS
+  ac2_properties_exported_typed: PASS
+  ac3_documented_with_examples: PASS
+  ac4_modifiers_documented: PASS
+  ac5_tests_validate_access_serialization: PASS
+  ac6_run_tests_exit_0: PASS
+
+next_action:
+  agent: Human
+  status: Complete
+  reason: "All acceptance criteria verified. No further agent work required."
+
+downstream:
+  - "M11-05 (AttackExecutor) consumes AttackResource — can proceed independently"

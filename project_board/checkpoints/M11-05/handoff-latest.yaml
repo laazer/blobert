@@ -1,38 +1,46 @@
 schema_version: "1.0"
 ticket_id: M11-05
 title: "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers"
-stage: TEST_BREAK
-revision: 4
-last_updated_by: "Test Designer Agent"
+stage: INTEGRATION
+revision: 7
+last_updated_by: "Acceptance Criteria Gatekeeper Agent"
 date: "2026-05-25"
 
 artifacts:
   spec: "project_board/specs/attack_executor_spec.md"
-  implementation: null
+  implementation:
+    - "scripts/attacks/attack_executor.gd"
+    - "scripts/attacks/player_projectile_3d.gd"
   primary_tests: "tests/scripts/attacks/test_attack_executor.gd"
-  adversarial_tests: null
+  adversarial_tests: "tests/scripts/attacks/test_attack_executor_adversarial.gd"
   ticket: "project_board/11_milestone_11_base_mutation_attacks/in_progress/05_attack_executor_handlers.md"
 
 test_results:
-  primary: "38 RED (expected — no implementation)"
-  adversarial: null
-  total: null
-  full_suite: null
+  primary: "67 assertions passed, 0 failed (38 test functions)"
+  adversarial: "85 assertions passed, 0 failed (49 test functions)"
+  total: "152 assertions, 87 test functions, all GREEN"
+  full_suite: "ALL TESTS PASSED (exit 0)"
 
 git:
-  commit: null
-  message: null
+  commit: "9fa63ec"
+  message: "feat(attacks): implement AttackExecutor dispatch with MELEE_SWIPE and PROJECTILE_SPIT handlers (M11-05)"
   pushed: false
   remote: null
 
-ac_verdict: null
+ac_verdict: "ALL 8 AC PASS — Stage held at INTEGRATION pending git push"
+
+blocking_issues:
+  - "Git push required: branch main ahead 2 commits from origin/main"
 
 next_action:
-  agent: "Test Breaker Agent"
+  agent: "Human"
   status: Proceed
-  reason: "Primary behavioral tests written (38 tests, AEX-1..AEX-8). Ready for adversarial deepening."
+  reason: "All 8 AC items verified PASS. Push commits to remote, then set Stage COMPLETE and move ticket to done/."
 
 downstream:
-  - "T2: Test Designer wrote tests/scripts/attacks/test_attack_executor.gd (DONE)"
-  - "T3: Test Breaker writes tests/scripts/attacks/test_attack_executor_adversarial.gd"
-  - "T4: Gameplay Systems Agent implements scripts/attacks/attack_executor.gd + scripts/attacks/player_projectile_3d.gd"
+  - "T1: Spec Agent froze spec (DONE)"
+  - "T2: Test Designer wrote primary tests (DONE)"
+  - "T3: Test Breaker wrote adversarial tests (DONE)"
+  - "T4: Gameplay Systems Agent implemented AttackExecutor + PlayerProjectile3D (DONE — 9fa63ec)"
+  - "T5: Static QA review (PARTIAL — gd-review run, gd-organization skipped on 1166-line test file)"
+  - "T6: AC Gatekeeper validation (DONE — all 8 AC PASS, blocked on push)"

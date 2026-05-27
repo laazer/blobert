@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-26T20:45:00-04:00",
+  "ticket_id": "M11-10",
+  "todos": [
+    {
+      "id": "ac_gate_all_criteria_verified",
+      "content": "All 6 acceptance criteria verified with explicit code and test evidence (167 tests across 3 files)",
+      "status": "completed",
+      "agent": "Acceptance Criteria Gatekeeper Agent"
+    },
+    {
+      "id": "ac_gate_static_qa_confirmed",
+      "content": "Static QA confirmed: gd-review and gd-organization passed via pre-commit hooks",
+      "status": "completed",
+      "agent": "Acceptance Criteria Gatekeeper Agent"
+    },
+    {
+      "id": "ac_gate_git_push",
+      "content": "Git push required: branch ahead of origin/main by 10 commits. Human must push before Stage can be COMPLETE.",
+      "status": "pending",
+      "agent": "Human"
+    },
+    {
+      "id": "ac_gate_move_to_done",
+      "content": "Move ticket to done/ folder after push succeeds and Stage set to COMPLETE",
+      "status": "pending",
+      "agent": "Human"
+    }
+  ]
+}

@@ -1,27 +1,22 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M11-14
-  from_agent: Implementation Agent
-  to_agent: Static QA
-  validated_at: "2026-05-26T17:30:00Z"
-  required_items_met: 4
-  total_required_items: 4
+  from_agent: Learning Agent
+  to_agent: Acceptance Criteria Gatekeeper Agent
+  validated_at: "2026-05-26T17:45:00Z"
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: integration_tests_written
-      item: "Integration tests bridging attack pipeline to real EnemyBase"
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "tests/scripts/enemies/test_enemy_attack_integration.gd — 31 tests, 0 failures"
-    - item_key: full_suite_passes
-      item: "Full Godot test suite exits 0"
+      evidence: "project_board/LEARNINGS.md"
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: "timeout 300 godot --headless -s tests/run_tests.gd → exit 0 (221+ tests)"
-    - item_key: ac11_satisfied
-      item: "AC-11: Integration tests verify EnemyBase receives damage from AttackExecutor and PlayerProjectile3D"
+      evidence: "project_board/checkpoints/M11-14/todos-latest.json"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "INT-1a..1d (melee→EnemyBase), INT-2a..2e (projectile→EnemyBase), INT-3a..3d (WEAKENED state via pipeline)"
-    - item_key: code_reviewed
-      item: "Code reviewed"
-      status: complete
-      evidence: "Prior Static QA pass (Revision 7); new file follows established test patterns from test_verify_damage_knockback.gd"
-  blocking_issues:
-    - "Untracked test file must be committed and pushed before COMPLETE"
+      evidence: "project_board/LEARNINGS.md"
+  blocking_issues: []

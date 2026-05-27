@@ -1,0 +1,37 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M11-10
+  from_agent: Acceptance Criteria Gatekeeper Agent
+  to_agent: Human
+  validated_at: "2026-05-26T20:45:00Z"
+  required_items_met: 6
+  total_required_items: 7
+  checklist:
+    - item_key: ac1_radial_hitbox
+      item: "AC1: Slam hitbox activates in configurable radius (default 3.0)"
+      status: complete
+      evidence: "_handle_slam_aoe() uses _query_enemies_in_range(owner_pos, resource.attack_range); tests CCA-3b/3c/3d/3f, EC-2/EC-3"
+    - item_key: ac2_damage_and_knockback
+      item: "AC2: All enemies within radius take damage and knockback away"
+      status: complete
+      evidence: "Per-enemy loop with _calculate_knockback + _apply_damage; tests CCA-7a/7b/7c/7e, EC-4, adversarial 15-enemy"
+    - item_key: ac3_windup
+      item: "AC3: Wind-up 0.2s before hitbox activates"
+      status: complete
+      evidence: "startup_frames=12 at 60fps = 0.2s; test CCA-3a"
+    - item_key: ac4_cooldown
+      item: "AC4: Cooldown 3.5s"
+      status: complete
+      evidence: "CARAPACE_COOLDOWN := 3.5; tests CCA-4e, CCA-8c, adversarial cooldown-slowest"
+    - item_key: ac5_airborne_slam
+      item: "AC5: Airborne slam triggers on landing"
+      status: complete
+      evidence: "_is_owner_on_floor() poll loop with 3.0s timeout; tests CCA-4a, adversarial airborne/grounded/no-floor"
+    - item_key: ac6_run_tests_exit_0
+      item: "AC6: run_tests.sh exits 0"
+      status: complete
+      evidence: "167 tests pass; gd-review + gd-organization pass; commits ba957af + 5eee2be"
+    - item_key: git_push_gate
+      item: "Git push to origin (workflow_enforcement_v1.md mandate)"
+      status: blocked
+      evidence: "Branch ahead of origin/main by 10 commits. Human must git push."

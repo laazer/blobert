@@ -1,45 +1,51 @@
 {
   "ticket_id": "M11-04",
-  "stage": "INTEGRATION",
-  "updated_by": "Gameplay Systems Agent",
-  "updated_at": "2026-05-25",
+  "title": "Implement AttackResource Godot resource class",
+  "last_updated": "2026-05-25",
+  "last_updated_by": "Acceptance Criteria Gatekeeper Agent",
+  "stage": "COMPLETE",
   "todos": [
     {
       "id": "T1",
       "task": "Freeze AttackResource property list, defaults, and modifiers contract",
       "agent": "Spec Agent",
-      "status": "COMPLETE"
+      "status": "complete",
+      "output": "project_board/specs/attack_resource_spec.md"
     },
     {
       "id": "T2",
       "task": "Write behavioral test suite for AttackResource",
       "agent": "Test Designer Agent",
-      "status": "COMPLETE"
+      "status": "complete",
+      "output": "tests/scripts/attacks/test_attack_resource.gd (23 tests, 133 assertions)"
     },
     {
       "id": "T3",
       "task": "Adversarial test deepening",
       "agent": "Test Breaker Agent",
-      "status": "COMPLETE"
+      "status": "complete",
+      "output": "tests/scripts/attacks/test_attack_resource_adversarial.gd (52 tests, 122 assertions)"
     },
     {
       "id": "T4",
       "task": "Implement AttackResource class",
       "agent": "Gameplay Systems Agent",
-      "status": "COMPLETE",
-      "notes": "scripts/attacks/attack_resource.gd created. 15 exports, deep-copy modifier setter. All 255 assertions pass."
+      "status": "complete",
+      "output": "scripts/attacks/attack_resource.gd (commit be206a7)"
     },
     {
       "id": "T5",
       "task": "Static QA review",
-      "agent": "Static QA Agent",
-      "status": "PENDING"
+      "agent": "Static QA",
+      "status": "complete",
+      "output": "gd-review + gd-organization PASS"
     },
     {
       "id": "T6",
       "task": "AC Gatekeeper validation",
-      "agent": "AC Gatekeeper Agent",
-      "status": "PENDING"
+      "agent": "Acceptance Criteria Gatekeeper Agent",
+      "status": "complete",
+      "output": "All 6 AC verified. Stage COMPLETE. Ticket moved to done/."
     }
   ]
 }

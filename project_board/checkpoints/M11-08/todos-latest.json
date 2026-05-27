@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-26T20:05:00Z",
+  "captured_at": "2026-05-26T20:07:00Z",
   "ticket_id": "M11-08",
   "todos": [
     {
@@ -14,6 +14,12 @@
       "content": "GDScript review and organization check passed",
       "status": "completed",
       "agent": "Static QA"
+    },
+    {
+      "id": "learning-done",
+      "content": "Learning extraction complete: 4 learnings, 2 anti-patterns, 2 prompt patches, 2 workflow improvements, 3 keep/reinforce items appended to LEARNINGS.md",
+      "status": "completed",
+      "agent": "Learning Agent"
     }
   ]
 }

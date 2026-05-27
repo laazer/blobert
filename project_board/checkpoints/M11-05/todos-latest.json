@@ -2,8 +2,8 @@
   "ticket_id": "M11-05",
   "title": "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers",
   "last_updated": "2026-05-25",
-  "last_updated_by": "Test Designer Agent",
-  "stage": "TEST_BREAK",
+  "last_updated_by": "Acceptance Criteria Gatekeeper Agent",
+  "stage": "INTEGRATION",
   "todos": [
     {
       "id": "T1",
@@ -17,33 +17,40 @@
       "task": "Write behavioral test suite for AttackExecutor",
       "agent": "Test Designer Agent",
       "status": "complete",
-      "output": "tests/scripts/attacks/test_attack_executor.gd (38 tests covering AEX-1..AEX-8, all RED)"
+      "output": "tests/scripts/attacks/test_attack_executor.gd (38 tests covering AEX-1..AEX-8, all GREEN)"
     },
     {
       "id": "T3",
       "task": "Adversarial test deepening",
       "agent": "Test Breaker Agent",
-      "status": "pending",
-      "output": null
+      "status": "complete",
+      "output": "tests/scripts/attacks/test_attack_executor_adversarial.gd (49 adversarial tests covering EC-1..EC-20, all GREEN)"
     },
     {
       "id": "T4",
       "task": "Implement AttackExecutor with MELEE_SWIPE and PROJECTILE_SPIT handlers",
       "agent": "Gameplay Systems Agent",
-      "status": "pending",
-      "output": null
+      "status": "complete",
+      "output": "scripts/attacks/attack_executor.gd + scripts/attacks/player_projectile_3d.gd (commit 9fa63ec, 87 tests GREEN)"
     },
     {
       "id": "T5",
       "task": "Static QA review (gd-review + gd-organization)",
       "agent": "Static QA",
-      "status": "pending",
-      "output": null
+      "status": "complete",
+      "output": "gd-review run by orchestrator. gd-organization skipped on adversarial test file (1166 lines, pre-existing from Test Breaker)."
     },
     {
       "id": "T6",
       "task": "AC Gatekeeper validation",
       "agent": "Acceptance Criteria Gatekeeper Agent",
+      "status": "complete",
+      "output": "All 8 AC items PASS. Stage held at INTEGRATION — git push required before COMPLETE. Checkpoint: project_board/checkpoints/M11-05/2026-05-25T-ac-gatekeeper-run.md"
+    },
+    {
+      "id": "T7",
+      "task": "Push commits to remote and advance Stage to COMPLETE",
+      "agent": "Human",
       "status": "pending",
       "output": null
     }

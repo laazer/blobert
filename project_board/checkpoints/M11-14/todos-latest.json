@@ -1,37 +1,19 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-26T17:30:00Z",
+  "captured_at": "2026-05-26T17:45:00Z",
   "ticket_id": "M11-14",
   "todos": [
     {
-      "id": "impl-done",
-      "content": "Implementation complete — EnemyBase HP + EnemyEffectTracker",
+      "id": "learning-rationale",
+      "content": "Decision rationale recorded — AC Gatekeeper rework cycle, handoff schema 7th recurrence, helper extraction pattern",
       "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-26T16:55:00Z",
-      "completed_at": "2026-05-26T17:05:00Z"
+      "agent": "Learning Agent"
     },
     {
-      "id": "review-done",
-      "content": "GDScript review and organization check passed",
+      "id": "learning-checklist",
+      "content": "Handoff checklist validated — LEARNINGS.md appended, todos-latest.json and handoff-latest.yaml written",
       "status": "completed",
-      "agent": "Static QA",
-      "started_at": "2026-05-26T17:15:00Z",
-      "completed_at": "2026-05-26T17:20:00Z"
-    },
-    {
-      "id": "integration-tests",
-      "content": "Integration tests written — AttackExecutor + PlayerProjectile3D → real EnemyBase (31 tests, 0 failures)",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent",
-      "started_at": "2026-05-26T17:25:00Z",
-      "completed_at": "2026-05-26T17:30:00Z"
-    },
-    {
-      "id": "ac-gate",
-      "content": "AC Gatekeeper validates acceptance criteria (all 12 ACs covered)",
-      "status": "pending",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     }
   ]
 }

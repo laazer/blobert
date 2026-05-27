@@ -14,6 +14,15 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-26T-m11-10-autopilot (M11 Carapace Player Attack)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/10_carapace_player_attack.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-10/`
+
+---
+
 ## Run: 2026-05-26T-m11-09-autopilot (M11 Acid Player Attack)
 
 - Queue mode: single ticket
@@ -885,6 +894,41 @@ Commits: `b05731b` (impl+tests), `b543fb3` (spec+checkpoints), `04f57ba` (ticket
 - **Agent:** Acceptance Criteria Gatekeeper Agent
 - **Outcome:** FAIL — all 7 ACs behaviorally evidenced (187/187 tests), but implementation files uncommitted/unpushed. Held at INTEGRATION, routed to Gameplay Systems Agent to commit+push.
 - Log: `project_board/checkpoints/M11-09/2026-05-26T-ac-gatekeeper-run.md`
+
+### M11-10 — Carapace Player Attack (Planning)
+
+- **Run:** 2026-05-26T-plan-run
+- **Agent:** Planner Agent
+- **Outcome:** 5-task execution plan decomposed (Spec → Test Design → Test Break → Implementation → AC Gate). Novel elements: new SLAM_AOE handler, radial player-centered query, airborne slam deferral, wind-up delay. 4 assumptions logged. Stage → SPECIFICATION.
+- Log: `project_board/checkpoints/M11-10/2026-05-26T-plan-run.md`
+
+### M11-10 — Carapace Player Attack (Specification)
+
+- **Run:** 2026-05-26T-spec-run
+- **Agent:** Spec Agent
+- **Outcome:** Frozen spec at `project_board/specs/carapace_player_attack_spec.md`. 8 requirements (CCA-1 through CCA-8), 58 acceptance criteria, 22 edge cases, 6 discrepancy resolutions. Key decisions: radial player-centered query, startup_frames=12 wind-up, executor-internal airborne deferral (50ms poll, 3.0s timeout), new slam_vfx_requested signal, handler-owned _is_active lifecycle. 4 assumptions logged. Stage → TEST_DESIGN.
+- Log: `project_board/checkpoints/M11-10/2026-05-26T-spec-run.md`
+
+### M11-10 — Carapace Player Attack (Test Design)
+
+- **Run:** 2026-05-26T-test-design-run
+- **Agent:** Test Designer Agent
+- **Outcome:** 42 behavioral tests in `tests/scripts/attacks/test_carapace_attack.gd` (879 lines). Covers CCA-1 through CCA-8 plus 11 edge cases. Registration, dispatch, radial query, multi-enemy knockback, VFX signal, wind-up, airborne deferral, pipeline integration. Stage → TEST_BREAK.
+- Log: `project_board/checkpoints/M11-10/2026-05-26T-test-design-run.md`
+
+### M11-10 — Carapace Player Attack (Test Break)
+
+- **Run:** 2026-05-26T-test-break-run
+- **Agent:** Test Breaker Agent
+- **Outcome:** 34 adversarial tests in `tests/scripts/attacks/test_carapace_attack_adversarial.gd` (887 lines). 23 adversarial categories: zero-radius, boundary precision, dead/dying/bare enemies, double-tap, airborne timing, 15-enemy stress, degenerate knockback, cooldown validation, database registration edge cases, duck-type guard, knockback direction mutations, 3D positioning, Z-zeroing, modifiers isolation, VFX isolation, facing independence, player offset, determinism, extreme values, sequential slam reset, strongest-mutation assertion. Combined: 76 tests total. Stage → IMPLEMENTATION_GAMEPLAY.
+- Log: `project_board/checkpoints/M11-10/2026-05-26T-test-break-run.md`
+
+### M11-10 — Carapace Player Attack (AC Gatekeeper)
+
+- **Run:** 2026-05-26T-ac-gatekeeper-run
+- **Agent:** Acceptance Criteria Gatekeeper Agent
+- **Outcome:** All 6 acceptance criteria verified with explicit code and test evidence (167 tests across 3 files). Stage held at INTEGRATION due to unpushed commits (branch ahead of origin by 10). Human must `git push` then finalize COMPLETE.
+- Log: `project_board/checkpoints/M11-10/2026-05-26T-ac-gatekeeper-run.md`
 
 ---
 
