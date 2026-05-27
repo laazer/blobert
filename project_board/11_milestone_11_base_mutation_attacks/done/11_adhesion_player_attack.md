@@ -34,4 +34,44 @@ The generic PROJECTILE_SPIT pipeline and slow modifier hook are implemented:
 ## Dependencies
 
 - ~~`attack_input_and_cooldown_framework`~~ (done — M11-03/04/05/06)
-- M11-14 (Enemy Health & Damage Reception) — enemies must have `take_damage()` and `apply_slowness()`
+- ~~M11-14 (Enemy Health & Damage Reception)~~ (done — enemies have `take_damage()` and `apply_slowness()`)
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+COMPLETE
+
+## Revision
+7
+
+## Last Updated By
+Acceptance Criteria Gatekeeper Agent
+
+## Validation Status
+- Tests: Pass — 180 adhesion tests (98 behavioral + 82 adversarial) pass; full suite run_tests.gd exits 0. Commits: 36daa53 (tests), 9680eae (impl).
+- Static QA: Pass — gd-review and gd-organization pre-commit hooks passed on all modified files.
+- Integration: Pass — adhesion registered in AttackDatabase with correct PROJECTILE_SPIT pipeline, root effect (slow:0.0, slow_duration:1.0), wall despawn, cooldown 2.5s, effective range 10u (8.0 speed * 1.25s lifetime). All 7 AC items have explicit automated test coverage with no manual verification gaps.
+
+## Blocking Issues
+None
+
+## Escalation Notes
+None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Human
+
+## Required Input Schema
+None
+
+## Status
+Proceed
+
+## Reason
+All 7 acceptance criteria verified with explicit automated evidence: (1) X-axis travel + color distinction tested, (2) first-enemy-consumes semantics + despawn tested, (3) root effect (speed=0 for 1.0s) tested via EnemyEffectTracker + executor + projectile paths with adversarial boundary coverage, (4) infection-during-root tested (claw can infect rooted+weakened; adhesion alone does not infect), (5) wall collision despawn + lifetime despawn + effective range 10.0 tested, (6) cooldown 2.5s exact value tested, (7) full test suite exits 0 confirmed. No manual verification items in AC. Ticket moved to done/.

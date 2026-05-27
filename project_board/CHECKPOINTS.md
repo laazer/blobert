@@ -14,6 +14,29 @@ Keep this file small. Do not paste full checkpoint bodies here.
 
 ---
 
+## Run: 2026-05-26T-m11-11-autopilot (M11 Adhesion Player Attack)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/11_milestone_11_base_mutation_attacks/in_progress/11_adhesion_player_attack.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M11-11/`
+
+### [M11-11] — OUTCOME: PLANNING COMPLETE
+5-task execution plan (Spec → Test Design → Test Break → Implementation → AC Gate). Critical finding: slow_val=0.0 falsy bug in both _apply_modifiers(). 4 assumptions logged (root via slowness, infection interaction, wall collision, lifetime derivation). Stage → SPECIFICATION; handoff to Spec Agent.
+Log: `project_board/checkpoints/M11-11/2026-05-26T-plan-run.md`
+
+### [M11-11] — OUTCOME: SPECIFICATION COMPLETE
+Frozen spec (ADHA-1 through ADHA-8, 48 AC, 20 edge cases, 7 DRs). Key: falsy-zero fix (null default + != null check), wall collision despawn (generic else branch), root+infection tactical synergy (no auto-infect), Color.DARK_GOLDENROD, damage 1.0, lifetime 1.25s. 3 assumptions logged (infection mechanic, color, damage). Stage → TEST_DESIGN; handoff to Test Designer Agent.
+Log: `project_board/checkpoints/M11-11/2026-05-26T-spec-run.md`
+Spec: `project_board/specs/adhesion_player_attack_spec.md`
+
+### [M11-11] — OUTCOME: COMPLETE
+All 7 acceptance criteria verified with explicit automated test evidence: 180 tests (98 behavioral + 82 adversarial), 0 failures. Static QA (gd-review + gd-organization) passed. Root effect (slow:0.0 for 1.0s), wall despawn, cooldown 2.5s, effective range 10u, infection synergy, visual distinction (DARK_GOLDENROD) — all evidenced. Commits: 36daa53 (tests), 9680eae (impl). Ticket moved to done/.
+Log: `project_board/checkpoints/M11-11/2026-05-26T-ac-gatekeeper-run.md`
+Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/11_adhesion_player_attack.md`
+
+---
+
 ## Run: 2026-05-26T-m11-10-autopilot (M11 Carapace Player Attack)
 
 - Queue mode: single ticket

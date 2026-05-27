@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-26T21:15:00-04:00",
+  "ticket_id": "M11-11",
+  "todos": [
+    {
+      "id": "impl_adhesion_registration",
+      "content": "Register adhesion AttackResource in attack_database.gd _register_defaults()",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl_falsy_zero_fix_projectile",
+      "content": "Fix falsy-zero slow check in player_projectile_3d.gd + add wall collision despawn",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl_falsy_zero_fix_executor",
+      "content": "Fix falsy-zero slow check in attack_executor.gd _apply_modifiers()",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl_update_existing_tests",
+      "content": "Update acid, executor, and damage-knockback tests for new wall despawn and zero-slow behavior",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "impl_run_tests",
+      "content": "Run full test suite — all tests pass (run_tests.gd exits 0)",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    }
+  ]
+}
