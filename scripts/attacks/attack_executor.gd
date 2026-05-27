@@ -7,11 +7,14 @@ const DEFAULT_POISON_DPS := 0.3
 const DEFAULT_ACID_DPS := 0.2
 const DEFAULT_SLOW_DURATION := 1.5
 const DEGENERATE_DISTANCE_SQ := 1e-8
+const SLAM_LANDING_POLL_INTERVAL := 0.05
+const SLAM_LANDING_TIMEOUT := 3.0
 
 signal attack_started(resource: AttackResource)
 signal attack_hit(target: Node3D, resource: AttackResource)
 signal projectile_fired(projectile: Node3D, resource: AttackResource)
 signal melee_vfx_requested(position: Vector3, color: Color, scale: float)
+signal slam_vfx_requested(position: Vector3, radius: float, color: Color, scale: float)
 
 var _is_active: bool = false
 
@@ -28,6 +31,9 @@ func execute_attack(resource: AttackResource) -> void:
 			_handle_melee_swipe(resource)
 		"PROJECTILE_SPIT":
 			_handle_projectile_spit(resource)
+		"SLAM_AOE":
+			_handle_slam_aoe(resource)
+			return
 		_:
 			_handle_unknown(resource)
 	_is_active = false
@@ -180,3 +186,46 @@ func _get_owner_position() -> Vector3:
 	if parent and parent is Node3D:
 		return (parent as Node3D).global_position
 	return Vector3.ZERO
+
+
+func _is_owner_on_floor() -> bool:
+	var parent := get_parent()
+	if parent and parent.has_method("is_on_floor"):
+		return parent.is_on_floor()
+	return true
+
+
+func _handle_slam_aoe(resource: AttackResource) -> void:
+	if resource.startup_frames > 0:
+		var startup_tree := get_tree()
+		if startup_tree:
+			await startup_tree.create_timer(resource.startup_frames / FRAMES_PER_SECOND).timeout
+
+	if not _is_owner_on_floor():
+		var elapsed := 0.0
+		while elapsed < SLAM_LANDING_TIMEOUT:
+			var poll_tree := get_tree()
+			if poll_tree == null:
+				break
+			await poll_tree.create_timer(SLAM_LANDING_POLL_INTERVAL).timeout
+			elapsed += SLAM_LANDING_POLL_INTERVAL
+			if _is_owner_on_floor():
+				break
+		if not _is_owner_on_floor():
+			_is_active = false
+			return
+
+	var owner_pos := _get_owner_position()
+	var enemies := _query_enemies_in_range(owner_pos, resource.attack_range)
+
+	for enemy in enemies:
+		var kb := _calculate_knockback(
+			enemy.global_position, owner_pos,
+			resource.knockback_magnitude, resource.knockback_direction
+		)
+		_apply_damage(enemy, resource.damage, kb)
+		_apply_modifiers(enemy, resource.modifiers)
+		attack_hit.emit(enemy, resource)
+
+	slam_vfx_requested.emit(owner_pos, resource.attack_range, resource.color, resource.vfx_scale)
+	_is_active = false

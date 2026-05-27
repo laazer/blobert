@@ -13,6 +13,14 @@ const ACID_PROJECTILE_SPEED := 8.0
 const ACID_DPS := 1.0
 const ACID_DURATION := 3.0
 
+const CARAPACE_ATTACK_ID := 3
+const CARAPACE_DAMAGE := 4.0
+const CARAPACE_COOLDOWN := 3.5
+const CARAPACE_RANGE := 3.0
+const CARAPACE_KNOCKBACK := 5.0
+const CARAPACE_STARTUP_FRAMES := 12
+const CARAPACE_VFX_SCALE := 1.5
+
 var _base_attacks: Dictionary = {}
 var _fused_attacks: Dictionary = {}
 
@@ -55,6 +63,22 @@ func _register_defaults() -> void:
 	acid.vfx_scale = 1.0
 	acid.modifiers = {"acid_on_hit": true, "acid_duration": ACID_DURATION, "acid_dps": ACID_DPS}
 	register_base_attack("acid", acid)
+
+	var carapace := AttackResource.new()
+	carapace.attack_id = CARAPACE_ATTACK_ID
+	carapace.attack_name = "Ground Slam"
+	carapace.description = "Heavy ground slam. Damages and knocks back all enemies in radius. Slams on landing if airborne."
+	carapace.effect_type = "SLAM_AOE"
+	carapace.damage = CARAPACE_DAMAGE
+	carapace.cooldown = CARAPACE_COOLDOWN
+	carapace.attack_range = CARAPACE_RANGE
+	carapace.startup_frames = CARAPACE_STARTUP_FRAMES
+	carapace.knockback_magnitude = CARAPACE_KNOCKBACK
+	carapace.knockback_direction = "away"
+	carapace.color = Color.SADDLE_BROWN
+	carapace.vfx_scale = CARAPACE_VFX_SCALE
+	carapace.modifiers = {}
+	register_base_attack("carapace", carapace)
 
 
 func register_base_attack(mutation_id: String, resource: AttackResource) -> void:
