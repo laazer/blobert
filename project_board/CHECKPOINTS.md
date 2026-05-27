@@ -21,6 +21,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: `project_board/checkpoints/M11-11/`
 
+### [M11-11] — OUTCOME: COMPLETE
+Adhesion sticky projectile with root effect (movement=0 for 1.0s) implemented. Cleanest run yet — all pre-impl gates passed first try.
+Log: project_board/checkpoints/M11-11/
+
 ### [M11-11] — OUTCOME: PLANNING COMPLETE
 5-task execution plan (Spec → Test Design → Test Break → Implementation → AC Gate). Critical finding: slow_val=0.0 falsy bug in both _apply_modifiers(). 4 assumptions logged (root via slowness, infection interaction, wall collision, lifetime derivation). Stage → SPECIFICATION; handoff to Spec Agent.
 Log: `project_board/checkpoints/M11-11/2026-05-26T-plan-run.md`
