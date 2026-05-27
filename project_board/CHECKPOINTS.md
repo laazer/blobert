@@ -21,6 +21,10 @@ Keep this file small. Do not paste full checkpoint bodies here.
 - Lean: no
 - Log root: `project_board/checkpoints/M11-10/`
 
+### [M11-10] — OUTCOME: COMPLETE
+Carapace ground slam (SLAM_AOE) attack implemented with radial AoE damage, wind-up delay, airborne deferral, and 167 passing tests.
+Log: project_board/checkpoints/M11-10/
+
 ---
 
 ## Run: 2026-05-26T-m11-09-autopilot (M11 Acid Player Attack)

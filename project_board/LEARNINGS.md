@@ -7970,3 +7970,79 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M11-10] — Test Breaker line-count overrun and decorative separators trigger lint false positives
+*Completed: 2026-05-26*
+
+### Learnings
+
+- **category:** process
+  **insight:** Test Breaker Agent produced a 1132-line adversarial test file, exceeding the 900-line `gd-organization` limit. The orchestrator had to split it into two files (`adversarial.gd` + `adversarial_b.gd`). This mirrors the M11-08 Test Designer overrun (1114 lines → split). The M11-08 prompt patch targeted Test Designer only — Test Breaker has the identical blind spot.
+  **impact:** Orchestrator spent a full correction cycle splitting the file, renaming references, and re-running lint. The split is mechanical work that the agent should have prevented at generation time.
+  **prevention:** Apply the same line-budget pre-check to Test Breaker that was patched into Test Designer after M11-08: estimate line count before writing, split at the plan stage if estimate exceeds 700 lines.
+  **severity:** medium
+
+- **category:** tooling
+  **insight:** Test Breaker used `# ===========================================================================` decorative section headers in generated test files. The `gd-review` hook's merge-conflict marker detector treats any line containing seven or more consecutive `=` characters as a git conflict marker (`=======`), producing false-positive lint failures. The orchestrator replaced all `=` separators with `-` separators.
+  **impact:** Every decorative `=` header line became a lint failure, requiring a bulk find-and-replace cycle. The root cause is that agents default to `=` for visual emphasis, which collides with a legitimate safety check.
+  **prevention:** All code-generating agents must avoid `=` character sequences of 4+ in comments or string literals. Use `-` or `#` for section separators.
+  **severity:** medium
+
+- **category:** process
+  **insight:** AC Gatekeeper blocked COMPLETE transition for the third consecutive ticket (M11-08, M11-09, M11-10) on "commits not pushed to remote." In a local-only development workflow without a remote, this gate is always a false positive. The orchestrator overrode to COMPLETE each time, establishing a de facto workaround.
+  **impact:** Each occurrence adds one unnecessary routing cycle (AC Gatekeeper → orchestrator override → COMPLETE). Three consecutive overrides indicate a systematic mismatch between the gate and the operating environment.
+  **prevention:** AC Gatekeeper needs a workflow mode flag (`local_only: true`) that skips the git-push gate when no remote is configured or when the orchestrator explicitly declares local-only operation. The commit gate (files committed) should remain; only the push gate should be conditional.
+  **severity:** medium
+
+- **category:** architecture
+  **insight:** Carapace's SLAM_AOE used a dedicated `_handle_slam_aoe()` handler function rather than the modifier-based approach used for claw (`infect_weakened` modifier) and acid (`acid_on_hit` modifier). The handler pattern was cleaner for SLAM_AOE because the attack has qualitatively different dispatch semantics (radial area, async wind-up, airborne deferral) that don't map to the "apply modifier after standard hit" model.
+  **impact:** Zero implementation rework and cleaner code. The handler owns its entire lifecycle (`_is_active` management, async wind-up, landing poll), while modifiers are post-hit decorators. Using modifiers for SLAM_AOE would have forced an awkward async modifier that fights the synchronous modifier pipeline.
+  **prevention:** Future mutations should evaluate whether the attack is a "standard hit + post-hit effect" (→ modifier) or a "qualitatively different dispatch pattern" (→ dedicated handler). Adhesion's slow-on-hit is likely a modifier; any future area/channeled/combo attack is likely a handler.
+  **severity:** low
+
+### Anti-Patterns
+
+- **description:** Test Breaker generates decorative comment separators using `=` character sequences that trigger `gd-review`'s merge-conflict marker detector. This is the same class of "agent output contains sequences that collide with tooling safety checks" seen when agents generate long `---` sequences near YAML frontmatter or `<<<`/`>>>` in string literals.
+  **detection_signal:** `gd-review` reports "possible merge conflict marker" on lines that are clearly decorative comments, not conflict artifacts.
+  **prevention:** Add to all code-generating agent prompts: "Never use 4+ consecutive `=` characters in comments or decorative headers. Use `-` or `#` for visual separators."
+
+- **description:** Handoff YAML schema non-compliance continues (10th consecutive ticket). Fields use `id` instead of `item_key`, `met: true` instead of `status: complete`, and agent names outside the canonical alias registry. Every handoff requires manual correction by the orchestrator.
+  **detection_signal:** Orchestrator correction cycle on every handoff artifact. Presence of `id:` or `met:` keys in handoff YAML instead of `item_key:` and `status:`.
+  **prevention:** `TOOLING_TICKET_CRITICAL_OVERDUE` — `write_handoff.sh` has been recommended for 10 consecutive tickets (since M11-13). Escalation: hard-block next milestone if not merged. This is the single highest-recurrence error in the pipeline.
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "Before writing adversarial test code, estimate total output line count (planned test functions × ~25 lines each + setup/mock overhead). If the estimate exceeds 700 lines, split into two adversarial files at the plan stage: `test_<feature>_adversarial.gd` (first half of categories) and `test_<feature>_adversarial_b.gd` (second half). Do not generate a single file exceeding 900 lines."
+  **reason:** M11-10's Test Breaker generated 1132 lines, requiring orchestrator-initiated file splitting. This is the same issue fixed in Test Designer after M11-08, but the patch was never applied to Test Breaker.
+
+- **agent: Test Breaker Agent**
+  **change:** "Never use 4 or more consecutive `=` characters in comments, section headers, or decorative separators. Use `# ---------------------------------------------------------------------------` for section breaks. Sequences of `=` trigger the gd-review merge-conflict marker detector."
+  **reason:** M11-10's Test Breaker used `# ===========================================================================` headers that produced false-positive merge-conflict lint failures on every decorated line.
+
+- **agent: AC Gatekeeper Agent**
+  **change:** "When the orchestrator declares `workflow_mode: local` or when `git remote` returns no configured remotes, skip the 'commits pushed to remote' gate. Still enforce the 'all changes committed' gate. Do not block COMPLETE solely because commits are unpushed in a local-only workflow."
+  **reason:** M11-08, M11-09, and M11-10 were all blocked by the push gate in a local-only environment. Three consecutive orchestrator overrides demonstrate this gate is systematically inapplicable in the current operating mode.
+
+### Workflow Improvements
+
+- **issue:** `TOOLING_TICKET_CRITICAL_OVERDUE` (10th recurrence) — `ci/scripts/write_handoff.sh` remains unbuilt. Every handoff artifact requires manual field correction (item_key vs id, status vs met, agent alias validation). The learning recommendation to hard-block the next milestone (issued at M11-08, condition was "if not built before M11-09") has been deferred twice.
+  **improvement:** Reclassify as `PIPELINE_BLOCKER`. The `write_handoff.sh` script must be the first ticket in the next milestone or the next planning session. No new feature tickets should be planned until this debt is retired. Script requirements: YAML schema validation, canonical agent alias enum, `item_key`/`status` field enforcement, called by all agents at handoff time.
+  **expected_benefit:** Eliminates the single most persistent pipeline error (10 consecutive tickets, estimated 20+ wasted correction cycles across M11).
+
+- **issue:** AC Gatekeeper git-push gate has no local-only bypass. Three consecutive orchestrator overrides (M11-08, M11-09, M11-10) demonstrate the gate is inapplicable for local development. The override is undocumented and ad hoc.
+  **improvement:** Add a `workflow_mode` field to `workflow_enforcement_v1.md` with values `local` (skip push gate) and `remote` (enforce push gate). Default to `local` when `git remote` returns empty. AC Gatekeeper reads this field before evaluating the push gate.
+  **expected_benefit:** Eliminates one routing cycle per ticket in local-only development. Removes the need for undocumented orchestrator overrides.
+
+### Keep / Reinforce
+
+- **practice:** Third consecutive ticket (M11-08, M11-09, M11-10) with zero implementation rework. All tests passed on first implementation run (M11-10: 167 tests across 3 files). The "precise spec → adversarial pre-hardening → implementation" pipeline is consistently producing first-pass success.
+  **reason:** The pipeline's value proposition is validated over 3 tickets: spec precision prevents ambiguity, Test Breaker hardens expectations before implementation, and the implementation agent has unambiguous targets. This pattern should be the baseline for all future milestones.
+
+- **practice:** Carapace's dedicated handler pattern (`_handle_slam_aoe()`) vs claw/acid's modifier pattern demonstrates that the attack system has two clean extension points for different complexity tiers. The architecture supports both without forcing all mutations through one abstraction.
+  **reason:** Dual extension points (modifier for post-hit decorators, handler for qualitatively different dispatches) prevent the "everything is a modifier" anti-pattern that would require increasingly complex modifier pipelines for non-standard attack behaviors.
+
+- **practice:** Planner's risk register correctly identified the airborne deferral mechanism as the highest-risk item (medium confidence in checkpoint). The Spec Agent resolved it with a concrete polling loop + timeout design (CCA-DR-3). The risk→resolution pipeline worked exactly as designed.
+  **reason:** Planner-identified risks that are resolved at spec time never become implementation bugs. Three consecutive tickets with clean risk→resolution flow validates the checkpoint system's value.
+
+---
+

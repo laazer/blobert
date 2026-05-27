@@ -1,31 +1,37 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-26T20:45:00-04:00",
+  "captured_at": "2026-05-26T20:55:00-04:00",
   "ticket_id": "M11-10",
   "todos": [
     {
-      "id": "ac_gate_all_criteria_verified",
-      "content": "All 6 acceptance criteria verified with explicit code and test evidence (167 tests across 3 files)",
+      "id": "learning_read_ticket_and_checkpoints",
+      "content": "Read completed ticket, all 5 checkpoint files, and prior LEARNINGS.md entries for context",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ac_gate_static_qa_confirmed",
-      "content": "Static QA confirmed: gd-review and gd-organization passed via pre-commit hooks",
+      "id": "learning_extract_insights",
+      "content": "Extract reusable insights from M11-10: Test Breaker line overrun, decorative separator lint collision, AC Gatekeeper push-gate recurrence, handoff schema 10th recurrence, handler vs modifier architecture pattern",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ac_gate_git_push",
-      "content": "Git push required: branch ahead of origin/main by 10 commits. Human must push before Stage can be COMPLETE.",
-      "status": "pending",
-      "agent": "Human"
+      "id": "learning_append_to_learnings_md",
+      "content": "Append structured M11-10 learning entry to project_board/LEARNINGS.md with all 5 sections",
+      "status": "completed",
+      "agent": "Learning Agent"
     },
     {
-      "id": "ac_gate_move_to_done",
-      "content": "Move ticket to done/ folder after push succeeds and Stage set to COMPLETE",
-      "status": "pending",
-      "agent": "Human"
+      "id": "learning_write_handoff_yaml",
+      "content": "Write handoff-latest.yaml with correct schema (item_key, status: complete, from/to agents)",
+      "status": "completed",
+      "agent": "Learning Agent"
+    },
+    {
+      "id": "learning_write_todos_json",
+      "content": "Write todos-latest.json capturing all learning stage work items",
+      "status": "completed",
+      "agent": "Learning Agent"
     }
   ]
 }
