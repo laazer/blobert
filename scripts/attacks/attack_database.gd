@@ -21,6 +21,13 @@ const CARAPACE_KNOCKBACK := 5.0
 const CARAPACE_STARTUP_FRAMES := 12
 const CARAPACE_VFX_SCALE := 1.5
 
+const ADHESION_ATTACK_ID := 4
+const ADHESION_DAMAGE := 1.0
+const ADHESION_COOLDOWN := 2.5
+const ADHESION_PROJECTILE_SPEED := 8.0
+const ADHESION_PROJECTILE_LIFETIME := 1.25
+const ADHESION_ROOT_DURATION := 1.0
+
 var _base_attacks: Dictionary = {}
 var _fused_attacks: Dictionary = {}
 
@@ -79,6 +86,24 @@ func _register_defaults() -> void:
 	carapace.vfx_scale = CARAPACE_VFX_SCALE
 	carapace.modifiers = {}
 	register_base_attack("carapace", carapace)
+
+	var adhesion := AttackResource.new()
+	adhesion.attack_id = ADHESION_ATTACK_ID
+	adhesion.attack_name = "Sticky Spit"
+	adhesion.description = "Sticky projectile that roots the first enemy hit, stopping all movement for 1.0s."
+	adhesion.effect_type = "PROJECTILE_SPIT"
+	adhesion.damage = ADHESION_DAMAGE
+	adhesion.cooldown = ADHESION_COOLDOWN
+	adhesion.attack_range = 0.0
+	adhesion.startup_frames = 0
+	adhesion.knockback_magnitude = 0.0
+	adhesion.knockback_direction = "none"
+	adhesion.projectile_speed = ADHESION_PROJECTILE_SPEED
+	adhesion.projectile_lifetime = ADHESION_PROJECTILE_LIFETIME
+	adhesion.color = Color.DARK_GOLDENROD
+	adhesion.vfx_scale = 1.0
+	adhesion.modifiers = {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION}
+	register_base_attack("adhesion", adhesion)
 
 
 func register_base_attack(mutation_id: String, resource: AttackResource) -> void:

@@ -531,7 +531,7 @@ func test_vdk3i_bare_target_no_crash() -> void:
 	root.add_child(bare)
 	bare.global_position = Vector3(2.0, 0.0, 0.0)
 	proj._on_body_entered(bare)
-	_assert_false(proj._consumed, "VDK-3i_consumed_stays_false")
+	_assert_true(proj._consumed, "VDK-3i_consumed_on_wall")
 	_pass_test("VDK-3i_no_crash")
 	_free_root(root)
 

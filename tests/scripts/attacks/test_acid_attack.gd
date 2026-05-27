@@ -595,13 +595,15 @@ func test_ec9_refresh_resets_tick_timer() -> void:
 	_assert_eq_float(3.0, tracker._active_dots["acid"]["remaining_duration"], "EC-9_dur_refreshed")
 	tracker.free()
 
-func test_ec12_projectile_no_take_damage_no_consume() -> void:
+func test_ec12_projectile_no_take_damage_despawns_on_wall() -> void:
 	var ps = _make_projectile_in_tree({})
 	var bare = Node3D.new()
 	ps["projectile"]._on_body_entered(bare)
-	_assert_false(ps["projectile"]._consumed, "EC-12_not_consumed")
+	_assert_true(ps["projectile"]._consumed, "EC-12_consumed_on_wall")
 	bare.free()
-	(ps["root"] as Node).free()
+	var root = ps["root"] as Node
+	if is_instance_valid(root):
+		root.free()
 
 func test_ec14_zero_dps_no_crash() -> void:
 	var tracker = EnemyEffectTracker.new()
@@ -661,7 +663,7 @@ func run_all() -> int:
 
 	test_ec6_no_apply_acid_skipped()
 	test_ec9_refresh_resets_tick_timer()
-	test_ec12_projectile_no_take_damage_no_consume()
+	test_ec12_projectile_no_take_damage_despawns_on_wall()
 	test_ec14_zero_dps_no_crash()
 	test_ec15_negative_duration_no_dot()
 

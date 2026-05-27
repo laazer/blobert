@@ -121,8 +121,8 @@ func _apply_modifiers(target: Node3D, modifiers: Dictionary, pre_damage_state: i
 				acid_dur *= 2.0
 			target.apply_acid(acid_dur, acid_dps_val)
 
-	var slow_val = modifiers.get("slow", 0.0)
-	if slow_val and slow_val > 0.0:
+	var slow_val = modifiers.get("slow", null)
+	if slow_val != null:
 		if target.has_method("apply_slowness"):
 			target.apply_slowness(slow_val, modifiers.get("slow_duration", DEFAULT_SLOW_DURATION))
 

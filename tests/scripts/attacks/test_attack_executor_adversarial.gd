@@ -473,7 +473,7 @@ func test_adv10_slow_zero_value() -> void:
 		return
 	var enemy := MockEnemy.new()
 	executor._apply_modifiers(enemy, {"slow": 0.0})
-	_assert_eq_int(0, enemy.slow_calls.size(), "ADV-10_no_slow_on_zero")
+	_assert_eq_int(1, enemy.slow_calls.size(), "ADV-10_slow_zero_applied")
 	enemy.free()
 	executor.free()
 
@@ -484,7 +484,7 @@ func test_adv10_slow_negative_value() -> void:
 		return
 	var enemy := MockEnemy.new()
 	executor._apply_modifiers(enemy, {"slow": -1.0})
-	_assert_eq_int(0, enemy.slow_calls.size(), "ADV-10_no_slow_on_negative")
+	_assert_eq_int(1, enemy.slow_calls.size(), "ADV-10_negative_slow_dispatched")
 	enemy.free()
 	executor.free()
 

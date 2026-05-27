@@ -433,14 +433,16 @@ func test_adv_projectile_consumed_set_before_body_entered() -> void:
 	(ps["root"] as Node).free()
 
 
-func test_adv_projectile_bare_target_no_consume() -> void:
-	## body without take_damage → projectile not consumed.
+func test_adv_projectile_bare_target_consumed_on_wall() -> void:
+	## body without take_damage → projectile consumed (wall collision despawn, ADHA-5).
 	var ps = _make_projectile_in_tree({"acid_on_hit": true, "acid_duration": 3.0, "acid_dps": 1.0})
 	var bare = Node3D.new()
 	ps["projectile"]._on_body_entered(bare)
-	_assert_false(ps["projectile"]._consumed, "ADV_bare_not_consumed")
+	_assert_true(ps["projectile"]._consumed, "ADV_bare_consumed_on_wall")
 	bare.free()
-	(ps["root"] as Node).free()
+	var root = ps["root"] as Node
+	if is_instance_valid(root):
+		root.free()
 
 
 func test_adv_projectile_no_apply_acid_skipped_silently() -> void:
@@ -784,7 +786,7 @@ func run_all() -> int:
 
 	test_adv_projectile_second_body_after_consumed()
 	test_adv_projectile_consumed_set_before_body_entered()
-	test_adv_projectile_bare_target_no_consume()
+	test_adv_projectile_bare_target_consumed_on_wall()
 	test_adv_projectile_no_apply_acid_skipped_silently()
 
 	test_adv_refresh_dps_change_last_write_wins()

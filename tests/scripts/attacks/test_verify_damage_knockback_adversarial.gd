@@ -512,7 +512,7 @@ func test_adv_mf05_slow_zero_not_applied() -> void:
 	root.add_child(enemy)
 	enemy.global_position = Vector3(1.0, 0.0, 0.0)
 	proj._on_body_entered(enemy)
-	_assert_eq_int(0, enemy.slow_calls.size(), "ADV-MF05_zero_slow_not_applied")
+	_assert_eq_int(1, enemy.slow_calls.size(), "ADV-MF05_zero_slow_applied")
 	_free_root(root)
 
 
