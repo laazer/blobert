@@ -6,16 +6,19 @@ Integrate new enemy/player models into shipping game paths
 
 | Field | Value |
 |---|---|
-| Stage | BLOCKED |
-| Revision | 1 |
+| Stage | BACKLOG |
+| Status | Backlog |
+| Revision | 3 |
 | Last Updated By | Human |
 | Next Responsible Agent | Planner Agent |
-| Validation Status | Blocked — waiting on M9 and M10 exit criteria (M9 = visuals, M10 = procedural wiring) |
+| Validation Status | Backlog — M10 follow-up; blocked on M9 mesh/material audit exit (ticket 02) |
 
 ---
 
 Description:
 Wire the reviewed and procedurally placed enemy models (and any player mesh/material updates from the asset pipeline) into default run entry points, main scenes, and build/export assumptions so “play the game” always uses the new art — not legacy placeholders or editor-only paths.
+
+**Milestone:** M10 follow-up (moved from M11 combat scope). Extends the original M10 wiring with current registry exports and player visuals once M9 audit completes.
 
 Acceptance Criteria:
 - New enemy scenes used in procedural run assembly match M10 deliverables; no duplicate legacy-only enemy paths in the default run.
@@ -26,7 +29,9 @@ Acceptance Criteria:
 ---
 
 Blocking issues:
-- **M9** — Enemy & Player Model Review / Materials: exit criteria not met (or explicitly waived with owner sign-off).
-- **M10** — Procedural Enemies in Level & Attack Loop: exit criteria not met.
+- **M9** — `in_progress/02_mesh_and_material_audit_enemy_families_and_player.md` and any open material/color fixes from that audit must complete (or be explicitly waived with owner sign-off) before promoting this ticket to `ready/`.
 
-Unblock when both milestones above are complete or the scope of this ticket is revised by explicit ticket update.
+Unblock when M9 audit exit criteria are met.
+
+## NEXT ACTION
+- Planner: confirm integration choke points (`RunSceneAssembler`, `player_3d`, registry active paths) and move to `ready/` when M9 ticket 02 completes.

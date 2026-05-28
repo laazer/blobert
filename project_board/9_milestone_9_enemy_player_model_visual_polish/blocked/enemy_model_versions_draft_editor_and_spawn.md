@@ -8,14 +8,14 @@ Enemy model versions, draft lifecycle, editor load rules, and spawn-time randomi
 |---|---|
 | Stage | BLOCKED |
 | Status | Blocked |
-| Revision | 2 |
-| Last Updated By | Planner Agent |
+| Revision | 4 |
+| Last Updated By | Human |
 | Next Responsible Agent | Human |
 
 ---
 
 Description:
-**Umbrella ticket.** Detailed work is tracked in `project_board/9_milestone_9_enemy_player_model_visual_polish/backlog/` as **`01_spec_model_registry_draft_versions_and_editor_contract.md`** through **`09_automated_tests_registry_allowlist_delete.md`**. Close this ticket when those acceptance themes are satisfied end-to-end (or explicitly waive with owner sign-off).
+**Umbrella ticket (M9).** Detailed implementation work is tracked in `project_board/9_milestone_9_enemy_player_model_visual_polish/` as **`01_spec_model_registry_draft_versions_and_editor_contract.md`** through **`09_automated_tests_registry_allowlist_delete.md`**. Close this ticket when those acceptance themes are satisfied end-to-end **and** default-run/player wiring in M10 (`project_board/done/10_milestone_10_procedural_enemies_in_level/backlog/integrate_new_models_into_game.md`) is complete (or explicitly waived with owner sign-off).
 
 Original scope summary:
 
@@ -48,18 +48,19 @@ Acceptance Criteria:
 - `timeout 300 ci/scripts/run_tests.sh` passes (Godot + Python suites as applicable).
 
 ## Execution plan
-1. Complete backlog ticket `02_mesh_and_material_audit_enemy_families_and_player.md`.
-2. Re-run full `timeout 300 ci/scripts/run_tests.sh`.
-3. Verify umbrella acceptance criteria against `done/` tickets `01`, `03`–`09` and ticket `02` when complete.
+1. Complete `in_progress/02_mesh_and_material_audit_enemy_families_and_player.md`.
+2. Complete M10 follow-up `integrate_new_models_into_game.md` (default run + player wiring).
+3. Re-run full `timeout 300 ci/scripts/run_tests.sh`.
+4. Verify umbrella acceptance criteria against `done/` tickets `01`, `03`–`09`, completed **02**, and **integrate_new_models_into_game.md**.
 
 ---
 
 Blocking issues:
-- **Ticket 02 (gating)** — `02_mesh_and_material_audit_enemy_families_and_player.md` remains in `backlog/`; complete before this umbrella leaves BLOCKED. Child tickets `01` and `03`–`09` are in `done/`.
-- **M10** — procedural spawn path should be stable enough to hang version selection off a single choke point (soft dependency; can stub in sandbox first if ticket is split).
+- **Ticket 02 (gating)** — `02_mesh_and_material_audit_enemy_families_and_player.md` is `in_progress/`; complete before this umbrella leaves BLOCKED. Child tickets `01` and `03`–`09` are in `done/`.
+- **M10 integration** — `integrate_new_models_into_game.md` must land default-run/player paths before umbrella close.
 - **M21** — 3D Model Quick Editor surfaces must exist or be extended for load/browse/delete; coordinate to avoid duplicate file browsers.
 
-Unblock when ticket **02** and remaining blocking issues are resolved; then verify acceptance against `done/` tickets `01`, `03`–`09` plus completed **02**.
+Unblock when ticket **02**, **integrate_new_models_into_game.md**, and remaining blocking issues are resolved; then verify acceptance against `done/` tickets `01`, `03`–`09` plus completed **02**.
 
 ## NEXT ACTION
-- Finish `02_mesh_and_material_audit_enemy_families_and_player.md`, run `timeout 300 ci/scripts/run_tests.sh`, and verify umbrella acceptance criteria against all child tickets when **02** is done.
+- Finish `02_mesh_and_material_audit_enemy_families_and_player.md`, complete M10 `integrate_new_models_into_game.md`, run `timeout 300 ci/scripts/run_tests.sh`, and verify umbrella acceptance when both are done.
