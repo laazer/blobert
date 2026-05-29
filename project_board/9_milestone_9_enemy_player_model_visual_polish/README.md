@@ -8,7 +8,7 @@
 - Fix or regenerate materials so base colors, infection/mutation accents, and family identity are consistent — including procedural/color-generation paths in Blender/Python (`asset_generation`) where colors are wrong or washed out.
 - Align with M13 (Blobert Visual Identity) for player-side readability; avoid one-off shaders unless shared.
 - Document any families deferred to a follow-up ticket with a clear reason (blocked only when scoped).
-- **Versions / draft / editor / spawn:** decomposed into ordered backlog tickets `01`–`09` below. **Umbrella blocked ticket** (cross-cutting acceptance): `blocked/enemy_model_versions_draft_editor_and_spawn.md`. **Default-run/player wiring follow-up:** M10 `project_board/done/10_milestone_10_procedural_enemies_in_level/backlog/integrate_new_models_into_game.md`.
+- **Versions / draft / editor / spawn:** covered by tickets `01`–`09` in `done/` (spawn: `08_runtime_spawn_random_enemy_visual_variant.md`; registry contract: `project_board/specs/model_registry_draft_versions_spec.md`).
 - **Draft vs live on disk:** shipped GLBs stay under `animated_exports/`, `player_exports/`, `level_exports/` at the root; draft iterations use the `draft/` subfolder under each (see `project_board/specs/registry_draft_live_directory_layout_spec.md`). Optional: `.gitignore` `**/draft/**` under those roots if you do not want draft GLBs in commits.
 
 ## Backlog tickets (execution order)

@@ -16,10 +16,6 @@
 3. `backlog/03_procedural_enemy_attack_loop_runtime.md` — continuous attack loop using M8 plumbing.
 4. `backlog/04_headless_tests_procedural_combat_enemies.md` — automated checks for combat rooms + generated enemies.
 
-## Follow-up (post–M10 exit)
-
-- `backlog/integrate_new_models_into_game.md` — wire latest registry exports and player visuals into default run / `player_3d` (blocked on M9 audit ticket `02`).
-
 ## Dependencies
 
 - M5 (Procedural Enemy Generation) — game-ready enemy scenes and naming

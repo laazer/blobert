@@ -4,7 +4,7 @@ Title: Specification — model registry, draft flag, player active path, enemy v
 
 ## Description
 
-Author `project_board/specs/model_registry_draft_versions_spec.md` (name final in spec PR) that defines the **data contract** called out in `blocked/enemy_model_versions_draft_editor_and_spawn.md`:
+Author `project_board/specs/model_registry_draft_versions_spec.md` (name final in spec PR) that defines the **data contract** for M9 tickets `01`–`09` (draft versions, editor allowlist, spawn pool, deletion rules):
 
 - **Registry / manifest** format: per-enemy-type **version list** (paths or IDs), **draft** vs **in-use** flags, **single player active** visual path (replacement semantics).
 - **Canonical filesystem roots** for enemy exports and player/Blobert exports; explicit **denylist** of “misc” paths the editor must never offer.
