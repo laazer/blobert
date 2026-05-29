@@ -12,6 +12,8 @@
 #   Additional: order stress, cooldown decay, combinatorial invalid sequence.
 #
 
+class_name FusedComboMatrixAdversarialTests
+
 extends "res://tests/utils/test_utils.gd"
 
 var _pass_count: int = 0
@@ -134,10 +136,8 @@ func test_ec1_self_fusion_player_dispatch_falls_back_to_base() -> void:
 	if executor != null and executor.has_signal("attack_started"):
 		executor.connect("attack_started", func(r): fired[0] = r)
 	controller.call("_try_attack")
-	# CHECKPOINT: FADI-EC-1 — self-fusion not registered → fallback to slot A's base.
-	# Assumption: get_fused_attack returns null for same-ID pair → else branch fires base.
-	# Confidence: High — code lines 467-474 confirm path.
-	_assert_true(fired[0] == base_res, label + "_base_fires")  # CHECKPOINT
+	# self-fusion not registered → _try_attack falls back to slot A's base attack
+	_assert_true(fired[0] == base_res, label + "_base_fires")
 	_free_adv_pipeline(pipeline)
 
 
@@ -264,10 +264,7 @@ func test_ec3_fused_fire_does_not_set_individual_slot_cooldowns() -> void:
 
 func test_ec3_individual_cooldown_active_does_not_block_fused_fire() -> void:
 	# FADI-EC-3: Individual slot cds active + composite at 0 → fused still fires.
-	# CHECKPOINT: FADI-EC-3 states individual and composite cooldowns are independent.
-	# Assumption: gate at _try_attack line 479 reads only the resolved cooldown_key
-	# (composite for fused path). Individual slot keys do not gate fused.
-	# Confidence: High — code at lines 467-479 confirms composite key is the gate.
+	# Individual and composite cooldowns are independent; individual cds do not gate fused path.
 	var label := "FADI-EC-3_individual_cd_no_block_fused"
 	var db = _get_autoload_db()
 	if db == null:
