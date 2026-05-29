@@ -1,21 +1,17 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-01
-  from_agent: Test Designer Agent
-  to_agent: Test Breaker Agent
-  validated_at: "2026-05-28T00:00:00Z"
-  required_items_met: 3
-  total_required_items: 3
+  from_agent: Test Breaker Agent
+  to_agent: Gameplay Systems Agent
+  validated_at: "2026-05-29T00:00:00Z"
+  required_items_met: 2
+  total_required_items: 2
   checklist:
-    - item_key: test_suite_complete
-      item: "Test suite complete per spec test plan"
+    - item_key: breaker_gaps_documented
+      item: "All discovered gaps documented"
       status: complete
-      evidence: "tests/scripts/attacks/test_fused_combo_matrix.gd — 18 test methods (36 assertions): 6 forward-lookup, 6 reverse-lookup, 6 player-dispatch. All pass: godot --headless -s tests/run_tests.gd → === ALL TESTS PASSED ==="
-    - item_key: test_coverage_threshold
-      item: "Coverage threshold met (>80% proxy)"
+      evidence: tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd
+    - item_key: breaker_impl_notes
+      item: "Implementation notes created"
       status: complete
-      evidence: "18 of 18 required test cases implemented per spec Section 7. All 6 canonical combos exercised in all 3 required test categories (FADI-6-Na, FADI-6-Nb, FADI-6-Nc). Dispatch tests each carry 4 assertions covering: fused resource fired, composite cooldown set, slot A individual cooldown unset, slot B individual cooldown unset."
-    - item_key: test_all_runnable
-      item: "All tests runnable"
-      status: complete
-      evidence: "timeout 300 godot --headless -s tests/run_tests.gd exits 0. FusedComboMatrixTests: 36 passed, 0 failed. Full suite: === ALL TESTS PASSED ==="
+      evidence: "project_board/checkpoints/M12-01/2026-05-29T-test-break-run.md — Implementation notes section. Key finding: no code changes required; implementation already correct per spec. Fallback key asymmetry (FADI-DD-2) is intentional. Real .tres resources are M12-02 scope."

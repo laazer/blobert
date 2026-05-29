@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "captured_at": "2026-05-28T00:00:00Z",
+  "captured_at": "2026-05-29T00:00:00Z",
   "ticket_id": "M12-01",
   "todos": [
     {
@@ -170,6 +170,60 @@
       "content": "Update ticket: Stage=TEST_BREAK, Revision=3, Last Updated By=Test Designer Agent, Next Responsible Agent=Test Breaker Agent, Status=Proceed",
       "status": "completed",
       "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_breaker_read_workflow_enforcement",
+      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md before acting",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_read_spec_ticket_existing_tests",
+      "content": "Read spec, ticket, test_fused_combo_matrix.gd, test_attack_database_controller_adversarial.gd, test_attack_database_adversarial.gd, and implementation files",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_write_adversarial_tests",
+      "content": "Write tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd with 26 test functions (59 assertions): FADI-EC-1..EC-7, FADI-3b/3c/3d, FADI-5b/5c, FADI-7a, FADI-NF-1/NF-4/NF-5, FADI-1c, order stress, cooldown decay, combinatorial",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_run_full_suite",
+      "content": "Run timeout 300 godot --headless -s tests/run_tests.gd and verify exit 0",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_write_checkpoint_log",
+      "content": "Write checkpoint log to project_board/checkpoints/M12-01/2026-05-29T-test-break-run.md with 2 assumptions logged",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_write_handoff_yaml",
+      "content": "Write project_board/checkpoints/M12-01/handoff-latest.yaml with test_breaker→implementation checklist",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_write_todos_json",
+      "content": "Write project_board/checkpoints/M12-01/todos-latest.json with all test-break tasks completed",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_update_checkpoints_index",
+      "content": "Add test-break run entry to project_board/CHECKPOINTS.md",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "test_breaker_update_ticket",
+      "content": "Update ticket: Stage=IMPLEMENTATION_GAMEPLAY, Revision=4, Last Updated By=Test Breaker Agent, Next Responsible Agent=Gameplay Systems Agent, Status=Proceed",
+      "status": "completed",
+      "agent": "Test Breaker Agent"
     }
   ]
 }

@@ -61,6 +61,10 @@ Spec: `project_board/specs/fused_attack_database_integration_spec.md`
 18 test methods (36 assertions) in `tests/scripts/attacks/test_fused_combo_matrix.gd`. All 6 combos covered in forward-lookup, reverse-lookup, and player-dispatch categories. Full suite: === ALL TESTS PASSED ===. Key finding: composite cooldown key must be computed by sorting namespaced IDs, not prepending namespace to pre-sorted canonical key. Stage → TEST_BREAK; handoff to Test Breaker Agent.
 Log: `project_board/checkpoints/M12-01/2026-05-28T-test-design-run.md`
 
+### [M12-01] — OUTCOME: TEST_BREAK COMPLETE
+26 adversarial test functions (59 assertions) in `tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd`. All 7 FADI-EC edge cases covered plus FADI-3b/3c/3d, FADI-5b/5c, FADI-7a, NF-1/NF-4/NF-5, last-write-wins, order stress, cooldown decay, combinatorial. Key finding: no implementation gaps — existing code is fully correct per spec. Full suite: === ALL TESTS PASSED ===. Stage → IMPLEMENTATION_GAMEPLAY; handoff to Gameplay Systems Agent.
+Log: `project_board/checkpoints/M12-01/2026-05-29T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-26T-m11-10-autopilot (M11 Carapace Player Attack)
