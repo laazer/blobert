@@ -4,86 +4,44 @@
   "ticket_id": "M12-02",
   "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/done/02_fused_attack_resources.md",
   "stage": "COMPLETE",
-  "run_id": "2026-05-29T-ac-gatekeeper-run",
-  "agent": "Acceptance Criteria Gatekeeper Agent",
+  "run_id": "2026-05-29T-learning-run",
+  "agent": "Learning Agent",
   "todos": [
     {
-      "id": "ACG-1",
-      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md",
+      "id": "LRN-1",
+      "content": "Read agent_context/agents/9_learning/learning_v1.md role definition",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ACG-2",
-      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md fully",
+      "id": "LRN-2",
+      "content": "Read completed ticket at project_board/12_milestone_12_fused_mutation_attacks/done/02_fused_attack_resources.md",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ACG-3",
-      "content": "Read spec at project_board/specs/fused_attack_resources_spec.md to understand full AC requirements",
+      "id": "LRN-3",
+      "content": "Read all checkpoint files under project_board/checkpoints/M12-02/",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ACG-4",
-      "content": "Read handoff-latest.yaml and todos-latest.json for prior agent state",
+      "id": "LRN-4",
+      "content": "Extract root causes from: pre-commit staged-file gap, gd-organization 180-line limit, frozen test constant divergence, out-of-range ticket example stats, todos field schema mismatch",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ACG-5",
-      "content": "Read static QA fix run checkpoint (2026-05-29T-static-qa-fix-run.md) for test evidence",
+      "id": "LRN-5",
+      "content": "Append M12-02 entry to project_board/LEARNINGS.md with Learnings, Anti-Patterns, Prompt Patches, Workflow Improvements, and Keep/Reinforce sections",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "ACG-6",
-      "content": "Verify implementation files exist: scripts/attacks/attack_database.gd register_fused_attack calls and named constants",
+      "id": "LRN-6",
+      "content": "Write project_board/checkpoints/M12-02/todos-latest.json with schema_version 1.0, captured_at 2026-05-29T00:00:00Z, all learning tasks completed",
       "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-7",
-      "content": "Verify test files exist: test_fused_attack_resources.gd, test_fused_attack_stats.gd, test_fused_attack_resources_adversarial.gd",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-8",
-      "content": "Build evidence matrix mapping each of 7 AC items to concrete test/static QA evidence",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-9",
-      "content": "Write AC Gatekeeper checkpoint log at project_board/checkpoints/M12-02/2026-05-29T-ac-gatekeeper-run.md",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-10",
-      "content": "Update ticket WORKFLOW STATE and NEXT ACTION: Stage COMPLETE, Revision 6, Last Updated By Acceptance Criteria Gatekeeper Agent",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-11",
-      "content": "Move ticket from backlog/ to done/ via git mv",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-12",
-      "content": "Update todos-latest.json for AC Gatekeeper run",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
-    },
-    {
-      "id": "ACG-13",
-      "content": "Add index entry to project_board/CHECKPOINTS.md for AC Gatekeeper run outcome",
-      "status": "completed",
-      "agent": "Acceptance Criteria Gatekeeper Agent"
+      "agent": "Learning Agent"
     }
   ]
 }

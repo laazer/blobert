@@ -1,25 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-02
-  from_agent: Implementation Agent
-  to_agent: Static QA
+  from_agent: Learning Agent
+  to_agent: Acceptance Criteria Gatekeeper Agent
   validated_at: "2026-05-29T00:00:00Z"
-  required_items_met: 4
-  total_required_items: 4
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: impl_ac_complete
-      item: "All acceptance criteria implemented"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "FAR-1: 40 named constants declared at class scope (6 combos x ~7 properties each); FAR-2: 6 register_fused_attack() calls in _register_defaults() after all 4 base attacks; FAR-3: IDs 101-106 assigned per DR-3 mapping (acid_claw=101, adhesion_claw=102, carapace_claw=103, acid_adhesion=104, acid_carapace=105, adhesion_carapace=106); FAR-4: all stat values match spec Section 4 exactly; FAR-5: get_fused_attack_count() returns 6 after _register_defaults(); FAR-6: bidirectional lookup guaranteed by _make_fused_key() alphabetical sort; FAR-7: fused attacks differ from base components in effect_type, damage, and/or modifiers as specified"
-    - item_key: impl_tests_passing
-      item: "All tests passing"
+      evidence: project_board/LEARNINGS.md
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "Implementation matches frozen spec Section 4 values verbatim. slow:0.0 falsy-zero pattern correct for adhesion_claw, acid_adhesion, adhesion_carapace. startup_frames=8 for carapace_claw, startup_frames=12 for acid_carapace and adhesion_carapace. All modifier dict sizes match FAR-EC-2 requirements (3,2,1,5,3,2). Test suite exit verified by orchestrator/CI via timeout 300 godot --headless -s tests/run_tests.gd"
-    - item_key: impl_linter_clean
-      item: "No linter violations"
+      evidence: "Root causes for: pre-commit hook catching unstaged Color literals, gd-organization 180-line limit requiring _register_fused_defaults() extraction, frozen test constants silent divergence pattern, todos format (content vs description field)."
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md
-    - item_key: impl_checkpoint_logged
-      item: "Checkpoint logged"
-      status: complete
-      evidence: project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md
+      evidence: "All checkpoint files for M12-02 reviewed. LEARNINGS.md appended. todos-latest.json updated with all learning tasks completed."

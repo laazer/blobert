@@ -8181,3 +8181,86 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M12-02] — Frozen test constants silently diverge; staged-file hook gap; org-limit guard; todos field schema
+*Completed: 2026-05-29*
+
+### Learnings
+
+- **category:** testing
+  **insight:** Test files that copy base-stat values as compile-time constants (`const _BASE_CLAW_DAMAGE := 3.0`) silently diverge from the source of truth when the implementation is rebalanced. The only safe pattern for relational assertions ("fused damage > base damage") is a live runtime lookup against the same database instance used by the test setup.
+  **impact:** Static QA required a dedicated fix iteration to replace 11 frozen constants with live `db.get_base_attack()` calls. The constants were factually correct at write time but created a latent rebalancing trap.
+  **prevention:** Test Designer must never copy numeric values from implementation constants for relational comparisons. The rule: if the assertion is "A > B", B must be read from the same live source as A, not a frozen literal.
+  **severity:** medium
+
+- **category:** infra
+  **insight:** The pre-commit hook scans the staged version of a file, not the working tree. An agent that writes a named constant to fix a linter finding but does not stage the edit will see the hook re-trigger on the unedited staged snapshot, making the fix appear to have no effect.
+  **impact:** One wasted hook iteration caused by the agent applying a fix to disk without re-staging. Root cause: agents cannot run `git add` on their own edits — staging is an orchestrator responsibility.
+  **prevention:** After any implementation fix that resolves a hook finding, the orchestrator must explicitly stage the changed files before re-running the hook. Add to orchestrator runbook: "After each implementation fix, run `git add <file>` before re-invoking the hook."
+  **severity:** medium
+
+- **category:** architecture
+  **insight:** The `gd-organization` 180-line method limit is a useful automatic guard against monolithic registration blocks. Adding 6 fused attacks (~20 lines each) inline in `_register_defaults()` guaranteed a linter violation; the correct fix was extracting `_register_fused_defaults()`. The linter enforced the right design.
+  **impact:** One extraction refactor was required during implementation. It was caught automatically rather than discovered in code review.
+  **prevention:** When an implementation adds N repetitive blocks to an existing method, pre-calculate the resulting line count before writing. If `current_length + (N * block_size) > 180`, plan the extraction upfront rather than discovering it post-write.
+  **severity:** low
+
+- **category:** process
+  **insight:** Ticket example values were out of range by 15–25x (knockback 120.0 vs live max 5.0; projectile_speed 200.0 vs live value 8.0). The Planner correctly flagged these as invalid before the Spec Agent froze stats, preventing the entire downstream pipeline from working against bogus balance numbers.
+  **impact:** Zero rework downstream — the correct stat ranges were frozen at spec time. If the Planner had passed the example values through, Implementation and Test Designer would both have built on wrong values requiring a full rework cycle.
+  **prevention:** The Planner should always cross-check ticket example numeric values against the live source constants before advancing to spec. When a ticket example value differs from the observed live range by more than 2x, flag it as a CP assumption rather than treating it as authoritative.
+  **severity:** medium
+
+- **category:** process
+  **insight:** `todos-latest.json` requires `content` (not `description`) and `captured_at` (not `timestamp`) as field names. Agents writing the wrong field names produce a structurally valid JSON file that silently fails the gate schema check.
+  **impact:** Multiple gate failures in prior tickets traced to this field-name mismatch. The schema is defined but not enforced programmatically at write time.
+  **prevention:** Add to every agent prompt that writes `todos-latest.json`: "Required fields for each todo item are `id`, `content`, `status`, and `agent`. The top-level envelope requires `schema_version`, `captured_at`, and `ticket_id`. Do not use `description` or `timestamp` — these field names are incorrect and will fail gate validation."
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Test Designer copies numeric constants from the implementation source into the test file as frozen literals for relational assertions. These values are correct at write time but create a maintenance trap: if the implementation is rebalanced, the test continues to pass against stale numbers while the assertion intent is violated.
+  **detection_signal:** Static QA or code review finds a `const _BASE_<FOO> := <number>` block in a test file that mirrors a constant in the implementation.
+  **prevention:** Relational assertions must read both sides from the same live runtime source. Frozen test constants are only safe for absolute invariants (e.g., "attack_id must be 101"), never for comparisons derived from another module's values.
+
+- **description:** Agent writes a fix to disk to resolve a pre-commit hook finding but the orchestrator does not re-stage before re-running the hook, making the fix invisible to the staged-file scanner.
+  **detection_signal:** Pre-commit hook re-fires the same finding on a file that was visually edited. `git diff --staged` shows the pre-fix content while `git diff` shows the post-fix content.
+  **prevention:** Orchestrator must run `git add <file>` after each agent fix before re-invoking hooks. Never assume that writing to disk is sufficient for staged-file hooks.
+
+- **description:** Ticket example stats are treated as authoritative design values by downstream agents, even when they are copy-paste artifacts from a different game's scale (e.g., knockback 120 in a system where max is 5).
+  **detection_signal:** Any example stat that differs from live system constants by more than 2x.
+  **prevention:** Planner must always verify ticket example values against live codebase constants before the spec is written. Flag as CP assumption and correct before Spec Agent freezes values.
+
+### Prompt Patches
+
+- **agent: Test Designer Agent**
+  **change:** "Never copy numeric values from implementation source files as frozen `const` literals in test files for relational comparisons (e.g., 'fused damage > base damage'). Read the comparison baseline from the same live runtime source as the value under test. Frozen test constants are only acceptable for absolute invariants (fixed IDs, enum values, exact required strings)."
+  **reason:** M12-02's test file contained 11 frozen base-stat constants that exactly mirrored implementation constants. These create a silent divergence trap when the implementation is rebalanced. Static QA required a dedicated fix iteration to replace them with live DB lookups.
+
+- **agent: Planner Agent**
+  **change:** "Before advancing to spec, cross-check all numeric example values in the ticket against the live codebase constants for that system. If any example value differs from the observed live range by more than 2x, record a CP assumption flagging the value as out-of-range and instruct the Spec Agent to derive correct values from the live source rather than the ticket examples."
+  **reason:** M12-02's ticket contained knockback 120.0 (live max 5.0) and projectile_speed 200.0 (live value 8.0). The Planner caught these before spec, preventing full-pipeline rework. Making this explicit in the prompt ensures the check is always performed, not just when the discrepancy is obvious.
+
+- **agent: All agents writing todos-latest.json**
+  **change:** "When writing `todos-latest.json`, the required top-level fields are: `schema_version`, `captured_at`, `ticket_id`, `ticket_path`, `stage`, `run_id`, `agent`, and `todos`. Each item in `todos` must have exactly: `id`, `content`, `status`, and `agent`. Do NOT use `description` (wrong — use `content`) or `timestamp` (wrong — use `captured_at`). These field names are part of the schema contract and will fail gate validation if wrong."
+  **reason:** Multiple consecutive tickets produced gate failures from `description` used in place of `content` and `timestamp` used in place of `captured_at`. The correct names are not intuitive and must be stated explicitly in the prompt.
+
+### Workflow Improvements
+
+- **issue:** Staged-file hook and agent edit cycle has no explicit "re-stage after fix" step in the orchestrator runbook. When an agent produces a fix, the orchestrator re-runs the hook without staging, which re-fires the same finding.
+  **improvement:** Add an explicit step to the orchestrator's hook-retry procedure: after receiving a fix from an implementation agent, run `git add <changed-files>` before re-invoking the hook. Document this as a required step in the hook retry loop, not optional cleanup.
+  **expected_benefit:** Eliminates a class of spurious re-runs where the fix is correct but invisible to the staged-file scanner. Currently costs one extra agent round-trip per occurrence.
+
+- **issue:** No automatic pre-calculation of method line count before adding repetitive blocks in implementation. The `gd-organization` 180-line limit is discovered post-write rather than planned for.
+  **improvement:** Add to Implementation Agent prompt: "Before adding N blocks of similar code to an existing method, count the current method length and estimate the post-addition length. If the post-addition length exceeds 180 lines, plan the extraction refactor as part of the implementation — do not write the overlong version first."
+  **expected_benefit:** Eliminates one extraction refactor iteration per ticket that adds bulk registration blocks to an existing method. The pattern (add N combos to `_register_defaults()`) will repeat in future milestone tickets.
+
+### Keep / Reinforce
+
+- **practice:** Planner flagged out-of-range ticket example stats as a CP assumption and explicitly instructed the Spec Agent not to use them verbatim. The Spec Agent then derived all 6 stat blocks from observed live constants, producing a valid frozen spec. Zero stat-related rework occurred downstream.
+  **reason:** The planner's defensive stat-range check prevented 2–3 agent iterations of rework that would have been required if the bogus values had propagated to test assertions and implementation. This is the correct use of CP assumptions: flag wrong inputs before they propagate.
+
+- **practice:** `gd-organization` org-limit enforcement automatically caught the need for `_register_fused_defaults()` extraction. The fix was clean and required no human judgment — the linter gave an unambiguous signal.
+  **reason:** Automated structural constraints (method length limits) act as a design guide, not just a style check. When a linter rejects a method as too long, it is enforcing a decomposition discipline that keeps implementation readable. This pattern is working as intended and should be kept.
+
+---
+
