@@ -69,6 +69,11 @@ Log: `project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md`
 6 fused attack registration blocks added to scripts/attacks/attack_database.gd. 40 named constants declared (6 combos x ~7 numeric properties). All stat values from frozen spec Section 4. slow:0.0 falsy-zero root pattern for 3 combos. SLAM_AOE startup_frames: carapace_claw=8, acid_carapace=12, adhesion_carapace=12. All 10 attack IDs globally unique. Stage → STATIC_QA; handoff to Acceptance Criteria Gatekeeper Agent.
 Log: `project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md`
 
+### [M12-02] — OUTCOME: COMPLETE
+All 7 acceptance criteria verified with explicit automated test evidence: 237 tests (33 FusedAttackResourcesTests + 127 FusedAttackStatsTests + 77 FusedAttackResourcesAdversarialTests), 0 failures. Static QA (gd-review + gd-organization) passed. All 6 fused attacks registered via _register_fused_defaults() with IDs 101-106, named constants for all numeric values, slow:0.0 root pattern, SLAM_AOE startup_frames. Full suite === ALL TESTS PASSED === (commit 32aca87). Ticket moved to done/.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-ac-gatekeeper-run.md`
+Ticket: `project_board/12_milestone_12_fused_mutation_attacks/done/02_fused_attack_resources.md`
+
 ---
 
 ## Run: 2026-05-28T-m12-01-autopilot (M12 Fused Attack Database Integration)

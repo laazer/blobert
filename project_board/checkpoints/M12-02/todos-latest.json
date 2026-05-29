@@ -2,106 +2,88 @@
   "schema_version": "1.0",
   "captured_at": "2026-05-29T00:00:00Z",
   "ticket_id": "M12-02",
-  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
-  "stage": "STATIC_QA",
-  "run_id": "2026-05-29T-gameplay-systems-run",
-  "agent": "Gameplay Systems Agent",
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/done/02_fused_attack_resources.md",
+  "stage": "COMPLETE",
+  "run_id": "2026-05-29T-ac-gatekeeper-run",
+  "agent": "Acceptance Criteria Gatekeeper Agent",
   "todos": [
     {
-      "id": "GS-1",
+      "id": "ACG-1",
       "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-2",
-      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
+      "id": "ACG-2",
+      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md fully",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-3",
-      "content": "Read spec at project_board/specs/fused_attack_resources_spec.md fully before writing any code",
+      "id": "ACG-3",
+      "content": "Read spec at project_board/specs/fused_attack_resources_spec.md to understand full AC requirements",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-4",
-      "content": "Read scripts/attacks/attack_database.gd to understand existing pattern",
+      "id": "ACG-4",
+      "content": "Read handoff-latest.yaml and todos-latest.json for prior agent state",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-5",
-      "content": "Read all 3 test files to confirm expected stat values and edge cases",
+      "id": "ACG-5",
+      "content": "Read static QA fix run checkpoint (2026-05-29T-static-qa-fix-run.md) for test evidence",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-6",
-      "content": "Add 40 named constants for all 6 fused attack combos at class scope in attack_database.gd",
+      "id": "ACG-6",
+      "content": "Verify implementation files exist: scripts/attacks/attack_database.gd register_fused_attack calls and named constants",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-7",
-      "content": "Add 6 register_fused_attack() blocks at end of _register_defaults() using exact spec Section 4 values",
+      "id": "ACG-7",
+      "content": "Verify test files exist: test_fused_attack_resources.gd, test_fused_attack_stats.gd, test_fused_attack_resources_adversarial.gd",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-8",
-      "content": "Verify slow:0.0 falsy-zero pattern for adhesion_claw, acid_adhesion, adhesion_carapace modifiers",
+      "id": "ACG-8",
+      "content": "Build evidence matrix mapping each of 7 AC items to concrete test/static QA evidence",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-9",
-      "content": "Verify SLAM_AOE startup_frames: carapace_claw=8, acid_carapace=12, adhesion_carapace=12",
+      "id": "ACG-9",
+      "content": "Write AC Gatekeeper checkpoint log at project_board/checkpoints/M12-02/2026-05-29T-ac-gatekeeper-run.md",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-10",
-      "content": "Verify all 10 attack IDs are globally unique (base 1-4, fused 101-106)",
+      "id": "ACG-10",
+      "content": "Update ticket WORKFLOW STATE and NEXT ACTION: Stage COMPLETE, Revision 6, Last Updated By Acceptance Criteria Gatekeeper Agent",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-11",
-      "content": "Run timeout 300 godot --headless -s tests/run_tests.gd and verify exit 0",
+      "id": "ACG-11",
+      "content": "Move ticket from backlog/ to done/ via git mv",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-12",
-      "content": "Write checkpoint log at project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md",
+      "id": "ACG-12",
+      "content": "Update todos-latest.json for AC Gatekeeper run",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     },
     {
-      "id": "GS-13",
-      "content": "Update handoff-latest.yaml from Test Breaker->Implementation Agent to Implementation Agent->Static QA",
+      "id": "ACG-13",
+      "content": "Add index entry to project_board/CHECKPOINTS.md for AC Gatekeeper run outcome",
       "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-14",
-      "content": "Update todos-latest.json for gameplay systems run",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-15",
-      "content": "Advance ticket Stage to STATIC_QA, Revision to 5, Last Updated By to Gameplay Systems Agent, Next Responsible Agent to Acceptance Criteria Gatekeeper Agent",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-16",
-      "content": "Add index entry to project_board/CHECKPOINTS.md for gameplay systems run outcome",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
+      "agent": "Acceptance Criteria Gatekeeper Agent"
     }
   ]
 }
