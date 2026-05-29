@@ -17,6 +17,7 @@ const DOT_TICK_INTERVAL: float = 0.5
 var _active_dots: Dictionary = {}
 var _slowness_multiplier: float = 1.0
 var _slowness_remaining: float = 0.0
+var _acid_stack_counter: int = 0
 
 
 func add_dot(effect_name: String, duration: float, dps: float) -> void:
@@ -27,6 +28,22 @@ func add_dot(effect_name: String, duration: float, dps: float) -> void:
 		"dps": dps,
 		"elapsed_since_tick": 0.0,
 	}
+
+
+func add_acid_stack(duration: float, dps: float) -> void:
+	if duration <= 0.0:
+		return
+	var key: String = "acid_stack_%d" % _acid_stack_counter
+	_acid_stack_counter += 1
+	add_dot(key, duration, dps)
+
+
+func get_acid_stack_count() -> int:
+	var count: int = 0
+	for key in _active_dots.keys():
+		if (key as String).begins_with("acid_stack_"):
+			count += 1
+	return count
 
 
 func set_slowness(multiplier: float, duration: float) -> void:

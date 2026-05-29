@@ -36,3 +36,24 @@ static func make_db(test_label: String, fail_callback: Callable) -> Node:
 static func free_db(db: Node) -> void:
 	if db != null and is_instance_valid(db):
 		db.free()
+
+
+static func make_combo_resource(combo_hits: int = 3) -> AttackResource:
+	var r = AttackResource.new()
+	r.attack_id = 101
+	r.attack_name = "Venomous Shred"
+	r.effect_type = "MELEE_SWIPE_COMBO"
+	r.damage = 1.8
+	r.cooldown = 2.0
+	r.attack_range = 1.2
+	r.startup_frames = 0
+	r.knockback_magnitude = 80.0
+	r.knockback_direction = "away"
+	r.modifiers = {
+		"acid_on_hit": true,
+		"acid_duration": 2.5,
+		"acid_dps": 0.4,
+		"combo_frame_interval": 6
+	}
+	r.set("combo_hits", combo_hits)
+	return r

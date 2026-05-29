@@ -9,6 +9,7 @@ extends Resource
 @export var cooldown: float = 0.8
 @export var attack_range: float = 1.5
 @export var startup_frames: int = 0
+@export var combo_hits: int = 1
 @export var knockback_magnitude: float = 0.0
 @export var knockback_direction: String = "away"
 @export var projectile_speed: float = 0.0

@@ -36,6 +36,8 @@ func execute_attack(resource: AttackResource) -> void:
 		"SLAM_AOE":
 			_run_slam_attack_async(resource)
 			return
+		"MELEE_SWIPE_COMBO":
+			_handle_melee_swipe_combo(resource)
 		_:
 			_handle_unknown(resource)
 	_is_active = false
@@ -44,6 +46,78 @@ func execute_attack(resource: AttackResource) -> void:
 func _run_slam_attack_async(resource: AttackResource) -> void:
 	await _handle_slam_aoe(resource)
 	_is_active = false
+
+
+func _run_melee_swipe_combo_async(resource: AttackResource) -> void:
+	await _handle_melee_swipe_combo(resource)
+	_is_active = false
+
+
+func _handle_melee_swipe_combo(resource: AttackResource) -> void:
+	if resource.combo_hits <= 0:
+		return
+
+	if resource.startup_frames > 0:
+		var startup_tree := get_tree()
+		if startup_tree:
+			await startup_tree.create_timer(resource.startup_frames / FRAMES_PER_SECOND).timeout
+
+	for _i in range(resource.combo_hits):
+		var facing := _get_facing_sign()
+		var owner_pos := _get_owner_position()
+		var center := owner_pos + Vector3(facing * resource.attack_range * HITBOX_RANGE_FACTOR, 0.0, 0.0)
+		var radius := resource.attack_range * HITBOX_RANGE_FACTOR
+		var enemies := _query_enemies_in_range(center, radius)
+
+		for enemy in enemies:
+			var pre_state: int = -1
+			if enemy.has_method("get_base_state"):
+				pre_state = enemy.get_base_state()
+			var kb := _calculate_knockback(
+				enemy.global_position, owner_pos,
+				resource.knockback_magnitude, resource.knockback_direction
+			)
+			_apply_damage(enemy, resource.damage, kb)
+			_apply_combo_modifiers(enemy, resource.modifiers, pre_state)
+			attack_hit.emit(enemy, resource)
+
+		melee_vfx_requested.emit(center, resource.color, resource.vfx_scale)
+
+
+func _apply_combo_modifiers(
+	target: Node3D,
+	modifiers: Dictionary,
+	pre_damage_state: int = -1
+) -> void:
+	if modifiers.get("poison", false):
+		if target.has_method("apply_poison"):
+			target.apply_poison(
+				modifiers.get("poison_duration", 2.0),
+				modifiers.get("poison_dps", DEFAULT_POISON_DPS)
+			)
+
+	if modifiers.get("acid_on_hit", false):
+		if target.has_method("apply_acid_stack"):
+			var acid_dur: float = modifiers.get("acid_duration", 2.0)
+			var acid_dps_val: float = modifiers.get("acid_dps", DEFAULT_ACID_DPS)
+			if target.has_method("get_base_state") and target.get_base_state() == 1:
+				acid_dur *= 2.0
+			target.apply_acid_stack(acid_dur, acid_dps_val)
+
+	var slow_val = modifiers.get("slow", null)
+	if slow_val != null:
+		if target.has_method("apply_slowness"):
+			target.apply_slowness(slow_val, modifiers.get("slow_duration", DEFAULT_SLOW_DURATION))
+
+	if modifiers.get("infect_weakened", false):
+		if target.has_method("get_base_state") and target.has_method("set_base_state"):
+			if target.has_method("is_dead") and target.is_dead():
+				return
+			var check_state: int = pre_damage_state if pre_damage_state >= 0 else -1
+			if check_state < 0 and target.has_method("get_base_state"):
+				check_state = target.get_base_state()
+			if check_state == 1:
+				target.set_base_state(2)
 
 
 func is_active() -> bool:

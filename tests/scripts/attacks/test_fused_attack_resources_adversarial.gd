@@ -36,7 +36,7 @@ var _fail_count: int = 0
 const _DB_SCRIPT_PATH := "res://scripts/attacks/attack_database.gd"
 
 # Known valid effect_type strings (handlers that exist as of M12-02 freeze).
-const _KNOWN_EFFECT_TYPES: Array = ["MELEE_SWIPE", "PROJECTILE_SPIT", "SLAM_AOE", "LUNGE"]
+const _KNOWN_EFFECT_TYPES: Array = ["MELEE_SWIPE", "MELEE_SWIPE_COMBO", "PROJECTILE_SPIT", "SLAM_AOE", "LUNGE"]
 
 
 # ---------------------------------------------------------------------------
@@ -506,6 +506,7 @@ func test_adv9_acid_adhesion_both_acid_and_slow_keys_coexist() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adv10_acid_claw_acid_dps_float_precision() -> void:
+	# Updated to normative M12-04 stat block: acid_dps = 0.4 (supersedes M12-02 placeholder 0.8).
 	var label := "ADV-10_acid_claw_acid_dps_float_approx"
 	var db = _new_defaults_db(label)
 	if db == null:
@@ -516,7 +517,7 @@ func test_adv10_acid_claw_acid_dps_float_precision() -> void:
 		_teardown_db(db)
 		return
 	var dps: float = res.modifiers.get("acid_dps", -1.0)
-	_assert_approx(0.8, dps, label + "_acid_dps_approx_0_8")
+	_assert_approx(0.4, dps, label + "_acid_dps_approx_0_4")
 	# Confirm exact == would also work at GDScript float precision (regression guard).
 	_assert_false(dps < 0.0, label + "_acid_dps_positive")
 	_teardown_db(db)
@@ -656,6 +657,8 @@ func test_adv_bonus_melee_fused_have_positive_range() -> void:
 	var db = _new_defaults_db(label)
 	if db == null:
 		return
+	# acid_claw uses MELEE_SWIPE_COMBO (M12-04 normative); adhesion_claw uses MELEE_SWIPE.
+	# Both are melee variants — the key invariant is attack_range > 0.
 	var melee_combos: Array = [
 		["acid", "claw", "acid_claw"],
 		["adhesion", "claw", "adhesion_claw"],
@@ -665,7 +668,10 @@ func test_adv_bonus_melee_fused_have_positive_range() -> void:
 		if res == null:
 			_fail_test(label + "_" + c[2], "returned null (not yet registered)")
 			continue
-		_assert_eq_string("MELEE_SWIPE", res.effect_type, label + "_" + c[2] + "_is_melee")
+		var is_melee: bool = (
+			res.effect_type == "MELEE_SWIPE" or res.effect_type == "MELEE_SWIPE_COMBO"
+		)
+		_assert_true(is_melee, label + "_" + c[2] + "_is_melee_variant")
 		_assert_true(res.attack_range > 0.0, label + "_" + c[2] + "_range_positive")
 	_teardown_db(db)
 

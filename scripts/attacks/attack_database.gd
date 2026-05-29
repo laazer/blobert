@@ -31,13 +31,15 @@ const ADHESION_ROOT_DURATION := 3.0
 
 # --- Fused attack constants: acid_claw (101) ---
 const ACID_CLAW_ATTACK_ID := 101
-const ACID_CLAW_DAMAGE := 4.0
-const ACID_CLAW_COOLDOWN := 1.5
-const ACID_CLAW_RANGE := 1.5
-const ACID_CLAW_KNOCKBACK := 3.0
+const ACID_CLAW_DAMAGE := 1.8
+const ACID_CLAW_COOLDOWN := 2.0
+const ACID_CLAW_RANGE := 1.2
+const ACID_CLAW_KNOCKBACK := 80.0
 const ACID_CLAW_VFX_SCALE := 1.3
-const ACID_CLAW_ACID_DURATION := 2.0
-const ACID_CLAW_ACID_DPS := 0.8
+const ACID_CLAW_ACID_DURATION := 2.5
+const ACID_CLAW_ACID_DPS := 0.4
+const ACID_CLAW_COMBO_HITS := 3
+const ACID_CLAW_COMBO_FRAME_INTERVAL := 6
 
 # --- Fused attack constants: adhesion_claw (102) ---
 const ADHESION_CLAW_ATTACK_ID := 102
@@ -178,13 +180,14 @@ func _register_defaults() -> void:
 func _register_fused_defaults() -> void:
 	var acid_claw_attack := AttackResource.new()
 	acid_claw_attack.attack_id = ACID_CLAW_ATTACK_ID
-	acid_claw_attack.attack_name = "Toxic Slash"
-	acid_claw_attack.description = "Acid-coated melee swipe. Applies acid on hit."
-	acid_claw_attack.effect_type = "MELEE_SWIPE"
+	acid_claw_attack.attack_name = "Venomous Shred"
+	acid_claw_attack.description = "Rapid 3-hit melee combo. Each hit applies an independent acid DoT stack."
+	acid_claw_attack.effect_type = "MELEE_SWIPE_COMBO"
 	acid_claw_attack.damage = ACID_CLAW_DAMAGE
 	acid_claw_attack.cooldown = ACID_CLAW_COOLDOWN
 	acid_claw_attack.attack_range = ACID_CLAW_RANGE
 	acid_claw_attack.startup_frames = 0
+	acid_claw_attack.combo_hits = ACID_CLAW_COMBO_HITS
 	acid_claw_attack.knockback_magnitude = ACID_CLAW_KNOCKBACK
 	acid_claw_attack.knockback_direction = "away"
 	acid_claw_attack.projectile_speed = 0.0
@@ -195,6 +198,7 @@ func _register_fused_defaults() -> void:
 		"acid_on_hit": true,
 		"acid_duration": ACID_CLAW_ACID_DURATION,
 		"acid_dps": ACID_CLAW_ACID_DPS,
+		"combo_frame_interval": ACID_CLAW_COMBO_FRAME_INTERVAL,
 	}
 	register_fused_attack("acid", "claw", acid_claw_attack)
 

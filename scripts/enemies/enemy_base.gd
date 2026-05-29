@@ -86,6 +86,18 @@ func apply_acid(duration: float, dps: float) -> void:
 	_effect_tracker.add_dot("acid", duration, dps)
 
 
+func apply_acid_stack(duration: float, dps: float) -> void:
+	if _is_dead:
+		return
+	_effect_tracker.add_acid_stack(duration, dps)
+
+
+func get_acid_stack_count() -> int:
+	if _effect_tracker == null:
+		return 0
+	return _effect_tracker.get_acid_stack_count()
+
+
 func apply_slowness(multiplier: float, duration: float) -> void:
 	if _is_dead:
 		return

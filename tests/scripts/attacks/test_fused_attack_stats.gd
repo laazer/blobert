@@ -33,35 +33,12 @@ extends "res://tests/utils/test_utils.gd"
 var _pass_count: int = 0
 var _fail_count: int = 0
 
-const _DB_SCRIPT_PATH := "res://scripts/attacks/attack_database.gd"
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 func _make_db(test_label: String) -> Node:
-	var script = load(_DB_SCRIPT_PATH) as GDScript
-	if script == null:
-		_fail_test(test_label, _DB_SCRIPT_PATH + " not loadable (not yet implemented)")
-		return null
-	var inst = script.new()
-	if inst == null:
-		_fail_test(test_label, "instantiation returned null")
-		return null
-	var tree = Engine.get_main_loop() as SceneTree
-	if tree:
-		tree.root.add_child(inst)
-	else:
-		_fail_test(test_label, "SceneTree not available; cannot add_child")
-		inst.free()
-		return null
-	return inst
+	return AttackDatabaseHarness.make_db(test_label, _fail_test)
 
 
 func _free_db(db: Node) -> void:
-	if db != null and is_instance_valid(db):
-		db.free()
+	AttackDatabaseHarness.free_db(db)
 
 
 # ---------------------------------------------------------------------------
@@ -69,9 +46,10 @@ func _free_db(db: Node) -> void:
 # ---------------------------------------------------------------------------
 
 func test_far4_acid_claw_stats() -> void:
-	# FAR-4-101: Toxic Slash — damage, cooldown, attack_range, knockback_magnitude,
-	# effect_type, modifiers (acid_on_hit=true, acid_duration=2.0, acid_dps~=0.8),
-	# attack_name.
+	# FAR-4-101: Venomous Shred — damage, cooldown, attack_range, knockback_magnitude,
+	# effect_type, combo_hits, modifiers (acid_on_hit=true, acid_duration=2.5,
+	# acid_dps=0.4, combo_frame_interval=6), attack_name.
+	# Updated to normative M12-04 stat block (supersedes M12-02 "Toxic Slash" placeholder).
 	var label := "FAR-4-101_acid_claw_stats"
 	var db = _make_db(label)
 	if db == null:
@@ -81,17 +59,17 @@ func test_far4_acid_claw_stats() -> void:
 		_fail_test(label, "acid_claw returned null (not yet registered)")
 		_free_db(db)
 		return
-	_assert_eq_float(4.0, res.damage, label + "_damage")
-	_assert_eq_float(1.5, res.cooldown, label + "_cooldown")
-	_assert_eq_float(1.5, res.attack_range, label + "_attack_range")
-	_assert_eq_float(3.0, res.knockback_magnitude, label + "_knockback_magnitude")
-	_assert_eq_string("MELEE_SWIPE", res.effect_type, label + "_effect_type")
-	_assert_eq_string("Toxic Slash", res.attack_name, label + "_attack_name")
+	_assert_eq_float(1.8, res.damage, label + "_damage")
+	_assert_eq_float(2.0, res.cooldown, label + "_cooldown")
+	_assert_eq_float(1.2, res.attack_range, label + "_attack_range")
+	_assert_eq_float(80.0, res.knockback_magnitude, label + "_knockback_magnitude")
+	_assert_eq_string("MELEE_SWIPE_COMBO", res.effect_type, label + "_effect_type")
+	_assert_eq_string("Venomous Shred", res.attack_name, label + "_attack_name")
 	_assert_true(res.modifiers.has("acid_on_hit") and res.modifiers["acid_on_hit"] == true,
 		label + "_modifier_acid_on_hit")
-	_assert_eq_float(2.0, res.modifiers.get("acid_duration", -1.0), label + "_modifier_acid_duration")
-	# FAR-EC-8: 0.8 is not exactly representable in IEEE 754 — use approx comparison
-	_assert_approx(0.8, res.modifiers.get("acid_dps", -1.0), label + "_modifier_acid_dps")
+	_assert_eq_float(2.5, res.modifiers.get("acid_duration", -1.0), label + "_modifier_acid_duration")
+	_assert_approx(0.4, res.modifiers.get("acid_dps", -1.0), label + "_modifier_acid_dps")
+	_assert_eq_int(6, res.modifiers.get("combo_frame_interval", -1), label + "_modifier_combo_frame_interval")
 	_free_db(db)
 
 
@@ -247,7 +225,7 @@ func test_far4_adhesion_carapace_stats() -> void:
 func test_farec2_modifier_dict_sizes() -> void:
 	# FAR-EC-2: Each fused attack's modifier dict must have exactly the number of
 	# keys defined in the spec.
-	# acid_claw: 3 keys (acid_on_hit, acid_duration, acid_dps)
+	# acid_claw: 4 keys (acid_on_hit, acid_duration, acid_dps, combo_frame_interval)
 	# adhesion_claw: 2 keys (slow, slow_duration)
 	# carapace_claw: 1 key (infect_weakened)
 	# acid_adhesion: 5 keys (acid_on_hit, acid_duration, acid_dps, slow, slow_duration)
@@ -258,7 +236,7 @@ func test_farec2_modifier_dict_sizes() -> void:
 	if db == null:
 		return
 	var cases: Array = [
-		["acid", "claw", 3, "acid_claw"],
+		["acid", "claw", 4, "acid_claw"],
 		["adhesion", "claw", 2, "adhesion_claw"],
 		["carapace", "claw", 1, "carapace_claw"],
 		["acid", "adhesion", 5, "acid_adhesion"],
@@ -356,12 +334,14 @@ func test_far7_fused_attacks_differ_from_base_components() -> void:
 		_free_db(db)
 		return
 
-	# FAR-7a: acid_claw.damage > claw.damage; acid_claw has acid_on_hit (claw does not)
-	_assert_true(acid_claw.damage > base_claw.damage, label + "_acid_claw_damage_gt_claw")
+	# FAR-7a: acid_claw has acid_on_hit (claw does not); combo_hits=3 vs claw combo_hits=1
+	# Note: acid_claw.damage (1.8 per hit) < base_claw.damage (3.0 single hit) by design —
+	# acid_claw is a 3-hit combo (total 5.4 per combo). Do NOT assert damage > claw.damage.
 	_assert_true(acid_claw.modifiers.has("acid_on_hit"), label + "_acid_claw_has_acid_on_hit")
+	_assert_true(acid_claw.get("combo_hits") == 3, label + "_acid_claw_combo_hits_3")
 
-	# FAR-7b: acid_claw.effect_type (MELEE_SWIPE) != acid (PROJECTILE_SPIT)
-	_assert_eq_string("MELEE_SWIPE", acid_claw.effect_type, label + "_acid_claw_effect_is_melee")
+	# FAR-7b: acid_claw.effect_type (MELEE_SWIPE_COMBO) != acid (PROJECTILE_SPIT)
+	_assert_eq_string("MELEE_SWIPE_COMBO", acid_claw.effect_type, label + "_acid_claw_effect_is_combo")
 	_assert_true(acid_claw.knockback_magnitude > 0.0, label + "_acid_claw_knockback_gt_acid")
 
 	# FAR-7c: adhesion_claw.cooldown > claw.cooldown; has "slow" key
@@ -442,7 +422,7 @@ func test_farnf6_attack_names_exact_and_unique() -> void:
 	if db == null:
 		return
 	var expected_names: Dictionary = {
-		"acid_claw": "Toxic Slash",
+		"acid_claw": "Venomous Shred",
 		"adhesion_claw": "Sticky Slash",
 		"carapace_claw": "Armored Slam",
 		"acid_adhesion": "Venom Web",
