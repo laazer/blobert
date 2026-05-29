@@ -6,6 +6,7 @@ extends "res://tests/utils/test_utils.gd"
 
 const _CONTROLLER_PATH: String = "res://scripts/player/player_controller_3d.gd"
 const _HANDLER_PATH: String = "res://scripts/infection/infection_interaction_handler.gd"
+const _BIND_PATH: String = "res://scripts/player/player_mutation_slot_bind.gd"
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -46,11 +47,14 @@ func test_try_bind_skips_until_handler_ready() -> void:
 		return
 	var handler: Node = handler_script.new() as Node
 	var player: CharacterBody3D = ctrl_script.new() as CharacterBody3D
-	_assert_true(ClassDB.class_exists("PlayerMutationSlotBind"), "PlayerMutationSlotBind_class")
-	player.set("_mutation_slot", PlayerMutationSlotBind.try_bind_from_handler(handler))
+	var bind_script: GDScript = load(_BIND_PATH) as GDScript
+	if bind_script == null:
+		_fail("late_bind_bind_script", "PlayerMutationSlotBind script missing")
+		return
+	player.set("_mutation_slot", bind_script.call("try_bind_from_handler", handler))
 	_assert_true(player.get("_mutation_slot") == null, "bind_skips_before_handler_ready")
 	handler._ready()
-	player.set("_mutation_slot", PlayerMutationSlotBind.try_bind_from_handler(handler))
+	player.set("_mutation_slot", bind_script.call("try_bind_from_handler", handler))
 	var bound: Variant = player.get("_mutation_slot")
 	_assert_true(bound != null, "bind_succeeds_after_handler_ready")
 	if bound != null and handler.has_method("get_mutation_slot_manager"):
@@ -64,7 +68,12 @@ func test_ensure_mutation_slot_binding_after_handler_ready() -> void:
 	var handler: Node = scene["handler"]
 	var player: CharacterBody3D = scene["player"]
 	player.set("_mutation_slot", null)
-	PlayerMutationSlotBind.ensure_binding(player as PlayerController3D)
+	var bind_script: GDScript = load(_BIND_PATH) as GDScript
+	if bind_script == null:
+		_fail("late_bind_ensure_script", "PlayerMutationSlotBind script missing")
+		_teardown(scene)
+		return
+	bind_script.call("ensure_binding", player)
 	var bound: Variant = player.get("_mutation_slot")
 	_assert_true(bound != null, "mutation_slot_bound_after_ensure")
 	if bound != null and handler.has_method("get_mutation_slot_manager"):
@@ -79,7 +88,12 @@ func test_filled_slots_do_not_force_mutate_fsm_state() -> void:
 		return
 	var player: CharacterBody3D = scene["player"]
 	player.set("_mutation_slot", null)
-	PlayerMutationSlotBind.ensure_binding(player as PlayerController3D)
+	var bind_script: GDScript = load(_BIND_PATH) as GDScript
+	if bind_script == null:
+		_fail("late_bind_ensure_script", "PlayerMutationSlotBind script missing")
+		_teardown(scene)
+		return
+	bind_script.call("ensure_binding", player)
 	var mgr: MutationSlotManager = player.get("_mutation_slot") as MutationSlotManager
 	if mgr == null:
 		_fail("filled_slots_fsm_mgr", "mutation slot manager still null")
@@ -110,7 +124,12 @@ func test_fusion_active_does_not_derive_mutate_or_block_attack() -> void:
 		return
 	var player: CharacterBody3D = scene["player"]
 	player.set("_mutation_slot", null)
-	PlayerMutationSlotBind.ensure_binding(player as PlayerController3D)
+	var bind_script: GDScript = load(_BIND_PATH) as GDScript
+	if bind_script == null:
+		_fail("late_bind_ensure_script", "PlayerMutationSlotBind script missing")
+		_teardown(scene)
+		return
+	bind_script.call("ensure_binding", player)
 	var mgr: MutationSlotManager = player.get("_mutation_slot") as MutationSlotManager
 	if mgr == null:
 		_fail("fusion_attack_gate_mgr", "mutation slot manager still null")
@@ -151,7 +170,12 @@ func test_try_attack_fires_after_late_bind_with_claw() -> void:
 		return
 	var player: CharacterBody3D = scene["player"]
 	player.set("_mutation_slot", null)
-	PlayerMutationSlotBind.ensure_binding(player as PlayerController3D)
+	var bind_script: GDScript = load(_BIND_PATH) as GDScript
+	if bind_script == null:
+		_fail("late_bind_ensure_script", "PlayerMutationSlotBind script missing")
+		_teardown(scene)
+		return
+	bind_script.call("ensure_binding", player)
 	var mgr: MutationSlotManager = player.get("_mutation_slot") as MutationSlotManager
 	if mgr == null:
 		_fail("late_bind_try_attack_mgr", "mutation slot manager still null")
