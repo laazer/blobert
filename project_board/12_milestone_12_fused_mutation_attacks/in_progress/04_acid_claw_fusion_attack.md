@@ -59,39 +59,49 @@ Implementation builds on the `fusion_attack_framework` (M12 ticket 03) to combin
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+BLOCKED
 
 ## Revision
-5
+9
 
 ## Last Updated By
-Test Designer Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Written (RED — implementation not yet present)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: 94 tests written covering AC-1 through AC-6, adversarial, seams, and stacking isolation. Implementation verified by code trace only — NO shell test run has been executed at any prior stage. run_tests.sh exit code is unknown.
+- Static QA: CRITICAL-1 (async wrapper dispatch), CRITICAL-2 (deduplication), WARNING-1 (counter comment) all fixed per 2026-05-29T-static-qa-fix-run.md.
+- Integration: Not Run.
+- Manual (AC-4 presentation): melee_vfx_requested signal emission per hit is covered by test_ac2f. Melee swipe sound trigger and per-stack color overlay are presentation-layer concerns requiring human in-editor verification; no documentation of this exists.
+- Git state: Unverifiable without shell command. No M12-04 implementation commit is visible in the 5-commit git log provided at conversation start.
 
 ## Blocking Issues
-- None
+- BLOCKER-1: run_tests.sh has never been executed. No agent had shell access. AC-8 (run_tests.sh exits 0) is unmet. Human or CI must run `timeout 300 bash ci/scripts/run_tests.sh`, record verbatim output, confirm exit 0, and document in project_board/checkpoints/M12-04/2026-05-29T-test-run.md.
+- BLOCKER-2: Git state unverified. Workflow enforcement requires clean working tree and pushed commits before Stage COMPLETE. Human must run `git status` + `git log --oneline -10` to confirm M12-04 implementation is committed and pushed. If dirty: commit and push first.
 
 ## Escalation Notes
-- None
+- ADVISORY: Inter-hit timer (AC-2b, frame 6/12/18 hitbox timing) is not implemented — the executor fires all combo hits synchronously with no timer await between hits. The combo_frame_interval modifier is stored but never consumed. This is an intentional implementation trade-off documented in the Gameplay Systems Agent checkpoint (2026-05-29T-gameplay-systems-run.md). If tests pass, Human must decide whether to accept this gap or file a follow-up ticket for runtime timing accuracy.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Human
 
 ## Required Input Schema
 ```json
-{}
+{
+  "required": [
+    "run test suite and record verbatim exit code and output",
+    "verify git status is clean for M12-04 implementation files",
+    "verify git push succeeded or push now",
+    "optionally perform manual in-editor verification of sound and VFX"
+  ]
+}
 ```
 
 ## Status
-Proceed
+Blocked
 
 ## Reason
-Test Designer Agent wrote 73 test functions across 3 files: tests/scripts/attacks/test_acid_claw_combo_attack.gd (41 tests, AC-1 through AC-6), tests/scripts/attacks/test_acid_claw_combo_adversarial.gd (14 tests, AC-EC-1 through AC-EC-10 + failure modes), tests/scripts/enemies/test_enemy_acid_stacking.gd (18 tests, AC-3 isolated). All tests target executable runtime behavior. Tests are RED as expected: combo_hits field, MELEE_SWIPE_COMBO handler, _apply_combo_modifiers, add_acid_stack/get_acid_stack_count, and acid_claw registration updates not yet implemented. Test Breaker Agent must attempt to make tests pass minimally and report which break.
+AC-8 (run_tests.sh exits 0) and AC-7 (all M11 prerequisite tests pass) have no runtime evidence — every prior agent lacked shell execution access. Git state for M12-04 implementation commits is unverified. Workflow enforcement v1 is explicit: Stage COMPLETE requires confirmed clean working tree and pushed commits. Human must run the test suite, confirm pass, verify and push any unpushed commits, then either re-run the AC Gatekeeper Agent or manually advance Stage to COMPLETE. All other acceptance criteria are covered by code review and test suite analysis (see checkpoint 2026-05-29T-ac-gatekeeper-run.md for full evidence matrix).
