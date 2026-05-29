@@ -478,6 +478,8 @@ func _try_attack() -> void:
 		cooldown_key = mid
 	if attack_resource == null or _mutation_cooldowns.get(cooldown_key, 0.0) > 0.0:
 		return
+	if _attack_executor.is_active():
+		return
 	_attack_executor.execute_attack(attack_resource)
 	_mutation_cooldowns[cooldown_key] = attack_resource.cooldown
 
