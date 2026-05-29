@@ -1,21 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-04
-  from_agent: static_qa
-  to_agent: learning
+  from_agent: learning
+  to_agent: ac_gatekeeper
   validated_at: "2026-05-29T00:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: review_feedback_incorporated
-      item: "Feedback incorporated"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "CRITICAL-1 fixed (async wrapper): MELEE_SWIPE_COMBO now dispatches via _run_melee_swipe_combo_async(resource) with return, mirroring SLAM_AOE. CRITICAL-2 fixed (deduplication): _apply_combo_modifiers now handles only acid_on_hit via apply_acid_stack, then delegates to _apply_modifiers with acid_on_hit erased from copy. WARNING-1 fixed (comment): _acid_stack_counter in enemy_effect_tracker.gd now has a 3-line comment explaining why it is not reset in stop_all_effects()."
-    - item_key: review_code_reviewed
-      item: "Code reviewed"
+      evidence: project_board/LEARNINGS.md
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "scripts/attacks/attack_executor.gd, scripts/enemies/enemy_effect_tracker.gd"
-    - item_key: review_merge_ready
-      item: "Merge-ready"
+      evidence: "Root causes: (1) GDScript coroutine called without await clears _is_active before hits land — fix: async wrapper with return; (2) _KNOWN_EFFECT_TYPES constant not updated when MELEE_SWIPE_COMBO added — fix: maintenance comment and count assertion; (3) _make_combo_resource/_make_db duplicated across test files — fix: attack_database_harness.gd static helpers; (4) pre-existing Python Ruff errors cause run_tests.sh exit 1 unrelated to M12-04 — AC Gatekeeper correctly classified as pre-existing; (5) subagents without Bash tool delegated all shell ops to orchestrator — document as relay step in workflow."
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: "All CRITICAL and WARNING-1 addressed. Static analysis confirms behavioral equivalence. Shell test execution not available in this tool environment — test run must be verified by next agent or CI. See checkpoint: project_board/checkpoints/M12-04/2026-05-29T-static-qa-fix-run.md"
+      evidence: project_board/checkpoints/M12-04/todos-latest.json

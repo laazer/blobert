@@ -1289,6 +1289,89 @@ When an agent defers acceptance criteria, implementation, or testing to a future
 
 ---
 
+## [M12-04] — GDScript async dispatch gap, test constant staleness, DRY violations, and subagent tool availability
+*Completed: 2026-05-29*
+
+### Learnings
+
+- category: architecture
+  insight: In GDScript 4, calling a coroutine function (one containing `await`) without `await` at the call site returns immediately and discards the coroutine. The caller continues past the call, clearing lifecycle flags such as `_is_active` before any hits land. The fix is to route through an async wrapper that owns the lifecycle flag and returns from the dispatcher with an early `return`.
+  impact: CRITICAL-1 — `execute_attack` dispatched `_handle_melee_swipe_combo` directly, causing `_is_active` to be cleared mid-combo before any hits fired. The correct `_run_melee_swipe_combo_async` wrapper existed in the file but was dead code.
+  prevention: For every dispatch table in an attack executor, verify each handler is either (a) fully synchronous with no `await`, or (b) routed through a named async wrapper that owns lifecycle cleanup. If the handler annotation is `-> void` and the body contains `await`, flag it as a coroutine and route accordingly. Static QA should treat `-> void` on a function containing `await` as a finding.
+  severity: critical
+
+- category: testing
+  insight: An adversarial test constant (`_KNOWN_EFFECT_TYPES`) that enumerates all valid effect types will silently pass when a new effect type is added — until the test runs against the implementation that registers the new type, at which point it produces one unexpected failure. Frozen enumeration constants in adversarial tests require active maintenance.
+  impact: Adding `MELEE_SWIPE_COMBO` to the implementation without updating `_KNOWN_EFFECT_TYPES` in the adversarial suite caused one test failure that appeared to be an implementation regression but was actually a stale test constant.
+  prevention: Adversarial tests that enumerate known-set constants must include a comment marking the list as "must be updated when new members are added." Test Breaker should also check for all-string-enum-style constants in test files and flag them as maintenance surfaces.
+  severity: high
+
+- category: testing
+  insight: DRY violations in test helper code (`_make_combo_resource` and `_make_db` duplicated across two test files) cause divergence when implementation details change — only one copy gets updated. The fix is to extract these into a shared harness file (`attack_database_harness.gd`) with static helpers callable from any test.
+  impact: Pre-commit org hook blocked advancement until duplication was resolved. Had the duplicate diverged before detection, one test file would have been testing a stale resource shape.
+  prevention: Before writing a second test file in the same domain (attacks, enemies, etc.), check whether any factory or builder helpers already exist in a harness file. If yes, import and call them. If no harness file exists and two or more test files need the same helper, create the harness rather than duplicating. The org hook catches this but only at commit time — catching it at test design time is cheaper.
+  severity: medium
+
+- category: infra
+  insight: Pre-existing Python Ruff errors in files the current ticket never touched caused `run_tests.sh` to exit 1 even when all 211 Godot tests passed. The AC Gatekeeper correctly classified this as a pre-existing defect and accepted the Godot pass as satisfying the relevant AC, but the distinction required explicit reasoning.
+  impact: Tickets that touch only GDScript implementation can inherit a failing `run_tests.sh` from unrelated Python lint debt, making the final gate ambiguous without evidence that the failures predate the ticket.
+  prevention: When `run_tests.sh` exits non-zero, the AC Gatekeeper must classify each failing subsystem as "introduced by this ticket" or "pre-existing." Pre-existing failures in untouched subsystems are non-blocking for the current ticket but must be recorded as advisory follow-up. A chore ticket for cleaning up pre-existing Ruff errors should be filed rather than carried forward indefinitely.
+  severity: medium
+
+- category: process
+  insight: Multiple subagents in this pipeline (Gameplay Systems Agent, Static QA Fix Agent) explicitly stated they had no shell execution capability and could not run tests, linting, or git commands. All such operations were delegated to the orchestrator. This created a hard dependency on the orchestrator for any validation step requiring command execution.
+  impact: The implementation and QA fix stages produced no runtime evidence — only static analysis claims. The orchestrator ran tests and commits on behalf of subagents, which is correct behavior but requires the orchestrator to be prepared for this delegation pattern on every ticket.
+  prevention: Document in the workflow that subagents operating without a Bash tool must explicitly state "Shell execution not available — orchestrator must run [command]" in their checkpoint and transition state to require an orchestrator pass-through step. Orchestrators should anticipate that IMPLEMENTATION and STATIC_QA fix stages may need a shell-execution relay step between them and the next agent.
+  severity: medium
+
+### Anti-Patterns
+
+- description: Implementing a dispatch case to a coroutine function without the async wrapper pattern, relying on the function's synchronous path to mask the lifetime bug.
+  detection_signal: A handler function has `-> void` annotation and contains `await`; the dispatch table calls it directly without `return`; a sibling async wrapper exists in the file but is never called.
+  prevention: Static QA agent should explicitly check: for each dispatch table case, is the handler sync or async? If async, is it routed through a wrapper? Is `_is_active = false` set after the await, not before?
+
+- description: Duplicating builder/factory helpers across multiple test files in the same domain instead of extracting to a shared harness.
+  detection_signal: Two or more test files contain functions with identical names and nearly identical bodies (`_make_combo_resource`, `_make_db`). Pre-commit org hook fires on duplication.
+  prevention: Domain-specific test harness files (`attack_database_harness.gd`, `enemy_effect_harness.gd`) should be created as the second test file is authored, not after the org hook fires.
+
+- description: Keeping an all-known-set enumeration constant in adversarial tests without a maintenance comment or pairing test that fails when the set changes.
+  detection_signal: After adding a new registered type, exactly one adversarial test fails with "unexpected member" or "unknown effect type."
+  prevention: Add a comment on enumeration constants in tests: "Update this list when new X types are registered in AttackDatabase." Or add a companion test that asserts the count matches exactly, so both the new-type test and the count test fail together.
+
+### Prompt Patches
+
+- agent: Static QA Agent
+  change: "When reviewing GDScript dispatch tables (match/switch blocks calling handler functions), for each case: (1) Check whether the handler contains `await`. (2) If yes, verify the dispatch routes through a named async wrapper (`_run_X_async`) and uses `return` immediately after the call. (3) If the handler is annotated `-> void` but contains `await`, flag as CRITICAL — GDScript coroutines called without `await` return immediately and discard execution. (4) Verify `_is_active = false` (or equivalent lifecycle cleanup) is set inside the async wrapper after the await resolves, not in the calling dispatcher."
+  reason: Prevents the class of bug where a sync dispatch of an awaiting function clears lifecycle flags before the async work completes. This is a GDScript-specific pitfall that is not obvious from function signatures.
+
+- agent: Test Breaker Agent
+  change: "Before finalizing adversarial tests, scan existing adversarial test files for enumeration-style constants that list known registered types, effect names, or fixed ID sets (e.g. `_KNOWN_EFFECT_TYPES`, `_REGISTERED_ATTACK_IDS`). If found, add a comment on each such constant: 'Maintenance required: update when new entries are added to AttackDatabase or equivalent registry.' If the constant drives an assertion that new-entries should fail, add a parallel count assertion so a registration change breaks both tests and makes the staleness obvious."
+  reason: Catches enumeration constant staleness at the point of adversarial test design rather than after implementation adds a new type.
+
+- agent: Test Designer Agent
+  change: "When planning tests for a ticket that will produce two or more test files in the same domain (e.g. both test a combo attack and the attack database for the same new attack type), determine up front whether shared builder or factory helpers will be needed. If yes, plan a harness file (e.g. `attack_database_harness.gd`) and specify which helpers go in it. Do not duplicate helper functions across test files — the pre-commit org hook will block commits, and diverged copies cause silent test debt."
+  reason: Moves the DRY violation detection from commit-time (org hook) to test-design time, reducing rework.
+
+### Workflow Improvements
+
+- issue: Subagents without shell access produce no runtime evidence in IMPLEMENTATION and STATIC_QA fix stages, creating a gap where all validation is code-trace only.
+  improvement: Add an explicit orchestrator relay step between STATIC_QA fix completion and AC Gatekeeper in the autopilot pipeline. The relay step runs the test suite, captures exit code and output, and writes a short evidence checkpoint before advancing to AC Gatekeeper. This makes the runtime evidence gap a structural workflow step rather than an ad hoc orchestrator responsibility.
+  expected_benefit: Every ticket that passes through STATIC_QA will have a documented test-run evidence artifact, not a "verified by code trace" claim. AC Gatekeeper will always have runtime evidence to evaluate.
+
+- issue: Pre-existing lint failures in unrelated subsystems create ambiguity at the final gate about whether `run_tests.sh` exit 1 is a ticket regression or pre-existing debt.
+  improvement: The AC Gatekeeper should classify each failing subsystem in its evidence matrix as "in-scope (introduced)" vs "out-of-scope (pre-existing)" using the initial git status provided by the orchestrator. An out-of-scope pre-existing failure must generate an advisory with a suggested chore ticket rather than blocking the current ticket or being silently ignored.
+  expected_benefit: Cleaner AC Gatekeeper decisions, no ambiguity about what "run_tests.sh exits 0" means when pre-existing debt exists, and explicit tracking of accumulated lint debt.
+
+### Keep / Reinforce
+
+- practice: The AC Gatekeeper's treatment of pre-existing Python Ruff failures — classifying them as out-of-scope pre-existing defects rather than blocking the current ticket — was the correct call and was well-documented with evidence.
+  reason: Prevents pre-existing repository debt from indefinitely blocking ticket closure while still creating an audit trail for the defect.
+
+- practice: The Static QA Agent found both CRITICAL issues (async dispatch, DRY duplication) through systematic code review of the dispatch table and modifier functions before any tests were run. This review pattern (dispatch table completeness, function deduplication) should be standard for every attack executor change.
+  reason: Runtime tests did not and could not catch CRITICAL-1 (the startup_frames=0 test path was synchronous, masking the lifecycle bug). Static review was the only reliable detection path.
+
+---
+
 ## [17_zone_extras_offset_xyz_controls] — Greedy regex in suffix parsers
 *Completed: 2026-04-11*
 
