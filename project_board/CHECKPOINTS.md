@@ -29,6 +29,14 @@ Log: `project_board/checkpoints/M12-03/2026-05-29T-test-design-run.md`
 Added 9 adversarial tests (test_fusion_attack_routing_adversarial2.gd, 28 assertions). Found real spec gap FAF-FM-3: when AttackExecutor._is_active=true rejects execute_attack(), _try_attack() still writes _mutation_cooldowns unconditionally (expected 0.0, got 2.0). 27/28 new assertions pass; 44 pre-existing assertions remain GREEN. Stage → IMPLEMENTATION_GENERALIST; handoff to Gameplay Systems Agent.
 Log: `project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md`
 
+### [M12-03] — OUTCOME: IMPLEMENTATION COMPLETE — FAF-FM-3 FIXED
+Added _attack_executor.is_active() guard before execute_attack() and _mutation_cooldowns write in _try_attack() (scripts/player/player_controller_3d.gd). All 72 fusion routing tests GREEN (FusionAttackRoutingTests: 22, FusionAttackRoutingAdversarialTests: 22, FusionAttackRoutingAdversarial2Tests: 28). FAF-ADV2-1 now passes. Routing verified: matches spec Section 6 decision tree; zero is_fusion_active() references in _try_attack(). Stage → STATIC_QA; handoff to Acceptance Criteria Gatekeeper Agent.
+Log: `project_board/checkpoints/M12-03/2026-05-29T-gameplay-systems-run.md`
+
+### [M12-03] — OUTCOME: AC GATEKEEPER — INTEGRATION (push verification pending)
+All 5 ACs fully evidenced by automated tests and code inspection. Static QA clear (W-1 already resolved, W-2/INFO non-blocking). Git working tree clean for M12-03 files. Push state cannot be verified without shell access; Stage held at INTEGRATION. Human must confirm git push and advance to COMPLETE.
+Log: `project_board/checkpoints/M12-03/2026-05-29T-ac-gatekeeper-run.md`
+
 ---
 
 ## Run: 2026-05-25T-m11-06-autopilot (M11 AttackDatabase Integration)

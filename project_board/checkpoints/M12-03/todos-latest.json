@@ -3,9 +3,9 @@
   "captured_at": "2026-05-29T00:00:00Z",
   "ticket_id": "M12-03",
   "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
-  "stage": "TEST_BREAK",
-  "run_id": "2026-05-29T-test-break-run",
-  "agent": "Test Breaker Agent",
+  "stage": "STATIC_QA",
+  "run_id": "2026-05-29T-static-qa-run",
+  "agent": "Static QA",
   "todos": [
     {
       "id": "TB-1",
@@ -102,6 +102,132 @@
       "content": "Write scoped checkpoint log at project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md",
       "status": "completed",
       "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "GS-1",
+      "content": "Read workflow enforcement module and checkpoint protocol",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-2",
+      "content": "Read ticket, spec, test-break checkpoint, player_controller_3d.gd _try_attack(), attack_executor.gd",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-3",
+      "content": "Verify _try_attack() routing matches spec decision tree Section 6 (FAF-DD-1)",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-4",
+      "content": "Fix FAF-FM-3: add _attack_executor.is_active() guard before execute_attack() and cooldown write",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-5",
+      "content": "Verify no other unguarded cooldown writes exist in _try_attack()",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-6",
+      "content": "Run static QA: task hooks:gd-review -- scripts/player/player_controller_3d.gd",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-7",
+      "content": "Run full test suite: timeout 300 godot --headless -s tests/run_tests.gd",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-8",
+      "content": "Commit fix: fix(player): guard cooldown write when executor is active (FAF-FM-3)",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-9",
+      "content": "Update ticket: Stage=STATIC_QA, Revision=7, Last Updated By=Gameplay Systems Agent, Next=Acceptance Criteria Gatekeeper Agent",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-10",
+      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-11",
+      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "GS-12",
+      "content": "Write scoped checkpoint log at project_board/checkpoints/M12-03/2026-05-29T-gameplay-systems-run.md",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "QA-1",
+      "content": "Read CLAUDE.md review policy and all 4 target files",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-2",
+      "content": "Review player_controller_3d.gd lines ~479-484 (FAF-FM-3 guard change)",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-3",
+      "content": "Review test_fusion_attack_routing.gd organization, naming, test quality",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-4",
+      "content": "Review test_fusion_attack_routing_adversarial.gd organization, naming, test quality",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-5",
+      "content": "Review test_fusion_attack_routing_adversarial2.gd organization, naming, test quality",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-6",
+      "content": "Verify no CRITICAL Godot 4 API misuse, signal syntax, or runtime crash risks",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-7",
+      "content": "Write project_board/checkpoints/M12-03/2026-05-29T-static-qa-run.md",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-8",
+      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
+      "status": "completed",
+      "agent": "Static QA"
+    },
+    {
+      "id": "QA-9",
+      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
+      "status": "completed",
+      "agent": "Static QA"
     }
   ]
 }
