@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "ticket_id": "M12-02",
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
+  "stage": "TEST_BREAK",
+  "run_id": "2026-05-29T-test-design-run",
+  "agent": "Test Designer Agent",
+  "updated": "2026-05-29",
+  "captured_at": "2026-05-29T00:00:00Z",
+  "todos": [
+    {
+      "id": "TD-1",
+      "status": "completed",
+      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-2",
+      "status": "completed",
+      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-3",
+      "status": "completed",
+      "content": "Read spec at project_board/specs/fused_attack_resources_spec.md (FAR-1 through FAR-7, FAR-EC-1 through FAR-EC-8)",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-4",
+      "status": "completed",
+      "content": "Read existing test patterns: tests/scripts/attacks/test_attack_database.gd and test_fused_combo_matrix.gd",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-5",
+      "status": "completed",
+      "content": "Read scripts/attacks/attack_database.gd for base attack constants (damage, cooldown values for FAR-7 comparisons)",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-6",
+      "status": "completed",
+      "content": "Read tests/utils/test_utils.gd for available assertion helpers (_assert_approx, _assert_eq_float, etc.)",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-7",
+      "status": "completed",
+      "content": "Write tests/scripts/attacks/test_fused_attack_resources.gd with 36 test functions covering FAR-1 through FAR-7",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-8",
+      "status": "completed",
+      "content": "Verify FAR-EC-1 slow=0.0 falsy-zero pattern: used has() + typeof()==TYPE_FLOAT + ==0.0 (not truthiness)",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-9",
+      "status": "completed",
+      "content": "Verify FAR-EC-8 float precision: used _assert_approx() for 0.8, 0.6, and 1.2 acid_dps values",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-10",
+      "status": "completed",
+      "content": "Run timeout 300 godot --headless -s tests/run_tests.gd and confirm tests are RED (49 failures from missing fused registrations) and pre-existing tests are green",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-11",
+      "status": "completed",
+      "content": "Write checkpoint log at project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-12",
+      "status": "completed",
+      "content": "Update handoff-latest.yaml from Spec->Test Designer to Test Designer->Test Breaker",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-13",
+      "status": "completed",
+      "content": "Update todos-latest.json for test design run",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-14",
+      "status": "completed",
+      "content": "Advance ticket Stage to TEST_BREAK, Revision to 3, Last Updated By to Test Designer Agent",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-15",
+      "status": "completed",
+      "content": "Add index entry to project_board/CHECKPOINTS.md for test design run outcome",
+      "agent": "Test Designer Agent"
+    }
+  ]
+}

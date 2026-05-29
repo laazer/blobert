@@ -73,6 +73,12 @@ modifiers: {
 }
 ```
 
+> **PLANNER NOTE (2026-05-29):** The example values above contain out-of-range stats. Actual
+> base attacks use knockback_magnitude 0–5.0 and projectile_speed 8.0. The Spec Agent MUST
+> freeze all 6 stat blocks at values consistent with base attack magnitude conventions —
+> the example values above must NOT be used verbatim. See checkpoint CP-2 in
+> `project_board/checkpoints/M12-02/handoff-latest.yaml`.
+
 ## Dependencies
 
 - M11_core_1_attack_resource (attack data model)
@@ -84,3 +90,56 @@ modifiers: {
 - Color should reflect both component mutations for visual clarity
 - Can be created as .tres files manually or programmatically after initial data is defined
 
+---
+
+## WORKFLOW STATE
+
+### Stage
+TEST_BREAK
+
+### Revision
+3
+
+### Last Updated By
+Test Designer Agent
+
+### Validation Status
+- Tests: RED (expected — 49/36 test functions fail on clean checkout; fused attacks not yet registered)
+- Static QA: Not Run
+- Integration: Not Run
+
+### Blocking Issues
+- None
+
+### Escalation Notes
+- None
+
+---
+
+## NEXT ACTION
+
+### Next Responsible Agent
+Test Breaker Agent
+
+### Required Input Schema
+```json
+{
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
+  "spec_path": "project_board/specs/fused_attack_resources_spec.md",
+  "test_file": "tests/scripts/attacks/test_fused_attack_resources.gd",
+  "checkpoint_path": "project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md",
+  "handoff_path": "project_board/checkpoints/M12-02/handoff-latest.yaml",
+  "key_files": [
+    "scripts/attacks/attack_database.gd",
+    "scripts/attacks/attack_resource.gd",
+    "tests/scripts/attacks/test_fused_attack_resources.gd",
+    "project_board/specs/fused_attack_resources_spec.md"
+  ]
+}
+```
+
+### Status
+Proceed
+
+### Reason
+Test Designer Agent has written 36 test functions in test_fused_attack_resources.gd covering FAR-1 through FAR-7, FAR-EC-1, FAR-EC-2, FAR-NF-4, FAR-NF-6. Tests confirmed RED on clean checkout (49 failures; fused attacks not yet registered). Test Breaker must adversarially probe the test suite for gaps or spec mismatches.

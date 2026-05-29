@@ -41,6 +41,28 @@ Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/11_adhesion_pl
 
 ---
 
+## Run: 2026-05-29T-m12-02-autopilot (M12 Fused Attack Resources)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M12-02/`
+
+### [M12-02] — OUTCOME: PLANNING COMPLETE
+5-task execution plan (Spec → Test Design → Test Break → Implementation → AC Gate). Critical finding: ticket example stats out of range (knockback 120.0, projectile_speed 200.0 vs base attack conventions 0–5.0 / 8.0). Key decision: code registration in _register_defaults() chosen over .tres files (consistent with all 4 base attacks; no attacks/ directory exists). 4 assumptions logged. Stage → SPECIFICATION; handoff to Spec Agent.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-plan-run.md`
+
+### [M12-02] — OUTCOME: SPECIFICATION COMPLETE
+Frozen spec (FAR-1 through FAR-7, 6 NF requirements, 8 edge cases). 4 design decisions frozen: code registration in _register_defaults() (DR-1), stat range conventions knockback 0-8.0 / projectile_speed 8.0-14.0 (DR-2), attack IDs 101-106 by sorted key (DR-3), named constants required for all numeric values (DR-4). All 6 fused attack stat blocks defined: acid_claw (Toxic Slash, id=101), adhesion_claw (Sticky Slash, id=102), carapace_claw (Armored Slam, id=103), acid_adhesion (Venom Web, id=104), acid_carapace (Corrosive Slam, id=105), adhesion_carapace (Web Slam, id=106). 26 minimum test functions required in test_fused_attack_resources.gd. Stage → TEST_DESIGN; handoff to Test Designer Agent.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-spec-run.md`
+Spec: `project_board/specs/fused_attack_resources_spec.md`
+
+### [M12-02] — OUTCOME: TEST DESIGN COMPLETE
+36 test functions written in tests/scripts/attacks/test_fused_attack_resources.gd. Coverage: FAR-1 through FAR-7, FAR-EC-1 (slow=0.0 falsy-zero pattern), FAR-EC-2 (modifier dict sizes), FAR-NF-4 (no cross-contamination), FAR-NF-6 (unique attack names). Tests confirmed RED on clean checkout (49 failures; fused attacks not yet registered in _register_defaults()). 18 tests pass on clean checkout (invariant checks: clear()→0, base count=4, null==null symmetric checks, base ID range). Pre-existing test suites unaffected. Stage → TEST_BREAK; handoff to Test Breaker Agent.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md`
+
+---
+
 ## Run: 2026-05-28T-m12-01-autopilot (M12 Fused Attack Database Integration)
 
 - Queue mode: single ticket
