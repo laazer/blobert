@@ -115,8 +115,6 @@ func _free_pipeline(pipeline: Dictionary) -> void:
 # Risk: _try_attack() calls execute_attack() then unconditionally writes
 #       _mutation_cooldowns[cooldown_key] — no check on whether executor accepted.
 # This test exposes whether the implementation satisfies FAF-FM-3.
-# CHECKPOINT: Spec says cooldown NOT set; code at line 481-482 sets it unconditionally.
-#             This test may RED if the implementation does not check executor return.
 # ---------------------------------------------------------------------------
 
 func test_executor_active_blocks_cooldown_write() -> void:
@@ -174,8 +172,6 @@ func test_executor_active_blocks_cooldown_write() -> void:
 	var post_composite_cd: float = 0.0
 	if cd != null:
 		post_composite_cd = cd.get(composite, 0.0)
-	# CHECKPOINT: This assertion will FAIL if _try_attack sets cooldown unconditionally
-	# (current code at line 482 does exactly that). Marking spec gap.
 	_assert_eq_float(
 		pre_composite_cd, post_composite_cd,
 		label + "_cooldown_not_set_when_executor_blocked"

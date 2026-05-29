@@ -1,31 +1,35 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-03
-  from_agent: test_breaker
-  to_agent: implementation
+  from_agent: static_qa
+  to_agent: learning
   validated_at: "2026-05-29T00:00:00Z"
-  required_items_met: 2
-  total_required_items: 2
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: breaker_gaps_documented
-      item: "Test Breaker gaps documented"
-      status: complete
-      evidence: project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md
-
-    - item_key: breaker_impl_notes
-      item: "Implementation Agent attestation and notes"
+    - item_key: review_feedback_incorporated
+      item: "Feedback incorporated"
       status: complete
       evidence: >
-        Implementation Agent task for M12-03 is a verification pass, not a
-        code-change task. However, Test Breaker found one real spec gap:
-        FAF-FM-3 violation in _try_attack() at player_controller_3d.gd line 482.
-        When AttackExecutor rejects execute_attack() due to _is_active=true,
-        the cooldown is still written unconditionally. Spec FAF-FM-3 says
-        cooldown must NOT be set when executor rejects the dispatch.
-        Implementation Agent must:
-        1. Verify _try_attack() matches spec decision tree (Section 6).
-        2. Fix FAF-FM-3 gap: check return value or _is_active state before
-           writing _mutation_cooldowns after execute_attack() call.
-        3. Run static QA: task hooks:gd-review -- scripts/player/player_controller_3d.gd
-        4. Run timeout 300 godot --headless -s tests/run_tests.gd and confirm
-           ALL tests pass (exit 0), including FAF-ADV2-1.
+        W-1 fixed: removed stale CHECKPOINT comments from
+        test_fusion_attack_routing_adversarial2.gd lines 117-120 and 177-178.
+        No CRITICAL issues found. FAF-FM-3 fix (player_controller_3d.gd lines 481-482)
+        is correct and well-tested.
+
+    - item_key: review_code_reviewed
+      item: "Code reviewed"
+      status: complete
+      evidence: >
+        Files reviewed: scripts/player/player_controller_3d.gd,
+        tests/scripts/attacks/test_fusion_attack_routing.gd,
+        tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd,
+        tests/scripts/attacks/test_fusion_attack_routing_adversarial2.gd.
+        72 total test assertions, 0 failures.
+
+    - item_key: review_merge_ready
+      item: "Merge-ready"
+      status: complete
+      evidence: >
+        All CRITICAL and blocking issues resolved. W-1 stale CHECKPOINT comments
+        removed. Implementation change is minimal and correct. All 72 test
+        assertions pass. Static QA (gd-review + gd-organization) clean.
