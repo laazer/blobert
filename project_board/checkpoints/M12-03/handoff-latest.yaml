@@ -1,35 +1,30 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-03
-  from_agent: static_qa
-  to_agent: learning
+  from_agent: learning
+  to_agent: ac_gatekeeper
   validated_at: "2026-05-29T00:00:00Z"
   required_items_met: 3
   total_required_items: 3
   checklist:
-    - item_key: review_feedback_incorporated
-      item: "Feedback incorporated"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: >
-        W-1 fixed: removed stale CHECKPOINT comments from
-        test_fusion_attack_routing_adversarial2.gd lines 117-120 and 177-178.
-        No CRITICAL issues found. FAF-FM-3 fix (player_controller_3d.gd lines 481-482)
-        is correct and well-tested.
+      evidence: project_board/LEARNINGS.md
 
-    - item_key: review_code_reviewed
-      item: "Code reviewed"
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
       evidence: >
-        Files reviewed: scripts/player/player_controller_3d.gd,
-        tests/scripts/attacks/test_fusion_attack_routing.gd,
-        tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd,
-        tests/scripts/attacks/test_fusion_attack_routing_adversarial2.gd.
-        72 total test assertions, 0 failures.
+        Root causes: (1) AC semantic drift vs code reality — is_fusion_active()
+        naming vs both-slots-filled routing gate; resolved by Spec Agent reading
+        code. (2) FAF-FM-3 phantom-cooldown bug from unconditional side effect
+        after void-return collaborator call; found by Test Breaker. (3) Stale
+        CHECKPOINT comments in test source post-fix required removal commit.
+        (4) Verification-only tickets need same adversarial coverage depth as
+        new-feature tickets.
 
-    - item_key: review_merge_ready
-      item: "Merge-ready"
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: >
-        All CRITICAL and blocking issues resolved. W-1 stale CHECKPOINT comments
-        removed. Implementation change is minimal and correct. All 72 test
-        assertions pass. Static QA (gd-review + gd-organization) clean.
+      evidence: project_board/checkpoints/M12-03/todos-latest.json

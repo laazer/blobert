@@ -2,232 +2,58 @@
   "schema_version": "1.0",
   "captured_at": "2026-05-29T00:00:00Z",
   "ticket_id": "M12-03",
-  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
-  "stage": "STATIC_QA",
-  "run_id": "2026-05-29T-static-qa-run",
-  "agent": "Static QA",
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/done/03_fusion_attack_framework.md",
+  "stage": "LEARNING",
+  "run_id": "2026-05-29T-learning-run",
+  "agent": "Learning Agent",
   "todos": [
     {
-      "id": "TB-1",
-      "content": "Read workflow enforcement module and checkpoint protocol",
+      "id": "LRN-1",
+      "content": "Read agent role definition at agent_context/agents/9_learning/learning_v1.md",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-2",
-      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
+      "id": "LRN-2",
+      "content": "Read completed ticket at project_board/12_milestone_12_fused_mutation_attacks/done/03_fusion_attack_framework.md",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-3",
-      "content": "Read spec at project_board/specs/fusion_attack_framework_spec.md",
+      "id": "LRN-3",
+      "content": "Read all scoped checkpoint files under project_board/checkpoints/M12-03/",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-4",
-      "content": "Read previous test design checkpoint at project_board/checkpoints/M12-03/2026-05-29T-test-design-run.md",
+      "id": "LRN-4",
+      "content": "Read tail of project_board/LEARNINGS.md to understand existing format and last entry",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-5",
-      "content": "Read existing behavioral tests: test_fusion_attack_routing.gd (14 tests, 22 assertions)",
+      "id": "LRN-5",
+      "content": "Extract root causes: FAF-DD-1 AC semantic drift resolved by code-first reading, FAF-FM-3 phantom cooldown bug exposed by Test Breaker adversarial pass, stale CHECKPOINT comments in test source, verification-only ticket adversarial budget",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-6",
-      "content": "Read existing adversarial tests: test_fusion_attack_routing_adversarial.gd (10 tests, 22 assertions)",
+      "id": "LRN-6",
+      "content": "Append M12-03 learning entry to project_board/LEARNINGS.md with all required sections",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-7",
-      "content": "Read player_controller_3d.gd _try_attack() (lines 445-482) and attack_executor.gd execute_attack()",
+      "id": "LRN-7",
+      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml with from_agent=learning, to_agent=ac_gatekeeper, canonical items learning_insights_documented, learning_rationale_recorded, learning_checklist_validated",
       "status": "completed",
-      "agent": "Test Breaker Agent"
+      "agent": "Learning Agent"
     },
     {
-      "id": "TB-8",
-      "content": "Analyze spec gaps not covered by existing tests using checklist matrix",
+      "id": "LRN-8",
+      "content": "Write project_board/checkpoints/M12-03/todos-latest.json with all learning todos completed",
       "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-9",
-      "content": "Write tests/scripts/attacks/test_fusion_attack_routing_adversarial2.gd (9 adversarial tests, 28 assertions)",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-10",
-      "content": "Run task hooks:gd-review and task hooks:gd-organization on new test file",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-11",
-      "content": "Run full test suite (timeout 300 godot --headless -s tests/run_tests.gd) and record results",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-12",
-      "content": "Document FAF-FM-3 spec gap found by GAP-1 test (FAF-ADV2-1 FAIL: expected 0.0, got 2.0)",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-13",
-      "content": "Update ticket: Stage=IMPLEMENTATION_GENERALIST, Revision=6, Last Updated By=Test Breaker Agent, Next=Gameplay Systems Agent",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-14",
-      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-15",
-      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "TB-16",
-      "content": "Write scoped checkpoint log at project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md",
-      "status": "completed",
-      "agent": "Test Breaker Agent"
-    },
-    {
-      "id": "GS-1",
-      "content": "Read workflow enforcement module and checkpoint protocol",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-2",
-      "content": "Read ticket, spec, test-break checkpoint, player_controller_3d.gd _try_attack(), attack_executor.gd",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-3",
-      "content": "Verify _try_attack() routing matches spec decision tree Section 6 (FAF-DD-1)",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-4",
-      "content": "Fix FAF-FM-3: add _attack_executor.is_active() guard before execute_attack() and cooldown write",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-5",
-      "content": "Verify no other unguarded cooldown writes exist in _try_attack()",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-6",
-      "content": "Run static QA: task hooks:gd-review -- scripts/player/player_controller_3d.gd",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-7",
-      "content": "Run full test suite: timeout 300 godot --headless -s tests/run_tests.gd",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-8",
-      "content": "Commit fix: fix(player): guard cooldown write when executor is active (FAF-FM-3)",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-9",
-      "content": "Update ticket: Stage=STATIC_QA, Revision=7, Last Updated By=Gameplay Systems Agent, Next=Acceptance Criteria Gatekeeper Agent",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-10",
-      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-11",
-      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "GS-12",
-      "content": "Write scoped checkpoint log at project_board/checkpoints/M12-03/2026-05-29T-gameplay-systems-run.md",
-      "status": "completed",
-      "agent": "Gameplay Systems Agent"
-    },
-    {
-      "id": "QA-1",
-      "content": "Read CLAUDE.md review policy and all 4 target files",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-2",
-      "content": "Review player_controller_3d.gd lines ~479-484 (FAF-FM-3 guard change)",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-3",
-      "content": "Review test_fusion_attack_routing.gd organization, naming, test quality",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-4",
-      "content": "Review test_fusion_attack_routing_adversarial.gd organization, naming, test quality",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-5",
-      "content": "Review test_fusion_attack_routing_adversarial2.gd organization, naming, test quality",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-6",
-      "content": "Verify no CRITICAL Godot 4 API misuse, signal syntax, or runtime crash risks",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-7",
-      "content": "Write project_board/checkpoints/M12-03/2026-05-29T-static-qa-run.md",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-8",
-      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
-      "status": "completed",
-      "agent": "Static QA"
-    },
-    {
-      "id": "QA-9",
-      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
-      "status": "completed",
-      "agent": "Static QA"
+      "agent": "Learning Agent"
     }
   ]
 }

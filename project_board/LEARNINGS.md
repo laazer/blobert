@@ -8264,3 +8264,80 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M12-03] — Spec-wording vs code-reality conflicts resolved by code-first reading; Test Breaker exposed a real phantom-cooldown bug
+*Completed: 2026-05-29*
+
+### Learnings
+
+- **category: process**
+  **insight:** When a ticket AC names a specific API symbol (e.g., "`is_fusion_active()` is used to determine routing"), and that symbol exists in the codebase with a different semantic than the AC implies, the Spec Agent must read the actual code before freezing any interpretation. In M12-03, `is_fusion_active()` returns the speed-boost timer (slots empty) while the AC intended "both mutation slots are filled." Reading three code locations — `_try_attack()`, `is_fusion_active()`, and `fusion_resolver.gd` — produced a high-confidence answer in one pass with zero rework.
+  **impact:** Zero downstream rework. All 5 ACs were satisfied by existing code because the spec was frozen correctly on the first attempt.
+  **prevention:** Spec Agent must always read the referenced symbol's implementation before freezing interpretation. When a ticket AC's wording contradicts or misnames existing code, the code is authoritative; the AC is a prose description that may have semantic drift. Document the mismatch explicitly in the spec (as FAF-DD-1 did), do not silently adopt the AC's phrasing.
+  **severity:** high
+
+- **category: testing**
+  **insight:** The Test Breaker's adversarial pass found a real latent bug (FAF-FM-3): `_try_attack()` wrote `_mutation_cooldowns[cooldown_key]` unconditionally, even when `execute_attack()` was silently rejected by the executor's `_is_active` guard. This phantom cooldown write was not exercised by any prior test because all prior tests set up the executor in an idle state. The Test Breaker specifically varied executor state — a dimension the Test Designer never exercised.
+  **impact:** The bug was caught before merge and fixed with a 2-line guard. Had it shipped, rapid attack inputs during a previous attack animation would silently trigger a full cooldown, making the attack appear to misfire randomly.
+  **prevention:** The Test Breaker agent's adversarial mandate — write tests that vary collaborator state (executor active/inactive, null DB, null policy) — directly enables this class of discovery. The practice should be reinforced. Specifically: the Test Breaker should always test every external collaborator call site with the collaborator in a blocking/rejected/busy state and verify that the caller's side effects (here: cooldown write) are conditioned on the call succeeding.
+  **severity:** high
+
+- **category: testing**
+  **insight:** Test Breaker agents embed discovery-phase checkpoint comments directly into test source code ("CHECKPOINT: This assertion will FAIL if _try_attack sets cooldown unconditionally — current code at line 482 does exactly that. Marking spec gap."). These comments are accurate at write time and serve the Test Breaker's documentation purpose. But after the Implementation Agent applies the fix, these comments describe a state that no longer exists, actively misleading future readers about the current implementation's correctness.
+  **impact:** Static QA found the stale comments as WARNING W-1 and required a fix iteration (commit b7849c2) to remove them before merge. This is a clean-up cost that could be avoided entirely.
+  **prevention:** Test Breaker agents must not embed checkpoint prose in test source files. Spec gap documentation belongs exclusively in `project_board/checkpoints/<ticket-id>/<run-id>.md`. In-test comments should describe observable behavior ("assert cooldown is not set when executor is busy"), never the pre-fix code state or the agent's discovery reasoning.
+  **severity:** medium
+
+- **category: architecture**
+  **insight:** When a ticket's acceptance criteria references a named function as "the routing gate," but the actual routing does not use that function at all, the correct resolution is to confirm — via code — that the named function's concept is already embodied by the actual routing logic, then document the semantic mapping in the spec. In M12-03, `is_fusion_active()` (AC-4's named function) and `a_filled and b_filled` (the actual gate) are not only different functions, they are temporally mutually exclusive states. The spec's FAF-DD-1 decision locked this in with code evidence at three locations.
+  **impact:** Zero ambiguity for Test Designer or Implementation Agent. Tests for the speed-boost window boundary (FAF-FM-5) confirmed temporal exclusivity. No confusion propagated downstream.
+  **prevention:** When any AC names a specific function as an implementation mechanism, the Spec Agent must verify: (a) does the function exist, (b) does the function's behavior match the AC's intent, and (c) is the function already used in the relevant code path. If (c) is false, the AC is either misleading or describing a new requirement. Freeze explicitly.
+  **severity:** medium
+
+### Anti-Patterns
+
+- **description:** Test Breaker writes spec-gap discovery notes as inline CHECKPOINT comments inside the test assertions they apply to. After the fix, these comments falsely describe the codebase.
+  **detection_signal:** A comment in a test file uses the word CHECKPOINT, refers to a specific line number in implementation source, or describes a pre-fix code behavior (e.g., "current code sets cooldown unconditionally").
+  **prevention:** All CHECKPOINT comments belong in scoped checkpoint log files under `project_board/checkpoints/<ticket-id>/`. Test source should only contain behavioral documentation: what the test asserts and why that behavior is specified. After the Implementation Agent applies a fix, discovery-phase comments in source become factually incorrect and require a separate fix iteration to remove.
+
+- **description:** Ticket acceptance criteria name a specific codebase symbol as "the mechanism" without verifying that symbol's actual runtime semantics. When the named symbol has a different semantic than implied, every downstream agent may misread the AC without catching the drift.
+  **detection_signal:** AC names a specific function or field AND uses language like "is used to determine" or "is the routing gate." When the Implementation Agent reads the corresponding code and the named symbol does not appear in the relevant code path, this is the signal.
+  **prevention:** Spec Agent must always read the referenced symbol's implementation before accepting the AC's premise. If the symbol is not used in the relevant path, freeze the correct interpretation in the spec with explicit evidence and document why the AC's wording is misleading.
+
+- **description:** Tests for a routing function only exercise collaborators in their "happy path" (idle/available) state, leaving collaborator-rejection paths untested. The caller's side effects after a rejected call remain unverified.
+  **detection_signal:** All test setups for a function that calls an external collaborator leave that collaborator in its default/idle state. No test explicitly sets the collaborator to a busy/active/failing state and verifies the caller's post-call side effects.
+  **prevention:** For every external call site in a routing function, the Test Breaker must write at least one test with the collaborator in its rejection state (busy, null, active) and verify that the caller's side effects (writes, state mutations, signal emissions) are absent when the call is rejected.
+
+### Prompt Patches
+
+- **agent: Spec Agent**
+  **change:** "When a ticket acceptance criterion names a specific function or field as 'the mechanism' (e.g., '`is_fusion_active()` is used to determine routing'), read that symbol's actual implementation before accepting the AC's premise. If the symbol is not present in the relevant code path, or has a different semantic than the AC implies, freeze the correct interpretation in the spec using code evidence from at least two corroborating locations. Document the mismatch explicitly as a design decision rather than silently adopting the AC's wording."
+  **reason:** M12-03's central ambiguity was resolved cleanly in one spec pass because the Spec Agent read the code. Without that reading, the Test Designer might have written tests against `is_fusion_active()` that would all fail or require implementation of a semantically incorrect feature.
+
+- **agent: Test Breaker Agent**
+  **change:** "Do not embed discovery-phase checkpoint prose inside test source files. Comments such as 'CHECKPOINT: This will FAIL because current code at line 482 does X' belong in the scoped checkpoint log at `project_board/checkpoints/<ticket-id>/<run-id>.md`. In-test comments must describe observable behavior only: what the test asserts and why that behavior is specified. After the Implementation Agent applies a fix, discovery-phase comments in source become factually incorrect and require a separate fix iteration to remove."
+  **reason:** M12-03's Test Breaker left stale CHECKPOINT comments that described the pre-fix code state. Static QA flagged them as WARNING W-1 and required a removal commit before merge.
+
+- **agent: Test Breaker Agent**
+  **change:** "For every external collaborator call site in the code under test, write at least one adversarial test that puts the collaborator in its rejected/busy/blocking state and asserts that the caller's side effects (dict writes, field mutations, signal emissions) are absent when the call is not accepted. The default idle/available state of a collaborator is not sufficient adversarial coverage for a call site."
+  **reason:** FAF-FM-3 was a phantom-cooldown write bug: `_try_attack()` wrote the cooldown unconditionally after calling `execute_attack()`, even though the executor silently rejected the call when `_is_active=true`. No prior test set the executor to active state. The Test Breaker's adversarial pass found the only real implementation bug in this ticket.
+
+### Workflow Improvements
+
+- **issue:** Test Designer produces a complete passing test suite but no test varies executor-active state. The Test Breaker subsequently finds a real bug by varying exactly that state. The gap was not in quantity but in collaborator-state coverage.
+  **improvement:** Add a required "collaborator state matrix" step to the Test Designer checklist: for each function under test, enumerate every external collaborator call site and its possible states (active/idle/null/failing). Test Designer must cover at least the null and default states; Test Breaker must cover rejection states. This makes the gap explicit at Test Design time rather than discovered during Test Break.
+  **expected_benefit:** Reduces the probability that the Test Breaker adversarial pass is the only layer that varies collaborator state. Distributes coverage responsibility intentionally.
+
+- **issue:** When a ticket's routing outcome depends entirely on pre-existing code (spec freezes "no new implementation needed"), the Test Designer's "regression tests are GREEN" result gives a false sense of complete coverage. The orchestrator may abbreviate the Test Breaker budget for "verification only" tickets.
+  **improvement:** Tickets classified as "regression/verification" at spec time should receive the same Test Breaker adversarial budget as new-feature tickets. Existing code that has never been adversarially verified is not proven correct. Make this explicit in the orchestrator's task-planning step: "verification tickets are not low-risk tickets."
+  **expected_benefit:** The FAF-FM-3 bug existed in already-shipped M12-01 code. The M12-03 Test Breaker found it only because the adversarial pass ran at full depth. Keeping the full pass for verification tickets prevents latent bugs from being grandfathered in.
+
+### Keep / Reinforce
+
+- **practice:** Spec Agent reading code at multiple corroborating locations (three for FAF-DD-1: `_try_attack()` line 464, `is_fusion_active()` line 603, `fusion_resolver.gd` lines 51-64) before freezing a design decision.
+  **reason:** The three-location corroboration produced a high-confidence freeze with no downstream rework. A single-location read might have been insufficient — the temporal exclusivity of the two states (slots filled vs. slots empty during speed boost) was only obvious after reading all three files together.
+
+- **practice:** Test Breaker's adversarial mandate to vary collaborator state independently of the primary routing path, exposing the executor-active gap that all prior tests missed.
+  **reason:** FAF-FM-3 was a real latent bug caught before shipping. Treating every external call site as a potential rejection point and verifying caller side effects in the rejection case is the correct adversarial posture for routing functions.
+
+---
+
