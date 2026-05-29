@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="blobert"
-run/main_scene="res://scenes/levels/sandbox/m11_verification_core_3d.tscn"
+run/main_scene="res://scenes/levels/procedural_run.tscn"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon_opt2.png"
 
