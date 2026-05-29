@@ -55,15 +55,21 @@ func test_play_damage_skips_when_dead_no_crash() -> void:
 
 
 func test_player_source_wires_damage_animation() -> void:
-	const NAME := "DDA-02 — PlayerController3D calls play_damage_hit_animation on chunk path"
-	var path := "res://scripts/player/player_controller_3d.gd"
-	var f := FileAccess.open(path, FileAccess.READ)
-	if f == null:
-		_fail(NAME, "could not read " + path)
-		return
-	var src := f.get_as_text()
-	if not src.contains("play_damage_hit_animation()"):
-		_fail(NAME, "expected play_damage_hit_animation() in player controller")
+	const NAME := "DDA-02 — chunk path calls play_damage_hit_animation on stick"
+	var paths: Array[String] = [
+		"res://scripts/player/player_controller_3d.gd",
+		"res://scripts/player/player_chunk_slot_processor.gd",
+	]
+	var found := false
+	for path in paths:
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		if f.get_as_text().contains("play_damage_hit_animation()"):
+			found = true
+			break
+	if not found:
+		_fail(NAME, "expected play_damage_hit_animation in player chunk wiring")
 		return
 	_pass(NAME)
 
