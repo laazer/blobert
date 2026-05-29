@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-29T00:00:00Z",
+  "ticket_id": "M12-04",
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/in_progress/04_acid_claw_fusion_attack.md",
+  "stage": "TEST_BREAK",
+  "run_id": "2026-05-29T-test-design-run",
+  "agent": "Test Designer Agent",
+  "todos": [
+    {"id": "TD-1", "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-2", "content": "Read ticket M12-04 and full spec at project_board/specs/acid_claw_fusion_attack_spec.md", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-3", "content": "Read attack_executor.gd for existing handler patterns and async lifecycle", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-4", "content": "Read attack_resource.gd for current schema (no combo_hits yet)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-5", "content": "Read enemy_effect_tracker.gd for add_dot overwrite behavior", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-6", "content": "Read enemy_base.gd for apply_acid() API and _is_dead guard patterns", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-7", "content": "Read test_claw_attack.gd and test_acid_attack.gd for framework patterns", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-8", "content": "Read attack_executor_harness.gd and test_utils.gd for helpers", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-9", "content": "Write tests/scripts/attacks/test_acid_claw_combo_attack.gd (41 tests, AC-1 through AC-6)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-10", "content": "Write tests/scripts/attacks/test_acid_claw_combo_adversarial.gd (14 tests, AC-EC-1 through AC-EC-10 + failure modes)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-11", "content": "Write tests/scripts/enemies/test_enemy_acid_stacking.gd (18 tests, AC-3 isolated)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-12", "content": "Fix inner class declared inside function body in test_ac4e (GDScript invalid syntax)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-13", "content": "Verify all 73 test functions are wired in run_all() in each file", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-14", "content": "Update ticket M12-04 to Stage TEST_BREAK, Revision 5", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-15", "content": "Write handoff-latest.yaml (test_designer -> test_breaker)", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-16", "content": "Write todos-latest.json for test design run", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-17", "content": "Write scoped checkpoint log project_board/checkpoints/M12-04/2026-05-29T-test-design-run.md", "status": "completed", "agent": "Test Designer Agent"},
+    {"id": "TD-18", "content": "Update project_board/CHECKPOINTS.md with test design run outcome", "status": "completed", "agent": "Test Designer Agent"}
+  ]
+}
