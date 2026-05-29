@@ -33,9 +33,10 @@ Log: `project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md`
 Added _attack_executor.is_active() guard before execute_attack() and _mutation_cooldowns write in _try_attack() (scripts/player/player_controller_3d.gd). All 72 fusion routing tests GREEN (FusionAttackRoutingTests: 22, FusionAttackRoutingAdversarialTests: 22, FusionAttackRoutingAdversarial2Tests: 28). FAF-ADV2-1 now passes. Routing verified: matches spec Section 6 decision tree; zero is_fusion_active() references in _try_attack(). Stage → STATIC_QA; handoff to Acceptance Criteria Gatekeeper Agent.
 Log: `project_board/checkpoints/M12-03/2026-05-29T-gameplay-systems-run.md`
 
-### [M12-03] — OUTCOME: AC GATEKEEPER — INTEGRATION (push verification pending)
-All 5 ACs fully evidenced by automated tests and code inspection. Static QA clear (W-1 already resolved, W-2/INFO non-blocking). Git working tree clean for M12-03 files. Push state cannot be verified without shell access; Stage held at INTEGRATION. Human must confirm git push and advance to COMPLETE.
+### [M12-03] — OUTCOME: COMPLETE
+All 5 ACs fully evidenced. FAF-FM-3 fix (executor-active guard before cooldown write) committed (5cd1686). 72 fusion routing tests GREEN. Static QA clean. Ticket moved to done/. Commits: 85b0135, ae28272, 5cd1686, b7849c2, ca3030d, 4ffd010.
 Log: `project_board/checkpoints/M12-03/2026-05-29T-ac-gatekeeper-run.md`
+Ticket: `project_board/12_milestone_12_fused_mutation_attacks/done/03_fusion_attack_framework.md`
 
 ---
 
