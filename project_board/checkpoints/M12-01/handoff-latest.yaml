@@ -1,25 +1,21 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-01
-  from_agent: Implementation Agent
-  to_agent: Static QA
+  from_agent: Learning Agent
+  to_agent: AC Gatekeeper
   validated_at: "2026-05-29T00:00:00Z"
-  required_items_met: 4
-  total_required_items: 4
+  required_items_met: 3
+  total_required_items: 3
   checklist:
-    - item_key: impl_ac_complete
-      item: "All acceptance criteria implemented"
+    - item_key: learning_insights_documented
+      item: "Insights documented"
       status: complete
-      evidence: "All 9 ACs verified in project_board/checkpoints/M12-01/2026-05-29T-gameplay-systems-run.md. AC 1-9 all PASS. AC 8 (combo matrix) covered by test_fused_combo_matrix.gd (18 tests, 36 assertions)."
-    - item_key: impl_tests_passing
-      item: "All tests passing"
+      evidence: project_board/LEARNINGS.md
+    - item_key: learning_rationale_recorded
+      item: "Decision rationale recorded"
       status: complete
-      evidence: "FusedComboMatrixAdversarialTests 59 passed 0 failed, FusedComboMatrixTests 36 passed 0 failed. === ALL TESTS PASSED ===. ACID_PROJECTILE_LIFETIME extraction is behavioral no-op."
-    - item_key: impl_linter_clean
-      item: "No linter violations"
+      evidence: "Root causes extracted for: (1) checkpoint prose leak into test_fused_combo_matrix_adversarial.gd (fix commit 5888e86); (2) from_agent alias mismatch at implementation_to_static_qa gate (from_agent: Gameplay Systems Agent vs canonical alias Implementation Agent); (3) correct Planner scoping of already-implemented ticket; (4) naive composite-key derivation causing 6 initial test failures in Test Designer."
+    - item_key: learning_checklist_validated
+      item: "Handoff checklist validated"
       status: complete
-      evidence: project_board/checkpoints/M12-01/2026-05-29T-gameplay-systems-run.md
-    - item_key: impl_checkpoint_logged
-      item: "Checkpoint logged"
-      status: complete
-      evidence: project_board/checkpoints/M12-01/2026-05-29T-gameplay-systems-run.md
+      evidence: "All checkpoint files for M12-01 read (plan, spec, test-design, test-break, gameplay-systems, ac-gatekeeper runs). Ticket done/01_fused_attack_database_integration.md read. LEARNINGS.md appended with entry conforming to learning_v1.md format. todos-latest.json updated with all learning tasks as completed."

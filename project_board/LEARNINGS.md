@@ -8108,3 +8108,76 @@ M902-17 (Final Validation & Stage Integration) completed from planning through A
 
 ---
 
+## [M12-01] — Checkpoint prose leaked into test source; handoff agent-alias mismatch pattern persists
+*Completed: 2026-05-29*
+
+### Learnings
+
+- **category:** process
+  **insight:** The Test Breaker Agent embedded `# CHECKPOINT`, `Assumption:`, and `Confidence:` comment blocks directly into `test_fused_combo_matrix_adversarial.gd`. These are internal agent deliberation artifacts that belong only in `project_board/checkpoints/`. Their presence in a committed test file required a separate fix commit (5888e86) and a static QA review iteration.
+  **impact:** One complete rework cycle (Static QA CRITICAL finding → fix commit → re-verify) that was avoidable. Checkpoint prose in source is also a form of information leak — it embeds pipeline internals into the game codebase.
+  **prevention:** Test Breaker Agent must strip all `# CHECKPOINT`, `Assumption:`, and `Confidence:` comment blocks before writing the final test file. Internal deliberation notes must be written exclusively to the checkpoint log file, never to source.
+  **severity:** high
+
+- **category:** process
+  **insight:** The `implementation_to_static_qa` handoff used `from_agent: Gameplay Systems Agent` — the display name of the agent — rather than the canonical alias `Implementation Agent` that the gate validates against. This is the same root cause as 11 prior handoff alias errors: agents do not share a canonical alias registry and write what feels natural (their full agent title) rather than the gate's short alias.
+  **impact:** Required manual orchestrator correction at the implementation→static_qa gate, continuing the 12-ticket unbroken handoff-alias-mismatch streak. Each correction is one avoidable routing cycle.
+  **prevention:** All agents must look up their own alias in `workflow_enforcement_v1.md`'s agent alias map before writing `from_agent`. The alias is a machine key, not a display name. This is the same fix needed since M11-01; it will remain broken until `write_handoff.sh` enforces it programmatically.
+  **severity:** medium
+
+- **category:** architecture
+  **insight:** When a ticket's core implementation is already complete from a prior milestone, the Planner's correct response is to narrow scope to documentation gaps and missing test coverage — not to re-implement. M12-01's Planner identified that `attack_database.gd` and `player_controller_3d.gd` were fully implemented, and scoped work to: one spec document, a combo matrix test suite, and adversarial hardening. This kept the pipeline proportionate to the actual gap.
+  **impact:** Zero implementation rework because there was no new implementation. Pipeline completed in under 2 days with 95 new tests validating pre-existing code. Any misscoping (e.g., re-implementing the cooldown model) would have introduced unnecessary risk.
+  **prevention:** Planner should always run an explicit "already exists?" discovery pass before proposing implementation tasks. Evidence of prior implementation (passing tests, code review) must be cited in the Execution Plan. Scope should be min(what spec/tests need) not max(what the ticket description implies).
+  **severity:** low
+
+- **category:** testing
+  **insight:** The Test Designer's initial composite-key computation was naive: `"fcm_" + sorted_key` produced `"fcm_acid_claw"` instead of the correct `"fcm_acid_fcm_claw"`. This caused 6 test failures on first run. The correct derivation sorts the fully-namespaced IDs, not the mutation short-names, matching the exact runtime key derivation in `_try_attack()` lines 469–471.
+  **impact:** One iteration of 6 test failures before the key computation was corrected. The root cause was not reading the runtime key derivation before writing tests.
+  **prevention:** When writing tests that assert on computed keys or derived identifiers, read the production key-derivation code before writing the test assertion. Never infer key format from the mutation names alone.
+  **severity:** low
+
+### Anti-Patterns
+
+- **description:** Test Breaker Agent embeds internal checkpoint deliberation (`# CHECKPOINT`, `Assumption:`, `Confidence:`) directly in test source files instead of isolating it to checkpoint log files.
+  **detection_signal:** Static QA or gd-review raises a CRITICAL finding on test files for comment blocks containing "CHECKPOINT", "Assumption made:", or "Confidence:" outside of `project_board/checkpoints/`.
+  **prevention:** Add to Test Breaker prompt: "Before committing, grep your test file for '# CHECKPOINT', 'Assumption:', and 'Confidence:' — remove all occurrences. These belong only in the checkpoint log file."
+
+- **description:** `from_agent` in handoff YAML set to agent display name rather than gate alias (e.g., "Gameplay Systems Agent" instead of "Implementation Agent"). 12 consecutive tickets with at least one occurrence of this error.
+  **detection_signal:** Gate rejects handoff on agent alias mismatch. Orchestrator has to manually correct `from_agent` in handoff YAML.
+  **prevention:** `PIPELINE_BLOCKER` escalation stands from M11-10. The only durable fix is `write_handoff.sh` with alias enum enforcement. Prompt-only patches have plateaued in effectiveness.
+
+- **description:** Static QA gate received a handoff with `from_agent: Gameplay Systems Agent` (display name) instead of the canonical alias. This is structurally identical to M11-11's `from_agent: Test Breaker` mismatch at the same gate, indicating the implementation agent's prompt patch from M11-11 did not fully address the alias vs display-name distinction.
+  **detection_signal:** Same pattern as M11-11: static QA gate rejection on agent alias. The prompt patch said "write a new handoff" but did not say "use the alias from the gate's alias map, not your display name."
+  **prevention:** Strengthen the M11-11 prompt patch: add "Your `from_agent` value must be exactly the short alias listed in `workflow_enforcement_v1.md`, not your agent title or display name."
+
+### Prompt Patches
+
+- **agent: Test Breaker Agent**
+  **change:** "Before writing the final test file, remove all occurrences of `# CHECKPOINT`, `# Assumption:`, `# Assumption made:`, and `# Confidence:` comment blocks from the source. These deliberation notes belong exclusively in the checkpoint log file (`project_board/checkpoints/<ticket-id>/<run-id>.md`). A test file containing these strings will fail static QA review."
+  **reason:** M12-01's Test Breaker leaked checkpoint deliberation into `test_fused_combo_matrix_adversarial.gd`, requiring a separate fix commit (5888e86) and a static QA CRITICAL finding. The test file is committed to the game codebase; checkpoint prose is an internal pipeline artifact.
+
+- **agent: Gameplay Systems Agent (Implementation)**
+  **change:** "When writing `handoff-latest.yaml`, set `from_agent` to the exact short alias listed for your role in `workflow_enforcement_v1.md`'s agent alias map — not your full agent title or display name. If your title is 'Gameplay Systems Agent', your alias may be 'Implementation Agent'. Look up the alias before writing the field."
+  **reason:** M12-01's implementation handoff used `from_agent: Gameplay Systems Agent` which the static QA gate does not alias to 'Implementation Agent', causing a gate rejection. This is the second consecutive occurrence of this alias mismatch at the same gate (first in M11-11 with `from_agent: Test Breaker`). The M11-11 patch said "write a new handoff" but did not address alias vs display-name distinction.
+
+### Workflow Improvements
+
+- **issue:** `PIPELINE_BLOCKER` (12th recurrence) — `ci/scripts/write_handoff.sh` remains unbuilt. Prompt patches have reduced per-ticket handoff errors from 2–3 (M11-01 through M11-07) to 1 (M11-08 through M12-01), but the alias mismatch class of error has not been eliminated because it requires a canonical enum, not a prompt instruction. The 12 tickets of correction history now cover every known error mode: alias mismatch, field-name mismatch (`id` vs `item_key`, `met` vs `status`), wrong evidence format.
+  **improvement:** Status escalation from M11-10/11: hard-block M12 milestone completion if `write_handoff.sh` is not the first ticket in M12. The 12-ticket correction log provides a complete regression test suite for the script. Minimum requirements: (1) canonical agent alias enum validated against `workflow_enforcement_v1.md`, (2) required field schema validation (`item_key`, `status: complete|pending|blocked`, `evidence`), (3) `from_agent` alias lookup from enum — no free-text input.
+  **expected_benefit:** Eliminates the single longest-running pipeline error. With prompt patches plateauing at ~1 error/ticket and the alias mismatch class showing no improvement, only programmatic enforcement will close the gap.
+
+- **issue:** Test Breaker has no post-write validation step to catch agent-internal artifacts (checkpoint prose, pipeline metadata) before the file is committed.
+  **improvement:** Add a pre-commit self-check step to Test Breaker's procedure: after writing the test file, grep for `# CHECKPOINT`, `Assumption:`, `Confidence:`, and remove any hits. This is a one-command validation that prevents a static QA CRITICAL finding.
+  **expected_benefit:** Eliminates the class of "agent internal deliberation leaks into committed source" at the agent level, removing the dependency on static QA to catch it as a CRITICAL finding.
+
+### Keep / Reinforce
+
+- **practice:** Planner's "already implemented?" discovery pass correctly identified the M12-01 core implementation as complete from M11 work, and scoped the ticket to only the genuine gaps (spec, combo matrix tests, adversarial hardening). The scoped plan was accurate: zero implementation work was needed.
+  **reason:** A discovery-first planning discipline prevents unnecessary re-implementation and keeps the pipeline proportionate to actual work. This is the first M12 ticket and the pattern set here (discovery → gap identification → min-scope plan) should be the M12 baseline.
+
+- **practice:** Fifth consecutive zero-rework implementation (M11-08 through M12-01). The M12-01 "implementation" stage was a pure verification + linter pass — no logic changes — yet the pipeline correctly classified it and the AC Gatekeeper verified all 9 ACs with explicit code evidence. The pipeline handles the "already done" case gracefully.
+  **reason:** When implementation already exists, the spec+test pipeline serves as documentation and hardening rather than driving new code. The 95 new tests (36 combo matrix + 59 adversarial) validate pre-existing behavior that was previously untested. Test coverage of existing code is a primary pipeline output, not just coverage of new code.
+
+---
+
