@@ -1,0 +1,21 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M12-03
+  from_agent: test_designer
+  to_agent: test_breaker
+  validated_at: "2026-05-29T00:00:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: test_suite_complete
+      item: "Test suite written and committed"
+      status: complete
+      evidence: "tests/scripts/attacks/test_fusion_attack_routing.gd (14 behavioral tests, 22 assertions GREEN) and tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd (10 adversarial tests, 22 assertions GREEN)"
+    - item_key: test_coverage_threshold
+      item: "All required test cases from spec Section 7 implemented"
+      status: complete
+      evidence: "All 14 behavioral tests from spec Section 7 'New Tests Required for test_fusion_attack_routing.gd' implemented and passing. All 10 adversarial tests from spec Section 7 'New Tests Required for test_fusion_attack_routing_adversarial.gd' implemented and passing. FAF-1 through FAF-5 and all FAF-FM failure modes covered."
+    - item_key: test_all_runnable
+      item: "Tests are syntactically valid GDScript and run_tests.gd discovers and executes them"
+      status: complete
+      evidence: "timeout 300 godot --headless -s tests/run_tests.gd exits 0. FusionAttackRoutingTests: 22 passed, 0 failed. FusionAttackRoutingAdversarialTests: 22 passed, 0 failed. Pre-commit hooks (gd-review, gd-organization) passed on both files."

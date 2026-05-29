@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-29T00:00:00Z",
+  "ticket_id": "M12-03",
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
+  "stage": "TEST_DESIGN",
+  "run_id": "2026-05-29T-test-design-run",
+  "agent": "Test Designer Agent",
+  "todos": [
+    {
+      "id": "TD-1",
+      "content": "Read workflow enforcement module and checkpoint protocol",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-2",
+      "content": "Read ticket at project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-3",
+      "content": "Read full spec at project_board/specs/fusion_attack_framework_spec.md",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-4",
+      "content": "Read player_controller_3d.gd _try_attack() method (lines 445-482)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-5",
+      "content": "Read attack_database.gd get_fused_attack(), get_base_attack(), register_fused_attack()",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-6",
+      "content": "Read existing test pattern: test_attack_database_controller_integration.gd",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-7",
+      "content": "Read existing test pattern: test_fused_combo_matrix.gd and test_fused_combo_matrix_adversarial.gd",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-8",
+      "content": "Read mutation_slot_manager.gd and mutation_slot.gd to understand slot fill API",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-9",
+      "content": "Write tests/scripts/attacks/test_fusion_attack_routing.gd (14 behavioral tests per spec Section 7)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-10",
+      "content": "Write tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd (10 adversarial tests per spec Section 7)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-11",
+      "content": "Run timeout 300 godot --headless -s tests/run_tests.gd and verify all tests pass (exit 0)",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-12",
+      "content": "Commit test files with conventional commit message",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-13",
+      "content": "Update ticket: Stage=TEST_BREAK, Revision=5, Last Updated By=Test Designer Agent, Next=Test Breaker Agent",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-14",
+      "content": "Write project_board/checkpoints/M12-03/handoff-latest.yaml",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-15",
+      "content": "Write project_board/checkpoints/M12-03/todos-latest.json",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "TD-16",
+      "content": "Write scoped checkpoint log at project_board/checkpoints/M12-03/2026-05-29T-test-design-run.md",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    }
+  ]
+}
