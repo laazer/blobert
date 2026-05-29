@@ -48,6 +48,10 @@ Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/11_adhesion_pl
 - Lean: no
 - Log root: `project_board/checkpoints/M12-01/`
 
+### [M12-01] — OUTCOME: COMPLETE
+All 9 ACs verified. Core impl already existed from M11; new work = spec doc + 40 tests (18 combo matrix + 22 adversarial). Static QA CRITICAL fixed (checkpoint prose in test file). Commits: 1732da2, 2b00189, 5888e86, a4cc953.
+Log: project_board/checkpoints/M12-01/
+
 ### [M12-01] — OUTCOME: PLANNING COMPLETE
 Core impl already exists (get_fused_attack, _try_attack fused path, ADB-07 tests). Gaps: no spec doc, no combo matrix test (6 unordered combos), cooldown model undocumented, fallback key asymmetry unspecified. 3 assumptions logged. Stage → SPECIFICATION; handoff to Spec Agent.
 Log: `project_board/checkpoints/M12-01/2026-05-28T-plan-run.md`
