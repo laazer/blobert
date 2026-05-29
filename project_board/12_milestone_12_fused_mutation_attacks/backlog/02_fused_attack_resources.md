@@ -95,16 +95,16 @@ modifiers: {
 ## WORKFLOW STATE
 
 ### Stage
-TEST_BREAK
+IMPLEMENTATION_GAMEPLAY
 
 ### Revision
-3
+4
 
 ### Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ### Validation Status
-- Tests: RED (expected — 49/36 test functions fail on clean checkout; fused attacks not yet registered)
+- Tests: RED (expected — 78/66 test functions fail on clean checkout; fused attacks not yet registered; 49 pre-existing + 29 adversarial)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -119,20 +119,23 @@ Test Designer Agent
 ## NEXT ACTION
 
 ### Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ### Required Input Schema
 ```json
 {
   "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/02_fused_attack_resources.md",
   "spec_path": "project_board/specs/fused_attack_resources_spec.md",
-  "test_file": "tests/scripts/attacks/test_fused_attack_resources.gd",
-  "checkpoint_path": "project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md",
+  "test_files": [
+    "tests/scripts/attacks/test_fused_attack_resources.gd",
+    "tests/scripts/attacks/test_fused_attack_stats.gd",
+    "tests/scripts/attacks/test_fused_attack_resources_adversarial.gd"
+  ],
+  "checkpoint_path": "project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md",
   "handoff_path": "project_board/checkpoints/M12-02/handoff-latest.yaml",
   "key_files": [
     "scripts/attacks/attack_database.gd",
     "scripts/attacks/attack_resource.gd",
-    "tests/scripts/attacks/test_fused_attack_resources.gd",
     "project_board/specs/fused_attack_resources_spec.md"
   ]
 }
@@ -142,4 +145,4 @@ Test Breaker Agent
 Proceed
 
 ### Reason
-Test Designer Agent has written 36 test functions in test_fused_attack_resources.gd covering FAR-1 through FAR-7, FAR-EC-1, FAR-EC-2, FAR-NF-4, FAR-NF-6. Tests confirmed RED on clean checkout (49 failures; fused attacks not yet registered). Test Breaker must adversarially probe the test suite for gaps or spec mismatches.
+Test Breaker Agent has added 30 adversarial test functions in test_fused_attack_resources_adversarial.gd. Total failures: 78 (49 pre-existing + 29 adversarial). Key implementation risks documented: slow:0.0 falsy trap for 3 root combos, startup_frames required for all 3 SLAM_AOE fused attacks, all 10 IDs must be globally unique, named constants required for every numeric literal. Implementation agent must add 6 fused attack registration blocks to scripts/attacks/attack_database.gd. All 78 failures must become 0.

@@ -1,21 +1,17 @@
 handoff:
   schema_version: "1.0"
   ticket_id: M12-02
-  from_agent: Test Designer Agent
-  to_agent: Test Breaker Agent
+  from_agent: Test Breaker Agent
+  to_agent: Implementation Agent
   validated_at: "2026-05-29T00:00:00Z"
-  required_items_met: 3
-  total_required_items: 3
+  required_items_met: 2
+  total_required_items: 2
   checklist:
-    - item_key: test_suite_complete
-      item: "Test suite complete per spec test plan"
+    - item_key: breaker_gaps_documented
+      item: "All discovered gaps documented"
       status: complete
-      evidence: tests/scripts/attacks/test_fused_attack_resources.gd
-    - item_key: test_coverage_threshold
-      item: "Coverage threshold met (>80% proxy)"
+      evidence: tests/scripts/attacks/test_fused_attack_resources_adversarial.gd
+    - item_key: breaker_impl_notes
+      item: "Implementation notes created"
       status: complete
-      evidence: "coverage: 100 — 36 test functions covering all 6 combos and spec requirements FAR-1 through FAR-7, FAR-EC-1, FAR-EC-2, FAR-NF-4, FAR-NF-6"
-    - item_key: test_all_runnable
-      item: "All tests runnable"
-      status: complete
-      evidence: "Tests are RED as expected (fused attacks not yet registered). FusedAttackResourcesTests: 18 passed, 49 failed. Suite runs without crash. Pre-existing tests unaffected."
+      evidence: "project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md — key implementation risks: slow:0.0 falsy trap, startup_frames required for SLAM_AOE combos, all 10 IDs must be unique, named constants required for all numeric literals"

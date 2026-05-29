@@ -61,6 +61,10 @@ Spec: `project_board/specs/fused_attack_resources_spec.md`
 36 test functions written in tests/scripts/attacks/test_fused_attack_resources.gd. Coverage: FAR-1 through FAR-7, FAR-EC-1 (slow=0.0 falsy-zero pattern), FAR-EC-2 (modifier dict sizes), FAR-NF-4 (no cross-contamination), FAR-NF-6 (unique attack names). Tests confirmed RED on clean checkout (49 failures; fused attacks not yet registered in _register_defaults()). 18 tests pass on clean checkout (invariant checks: clear()→0, base count=4, null==null symmetric checks, base ID range). Pre-existing test suites unaffected. Stage → TEST_BREAK; handoff to Test Breaker Agent.
 Log: `project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md`
 
+### [M12-02] — OUTCOME: TEST BREAK COMPLETE
+30 adversarial test functions in tests/scripts/attacks/test_fused_attack_resources_adversarial.gd. ADV-1..ADV-13 + bonus. Key gaps exposed: global ID uniqueness (10 attacks, not just 6), cross-instance count isolation, vfx_scale zero-guard, known-effect_type typo guard, all 3 SLAM_AOE combos require startup_frames, modifier setter deep-copy isolation. Total failures: 78 (49 pre-existing + 29 adversarial). Suite exits cleanly (no crashes). Stage → IMPLEMENTATION_GAMEPLAY; handoff to Gameplay Systems Agent.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-28T-m12-01-autopilot (M12 Fused Attack Database Integration)
