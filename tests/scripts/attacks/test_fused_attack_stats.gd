@@ -25,7 +25,6 @@
 #   - Does NOT use the autoload singleton to avoid cross-test contamination.
 #   - FAR-EC-1 slow=0.0: verified with has() + typeof()==TYPE_FLOAT + ==0.0 (not truthiness).
 #   - FAR-EC-8: 0.8, 0.6, and 1.2 acid_dps values use _assert_approx() (not exact).
-#   - Tests are RED on clean checkout (fused attacks not yet registered).
 #
 
 class_name FusedAttackStatsTests
@@ -35,23 +34,6 @@ var _pass_count: int = 0
 var _fail_count: int = 0
 
 const _DB_SCRIPT_PATH := "res://scripts/attacks/attack_database.gd"
-
-# Base attack stats for FAR-7 meaningful-distinction comparisons.
-# Source: scripts/attacks/attack_database.gd constants at M12-02 freeze.
-const _BASE_CLAW_DAMAGE := 3.0
-const _BASE_CLAW_COOLDOWN := 0.8
-const _BASE_CLAW_RANGE := 1.5
-const _BASE_CLAW_KNOCKBACK := 2.0
-
-const _BASE_ACID_DAMAGE := 1.0
-const _BASE_ACID_COOLDOWN := 2.0
-const _BASE_ACID_PROJECTILE_SPEED := 8.0
-
-const _BASE_CARAPACE_DAMAGE := 4.0
-const _BASE_CARAPACE_KNOCKBACK := 5.0
-
-const _BASE_ADHESION_DAMAGE := 1.0
-const _BASE_ADHESION_COOLDOWN := 2.5
 
 
 # ---------------------------------------------------------------------------
@@ -344,7 +326,8 @@ func test_farec1_acid_adhesion_both_slow_and_acid() -> void:
 
 func test_far7_fused_attacks_differ_from_base_components() -> void:
 	# FAR-7a through FAR-7l: Each fused attack differs from both components in
-	# at least two observable properties.
+	# at least two observable properties. Base stats are read from the DB live
+	# so this test stays correct if base values are tuned.
 	var label := "FAR-7_fused_differ_from_base"
 	var db = _make_db(label)
 	if db == null:
@@ -363,8 +346,18 @@ func test_far7_fused_attacks_differ_from_base_components() -> void:
 		_free_db(db)
 		return
 
+	var base_claw = db.get_base_attack("claw")
+	var base_acid = db.get_base_attack("acid")
+	var base_carapace = db.get_base_attack("carapace")
+	var base_adhesion = db.get_base_attack("adhesion")
+
+	if base_claw == null or base_acid == null or base_carapace == null or base_adhesion == null:
+		_fail_test(label, "one or more base attacks returned null from DB")
+		_free_db(db)
+		return
+
 	# FAR-7a: acid_claw.damage > claw.damage; acid_claw has acid_on_hit (claw does not)
-	_assert_true(acid_claw.damage > _BASE_CLAW_DAMAGE, label + "_acid_claw_damage_gt_claw")
+	_assert_true(acid_claw.damage > base_claw.damage, label + "_acid_claw_damage_gt_claw")
 	_assert_true(acid_claw.modifiers.has("acid_on_hit"), label + "_acid_claw_has_acid_on_hit")
 
 	# FAR-7b: acid_claw.effect_type (MELEE_SWIPE) != acid (PROJECTILE_SPIT)
@@ -372,29 +365,29 @@ func test_far7_fused_attacks_differ_from_base_components() -> void:
 	_assert_true(acid_claw.knockback_magnitude > 0.0, label + "_acid_claw_knockback_gt_acid")
 
 	# FAR-7c: adhesion_claw.cooldown > claw.cooldown; has "slow" key
-	_assert_true(adhesion_claw.cooldown > _BASE_CLAW_COOLDOWN, label + "_adhesion_claw_cooldown_gt_claw")
+	_assert_true(adhesion_claw.cooldown > base_claw.cooldown, label + "_adhesion_claw_cooldown_gt_claw")
 	_assert_true(adhesion_claw.modifiers.has("slow"), label + "_adhesion_claw_has_slow")
 
 	# FAR-7d: adhesion_claw.effect_type (MELEE_SWIPE) != adhesion (PROJECTILE_SPIT)
 	_assert_eq_string("MELEE_SWIPE", adhesion_claw.effect_type, label + "_adhesion_claw_effect_melee")
-	_assert_true(adhesion_claw.damage > _BASE_ADHESION_DAMAGE, label + "_adhesion_claw_damage_gt_adhesion")
+	_assert_true(adhesion_claw.damage > base_adhesion.damage, label + "_adhesion_claw_damage_gt_adhesion")
 
 	# FAR-7e: carapace_claw.effect_type (SLAM_AOE) != claw (MELEE_SWIPE)
 	_assert_eq_string("SLAM_AOE", carapace_claw.effect_type, label + "_carapace_claw_effect_slam")
-	_assert_true(carapace_claw.attack_range > _BASE_CLAW_RANGE, label + "_carapace_claw_range_gt_claw")
+	_assert_true(carapace_claw.attack_range > base_claw.attack_range, label + "_carapace_claw_range_gt_claw")
 
 	# FAR-7f: carapace_claw.damage > carapace.damage; has infect_weakened
-	_assert_true(carapace_claw.damage > _BASE_CARAPACE_DAMAGE, label + "_carapace_claw_damage_gt_carapace")
+	_assert_true(carapace_claw.damage > base_carapace.damage, label + "_carapace_claw_damage_gt_carapace")
 	_assert_true(carapace_claw.modifiers.has("infect_weakened"), label + "_carapace_claw_has_infect")
 
 	# FAR-7g: acid_adhesion.projectile_speed > acid; has "slow" key (acid lacks)
-	_assert_true(acid_adhesion.projectile_speed > _BASE_ACID_PROJECTILE_SPEED,
+	_assert_true(acid_adhesion.projectile_speed > base_acid.projectile_speed,
 		label + "_acid_adhesion_speed_gt_acid")
 	_assert_true(acid_adhesion.modifiers.has("slow"), label + "_acid_adhesion_has_slow")
 
 	# FAR-7h: acid_adhesion has acid_on_hit (adhesion lacks); cooldown > adhesion
 	_assert_true(acid_adhesion.modifiers.has("acid_on_hit"), label + "_acid_adhesion_has_acid_on_hit")
-	_assert_true(acid_adhesion.cooldown > _BASE_ADHESION_COOLDOWN,
+	_assert_true(acid_adhesion.cooldown > base_adhesion.cooldown,
 		label + "_acid_adhesion_cooldown_gt_adhesion")
 
 	# FAR-7i: acid_carapace.effect_type (SLAM_AOE) != acid (PROJECTILE_SPIT)
@@ -403,16 +396,16 @@ func test_far7_fused_attacks_differ_from_base_components() -> void:
 
 	# FAR-7j: acid_carapace has acid_on_hit; damage > acid.damage
 	_assert_true(acid_carapace.modifiers.has("acid_on_hit"), label + "_acid_carapace_has_acid_on_hit")
-	_assert_true(acid_carapace.damage > _BASE_ACID_DAMAGE, label + "_acid_carapace_damage_gt_acid")
+	_assert_true(acid_carapace.damage > base_acid.damage, label + "_acid_carapace_damage_gt_acid")
 
 	# FAR-7k: adhesion_carapace has "slow"; knockback < carapace (root is primary effect)
 	_assert_true(adhesion_carapace.modifiers.has("slow"), label + "_adhesion_carapace_has_slow")
-	_assert_true(adhesion_carapace.knockback_magnitude < _BASE_CARAPACE_KNOCKBACK,
+	_assert_true(adhesion_carapace.knockback_magnitude < base_carapace.knockback_magnitude,
 		label + "_adhesion_carapace_knockback_lt_carapace")
 
 	# FAR-7l: adhesion_carapace.effect_type (SLAM_AOE) != adhesion (PROJECTILE_SPIT)
 	_assert_eq_string("SLAM_AOE", adhesion_carapace.effect_type, label + "_adhesion_carapace_effect_slam")
-	_assert_true(adhesion_carapace.damage > _BASE_ADHESION_DAMAGE,
+	_assert_true(adhesion_carapace.damage > base_adhesion.damage,
 		label + "_adhesion_carapace_damage_gt_adhesion")
 
 	_free_db(db)

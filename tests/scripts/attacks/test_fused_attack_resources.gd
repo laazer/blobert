@@ -18,9 +18,6 @@
 # Design notes:
 #   - Uses a fresh AttackDatabaseNode per test via add_child() to trigger _ready().
 #   - Does NOT use the autoload singleton to avoid cross-test contamination.
-#   - Tests are RED on clean checkout: fused attacks are not yet registered in
-#     _register_defaults(). All get_fused_attack() calls return null until
-#     implementation adds the 6 registration blocks.
 #
 
 class_name FusedAttackResourcesTests

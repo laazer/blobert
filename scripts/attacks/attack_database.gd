@@ -29,6 +29,73 @@ const ADHESION_PROJECTILE_SPEED := 8.0
 const ADHESION_PROJECTILE_LIFETIME := 1.25
 const ADHESION_ROOT_DURATION := 3.0
 
+# --- Fused attack constants: acid_claw (101) ---
+const ACID_CLAW_ATTACK_ID := 101
+const ACID_CLAW_DAMAGE := 4.0
+const ACID_CLAW_COOLDOWN := 1.5
+const ACID_CLAW_RANGE := 1.5
+const ACID_CLAW_KNOCKBACK := 3.0
+const ACID_CLAW_VFX_SCALE := 1.3
+const ACID_CLAW_ACID_DURATION := 2.0
+const ACID_CLAW_ACID_DPS := 0.8
+
+# --- Fused attack constants: adhesion_claw (102) ---
+const ADHESION_CLAW_ATTACK_ID := 102
+const ADHESION_CLAW_DAMAGE := 3.5
+const ADHESION_CLAW_COOLDOWN := 2.0
+const ADHESION_CLAW_RANGE := 1.5
+const ADHESION_CLAW_KNOCKBACK := 1.0
+const ADHESION_CLAW_VFX_SCALE := 1.2
+const ADHESION_CLAW_SLOW_DURATION := 2.0
+
+# --- Fused attack constants: carapace_claw (103) ---
+const CARAPACE_CLAW_ATTACK_ID := 103
+const CARAPACE_CLAW_DAMAGE := 5.0
+const CARAPACE_CLAW_COOLDOWN := 3.0
+const CARAPACE_CLAW_RANGE := 2.5
+const CARAPACE_CLAW_KNOCKBACK := 6.0
+const CARAPACE_CLAW_STARTUP_FRAMES := 8
+const CARAPACE_CLAW_VFX_SCALE := 1.5
+
+# --- Fused attack constants: acid_adhesion (104) ---
+const ACID_ADHESION_ATTACK_ID := 104
+const ACID_ADHESION_DAMAGE := 2.0
+const ACID_ADHESION_COOLDOWN := 3.0
+const ACID_ADHESION_PROJECTILE_SPEED := 10.0
+const ACID_ADHESION_PROJECTILE_LIFETIME := 1.75
+const ACID_ADHESION_VFX_SCALE := 1.2
+const ACID_ADHESION_SLOW_DURATION := 2.5
+const ACID_ADHESION_ACID_DURATION := 3.0
+const ACID_ADHESION_ACID_DPS := 1.2
+
+# --- Fused attack constants: acid_carapace (105) ---
+const ACID_CARAPACE_ATTACK_ID := 105
+const ACID_CARAPACE_DAMAGE := 4.5
+const ACID_CARAPACE_COOLDOWN := 4.0
+const ACID_CARAPACE_RANGE := 3.5
+const ACID_CARAPACE_KNOCKBACK := 4.0
+const ACID_CARAPACE_STARTUP_FRAMES := 12
+const ACID_CARAPACE_VFX_SCALE := 1.8
+const ACID_CARAPACE_ACID_DURATION := 2.5
+const ACID_CARAPACE_ACID_DPS := 0.6
+
+# --- Fused attack constants: adhesion_carapace (106) ---
+const ADHESION_CARAPACE_ATTACK_ID := 106
+const ADHESION_CARAPACE_DAMAGE := 3.5
+const ADHESION_CARAPACE_COOLDOWN := 3.5
+const ADHESION_CARAPACE_RANGE := 3.0
+const ADHESION_CARAPACE_KNOCKBACK := 2.0
+const ADHESION_CARAPACE_STARTUP_FRAMES := 12
+const ADHESION_CARAPACE_VFX_SCALE := 1.6
+const ADHESION_CARAPACE_SLOW_DURATION := 2.0
+
+const ACID_CLAW_COLOR := Color(0.6, 0.85, 0.0)
+const ADHESION_CLAW_COLOR := Color(0.85, 0.65, 0.0)
+const CARAPACE_CLAW_COLOR := Color(0.65, 0.35, 0.05)
+const ACID_ADHESION_COLOR := Color(0.3, 0.75, 0.1)
+const ACID_CARAPACE_COLOR := Color(0.4, 0.65, 0.05)
+const ADHESION_CARAPACE_COLOR := Color(0.55, 0.45, 0.1)
+
 var _base_attacks: Dictionary = {}
 var _fused_attacks: Dictionary = {}
 
@@ -105,6 +172,131 @@ func _register_defaults() -> void:
 	adhesion.vfx_scale = 1.0
 	adhesion.modifiers = {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION}
 	register_base_attack("adhesion", adhesion)
+	_register_fused_defaults()
+
+
+func _register_fused_defaults() -> void:
+	var acid_claw_attack := AttackResource.new()
+	acid_claw_attack.attack_id = ACID_CLAW_ATTACK_ID
+	acid_claw_attack.attack_name = "Toxic Slash"
+	acid_claw_attack.description = "Acid-coated melee swipe. Applies acid on hit."
+	acid_claw_attack.effect_type = "MELEE_SWIPE"
+	acid_claw_attack.damage = ACID_CLAW_DAMAGE
+	acid_claw_attack.cooldown = ACID_CLAW_COOLDOWN
+	acid_claw_attack.attack_range = ACID_CLAW_RANGE
+	acid_claw_attack.startup_frames = 0
+	acid_claw_attack.knockback_magnitude = ACID_CLAW_KNOCKBACK
+	acid_claw_attack.knockback_direction = "away"
+	acid_claw_attack.projectile_speed = 0.0
+	acid_claw_attack.projectile_lifetime = 0.0
+	acid_claw_attack.color = ACID_CLAW_COLOR
+	acid_claw_attack.vfx_scale = ACID_CLAW_VFX_SCALE
+	acid_claw_attack.modifiers = {
+		"acid_on_hit": true,
+		"acid_duration": ACID_CLAW_ACID_DURATION,
+		"acid_dps": ACID_CLAW_ACID_DPS,
+	}
+	register_fused_attack("acid", "claw", acid_claw_attack)
+
+	var adhesion_claw_attack := AttackResource.new()
+	adhesion_claw_attack.attack_id = ADHESION_CLAW_ATTACK_ID
+	adhesion_claw_attack.attack_name = "Sticky Slash"
+	adhesion_claw_attack.description = "Melee swipe that roots the target on contact."
+	adhesion_claw_attack.effect_type = "MELEE_SWIPE"
+	adhesion_claw_attack.damage = ADHESION_CLAW_DAMAGE
+	adhesion_claw_attack.cooldown = ADHESION_CLAW_COOLDOWN
+	adhesion_claw_attack.attack_range = ADHESION_CLAW_RANGE
+	adhesion_claw_attack.startup_frames = 0
+	adhesion_claw_attack.knockback_magnitude = ADHESION_CLAW_KNOCKBACK
+	adhesion_claw_attack.knockback_direction = "away"
+	adhesion_claw_attack.projectile_speed = 0.0
+	adhesion_claw_attack.projectile_lifetime = 0.0
+	adhesion_claw_attack.color = ADHESION_CLAW_COLOR
+	adhesion_claw_attack.vfx_scale = ADHESION_CLAW_VFX_SCALE
+	adhesion_claw_attack.modifiers = {"slow": 0.0, "slow_duration": ADHESION_CLAW_SLOW_DURATION}
+	register_fused_attack("adhesion", "claw", adhesion_claw_attack)
+
+	var carapace_claw_attack := AttackResource.new()
+	carapace_claw_attack.attack_id = CARAPACE_CLAW_ATTACK_ID
+	carapace_claw_attack.attack_name = "Armored Slam"
+	carapace_claw_attack.description = "Powerful melee slam in a wider arc. Infects weakened enemies."
+	carapace_claw_attack.effect_type = "SLAM_AOE"
+	carapace_claw_attack.damage = CARAPACE_CLAW_DAMAGE
+	carapace_claw_attack.cooldown = CARAPACE_CLAW_COOLDOWN
+	carapace_claw_attack.attack_range = CARAPACE_CLAW_RANGE
+	carapace_claw_attack.startup_frames = CARAPACE_CLAW_STARTUP_FRAMES
+	carapace_claw_attack.knockback_magnitude = CARAPACE_CLAW_KNOCKBACK
+	carapace_claw_attack.knockback_direction = "away"
+	carapace_claw_attack.projectile_speed = 0.0
+	carapace_claw_attack.projectile_lifetime = 0.0
+	carapace_claw_attack.color = CARAPACE_CLAW_COLOR
+	carapace_claw_attack.vfx_scale = CARAPACE_CLAW_VFX_SCALE
+	carapace_claw_attack.modifiers = {"infect_weakened": true}
+	register_fused_attack("carapace", "claw", carapace_claw_attack)
+
+	var acid_adhesion_attack := AttackResource.new()
+	acid_adhesion_attack.attack_id = ACID_ADHESION_ATTACK_ID
+	acid_adhesion_attack.attack_name = "Venom Web"
+	acid_adhesion_attack.description = "Sticky acid projectile. Roots first target and applies acid."
+	acid_adhesion_attack.effect_type = "PROJECTILE_SPIT"
+	acid_adhesion_attack.damage = ACID_ADHESION_DAMAGE
+	acid_adhesion_attack.cooldown = ACID_ADHESION_COOLDOWN
+	acid_adhesion_attack.attack_range = 0.0
+	acid_adhesion_attack.startup_frames = 0
+	acid_adhesion_attack.knockback_magnitude = 0.0
+	acid_adhesion_attack.knockback_direction = "none"
+	acid_adhesion_attack.projectile_speed = ACID_ADHESION_PROJECTILE_SPEED
+	acid_adhesion_attack.projectile_lifetime = ACID_ADHESION_PROJECTILE_LIFETIME
+	acid_adhesion_attack.color = ACID_ADHESION_COLOR
+	acid_adhesion_attack.vfx_scale = ACID_ADHESION_VFX_SCALE
+	acid_adhesion_attack.modifiers = {
+		"acid_on_hit": true,
+		"acid_duration": ACID_ADHESION_ACID_DURATION,
+		"acid_dps": ACID_ADHESION_ACID_DPS,
+		"slow": 0.0,
+		"slow_duration": ACID_ADHESION_SLOW_DURATION,
+	}
+	register_fused_attack("acid", "adhesion", acid_adhesion_attack)
+
+	var acid_carapace_attack := AttackResource.new()
+	acid_carapace_attack.attack_id = ACID_CARAPACE_ATTACK_ID
+	acid_carapace_attack.attack_name = "Corrosive Slam"
+	acid_carapace_attack.description = "Ground slam that coats the impact zone with acid."
+	acid_carapace_attack.effect_type = "SLAM_AOE"
+	acid_carapace_attack.damage = ACID_CARAPACE_DAMAGE
+	acid_carapace_attack.cooldown = ACID_CARAPACE_COOLDOWN
+	acid_carapace_attack.attack_range = ACID_CARAPACE_RANGE
+	acid_carapace_attack.startup_frames = ACID_CARAPACE_STARTUP_FRAMES
+	acid_carapace_attack.knockback_magnitude = ACID_CARAPACE_KNOCKBACK
+	acid_carapace_attack.knockback_direction = "away"
+	acid_carapace_attack.projectile_speed = 0.0
+	acid_carapace_attack.projectile_lifetime = 0.0
+	acid_carapace_attack.color = ACID_CARAPACE_COLOR
+	acid_carapace_attack.vfx_scale = ACID_CARAPACE_VFX_SCALE
+	acid_carapace_attack.modifiers = {
+		"acid_on_hit": true,
+		"acid_duration": ACID_CARAPACE_ACID_DURATION,
+		"acid_dps": ACID_CARAPACE_ACID_DPS,
+	}
+	register_fused_attack("acid", "carapace", acid_carapace_attack)
+
+	var adhesion_carapace_attack := AttackResource.new()
+	adhesion_carapace_attack.attack_id = ADHESION_CARAPACE_ATTACK_ID
+	adhesion_carapace_attack.attack_name = "Web Slam"
+	adhesion_carapace_attack.description = "Ground slam that roots all enemies in the impact zone."
+	adhesion_carapace_attack.effect_type = "SLAM_AOE"
+	adhesion_carapace_attack.damage = ADHESION_CARAPACE_DAMAGE
+	adhesion_carapace_attack.cooldown = ADHESION_CARAPACE_COOLDOWN
+	adhesion_carapace_attack.attack_range = ADHESION_CARAPACE_RANGE
+	adhesion_carapace_attack.startup_frames = ADHESION_CARAPACE_STARTUP_FRAMES
+	adhesion_carapace_attack.knockback_magnitude = ADHESION_CARAPACE_KNOCKBACK
+	adhesion_carapace_attack.knockback_direction = "away"
+	adhesion_carapace_attack.projectile_speed = 0.0
+	adhesion_carapace_attack.projectile_lifetime = 0.0
+	adhesion_carapace_attack.color = ADHESION_CARAPACE_COLOR
+	adhesion_carapace_attack.vfx_scale = ADHESION_CARAPACE_VFX_SCALE
+	adhesion_carapace_attack.modifiers = {"slow": 0.0, "slow_duration": ADHESION_CARAPACE_SLOW_DURATION}
+	register_fused_attack("adhesion", "carapace", adhesion_carapace_attack)
 
 
 func register_base_attack(mutation_id: String, resource: AttackResource) -> void:

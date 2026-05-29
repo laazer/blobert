@@ -65,6 +65,10 @@ Log: `project_board/checkpoints/M12-02/2026-05-29T-test-design-run.md`
 30 adversarial test functions in tests/scripts/attacks/test_fused_attack_resources_adversarial.gd. ADV-1..ADV-13 + bonus. Key gaps exposed: global ID uniqueness (10 attacks, not just 6), cross-instance count isolation, vfx_scale zero-guard, known-effect_type typo guard, all 3 SLAM_AOE combos require startup_frames, modifier setter deep-copy isolation. Total failures: 78 (49 pre-existing + 29 adversarial). Suite exits cleanly (no crashes). Stage → IMPLEMENTATION_GAMEPLAY; handoff to Gameplay Systems Agent.
 Log: `project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md`
 
+### [M12-02] — OUTCOME: IMPLEMENTATION_GAMEPLAY COMPLETE
+6 fused attack registration blocks added to scripts/attacks/attack_database.gd. 40 named constants declared (6 combos x ~7 numeric properties). All stat values from frozen spec Section 4. slow:0.0 falsy-zero root pattern for 3 combos. SLAM_AOE startup_frames: carapace_claw=8, acid_carapace=12, adhesion_carapace=12. All 10 attack IDs globally unique. Stage → STATIC_QA; handoff to Acceptance Criteria Gatekeeper Agent.
+Log: `project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md`
+
 ---
 
 ## Run: 2026-05-28T-m12-01-autopilot (M12 Fused Attack Database Integration)

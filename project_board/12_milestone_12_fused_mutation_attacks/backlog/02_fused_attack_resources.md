@@ -95,17 +95,17 @@ modifiers: {
 ## WORKFLOW STATE
 
 ### Stage
-IMPLEMENTATION_GAMEPLAY
+STATIC_QA
 
 ### Revision
-4
+5
 
 ### Last Updated By
-Test Breaker Agent
+Gameplay Systems Agent
 
 ### Validation Status
-- Tests: RED (expected — 78/66 test functions fail on clean checkout; fused attacks not yet registered; 49 pre-existing + 29 adversarial)
-- Static QA: Not Run
+- Tests: Implementation complete — 6 fused attack registration blocks added to scripts/attacks/attack_database.gd; test run pending CI/orchestrator verification
+- Static QA: Not Run (pending)
 - Integration: Not Run
 
 ### Blocking Issues
@@ -119,7 +119,7 @@ Test Breaker Agent
 ## NEXT ACTION
 
 ### Next Responsible Agent
-Gameplay Systems Agent
+Acceptance Criteria Gatekeeper Agent
 
 ### Required Input Schema
 ```json
@@ -131,7 +131,7 @@ Gameplay Systems Agent
     "tests/scripts/attacks/test_fused_attack_stats.gd",
     "tests/scripts/attacks/test_fused_attack_resources_adversarial.gd"
   ],
-  "checkpoint_path": "project_board/checkpoints/M12-02/2026-05-29T-test-break-run.md",
+  "checkpoint_path": "project_board/checkpoints/M12-02/2026-05-29T-gameplay-systems-run.md",
   "handoff_path": "project_board/checkpoints/M12-02/handoff-latest.yaml",
   "key_files": [
     "scripts/attacks/attack_database.gd",
@@ -145,4 +145,4 @@ Gameplay Systems Agent
 Proceed
 
 ### Reason
-Test Breaker Agent has added 30 adversarial test functions in test_fused_attack_resources_adversarial.gd. Total failures: 78 (49 pre-existing + 29 adversarial). Key implementation risks documented: slow:0.0 falsy trap for 3 root combos, startup_frames required for all 3 SLAM_AOE fused attacks, all 10 IDs must be globally unique, named constants required for every numeric literal. Implementation agent must add 6 fused attack registration blocks to scripts/attacks/attack_database.gd. All 78 failures must become 0.
+Gameplay Systems Agent has implemented all 6 fused attack registration blocks in scripts/attacks/attack_database.gd. All 40 named constants declared (6 combos, all non-identity numeric literals). All stat values match frozen spec Section 4 exactly. slow:0.0 falsy-zero pattern correct for 3 root combos. All 3 SLAM_AOE combos have startup_frames > 0. All 10 attack IDs globally unique (base 1-4, fused 101-106). Orchestrator must run timeout 300 godot --headless -s tests/run_tests.gd and verify exit 0, then commit/push before AC Gatekeeper can advance to COMPLETE.
