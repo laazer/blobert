@@ -23,16 +23,16 @@ Extend the attack input framework (M9) so that when a fusion is active, pressing
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-TEST_BREAK
+IMPLEMENTATION_GENERALIST
 
 ## Revision
-5
+6
 
 ## Last Updated By
-Test Designer Agent
+Test Breaker Agent
 
 ## Validation Status
-- Tests: Not Run
+- Tests: 1 adversarial FAIL (FAF-ADV2-1 exposes spec gap FAF-FM-3 — see checkpoint log)
 - Static QA: Not Run
 - Integration: Not Run
 
@@ -47,17 +47,18 @@ Test Designer Agent
 # NEXT ACTION
 
 ## Next Responsible Agent
-Test Breaker Agent
+Gameplay Systems Agent
 
 ## Required Input Schema
 ```json
 {
   "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/in_progress/03_fusion_attack_framework.md",
   "spec_path": "project_board/specs/fusion_attack_framework_spec.md",
-  "checkpoint_log": "project_board/checkpoints/M12-03/2026-05-29T-spec-run.md",
+  "checkpoint_log": "project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md",
   "test_files": [
     "tests/scripts/attacks/test_fusion_attack_routing.gd",
-    "tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd"
+    "tests/scripts/attacks/test_fusion_attack_routing_adversarial.gd",
+    "tests/scripts/attacks/test_fusion_attack_routing_adversarial2.gd"
   ]
 }
 ```
@@ -66,4 +67,4 @@ Test Breaker Agent
 Proceed
 
 ## Reason
-Test suite complete. 14 behavioral tests in test_fusion_attack_routing.gd and 10 adversarial tests in test_fusion_attack_routing_adversarial.gd. All 44 assertions GREEN against current codebase (regression-only suite). All FAF-1 through FAF-5 requirements and all FAF-FM failure modes covered. Full test suite exits 0. Test Breaker Agent should write adversarial tests that would fail if the routing gate, cooldown keys, state-gating, or fallback logic were broken.
+Test Breaker added 9 adversarial tests (28 assertions) in test_fusion_attack_routing_adversarial2.gd. Found 1 real spec gap: FAF-FM-3 violation — when AttackExecutor._is_active=true rejects execute_attack(), _try_attack() still writes _mutation_cooldowns[cooldown_key] unconditionally (line 482 of player_controller_3d.gd). Spec says cooldown must NOT be set in this case. Test FAF-ADV2-1 confirms this with FAIL: expected 0.0, got 2.0. Implementation Agent (Gameplay Systems Agent) must verify existing code satisfies spec, fix the FAF-FM-3 gap if needed, and run static QA. All other 27 new assertions and all 44 pre-existing assertions remain GREEN.

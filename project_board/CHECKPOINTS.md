@@ -25,6 +25,10 @@ Spec: `project_board/specs/fusion_attack_framework_spec.md`
 14 behavioral tests (test_fusion_attack_routing.gd, 22 assertions) + 10 adversarial tests (test_fusion_attack_routing_adversarial.gd, 22 assertions). All 44 assertions GREEN on current codebase. FAF-1 through FAF-5 and all FAF-FM failure modes covered. Full suite: === ALL TESTS PASSED ===. Stage → TEST_BREAK; handoff to Test Breaker Agent.
 Log: `project_board/checkpoints/M12-03/2026-05-29T-test-design-run.md`
 
+### [M12-03] — OUTCOME: TEST BREAK COMPLETE — 1 SPEC GAP FOUND
+Added 9 adversarial tests (test_fusion_attack_routing_adversarial2.gd, 28 assertions). Found real spec gap FAF-FM-3: when AttackExecutor._is_active=true rejects execute_attack(), _try_attack() still writes _mutation_cooldowns unconditionally (expected 0.0, got 2.0). 27/28 new assertions pass; 44 pre-existing assertions remain GREEN. Stage → IMPLEMENTATION_GENERALIST; handoff to Gameplay Systems Agent.
+Log: `project_board/checkpoints/M12-03/2026-05-29T-test-break-run.md`
+
 ---
 
 ## Run: 2026-05-25T-m11-06-autopilot (M11 AttackDatabase Integration)
