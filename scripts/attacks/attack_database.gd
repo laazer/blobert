@@ -10,6 +10,7 @@ const CLAW_VFX_SCALE := 1.2
 const ACID_DAMAGE := 1.0
 const ACID_COOLDOWN := 2.0
 const ACID_PROJECTILE_SPEED := 8.0
+const ACID_PROJECTILE_LIFETIME := 2.0
 const ACID_DPS := 1.0
 const ACID_DURATION := 3.0
 
@@ -65,7 +66,7 @@ func _register_defaults() -> void:
 	acid.knockback_magnitude = 0.0
 	acid.knockback_direction = "none"
 	acid.projectile_speed = ACID_PROJECTILE_SPEED
-	acid.projectile_lifetime = 2.0
+	acid.projectile_lifetime = ACID_PROJECTILE_LIFETIME
 	acid.color = Color.CHARTREUSE
 	acid.vfx_scale = 1.0
 	acid.modifiers = {"acid_on_hit": true, "acid_duration": ACID_DURATION, "acid_dps": ACID_DPS}

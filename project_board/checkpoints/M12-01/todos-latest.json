@@ -224,6 +224,66 @@
       "content": "Update ticket: Stage=IMPLEMENTATION_GAMEPLAY, Revision=4, Last Updated By=Test Breaker Agent, Next Responsible Agent=Gameplay Systems Agent, Status=Proceed",
       "status": "completed",
       "agent": "Test Breaker Agent"
+    },
+    {
+      "id": "gameplay_read_workflow_enforcement",
+      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md before acting",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_read_spec_ticket_impl_files",
+      "content": "Read fused_attack_database_integration_spec.md, ticket, attack_database.gd, and player_controller_3d.gd _try_attack() lines 445-482",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_static_review_attack_database",
+      "content": "Static review of scripts/attacks/attack_database.gd against CLAUDE.md reviewer policy; found and fixed ACID_PROJECTILE_LIFETIME unnamed literal",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_static_review_player_controller",
+      "content": "Static review of scripts/player/player_controller_3d.gd _try_attack(); no linter findings",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_verify_9_acceptance_criteria",
+      "content": "Verify all 9 acceptance criteria against existing code and passing tests; all 9 PASS including AC 8 (combo matrix) now covered by test_fused_combo_matrix.gd",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_write_checkpoint_log",
+      "content": "Write checkpoint log to project_board/checkpoints/M12-01/2026-05-29T-gameplay-systems-run.md",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_write_handoff_yaml",
+      "content": "Write project_board/checkpoints/M12-01/handoff-latest.yaml with gameplay→static_qa checklist (4/4 items met)",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_write_todos_json",
+      "content": "Write project_board/checkpoints/M12-01/todos-latest.json with all implementation tasks completed",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_update_checkpoints_index",
+      "content": "Add gameplay systems run entry to project_board/CHECKPOINTS.md",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
+    },
+    {
+      "id": "gameplay_update_ticket",
+      "content": "Update ticket: Stage=STATIC_QA, Revision=5, Last Updated By=Gameplay Systems Agent, Next Responsible Agent=Acceptance Criteria Gatekeeper Agent, Status=Proceed",
+      "status": "completed",
+      "agent": "Gameplay Systems Agent"
     }
   ]
 }

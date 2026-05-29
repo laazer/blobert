@@ -27,7 +27,7 @@ Reuse AttackDatabase (extend `get_fused_attack()` method) and AttackExecutor dis
 - [x] Fallback to base attack if fused not found (graceful degradation)
 - [x] Input gating still applies (state machine checks, per-slot cooldowns)
 - [x] Tests validate fused attack lookup and fallback behavior
-- [ ] Tests validate combo matrix coverage (6 unordered combos)
+- [x] Tests validate combo matrix coverage (6 unordered combos)
 - [x] `run_tests.sh` exits 0
 
 ## Dependencies
@@ -97,47 +97,38 @@ func _try_attack() -> void:
 # WORKFLOW STATE (DO NOT FREEFORM EDIT)
 
 ## Stage
-IMPLEMENTATION_GAMEPLAY
+COMPLETE
 
 ## Revision
-4
+6
 
 ## Last Updated By
-Test Breaker Agent
+Acceptance Criteria Gatekeeper Agent
 
 ## Validation Status
-- Tests: Pass (FusedComboMatrixAdversarialTests: 59 passed, 0 failed; FusedComboMatrixTests: 36 passed, 0 failed; full suite === ALL TESTS PASSED ===)
-- Static QA: Not Run
-- Integration: Not Run
+- Tests: Pass — FusedComboMatrixTests: 36 passed, 0 failed; FusedComboMatrixAdversarialTests: 59 passed, 0 failed; full suite === ALL TESTS PASSED ===. Confirmed by Test Breaker checkpoint 2026-05-29T-test-break-run.md.
+- Static QA: Pass — scripts/attacks/attack_database.gd (ACID_PROJECTILE_LIFETIME constant extracted, no other findings); scripts/player/player_controller_3d.gd (no findings). Confirmed by Gameplay Systems Agent checkpoint 2026-05-29T-gameplay-systems-run.md.
+- Integration: All 9 ACs verified by AC Gatekeeper against code (player_controller_3d.gd lines 445–482, attack_database.gd), primary tests (test_adb07_fused_when_both_slots, test_adb07_fused_fallback_to_base), combo matrix tests (test_fused_combo_matrix.gd — 18 tests, 6 pairs, 3 categories), and adversarial tests (test_fused_combo_matrix_adversarial.gd — 26 functions, 59 assertions).
+- Git state: All M12-01 implementation files clean and committed. (Unrelated dirty files from other work streams present in working tree — advisory to Human only.)
 
 ## Blocking Issues
 - None
 
 ## Escalation Notes
-- None
+- Advisory to Human: Working tree has uncommitted changes in files unrelated to M12-01 (asset_generation/ Python files, web frontend, test_player_mutation_slot_late_bind.gd). These should be committed before next agent pipeline runs to prevent false positives.
+- Action required: Run `git rm project_board/12_milestone_12_fused_mutation_attacks/backlog/01_fused_attack_database_integration.md` and commit, since the AC Gatekeeper lacked shell access to execute `git mv`. The authoritative copy is now at `done/01_fused_attack_database_integration.md`.
 
 ---
 
 # NEXT ACTION
 
 ## Next Responsible Agent
-Gameplay Systems Agent
+Human
 
 ## Required Input Schema
 ```json
 {
-  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/01_fused_attack_database_integration.md",
-  "spec_path": "project_board/specs/fused_attack_database_integration_spec.md",
-  "primary_test_files": [
-    "tests/scripts/attacks/test_fused_combo_matrix.gd",
-    "tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd"
-  ],
-  "impl_domain": "GDScript",
-  "impl_files": [
-    "scripts/player/player_controller_3d.gd",
-    "scripts/attacks/attack_database.gd"
-  ],
-  "breaker_finding": "No implementation changes required. All acceptance criteria already satisfied by existing code. The unchecked AC (combo matrix coverage) is now covered by test_fused_combo_matrix.gd (18 tests). Fallback key asymmetry (FADI-DD-2) is intentional per spec."
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/done/01_fused_attack_database_integration.md"
 }
 ```
 
@@ -145,4 +136,4 @@ Gameplay Systems Agent
 Proceed
 
 ## Reason
-Test Breaker completed 26 adversarial test functions (59 assertions) in tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd covering all 7 FADI-EC edge cases, FADI-3b/3c/3d, FADI-5b/5c, FADI-7a, FADI-NF-1/NF-4/NF-5, last-write-wins overwrite, order stress, cooldown decay via tick, and combinatorial invalid sequences. Full suite exits 0. Key finding: no implementation gaps — existing code is correct per spec. Gameplay Systems Agent must verify remaining acceptance criteria and advance to COMPLETE.
+All 9 acceptance criteria verified with explicit test and code evidence. AC1 (two-mutation detection): _try_attack() lines 453-456, 464; AC2 (fused lookup before base): line 467; AC3 (execute fused if found): lines 467-482, all 6 FADI-6-Nc dispatch tests; AC4 (correct cooldown): composite key lines 469-471/482, slot keys unset confirmed by EC-3/EC-6 adversarial tests; AC5 (fallback): lines 472-474, test_adb07_fused_fallback_to_base; AC6 (input gating): lines 447-452/479, FADI-7a tests; AC7 (lookup+fallback tests): test_adb07_fused_when_both_slots + fallback; AC8 (combo matrix): test_fused_combo_matrix.gd 18 tests / 36 assertions covering all 6 unordered pairs; AC9 (run_tests exits 0): === ALL TESTS PASSED === confirmed. Ticket written to done/. Human must remove backlog copy (git rm) since AC Gatekeeper lacked shell access for git mv.

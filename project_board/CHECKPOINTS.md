@@ -65,6 +65,15 @@ Log: `project_board/checkpoints/M12-01/2026-05-28T-test-design-run.md`
 26 adversarial test functions (59 assertions) in `tests/scripts/attacks/test_fused_combo_matrix_adversarial.gd`. All 7 FADI-EC edge cases covered plus FADI-3b/3c/3d, FADI-5b/5c, FADI-7a, NF-1/NF-4/NF-5, last-write-wins, order stress, cooldown decay, combinatorial. Key finding: no implementation gaps — existing code is fully correct per spec. Full suite: === ALL TESTS PASSED ===. Stage → IMPLEMENTATION_GAMEPLAY; handoff to Gameplay Systems Agent.
 Log: `project_board/checkpoints/M12-01/2026-05-29T-test-break-run.md`
 
+### [M12-01] — OUTCOME: IMPLEMENTATION_GAMEPLAY COMPLETE
+Verification pass only — no implementation code changes required. Static review of attack_database.gd and player_controller_3d.gd: one linter fix (extracted ACID_PROJECTILE_LIFETIME named constant). All 9 ACs verified with evidence against existing code and Test Breaker passing suite. Stage → STATIC_QA; handoff to Acceptance Criteria Gatekeeper Agent.
+Log: `project_board/checkpoints/M12-01/2026-05-29T-gameplay-systems-run.md`
+
+### [M12-01] — OUTCOME: COMPLETE
+All 9 acceptance criteria verified with explicit test and code evidence. FusedComboMatrixTests: 36 passed, 0 failed. FusedComboMatrixAdversarialTests: 59 passed, 0 failed. Full suite === ALL TESTS PASSED ===. M12-01 implementation files clean and committed. Ticket moved to done/.
+Log: `project_board/checkpoints/M12-01/2026-05-29T-ac-gatekeeper-run.md`
+Ticket: `project_board/12_milestone_12_fused_mutation_attacks/done/01_fused_attack_database_integration.md`
+
 ---
 
 ## Run: 2026-05-26T-m11-10-autopilot (M11 Carapace Player Attack)
