@@ -1,0 +1,82 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://cplayer3d001" path="res://scenes/player/player_3d.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://dmegpjpvpa0hh" path="res://scripts/world/respawn_zone.gd" id="2_respawn"]
+[ext_resource type="Script" uid="uid://cu4r3e3wshn6j" path="res://scripts/infection/infection_interaction_handler.gd" id="3_infection_handler"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_ui.tscn" id="5_game_ui"]
+[ext_resource type="Script" uid="uid://67hlquotuweb" path="res://scripts/system/scene_variant_controller_3d.gd" id="6_scene_variant_controller"]
+[ext_resource type="Script" path="res://scripts/system/death_restart_coordinator.gd" id="12_death_restart"]
+[ext_resource type="Script" uid="uid://cmgjcp42oxt6e" path="res://scripts/player/player_export_animation_controller_3d.gd" id="13_anim_ctl"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+background_color = Color(0.16, 0.2, 0.28, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.58, 0.62, 0.7, 1)
+ambient_light_energy = 0.85
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(28, 1, 10)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.3, 0.36, 0.42, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(28, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_respawn"]
+size = Vector3(32, 10, 12)
+
+[node name="M11SandboxBase" type="Node3D"]
+
+[node name="SceneVariantController" type="Node" parent="."]
+script = ExtResource("6_scene_variant_controller")
+
+[node name="InfectionInteractionHandler" type="Node" parent="."]
+script = ExtResource("3_infection_handler")
+
+[node name="DeathRestartCoordinator" type="Node" parent="."]
+script = ExtResource("12_death_restart")
+player = NodePath("../Player3D")
+spawn_position = NodePath("../SpawnPosition")
+infection_handler = NodePath("../InfectionInteractionHandler")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 5, 10, 5)
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="."]
+collision_mask = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("StandardMaterial3D_floor")
+mesh = SubResource("BoxMesh_floor")
+
+[node name="SpawnPosition" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 0)
+
+[node name="Player3D" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, 0)
+
+[node name="PlayerExportAnimationController" type="Node" parent="Player3D"]
+script = ExtResource("13_anim_ctl")
+
+[node name="InfectionUI" parent="." instance=ExtResource("5_game_ui")]
+
+[node name="RespawnZone" type="Area3D" parent="."]
+script = ExtResource("2_respawn")
+spawn_point = NodePath("../SpawnPosition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RespawnZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6, 0)
+shape = SubResource("BoxShape3D_respawn")
+
+[connection signal="body_entered" from="RespawnZone" to="RespawnZone" method="_on_body_entered"]

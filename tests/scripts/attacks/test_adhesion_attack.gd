@@ -2,7 +2,7 @@
 # test_adhesion_attack.gd
 #
 # Behavioral tests for the adhesion mutation attack: AttackResource registration,
-# falsy-zero slow modifier fix, root effect (speed=0 for 1.0s), wall collision
+# falsy-zero slow modifier fix, root effect (speed=0 for 3.0s), wall collision
 # despawn, visual distinction, root+infection tactical synergy, and pipeline
 # integration with PROJECTILE_SPIT.
 #
@@ -12,6 +12,8 @@
 
 class_name AdhesionAttackTests
 extends "res://tests/utils/test_utils.gd"
+
+const ADHESION_ROOT_DURATION_SEC: float = 3.0
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -98,7 +100,7 @@ func _make_adhesion_resource() -> AttackResource:
 	var r = AttackResource.new()
 	r.attack_id = 4
 	r.attack_name = "Sticky Spit"
-	r.description = "Sticky projectile that roots the first enemy hit, stopping all movement for 1.0s."
+	r.description = "Sticky projectile that roots the first enemy hit, stopping all movement for 3.0s."
 	r.effect_type = "PROJECTILE_SPIT"
 	r.damage = 1.0
 	r.cooldown = 2.5
@@ -110,7 +112,7 @@ func _make_adhesion_resource() -> AttackResource:
 	r.projectile_lifetime = 1.25
 	r.color = Color.DARK_GOLDENROD
 	r.vfx_scale = 1.0
-	r.modifiers = {"slow": 0.0, "slow_duration": 1.0}
+	r.modifiers = {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	return r
 
 
@@ -191,7 +193,11 @@ func test_adha1g_modifiers_slow_zero() -> void:
 
 func test_adha1h_modifiers_slow_duration_one() -> void:
 	var res = _make_adhesion_resource()
-	_assert_eq_float(1.0, res.modifiers.get("slow_duration", -1.0), "ADHA-1h_slow_duration")
+	_assert_eq_float(
+		ADHESION_ROOT_DURATION_SEC,
+		res.modifiers.get("slow_duration", -1.0),
+		"ADHA-1h_slow_duration",
+	)
 
 func test_adha1i_color_dark_goldenrod() -> void:
 	var res = _make_adhesion_resource()
@@ -276,7 +282,11 @@ func test_adha2d_db_adhesion_properties_match_spec() -> void:
 	_assert_true(slow_val != null, "ADHA-2d_slow_present")
 	if slow_val != null:
 		_assert_eq_float(0.0, slow_val, "ADHA-2d_slow_zero")
-	_assert_eq_float(1.0, adhesion.modifiers.get("slow_duration", -1.0), "ADHA-2d_slow_dur")
+	_assert_eq_float(
+		ADHESION_ROOT_DURATION_SEC,
+		adhesion.modifiers.get("slow_duration", -1.0),
+		"ADHA-2d_slow_dur",
+	)
 	_assert_eq_int(4, adhesion.attack_id, "ADHA-2d_id")
 	if tree:
 		db.queue_free()
@@ -294,12 +304,16 @@ func test_adha3a_executor_slow_zero_calls_apply_slowness() -> void:
 		_fail_test("ADHA-3a", "executor not loadable")
 		return
 	var enemy = MockEnemy.new()
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	executor._apply_modifiers(enemy, mods)
 	_assert_eq_int(1, enemy.slowness_applications.size(), "ADHA-3a_called")
 	if enemy.slowness_applications.size() > 0:
 		_assert_eq_float(0.0, enemy.slowness_applications[0]["multiplier"], "ADHA-3a_mult_zero")
-		_assert_eq_float(1.0, enemy.slowness_applications[0]["duration"], "ADHA-3a_dur_one")
+		_assert_eq_float(
+			ADHESION_ROOT_DURATION_SEC,
+			enemy.slowness_applications[0]["duration"],
+			"ADHA-3a_dur_one",
+		)
 	enemy.free()
 	executor.free()
 
@@ -336,14 +350,18 @@ func test_adha3c_executor_no_slow_key_skips_apply() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adha3d_projectile_slow_zero_calls_apply_slowness() -> void:
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	var enemy = MockEnemy.new()
 	ps["projectile"]._apply_modifiers(enemy)
 	_assert_eq_int(1, enemy.slowness_applications.size(), "ADHA-3d_called")
 	if enemy.slowness_applications.size() > 0:
 		_assert_eq_float(0.0, enemy.slowness_applications[0]["multiplier"], "ADHA-3d_mult_zero")
-		_assert_eq_float(1.0, enemy.slowness_applications[0]["duration"], "ADHA-3d_dur_one")
+		_assert_eq_float(
+			ADHESION_ROOT_DURATION_SEC,
+			enemy.slowness_applications[0]["duration"],
+			"ADHA-3d_dur_one",
+		)
 	enemy.free()
 	(ps["root"] as Node).free()
 
@@ -368,7 +386,7 @@ func test_adha3f_projectile_no_slow_key_skips() -> void:
 	(ps["root"] as Node).free()
 
 func test_adha3g_no_apply_slowness_method_skipped() -> void:
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	var target = NoSlownessTarget.new()
 	ps["projectile"]._apply_modifiers(target)
@@ -383,53 +401,56 @@ func test_adha3g_no_apply_slowness_method_skipped() -> void:
 
 func test_adha4a_speed_multiplier_zero_after_root() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "ADHA-4a_speed_zero")
 	tracker.free()
 
 func test_adha4b_speed_restores_after_duration() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
-	tracker._tick_slowness(1.01)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
+	tracker._tick_slowness(ADHESION_ROOT_DURATION_SEC + 0.01)
 	_assert_eq_float(1.0, tracker.get_speed_multiplier(), "ADHA-4b_speed_restored")
 	tracker.free()
 
 func test_adha4c_speed_zero_during_root_midway() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	tracker._tick_slowness(0.5)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "ADHA-4c_still_rooted")
 	tracker.free()
 
 func test_adha4d_reroot_refreshes_duration() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	tracker._tick_slowness(0.8)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "ADHA-4d_pre_reroot")
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	tracker._tick_slowness(0.8)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "ADHA-4d_still_rooted_after_refresh")
 	tracker.free()
 
 func test_adha4e_root_does_not_prevent_damage() -> void:
 	var enemy = MockEnemy.new()
-	enemy.apply_slowness(0.0, 1.0)
+	enemy.apply_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	enemy.take_damage(5.0, Vector3.ZERO)
 	_assert_eq_int(1, enemy.damage_taken.size(), "ADHA-4e_damage_taken")
 	enemy.free()
 
 func test_adha4f_root_does_not_prevent_state_transition() -> void:
 	var enemy = WeakeningEnemy.new()
-	enemy.apply_slowness(0.0, 1.0)
+	enemy.apply_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	enemy.take_damage(1.0, Vector3.ZERO)
 	_assert_eq_int(1, enemy.current_state, "ADHA-4f_weakened_during_root")
 	enemy.free()
 
 func test_adha4g_root_expires_naturally() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
-	for i in range(20):
-		tracker._tick_slowness(0.05)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
+	var step := 0.05
+	var elapsed := 0.0
+	while elapsed <= ADHESION_ROOT_DURATION_SEC:
+		tracker._tick_slowness(step)
+		elapsed += step
 	_assert_eq_float(1.0, tracker.get_speed_multiplier(), "ADHA-4g_expired")
 	tracker.free()
 
@@ -439,7 +460,7 @@ func test_adha4g_root_expires_naturally() -> void:
 # ---------------------------------------------------------------------------
 
 func test_adha5a_projectile_despawns_on_wall() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var wall = MockWall.new()
 	ps["projectile"]._on_body_entered(wall)
 	_assert_true(ps["projectile"]._consumed, "ADHA-5a_consumed")
@@ -449,7 +470,7 @@ func test_adha5a_projectile_despawns_on_wall() -> void:
 		root.free()
 
 func test_adha5b_wall_no_damage_dealt() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var wall = MockWall.new()
 	ps["projectile"]._on_body_entered(wall)
 	_pass_test("ADHA-5b_no_damage_on_wall")
@@ -459,7 +480,7 @@ func test_adha5b_wall_no_damage_dealt() -> void:
 		root.free()
 
 func test_adha5c_wall_no_modifiers_applied() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var wall = MockWall.new()
 	ps["projectile"]._on_body_entered(wall)
 	_pass_test("ADHA-5c_no_modifiers_on_wall")
@@ -469,7 +490,7 @@ func test_adha5c_wall_no_modifiers_applied() -> void:
 		root.free()
 
 func test_adha5d_consumed_prevents_double_processing() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var wall = MockWall.new()
 	var enemy = MockEnemy.new()
 	ps["projectile"]._on_body_entered(wall)
@@ -482,7 +503,7 @@ func test_adha5d_consumed_prevents_double_processing() -> void:
 		root.free()
 
 func test_adha5e_enemy_hit_still_works() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var enemy = MockEnemy.new()
 	ps["projectile"]._on_body_entered(enemy)
 	_assert_true(ps["projectile"]._consumed, "ADHA-5e_consumed_on_enemy")
@@ -545,7 +566,7 @@ func test_adha7b_claw_can_infect_rooted_weakened_enemy() -> void:
 		return
 	var enemy = MockEnemy.new()
 	enemy.current_state = 1
-	enemy.apply_slowness(0.0, 1.0)
+	enemy.apply_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	var claw_mods := {"infect_weakened": true}
 	executor._apply_modifiers(enemy, claw_mods, 1)
 	_assert_eq_int(2, enemy.current_state, "ADHA-7b_infected")
@@ -553,7 +574,7 @@ func test_adha7b_claw_can_infect_rooted_weakened_enemy() -> void:
 	executor.free()
 
 func test_adha7c_adhesion_alone_does_not_infect() -> void:
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	var enemy = MockEnemy.new()
 	enemy.current_state = 1
@@ -566,7 +587,7 @@ func test_adha7c_adhesion_alone_does_not_infect() -> void:
 
 func test_adha7d_root_creates_movement_stop_window() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "ADHA-7d_speed_zero")
 	tracker.free()
 
@@ -604,7 +625,11 @@ func test_adha8b_projectile_properties_correct() -> void:
 	_assert_true(slow_val != null, "ADHA-8b_slow_present")
 	if slow_val != null:
 		_assert_eq_float(0.0, slow_val, "ADHA-8b_slow_zero")
-	_assert_eq_float(1.0, proj.modifiers.get("slow_duration", -1.0), "ADHA-8b_slow_dur")
+	_assert_eq_float(
+		ADHESION_ROOT_DURATION_SEC,
+		proj.modifiers.get("slow_duration", -1.0),
+		"ADHA-8b_slow_dur",
+	)
 	_teardown(scene)
 
 func test_adha8c_cooldown_value() -> void:
@@ -612,7 +637,7 @@ func test_adha8c_cooldown_value() -> void:
 	_assert_eq_float(2.5, res.cooldown, "ADHA-8c_cooldown")
 
 func test_adha8d_projectile_travels_along_x() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var proj = ps["projectile"]
 	var start_x = proj.global_position.x
 	proj._physics_process(0.1)
@@ -621,7 +646,7 @@ func test_adha8d_projectile_travels_along_x() -> void:
 	(ps["root"] as Node).free()
 
 func test_adha8e_projectile_consumed_on_first_enemy() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var proj = ps["projectile"]
 	var e1 = MockEnemy.new()
 	var e2 = MockEnemy.new()
@@ -656,7 +681,7 @@ func test_adha8f_facing_left_negative_direction() -> void:
 func test_ec1_adhesion_hit_normal_stays_normal() -> void:
 	var enemy = MockEnemy.new()
 	enemy.current_state = 0
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	ps["projectile"]._on_body_entered(enemy)
 	_assert_eq_int(0, enemy.current_state, "EC-1_stays_normal")
@@ -669,7 +694,7 @@ func test_ec1_adhesion_hit_normal_stays_normal() -> void:
 func test_ec2_adhesion_hit_weakens_enemy() -> void:
 	var enemy = WeakeningEnemy.new()
 	enemy.current_state = 0
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	ps["projectile"]._on_body_entered(enemy)
 	_assert_eq_int(1, enemy.current_state, "EC-2_now_weakened")
@@ -682,7 +707,7 @@ func test_ec2_adhesion_hit_weakens_enemy() -> void:
 func test_ec3_adhesion_weakened_no_infect() -> void:
 	var enemy = MockEnemy.new()
 	enemy.current_state = 1
-	var mods := {"slow": 0.0, "slow_duration": 1.0}
+	var mods := {"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC}
 	var ps = _make_projectile_in_tree(mods)
 	ps["projectile"]._on_body_entered(enemy)
 	_assert_eq_int(1, enemy.current_state, "EC-3_still_weakened")
@@ -693,24 +718,24 @@ func test_ec3_adhesion_weakened_no_infect() -> void:
 
 func test_ec9_reroot_refreshes_duration() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	tracker._tick_slowness(0.9)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "EC-9_still_rooted")
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	tracker._tick_slowness(0.9)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "EC-9_refreshed")
 	tracker.free()
 
 func test_ec11_claw_slow_overwrites_root() -> void:
 	var tracker = EnemyEffectTracker.new()
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "EC-11_rooted")
 	tracker.set_slowness(0.5, 2.0)
 	_assert_eq_float(0.5, tracker.get_speed_multiplier(), "EC-11_overwritten")
 	tracker.free()
 
 func test_ec14_first_enemy_consumes_projectile() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var e1 = MockEnemy.new()
 	var e2 = MockEnemy.new()
 	ps["projectile"]._on_body_entered(e1)
@@ -727,17 +752,17 @@ func test_ec15_root_overwrites_partial_slow() -> void:
 	var tracker = EnemyEffectTracker.new()
 	tracker.set_slowness(0.5, 2.0)
 	_assert_eq_float(0.5, tracker.get_speed_multiplier(), "EC-15_partial")
-	tracker.set_slowness(0.0, 1.0)
+	tracker.set_slowness(0.0, ADHESION_ROOT_DURATION_SEC)
 	_assert_eq_float(0.0, tracker.get_speed_multiplier(), "EC-15_full_root")
 	tracker.free()
 
 func test_ec17_slow_duration_explicit_in_modifiers() -> void:
 	var res = _make_adhesion_resource()
 	_assert_true(res.modifiers.has("slow_duration"), "EC-17_has_duration")
-	_assert_eq_float(1.0, res.modifiers["slow_duration"], "EC-17_is_one")
+	_assert_eq_float(ADHESION_ROOT_DURATION_SEC, res.modifiers["slow_duration"], "EC-17_is_three")
 
 func test_ec20_consumed_prevents_wall_after_enemy() -> void:
-	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": 1.0})
+	var ps = _make_projectile_in_tree({"slow": 0.0, "slow_duration": ADHESION_ROOT_DURATION_SEC})
 	var enemy = MockEnemy.new()
 	var wall = MockWall.new()
 	ps["projectile"]._on_body_entered(enemy)

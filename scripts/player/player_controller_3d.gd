@@ -25,10 +25,9 @@ var _chunk_dot_time_accum: Array[float] = [0.0, 0.0]
 var _infection_handler: Node = null
 
 @export var chunk_dot_step_interval: float = 0.45
-var _detach_spawned: Array = [false, false]
-
-const _RECALL_TRAVEL_TIME: float = 0.25
-const _CHUNK_SCENE: PackedScene = preload("res://scenes/chunk/chunk_3d.tscn")
+## Frames remaining where a detach press must not also start recall (spawn frame only).
+var _detach_spawn_blocks_recall: Array = [0, 0]
+var _chunk_slot_processor: PlayerChunkSlotProcessor
 
 var _mutation_slot: Object = null
 var _base_max_speed: float = 5.0
@@ -74,22 +73,13 @@ const _DEFAULT_MOVEMENT_MAX_SPEED_2D: float = 300.0
 
 @export var detach_lob_horizontal: float = 5.0
 @export var detach_lob_upward: float = 8.0
-const _DETACH_SPAWN_OFFSET: float = 0.4
-const _DETACH_SPAWN_HEIGHT: float = 0.75
-
 const _CHUNK_SLOT_COUNT: int = 2
-const _CHUNK_KILL_PLANE_Y: float = -4.0
-const _CHUNK_DOT_PHASE_WEAKEN: int = 3
-const _CHUNK_DOT_PHASE_INFECT: int = 2
-const _CHUNK_DOT_PHASE_RELEASE: int = 1
 
 const _DEFAULT_PROJECT_GRAVITY: float = 9.8
 const _TRAIL_VELOCITY_THRESHOLD: float = 0.5
 const _JUMP_SFX_PITCH_MIN: float = 1.0
 const _JUMP_SFX_PITCH_MAX: float = 1.15
 const _PLAY_PLANE_Z: float = 0.0
-const _DETACH_LOB_DIRECTION_VELOCITY_EPSILON: float = 0.1
-
 const _LAND_SQUASH_SCALE: Vector3 = Vector3(1.15, 0.85, 1.15)
 const _LAND_SQUASH_OUT_DURATION_FACTOR: float = 1.2
 const _DETACH_POP_SCALE: Vector3 = Vector3(1.08, 1.08, 1.08)
@@ -128,16 +118,14 @@ func _ready() -> void:
 	_attack_executor = AttackExecutor.new()
 	add_child(_attack_executor)
 	_input_policy = PlayerInputActionPolicy.new()
+	_chunk_slot_processor = PlayerChunkSlotProcessor.new(self)
 
 	var root: Node = get_parent()
 	if root != null:
 		var handler: Node = root.get_node_or_null("InfectionInteractionHandler")
 		_infection_handler = handler
 		if handler != null:
-			if handler.has_method("get_mutation_slot_manager"):
-				_mutation_slot = handler.call("get_mutation_slot_manager")
-			elif handler.has_method("get_mutation_slot"):
-				_mutation_slot = handler.call("get_mutation_slot")
+			_mutation_slot = PlayerMutationSlotBind.try_bind_from_handler(handler)
 			handler.absorb_resolved.connect(_on_absorb_resolved)
 		var enemies: Array = root.find_children("*", "EnemyInfection3D", true, false)
 		for enemy in enemies:
@@ -391,238 +379,15 @@ func sync_movement_simulation_exports() -> void:
 
 
 func _process_chunk_slot(i: int, detach_just: bool, next_state: MovementSimulation.MovementState, delta: float) -> void:
-	var prev_has: bool = _get_has_chunk(i)
-	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
-
-	if _chunk_stuck[i] and _chunk_dot_ticks_remaining[i] > 0:
-		_chunk_dot_time_accum[i] += delta
-		if _chunk_dot_time_accum[i] >= chunk_dot_step_interval:
-			_chunk_dot_time_accum[i] -= chunk_dot_step_interval
-			_apply_chunk_dot_step(i)
-
-	# Kill-plane: recover a live chunk that has fallen below the platform.
-	if not prev_has and not _recall_in_progress[i] and not _chunk_stuck[i] \
-			and chunk != null and is_instance_valid(chunk) \
-			and chunk.global_position.y < _CHUNK_KILL_PLANE_Y:
-		chunk.queue_free()
-		_chunks[i] = null
-		_set_has_chunk(i, true)
-		return
-
-	# Recover slot if chunk reference became invalid externally. Never fire
-	# while stuck on an enemy — _on_absorb_resolved handles that path.
-	if not prev_has and not _recall_in_progress[i] and not _chunk_stuck[i] and (chunk == null or not is_instance_valid(chunk)):
-		_chunk_stuck[i] = false
-		_chunk_stuck_enemy[i] = null
-		_chunks[i] = null
-		_set_has_chunk(i, true)
-		return
-
-	# Clear the spawn-guard once the key is released so the next press works.
-	if not detach_just:
-		_detach_spawned[i] = false
-
-	var recall_pressed: bool = (
-		detach_just
-		and (not prev_has)
-		and chunk != null
-		and is_instance_valid(chunk)
-		and (not _chunk_stuck[i])
-		and (not _detach_spawned[i])
-	)
-	if recall_pressed and not _recall_in_progress[i]:
-		_recall_in_progress[i] = true
-		_recall_timer[i] = 0.0
-		_emit_recall_started(i)
-
-	_set_has_chunk(i, _next_has_chunk(i, next_state))
-
-	if prev_has and not _get_has_chunk(i):
-		_spawn_chunk(i)
-
-	_tick_recall(i, delta)
-
-
-func _spawn_chunk(i: int) -> void:
-	var chunk: RigidBody3D = _CHUNK_SCENE.instantiate() as RigidBody3D
-	assert(chunk != null, "chunk_3d.tscn root must be RigidBody3D")
-	var lob_dir: float = 1.0
-	if absf(velocity.x) > _DETACH_LOB_DIRECTION_VELOCITY_EPSILON:
-		lob_dir = 1.0 if velocity.x > 0.0 else -1.0
-	var parent: Node = get_parent()
-	if parent == null:
-		push_error("PlayerController3D: cannot detach chunk — node has no parent")
-		return
-	parent.add_child(chunk)
-	# Set global_position AFTER add_child so the physics body initialises
-	# at the correct world position rather than the pre-tree local origin.
-	chunk.global_position = global_position + Vector3(
-		lob_dir * _DETACH_SPAWN_OFFSET, _DETACH_SPAWN_HEIGHT, _PLAY_PLANE_Z
-	)
-	_chunks[i] = chunk
-	_detach_spawned[i] = true
-	chunk.add_collision_exception_with(self)
-	chunk.freeze = false
-	chunk.linear_velocity = Vector3(
-		lob_dir * detach_lob_horizontal, detach_lob_upward, _PLAY_PLANE_Z
-	)
-	_juice_detach_pop()
-	if i == 0:
-		var am := _get_audio_manager()
-		if am != null and am.detach_sfx != null:
-			am.detach_sfx.play()
-		detach_fired.emit(global_position, chunk.global_position)
-	else:
-		detach_2_fired.emit(global_position, chunk.global_position)
-
-
-func _tick_recall(i: int, delta: float) -> void:
-	if not _recall_in_progress[i]:
-		return
-	_recall_timer[i] += delta
-	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
-	if chunk == null or not is_instance_valid(chunk):
-		_recall_in_progress[i] = false
-		_chunk_stuck[i] = false
-		_chunk_stuck_enemy[i] = null
-		_chunks[i] = null
-		_set_has_chunk(i, true)
-		return
-	if _recall_timer[i] >= _RECALL_TRAVEL_TIME:
-		_recall_in_progress[i] = false
-		_current_state.current_hp = minf(_simulation.max_hp, _current_state.current_hp + _simulation.hp_cost_per_detach)
-		_set_has_chunk(i, true)
-		var am := _get_audio_manager()
-		if am != null and am.recall_sfx != null:
-			am.recall_sfx.play()
-		_juice_recall_pop()
-		_emit_chunk_reabsorbed(i, chunk.global_position)
-		chunk.queue_free()
-		_chunk_stuck[i] = false
-		_chunk_stuck_enemy[i] = null
-		_chunks[i] = null
+	_chunk_slot_processor.process_slot(i, detach_just, next_state, delta)
 
 
 func _on_enemy_chunk_attached(chunk: RigidBody3D, enemy: EnemyInfection3D) -> void:
-	if not is_instance_valid(chunk):
-		return
-	for i in _CHUNK_SLOT_COUNT:
-		if chunk == _chunks[i]:
-			chunk.linear_velocity = Vector3.ZERO
-			chunk.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-			chunk.freeze = true
-			chunk.reparent(enemy, true)
-			_chunk_stuck[i] = true
-			_chunk_stuck_enemy[i] = enemy
-			_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_WEAKEN
-			_chunk_dot_time_accum[i] = 0.0
-			# Immediate damage feedback when the chunk sticks (before DoT ticks).
-			enemy.play_damage_hit_animation()
-			return
-
-
-func _release_chunk_after_dot(i: int) -> void:
-	var enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
-	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
-	if chunk == null or not is_instance_valid(chunk) or enemy == null or not is_instance_valid(enemy):
-		_chunk_dot_ticks_remaining[i] = 0
-		_chunk_dot_time_accum[i] = 0.0
-		return
-	var level_root: Node = enemy.get_parent()
-	if level_root == null:
-		return
-	enemy.unregister_attached_chunk(chunk)
-	_chunk_dot_ticks_remaining[i] = 0
-	_chunk_dot_time_accum[i] = 0.0
-	# Keep world pose so the blob does not snap (e.g. under a scaled boss).
-	chunk.reparent(level_root, true)
-	chunk.freeze = false
-	chunk.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-	chunk.linear_velocity = Vector3.ZERO
-	_chunk_stuck[i] = false
-	_chunk_stuck_enemy[i] = null
-	_recall_in_progress[i] = true
-	_recall_timer[i] = 0.0
-	_emit_recall_started(i)
-
-
-func _apply_chunk_dot_step(i: int) -> void:
-	var enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
-	if enemy == null or not is_instance_valid(enemy):
-		_chunk_dot_ticks_remaining[i] = 0
-		_chunk_dot_time_accum[i] = 0.0
-		return
-	var esm: EnemyStateMachine = enemy.get_esm()
-	if esm == null:
-		_chunk_dot_ticks_remaining[i] = 0
-		_chunk_dot_time_accum[i] = 0.0
-		return
-	var remaining: int = _chunk_dot_ticks_remaining[i]
-	if remaining == _CHUNK_DOT_PHASE_WEAKEN:
-		esm.apply_weaken_event()
-		enemy.play_damage_hit_animation()
-		_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_INFECT
-		return
-	if remaining == _CHUNK_DOT_PHASE_INFECT:
-		esm.apply_infection_event()
-		enemy.play_damage_hit_animation()
-		_chunk_dot_ticks_remaining[i] = _CHUNK_DOT_PHASE_RELEASE
-		return
-	if remaining != _CHUNK_DOT_PHASE_RELEASE:
-		return
-	# Mini-boss and regular enemies: third step only releases the blob (recall).
-	# Absorb the enemy with R after chunk returns; infected boss stays in place until then.
-	_release_chunk_after_dot(i)
+	_chunk_slot_processor.on_enemy_chunk_attached(chunk, enemy)
 
 
 func _on_absorb_resolved(esm: EnemyStateMachine) -> void:
-	for i in _CHUNK_SLOT_COUNT:
-		var stuck_enemy: EnemyInfection3D = _chunk_stuck_enemy[i] as EnemyInfection3D
-		if _chunk_stuck[i] and stuck_enemy != null and is_instance_valid(stuck_enemy):
-			if stuck_enemy.get_esm() == esm:
-				_chunk_dot_ticks_remaining[i] = 0
-				_chunk_dot_time_accum[i] = 0.0
-				var chunk: RigidBody3D = _chunks[i] as RigidBody3D
-				if chunk != null and is_instance_valid(chunk):
-					stuck_enemy.unregister_attached_chunk(chunk)
-					chunk.queue_free()
-				_chunks[i] = null
-				_set_has_chunk(i, true)
-				_chunk_stuck[i] = false
-				_chunk_stuck_enemy[i] = null
-	_current_state.current_hp = minf(
-		_simulation.max_hp,
-		_current_state.current_hp + _simulation.hp_cost_per_detach
-	)
-
-
-func _get_has_chunk(i: int) -> bool:
-	return _current_state.has_chunks[i]
-
-
-func _set_has_chunk(i: int, val: bool) -> void:
-	_current_state.has_chunks[i] = val
-
-
-func _next_has_chunk(i: int, next: MovementSimulation.MovementState) -> bool:
-	return next.has_chunks[i]
-
-
-func _emit_recall_started(i: int) -> void:
-	var chunk: RigidBody3D = _chunks[i] as RigidBody3D
-	if chunk == null or not is_instance_valid(chunk):
-		return
-	if i == 0:
-		recall_started.emit(global_position, chunk.global_position)
-	else:
-		recall_2_started.emit(global_position, chunk.global_position)
-
-
-func _emit_chunk_reabsorbed(i: int, chunk_pos: Vector3) -> void:
-	if i == 0:
-		chunk_reabsorbed.emit(global_position, chunk_pos)
-	else:
-		chunk_2_reabsorbed.emit(global_position, chunk_pos)
+	_chunk_slot_processor.on_absorb_resolved(esm)
 
 
 func _get_visual_node() -> Node3D:
@@ -633,9 +398,14 @@ func _juice_pop(target_scale: Vector3, in_dur: float, out_dur: float) -> void:
 	var vis: Node3D = _get_visual_node()
 	if vis == null:
 		return
+	vis.scale = Vector3.ONE
 	var tween := create_tween()
 	tween.tween_property(vis, "scale", target_scale, in_dur)
 	tween.tween_property(vis, "scale", Vector3.ONE, out_dur)
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(vis):
+			vis.scale = Vector3.ONE
+	)
 
 
 func _juice_jump_stretch() -> void:
@@ -673,6 +443,7 @@ func get_attack_executor() -> AttackExecutor:
 
 
 func _try_attack() -> void:
+	PlayerMutationSlotBind.ensure_binding(self)
 	if _input_policy == null or _mutation_slot == null:
 		return
 	if not _input_policy.is_action_permitted(
@@ -742,7 +513,8 @@ func _sync_player_state_machine() -> void:
 	_player_state_ctx.move_speed_threshold = _MOVE_SPEED_THRESHOLD
 	_player_state_ctx.is_wall_clinging = _current_state.is_wall_clinging
 	_player_state_ctx.is_any_chunk_stuck = _is_any_chunk_stuck()
-	_player_state_ctx.is_mutation_active = _is_mutation_active()
+	# Fusion is a speed buff only (FusionResolver); do not derive MUTATE — that blocks J (IAM-5.2).
+	_player_state_ctx.is_mutation_active = false
 	_player_state_ctx.current_hp = _current_state.current_hp
 	_player_state_ctx.min_hp = _simulation.min_hp
 	_player_state_ctx.hurt_pending = false

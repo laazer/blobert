@@ -11,16 +11,30 @@ extends BasePhysicsEntity3D
 
 signal chunk_attached(chunk: RigidBody3D)
 
+const KNOCKBACK_DECAY_RATE: float = 0.8
+const KNOCKBACK_EPSILON: float = 0.01
+const WEAKENED_HP_THRESHOLD: float = 0.5
+
 @export var mutation_drop: String = "infection_mutation_01"
 @export var model_scene: PackedScene = null
+@export var max_hp: float = 10.0
 
 var _esm: EnemyStateMachine = EnemyStateMachine.new()
 var _handler: InfectionInteractionHandler
 var _area: Area3D
 var _attached_chunks: Array[RigidBody3D] = []
+var _current_hp: float = 0.0
+var _knockback_velocity: Vector3 = Vector3.ZERO
+var _effect_tracker: EnemyEffectTracker = null
 
 
 func _ready() -> void:
+	add_to_group("enemies")
+	_current_hp = max_hp
+	_effect_tracker = EnemyEffectTracker.new()
+	_effect_tracker.name = "EnemyEffectTracker"
+	_effect_tracker.dot_tick_requested.connect(_on_dot_tick_requested)
+	add_child(_effect_tracker)
 	var anim_ctrl: EnemyAnimationController = get_node_or_null("EnemyAnimationController") as EnemyAnimationController
 	if anim_ctrl != null:
 		anim_ctrl.setup(_esm)
@@ -150,6 +164,86 @@ func get_esm() -> EnemyStateMachine:
 	return _esm
 
 
+func get_base_state() -> int:
+	match _esm.get_state():
+		EnemyStateMachine.STATE_WEAKENED:
+			return 1
+		EnemyStateMachine.STATE_INFECTED:
+			return 2
+		_:
+			return 0
+
+
+func set_base_state(state: int) -> void:
+	if _esm.get_state() == EnemyStateMachine.STATE_DEAD:
+		return
+	if state == 1:
+		_esm.apply_weaken_event()
+	elif state == 2:
+		if _esm.get_state() == EnemyStateMachine.STATE_WEAKENED:
+			_esm.apply_infection_event()
+		elif _esm.get_state() in [EnemyStateMachine.STATE_IDLE, EnemyStateMachine.STATE_ACTIVE]:
+			_esm.apply_weaken_event()
+			_esm.apply_infection_event()
+
+
+func take_damage(damage: float, knockback: Vector3) -> void:
+	if is_dead():
+		return
+	damage = maxf(0.0, damage)
+	_current_hp = maxf(0.0, _current_hp - damage)
+	_sync_esm_from_hp()
+	play_damage_hit_animation()
+	if _current_hp > 0.0 and knockback != Vector3.ZERO:
+		_knockback_velocity = knockback
+	if _current_hp <= 0.0:
+		_esm.apply_death_event()
+
+
+func apply_acid(duration: float, dps: float) -> void:
+	if is_dead() or _effect_tracker == null:
+		return
+	_effect_tracker.add_dot("acid", duration, dps)
+
+
+func apply_slowness(multiplier: float, duration: float) -> void:
+	if is_dead() or _effect_tracker == null:
+		return
+	_effect_tracker.set_slowness(multiplier, duration)
+
+
+func get_speed_multiplier() -> float:
+	if _effect_tracker == null:
+		return 1.0
+	return _effect_tracker.get_speed_multiplier()
+
+
+func is_dead() -> bool:
+	return _esm.get_state() == EnemyStateMachine.STATE_DEAD
+
+
+func _sync_esm_from_hp() -> void:
+	if _esm.get_state() in [
+		EnemyStateMachine.STATE_WEAKENED,
+		EnemyStateMachine.STATE_INFECTED,
+		EnemyStateMachine.STATE_DEAD,
+	]:
+		return
+	if _current_hp <= max_hp * WEAKENED_HP_THRESHOLD:
+		_esm.apply_weaken_event()
+
+
+func _on_dot_tick_requested(effect_name: String, tick_damage: float) -> void:
+	if is_dead():
+		return
+	tick_damage = maxf(0.0, tick_damage)
+	_current_hp = maxf(0.0, _current_hp - tick_damage)
+	_sync_esm_from_hp()
+	play_damage_hit_animation()
+	if _current_hp <= 0.0:
+		_esm.apply_death_event()
+
+
 ## Plays the one-shot Hit (damage) clip on the root AnimationPlayer, if wired.
 ## No-op when dead or controller / Hit clip unavailable.
 func play_damage_hit_animation() -> void:
@@ -196,6 +290,10 @@ func _on_body_exited(body: Node3D) -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	velocity += _knockback_velocity
+	_knockback_velocity *= KNOCKBACK_DECAY_RATE
+	if _knockback_velocity.length() < KNOCKBACK_EPSILON:
+		_knockback_velocity = Vector3.ZERO
 	var lunge_atk: Node = get_node_or_null("AdhesionBugLungeAttack")
 	var lunge_controls_x: bool = false
 	if lunge_atk != null and lunge_atk.has_method("enemy_writes_velocity_x_this_frame"):
@@ -204,7 +302,7 @@ func _physics_process(delta: float) -> void:
 	var carapace_controls_x: bool = false
 	if carapace_atk != null and carapace_atk.has_method("enemy_writes_velocity_x_this_frame"):
 		carapace_controls_x = carapace_atk.call("enemy_writes_velocity_x_this_frame") as bool
-	if not lunge_controls_x and not carapace_controls_x:
+	if not lunge_controls_x and not carapace_controls_x and _knockback_velocity.length() < KNOCKBACK_EPSILON:
 		velocity.x = 0.0
 	velocity.z = 0.0
 	# move and apply collisions; after sliding, clear vertical speed if we're on the floor

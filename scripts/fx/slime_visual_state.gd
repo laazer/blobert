@@ -26,11 +26,7 @@ var _baseline_emission_energy: float = 1.0
 
 
 func _ready() -> void:
-	_mesh = get_node_or_null("MeshInstance3D") as MeshInstance3D
-	if _mesh == null:
-		for n in find_children("*", "MeshInstance3D", true, false):
-			_mesh = n as MeshInstance3D
-			break
+	_mesh = _resolve_tint_mesh()
 	if _mesh == null:
 		push_error("SlimeVisualState: no MeshInstance3D found — color feedback disabled")
 		return
@@ -45,6 +41,18 @@ func _ready() -> void:
 	_baseline_emission_energy = _material.emission_energy_multiplier
 	_mesh_ready = true
 	_player = get_parent()
+
+
+func _resolve_tint_mesh() -> MeshInstance3D:
+	var direct: MeshInstance3D = get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if direct != null and direct.visible:
+		return direct
+	var fallback: MeshInstance3D = direct
+	for n: Node in find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = n as MeshInstance3D
+		if mi != null and mi.visible:
+			return mi
+	return fallback
 
 
 func _bind_first_standard_material(mi: MeshInstance3D) -> bool:

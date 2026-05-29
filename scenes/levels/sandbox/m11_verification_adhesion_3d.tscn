@@ -1,0 +1,86 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/sandbox/m11_sandbox_base_3d.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://cpyujft4wk0vm" path="res://scripts/levels/m11_verification_controller_3d.gd" id="2_controller"]
+[ext_resource type="Script" path="res://scripts/levels/m11_enemy_patrol_probe.gd" id="3_patrol_probe"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" uid="uid://dbuoubqyaikq1" path="res://assets/enemies/generated_glb/adhesion_bug_animated_00.glb" id="7_adhesion_glb"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_collision"]
+size = Vector3(1.2, 3, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall_adhesion"]
+albedo_color = Color(0.85, 0.22, 0.18, 1)
+emission_enabled = true
+emission = Color(0.9, 0.25, 0.15, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_collision"]
+size = Vector3(1.2, 3, 2)
+
+[node name="M11VerificationAdhesion" type="Node3D"]
+
+[node name="SandboxBase" parent="." instance=ExtResource("1_base")]
+
+[node name="M11VerificationController" type="Node" parent="."]
+script = ExtResource("2_controller")
+default_slot_a_mutation = "adhesion"
+
+[node name="StationSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, -10, 4.5, 0)
+pixel_size = 0.0025
+fixed_size = true
+text = "M11 ADHESION — press 4 if needed, then J (gate=ok)
+ROOT: hit LEFT target (patrols). It should freeze ~3s; HUD shows root=STOP.
+WALL: walk to X~2, aim OVER/UNDER dummies into red wall — ball vanishes (max ~10m travel).
+Projectile = dark gold (not acid green). Right dummy does not patrol."
+font_size = 16
+outline_size = 3
+
+[node name="AdhesionTargetA" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+model_scene = ExtResource("7_adhesion_glb")
+
+[node name="PatrolProbe" type="Node" parent="AdhesionTargetA"]
+script = ExtResource("3_patrol_probe")
+
+[node name="AdhesionTargetALabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(1, 0.75, 0.35, 1)
+text = "TARGET"
+font_size = 14
+outline_size = 2
+
+[node name="AdhesionTargetB" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, 0)
+model_scene = ExtResource("7_adhesion_glb")
+
+[node name="AdhesionTargetBLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2.2, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(1, 0.75, 0.35, 1)
+text = "TARGET"
+font_size = 14
+outline_size = 2
+
+[node name="AdhesionWall" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AdhesionWall"]
+shape = SubResource("BoxShape3D_wall_collision")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="AdhesionWall"]
+material_override = SubResource("StandardMaterial3D_wall_adhesion")
+mesh = SubResource("BoxMesh_wall_collision")
+
+[node name="AdhesionWallLabel" type="Label3D" parent="AdhesionWall"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 1.6, 0)
+pixel_size = 0.0025
+fixed_size = true
+modulate = Color(1, 0.65, 0.5, 1)
+text = "DESPAWN WALL"
+font_size = 18
+outline_size = 3

@@ -9,6 +9,8 @@ const DEFAULT_SLOW_DURATION := 1.5
 const DEGENERATE_DISTANCE_SQ := 1e-8
 const SLAM_LANDING_POLL_INTERVAL := 0.05
 const SLAM_LANDING_TIMEOUT := 3.0
+const PROJECTILE_SPAWN_OFFSET_X := 0.65
+const PROJECTILE_SPAWN_OFFSET_Y := 0.45
 
 signal attack_started(resource: AttackResource)
 signal attack_hit(target: Node3D, resource: AttackResource)
@@ -32,10 +34,15 @@ func execute_attack(resource: AttackResource) -> void:
 		"PROJECTILE_SPIT":
 			_handle_projectile_spit(resource)
 		"SLAM_AOE":
-			_handle_slam_aoe(resource)
+			_run_slam_attack_async(resource)
 			return
 		_:
 			_handle_unknown(resource)
+	_is_active = false
+
+
+func _run_slam_attack_async(resource: AttackResource) -> void:
+	await _handle_slam_aoe(resource)
 	_is_active = false
 
 
@@ -86,12 +93,18 @@ func _handle_projectile_spit(resource: AttackResource) -> void:
 	projectile.direction_x = _get_facing_sign()
 	projectile.color = resource.color
 
-	var grandparent: Node = null
+	var spawn_parent: Node = null
 	if get_parent():
-		grandparent = get_parent().get_parent()
-	if grandparent:
-		grandparent.add_child(projectile)
-		projectile.global_position = _get_owner_position()
+		spawn_parent = get_parent().get_parent()
+	if spawn_parent:
+		spawn_parent.add_child(projectile)
+		var facing := _get_facing_sign()
+		var owner_pos := _get_owner_position()
+		projectile.global_position = owner_pos + Vector3(
+			facing * PROJECTILE_SPAWN_OFFSET_X,
+			PROJECTILE_SPAWN_OFFSET_Y,
+			0.0
+		)
 
 	projectile_fired.emit(projectile, resource)
 
@@ -212,7 +225,6 @@ func _handle_slam_aoe(resource: AttackResource) -> void:
 			if _is_owner_on_floor():
 				break
 		if not _is_owner_on_floor():
-			_is_active = false
 			return
 
 	var owner_pos := _get_owner_position()
@@ -228,4 +240,3 @@ func _handle_slam_aoe(resource: AttackResource) -> void:
 		attack_hit.emit(enemy, resource)
 
 	slam_vfx_requested.emit(owner_pos, resource.attack_range, resource.color, resource.vfx_scale)
-	_is_active = false

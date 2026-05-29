@@ -1,0 +1,85 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/sandbox/m11_sandbox_base_3d.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://cpyujft4wk0vm" path="res://scripts/levels/m11_verification_controller_3d.gd" id="2_controller"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" uid="uid://dbuoubqyaikq1" path="res://assets/enemies/generated_glb/adhesion_bug_animated_00.glb" id="7_adhesion_glb"]
+[ext_resource type="PackedScene" uid="uid://dbgfmmiyqehxa" path="res://assets/enemies/generated_glb/acid_spitter_animated_00.glb" id="8_acid_glb"]
+[ext_resource type="PackedScene" uid="uid://ci663hm36o3r8" path="res://assets/enemies/generated_glb/claw_crawler_animated_00.glb" id="9_claw_glb"]
+[ext_resource type="PackedScene" uid="uid://dx24tbtmepaci" path="res://assets/enemies/generated_glb/carapace_husk_animated_00.glb" id="10_carapace_glb"]
+
+[node name="M11VerificationInfection" type="Node3D"]
+
+[node name="SandboxBase" parent="." instance=ExtResource("1_base")]
+
+[node name="M11VerificationController" type="Node" parent="."]
+script = ExtResource("2_controller")
+auto_seed_slot_a = false
+enable_attack_hotkeys = true
+
+[node name="StationSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, -10, 4.5, 0)
+pixel_size = 0.0025
+fixed_size = true
+text = "M11 INFECTION — chunk / weaken / infect / absorb
+Face enemy (+X). E: chunk sticks -> 3 DoT -> WEAKENED.
+F on WEAKENED -> INFECTED. R on INFECTED -> mutation in HUD.
+Optional: 1-4 arms slot A without absorb. J is NOT this test."
+font_size = 17
+outline_size = 3
+
+[node name="SourceLabelAdhesion" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2.4, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(0.55, 0.85, 1, 1)
+text = "adhesion"
+font_size = 14
+outline_size = 2
+
+[node name="AdhesionBugEnemy" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 0)
+mutation_drop = "adhesion"
+model_scene = ExtResource("7_adhesion_glb")
+
+[node name="SourceLabelAcid" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2.4, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(0.55, 0.85, 1, 1)
+text = "acid"
+font_size = 14
+outline_size = 2
+
+[node name="AcidSpitterEnemy" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1, 0)
+mutation_drop = "acid"
+model_scene = ExtResource("8_acid_glb")
+
+[node name="SourceLabelClaw" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.4, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(0.55, 0.85, 1, 1)
+text = "claw"
+font_size = 14
+outline_size = 2
+
+[node name="ClawCrawlerEnemy" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 0)
+mutation_drop = "claw"
+model_scene = ExtResource("9_claw_glb")
+
+[node name="SourceLabelCarapace" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2.4, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(0.55, 0.85, 1, 1)
+text = "carapace"
+font_size = 14
+outline_size = 2
+
+[node name="CarapaceHuskEnemy" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, 0)
+mutation_drop = "carapace"
+model_scene = ExtResource("10_carapace_glb")

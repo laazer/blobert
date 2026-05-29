@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/sandbox/m11_sandbox_base_3d.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://cpyujft4wk0vm" path="res://scripts/levels/m11_verification_controller_3d.gd" id="2_controller"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemy_infection_3d.tscn" id="4_enemy"]
+[ext_resource type="PackedScene" uid="uid://dbgfmmiyqehxa" path="res://assets/enemies/generated_glb/acid_spitter_animated_00.glb" id="8_acid_glb"]
+
+[node name="M11VerificationAcid" type="Node3D"]
+
+[node name="SandboxBase" parent="." instance=ExtResource("1_base")]
+
+[node name="M11VerificationController" type="Node" parent="."]
+script = ExtResource("2_controller")
+default_slot_a_mutation = "acid"
+
+[node name="StationSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, -10, 4.5, 0)
+pixel_size = 0.0025
+fixed_size = true
+text = "M11 ACID (slot A = acid, or press 2)
+J: chartreuse projectile +X. On hit: acid DoT.
+WEAKENED target: DoT duration x2. Cooldown ~2s."
+font_size = 17
+outline_size = 3
+
+[node name="AcidTargetA" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+model_scene = ExtResource("8_acid_glb")
+
+[node name="AcidTargetALabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(1, 0.75, 0.35, 1)
+text = "TARGET"
+font_size = 14
+outline_size = 2
+
+[node name="AcidTargetB" parent="." instance=ExtResource("4_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, 0)
+model_scene = ExtResource("8_acid_glb")
+
+[node name="AcidTargetBLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 2.2, 0)
+pixel_size = 0.002
+fixed_size = true
+modulate = Color(1, 0.75, 0.35, 1)
+text = "TARGET"
+font_size = 14
+outline_size = 2

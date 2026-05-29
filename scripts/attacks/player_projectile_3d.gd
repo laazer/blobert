@@ -5,6 +5,9 @@ const DEFAULT_POISON_DPS := 0.3
 const DEFAULT_ACID_DPS := 0.2
 const DEFAULT_SLOW_DURATION := 1.5
 const DEGENERATE_DISTANCE_SQ := 1e-8
+const PROJECTILE_RADIUS := 0.22
+const PROJECTILE_LAYER := 4
+const PROJECTILE_MASK := 3
 
 var damage: float = 0.0
 var speed: float = 0.0
@@ -17,6 +20,46 @@ var color: Color = Color.WHITE
 
 var _age: float = 0.0
 var _consumed: bool = false
+
+
+func _ready() -> void:
+	collision_layer = PROJECTILE_LAYER
+	collision_mask = PROJECTILE_MASK
+	monitoring = true
+	monitorable = false
+	if not body_entered.is_connected(_on_body_entered):
+		body_entered.connect(_on_body_entered)
+	_ensure_visual_and_collision()
+
+
+func _ensure_visual_and_collision() -> void:
+	var shape_node: CollisionShape3D = get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if shape_node == null:
+		shape_node = CollisionShape3D.new()
+		shape_node.name = "CollisionShape3D"
+		add_child(shape_node)
+	if shape_node.shape == null:
+		var sphere := SphereShape3D.new()
+		sphere.radius = PROJECTILE_RADIUS
+		shape_node.shape = sphere
+
+	var mesh_node: MeshInstance3D = get_node_or_null("MeshInstance3D") as MeshInstance3D
+	if mesh_node == null:
+		mesh_node = MeshInstance3D.new()
+		mesh_node.name = "MeshInstance3D"
+		add_child(mesh_node)
+	if mesh_node.mesh == null:
+		var mesh := SphereMesh.new()
+		mesh.radius = PROJECTILE_RADIUS
+		mesh.height = PROJECTILE_RADIUS * 2.0
+		mesh_node.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 2.0
+	material.albedo_color = color
+	mesh_node.material_override = material
 
 
 func _physics_process(delta: float) -> void:
@@ -32,6 +75,8 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(body: Node3D) -> void:
 	if _consumed:
+		return
+	if body.is_in_group("player") or body.is_in_group("chunk"):
 		return
 	if body.has_method("take_damage"):
 		_consumed = true

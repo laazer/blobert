@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/sandbox/m11_sandbox_base_3d.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://cpyujft4wk0vm" path="res://scripts/levels/m11_verification_controller_3d.gd" id="2_controller"]
+
+[node name="M11VerificationCore" type="Node3D"]
+
+[node name="SandboxBase" parent="." instance=ExtResource("1_base")]
+
+[node name="M11VerificationController" type="Node" parent="."]
+script = ExtResource("2_controller")
+default_slot_a_mutation = "acid"
+
+[node name="KeyInstructions" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, -10, 5.5, 0)
+pixel_size = 0.0025
+fixed_size = true
+modulate = Color(0.85, 0.92, 1, 1)
+text = "M11 CORE — player + debug HUD + death
+Move A/D  Jump  Attack J  Keys 1-4 swap slot A
+Debug kill K (respawn ~1.5s)  Fall off floor = pit
+Open other m11_verification_* scenes for each feature."
+font_size = 18
+outline_size = 4
+
+[node name="StationSign" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, -10, 3.8, 0)
+pixel_size = 0.0025
+fixed_size = true
+modulate = Color(0.75, 1, 0.85, 1)
+text = "Verify: Blobert model visible. Press J: DBG atk/proj rise; gate=ok.
+gate=executor_busy: wait or J again. gate=policy_6: recall chunk (E stuck).
+Face +X (+ right) for attacks."
+font_size = 17
+outline_size = 3
