@@ -37,7 +37,8 @@ func execute_attack(resource: AttackResource) -> void:
 			_run_slam_attack_async(resource)
 			return
 		"MELEE_SWIPE_COMBO":
-			_handle_melee_swipe_combo(resource)
+			_run_melee_swipe_combo_async(resource)
+			return
 		_:
 			_handle_unknown(resource)
 	_is_active = false
@@ -89,13 +90,8 @@ func _apply_combo_modifiers(
 	modifiers: Dictionary,
 	pre_damage_state: int = -1
 ) -> void:
-	if modifiers.get("poison", false):
-		if target.has_method("apply_poison"):
-			target.apply_poison(
-				modifiers.get("poison_duration", 2.0),
-				modifiers.get("poison_dps", DEFAULT_POISON_DPS)
-			)
-
+	# Combo-specific acid path: apply_acid_stack instead of apply_acid so each
+	# hit creates an independently-decaying DoT stack.
 	if modifiers.get("acid_on_hit", false):
 		if target.has_method("apply_acid_stack"):
 			var acid_dur: float = modifiers.get("acid_duration", 2.0)
@@ -104,20 +100,11 @@ func _apply_combo_modifiers(
 				acid_dur *= 2.0
 			target.apply_acid_stack(acid_dur, acid_dps_val)
 
-	var slow_val = modifiers.get("slow", null)
-	if slow_val != null:
-		if target.has_method("apply_slowness"):
-			target.apply_slowness(slow_val, modifiers.get("slow_duration", DEFAULT_SLOW_DURATION))
-
-	if modifiers.get("infect_weakened", false):
-		if target.has_method("get_base_state") and target.has_method("set_base_state"):
-			if target.has_method("is_dead") and target.is_dead():
-				return
-			var check_state: int = pre_damage_state if pre_damage_state >= 0 else -1
-			if check_state < 0 and target.has_method("get_base_state"):
-				check_state = target.get_base_state()
-			if check_state == 1:
-				target.set_base_state(2)
+	# Delegate all non-acid modifiers (poison, slow, infect_weakened) to the
+	# shared base path, excluding acid_on_hit so apply_acid is not also called.
+	var mods_sans_acid := modifiers.duplicate()
+	mods_sans_acid.erase("acid_on_hit")
+	_apply_modifiers(target, mods_sans_acid, pre_damage_state)
 
 
 func is_active() -> bool:

@@ -17,6 +17,9 @@ const DOT_TICK_INTERVAL: float = 0.5
 var _active_dots: Dictionary = {}
 var _slowness_multiplier: float = 1.0
 var _slowness_remaining: float = 0.0
+# Not reset in stop_all_effects(): each stack gets a unique key (acid_stack_N)
+# so independently-decaying stacks can never collide. Resetting the counter
+# would reuse keys and corrupt still-active entries after a stop+reapply cycle.
 var _acid_stack_counter: int = 0
 
 
