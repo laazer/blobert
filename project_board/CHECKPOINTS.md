@@ -41,6 +41,28 @@ Ticket: `project_board/11_milestone_11_base_mutation_attacks/done/11_adhesion_pl
 
 ---
 
+## Run: 2026-05-28T-m12-01-autopilot (M12 Fused Attack Database Integration)
+
+- Queue mode: single ticket
+- Queue scope: `project_board/12_milestone_12_fused_mutation_attacks/backlog/01_fused_attack_database_integration.md`
+- Lean: no
+- Log root: `project_board/checkpoints/M12-01/`
+
+### [M12-01] — OUTCOME: PLANNING COMPLETE
+Core impl already exists (get_fused_attack, _try_attack fused path, ADB-07 tests). Gaps: no spec doc, no combo matrix test (6 unordered combos), cooldown model undocumented, fallback key asymmetry unspecified. 3 assumptions logged. Stage → SPECIFICATION; handoff to Spec Agent.
+Log: `project_board/checkpoints/M12-01/2026-05-28T-plan-run.md`
+
+### [M12-01] — OUTCOME: SPECIFICATION COMPLETE
+Frozen spec (FADI-1 through FADI-7, 7 NF requirements, 7 edge cases). 4 design decisions frozen: composite-key shared cooldown (FADI-DD-1), fallback key asymmetry intentional (FADI-DD-2), order-independence contract (FADI-DD-3), 6-combo matrix defined (FADI-DD-4). 18+ new tests required in test_fused_combo_matrix.gd. Stage → TEST_DESIGN; handoff to Test Designer Agent.
+Log: `project_board/checkpoints/M12-01/2026-05-28T-spec-run.md`
+Spec: `project_board/specs/fused_attack_database_integration_spec.md`
+
+### [M12-01] — OUTCOME: TEST_DESIGN COMPLETE
+18 test methods (36 assertions) in `tests/scripts/attacks/test_fused_combo_matrix.gd`. All 6 combos covered in forward-lookup, reverse-lookup, and player-dispatch categories. Full suite: === ALL TESTS PASSED ===. Key finding: composite cooldown key must be computed by sorting namespaced IDs, not prepending namespace to pre-sorted canonical key. Stage → TEST_BREAK; handoff to Test Breaker Agent.
+Log: `project_board/checkpoints/M12-01/2026-05-28T-test-design-run.md`
+
+---
+
 ## Run: 2026-05-26T-m11-10-autopilot (M11 Carapace Player Attack)
 
 - Queue mode: single ticket

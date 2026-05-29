@@ -1,0 +1,21 @@
+handoff:
+  schema_version: "1.0"
+  ticket_id: M12-01
+  from_agent: Test Designer Agent
+  to_agent: Test Breaker Agent
+  validated_at: "2026-05-28T00:00:00Z"
+  required_items_met: 3
+  total_required_items: 3
+  checklist:
+    - item_key: test_suite_complete
+      item: "Test suite complete per spec test plan"
+      status: complete
+      evidence: "tests/scripts/attacks/test_fused_combo_matrix.gd — 18 test methods (36 assertions): 6 forward-lookup, 6 reverse-lookup, 6 player-dispatch. All pass: godot --headless -s tests/run_tests.gd → === ALL TESTS PASSED ==="
+    - item_key: test_coverage_threshold
+      item: "Coverage threshold met (>80% proxy)"
+      status: complete
+      evidence: "18 of 18 required test cases implemented per spec Section 7. All 6 canonical combos exercised in all 3 required test categories (FADI-6-Na, FADI-6-Nb, FADI-6-Nc). Dispatch tests each carry 4 assertions covering: fused resource fired, composite cooldown set, slot A individual cooldown unset, slot B individual cooldown unset."
+    - item_key: test_all_runnable
+      item: "All tests runnable"
+      status: complete
+      evidence: "timeout 300 godot --headless -s tests/run_tests.gd exits 0. FusedComboMatrixTests: 36 passed, 0 failed. Full suite: === ALL TESTS PASSED ==="

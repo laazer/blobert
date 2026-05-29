@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-05-28T00:00:00Z",
+  "ticket_id": "M12-01",
+  "todos": [
+    {
+      "id": "planner_discover_existing_impl",
+      "content": "Discover existing implementation: attack_database.gd, player_controller_3d.gd _try_attack(), existing ADB-07 tests",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "planner_identify_gaps",
+      "content": "Identify gaps: missing spec, missing combo matrix tests, undocumented cooldown model, fallback key asymmetry",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "planner_produce_execution_plan",
+      "content": "Produce 5-task execution plan (Spec → Test Design → Test Break → Implementation → AC Gate)",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "planner_update_ticket_workflow_state",
+      "content": "Update ticket WORKFLOW STATE: Stage=SPECIFICATION, Next=Spec Agent",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "planner_write_checkpoint",
+      "content": "Write checkpoint log to project_board/checkpoints/M12-01/2026-05-28T-plan-run.md",
+      "status": "completed",
+      "agent": "Planner Agent"
+    },
+    {
+      "id": "spec_read_workflow_enforcement",
+      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md before acting",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_read_impl_files",
+      "content": "Read attack_database.gd, player_controller_3d.gd lines 445-482, and existing test files for ADB-05, ADB-06, ADB-07",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_freeze_composite_key_cooldown",
+      "content": "Freeze FADI-DD-1: composite-key shared cooldown model as normative design",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_freeze_fallback_asymmetry",
+      "content": "Freeze FADI-DD-2: fallback cooldown key asymmetry (slot A only) as intentional design",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_freeze_order_independence",
+      "content": "Freeze FADI-DD-3: order-independence contract guaranteed by alphabetical sort in _make_fused_key()",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_freeze_combo_matrix",
+      "content": "Freeze FADI-DD-4: 6-combo matrix with sorted keys enumerated (acid_claw, carapace_claw, adhesion_claw, acid_carapace, acid_adhesion, adhesion_carapace)",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_write_spec_document",
+      "content": "Write project_board/specs/fused_attack_database_integration_spec.md with 7 functional requirements, 5 NF requirements, 7 edge cases, test strategy",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_write_checkpoint_log",
+      "content": "Write checkpoint log to project_board/checkpoints/M12-01/2026-05-28T-spec-run.md with 2 assumptions logged",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_update_checkpoints_index",
+      "content": "Add spec run entry to project_board/CHECKPOINTS.md",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_write_handoff_yaml",
+      "content": "Write project_board/checkpoints/M12-01/handoff-latest.yaml with spec→test_designer checklist",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_write_todos_json",
+      "content": "Write project_board/checkpoints/M12-01/todos-latest.json with all spec tasks completed",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "spec_update_ticket",
+      "content": "Update ticket: Stage=TEST_DESIGN, Revision=2, Last Updated By=Spec Agent, Next Responsible Agent=Test Designer Agent, Status=Proceed",
+      "status": "completed",
+      "agent": "Spec Agent"
+    },
+    {
+      "id": "test_designer_read_workflow_enforcement",
+      "content": "Read workflow_enforcement_v1.md and checkpoint_protocol_v1.md before acting",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_read_spec_and_ticket",
+      "content": "Read fused_attack_database_integration_spec.md and ticket backlog/01_fused_attack_database_integration.md",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_read_existing_tests",
+      "content": "Read test_attack_database_controller_integration.gd (lines 1-100 and 558-615) and test_attack_database.gd (lines 195-270) for patterns",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_read_impl_files",
+      "content": "Read attack_database.gd fused API and player_controller_3d.gd _try_attack() lines 445-483",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_write_test_file",
+      "content": "Write tests/scripts/attacks/test_fused_combo_matrix.gd with 18 test methods covering 6 forward-lookup, 6 reverse-lookup, 6 player-dispatch tests",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_run_tests",
+      "content": "Run timeout 300 godot --headless -s tests/run_tests.gd and verify exit 0",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_write_checkpoint_log",
+      "content": "Write checkpoint log to project_board/checkpoints/M12-01/2026-05-28T-test-design-run.md",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_write_handoff_yaml",
+      "content": "Write project_board/checkpoints/M12-01/handoff-latest.yaml with test_designer→test_breaker checklist",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_write_todos_json",
+      "content": "Write project_board/checkpoints/M12-01/todos-latest.json with all test design tasks completed",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_commit_changes",
+      "content": "Commit test file and checkpoint artifacts to git",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    },
+    {
+      "id": "test_designer_update_ticket",
+      "content": "Update ticket: Stage=TEST_BREAK, Revision=3, Last Updated By=Test Designer Agent, Next Responsible Agent=Test Breaker Agent, Status=Proceed",
+      "status": "completed",
+      "agent": "Test Designer Agent"
+    }
+  ]
+}

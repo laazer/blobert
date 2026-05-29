@@ -27,7 +27,7 @@ Reuse AttackDatabase (extend `get_fused_attack()` method) and AttackExecutor dis
 - [x] Fallback to base attack if fused not found (graceful degradation)
 - [x] Input gating still applies (state machine checks, per-slot cooldowns)
 - [x] Tests validate fused attack lookup and fallback behavior
-- [x] Tests validate combo matrix coverage (6 unordered combos)
+- [ ] Tests validate combo matrix coverage (6 unordered combos)
 - [x] `run_tests.sh` exits 0
 
 ## Dependencies
@@ -67,3 +67,80 @@ func _try_attack() -> void:
 - Fused cooldown may be different from base attack cooldowns
 - Decide: shared cooldown (both mutations on same timer) or independent (each slot independent)
 
+---
+
+## Execution Plan
+
+### Planning findings (2026-05-28)
+
+**What already exists — no implementation needed:**
+- `scripts/attacks/attack_database.gd`: `register_fused_attack()` and `get_fused_attack()` fully implemented with alphabetical sort key for order-independence.
+- `scripts/player/player_controller_3d.gd` lines 445–482: `_try_attack()` has complete fused path (both-slot check → fused lookup → sorted composite cooldown key → fallback to slot_a base attack).
+- `tests/scripts/attacks/test_attack_database_controller_integration.gd`: `test_adb07_fused_when_both_slots` and `test_adb07_fused_fallback_to_base` exist and pass.
+- `tests/scripts/attacks/test_attack_database.gd`: ADB-5 and ADB-6 cover `register_fused_attack` / `get_fused_attack` including order-independence.
+
+**Gaps requiring work (Spec Agent must address):**
+1. **No spec document for M12-01.** The Spec Agent must produce `project_board/specs/fused_attack_database_integration_spec.md`.
+2. **No combo matrix test.** No test exercises all 6 unordered real-mutation combos (claw+acid, claw+carapace, claw+adhesion, acid+carapace, acid+adhesion, carapace+adhesion). The AC checkbox for this is unchecked.
+3. **Cooldown model undocumented.** The current implementation uses a single composite key (e.g., `"acid_claw"`) for fused cooldown — a single shared timer — not two independent per-slot timers. The Spec Agent must freeze this as the normative design and document the behavior precisely.
+4. **Fallback cooldown key asymmetry.** When both slots are filled but no fused combo exists, `_try_attack()` falls back to slot_a's cooldown key (`cooldown_key = a_id`) only. This means slot_b's cooldown is not checked or set on a fallback. The Spec Agent must determine and document whether this is intentional or a gap.
+
+**Work plan:**
+- Task 1 (Spec Agent): Write `project_board/specs/fused_attack_database_integration_spec.md`. Freeze: composite key cooldown model, fallback key asymmetry, combo matrix definition, order-independence contract. Spec type: `generic`. **COMPLETE.**
+- Task 2 (Test Designer): Write combo matrix behavioral tests in `tests/scripts/attacks/test_fused_combo_matrix.gd` — 6 forward lookups + 6 reverse lookups + 6 player-dispatch paths. Use synthetic AttackResources (not real `.tres` files).
+- Task 3 (Test Breaker): Adversarial tests — null fused when only 1 slot filled, composite key collision, both-slot gating under active fused cooldown, fallback key behavior, order determinism stress.
+- Task 4 (Gameplay Systems Agent): Any implementation changes required by the spec (likely none, but fallback key asymmetry may require a one-line fix).
+- Task 5 (AC Gatekeeper): Verify all 9 ACs (including the previously unchecked combo matrix AC).
+
+---
+
+# WORKFLOW STATE (DO NOT FREEFORM EDIT)
+
+## Stage
+TEST_BREAK
+
+## Revision
+3
+
+## Last Updated By
+Test Designer Agent
+
+## Validation Status
+- Tests: Not Run
+- Static QA: Not Run
+- Integration: Not Run
+
+## Blocking Issues
+- None
+
+## Escalation Notes
+- None
+
+---
+
+# NEXT ACTION
+
+## Next Responsible Agent
+Test Breaker Agent
+
+## Required Input Schema
+```json
+{
+  "ticket_path": "project_board/12_milestone_12_fused_mutation_attacks/backlog/01_fused_attack_database_integration.md",
+  "spec_path": "project_board/specs/fused_attack_database_integration_spec.md",
+  "primary_test_file": "tests/scripts/attacks/test_fused_combo_matrix.gd",
+  "adversarial_targets": [
+    "Fallback cooldown key isolation: _mutation_cooldowns[b_id] unset after fallback fire (FADI-5c)",
+    "Composite key and individual key independence: _mutation_cooldowns[acid] unset after acid_claw composite fires (FADI-EC-3, FADI-3b)",
+    "Both-slot fused cooldown blocks re-fire (FADI-3c)",
+    "State-machine gate blocks fused attack in non-permit state (FADI-7a)",
+    "Null database causes _try_attack() to return without crash"
+  ]
+}
+```
+
+## Status
+Proceed
+
+## Reason
+Test Designer completed 18 behavioral tests (36 assertions) in tests/scripts/attacks/test_fused_combo_matrix.gd. All 6 canonical combos covered in forward-lookup, reverse-lookup, and player-dispatch categories. Full suite passes (=== ALL TESTS PASSED ===). Test Breaker must now write adversarial tests covering: fallback cooldown key isolation (FADI-5c), composite/individual key independence (FADI-3b, FADI-EC-3), both-slot cooldown blocks re-fire (FADI-3c), state-machine gate blocks fused in non-permit state (FADI-7a), and null-db safety. See spec Section 7 adversarial targets and FADI-3, FADI-5, FADI-7 requirements.
